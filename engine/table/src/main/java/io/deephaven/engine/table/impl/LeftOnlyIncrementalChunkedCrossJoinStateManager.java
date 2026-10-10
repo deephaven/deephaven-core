@@ -8,7 +8,6 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.exceptions.OutOfKeySpaceException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -99,13 +98,14 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         // how many bits we need for the right keys.
         validateKeySpaceSize();
 
-        final RowSetBuilderRandom resultRowSet = RowSetFactory.builderRandom();
+        // addLeft visits the left rows in row key order, so the result regions arrive in order
+        final RowSetBuilderSequential resultRowSet = RowSetFactory.builderSequential();
         addLeft(leftTable.getRowSet(), (slot, rowKey, rightRowSet) -> {
             final long regionStart = rowKey << getNumShiftBits();
             if (rightRowSet.isNonempty()) {
-                resultRowSet.addRange(regionStart, regionStart + rightRowSet.size() - 1);
+                resultRowSet.appendRange(regionStart, regionStart + rightRowSet.size() - 1);
             } else if (leftOuterJoin()) {
-                resultRowSet.addKey(regionStart);
+                resultRowSet.appendKey(regionStart);
             }
         });
 

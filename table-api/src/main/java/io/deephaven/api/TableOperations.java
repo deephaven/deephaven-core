@@ -443,7 +443,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      *        "columnFoundInBoth")
      * @param columnsToAdd A comma separated list with the columns from the right side that need to be added to the left
      *        side as a result of the match.
-     * @param reserveBits The number of bits to reserve for rightTable groups.
+     * @param reserveBits The number of bits to reserve for rightTable groups, between 1 and 62 (inclusive).
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      * @see #join(Object, Collection, Collection, int)
      */
@@ -480,10 +480,11 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * specified, join reserves 10 bits to represent a right row. When there are too few bits to represent all of the
      * right rows for a given aggregation group the table will shift a bit from the left side to the right side. The
      * default of 10 bits was carefully chosen because it results in an efficient implementation to process live
-     * updates.
+     * updates. A join whose result can never change, such as a join of two static tables, ignores {@code reserveBits}
+     * and uses just enough bits for its right rows.
      *
      * <p>
-     * An io.deephaven.engine.table.impl.util.OutOfKeySpaceException is thrown when the total number of bits needed to
+     * An io.deephaven.engine.exceptions.OutOfKeySpaceException is thrown when the total number of bits needed to
      * express the result table exceeds that needed to represent Long.MAX_VALUE. There are a few work arounds:
      *
      * <p>
@@ -502,7 +503,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param columnsToMatch The match pair conditions.
      * @param columnsToAdd The columns from the right side that need to be added to the left side as a result of the
      *        match.
-     * @param reserveBits The number of bits to reserve for rightTable groups.
+     * @param reserveBits The number of bits to reserve for rightTable groups, between 1 and 62 (inclusive).
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
     TOPS join(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,

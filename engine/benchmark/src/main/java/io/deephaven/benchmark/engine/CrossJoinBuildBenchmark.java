@@ -38,6 +38,8 @@ import java.util.concurrent.TimeUnit;
  * are drawn from {@code keyCount} values, so that the result has about {@code rows * rows / keyCount} rows:
  * <ul>
  * <li>{@link #staticBuild()}: both inputs static.</li>
+ * <li>{@link #leftRefreshingBuild()}: a refreshing left input and a static right input, so the join builds the state it
+ * keeps for left updates.</li>
  * <li>{@link #bothRefreshingBuild()}: both inputs refreshing, so the join builds the state it keeps for updates.</li>
  * </ul>
  * The key columns compute a long key from the row key, scattering each key's rows across the table, so the measured
@@ -126,6 +128,17 @@ public class CrossJoinBuildBenchmark {
     @Benchmark
     public long staticBuild() {
         return staticLeft.join(staticRight, "LK=RK").size();
+    }
+
+    @Benchmark
+    public void leftRefreshingBuild(final Blackhole blackhole) {
+        // release the join, and the listener it registers, after each build
+        final LivenessScope scope = new LivenessScope();
+        try (final SafeCloseable ignored = LivenessScopeStack.open(scope, true)) {
+            final Table result =
+                    updateGraph.sharedLock().computeLocked(() -> refreshingLeft.join(staticRight, "LK=RK"));
+            blackhole.consume(result.size());
+        }
     }
 
     @Benchmark

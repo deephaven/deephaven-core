@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
@@ -20,8 +21,10 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.join.ChangedKeyRows;
 import io.deephaven.engine.table.impl.join.IncrementalKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.join.KeyIdHasher;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
@@ -33,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
@@ -76,6 +80,8 @@ class RightIncrementalChunkedCrossJoinStateManager
     private final WritableRowRedirection rightRowToSlot;
     private final ColumnSource<?>[] leftKeySources;
     private final ColumnSource<?>[] rightKeySources;
+    // finds the left modified rows whose key value changed, and therefore may change slots
+    private final ChangedKeyRows changedKeyRows;
 
     // the row sets and modified slot tracker cookie of each slot
     private final ObjectArraySource<TrackingWritableRowSet> leftRowSetSource =
@@ -105,6 +111,8 @@ class RightIncrementalChunkedCrossJoinStateManager
         this.rightRowToSlot = WritableRowRedirection.FACTORY.createRowRedirection(tableSize);
         this.leftKeySources = tableKeySources;
         this.rightKeySources = rightKeySources;
+        this.changedKeyRows = new ChangedKeyRows(
+                Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new));
         this.isLeftTicking = leftTable.isRefreshing();
         this.leftTable = leftTable;
     }
@@ -291,13 +299,74 @@ class RightIncrementalChunkedCrossJoinStateManager
         }
 
         if (!keyColumnsChanged) {
-            final boolean usePrev = false;
-            probeWithCallback(upstream.modified(), leftKeySources, usePrev, null,
-                    (cookie, slot, rowKey, prevRowKey) -> tracker.appendChunkModify(cookie, slot, rowKey));
+            leftModifiedInPlace(upstream.getModifiedPreShift(), upstream.modified(), tracker);
             tracker.flushLeftModifies();
             return;
         }
 
+        // only the rows whose key value changed can move to another slot; the rest are modified in place
+        final RowSetBuilderSequential changedPreShiftBuilder = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential changedPostShiftBuilder = RowSetFactory.builderSequential();
+        changedKeyRows.findChanged(leftKeySources, upstream.getModifiedPreShift(), upstream.modified(),
+                changedPreShiftBuilder, changedPostShiftBuilder, null);
+        try (final RowSet changedPreShift = changedPreShiftBuilder.build();
+                final RowSet changedPostShift = changedPostShiftBuilder.build()) {
+            if (changedPostShift.size() < upstream.modified().size()) {
+                // shifts preserve order, so removing the changed rows keeps the pre- and post-shift rows aligned
+                try (final RowSet unchangedPreShift = upstream.getModifiedPreShift().minus(changedPreShift);
+                        final RowSet unchangedPostShift = upstream.modified().minus(changedPostShift)) {
+                    leftModifiedInPlace(unchangedPreShift, unchangedPostShift, tracker);
+                }
+            }
+            if (changedPostShift.isNonempty()) {
+                leftModifiedReslot(changedPreShift, changedPostShift, tracker);
+            }
+        }
+        tracker.flushLeftModifies();
+    }
+
+    /**
+     * Record modifications of left rows that remain in their slot. Each row's slot is read from leftRowToSlot, which
+     * left shifts have not yet been applied to, at the row's pre-shift key.
+     *
+     * @param modifiedPreShift the modified rows in pre-shift key space, aligned positionally with
+     *        {@code modifiedPostShift}
+     * @param modifiedPostShift the modified rows in post-shift key space, which the tracker records
+     */
+    private void leftModifiedInPlace(final RowSet modifiedPreShift, final RowSet modifiedPostShift,
+            final CrossJoinModifiedSlotTracker tracker) {
+        final int chunkSize = (int) Math.min(CHUNK_SIZE, modifiedPostShift.size());
+        try (final ChunkSource.FillContext fillContext = leftRowToSlot.makeFillContext(chunkSize);
+                final WritableLongChunk<RowKeys> slots = WritableLongChunk.makeWritableChunk(chunkSize);
+                final RowSequence.Iterator preShiftModified = modifiedPreShift.getRowSequenceIterator();
+                final RowSequence.Iterator postShiftModified = modifiedPostShift.getRowSequenceIterator()) {
+            while (postShiftModified.hasMore()) {
+                final RowSequence preChunk = preShiftModified.getNextRowSequenceWithLength(chunkSize);
+                final RowSequence postChunk = postShiftModified.getNextRowSequenceWithLength(chunkSize);
+                leftRowToSlot.fillChunk(fillContext, slots, preChunk);
+                final LongChunk<OrderedRowKeys> postKeys = postChunk.asRowKeyChunk();
+                for (int ii = 0; ii < slots.size(); ++ii) {
+                    final long slot = slots.get(ii);
+                    final long cookie = modifiedTrackerCookieSource.getUnsafe(slot);
+                    final long newCookie = tracker.appendChunkModify(cookie, slot, postKeys.get(ii));
+                    if (newCookie != cookie) {
+                        modifiedTrackerCookieSource.set(slot, newCookie);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Record modifications of left rows whose key value changed, moving each row whose slot changed out of its previous
+     * slot and into its new one.
+     *
+     * @param modifiedPreShift the modified rows in pre-shift key space, aligned positionally with
+     *        {@code modifiedPostShift}
+     * @param modifiedPostShift the modified rows in post-shift key space
+     */
+    private void leftModifiedReslot(final RowSet modifiedPreShift, final RowSet modifiedPostShift,
+            final CrossJoinModifiedSlotTracker tracker) {
         // note: at this point left shifts have not yet been applied to our internal data structures
         final StateTrackingCallback callback = (cookie, postSlot, rowKey, prevRowKey) -> {
             Assert.neq(postSlot, "postSlot", EMPTY_RIGHT_SLOT);
@@ -320,8 +389,7 @@ class RightIncrementalChunkedCrossJoinStateManager
             return cookie;
         };
 
-        buildWithCallback(false, upstream.modified(), leftKeySources, upstream.getModifiedPreShift(), callback);
-        tracker.flushLeftModifies();
+        buildWithCallback(false, modifiedPostShift, leftKeySources, modifiedPreShift, callback);
     }
 
     void leftShift(final RowSet filterRowSet, final RowSetShiftData shifted,

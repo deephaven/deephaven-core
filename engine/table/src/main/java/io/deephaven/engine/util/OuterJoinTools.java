@@ -6,6 +6,7 @@ package io.deephaven.engine.util;
 import com.google.common.collect.Streams;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.TableOperationsDefaults;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MatchPair;
@@ -16,6 +17,8 @@ import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.NullSelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
@@ -76,7 +79,7 @@ public class OuterJoinTools {
      * @param table2 input table
      * @param columnsToMatch match criteria
      * @param columnsToAdd columns to add
-     * @param numRightBitsToReserve The number of bits to reserve for table2 groups.
+     * @param numRightBitsToReserve The number of bits to reserve for table2 groups, between 1 and 62 (inclusive).
      * @return the resulting full-outer-joined table
      */
     @ScriptApi
@@ -86,16 +89,31 @@ public class OuterJoinTools {
             @NotNull final MatchPair[] columnsToMatch,
             @NotNull final MatchPair[] columnsToAdd,
             final int numRightBitsToReserve) {
+        // like Table.join, the join runs under its inputs' update graph rather than the caller's
+        final UpdateGraph updateGraph = table1.getUpdateGraph(table2);
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return fullOuterJoinImpl(table1, table2, columnsToMatch, columnsToAdd, numRightBitsToReserve);
+        }
+    }
+
+    private static Table fullOuterJoinImpl(
+            @NotNull final Table table1,
+            @NotNull final Table table2,
+            @NotNull final MatchPair[] columnsToMatch,
+            @NotNull final MatchPair[] columnsToAdd,
+            final int numRightBitsToReserve) {
         // perform the leftOuterJoin; it's missing right-side only rows
         final Table leftTable = leftOuterJoin(table1, table2, columnsToMatch, columnsToAdd, numRightBitsToReserve);
 
-        // find a sentinel column name to use to identify right-side only rows
+        // find a sentinel column name to use to identify right-side only rows; it is natural joined onto table2, so it
+        // must name neither a result column nor a table2 column
         int numAttempts = 0;
         String sentinelColumnName;
         final Set<String> resultColumns = leftTable.getDefinition().getColumnNameSet();
+        final Set<String> table2Columns = table2.getDefinition().getColumnNameSet();
         do {
             sentinelColumnName = "__sentinel_" + (numAttempts++) + "__";
-        } while (resultColumns.contains(sentinelColumnName));
+        } while (resultColumns.contains(sentinelColumnName) || table2Columns.contains(sentinelColumnName));
 
         // only need match columns from the left; rename to right names and drop remaining to avoid name conflicts
         final List<SelectColumn> leftColumns = Streams.concat(
@@ -106,7 +124,9 @@ public class OuterJoinTools {
         final List<SelectColumn> leftMatchColumns = Arrays.stream(columnsToMatch)
                 .map(mp -> new SourceColumn(mp.leftColumn()))
                 .collect(Collectors.toList());
+        // the groups of table1's current rows; a blink table1's selectDistinct would keep every group it has ever seen
         final Table uniqueLeftGroups = table1.coalesce()
+                .removeBlink()
                 .selectDistinct(leftMatchColumns)
                 .view(leftColumns);
 
@@ -201,7 +221,7 @@ public class OuterJoinTools {
      * @param rightTable input table
      * @param columnsToMatch match criteria
      * @param columnsToAdd columns to add
-     * @param numRightBitsToReserve The number of bits to reserve for rightTable groups.
+     * @param numRightBitsToReserve The number of bits to reserve for rightTable groups, between 1 and 62 (inclusive).
      * @return the resulting left-outer-joined table
      */
     @ScriptApi
@@ -212,12 +232,16 @@ public class OuterJoinTools {
             @NotNull final MatchPair[] columnsToAdd,
             final int numRightBitsToReserve) {
         final MatchPair[] useColumnsToAdd = createColumnsToAdd(rightTable, columnsToMatch, columnsToAdd);
-        return CrossJoinHelper.leftOuterJoin(
-                (QueryTable) leftTable.coalesce(),
-                (QueryTable) rightTable.coalesce(),
-                columnsToMatch,
-                useColumnsToAdd,
-                numRightBitsToReserve);
+        // like Table.join, the join runs under its inputs' update graph rather than the caller's
+        final UpdateGraph updateGraph = leftTable.getUpdateGraph(rightTable);
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return CrossJoinHelper.leftOuterJoin(
+                    (QueryTable) leftTable.coalesce(),
+                    (QueryTable) rightTable.coalesce(),
+                    columnsToMatch,
+                    useColumnsToAdd,
+                    numRightBitsToReserve);
+        }
     }
 
     /**
@@ -308,7 +332,7 @@ public class OuterJoinTools {
      * @param rightTable input table
      * @param columnsToMatch match criteria
      * @param columnsToAdd columns to add
-     * @param numRightBitsToReserve The number of bits to reserve for rightTable groups.
+     * @param numRightBitsToReserve The number of bits to reserve for rightTable groups, between 1 and 62 (inclusive).
      * @return the resulting left-outer-joined table
      */
     @ScriptApi
@@ -435,7 +459,7 @@ public class OuterJoinTools {
      * @param table2 input table
      * @param columnsToMatch match criteria
      * @param columnsToAdd columns to add
-     * @param numRightBitsToReserve The number of bits to reserve for table2 groups.
+     * @param numRightBitsToReserve The number of bits to reserve for table2 groups, between 1 and 62 (inclusive).
      * @return the resulting full-outer-joined table
      */
     @ScriptApi

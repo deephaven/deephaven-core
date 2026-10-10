@@ -11,22 +11,29 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ResettableWritableIntChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.exceptions.OutOfKeySpaceException;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.sources.CrossJoinRightColumnSource;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.sources.IntTestSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.util.OuterJoinTools;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -39,6 +46,7 @@ import org.junit.experimental.categories.Category;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
@@ -226,6 +234,203 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     @Test
+    public void testZeroKeyRightModifyReportsOnlyModifiedRows() {
+        final QueryTable lTable = testRefreshingTable(i(1, 5, 9).toTracking(), intCol("LVal", 1, 5, 9));
+        final QueryTable rTable = testRefreshingTable(i(0, 2, 4, 6).toTracking(), intCol("RVal", 10, 12, 14, 16));
+        final QueryTable jt = (QueryTable) lTable.join(rTable, emptyList(), emptyList(), numRightBitsToReserve);
+        final SimpleListener listener = new SimpleListener(jt);
+        jt.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(4), intCol("RVal", -14));
+            rTable.notifyListeners(new TableUpdateImpl(i(), i(), i(4), RowSetShiftData.EMPTY,
+                    rTable.newModifiedColumnSet("RVal")));
+        });
+
+        assertEquals(1, listener.getCount());
+        assertEquals(i(), listener.update.added());
+        assertEquals(i(), listener.update.removed());
+        assertTrue(listener.update.shifted().empty());
+        assertEquals(jt.newModifiedColumnSet("RVal"), listener.update.modifiedColumnSet());
+        assertEquals(lTable.size(), listener.update.modified().size());
+        final ColumnSource<Integer> rVal = jt.getColumnSource("RVal", int.class);
+        listener.update.modified().forAllRowKeys(rowKey -> assertEquals(-14, rVal.getInt(rowKey)));
+        assertTableEquals(lTable.join(rTable, emptyList(), emptyList(), numRightBitsToReserve), jt);
+        listener.reset();
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(3), intCol("RVal", 13));
+            removeRows(rTable, i(0));
+            rTable.notifyListeners(i(3), i(0), i());
+        });
+        assertEquals(1, listener.getCount());
+        assertEquals(2 * lTable.size(), listener.update.added().size() + listener.update.removed().size());
+        assertEquals(i(), listener.update.modified());
+        assertTrue(listener.update.shifted().empty());
+        assertTableEquals(lTable.join(rTable, emptyList(), emptyList(), numRightBitsToReserve), jt);
+    }
+
+    @Test
+    public void testBothTickingModifiedColumnsOfModifiedRowsOnly() {
+        for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+            final String description = "leftOuterJoin=" + leftOuterJoin;
+
+            // left row 1 moves from key 1 to key 2, becoming a remove and an add, while a right modification of key 2
+            // modifies left row 3's result row
+            checkBothTickingModifiedColumns(description + ", left row changes key", leftOuterJoin,
+                    (left, right) -> {
+                        addToTable(left, i(1), intCol("K", 2), intCol("A", 1));
+                        left.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                                left.newModifiedColumnSet("K")));
+                        addToTable(right, i(2), intCol("K", 2), intCol("Y", -12));
+                        right.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                                right.newModifiedColumnSet("Y")));
+                    }, i(3L << 10), "Y");
+
+            // a right modification of key 3, which has no left rows, changes no result row
+            checkBothTickingModifiedColumns(description + ", right modify without left rows", leftOuterJoin,
+                    (left, right) -> {
+                        addToTable(left, i(1), intCol("K", 1), intCol("A", -1));
+                        left.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                                left.newModifiedColumnSet("A")));
+                        addToTable(right, i(4), intCol("K", 3), intCol("Y", -30));
+                        right.notifyListeners(new TableUpdateImpl(i(), i(), i(4), RowSetShiftData.EMPTY,
+                                right.newModifiedColumnSet("Y")));
+                    }, i(1L << 10), "A");
+
+            // left row 1 is modified while key 1's only right row is replaced, so its result row is removed and added;
+            // left row 3 of key 2 is modified through its right row
+            checkBothTickingModifiedColumns(description + ", left modify with replaced right rows", leftOuterJoin,
+                    (left, right) -> {
+                        addToTable(left, i(1), intCol("K", 1), intCol("A", -1));
+                        left.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                                left.newModifiedColumnSet("A")));
+                        removeRows(right, i(0));
+                        addToTable(right, i(1), intCol("K", 1), intCol("Y", 11));
+                        addToTable(right, i(2), intCol("K", 2), intCol("Y", -12));
+                        right.notifyListeners(new TableUpdateImpl(i(1), i(0), i(2), RowSetShiftData.EMPTY,
+                                right.newModifiedColumnSet("Y")));
+                    }, null, "Y");
+        }
+    }
+
+    private void checkBothTickingModifiedColumns(final String description, final boolean leftOuterJoin,
+            final java.util.function.BiConsumer<QueryTable, QueryTable> changes, final RowSet expectedModified,
+            final String... expectedModifiedColumns) {
+        // left rows 1 and 3 have keys 1 and 2; right rows 0, 2 and 4 have keys 1, 2 and 3
+        final QueryTable left = testRefreshingTable(i(1, 3).toTracking(), intCol("K", 1, 2), intCol("A", 1, 3));
+        final QueryTable right = testRefreshingTable(i(0, 2, 4).toTracking(), intCol("K", 1, 2, 3),
+                intCol("Y", 10, 12, 30));
+        final MatchPair[] columnsToMatch = MatchPairFactory.getExpressions("K");
+        final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+        final QueryTable joined = (QueryTable) (leftOuterJoin
+                ? CrossJoinHelper.leftOuterJoin(left, right, columnsToMatch, columnsToAdd, 10)
+                : CrossJoinHelper.join(left, right, columnsToMatch, columnsToAdd, 10));
+        final io.deephaven.engine.table.impl.SimpleListener listener =
+                new io.deephaven.engine.table.impl.SimpleListener(joined);
+        joined.addUpdateListener(listener);
+
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                .runWithinUnitTestCycle(() -> changes.accept(left, right));
+
+        assertEquals(description, 1, listener.getCount());
+        if (expectedModified != null) {
+            assertEquals(description, expectedModified, listener.update.modified());
+        }
+        assertEquals(description, joined.newModifiedColumnSet(expectedModifiedColumns),
+                listener.update.modifiedColumnSet());
+        joined.removeUpdateListener(listener);
+    }
+
+    @Test
+    public void testKeyedRightModifyOfColumnNotAdded() {
+        for (final boolean leftRefreshing : new boolean[] {false, true}) {
+            for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+                final String description = "leftRefreshing=" + leftRefreshing + ", leftOuterJoin=" + leftOuterJoin;
+                final QueryTable left = leftRefreshing
+                        ? testRefreshingTable(i(1, 5).toTracking(), intCol("K", 1, 2), intCol("A", 1, 5))
+                        : testTable(i(1, 5).toTracking(), intCol("K", 1, 2), intCol("A", 1, 5));
+                final QueryTable right = testRefreshingTable(i(0, 2).toTracking(), intCol("K", 1, 2),
+                        intCol("Y", 10, 12), intCol("Unused", 20, 22));
+                final MatchPair[] columnsToMatch = MatchPairFactory.getExpressions("K");
+                final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+                final QueryTable joined = (QueryTable) (leftOuterJoin
+                        ? CrossJoinHelper.leftOuterJoin(left, right, columnsToMatch, columnsToAdd, 10)
+                        : CrossJoinHelper.join(left, right, columnsToMatch, columnsToAdd, 10));
+                final io.deephaven.engine.table.impl.SimpleListener listener =
+                        new io.deephaven.engine.table.impl.SimpleListener(joined);
+                joined.addUpdateListener(listener);
+
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> {
+                            if (leftRefreshing) {
+                                addToTable(left, i(1), intCol("K", 1), intCol("A", -1));
+                                left.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                                        left.newModifiedColumnSet("A")));
+                            }
+                            addToTable(right, i(2), intCol("K", 2), intCol("Y", 12), intCol("Unused", -22));
+                            right.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                                    right.newModifiedColumnSet("Unused")));
+                        });
+
+                // only a left modification changes a result row; left row 5's result row is untouched
+                final RowSet expectedModified = leftRefreshing ? i(1L << 10) : i();
+                if (listener.getCount() > 0) {
+                    assertEquals(description, expectedModified, listener.update.modified());
+                } else {
+                    assertTrue(description, expectedModified.isEmpty());
+                }
+                joined.removeUpdateListener(listener);
+            }
+        }
+    }
+
+    @Test
+    public void testZeroKeyRightModifyOfColumnNotAdded() {
+        final QueryTable lTable = testRefreshingTable(i(1, 5).toTracking(), intCol("LVal", 1, 5));
+        final QueryTable rTable = testRefreshingTable(i(0, 2).toTracking(), intCol("RVal", 10, 12),
+                intCol("RUnused", 20, 22));
+        final QueryTable jt = (QueryTable) lTable.join(rTable, emptyList(), List.of(JoinAddition.parse("RVal")),
+                numRightBitsToReserve);
+        final SimpleListener listener = new SimpleListener(jt);
+        jt.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(2), intCol("RVal", 12), intCol("RUnused", -22));
+            rTable.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                    rTable.newModifiedColumnSet("RUnused")));
+        });
+        assertEquals(0, listener.getCount());
+
+        // the left modification paints only its own left row's block
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(lTable, i(1), intCol("LVal", -1));
+            lTable.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    lTable.newModifiedColumnSet("LVal")));
+            addToTable(rTable, i(2), intCol("RVal", 12), intCol("RUnused", 22));
+            rTable.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                    rTable.newModifiedColumnSet("RUnused")));
+        });
+        assertEquals(1, listener.getCount());
+        assertEquals(rTable.size(), listener.update.modified().size());
+        assertEquals(jt.newModifiedColumnSet("LVal"), listener.update.modifiedColumnSet());
+        listener.reset();
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(2), intCol("RVal", -12), intCol("RUnused", 22));
+            rTable.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                    rTable.newModifiedColumnSet("RVal", "RUnused")));
+        });
+        assertEquals(1, listener.getCount());
+        assertEquals(lTable.size(), listener.update.modified().size());
+        assertEquals(jt.newModifiedColumnSet("RVal"), listener.update.modifiedColumnSet());
+        assertTableEquals(lTable.join(rTable, emptyList(), List.of(JoinAddition.parse("RVal")),
+                numRightBitsToReserve), jt);
+    }
+
+    @Test
     public void testIncrementalZeroKeyJoin() {
         final int[] sizes = {10, 100, 1000};
         for (int size : sizes) {
@@ -261,6 +466,203 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         assertEquals(i(), listener.update.modified());
         assertEquals(i(5, 6), listener.update.added());
         listener.reset();
+    }
+
+    @Test
+    public void testBothTickingLeftAddOutOfKeySpace() {
+        for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+            final QueryTable left = testRefreshingTable(i(0).toTracking(), intCol("K", 1));
+            final QueryTable right =
+                    testRefreshingTable(i(0, 1).toTracking(), intCol("K", 1, 1), intCol("Y", 3, 4));
+            final MatchPair[] columnsToMatch = MatchPairFactory.getExpressions("K");
+            final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+            final Table joined = leftOuterJoin
+                    ? CrossJoinHelper.leftOuterJoin(left, right, columnsToMatch, columnsToAdd, 10)
+                    : CrossJoinHelper.join(left, right, columnsToMatch, columnsToAdd, 10);
+            final ErrorListener errorListener = new ErrorListener(joined);
+            joined.addUpdateListener(errorListener);
+
+            // a left row key needing 57 bits leaves too few bits for the 10 reserved right bits
+            final long leftKey = 1L << 56;
+            allowingError(() -> ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                    .runWithinUnitTestCycle(() -> {
+                        addToTable(left, i(leftKey), intCol("K", 1));
+                        left.notifyListeners(i(leftKey), i(), i());
+                    }), errors -> !errors.isEmpty());
+
+            assertTrue("leftOuterJoin=" + leftOuterJoin, joined.isFailed());
+            assertTrue("leftOuterJoin=" + leftOuterJoin,
+                    errorListener.originalException() instanceof OutOfKeySpaceException);
+        }
+    }
+
+    @Test
+    public void testBothTickingRightGrowthOutOfKeySpace() {
+        for (final int bitsOfGrowth : new int[] {1, 2}) {
+            for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+                final String description = "bitsOfGrowth=" + bitsOfGrowth + ", leftOuterJoin=" + leftOuterJoin;
+                // a left row key needing 53 bits leaves exactly the 10 reserved right bits
+                final long bigLeftKey = (1L << 52) + 1;
+                final QueryTable left = testRefreshingTable(i(1, bigLeftKey).toTracking(), intCol("K", 1, 1));
+                final int groupSize = 1 << 10;
+                final QueryTable right = testRefreshingTable(RowSetFactory.flat(groupSize).toTracking(),
+                        intCol("K", IntStream.range(0, groupSize).map(ignored -> 1).toArray()),
+                        intCol("Y", IntStream.range(0, groupSize).toArray()));
+                final MatchPair[] columnsToMatch = MatchPairFactory.getExpressions("K");
+                final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+                final Table joined = leftOuterJoin
+                        ? CrossJoinHelper.leftOuterJoin(left, right, columnsToMatch, columnsToAdd, 10)
+                        : CrossJoinHelper.join(left, right, columnsToMatch, columnsToAdd, 10);
+                final ErrorListener errorListener = new ErrorListener(joined);
+                joined.addUpdateListener(errorListener);
+
+                // only the right table changes, growing the group to need 10 + bitsOfGrowth bits
+                final int newSize = (groupSize << (bitsOfGrowth - 1)) + 1;
+                allowingError(() -> ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> {
+                            final RowSet added = RowSetFactory.fromRange(groupSize, newSize - 1);
+                            addToTable(right, added,
+                                    intCol("K", IntStream.range(groupSize, newSize).map(ignored -> 1).toArray()),
+                                    intCol("Y", IntStream.range(groupSize, newSize).toArray()));
+                            right.notifyListeners(added, i(), i());
+                        }), errors -> !errors.isEmpty());
+
+                assertTrue(description, joined.isFailed());
+                assertTrue(description + ": " + errorListener.originalException(),
+                        errorListener.originalException() instanceof OutOfKeySpaceException);
+            }
+        }
+    }
+
+    @Test
+    public void testFailedUpdateReleasesTrackerChunks() {
+        // the joins match on K, which the views below compute from X when the join reads it; reading the key of a row
+        // with X == 99 throws
+        final String throwingKey = "K = X == 99 ? Integer.parseInt(`notAnInt`) : X";
+        for (final boolean leftRefreshing : new boolean[] {false, true}) {
+            for (final boolean failLeft : leftRefreshing ? new boolean[] {false, true} : new boolean[] {false}) {
+                for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+                    final String description = "leftRefreshing=" + leftRefreshing + ", failLeft=" + failLeft
+                            + ", leftOuterJoin=" + leftOuterJoin;
+                    final QueryTable left = leftRefreshing
+                            ? testRefreshingTable(i(1, 2).toTracking(), intCol("X", 1, 2), intCol("A", 10, 20))
+                            : testTable(i(1, 2).toTracking(), intCol("X", 1, 2), intCol("A", 10, 20));
+                    final QueryTable right = testRefreshingTable(i(1, 2, 3).toTracking(), intCol("X", 1, 2, 1),
+                            intCol("Y", 100, 200, 300));
+                    final Table leftKeyed = left.view(throwingKey, "A");
+                    final Table rightKeyed = right.view(throwingKey, "Y");
+                    final Table joined = leftOuterJoin
+                            ? OuterJoinTools.leftOuterJoin(leftKeyed, rightKeyed, "K", "Y", numRightBitsToReserve)
+                            : leftKeyed.join(rightKeyed, "K", "Y", numRightBitsToReserve);
+                    final ErrorListener errorListener = new ErrorListener(joined);
+                    joined.addUpdateListener(errorListener);
+
+                    // the right remove gives the slot tracker pooled chunks before the failing key read
+                    allowingError(() -> ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                            .runWithinUnitTestCycle(() -> {
+                                removeRows(right, i(3));
+                                if (failLeft) {
+                                    // the join processes the right remove, then throws reading the key of the added
+                                    // left row 20
+                                    addToTable(left, i(20), intCol("X", 99), intCol("A", 99));
+                                    left.notifyListeners(i(20), i(), i());
+                                    right.notifyListeners(i(), i(3), i());
+                                } else {
+                                    // the join processes the right remove, then throws reading the key of the added
+                                    // right row 20
+                                    addToTable(right, i(20), intCol("X", 99), intCol("Y", 990));
+                                    right.notifyListeners(i(20), i(3), i());
+                                }
+                            }), errors -> !errors.isEmpty());
+
+                    assertTrue(description, joined.isFailed());
+                    assertNotNull(description, errorListener.originalException());
+                    ChunkPoolReleaseTracking.check();
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testLeftTickingModifiedColumnsPerCycle() {
+        for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+            final QueryTable left = testRefreshingTable(i(0, 1).toTracking(), intCol("K", 1, 2), intCol("A", 1, 2),
+                    intCol("B", 1, 2));
+            final QueryTable right = testTable(i(0, 1).toTracking(), intCol("K", 1, 2), intCol("Y", 3, 4));
+            final MatchPair[] columnsToMatch = MatchPairFactory.getExpressions("K");
+            final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+            final QueryTable joined = (QueryTable) (leftOuterJoin
+                    ? CrossJoinHelper.leftOuterJoin(left, right, columnsToMatch, columnsToAdd, numRightBitsToReserve)
+                    : CrossJoinHelper.join(left, right, columnsToMatch, columnsToAdd, numRightBitsToReserve));
+            final SimpleListener listener = new SimpleListener(joined);
+            joined.addUpdateListener(listener);
+
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            // the key column is written with its existing value, so the row keeps its slot
+            final int[] aValues = {11, 11, 11};
+            final int[] bValues = {1, 1, 12};
+            final String[] columns = {"A", "K", "B"};
+            for (int step = 0; step < columns.length; ++step) {
+                final String column = columns[step];
+                final int aValue = aValues[step];
+                final int bValue = bValues[step];
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    addToTable(left, i(0), intCol("K", 1), intCol("A", aValue), intCol("B", bValue));
+                    left.notifyListeners(new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
+                            left.newModifiedColumnSet(column)));
+                });
+                assertEquals("leftOuterJoin=" + leftOuterJoin + ", column=" + column,
+                        joined.newModifiedColumnSet(column), listener.update.modifiedColumnSet());
+                listener.reset();
+            }
+        }
+    }
+
+    @Test
+    public void testStaticEmptyInputResultIsStatic() {
+        for (final boolean keyed : new boolean[] {false, true}) {
+            final MatchPair[] columnsToMatch =
+                    keyed ? MatchPairFactory.getExpressions("K") : MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY;
+            final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+            for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+                final String description = "keyed=" + keyed + ", leftOuterJoin=" + leftOuterJoin;
+
+                // a static empty left table has no rows to join
+                final QueryTable emptyLeft = testTable(intCol("K"), intCol("A"));
+                final QueryTable tickingRight =
+                        testRefreshingTable(i(0).toTracking(), intCol("K", 1), intCol("Y", 10));
+                final Table emptyLeftJoined = leftOuterJoin
+                        ? CrossJoinHelper.leftOuterJoin(emptyLeft, tickingRight, columnsToMatch, columnsToAdd,
+                                numRightBitsToReserve)
+                        : CrossJoinHelper.join(emptyLeft, tickingRight, columnsToMatch, columnsToAdd,
+                                numRightBitsToReserve);
+                assertFalse(description, emptyLeftJoined.isRefreshing());
+                assertTrue(description, emptyLeftJoined.isEmpty());
+
+                // an inner join against a static empty right table has no rows to match; an outer join follows the
+                // left table
+                final QueryTable tickingLeft = testRefreshingTable(i(0).toTracking(), intCol("K", 1), intCol("A", 2));
+                final QueryTable emptyRight = testTable(intCol("K"), intCol("Y"));
+                final EvalNugget[] en = new EvalNugget[] {
+                        EvalNugget.from(() -> leftOuterJoin
+                                ? CrossJoinHelper.leftOuterJoin(tickingLeft, emptyRight, columnsToMatch,
+                                        columnsToAdd, numRightBitsToReserve)
+                                : CrossJoinHelper.join(tickingLeft, emptyRight, columnsToMatch, columnsToAdd,
+                                        numRightBitsToReserve)),
+                };
+                assertEquals(description, leftOuterJoin, en[0].originalValue.isRefreshing());
+
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    addToTable(tickingRight, i(1), intCol("K", 1), intCol("Y", 11));
+                    tickingRight.notifyListeners(i(1), i(), i());
+                    addToTable(tickingLeft, i(1), intCol("K", 1), intCol("A", 3));
+                    tickingLeft.notifyListeners(i(1), i(), i());
+                });
+                assertTrue(description, emptyLeftJoined.isEmpty());
+                TstUtils.validate(description, en);
+            }
+        }
     }
 
     private ErrorListener makeAndListenToValidator(QueryTable joined) {
@@ -914,5 +1316,214 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             TstUtils.addToTable(table, changed, longCol(keyName, keys), intCol(valueName, values));
         }
         table.notifyListeners(added, removed, modified);
+    }
+
+    private static final class CountingIntTestSource extends IntTestSource {
+        long reads;
+
+        CountingIntTestSource(final RowSet rowSet, final int[] values) {
+            super(rowSet, IntChunk.chunkWrap(values));
+        }
+
+        @Override
+        public int getInt(final long index) {
+            ++reads;
+            return super.getInt(index);
+        }
+
+        @Override
+        public int getPrevInt(final long index) {
+            ++reads;
+            return super.getPrevInt(index);
+        }
+    }
+
+    @Test
+    public void testBothTickingLeftNonKeyModifyDoesNotReadKeys() {
+        final int size = 1_000;
+        final int[] keys = IntStream.range(0, size).toArray();
+        final CountingIntTestSource keySource = new CountingIntTestSource(RowSetFactory.flat(size), keys);
+        final IntTestSource valueSource = new IntTestSource(RowSetFactory.flat(size), IntChunk.chunkWrap(keys));
+        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
+        columns.put("Key", keySource);
+        columns.put("LVal", valueSource);
+        final QueryTable lTable = new QueryTable(RowSetFactory.flat(size).toTracking(), columns);
+        lTable.setRefreshing(true);
+        final QueryTable rTable = testRefreshingTable(RowSetFactory.flat(size).toTracking(), intCol("Key", keys),
+                intCol("RVal", keys));
+
+        // no validator listens to the result, so only the join reads the key column during the update
+        final Table joined = lTable.join(rTable, List.of(JoinMatch.parse("Key")),
+                List.of(JoinAddition.parse("RVal")), numRightBitsToReserve);
+
+        final ModifiedColumnSet valueColumnSet = lTable.newModifiedColumnSet("LVal");
+        keySource.reads = 0;
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            valueSource.add(RowSetFactory.flat(size), IntChunk.chunkWrap(IntStream.range(0, size).map(ii -> -ii)
+                    .toArray()));
+            lTable.notifyListeners(new TableUpdateImpl(i(), i(), RowSetFactory.flat(size), RowSetShiftData.EMPTY,
+                    valueColumnSet));
+        });
+        // the modified rows keep their slots, which the left row redirection already holds
+        assertEquals(0, keySource.reads);
+        assertTableEquals(lTable.snapshot().join(rTable.snapshot(), "Key", "RVal"), joined);
+    }
+
+    @Test
+    public void testBothTickingLeftKeyModifySomeKeysUnchanged() {
+        final QueryTable lTable = testRefreshingTable(i(10, 20, 30, 40, 50, 60).toTracking(),
+                intCol("Key", 1, 1, 2, 2, 3, 3), intCol("LVal", 10, 20, 30, 40, 50, 60));
+        final QueryTable rTable = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                intCol("Key", 1, 2, 2, 3), intCol("RVal", 100, 200, 201, 300));
+
+        final EvalNugget[] en = new EvalNugget[] {
+                EvalNugget.from(() -> lTable.join(rTable, List.of(JoinMatch.parse("Key")),
+                        List.of(JoinAddition.parse("RVal")), numRightBitsToReserve)),
+                EvalNugget.from(() -> CrossJoinHelper.leftOuterJoin(lTable, rTable,
+                        MatchPairFactory.getExpressions("Key"), MatchPairFactory.getExpressions("RVal"),
+                        numRightBitsToReserve)),
+        };
+
+        final ModifiedColumnSet keyAndValueColumnSet = lTable.newModifiedColumnSet("Key", "LVal");
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            // rows 40, 50 and 60 shift to 45, 55 and 65; of the modified rows, 20 and 45 keep their keys, 30 moves to
+            // a matched key, 55 to an unmatched key and 65 to a matched key
+            removeRows(lTable, i(40, 50, 60));
+            addToTable(lTable, i(20, 30, 45, 55, 65), intCol("Key", 1, 3, 2, 4, 1),
+                    intCol("LVal", 21, 31, 41, 51, 61));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(40, 60, 5);
+            lTable.notifyListeners(new TableUpdateImpl(i(), i(), i(20, 30, 45, 55, 65), shiftBuilder.build(),
+                    keyAndValueColumnSet));
+        });
+        TstUtils.validate(en);
+
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            // the key column is modified but no row's key value changes
+            addToTable(lTable, i(10, 45), intCol("Key", 1, 2), intCol("LVal", 12, 42));
+            lTable.notifyListeners(new TableUpdateImpl(i(), i(), i(10, 45), RowSetShiftData.EMPTY,
+                    keyAndValueColumnSet));
+        });
+        TstUtils.validate(en);
+    }
+
+    @Test
+    public void testConfiguredReserveBitsValidated() {
+        for (final int invalid : new int[] {Integer.MIN_VALUE, -1, 0, 63, Integer.MAX_VALUE}) {
+            final IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                    () -> CrossJoinHelper.validateConfiguredNumRightBitsToReserve(invalid));
+            assertTrue(thrown.getMessage(), thrown.getMessage().contains("CrossJoinHelper.numRightBitsToReserve"));
+            assertTrue(thrown.getMessage(), thrown.getMessage().endsWith("but was " + invalid));
+        }
+        for (final int valid : new int[] {1, 10, 62}) {
+            assertEquals(valid, CrossJoinHelper.validateConfiguredNumRightBitsToReserve(valid));
+        }
+    }
+
+    @Test
+    public void testReserveBitsOutOfRange() {
+        for (final boolean leftRefreshing : new boolean[] {false, true}) {
+            for (final boolean rightRefreshing : new boolean[] {false, true}) {
+                final QueryTable lTable = leftRefreshing
+                        ? testRefreshingTable(i(0, 1).toTracking(), intCol("Key", 1, 2))
+                        : testTable(i(0, 1).toTracking(), intCol("Key", 1, 2));
+                final QueryTable rTable = rightRefreshing
+                        ? testRefreshingTable(i(0, 1).toTracking(), intCol("Key", 1, 2), intCol("RVal", 3, 4))
+                        : testTable(i(0, 1).toTracking(), intCol("Key", 1, 2), intCol("RVal", 3, 4));
+                for (final int reserveBits : new int[] {Integer.MIN_VALUE, -1, 0, 63, 64, Integer.MAX_VALUE}) {
+                    final String description = "leftRefreshing=" + leftRefreshing + ", rightRefreshing="
+                            + rightRefreshing + ", reserveBits=" + reserveBits;
+                    final String expectedMessage =
+                            "reserveBits must be between 1 and 62 (inclusive), but was " + reserveBits;
+                    for (final String columnsToMatch : new String[] {"Key", ""}) {
+                        final IllegalArgumentException joinException = assertThrows(description,
+                                IllegalArgumentException.class,
+                                () -> lTable.join(rTable, columnsToMatch, "RVal", reserveBits));
+                        assertEquals(description, expectedMessage, joinException.getMessage());
+
+                        final IllegalArgumentException leftOuterException = assertThrows(description,
+                                IllegalArgumentException.class,
+                                () -> OuterJoinTools.leftOuterJoin(lTable, rTable, columnsToMatch, "RVal",
+                                        reserveBits));
+                        assertEquals(description, expectedMessage, leftOuterException.getMessage());
+                    }
+
+                    final IllegalArgumentException fullOuterException = assertThrows(description,
+                            IllegalArgumentException.class,
+                            () -> OuterJoinTools.fullOuterJoin(lTable, rTable,
+                                    MatchPairFactory.getExpressions("Key"), MatchPairFactory.getExpressions("RVal"),
+                                    reserveBits));
+                    assertEquals(description, expectedMessage, fullOuterException.getMessage());
+                }
+
+                for (final int reserveBits : new int[] {1, 62}) {
+                    final String description = "leftRefreshing=" + leftRefreshing + ", rightRefreshing="
+                            + rightRefreshing + ", reserveBits=" + reserveBits;
+                    assertTableEquals(description, testTable(intCol("Key", 1, 2), intCol("RVal", 3, 4)),
+                            lTable.join(rTable, "Key", "RVal", reserveBits));
+                    assertTableEquals(description, testTable(intCol("Key", 1, 1, 2, 2), intCol("RVal", 3, 4, 3, 4)),
+                            lTable.join(rTable, "", "RVal", reserveBits));
+                    assertTableEquals(description, testTable(intCol("Key", 1, 2), intCol("RVal", 3, 4)),
+                            OuterJoinTools.leftOuterJoin(lTable, rTable, "Key", "RVal", reserveBits));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testAddOnlyAndAppendOnlyLeftWithStaticRight() {
+        for (final String leftAttribute : new String[] {Table.ADD_ONLY_TABLE_ATTRIBUTE,
+                Table.APPEND_ONLY_TABLE_ATTRIBUTE}) {
+            for (final boolean rightRefreshing : new boolean[] {false, true}) {
+                for (final String columnsToMatch : new String[] {"Key", ""}) {
+                    for (final boolean leftOuter : new boolean[] {false, true}) {
+                        final String description = "leftAttribute=" + leftAttribute + ", rightRefreshing="
+                                + rightRefreshing + ", columnsToMatch=" + columnsToMatch + ", leftOuter=" + leftOuter;
+                        final QueryTable lTable = testRefreshingTable(i(10, 20).toTracking(),
+                                intCol("Key", 1, 2), intCol("LVal", 10, 20));
+                        lTable.setAttribute(leftAttribute, true);
+                        final QueryTable rTable = rightRefreshing
+                                ? testRefreshingTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4))
+                                : testTable(i(0, 1).toTracking(), intCol("Key", 1, 1), intCol("RVal", 3, 4));
+
+                        final Table result = leftOuter
+                                ? OuterJoinTools.leftOuterJoin(lTable, rTable, columnsToMatch, "RVal",
+                                        numRightBitsToReserve)
+                                : lTable.join(rTable, columnsToMatch, "RVal", numRightBitsToReserve);
+                        final boolean appendOnlyLeft = leftAttribute.equals(Table.APPEND_ONLY_TABLE_ATTRIBUTE);
+                        assertEquals(description, !rightRefreshing,
+                                Boolean.TRUE.equals(result.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE)));
+                        assertEquals(description, !rightRefreshing && appendOnlyLeft,
+                                Boolean.TRUE.equals(result.getAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE)));
+                        if (rightRefreshing) {
+                            continue;
+                        }
+
+                        final long lastRowKeyBefore = result.getRowSet().lastRowKey();
+                        final SimpleListener listener = new SimpleListener(result);
+                        result.addUpdateListener(listener);
+                        // key 1 matches two right rows and key 3 matches none
+                        final RowSet leftAdded = appendOnlyLeft ? i(30, 40) : i(5, 15, 30);
+                        final int[] addedKeys = appendOnlyLeft ? new int[] {1, 3} : new int[] {3, 1, 3};
+                        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                                .runWithinUnitTestCycle(() -> {
+                                    addToTable(lTable, leftAdded, intCol("Key", addedKeys),
+                                            intCol("LVal", new int[addedKeys.length]));
+                                    lTable.notifyListeners(leftAdded.copy(), i(), i());
+                                });
+                        assertEquals(description, 1, listener.getCount());
+                        final TableUpdate update = listener.getUpdate();
+                        assertTrue(description, update.added().isNonempty());
+                        assertTrue(description, update.removed().isEmpty());
+                        assertTrue(description, update.modified().isEmpty());
+                        assertTrue(description, update.shifted().empty());
+                        if (appendOnlyLeft) {
+                            assertTrue(description, update.added().firstRowKey() > lastRowKeyBefore);
+                        }
+                        listener.close();
+                    }
+                }
+            }
+        }
     }
 }
