@@ -128,6 +128,8 @@ public class QueryTableWhereParallelTest extends QueryTableWhereTest {
                     @NotNull final RowSet fullSet,
                     @NotNull final Table table,
                     final boolean usePrev) {
+                // once per call, and a call filters a whole segment: one for the initial where and two for the
+                // update, so the test sleeps about 150 ms in all
                 SleepUtil.sleep(sleepMillis);
                 return super.filter(selection, fullSet, table, usePrev);
             }
