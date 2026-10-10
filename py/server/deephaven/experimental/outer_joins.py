@@ -41,8 +41,8 @@ def full_outer_join(
         joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from right table to the result
             table, can be renaming expressions, i.e. "new_col = col"; default is None, meaning all the columns from
             the right table except those whose names match a left table column in on
-        reserve_bits (Optional[int]): the number of bits to reserve for the right row; default is None,
-            meaning the configured value is used, which is 10 bits by default.
+        reserve_bits (Optional[int]): the number of bits to reserve for the right row, between 1 and 62
+            (inclusive); default is None, meaning the configured value is used, which is 10 bits by default.
 
     Returns:
         a new Table
@@ -87,8 +87,8 @@ def left_outer_join(
         joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from right table to the result
             table, can be renaming expressions, i.e. "new_col = col"; default is None, meaning all the columns from
             the right table except those whose names match a left table column in on
-        reserve_bits (Optional[int]): the number of bits to reserve for the right row; default is None,
-            meaning the configured value is used, which is 10 bits by default.
+        reserve_bits (Optional[int]): the number of bits to reserve for the right row, between 1 and 62
+            (inclusive); default is None, meaning the configured value is used, which is 10 bits by default.
 
     Returns:
         a new Table

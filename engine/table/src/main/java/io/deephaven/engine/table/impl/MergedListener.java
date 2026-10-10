@@ -131,6 +131,30 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         return recorders;
     }
 
+    /**
+     * Add each of this listener's {@link ListenerRecorder recorders} as an update listener on its
+     * {@link ListenerRecorder#getParent() parent}, in iteration order. When adding a recorder throws, for example
+     * because its parent has already failed, the recorders added before it are removed from their parents before the
+     * exception propagates, so an operation that can not listen to all of its inputs is left listening to none of them.
+     */
+    public void addRecordersToParents() {
+        int numAdded = 0;
+        try {
+            for (final ListenerRecorder recorder : recorders) {
+                recorder.getParent().addUpdateListener(recorder);
+                ++numAdded;
+            }
+        } catch (final RuntimeException failure) {
+            for (final ListenerRecorder recorder : recorders) {
+                if (numAdded-- == 0) {
+                    break;
+                }
+                recorder.getParent().removeUpdateListener(recorder);
+            }
+            throw failure;
+        }
+    }
+
     public boolean isFailed() {
         return failed;
     }

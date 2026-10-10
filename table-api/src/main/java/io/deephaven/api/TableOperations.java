@@ -443,7 +443,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      *        "columnFoundInBoth")
      * @param columnsToAdd A comma separated list with the columns from the right side that need to be added to the left
      *        side as a result of the match.
-     * @param reserveBits The number of bits to reserve for rightTable groups.
+     * @param reserveBits The number of bits to reserve for rightTable groups, between 1 and 62 (inclusive).
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      * @see #join(Object, Collection, Collection, int)
      */
@@ -483,7 +483,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * updates.
      *
      * <p>
-     * An io.deephaven.engine.table.impl.util.OutOfKeySpaceException is thrown when the total number of bits needed to
+     * An io.deephaven.engine.exceptions.OutOfKeySpaceException is thrown when the total number of bits needed to
      * express the result table exceeds that needed to represent Long.MAX_VALUE. There are a few work arounds:
      *
      * <p>
@@ -502,7 +502,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param columnsToMatch The match pair conditions.
      * @param columnsToAdd The columns from the right side that need to be added to the left side as a result of the
      *        match.
-     * @param reserveBits The number of bits to reserve for rightTable groups.
+     * @param reserveBits The number of bits to reserve for rightTable groups, between 1 and 62 (inclusive).
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
     TOPS join(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
