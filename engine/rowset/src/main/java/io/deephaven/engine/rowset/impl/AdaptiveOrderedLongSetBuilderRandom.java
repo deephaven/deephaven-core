@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSet;
@@ -97,13 +98,13 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
     }
 
     private void newKey(final long key) {
+        Assert.geqZero(key, "key");
         newRangeSafe(key, key);
     }
 
     private void newRange(final long firstKey, final long lastKey) {
-        if (firstKey > lastKey) {
-            throw new IllegalArgumentException("Illegal range start=" + firstKey + " > end=" + lastKey + ".");
-        }
+        Assert.leq(firstKey, "firstKey", lastKey, "lastKey");
+        Assert.geqZero(firstKey, "firstKey");
         newRangeSafe(firstKey, lastKey);
     }
 
@@ -240,6 +241,9 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
             while (++position < end && keyAt.applyAsLong(position) == runEnd + 1) {
                 ++runEnd;
             }
+            // runEnd + 1 wraps at Long.MAX_VALUE, so a run can absorb a negative key and end before its start.
+            Assert.geqZero(runStart, "runStart");
+            Assert.leq(runStart, "runStart", runEnd, "runEnd");
             newRangeSafe(runStart, runEnd);
         }
     }

@@ -1,5 +1,6 @@
 package io.deephaven.engine.rowset;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.web.shared.data.Range;
@@ -18,6 +19,7 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
 
     @Override
     public void insert(long key) {
+        Assert.geqZero(key, "key");
         rangeSet.addRange(new Range(key, key));
     }
 
@@ -188,7 +190,10 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
 
     @Override
     public WritableRowSet subSetByKeyRange(long startKey, long endKey) {
-        throw new UnsupportedOperationException("subSetByKeyRange");
+        if (this.isEmpty() || endKey < startKey) {
+            return RowSetFactory.empty();
+        }
+        return new WebRowSetImpl(rangeSet.intersect(RangeSet.ofRange(startKey, endKey)));
     }
 
     @Override

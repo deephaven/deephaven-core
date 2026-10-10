@@ -4,6 +4,7 @@
 package io.deephaven.engine.rowset;
 
 import io.deephaven.base.ArrayUtil;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.impl.AdaptiveRowSetBuilderRandom;
 import io.deephaven.engine.rowset.impl.BasicRowSetBuilderSequential;
@@ -108,30 +109,30 @@ public abstract class RowSetFactory {
     }
 
     /**
-     * Create a {@link WritableRowSet} containing the continuous range [firstRowKey, lastRowKey], or an {@link #empty()
-     * empty row set} if {@code lastRowKey < firstRowKey}.
+     * Create a {@link WritableRowSet} containing the continuous range [firstRowKey, lastRowKey]. The range must hold at
+     * least one row key: {@code 0 <= firstRowKey <= lastRowKey}.
      *
      * @param firstRowKey The first row key in the continuous range
      * @param lastRowKey The last row key in the continuous range
      * @return A new {@link WritableRowSet} containing the specified row key range
      */
     public static WritableRowSet fromRange(final long firstRowKey, final long lastRowKey) {
-        if (lastRowKey < firstRowKey) {
-            return empty();
-        }
+        Assert.geqZero(firstRowKey, "firstRowKey");
+        Assert.leq(firstRowKey, "firstRowKey", lastRowKey, "lastRowKey");
         return new WritableRowSetImpl(SingleRange.make(firstRowKey, lastRowKey));
     }
 
     /**
      * Get a flat {@link WritableRowSet} containing the row key range {@code [0, size)}, or an {@link #empty() empty row
-     * set} if {@code size <= 0}.
+     * set} if {@code size == 0}.
      *
      * @param size The size of the {@link WritableRowSet} to create
      * @return A flat {@link WritableRowSet} containing the row key range {@code [0, size)} or an {@link #empty() empty
-     *         row set} if the {@code size <= 0}
+     *         row set} if the {@code size == 0}
      */
     public static WritableRowSet flat(final long size) {
-        return size <= 0 ? empty() : fromRange(0, size - 1);
+        Assert.geqZero(size, "size");
+        return size == 0 ? empty() : fromRange(0, size - 1);
     }
 
     /**

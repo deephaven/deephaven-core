@@ -249,7 +249,9 @@ public class TailInitializationFilter {
                     source.getColumnSourceMap().values().stream().anyMatch(RegionedColumnSource.class::isInstance);
 
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-            if (isRegioned) {
+            if (rowCount <= 0) {
+                // Nothing to keep. Checked up front: lastRow - rowCount + 1 below would wrap at Long.MAX_VALUE.
+            } else if (isRegioned) {
                 try (final RowSequence.Iterator it = source.getRowSet().getRowSequenceIterator()) {
                     while (it.hasMore()) {
                         final long nextRowKey = it.peekNextKey();

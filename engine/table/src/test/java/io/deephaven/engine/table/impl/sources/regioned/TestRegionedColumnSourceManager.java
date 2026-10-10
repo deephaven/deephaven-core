@@ -244,7 +244,8 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                 will(new CustomAction("Return last size") {
                     @Override
                     public Object invoke(Invocation invocation) {
-                        return RowSetFactory.flat(lastSizes[li]);
+                        // Like a real location, one whose size is unknown has no row set.
+                        return lastSizes[li] == NULL_SIZE ? null : RowSetFactory.flat(lastSizes[li]);
                     }
                 });
                 allowing(tl).getDataIndexColumns();

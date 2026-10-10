@@ -1653,7 +1653,9 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 }
                 addToTable(rightTicking, RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.get()),
                         longCol("intCol", data));
-                TstUtils.removeRows(rightTicking, i(rightOffset - 1));
+                if (rightOffset > 0) {
+                    TstUtils.removeRows(rightTicking, i(rightOffset - 1));
+                }
 
                 up = new TableUpdateImpl();
                 final RowSetShiftData.Builder shifted = new RowSetShiftData.Builder();

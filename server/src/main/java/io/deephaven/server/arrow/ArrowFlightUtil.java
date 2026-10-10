@@ -229,7 +229,9 @@ public class ArrowFlightUtil {
 
             final int numColumns = resultTable.getColumnSources().size();
             final BarrageMessage msg = createBarrageMessage(mi, numColumns);
-            msg.rowsAdded = RowSetFactory.fromRange(totalRowsRead, totalRowsRead + msg.length - 1);
+            msg.rowsAdded = msg.length == 0
+                    ? RowSetFactory.empty()
+                    : RowSetFactory.fromRange(totalRowsRead, totalRowsRead + msg.length - 1);
             msg.rowsIncluded = msg.rowsAdded.copy();
             msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
             totalRowsRead += msg.length;
