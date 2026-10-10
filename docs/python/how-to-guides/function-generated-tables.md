@@ -68,7 +68,7 @@ result_from_refresh_interval = function_generated_table(
 
 ## Example: pull data from a web API
 
-The following example pulls the hourly forecast for Denver, Colorado, from the National Weather Service's free-to-use [Weather API](https://www.weather.gov/documentation/services-web-api). Each row is one forecast hour, in time order, and `PctChanceRain` holds the forecast probability of any precipitation. The function re-runs once per minute (`refresh_interval_ms=60_000`).
+The following example pulls the hourly forecast for Denver, Colorado, from the National Weather Service's free-to-use [Weather API](https://www.weather.gov/documentation/services-web-api). Each row is one forecast hour, in time order, and `PctChanceRain` holds the forecast probability of any precipitation. The function re-runs once per minute (`refresh_interval_ms=60_000`). It runs during an update cycle, so a slow request delays every table update until it returns, and `timeout=10` bounds that wait. If the request fails, the table stops updating. For production use, fetch the data on a separate thread and have the function return the latest result.
 
 ```python ticking-table order=null
 from deephaven import function_generated_table
@@ -83,7 +83,7 @@ def pull_denver_weather_data():
     req = Request("https://api.weather.gov/gridpoints/BOU/63,62/forecast/hourly")
     # Identify your own application and contact address, as the API requires.
     req.add_header("User-Agent", "(deephaven.io, social@deephaven.io)")
-    content = json.loads(urlopen(req).read())
+    content = json.loads(urlopen(req, timeout=10).read())
     weather = content["properties"]["periods"]
     n_weather = len(weather)
     temps = [0] * n_weather

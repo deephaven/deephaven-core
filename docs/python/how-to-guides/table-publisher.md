@@ -435,9 +435,11 @@ print(result.size == 0)
 
 The `print` statement prints `True`: it runs in the same command as the `write_row` calls, so the UG cycle that adds the queued rows to `result` has not run yet.
 
-Run the same `print` statement as a second command, and it prints `False`.
+A second command can still start before that cycle runs, so wait for the table to update if it is still empty. Then the same `print` statement prints `False`.
 
 ```python test-set=3 order=:log
+if result.size == 0:
+    result.await_update()
 print(result.size == 0)
 ```
 

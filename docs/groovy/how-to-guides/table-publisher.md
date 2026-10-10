@@ -277,9 +277,12 @@ println result.isEmpty()
 
 The `println` statement prints `true`: it runs in the same command as the `logRow` calls, so the UG cycle that adds the queued rows to `result` has not run yet.
 
-Run the same `println` statement as a second command, and it prints `false`.
+A second command can still start before that cycle runs, so wait for the table to update if it is still empty. Then the same `println` statement prints `false`.
 
 ```groovy test-set=3 order=:log
+if (result.isEmpty()) {
+    result.awaitUpdate()
+}
 println result.isEmpty()
 ```
 
