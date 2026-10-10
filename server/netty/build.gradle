@@ -29,6 +29,7 @@ dependencies {
     implementation libs.ayza.netty
 
     implementation project(':grpc-java:grpc-mtls')
+    implementation project(':java-client-grpc-compression')
 
     testImplementation project(':server-test-utils')
     testImplementation libs.junit4

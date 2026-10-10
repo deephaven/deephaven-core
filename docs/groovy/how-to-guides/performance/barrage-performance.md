@@ -141,6 +141,37 @@ The two thresholds answer different questions. The fraction asks whether compact
 > [!NOTE]
 > The `PendingDeltaCount` and `PendingDeltaBytes` metrics in the subscription table measure what the server holds for subscribers it has not yet served, so they are the place to look when tuning these properties.
 
+## Compress Barrage data
+
+By default, the server sends Barrage snapshots and subscriptions uncompressed. To let it compress a table's data, set the table's `BarrageCompression` attribute to an ordered, comma-separated list of the gRPC message encodings the server may use: `gzip`, `zstd`, or `snappy`. A gRPC client may list the encodings it is able to decode in a `grpc-accept-encoding` request header. When a client fetches the table, the server uses the first encoding in the table's list that the client also lists, and sends uncompressed data when none match or the client lists none.
+
+```groovy order=null
+t = emptyTable(1_000_000).update("X = ii", "Sym = `S` + (ii % 32)")
+tCompressed = t.withAttributes(Map.of("BarrageCompression", "zstd,gzip"))
+```
+
+The attribute applies only to the table it is set on. Tables derived from it, for example by sorting or filtering, are sent uncompressed unless they set the attribute themselves. For a rollup or tree table, set the attribute on the rollup or tree table rather than on its source.
+
+These are the encodings each client lists by default. A client that lists none always receives uncompressed data.
+
+| Client                                                       | Encodings listed                                      |
+| ------------------------------------------------------------ | ----------------------------------------------------- |
+| Java client, including remote tables between servers         | `gzip`, `zstd`, `snappy`                              |
+| Python (`pydeephaven`), C++, and R clients                   | `gzip` (and `deflate`, which the server does not use) |
+| Web UI and JavaScript API, Go client                         | None, so data is always sent uncompressed             |
+
+Choose the list based on what the server's CPU can afford. The following figures are one sample measurement of a one-million-row table of mixed trade data, taken single-threaded with JDK 21 on an Apple silicon laptop using the `BarrageCompressionBenchmark` JMH benchmark in `extensions/barrage/benchmark`. Absolute speeds depend on the hardware and the data, so use them to compare the encodings rather than to predict throughput:
+
+| Encoding | Size after compression | Compression speed | Decompression speed |
+| -------- | ---------------------- | ----------------- | ------------------- |
+| `zstd`   | 30% of the original    | about 400 MB/s    | about 850 MB/s      |
+| `gzip`   | 27% of the original    | about 19 MB/s     | about 400 MB/s      |
+| `snappy` | 58% of the original    | about 835 MB/s    | about 1450 MB/s     |
+
+`zstd` suits most tables. `gzip` compresses slightly smaller but is about 20 times slower to compress, so list it last, and only when clients that cannot decode `zstd`, such as the Python client, should also receive compressed data. `snappy` is the fastest but saves the least, and it saves nothing on data that is already close to random.
+
+A Java client can narrow the encodings it lists with `ClientConfig.builder().acceptCompression(...)`; an empty set asks for uncompressed data. For remote tables fetched by one server from another, set `-DBarrageTableResolver.acceptCompression`, for example `-DBarrageTableResolver.acceptCompression=zstd`.
+
 ## Additional Barrage configuration
 
 The following properties control other aspects of Barrage behavior:

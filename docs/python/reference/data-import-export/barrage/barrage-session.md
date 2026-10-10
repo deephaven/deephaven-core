@@ -15,7 +15,8 @@ barrage_session(
   auth_type: str = 'Anonymous',
   auth_token: str = '',
   use_tls: bool = False,
-  tls_root_certs: bytes = None
+  tls_root_certs: bytes = None,
+  accept_compression: Union[str, Sequence[str]] = None
 ) -> BarrageSession
 ```
 
@@ -50,6 +51,11 @@ If `True`, the connection will be encrypted using TLS. The default is `False`.
 <Param name="tls_root_certs" type="bytes" optional>
 
 The PEM-encoded root certificates to use for TLS connection, or `None` to use system defaults. `True` implies the use of a TLS connection and the `use_tls` argument should be passed as `True`. Defaults to `None`.
+
+</Param>
+<Param name="accept_compression" type="Union[str, Sequence[str]]" optional>
+
+The gRPC message encoding, or encodings, that the session can decode: any of `"gzip"`, `"zstd"`, and `"snappy"`. The remote server compresses only tables that allow one of these encodings; see [Compress Barrage data](../../../how-to-guides/performance/barrage-performance.md#compress-barrage-data). `None` accepts all three. An empty sequence accepts none, so data is always sent uncompressed. Defaults to `None`.
 
 </Param>
 </ParamTable>
@@ -95,6 +101,14 @@ barrage_sesh = barrage_session(
     auth_type="io.deephaven.authentication.psk.PskAuthenticationHandler",
     auth_token="PASSWORD",
 )
+```
+
+The following example creates a session that accepts only `zstd`-compressed data from the remote server.
+
+```python skip-test
+from deephaven.barrage import barrage_session
+
+barrage_sesh = barrage_session("localhost", 10000, accept_compression="zstd")
 ```
 
 ## Related documentation

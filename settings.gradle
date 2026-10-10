@@ -333,6 +333,9 @@ project(':uri').projectDir = file('java-client/uri')
 include(':java-client-session')
 project(':java-client-session').projectDir = file('java-client/session')
 
+include(':java-client-grpc-compression')
+project(':java-client-grpc-compression').projectDir = file('java-client/grpc-compression')
+
 include(':java-client-flight')
 project(':java-client-flight').projectDir = file('java-client/flight')
 

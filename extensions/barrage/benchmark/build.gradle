@@ -12,6 +12,9 @@ dependencies {
     implementation libs.flatbuffers.java
     implementation platform(libs.grpc.bom)
     implementation libs.grpc.api
+    implementation libs.grpc.stub
+    implementation project(':java-client-grpc-compression')
+    implementation project(':proto:proto-backplane-grpc-flight')
     implementation TestTools.projectDependency(project, 'engine-rowset')
     implementation TestTools.projectDependency(project, 'engine-table')
 
@@ -51,6 +54,23 @@ def createJmhTask = {
 createJmhTask('jmhRunBarrageRoundTrip', 'BarrageMessageRoundTripBenchmark')
 
 createJmhTask('jmhRunBarrageCopyKernel', 'BarrageCopyKernelBenchmark')
+
+// gRPC message compression (gzip, zstd, snappy) of a DoGet snapshot; narrow it with JMH options, e.g.
+// --args='BarrageCompressionBenchmark -p shape=MIXED -p numRows=65536'
+createJmhTask('jmhRunBarrageCompression', 'BarrageCompressionBenchmark')
+
+// The wire size of each codec for the data BarrageCompressionBenchmark times, as a Markdown table.
+tasks.register('barrageCompressionSizeReport', JavaExec) { JavaExec task ->
+    task.doFirst { new File("$rootDir/tmp/workspace").mkdirs() }
+    task.workingDir "$rootDir/tmp/workspace"
+    task.classpath = sourceSets.main.runtimeClasspath
+    task.mainClass.set 'io.deephaven.benchmark.barrage.BarrageCompressionSizeReport'
+    task.jvmArgs '-DConfiguration.rootFile=dh-tests.prop',
+            "-Dworkspace=$rootDir/tmp/workspace",
+            '-Dconfiguration.quiet=true',
+            '-Djava.awt.headless=true',
+            '-Xmx8g'
+}
 
 // Three forks throughout: single-fork runs of these arms have disagreed with each other by more than the effects
 // they measure, and the sign of a small difference has flipped between forks.

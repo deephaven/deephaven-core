@@ -87,6 +87,7 @@ rewrite-java = "8.90.4"
 selenium = "4.49.0"
 slf4j = "2.0.20"
 snappy = "1.1.10.8"
+zstd-jni = "1.5.7-6"
 javapoet = "0.20.0"
 ayza = "10.1.0"
 tdunning = "3.3"
@@ -319,6 +320,8 @@ slf4j-jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" 
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "snappy" }
+
+zstd-jni = { module = "com.github.luben:zstd-jni", version.ref = "zstd-jni" }
 
 javapoet = { module = "com.palantir.javapoet:javapoet", version.ref = "javapoet" }
 

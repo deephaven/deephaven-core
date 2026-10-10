@@ -93,6 +93,8 @@ public class ArrowFlightUtil {
 
         final String ticketLogName = ticketRouter.getLogNameFor(request, "table");
         final String description = "FlightService#DoGet(table=" + ticketLogName + ")";
+        // only readable on the gRPC thread; the snapshot itself runs on the session executor
+        final Set<String> acceptedEncodings = ClientAcceptEncodingInterceptor.acceptedEncodings();
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
@@ -122,6 +124,8 @@ public class ArrowFlightUtil {
                         final BaseTable<?> table = (BaseTable<?>) export;
                         metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                         metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
+
+                        BarrageCompression.apply(observer, acceptedEncodings, table, ticketLogName);
 
                         // create an adapter for the response observer
                         final StreamObserver<BarrageMessageWriter.MessageView> listener =
@@ -363,6 +367,11 @@ public class ArrowFlightUtil {
 
         private final StreamObserver<BarrageMessageWriter.MessageView> listener;
 
+        /** the unwrapped response observer, needed to choose the response encoding */
+        private final StreamObserver<InputStream> responseObserver;
+        /** the encodings the client advertised; captured at construction, on the gRPC thread */
+        private final Set<String> acceptedEncodings;
+
         private volatile boolean isClosed = false;
 
         private boolean isFirstMsg = true;
@@ -417,6 +426,8 @@ public class ArrowFlightUtil {
             this.streamGeneratorFactory = streamGeneratorFactory;
             this.session = session;
             this.listener = new MessageViewAdapter(responseObserver);
+            this.responseObserver = responseObserver;
+            this.acceptedEncodings = ClientAcceptEncodingInterceptor.acceptedEncodings();
             this.errorTransformer = errorTransformer;
             this.marshallers = exchangeMarshallers;
 
@@ -484,6 +495,22 @@ public class ArrowFlightUtil {
             }
 
             handler.handleMessage(message);
+        }
+
+        /**
+         * Chooses the response encoding for {@code export} from its allowed-compression attribute and the encodings the
+         * client advertised. Must be called before the first response message is sent.
+         *
+         * @param marshallerForExport the marshaller that will send {@code export}
+         * @param export the object being sent
+         * @param logName a description of {@code export}, for log messages
+         */
+        public void applyCompression(
+                final ExchangeMarshaller marshallerForExport,
+                final Object export,
+                final String logName) {
+            BarrageCompression.apply(responseObserver, acceptedEncodings,
+                    marshallerForExport.attributesFor(export), logName);
         }
 
         public List<ExchangeMarshaller> getMarshallers() {

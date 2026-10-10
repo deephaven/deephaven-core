@@ -106,6 +106,8 @@ public class BarrageSnapshotRequestHandler implements ArrowFlightUtil.DoExchange
                                     + ticketLogName + ") is has no associated exchange marshaller.");
                         }
 
+                        marshaller.applyCompression(marshallerForExport, export, ticketLogName);
+
                         final BarrageSnapshotOptions options = BarrageSnapshotOptions.of(snapshotRequest);
 
                         marshallerForExport.snapshot(snapshotRequest, options, export, metrics,

@@ -3,6 +3,7 @@
 //
 package io.deephaven.client.impl;
 
+import io.deephaven.grpc.compression.CompressionCodecs;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.impl.KickstartUtils;
@@ -76,6 +77,7 @@ public final class ChannelHelper {
         } else {
             channelBuilder.usePlaintext();
         }
+        channelBuilder.decompressorRegistry(CompressionCodecs.decompressorRegistry(clientConfig.acceptCompression()));
         clientConfig.userAgent().ifPresent(channelBuilder::userAgent);
         clientConfig.overrideAuthority().ifPresent(channelBuilder::overrideAuthority);
         if (!clientConfig.extraHeaders().isEmpty()) {

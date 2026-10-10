@@ -18,6 +18,7 @@ import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.server.session.ActionResolver;
 import io.deephaven.server.session.TicketResolver;
 import io.grpc.BindableService;
+import io.grpc.ServerInterceptor;
 
 import javax.inject.Singleton;
 import java.util.Set;
@@ -31,6 +32,10 @@ public abstract class ArrowModule {
     @Binds
     @IntoSet
     abstract BindableService bindBrowserFlightServiceBinding(BrowserFlightServiceGrpcBinding service);
+
+    @Binds
+    @IntoSet
+    abstract ServerInterceptor bindClientAcceptEncodingInterceptor(ClientAcceptEncodingInterceptor interceptor);
 
     @Provides
     @Singleton
