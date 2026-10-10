@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
@@ -18,6 +19,7 @@ import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -355,12 +357,30 @@ class WhereListener extends GuardedMergedListener {
         public void scheduleCompletion(@NotNull AbstractFilterExecution.FilterComplete onComplete,
                 @NotNull Consumer<Exception> onError) {
             super.scheduleCompletion((adds, mods) -> {
-                final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
-                if (accumulated != null) {
-                    basePerformanceEntry.accumulate(accumulated);
-                }
+                recordJobPerformance();
                 onComplete.accept(adds, mods);
             }, onError);
+        }
+
+        /**
+         * Credit this listener's entry with the performance of the filter jobs. This completion runs on the last job to
+         * finish, which has yet to add its own, so the total is read in a terminal notification, once every job of this
+         * cycle has run, as {@link SelectOrUpdateListener} does.
+         */
+        private void recordJobPerformance() {
+            final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
+            if (accumulated == null) {
+                return;
+            }
+            WhereListener.this.getUpdateGraph().addNotification(new TerminalNotification() {
+                @Override
+                public void run() {
+                    final PerformanceEntry listenerEntry = WhereListener.this.getEntry();
+                    if (listenerEntry != null) {
+                        listenerEntry.accumulate(accumulated);
+                    }
+                }
+            });
         }
     }
 }

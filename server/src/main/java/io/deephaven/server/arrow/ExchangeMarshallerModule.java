@@ -6,12 +6,16 @@ package io.deephaven.server.arrow;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
+import io.deephaven.server.barrage.BarrageMessageProducer;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
 import org.jetbrains.annotations.NotNull;
 
+import javax.inject.Named;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -25,9 +29,15 @@ import java.util.stream.Collectors;
  * Note, the user of the ExchangeMarshaller set must sort the marshallers according to priority. The set cannot be
  * sorted at our injection point, because there may be multiple @ElementsIntoSet injectors.
  * </p>
+ *
+ * <p>
+ * The marshallers are also given the {@code Supplier<JobScheduler>} bound as
+ * {@value BarrageMessageProducer#PROPAGATION_JOB_SCHEDULER}, which a component that includes this module must provide.
+ * </p>
  */
 @Module
 public class ExchangeMarshallerModule {
+
     /**
      * Multiple modules could have injected a marshaller, we must sort the complete list by priority.
      *
@@ -45,10 +55,12 @@ public class ExchangeMarshallerModule {
     @ElementsIntoSet
     public static Set<ExchangeMarshaller> provideExchangeMarshallers(final Scheduler scheduler,
             final SessionService.ErrorTransformer errorTransformer,
-            final BarrageMessageWriter.Factory streamGeneratorFactory) {
+            final BarrageMessageWriter.Factory streamGeneratorFactory,
+            @Named(BarrageMessageProducer.PROPAGATION_JOB_SCHEDULER) final Supplier<JobScheduler> propagationJobSchedulerFactory) {
         return ServiceLoader.load(ExchangeMarshallerModule.Factory.class)
                 .stream()
-                .map(factory -> factory.get().create(scheduler, errorTransformer, streamGeneratorFactory))
+                .map(factory -> factory.get().create(scheduler, errorTransformer, streamGeneratorFactory,
+                        propagationJobSchedulerFactory))
                 .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
     }
 
@@ -56,9 +68,14 @@ public class ExchangeMarshallerModule {
      * To add an additional {@link ExchangeMarshaller}, implement this Factory and add it as a service.
      */
     public interface Factory {
+        /**
+         * Creates the marshaller. Any {@link BarrageMessageProducer} it makes writes each propagation phase to its
+         * subscribers on a scheduler from {@code propagationJobSchedulerFactory}.
+         */
         ExchangeMarshaller create(final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
-                final BarrageMessageWriter.Factory streamGeneratorFactory);
+                final BarrageMessageWriter.Factory streamGeneratorFactory,
+                final Supplier<JobScheduler> propagationJobSchedulerFactory);
     }
 
     @Provides

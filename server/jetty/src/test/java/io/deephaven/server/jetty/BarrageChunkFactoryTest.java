@@ -47,6 +47,7 @@ import io.deephaven.plugin.Registration;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.arrow.ExchangeMarshallerModule;
+import io.deephaven.server.runner.scheduler.PropagationJobSchedulerTestModule;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.console.ConsoleModule;
@@ -211,6 +212,7 @@ public class BarrageChunkFactoryTest {
             JettyServerModule.class,
             JettyTestConfig.class,
             ExchangeMarshallerModule.class,
+            PropagationJobSchedulerTestModule.class,
             ExpressionValidatorModule.class,
     })
     public interface JettyTestComponent extends TestComponent {

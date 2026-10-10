@@ -1838,15 +1838,15 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
 
                             try {
-                                analyzer.applyUpdate(
-                                        fakeUpdate, emptyRowSet, updateHelper, jobScheduler, liveResultCapture,
-                                        () -> waitForResult.complete(null),
-                                        waitForResult::completeExceptionally);
-                            } catch (Exception e) {
-                                waitForResult.completeExceptionally(e);
-                            }
+                                try {
+                                    analyzer.applyUpdate(
+                                            fakeUpdate, emptyRowSet, updateHelper, jobScheduler, liveResultCapture,
+                                            () -> waitForResult.complete(null),
+                                            waitForResult::completeExceptionally);
+                                } catch (Exception e) {
+                                    waitForResult.completeExceptionally(e);
+                                }
 
-                            try {
                                 waitForResult.get();
                             } catch (InterruptedException e) {
                                 throw new CancellationException("interrupted while computing select or update");
@@ -1855,6 +1855,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         "an exception occurred while performing the initial select or update",
                                         e.getCause());
                             } finally {
+                                // On an operation initializer this waits for every job the analyzer submitted, so none
+                                // still uses updateHelper or emptyRowSet when they close, even if applyUpdate threw.
                                 final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
                                 if (baseEntry != null) {
                                     QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(baseEntry);

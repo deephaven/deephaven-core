@@ -32,7 +32,9 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  *
  * <p>
- * Thread-safety: not thread-safe; single-threaded barrage stream serialization is assumed.
+ * Thread-safety: an instance serves a single subscriber, whose writes use the instance from one thread at a time, so
+ * the instance does not need to be thread-safe. The {@link SharedDictionaryWriterState} instances of different
+ * subscribers share a {@link SharedWriterDictionary}, which is thread-safe.
  */
 public interface DictionaryWriterState {
 
@@ -72,9 +74,11 @@ public interface DictionaryWriterState {
     WritableChunk<Values> buildDeltaChunk();
 
     /**
-     * Advances the delta boundary after a DictionaryBatch has been successfully emitted. Unlike {@link #reset()}, this
-     * does not discard the accumulated value-to-index mapping — it only moves the boundary so that already-sent values
-     * are excluded from future delta batches. The client's cached dictionary remains valid after this call.
+     * Advances the delta boundary past the values that the last {@link #buildDeltaChunk()} covered, once the
+     * DictionaryBatch built from them has been emitted, so that they are excluded from future delta batches. Call this
+     * method only after {@link #buildDeltaChunk()}; without a preceding {@link #buildDeltaChunk()} call, the shared
+     * implementation does nothing. Unlike {@link #reset()}, this does not discard the accumulated value-to-index
+     * mapping, so the client's cached dictionary remains valid after this call.
      */
     void resetDelta();
 

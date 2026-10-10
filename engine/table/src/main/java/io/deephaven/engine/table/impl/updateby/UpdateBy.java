@@ -956,7 +956,8 @@ public abstract class UpdateBy {
             SafeCloseable.closeAll(changedRows, toClear);
             upstream.release();
 
-            // accumulate performance data
+            // accumulate performance data, in a terminal notification: this runs on the last job to finish, which adds
+            // its own only after this returns
             if (!initialStep) {
                 final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
                 if (accumulated != null) {

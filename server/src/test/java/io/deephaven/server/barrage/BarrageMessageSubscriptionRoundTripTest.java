@@ -66,6 +66,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -379,6 +380,91 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
                 }
             }
         }
+    }
+
+    /**
+     * A subscription removed while its table is quiet is still completed. The producer run that removes it has nothing
+     * else to send, and used to return before ending the subscriber's stream, leaving a client that half-closed its
+     * subscription waiting for an end that never came.
+     */
+    @Test
+    public void testRemovedSubscriptionIsCompletedWhileTheTableIsQuiet() {
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(10).toTracking(), TableTools.intCol("intCol", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient client = nugget.newClient(null, allCols, "removed-while-quiet");
+        // send the whole initial snapshot and apply it, so that nothing is left to propagate
+        flushProducerTable();
+        nugget.flushClientEvents();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        assertFalse(client.dummyObserver.completed);
+
+        nugget.barrageMessageProducer.removeSubscription(client.dummyObserver);
+        flushProducerTable();
+
+        assertTrue("the removed subscription's stream was not completed", client.dummyObserver.completed);
+    }
+
+    /**
+     * A subscription removed before the producer first runs for it is still completed. It was never activated, so the
+     * producer used to drop it with its pending changes without ending the subscriber's stream.
+     */
+    @Test
+    public void testSubscriptionRemovedBeforeItsFirstRunIsCompleted() {
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(10).toTracking(), TableTools.intCol("intCol", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient client = nugget.newClient(null, allCols, "removed-before-first-run");
+        nugget.barrageMessageProducer.removeSubscription(client.dummyObserver);
+        assertFalse(client.dummyObserver.completed);
+
+        flushProducerTable();
+
+        assertTrue("the removed subscription's stream was not completed", client.dummyObserver.completed);
+    }
+
+    /**
+     * A viewport subscription removed before the producer first runs for it releases the viewport it was given, which
+     * it owned and which nothing else will close.
+     */
+    @Test
+    public void testViewportRemovedBeforeItsFirstRunIsReleased() {
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(10).toTracking(), TableTools.intCol("intCol", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        // subscribed directly, rather than through a RemoteClient, which hands the producer a copy of its viewport
+        final AtomicBoolean completed = new AtomicBoolean();
+        final StreamObserver<BarrageMessageWriter.MessageView> observer = new StreamObserver<>() {
+            @Override
+            public void onNext(final BarrageMessageWriter.MessageView messageView) {}
+
+            @Override
+            public void onError(final Throwable t) {}
+
+            @Override
+            public void onCompleted() {
+                completed.set(true);
+            }
+        };
+        final WritableRowSet viewport = RowSetFactory.fromRange(0, 4);
+        nugget.barrageMessageProducer.addSubscription(
+                observer, BarrageSubscriptionOptions.builder().build(), allCols, viewport, false);
+        nugget.barrageMessageProducer.removeSubscription(observer);
+
+        flushProducerTable();
+
+        assertTrue("the removed subscription's stream was not completed", completed.get());
+        // a closed row set fails on use
+        org.junit.Assert.assertThrows(NullPointerException.class, viewport::size);
     }
 
     @Test

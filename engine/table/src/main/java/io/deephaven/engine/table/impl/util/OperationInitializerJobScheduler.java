@@ -8,11 +8,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.updategraph.OperationInitializer;
-import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.process.ProcessEnvironment;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -38,11 +36,20 @@ public class OperationInitializerJobScheduler implements JobScheduler {
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
         outstandingJobs.incrementAndGet();
+        final AtomicBoolean started = new AtomicBoolean();
         try {
-            operationInitializer.submit(() -> wrapRunnable(executionContext, runnable, description, onError));
-        } catch (Exception e) {
-            decrementOutstandingJobs();
-            throw e;
+            operationInitializer.submit(() -> {
+                started.set(true);
+                wrapRunnable(executionContext, runnable, description, onError);
+            });
+        } catch (Throwable t) {
+            // A job that never started must release its count here, or getAccumulatedPerformance would wait forever
+            // for it; an Error counts too, OutOfMemoryError when the pool cannot make a thread in practice. A job that
+            // an inline initializer started has released its count already, in wrapRunnable, whatever it threw.
+            if (!started.get()) {
+                decrementOutstandingJobs();
+            }
+            throw t;
         }
     }
 
@@ -59,37 +66,28 @@ public class OperationInitializerJobScheduler implements JobScheduler {
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
-        final BasePerformanceEntry basePerformanceEntry;
-        if (currentBaseEntry.get() == null) {
-            basePerformanceEntry = new BasePerformanceEntry();
-            basePerformanceEntry.onBaseEntryStart();
-            currentBaseEntry.set(basePerformanceEntry);
-        } else {
-            basePerformanceEntry = null;
-        }
-        try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
-            runnable.run();
-        } catch (Exception e) {
-            onError.accept(e);
-        } catch (Error e) {
-            // Deliver the error before reporting it. Anything waiting on this job's completion has no other way to
-            // learn that the job failed, and would otherwise wait forever for a completion that cannot happen.
+        try {
+            final BasePerformanceEntry basePerformanceEntry;
+            if (currentBaseEntry.get() == null) {
+                basePerformanceEntry = new BasePerformanceEntry();
+                basePerformanceEntry.onBaseEntryStart();
+                currentBaseEntry.set(basePerformanceEntry);
+            } else {
+                basePerformanceEntry = null;
+            }
             try {
-                onError.accept(JobScheduler.asDeliverableException(e));
-            } catch (Throwable t) {
-                e.addSuppressed(t);
+                JobScheduler.runJob(executionContext, runnable, description, onError);
+            } finally {
+                if (basePerformanceEntry != null) {
+                    Assert.equals(currentBaseEntry.get(), "currentBaseEntry.get()", basePerformanceEntry,
+                            "basePerformanceEntry");
+                    currentBaseEntry.remove();
+                    basePerformanceEntry.onBaseEntryEnd();
+                    accumulatedBaseEntry.accumulate(basePerformanceEntry);
+                }
             }
-            final String logMessage = new LogOutputStringImpl().append(description).append(" Error").toString();
-            ProcessEnvironment.getGlobalFatalErrorReporter().report(logMessage, e);
-            throw e;
         } finally {
-            if (basePerformanceEntry != null) {
-                Assert.equals(currentBaseEntry.get(), "currentBaseEntry.get()", basePerformanceEntry,
-                        "basePerformanceEntry");
-                currentBaseEntry.remove();
-                basePerformanceEntry.onBaseEntryEnd();
-                accumulatedBaseEntry.accumulate(basePerformanceEntry);
-            }
+            // even if the performance accounting failed, or getAccumulatedPerformance would wait for this job forever
             decrementOutstandingJobs();
         }
     }
@@ -108,13 +106,19 @@ public class OperationInitializerJobScheduler implements JobScheduler {
 
     @Override
     public BasePerformanceEntry getAccumulatedPerformance() {
+        boolean interrupted = false;
         synchronized (outstandingJobs) {
             while (outstandingJobs.get() > 0) {
                 try {
                     outstandingJobs.wait();
-                } catch (InterruptedException ignored) {
+                } catch (InterruptedException e) {
+                    // keep waiting, and restore the interrupt for the caller, which may be about to check it
+                    interrupted = true;
                 }
             }
+        }
+        if (interrupted) {
+            Thread.currentThread().interrupt();
         }
         return accumulatedBaseEntry;
     }
