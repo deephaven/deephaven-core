@@ -29,9 +29,12 @@ import org.openjdk.jmh.infra.BenchmarkParams;
 
 import java.util.concurrent.TimeUnit;
 
-import static io.deephaven.benchmark.engine.AsOfJoinBuildBenchmark.LEFT_MULTIPLIER;
-import static io.deephaven.benchmark.engine.AsOfJoinBuildBenchmark.RIGHT_MULTIPLIER;
 import static io.deephaven.benchmark.engine.AsOfJoinBuildBenchmark.sideTable;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.LEFT;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.RIGHT;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.keySource;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.keys;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.sideRows;
 
 /**
  * Measures one update cycle of an as-of join in which each refreshing input removes its last {@code replacedRows} rows
@@ -42,10 +45,10 @@ import static io.deephaven.benchmark.engine.AsOfJoinBuildBenchmark.sideTable;
  * <li>{@link #rightRowsReplaced()}: the right refreshes against a static left table.</li>
  * <li>{@link #bothRowsReplaced()}: both refresh, and both replace rows in the same cycle.</li>
  * </ul>
- * The tables are those of {@link AsOfJoinBuildBenchmark}: each side's keys are a scrambled function of the row key
- * modulo {@code keyCount}, scrambled differently on the two sides, and each row's stamp is its row key. The columns
- * compute their values from the row key, so removing and re-adding rows changes no data and the measured cycle is the
- * join's own work plus the update graph's bookkeeping.
+ * The tables are those of {@link AsOfJoinBuildBenchmark}: each side holds {@code keyCount} distinct keys, of which
+ * {@code hitPercent} percent occur on the other side, so that percentage of the replaced rows find their key on the
+ * other side at every key count. Re-adding rows changes no data, so the measured cycle is the join's own work plus the
+ * update graph's bookkeeping.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
@@ -55,14 +58,11 @@ import static io.deephaven.benchmark.engine.AsOfJoinBuildBenchmark.sideTable;
 @Fork(2)
 public class AsOfJoinUpdateBenchmark {
 
-    @Param({"1000000"})
-    private int leftRows;
-
-    @Param({"1000000"})
-    private int rightRows;
-
     @Param({"100000", "1000000", "10000000"})
     private int keyCount;
+
+    @Param({"25", "75"})
+    private int hitPercent;
 
     /** The number of rows each refreshing input removes and re-adds per cycle. */
     @Param({"100000"})
@@ -73,8 +73,7 @@ public class AsOfJoinUpdateBenchmark {
     private QueryTable left;
     private QueryTable right;
     private Table result;
-    private WritableRowSet replacedLeftRows;
-    private WritableRowSet replacedRightRows;
+    private WritableRowSet replacedSideRows;
 
     @Setup(Level.Trial)
     public void setupEnv(final BenchmarkParams params) {
@@ -87,46 +86,45 @@ public class AsOfJoinUpdateBenchmark {
         final String benchmark = params.getBenchmark();
         final boolean leftRefreshing = !benchmark.endsWith(".rightRowsReplaced");
         final boolean rightRefreshing = !benchmark.endsWith(".leftRowsReplaced");
-        left = sideTable("L", leftRows, LEFT_MULTIPLIER, keyCount, leftRefreshing);
-        right = sideTable("R", rightRows, RIGHT_MULTIPLIER, keyCount, rightRefreshing);
+        final int rows = sideRows(keyCount);
+        left = sideTable("L", rows, keySource(keys(rows, keyCount, hitPercent, LEFT)), leftRefreshing);
+        right = sideTable("R", rows, keySource(keys(rows, keyCount, hitPercent, RIGHT)), rightRefreshing);
         result = updateGraph.sharedLock().computeLocked(() -> left.aj(right, "LK=RK,LS>=RS", "RS"));
 
         // the last rows of each table, so that each replaced block ends at its table's last row key
-        replacedLeftRows = RowSetFactory.fromRange(leftRows - replacedRows, leftRows - 1);
-        replacedRightRows = RowSetFactory.fromRange(rightRows - replacedRows, rightRows - 1);
+        replacedSideRows = RowSetFactory.fromRange(rows - replacedRows, rows - 1);
     }
 
     @TearDown(Level.Trial)
     public void tearDownEnv() {
-        replacedLeftRows.close();
-        replacedRightRows.close();
+        replacedSideRows.close();
         executionContext.close();
     }
 
     @Benchmark
     public Table leftRowsReplaced() {
-        updateGraph.runWithinUnitTestCycle(() -> replace(left, replacedLeftRows));
+        updateGraph.runWithinUnitTestCycle(() -> replace(left));
         return result;
     }
 
     @Benchmark
     public Table rightRowsReplaced() {
-        updateGraph.runWithinUnitTestCycle(() -> replace(right, replacedRightRows));
+        updateGraph.runWithinUnitTestCycle(() -> replace(right));
         return result;
     }
 
     @Benchmark
     public Table bothRowsReplaced() {
         updateGraph.runWithinUnitTestCycle(() -> {
-            replace(left, replacedLeftRows);
-            replace(right, replacedRightRows);
+            replace(left);
+            replace(right);
         });
         return result;
     }
 
-    private static void replace(final QueryTable table, final WritableRowSet rows) {
-        // the columns are computed from the row key, so removing and re-adding the same rows changes no data
-        table.notifyListeners(rows.copy(), rows.copy(), RowSetFactory.empty());
+    private void replace(final QueryTable table) {
+        // the columns are in memory and unchanged, so removing and re-adding the same rows changes no data
+        table.notifyListeners(replacedSideRows.copy(), replacedSideRows.copy(), RowSetFactory.empty());
     }
 
     public static void main(String[] args) {

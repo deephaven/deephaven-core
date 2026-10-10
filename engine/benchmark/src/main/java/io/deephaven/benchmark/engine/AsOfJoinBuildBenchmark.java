@@ -8,10 +8,8 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.SafeCloseable;
@@ -33,10 +31,15 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.LEFT;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.RIGHT;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.keySource;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.keys;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.sideRows;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.table;
+
 /**
- * Measures the initial build of an as-of join of a left table with {@code leftRows} rows onto a right table with
- * {@code rightRows} rows, matching keys drawn from {@code keyCount} values, for each combination of the inputs
- * refreshing:
+ * Measures the initial build of an as-of join for each combination of the inputs refreshing:
  * <ul>
  * <li>{@link #staticBuild()}: both static.</li>
  * <li>{@link #leftRefreshingBuild}: the left refreshes, so the join keeps the right rows of each key to restamp left
@@ -44,12 +47,10 @@ import java.util.concurrent.TimeUnit;
  * <li>{@link #rightRefreshingBuild}: the right refreshes, so the join keeps the left rows of each key.</li>
  * <li>{@link #bothRefreshingBuild}: both refresh, so the join keeps the rows of every key from either side.</li>
  * </ul>
- * Each side's keys are a scrambled function of the row key modulo {@code keyCount}, scrambled differently on the two
- * sides, so each key's rows are scattered and the order in which a side's keys are first seen is unrelated to the order
- * in which the other side looks them up. With a million rows a side, every key occurs on both sides at 100K keys; at 1M
- * the right holds every key and the left about 88% of them; at 10M each side holds a million distinct keys, of which
- * about a tenth occur on the other side. Each row's stamp is its row key, so the rows of a key are in stamp order. The
- * columns compute their values, so the measured time is the join's own work rather than reading column data.
+ * Each side holds {@code keyCount} distinct keys, of which {@code hitPercent} percent occur on the other side, as
+ * {@link JoinBenchmarkKeys} builds them; so that percentage of each side's rows find their key on the other side, at
+ * every key count. Each side has at least a million rows, and one per key beyond that. Each row's stamp is its row key,
+ * so the rows of a key are in stamp order.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
@@ -59,85 +60,11 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 public class AsOfJoinBuildBenchmark {
 
-    /**
-     * A long key column whose value at a row key is {@code (rowKey * multiplier) mod keyCount}.
-     */
-    static final class ScaledKeySource extends AbstractColumnSource<Long>
-            implements MutableColumnSourceGetDefaults.ForLong {
-        private final long multiplier;
-        private final long keyCount;
-
-        ScaledKeySource(final long multiplier, final long keyCount) {
-            super(long.class);
-            this.multiplier = multiplier;
-            this.keyCount = keyCount;
-        }
-
-        @Override
-        public long getLong(final long rowKey) {
-            return Math.floorMod(rowKey * multiplier, keyCount);
-        }
-
-        @Override
-        public long getPrevLong(final long rowKey) {
-            return getLong(rowKey);
-        }
-
-        @Override
-        public boolean isImmutable() {
-            return true;
-        }
-
-        @Override
-        public boolean isStateless() {
-            return true;
-        }
-    }
-
-    /**
-     * A long stamp column whose value at a row key is the row key.
-     */
-    static final class RowKeyStampSource extends AbstractColumnSource<Long>
-            implements MutableColumnSourceGetDefaults.ForLong {
-
-        RowKeyStampSource() {
-            super(long.class);
-        }
-
-        @Override
-        public long getLong(final long rowKey) {
-            return rowKey;
-        }
-
-        @Override
-        public long getPrevLong(final long rowKey) {
-            return rowKey;
-        }
-
-        @Override
-        public boolean isImmutable() {
-            return true;
-        }
-
-        @Override
-        public boolean isStateless() {
-            return true;
-        }
-    }
-
-    // scatters the rows of each key across the left table
-    static final long LEFT_MULTIPLIER = 0x9E3779B97F4A7C15L;
-    // a prime that divides no power of ten, so that a right table of keyCount rows holds every key once
-    static final long RIGHT_MULTIPLIER = 999_983L;
-
-    @Param({"1000000"})
-    private int leftRows;
-
-    @Param({"1000000"})
-    private int rightRows;
-
     @Param({"100000", "1000000", "10000000"})
     private int keyCount;
+
+    @Param({"25", "75"})
+    private int hitPercent;
 
     private ControlledUpdateGraph updateGraph;
     private SafeCloseable executionContext;
@@ -153,10 +80,13 @@ public class AsOfJoinBuildBenchmark {
         updateGraph.enableUnitTestMode();
         updateGraph.resetForUnitTests(false);
 
-        staticLeft = sideTable("L", leftRows, LEFT_MULTIPLIER, keyCount, false);
-        staticRight = sideTable("R", rightRows, RIGHT_MULTIPLIER, keyCount, false);
-        refreshingLeft = sideTable("L", leftRows, LEFT_MULTIPLIER, keyCount, true);
-        refreshingRight = sideTable("R", rightRows, RIGHT_MULTIPLIER, keyCount, true);
+        final int rows = sideRows(keyCount);
+        final ColumnSource<Long> leftKeys = keySource(keys(rows, keyCount, hitPercent, LEFT));
+        final ColumnSource<Long> rightKeys = keySource(keys(rows, keyCount, hitPercent, RIGHT));
+        staticLeft = sideTable("L", rows, leftKeys, false);
+        staticRight = sideTable("R", rows, rightKeys, false);
+        refreshingLeft = sideTable("L", rows, leftKeys, true);
+        refreshingRight = sideTable("R", rows, rightKeys, true);
     }
 
     @TearDown(Level.Trial)
@@ -165,19 +95,12 @@ public class AsOfJoinBuildBenchmark {
     }
 
     /**
-     * @return a flat table of {@code size} rows with a key column {@code <prefix>K} and a stamp column
+     * @return a flat table of {@code rows} rows with the key column {@code <prefix>K} and the stamp column
      *         {@code <prefix>S}
      */
-    static QueryTable sideTable(final String prefix, final int size, final long multiplier, final long keyCount,
+    static QueryTable sideTable(final String prefix, final int rows, final ColumnSource<Long> keys,
             final boolean refreshing) {
-        final QueryTable table = new QueryTable(RowSetFactory.flat(size).toTracking(), Map.of(
-                prefix + "K", new ScaledKeySource(multiplier, keyCount),
-                prefix + "S", new RowKeyStampSource()));
-        table.setRefreshing(refreshing);
-        if (refreshing) {
-            table.setFlat();
-        }
-        return table;
+        return table(rows, Map.of(prefix + "K", keys, prefix + "S", new JoinBenchmarkKeys.RowKeySource()), refreshing);
     }
 
     @Benchmark

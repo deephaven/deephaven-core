@@ -8,10 +8,8 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.SafeCloseable;
@@ -33,19 +31,25 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.LEFT;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.RIGHT;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.keySource;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.keys;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.sideRows;
+import static io.deephaven.benchmark.engine.JoinBenchmarkKeys.table;
+
 /**
- * Measures the initial build of a natural join of a left table with {@code leftRows} rows onto a right table with one
- * row for each of {@code keyCount} keys, for each combination of the inputs refreshing:
+ * Measures the initial build of a natural join for each combination of the inputs refreshing:
  * <ul>
  * <li>{@link #staticBuild()}: both static.</li>
  * <li>{@link #leftRefreshingBuild}: the left refreshes, so the join keeps the right keys to probe left updates.</li>
  * <li>{@link #rightRefreshingBuild}: the right refreshes, so the join keeps the left rows of each key.</li>
  * <li>{@link #bothRefreshingBuild}: both refresh, so the join keeps every key from either side.</li>
  * </ul>
- * The left keys are a scrambled function of the row key modulo {@code keyCount}, so each key's left rows are scattered.
- * With a million left rows, every key occurs on the left at 100K keys, about 88% of the keys do at 1M, and a tenth of
- * them at 10M, where each left row has a key of its own. The right keys are a permutation of {@code [0, keyCount)}. The
- * key columns compute their values, so the measured time is the join's own work rather than reading column data.
+ * Each side holds {@code keyCount} distinct keys, of which {@code hitPercent} percent occur on the other side, as
+ * {@link JoinBenchmarkKeys} builds them; so that percentage of each side's rows find their key on the other side,
+ * whichever side the join builds from and at every key count. The right table has one row per key, as a natural join's
+ * right keys are unique; the left has at least a million rows, and one per key beyond that.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
@@ -55,51 +59,11 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 public class NaturalJoinBuildBenchmark {
 
-    /**
-     * A long key column whose value at a row key is {@code (rowKey * multiplier) mod keyCount}.
-     */
-    static final class ScaledKeySource extends AbstractColumnSource<Long>
-            implements MutableColumnSourceGetDefaults.ForLong {
-        private final long multiplier;
-        private final long keyCount;
-
-        ScaledKeySource(final long multiplier, final long keyCount) {
-            super(long.class);
-            this.multiplier = multiplier;
-            this.keyCount = keyCount;
-        }
-
-        @Override
-        public long getLong(final long rowKey) {
-            return Math.floorMod(rowKey * multiplier, keyCount);
-        }
-
-        @Override
-        public long getPrevLong(final long rowKey) {
-            return getLong(rowKey);
-        }
-
-        @Override
-        public boolean isImmutable() {
-            return true;
-        }
-
-        @Override
-        public boolean isStateless() {
-            return true;
-        }
-    }
-
-    // scatters the left rows of each key across the left table
-    private static final long LEFT_MULTIPLIER = 0x9E3779B97F4A7C15L;
-    // a prime that divides no power of ten, so that the right keys are a permutation of [0, keyCount)
-    private static final long RIGHT_MULTIPLIER = 999_983L;
-
-    @Param({"1000000"})
-    private int leftRows;
-
     @Param({"100000", "1000000", "10000000"})
     private int keyCount;
+
+    @Param({"25", "75"})
+    private int hitPercent;
 
     private ControlledUpdateGraph updateGraph;
     private SafeCloseable executionContext;
@@ -115,22 +79,18 @@ public class NaturalJoinBuildBenchmark {
         updateGraph.enableUnitTestMode();
         updateGraph.resetForUnitTests(false);
 
-        staticLeft = keyTable("LK", leftRows, LEFT_MULTIPLIER, false);
-        staticRight = keyTable("RK", keyCount, RIGHT_MULTIPLIER, false);
-        refreshingLeft = keyTable("LK", leftRows, LEFT_MULTIPLIER, true);
-        refreshingRight = keyTable("RK", keyCount, RIGHT_MULTIPLIER, true);
+        final int leftRows = sideRows(keyCount);
+        final ColumnSource<Long> leftKeys = keySource(keys(leftRows, keyCount, hitPercent, LEFT));
+        final ColumnSource<Long> rightKeys = keySource(keys(keyCount, keyCount, hitPercent, RIGHT));
+        staticLeft = table(leftRows, Map.of("LK", leftKeys), false);
+        staticRight = table(keyCount, Map.of("RK", rightKeys), false);
+        refreshingLeft = table(leftRows, Map.of("LK", leftKeys), true);
+        refreshingRight = table(keyCount, Map.of("RK", rightKeys), true);
     }
 
     @TearDown(Level.Trial)
     public void tearDownEnv() {
         executionContext.close();
-    }
-
-    private QueryTable keyTable(final String name, final int size, final long multiplier, final boolean refreshing) {
-        final QueryTable table = new QueryTable(RowSetFactory.flat(size).toTracking(),
-                Map.of(name, new ScaledKeySource(multiplier, keyCount)));
-        table.setRefreshing(refreshing);
-        return table;
     }
 
     @Benchmark
