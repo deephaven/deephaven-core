@@ -425,9 +425,6 @@ public class CrossJoinHelper {
                                         upstreamRight.modifiedColumnSet().containsAny(rightKeyColumns), tracker);
                             }
 
-                            // space needed for right RowSet might have changed, let's verify we have enough keyspace
-                            jsm.validateKeySpaceSize();
-
                             // We must finalize all known slots, so that left accumulation does not mix with right
                             // accumulation.
                             if (upstreamRight.shifted().nonempty()) {
@@ -437,6 +434,10 @@ public class CrossJoinHelper {
                             }
                             tracker.finalizeRightProcessing();
                         }
+
+                        // finalizing the right changes sizes the right bits, and left rows may have been added past
+                        // the keyspace the right bits leave free
+                        jsm.validateKeySpaceSize();
 
                         final int prevRightBits = jsm.getPrevNumShiftBits();
                         final int currRightBits = jsm.getNumShiftBits();

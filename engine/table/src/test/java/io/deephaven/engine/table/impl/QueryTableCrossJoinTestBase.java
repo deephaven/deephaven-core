@@ -18,6 +18,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.exceptions.OutOfKeySpaceException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -350,6 +351,72 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         assertEquals(i(), listener.update.modified());
         assertEquals(i(5, 6), listener.update.added());
         listener.reset();
+    }
+
+    @Test
+    public void testBothTickingLeftAddOutOfKeySpace() {
+        for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+            final QueryTable left = testRefreshingTable(i(0).toTracking(), intCol("K", 1));
+            final QueryTable right =
+                    testRefreshingTable(i(0, 1).toTracking(), intCol("K", 1, 1), intCol("Y", 3, 4));
+            final MatchPair[] columnsToMatch = MatchPairFactory.getExpressions("K");
+            final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+            final Table joined = leftOuterJoin
+                    ? CrossJoinHelper.leftOuterJoin(left, right, columnsToMatch, columnsToAdd, 10)
+                    : CrossJoinHelper.join(left, right, columnsToMatch, columnsToAdd, 10);
+            final ErrorListener errorListener = new ErrorListener(joined);
+            joined.addUpdateListener(errorListener);
+
+            // a left row key needing 57 bits leaves too few bits for the 10 reserved right bits
+            final long leftKey = 1L << 56;
+            allowingError(() -> ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                    .runWithinUnitTestCycle(() -> {
+                        addToTable(left, i(leftKey), intCol("K", 1));
+                        left.notifyListeners(i(leftKey), i(), i());
+                    }), errors -> !errors.isEmpty());
+
+            assertTrue("leftOuterJoin=" + leftOuterJoin, joined.isFailed());
+            assertTrue("leftOuterJoin=" + leftOuterJoin,
+                    errorListener.originalException() instanceof OutOfKeySpaceException);
+        }
+    }
+
+    @Test
+    public void testBothTickingRightGrowthOutOfKeySpace() {
+        for (final int bitsOfGrowth : new int[] {1, 2}) {
+            for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+                final String description = "bitsOfGrowth=" + bitsOfGrowth + ", leftOuterJoin=" + leftOuterJoin;
+                // a left row key needing 53 bits leaves exactly the 10 reserved right bits
+                final long bigLeftKey = (1L << 52) + 1;
+                final QueryTable left = testRefreshingTable(i(1, bigLeftKey).toTracking(), intCol("K", 1, 1));
+                final int groupSize = 1 << 10;
+                final QueryTable right = testRefreshingTable(RowSetFactory.flat(groupSize).toTracking(),
+                        intCol("K", IntStream.range(0, groupSize).map(ignored -> 1).toArray()),
+                        intCol("Y", IntStream.range(0, groupSize).toArray()));
+                final MatchPair[] columnsToMatch = MatchPairFactory.getExpressions("K");
+                final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+                final Table joined = leftOuterJoin
+                        ? CrossJoinHelper.leftOuterJoin(left, right, columnsToMatch, columnsToAdd, 10)
+                        : CrossJoinHelper.join(left, right, columnsToMatch, columnsToAdd, 10);
+                final ErrorListener errorListener = new ErrorListener(joined);
+                joined.addUpdateListener(errorListener);
+
+                // only the right table changes, growing the group to need 10 + bitsOfGrowth bits
+                final int newSize = (groupSize << (bitsOfGrowth - 1)) + 1;
+                allowingError(() -> ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> {
+                            final RowSet added = RowSetFactory.fromRange(groupSize, newSize - 1);
+                            addToTable(right, added,
+                                    intCol("K", IntStream.range(groupSize, newSize).map(ignored -> 1).toArray()),
+                                    intCol("Y", IntStream.range(groupSize, newSize).toArray()));
+                            right.notifyListeners(added, i(), i());
+                        }), errors -> !errors.isEmpty());
+
+                assertTrue(description, joined.isFailed());
+                assertTrue(description + ": " + errorListener.originalException(),
+                        errorListener.originalException() instanceof OutOfKeySpaceException);
+            }
+        }
     }
 
     @Test
