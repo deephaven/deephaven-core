@@ -23,7 +23,7 @@ staticTable2 = emptyTable(5).updateView(
 > [!NOTE]
 > The [special variables](../../reference/query-language/variables/special-variables.md) `i` and `ii` hold each row's position as an `int` and a `long`, respectively. They are safe in static tables like this one. In ticking tables, they are only supported in [append-only](../../conceptual/table-types.md#specialization-1-append-only) and [blink](../../conceptual/table-types.md#specialization-3-blink) tables, because a row's position can change between updates in other ticking tables.
 
-The two tables hold the same data but are created differently.
+The two tables look identical but are created differently.
 
 - [`newTable`](../../reference/table-operations/create/newTable.md) builds a table directly from column type specifications and raw data.
 - [`emptyTable`](../../reference/table-operations/create/emptyTable.md) builds an empty table with no columns and a specified number of rows. You can add columns with the Deephaven Query Language (DQL).
