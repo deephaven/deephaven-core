@@ -146,7 +146,7 @@ public class NaturalJoinModifiedSlotTracker {
      * and a new right row for the same join key is added at the vacated key.
      *
      * @param cookie the slot's existing cookie (or an invalid cookie if this slot has not been tracked yet)
-     * @param slot the hash slot (encoding main/alternate via the insert mask)
+     * @param slot the key id of the slot
      * @param originalRightValue the slot's right state before this addition
      * @param addedRightRowKey the row key of the arriving right row
      * @param flags the flags to or into our state
@@ -183,7 +183,7 @@ public class NaturalJoinModifiedSlotTracker {
      * removals in bulk later via {@link #forAllLeftRemovals(LeftRowSetConsumer)}.
      *
      * @param cookie the slot's existing cookie (or an invalid cookie if this slot has not been tracked yet)
-     * @param slot the hash slot (encoding main/alternate via the insert mask)
+     * @param slot the key id of the slot
      * @param removedRowKey the left row key to remove from the slot
      * @param rightValue the slot's current right state, used as the original right value if we must allocate an entry
      * @return the cookie for future access
@@ -198,7 +198,7 @@ public class NaturalJoinModifiedSlotTracker {
      * insertions in bulk later via {@link #forAllLeftAdditions(boolean, LeftRowSetConsumer)}.
      *
      * @param cookie the slot's existing cookie (or an invalid cookie if this slot has not been tracked yet)
-     * @param slot the hash slot (encoding main/alternate via the insert mask)
+     * @param slot the key id of the slot
      * @param addedRowKey the left row key to add to the slot
      * @param rightValue the slot's current right state, used as the original right value if we must allocate an entry
      * @return the cookie for future access
@@ -214,7 +214,7 @@ public class NaturalJoinModifiedSlotTracker {
      * {@link #forAllLeftShifts(LeftRowSetConsumer)} once the range's rows have all been probed.
      *
      * @param cookie the slot's existing cookie (or an invalid cookie if this slot has not been tracked yet)
-     * @param slot the hash slot (encoding main/alternate via the insert mask)
+     * @param slot the key id of the slot
      * @param shiftedRowKey the post-shift row key of the left row
      * @param rightValue the slot's current right state, used as the original right value if we must allocate an entry
      * @return the cookie for future access
@@ -300,23 +300,6 @@ public class NaturalJoinModifiedSlotTracker {
     }
 
     /**
-     * Move a main table location.
-     *
-     * @param oldTableLocation the old hash slot
-     * @param newTableLocation the new hash slot
-     */
-    public void moveTableLocation(long cookie, @SuppressWarnings("unused") int oldTableLocation,
-            int newTableLocation) {
-        if (isValidCookie(cookie)) {
-            final long pointer = getPointerFromCookie(cookie);
-            final long existingSlotAndFlag = modifiedSlots.getLong(pointer);
-            final byte flag = (byte) (existingSlotAndFlag & FLAG_MASK);
-            final long newSlotAndFlag = ((long) newTableLocation << FLAG_SHIFT) | flag;
-            modifiedSlots.set(pointer, newSlotAndFlag);
-        }
-    }
-
-    /**
      * For each slot that has accumulated left removals, build the removed-key row set and pass it to the consumer, then
      * discard the slot's builder and clear its {@link #FLAG_LEFT_REMOVE} flag (so a subsequent removal pass and the
      * final {@link #forAllModifiedSlots(ModifiedSlotConsumer)} pass do not re-process it). The row set handed to the
@@ -398,7 +381,7 @@ public class NaturalJoinModifiedSlotTracker {
 
     interface ModifiedSlotConsumer {
         /**
-         * @param slot the hash slot (encoding main/alternate via the insert mask)
+         * @param slot the key id of the slot
          * @param originalRightValue the slot's right state when its entry was created this cycle
          * @param flag the flags accumulated for the slot this cycle
          * @param leftAddedCount the number of rows added to the left table this cycle that the slot holds

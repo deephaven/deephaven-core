@@ -143,7 +143,7 @@ public class NaturalJoinIncrementalModifyBenchmark extends RefreshingTableTestCa
 
         // Right table: one unique row per key so the natural join is valid. It is marked refreshing (even though it
         // never ticks) so that naturalJoin selects the both-incremental state manager
-        // (IncrementalNaturalJoinStateManagerTypedBase), which maintains a per-key left WritableRowSet -- the
+        // (IncrementalKeyIdNaturalJoinStateManager), which maintains a per-key left WritableRowSet -- the
         // RSP-backed
         // "left hand side state" this benchmark exercises. With a static right table, naturalJoin would instead keep
         // only

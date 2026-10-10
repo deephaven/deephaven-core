@@ -12,10 +12,10 @@ import static io.deephaven.util.compare.LongComparisons.eq;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.LongChunkHasher;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.join.KeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
@@ -36,8 +36,8 @@ final class KeyIdHasherLong extends KeyIdHasherTypedBase {
         return (tableLocation + 1) & (tableSize - 1);
     }
 
-    protected void build(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            WritableIntChunk<Values> ids) {
+    protected void build(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids,
+            WritableByteChunk<Values> statuses) {
         final LongChunk<Values> keyChunk0 = sourceKeyChunks[0].asLongChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -53,9 +53,11 @@ final class KeyIdHasherLong extends KeyIdHasherTypedBase {
                     final int id = allocateId(tableLocation);
                     mainId.set(tableLocation, id);
                     ids.set(chunkPosition, id);
+                    statuses.set(chunkPosition, ADDED);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     ids.set(chunkPosition, idValue);
+                    statuses.set(chunkPosition, FOUND);
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
@@ -67,8 +69,8 @@ final class KeyIdHasherLong extends KeyIdHasherTypedBase {
         }
     }
 
-    protected void probe(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            WritableIntChunk<Values> ids) {
+    protected void probe(Chunk[] sourceKeyChunks, WritableIntChunk<Values> ids,
+            WritableByteChunk<Values> statuses) {
         final LongChunk<Values> keyChunk0 = sourceKeyChunks[0].asLongChunk();
         final int chunkSize = keyChunk0.size();
         for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
@@ -81,6 +83,7 @@ final class KeyIdHasherLong extends KeyIdHasherTypedBase {
             while (!isStateEmpty(idValue = mainId.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     ids.set(chunkPosition, idValue);
+                    statuses.set(chunkPosition, FOUND);
                     found = true;
                     break;
                 }
@@ -91,6 +94,7 @@ final class KeyIdHasherLong extends KeyIdHasherTypedBase {
             }
             if (!found) {
                 ids.set(chunkPosition, NULL_ID);
+                statuses.set(chunkPosition, MISSING);
             }
         }
     }

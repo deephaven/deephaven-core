@@ -404,13 +404,16 @@ class RightIncrementalChunkedCrossJoinStateManager
             return;
         }
         try (final PrevRowKeys prevRowKeys = new PrevRowKeys(rows, prevRows)) {
-            final KeyIdHasher.IdChunkConsumer consumer = (chunkRows, slots) -> {
+            final KeyIdHasher.IdChunkConsumer consumer = (chunkRows, slots, statuses) -> {
                 ensureSlotCapacity();
                 final LongChunk<OrderedRowKeys> rowKeys = chunkRows.asRowKeyChunk();
                 final LongChunk<OrderedRowKeys> prevKeys = prevRowKeys.next(chunkRows);
                 for (int ii = 0; ii < rowKeys.size(); ++ii) {
                     final int slot = slots.get(ii);
-                    ensureSlotExists(slot);
+                    if (statuses.get(ii) == KeyIdHasher.ADDED) {
+                        // a new or reused slot starts with no right rows
+                        rightRowSetSource.set(slot, RowSetFactory.empty().toTracking());
+                    }
                     invokeTrackingCallback(trackingCallback, slot, rowKeys.get(ii),
                             prevKeys == null ? RowSequence.NULL_ROW_KEY : prevKeys.get(ii));
                 }
@@ -440,7 +443,7 @@ class RightIncrementalChunkedCrossJoinStateManager
             return;
         }
         try (final PrevRowKeys prevRowKeys = new PrevRowKeys(rows, prevRows)) {
-            hasher.probe(rows, sources, usePrev, (chunkRows, slots) -> {
+            hasher.probe(rows, sources, usePrev, (chunkRows, slots, statuses) -> {
                 final LongChunk<OrderedRowKeys> rowKeys = chunkRows.asRowKeyChunk();
                 final LongChunk<OrderedRowKeys> prevKeys = prevRowKeys.next(chunkRows);
                 for (int ii = 0; ii < rowKeys.size(); ++ii) {
@@ -504,13 +507,6 @@ class RightIncrementalChunkedCrossJoinStateManager
             rightRowSetSource.ensureCapacity(capacity);
             modifiedTrackerCookieSource.ensureCapacity(capacity);
             slotCapacity = capacity;
-        }
-    }
-
-    private void ensureSlotExists(final long slot) {
-        final RowSet rowSet = rightRowSetSource.getUnsafe(slot);
-        if (rowSet == null) {
-            rightRowSetSource.set(slot, RowSetFactory.empty().toTracking());
         }
     }
 

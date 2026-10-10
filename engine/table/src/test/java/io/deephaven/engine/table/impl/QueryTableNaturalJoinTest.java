@@ -15,7 +15,7 @@ import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
+import io.deephaven.engine.table.impl.join.IncrementalKeyIdHasherTypedBase;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -3712,7 +3712,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         // at or below 1 / REHASH_SLOTS_PER_ENTRY, a partial rehash could not drain the alternate before the new table
         // fills
-        final double limit = 1.0 / IncrementalNaturalJoinStateManagerTypedBase.REHASH_SLOTS_PER_ENTRY;
+        final double limit = 1.0 / IncrementalKeyIdHasherTypedBase.REHASH_SLOTS_PER_ENTRY;
         for (final double maximumLoadFactor : new double[] {0.3, limit}) {
             Throwable cause = assertThrows(Throwable.class, () -> join.apply(maximumLoadFactor));
             while (!(cause instanceof IllegalArgumentException) && cause.getCause() != null) {

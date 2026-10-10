@@ -4,7 +4,10 @@
 package io.deephaven.engine.table.impl.join;
 
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -54,15 +57,15 @@ public class KeyIdHasherTest extends RefreshingTableTestCase {
         final Table first = newTable(longCol("K", 0, 1, 2, 3, 4, 5, 6, 7));
         final Table second = newTable(longCol("K", 8, 9, 10, 11, 12, 13, 14, 15));
         final IncrementalKeyIdHasherTypedBase hasher = IncrementalKeyIdHasherTypedBase.make(sources(first), 16, 0.95);
-        hasher.buildWithFullRehash(first.getRowSet(), sources(first), (rows, ids) -> {
+        hasher.buildWithFullRehash(first.getRowSet(), sources(first), (rows, ids, statuses) -> {
         });
-        hasher.buildWithFullRehash(second.getRowSet(), sources(second), (rows, ids) -> {
+        hasher.buildWithFullRehash(second.getRowSet(), sources(second), (rows, ids, statuses) -> {
         });
         assertEquals(16, hasher.size());
 
         final Table missing = newTable(longCol("K", 16));
         hasher.probe(missing.getRowSet(), sources(missing), false,
-                (rows, ids) -> assertEquals(KeyIdHasher.NULL_ID, ids.get(0)));
+                (rows, ids, statuses) -> assertEquals(KeyIdHasher.NULL_ID, ids.get(0)));
     }
 
     @Test
@@ -71,14 +74,52 @@ public class KeyIdHasherTest extends RefreshingTableTestCase {
         final Table first = newTable(longCol("K", 0, 1));
         final Table second = newTable(longCol("K", 2));
         final IncrementalKeyIdHasherTypedBase hasher = IncrementalKeyIdHasherTypedBase.make(sources(first), 16, 0.75);
-        hasher.buildWithFullRehash(first.getRowSet(), sources(first), (rows, ids) -> {
+        hasher.buildWithFullRehash(first.getRowSet(), sources(first), (rows, ids, statuses) -> {
         });
         hasher.remove(IntChunk.chunkWrap(new int[] {0}));
-        hasher.build(second.getRowSet(), sources(second), (rows, ids) -> assertEquals(0, ids.get(0)));
+        hasher.build(second.getRowSet(), sources(second), (rows, ids, statuses) -> assertEquals(0, ids.get(0)));
         assertEquals(hasher.size(), hasher.idCapacity());
         assertThrows(AssertionFailure.class,
-                () -> hasher.buildWithFullRehash(second.getRowSet(), sources(second), (rows, ids) -> {
+                () -> hasher.buildWithFullRehash(second.getRowSet(), sources(second), (rows, ids, statuses) -> {
                 }));
+    }
+
+    @Test
+    public void testChunkContext() {
+        // build and probe key chunks directly, reusing one context across chunks while the table grows
+        final IncrementalKeyIdHasherTypedBase hasher =
+                IncrementalKeyIdHasherTypedBase.make(sources(newTable(longCol("K"))), 16, 0.75);
+        final Map<Long, Integer> expected = new HashMap<>();
+        try (final KeyIdHasher.Context context = hasher.makeContext(1024)) {
+            for (int chunk = 0; chunk < 40; ++chunk) {
+                final long[] keys = new long[1024];
+                for (int ii = 0; ii < keys.length; ++ii) {
+                    // half the keys repeat earlier chunks, half are new
+                    keys[ii] = ii % 2 == 0 ? ii : chunk * 1024L + ii;
+                }
+                // noinspection unchecked
+                final Chunk<Values>[] keyChunks = new Chunk[] {LongChunk.chunkWrap(keys)};
+                hasher.build(context, keyChunks);
+                for (int ii = 0; ii < keys.length; ++ii) {
+                    final Integer existing = expected.putIfAbsent(keys[ii], context.ids().get(ii));
+                    assertEquals(existing == null ? KeyIdHasher.ADDED : KeyIdHasher.FOUND,
+                            context.statuses().get(ii));
+                    if (existing != null) {
+                        assertEquals((int) existing, context.ids().get(ii));
+                    }
+                }
+                hasher.probe(context, keyChunks);
+                for (int ii = 0; ii < keys.length; ++ii) {
+                    assertEquals((int) expected.get(keys[ii]), context.ids().get(ii));
+                    assertEquals(KeyIdHasher.FOUND, context.statuses().get(ii));
+                }
+            }
+            // noinspection unchecked
+            hasher.probe(context, new Chunk[] {LongChunk.chunkWrap(new long[] {-1, -2})});
+            assertEquals(KeyIdHasher.NULL_ID, context.ids().get(0));
+            assertEquals(KeyIdHasher.MISSING, context.statuses().get(1));
+        }
+        assertEquals(expected.size(), hasher.size());
     }
 
     private static Table singleKeyTable(final Random random, final int step) {
@@ -126,18 +167,22 @@ public class KeyIdHasherTest extends RefreshingTableTestCase {
         for (int step = 0; step < 50; ++step) {
             final Table toBuild = tableMaker.make(random, step);
             final ColumnSource<?>[] sources = sources(toBuild);
-            hasher.build(toBuild.getRowSet(), sources, (rows, ids) -> {
+            hasher.build(toBuild.getRowSet(), sources, (rows, ids, statuses) -> {
                 if (incremental && ((IncrementalKeyIdHasherTypedBase) hasher).rehashPointer > 0) {
                     sawPartialRehash.setTrue();
                 }
                 final int[] position = {0};
                 rows.forAllRowKeys(rowKey -> {
                     final List<Object> key = keyOf(sources, rowKey);
+                    final byte status = statuses.get(position[0]);
                     final int id = ids.get(position[0]++);
                     assertNotEquals(KeyIdHasher.NULL_ID, id);
                     final Integer existing = expected.putIfAbsent(key, id);
                     if (existing != null) {
                         assertEquals((int) existing, id);
+                        assertEquals(KeyIdHasher.FOUND, status);
+                    } else {
+                        assertEquals(KeyIdHasher.ADDED, status);
                     }
                 });
             });
@@ -165,18 +210,20 @@ public class KeyIdHasherTest extends RefreshingTableTestCase {
             }
 
             // every key that was built or removed probes to its id, or to NULL_ID once removed
-            hasher.probe(toBuild.getRowSet(), sources, false, (rows, ids) -> {
+            hasher.probe(toBuild.getRowSet(), sources, false, (rows, ids, statuses) -> {
                 final int[] position = {0};
                 rows.forAllRowKeys(rowKey -> {
                     final Integer id = expected.get(keyOf(sources, rowKey));
+                    assertEquals(id == null ? KeyIdHasher.MISSING : KeyIdHasher.FOUND, statuses.get(position[0]));
                     assertEquals(id == null ? KeyIdHasher.NULL_ID : (int) id, ids.get(position[0]++));
                 });
             });
             if (!removed.isEmpty()) {
                 final Table removedKeys = keysTable(prototype, removed);
-                hasher.probe(removedKeys.getRowSet(), sources(removedKeys), false, (rows, ids) -> {
+                hasher.probe(removedKeys.getRowSet(), sources(removedKeys), false, (rows, ids, statuses) -> {
                     for (int ii = 0; ii < ids.size(); ++ii) {
                         assertEquals(KeyIdHasher.NULL_ID, ids.get(ii));
+                        assertEquals(KeyIdHasher.MISSING, statuses.get(ii));
                     }
                 });
             }

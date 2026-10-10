@@ -52,7 +52,7 @@ class SymbolTableCombiner {
         try (final ColumnSource.GetContext idContext =
                 idSource.makeGetContext((int) Math.min(CHUNK_SIZE, rowSet.size()))) {
             hasher.build(rowSet, symbolSources,
-                    (rows, uniqueIds) -> mapSymbols(idSource, idContext, rows, uniqueIds, symbolMapper, 0));
+                    (rows, uniqueIds, statuses) -> mapSymbols(idSource, idContext, rows, uniqueIds, symbolMapper, 0));
         }
     }
 
@@ -73,7 +73,7 @@ class SymbolTableCombiner {
         try (final ColumnSource.GetContext idContext =
                 idSource.makeGetContext((int) Math.min(CHUNK_SIZE, symbolTable.size()))) {
             hasher.probe(symbolTable.getRowSet(), symbolSources, false,
-                    (rows, uniqueIds) -> mapSymbols(idSource, idContext, rows, uniqueIds, symbolMapper,
+                    (rows, uniqueIds, statuses) -> mapSymbols(idSource, idContext, rows, uniqueIds, symbolMapper,
                             irrelevantSymbolValue));
         }
     }

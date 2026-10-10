@@ -45,7 +45,7 @@ public abstract class KeyIdHasherTypedBase extends KeyIdHasher {
     }
 
     @Override
-    protected void prepareForChunk(final int nextChunkSize) {
+    protected void prepareForChunk(final Context context, final int nextChunkSize) {
         if (numEntries + nextChunkSize <= tableSize * maximumLoadFactor) {
             return;
         }

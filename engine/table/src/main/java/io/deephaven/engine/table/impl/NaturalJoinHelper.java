@@ -14,7 +14,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.join.ChangedKeyRows;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
 import io.deephaven.engine.table.impl.naturaljoin.*;
@@ -113,10 +112,9 @@ class NaturalJoinHelper {
 
             if (leftTable.isRefreshing() && rightTable.isRefreshing()) {
                 // We always build right first, regardless of the build parameters. This is probably irrelevant.
-                final BothIncrementalNaturalJoinStateManager jsm = TypedHasherFactory.makeNaturalJoin(
-                        IncrementalNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        initialHashTableSize, control.getMaximumLoadFactor(),
-                        control.getTargetLoadFactor(), joinType, rightAddOnly);
+                final BothIncrementalNaturalJoinStateManager jsm = new IncrementalKeyIdNaturalJoinStateManager(
+                        bc.leftSources, bc.originalLeftSources, initialHashTableSize, control.getMaximumLoadFactor(),
+                        joinType, rightAddOnly);
                 jsm.buildFromRightSide(rightTable, bc.rightSources);
 
                 try (final BothIncrementalNaturalJoinStateManager.InitialBuildContext ibc =
@@ -160,10 +158,9 @@ class NaturalJoinHelper {
                 Assert.eq(firstBuildFrom, "firstBuildFrom", RightInput);
 
                 final LongArraySource leftRedirections = new LongArraySource();
-                final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.makeNaturalJoin(
-                        StaticNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        initialHashTableSize, control.getMaximumLoadFactor(),
-                        control.getTargetLoadFactor(), joinType, rightAddOnly);
+                final StaticHashedNaturalJoinStateManager jsm = new StaticKeyIdNaturalJoinStateManager(
+                        bc.leftSources, bc.originalLeftSources, initialHashTableSize, control.getMaximumLoadFactor(),
+                        joinType, rightAddOnly);
 
                 jsm.buildFromRightSide(rightTable, bc.rightSources);
                 if (bc.leftDataIndexTable != null) {
@@ -197,10 +194,9 @@ class NaturalJoinHelper {
                 Assert.assertion(firstBuildFrom == LeftInput || firstBuildFrom == LeftDataIndex,
                         "firstBuildFrom == LeftInput || firstBuildFrom == LeftDataIndex");
 
-                final RightIncrementalNaturalJoinStateManager jsm = TypedHasherFactory.makeNaturalJoin(
-                        RightIncrementalNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        initialHashTableSize, control.getMaximumLoadFactor(),
-                        control.getTargetLoadFactor(), joinType, rightAddOnly);
+                final RightIncrementalNaturalJoinStateManager jsm = new RightIncrementalKeyIdNaturalJoinStateManager(
+                        bc.leftSources, bc.originalLeftSources, initialHashTableSize, control.getMaximumLoadFactor(),
+                        joinType, rightAddOnly);
                 final RightIncrementalNaturalJoinStateManager.InitialBuildContext ibc =
                         jsm.makeInitialBuildContext(leftTable);
 
@@ -241,10 +237,9 @@ class NaturalJoinHelper {
 
             if (firstBuildFrom == LeftDataIndex) {
                 Assert.neqNull(bc.leftDataIndexTable, "leftDataIndexTable");
-                final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.makeNaturalJoin(
-                        StaticNaturalJoinStateManagerTypedBase.class, bc.leftDataIndexSources,
-                        bc.originalLeftDataIndexSources, initialHashTableSize,
-                        control.getMaximumLoadFactor(), control.getTargetLoadFactor(), joinType, rightAddOnly);
+                final StaticHashedNaturalJoinStateManager jsm = new StaticKeyIdNaturalJoinStateManager(
+                        bc.leftDataIndexSources, bc.originalLeftDataIndexSources, initialHashTableSize,
+                        control.getMaximumLoadFactor(), joinType, rightAddOnly);
 
                 final IntegerArraySource leftHashSlots = new IntegerArraySource();
                 jsm.buildFromLeftSide(bc.leftDataIndexTable, bc.leftDataIndexSources,
@@ -258,12 +253,11 @@ class NaturalJoinHelper {
                         bc.leftDataIndexTable.getRowSet(), leftHashSlots,
                         bc.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
             } else if (firstBuildFrom == LeftInput) {
-                final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.makeNaturalJoin(
-                        StaticNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        // A build from the left side records each left row's hash slot, which a rehash would move, so
-                        // the table must be big enough for the possibility that all left rows have unique keys.
-                        control.tableSize(leftTable.size()),
-                        control.getMaximumLoadFactor(), control.getTargetLoadFactor(), joinType, rightAddOnly);
+                // The table is sized for every left row having a distinct key, so that the build does not rehash. It
+                // could grow instead, since the build records each left row's key id rather than its hash slot.
+                final StaticHashedNaturalJoinStateManager jsm = new StaticKeyIdNaturalJoinStateManager(
+                        bc.leftSources, bc.originalLeftSources, control.tableSize(leftTable.size()),
+                        control.getMaximumLoadFactor(), joinType, rightAddOnly);
 
                 final IntegerArraySource leftHashSlots = new IntegerArraySource();
                 jsm.buildFromLeftSide(leftTable, bc.leftSources, leftHashSlots);
@@ -276,10 +270,9 @@ class NaturalJoinHelper {
                         control.getRedirectionType(leftTable));
             } else {
                 final LongArraySource leftRedirections = new LongArraySource();
-                final StaticHashedNaturalJoinStateManager jsm = TypedHasherFactory.makeNaturalJoin(
-                        StaticNaturalJoinStateManagerTypedBase.class, bc.leftSources, bc.originalLeftSources,
-                        initialHashTableSize, control.getMaximumLoadFactor(),
-                        control.getTargetLoadFactor(), joinType, rightAddOnly);
+                final StaticHashedNaturalJoinStateManager jsm = new StaticKeyIdNaturalJoinStateManager(
+                        bc.leftSources, bc.originalLeftSources, initialHashTableSize, control.getMaximumLoadFactor(),
+                        joinType, rightAddOnly);
 
                 jsm.buildFromRightSide(rightTable, bc.rightSources);
                 jsm.decorateLeftSide(leftTable.getRowSet(), bc.leftSources, leftRedirections);
