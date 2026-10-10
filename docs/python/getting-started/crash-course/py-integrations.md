@@ -5,7 +5,7 @@ title: Powerful Python Integrations
 Deephaven empowers Python developers by providing efficient integrations with popular Python libraries. This section covers some highlights of Deephaven's Python interoperability as well as the inherent limitations of static Python data structures.
 
 > [!NOTE]
-> Coming from pandas or traditional Python? Deephaven uses vectorized operations instead of loops to transform data. Once you convert data to Deephaven tables, use declarative operations like `update()` rather than loops. See [Vectorization](./vectorization-vs-loops.md) to learn more.
+> Coming from pandas or traditional Python? Deephaven uses declarative table operations instead of loops to transform data. Once you convert data to Deephaven tables, use operations like [`update`](../../reference/table-operations/select/update.md) rather than loops. See [Vectorization](./vectorization-vs-loops.md) to learn more.
 
 ## Pandas
 
@@ -28,7 +28,7 @@ t = empty_table(10).update(
 t_df = dhpd.to_pandas(t)
 ```
 
-The appropriate column types are automatically inferred.
+The Deephaven column types are automatically mapped to the appropriate Pandas types.
 
 ```python test-set=1
 print(t_df.dtypes)
@@ -37,7 +37,7 @@ print(t_df.dtypes)
 Pandas operations can be applied to the DataFrame and the result can be converted back to a Deephaven table.
 
 ```python test-set=1 order=t_df_group_avg,t_group_avg
-t_df_group_avg = t_df.groupby("Group").mean()
+t_df_group_avg = t_df.groupby("Group", as_index=False).mean()
 t_group_avg = dhpd.to_table(t_df_group_avg)
 ```
 
@@ -47,7 +47,7 @@ Note that Pandas DataFrames are inherently static. Converting a ticking Deephave
 
 ## NumPy
 
-[NumPy](https://numpy.org/) is one of Python's most popular packages. It implements arrays and array operations. Deephaven's [`deephaven.numpy`](../../how-to-guides/use-numpy.md) package, like the Pandas package, contains only two functions, [`to_numpy`](/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.to_numpy) and [`to_table`](/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.to_numpy), for converting to and from NumPy arrays and Deephaven tables, respectively.
+[NumPy](https://numpy.org/) is one of Python's most popular packages. It implements arrays and array operations. Deephaven's [`deephaven.numpy`](../../how-to-guides/use-numpy.md) package provides [`to_numpy`](/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.to_numpy) and [`to_table`](/core/pydoc/code/deephaven.numpy.html#deephaven.numpy.to_table) for converting to and from NumPy arrays and Deephaven tables, respectively.
 
 ```python test-set=2 order=t,t_transposed
 from deephaven import numpy as dhnp
@@ -76,7 +76,7 @@ col_names = [
 t_transposed = dhnp.to_table(t_np_transposed, col_names)
 ```
 
-Note: in this example, the `X` column is cast from a `long` to a `double`. NumPy arrays can only contain a single data type, while Deephaven tables can contain one data type per column. To create a NumPy array, all columns must be the same type. For example, the following conversion will fail.
+In this example, the `X` column is cast from a `long` to a `double` because `to_numpy` requires all columns to have the same data type, while Deephaven tables can have a different type in each column. For example, the following conversion fails.
 
 ```python test-set=2  should-fail
 t = empty_table(10).update(["X = ii", "Y = sin(X)", "Z = Y > 0 ? 1 : 0"])
@@ -87,7 +87,7 @@ t_np = dhnp.to_numpy(t)
 
 ## Listener-based AI
 
-Deephaven makes real-time AI inference easy. Evaluate complex machine learning models on real-time data streams with Deephaven's [table listeners](../../how-to-guides/table-listeners-python.md) and [table publishers](../../how-to-guides/table-publisher.md).
+Deephaven can evaluate machine learning models on real-time data streams using [table listeners](../../how-to-guides/table-listeners-python.md) and [table publishers](../../how-to-guides/table-publisher.md).
 
 Listener-based AI workflows use a [table listener](../../how-to-guides/table-listeners-python.md) to keep track of a table's changes. Data from these changes is then used as inputs for an AI model. Then, the results are published to an AI results [blink table](../../conceptual/table-types.md#specialization-3-blink) using a [`table_publisher`](../../how-to-guides/table-publisher.md). Finally, these blink table results are combined into a complete AI inference history using [`blink_to_append_only`](/core/pydoc/code/deephaven.stream.html#deephaven.stream.blink_to_append_only).
 
@@ -169,7 +169,8 @@ To learn more about this workflow, check out the [AI/ML workflows user guide](..
 
 ## The `deephaven.learn` library
 
-> **_NOTE:_** `deephaven.learn` only works on append-only tables. See the [previous section](#listener-based-ai) for another approach that works with all table types.
+> [!NOTE]
+> `deephaven.learn` uses row keys internally, so on ticking tables it works only with add-only (including append-only) and blink tables. It works on any static table. See the [previous section](#listener-based-ai) for another approach to real-time inference.
 
 Aimed at ML/AI practitioners, [`deephaven.learn`](../../how-to-guides/use-deephaven-learn.md) provides a general-purpose framework for efficient data interchange between Deephaven tables and Python objects such as NumPy arrays, Torch tensors, and more. [`deephaven.learn`](../../how-to-guides/use-deephaven-learn.md) is fundamentally geared towards machine learning applications, as it enables models to be applied to real-time data.
 

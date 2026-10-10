@@ -27,16 +27,17 @@ static_table2 = empty_table(5).update_view(
 )
 ```
 
-> **_NOTE:_** The variables `i` and `ii` correspond to `int` and `long` row indices, respectively. They are only supported in [append-only tables](../../conceptual/table-types.md#specialization-1-append-only).
+> [!NOTE]
+> The [special variables](../../reference/query-language/variables/special-variables.md) `i` and `ii` hold each row's position as an `int` and a `long`, respectively. They are safe in static tables like this one. In ticking tables, they are only supported in [append-only](../../conceptual/table-types.md#specialization-1-append-only) and [blink](../../conceptual/table-types.md#specialization-3-blink) tables, because a row's position can change between updates in other ticking tables.
 
-The two tables look identical but are created differently.
+The two tables hold the same data but are created differently.
 
 - [`new_table`](../../reference/table-operations/create/newTable.md) builds a table directly from column type specifications and raw data.
-- [`empty_table`](../../reference/table-operations/create/emptyTable.md) builds an empty table with no columns and a specified number of rows. The Deephaven Query Language (DQL) can add new columns programmatically.
+- [`empty_table`](../../reference/table-operations/create/emptyTable.md) builds an empty table with no columns and a specified number of rows. You can add columns with the Deephaven Query Language (DQL).
 
 ## Ticking tables
 
-You can create ticking tables to get a feel for live data in Deephaven. The [`time_table`](../../reference/table-operations/create/timeTable.md) method works similarly to [`empty_table`](../../reference/table-operations/create/emptyTable.md) in that DQL is used to populate the table with more data. It creates a table with just a `Timestamp` column. The resultant table ticks at a regular interval specified by the input argument.
+You can create ticking tables to get a feel for live data in Deephaven. The [`time_table`](../../reference/table-operations/create/timeTable.md) method creates a ticking table. Unlike [`empty_table`](../../reference/table-operations/create/emptyTable.md), whose columns you add with DQL, `time_table` supplies its own `Timestamp` column and adds rows as time passes.
 
 ```python test-set=2 ticking-table order=null
 from deephaven import time_table
@@ -46,7 +47,7 @@ ticking_table = time_table("PT1s")
 
 ![A GIF showing the creation and updating of a ticking table in Deephaven](../../assets/tutorials/crash-course/crash-course-3.gif)
 
-The `PT1s` argument is an [ISO-8641 formatted duration string](https://www.digi.com/resources/documentation/digidocs/90001488-13/reference/r_iso_8601_duration_format.htm) that indicates the table will tick once every second.
+The `PT1s` argument is an [ISO 8601 duration string](https://www.digi.com/resources/documentation/digidocs/90001488-13/reference/r_iso_8601_duration_format.htm) that sets the period between rows. With `PT1s`, consecutive rows have `Timestamp` values one second apart, and a delayed update cycle can add several rows at once.
 
 New ticking tables can be derived from existing ones using DQL, just as in the static case.
 
@@ -58,11 +59,11 @@ new_ticking_table = ticking_table.update_view(
 
 ![A GIF showing a new ticking table updating in tandem with a source ticking table](../../assets/tutorials/crash-course/crash-course-4.gif)
 
-This exemplifies Deephaven's use of the Directed Acyclic Graph (DAG). The table `ticking_table` is a root node in the DAG, and `new_ticking_table` is a downstream node. Because the source table is ticking, the new table is also ticking. Every update to `ticking_table` propagates down the DAG to `new_ticking_table`, and the compute-on-deltas model ensures that only the updated rows are re-evaluated with each update cycle.
+This exemplifies Deephaven's use of the Directed Acyclic Graph (DAG). The table `ticking_table` is a root node in the DAG, and `new_ticking_table` is a downstream node. Because the source table is ticking, the new table is also ticking. Every update to `ticking_table` propagates down the DAG to `new_ticking_table`, and only the added rows propagate with each update cycle. Because `update_view` formulas are evaluated when cells are read, the engine computes new values only for rows that are actually requested.
 
 ## Ingesting static data
 
-Deephaven supports reading from various common file formats like [CSV](../../reference/data-import-export/CSV/readCsv.md), [Parquet](../../reference/data-import-export/Parquet/readTable.md), and [Arrow](/core/pydoc/code/deephaven.arrow.html#module-deephaven.arrow). The following code block reads CSV data from a URL directly into a table.
+Deephaven supports reading from various common file formats like [CSV](../../reference/data-import-export/CSV/readCsv.md), [Parquet](../../reference/data-import-export/Parquet/readTable.md), and [Arrow Feather](/core/pydoc/code/deephaven.arrow.html#deephaven.arrow.read_feather). The following code block reads CSV data from a URL directly into a table.
 
 ```python test-set=3
 from deephaven import read_csv
@@ -88,4 +89,4 @@ replayed_crypto = replayer.add_table(
 replayer.start()
 ```
 
-Most real-world use cases for ticking data involve connecting to data streams that are constantly being updated. For this, Deephaven's [Apache Kafka integration](../../how-to-guides/data-import-export/kafka-stream.md) is first-in-class, and almost any imaginable real-time streaming source can be wrangled with the [`TablePublisher`](../../how-to-guides/table-publisher.md#table-publisher) or [`DynamicTableWriter`](../../how-to-guides/table-publisher.md#dynamictablewriter). That said, setting up the pipelines for Kafka streams or other real-time data sources can be very complex, and is outside the scope of this guide.
+Most real-world use cases for ticking data involve connecting to data streams that are constantly being updated. For this, Deephaven provides an [Apache Kafka integration](../../how-to-guides/data-import-export/kafka-stream.md), and you can ingest other real-time sources with the [`TablePublisher`](../../how-to-guides/table-publisher.md#table-publisher) or [`DynamicTableWriter`](../../how-to-guides/table-publisher.md#dynamictablewriter). Setting up pipelines for Kafka streams or other real-time sources is outside the scope of this guide.

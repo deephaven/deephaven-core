@@ -2,19 +2,19 @@
 title: Basic Table Operations
 ---
 
-This section will cover some table operations that appear in almost all queries. These table operations use query strings extensively, which are discussed in detail in the [next section](./query-strings.md).
+This section covers some table operations that appear in almost all queries. These table operations use query strings extensively, which are discussed in detail in the [query strings section](./query-strings.md).
 
 Table operations are integral to the Deephaven Query Language (DQL). The previous sections of the crash course used five:
 
 - [`updateView`](../../reference/table-operations/select/update-view.md), which adds columns to or modifies existing columns in a table.
 - [`sumBy`](../../reference/table-operations/group-and-aggregate/sumBy.md), which computes the sum of all columns in a table by a grouping column.
-- [`dropColumns`](../../reference/table-operations/select/drop-columns.md), which drops columns from a table.
+- [`renameColumns`](../../reference/table-operations/select/rename-columns.md), which renames columns in a table.
 - [`sort`](../../reference/table-operations/sort/sort.md), which sorts a table by the given columns from least to greatest.
 - [`sortDescending`](../../reference/table-operations/sort/sort-descending.md), which sorts a table by the given columns from greatest to least.
 
-Table operations are an integral component of DQL. You've already seen several: [`updateView`](../../reference/table-operations/select/update-view.md), [`sumBy`](../../reference/table-operations/group-and-aggregate/sumBy.md), [`dropColumns`](../../reference/table-operations/select/drop-columns.md), [`sort`](../../reference/table-operations/sort/sort.md) and [`sortDescending`](../../reference/table-operations/sort/sort-descending.md). You can think of these as different transformations being applied to the data in the table. This section will outline some basic table operations that make up the backbones of the most common queries.
+You can think of these as different transformations applied to the data in a table. This section outlines some basic table operations that make up the backbone of the most common queries.
 
-Many of the code blocks in this notebook use the following table, `t`, as the root table. This is a simple table with 100 rows and contains only a `Timestamp` column.
+Many of the code blocks on this page use the following table, `t`, as the root table. This is a simple table with 100 rows and contains only a `Timestamp` column.
 
 ```groovy test-set=1
 t = emptyTable(100).update("Timestamp = '2015-01-01T00:00:00 ET' + 'PT1m' * ii")
@@ -184,13 +184,13 @@ tSortMulti = tUpdated.sort(sortColumns)
 See the [sorting guide](../../how-to-guides/sort.md) for more information.
 
 > [!TIP]
-> You can also filter and sort tables directly in the UI without writing code. Right-click a column header to access filter and sort options, or use the **Filters** panel in the Controls area. See [Navigate the GUI](../../how-to-guides/user-interface/navigating-the-ui.md) to learn more about the table context menus.
+> You can also filter and sort tables directly in the UI without writing code. See [Navigate the GUI](../../how-to-guides/user-interface/navigating-the-ui.md) to learn more.
 
 ## Group and aggregate data
 
 Grouping data places rows into groups based on zero or more supplied key columns. Aggregation calculates summary statistics over a group of data. Grouping and aggregation are key components of data analysis, especially in Deephaven queries.
 
-The examples in this section will use the following table.
+The examples in this section use the following table.
 
 ```groovy test-set=2
 t = emptyTable(100).update(
@@ -204,7 +204,7 @@ t = emptyTable(100).update(
 
 ### Group and ungroup data
 
-[`groupBy`](../../reference/table-operations/group-and-aggregate/groupBy.md) groups table data into [arrays](../../how-to-guides/work-with-arrays.md). Entire tables can be grouped.
+[`groupBy`](../../reference/table-operations/group-and-aggregate/groupBy.md) groups table data into [array columns](../../how-to-guides/work-with-arrays.md). Entire tables can be grouped.
 
 ```groovy test-set=2
 tGrouped = t.groupBy()
@@ -217,7 +217,7 @@ tGroupedByGroup = t.groupBy("Group")
 tGroupedByMultiple = t.groupBy("Group", "Letter")
 ```
 
-[`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md) is the inverse of [`groupBy`](../../reference/table-operations/group-and-aggregate/groupBy.md).
+[`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md) expands array columns back into separate rows. It reverses [`groupBy`](../../reference/table-operations/group-and-aggregate/groupBy.md), except that rows come back in group order.
 
 ```groovy test-set=2 order=tUngrouped,tUngrouped2,tUngrouped3
 tUngrouped = tGrouped.ungroup()
@@ -229,7 +229,7 @@ See the [grouping and ungrouping guide](../../how-to-guides/grouping-data.md) fo
 
 ### Single aggregations
 
-[Single aggregations](../../how-to-guides/dedicated-aggregations.md) apply a single aggregation to an entire table. See [here](../../how-to-guides/dedicated-aggregations.md#single-aggregators) for a list of single aggregators.
+[Single aggregations](../../how-to-guides/dedicated-aggregations.md) apply one type of aggregation to a table, either over the whole table or for each group. See the [list of single aggregators](../../how-to-guides/dedicated-aggregations.md#single-aggregators).
 
 The following code uses [`avgBy`](../../reference/table-operations/group-and-aggregate/avgBy.md) to calculate the aggregated average of columns `X` and `Y` from the table `t`. No grouping columns are given, so the averages are calculated over the entire table.
 
@@ -256,9 +256,6 @@ To apply multiple aggregations in a single operation, pass one or more of the [a
 The following code block calculates the average of `X` and the median of `Y`, grouped by `Group` and `Letter`. It renames the resultant columns `AvgX` and `MedianY`, respectively.
 
 ```groovy test-set=2
-import static io.deephaven.api.agg.Aggregation.AggAvg
-import static io.deephaven.api.agg.Aggregation.AggMed
-
 aggList = [AggAvg("AvgX = X"), AggMed("MedianY = Y")]
 
 tMultipleAggs = t.view("Group", "Letter", "X", "Y").aggBy(
@@ -267,7 +264,7 @@ tMultipleAggs = t.view("Group", "Letter", "X", "Y").aggBy(
 
 ### Rolling aggregations
 
-Most platforms offer aggregation functionality similar to the dedicated and multiple aggregations presented above (though none will work so easily on real-time data). However, Deephaven is unique and powerful in its vast library of cumulative, moving, and windowed calculations, facilitated by the [`updateBy`](../../reference/table-operations/update-by-operations/updateBy.md) table operation and the [`io.deephaven.api.updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) module.
+In addition to the dedicated and multiple aggregations presented above, Deephaven offers a large library of cumulative, moving, and windowed calculations, facilitated by the [`updateBy`](../../reference/table-operations/update-by-operations/updateBy.md) table operation and the [`io.deephaven.api.updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) module.
 
 The following code block calculates the cumulative sum of `X` in `t`.
 
@@ -277,7 +274,7 @@ tCumSum = t.view("X").updateBy(CumSum("SumX = X"))
 
 Aggregations with [`updateBy`](../../reference/table-operations/update-by-operations/updateBy.md) show the running total as it progresses through the table.
 
-[`updateBy`](../../reference/table-operations/update-by-operations/updateBy.md) can also limit these summary statistics to subsets of table data defined by a number of rows or amount of time backward, forward, or both. The following code block calculates the sum of the prior 10 rows in column `X` of table `t`.
+[`updateBy`](../../reference/table-operations/update-by-operations/updateBy.md) can also limit these summary statistics to subsets of table data defined by a number of rows or amount of time backward, forward, or both. The following code block calculates the sum of the current row and the previous 9 rows in column `X` of table `t`.
 
 ```groovy test-set=2
 tWindowedSum = t.view("X").updateBy(RollingSum(10, "TenRowSumX = X"))
@@ -291,22 +288,22 @@ updateByOps = [RollingSum(10, "TenRowSumX = X"), CumSum("SumX = X")]
 tUpdatedByGrouped = t.updateBy(updateByOps, "Group", "Letter")
 ```
 
-Additionally, calculations can be windowed by time. The following code block calculates a 16-second rolling average of `X`, grouped by `Group`.
+Additionally, calculations can be windowed by time. The following code block calculates a 16-minute rolling average of `X`, grouped by `Group`.
 
 ```groovy test-set=2
-tRollingAvgTime = t.updateBy(RollingAvg("Timestamp", parseDuration("PT16s"), "AvgX = X"), "Group")
+tRollingAvgTime = t.updateBy(RollingAvg("Timestamp", parseDuration("PT16m"), "AvgX = X"), "Group")
 ```
 
 Windows can look backward, forward, or both ways. The following example calculates the rolling average of the following windows:
 
-- The previous 9 seconds.
+- The previous 9 minutes.
 - The current row and the previous 8 rows.
 - The current row, the previous 10 rows, and the next 10 rows.
 - The next 8 rows.
 
 ```groovy test-set=2
 updateByOps = [
-    RollingAvg("Timestamp", parseDuration("PT9s"), "BackwardTimeAvgX = X"),
+    RollingAvg("Timestamp", parseDuration("PT9m"), "BackwardTimeAvgX = X"),
     RollingAvg(9, "BackwardRowAvgX = X"),
     RollingAvg(11, 10, "CenteredRowAvgX = X"),
     RollingAvg(0, 8, "ForwardRowAvgX = X"),
@@ -315,13 +312,14 @@ updateByOps = [
 tWindowed = t.updateBy(updateByOps)
 ```
 
-> **_NOTE:_** A backward-looking window counts the current row as the first row backward. A forward-looking window counts the row ahead of the current row as the first row forward.
+> [!NOTE]
+> A backward-looking window counts the current row as the first row backward. A forward-looking window counts the row ahead of the current row as the first row forward.
 
 See the [`updateBy` user guide](../../how-to-guides/rolling-aggregations.md) to learn more.
 
 ## Combine tables
 
-There are two different ways to combine tables in Deephaven: merging and joining. Merging tables can be visualized as a vertical stacking of tables, whereas joining is more horizontal in nature, appending rows from one table to another based on common columns.
+There are two different ways to combine tables in Deephaven: merging and joining. Merging tables can be visualized as a vertical stacking of tables, whereas joining is more horizontal in nature, appending columns from matching rows of another table, based on values in key columns.
 
 Each subsection below defines its own tables to demonstrate merging and joining tables in Deephaven.
 
@@ -377,13 +375,13 @@ Joins can use more than one key column. The tables `t2` and `t3` have both the `
 tJoined2 = t2.naturalJoin(t3, "Letter, Color")
 ```
 
-By default, every join operation in Deephaven appends _all_ columns from the right table onto the left table. An optional third argument can be used to specify which columns to append. The following code block joins `t2` and `t3` on the `Letter` column, but only appends the `Value` column from `t3`.
+By default, exact and relational joins, `aj`, and `raj` append _all_ non-key columns from the right table onto the left table. An optional third argument can be used to specify which columns to append. The following code block joins `t2` and `t3` on the `Letter` column, but only appends the `Value` column from `t3`.
 
 ```groovy test-set=4
 tJoinedSubset = t2.naturalJoin(t3, "Letter", "Value")
 ```
 
-`t2` and `t3` share the `Color` column, so any attempt to append that onto `t2` results in a name conflict error. This can be avoided by either [renaming the column](../../reference/table-operations/select/rename-columns.md), or by using the `joins` argument to specify which columns to append.
+`t2` and `t3` share the `Color` column, so any attempt to append that onto `t2` results in a name conflict error. This can be avoided by either [renaming the column](../../reference/table-operations/select/rename-columns.md), or by using the `columnsToAdd` argument to specify which columns to append.
 
 The following example renames `Color` in t3 to `Color2` when joining the tables.
 
@@ -435,7 +433,7 @@ tRight2 = newTable(
 )
 ```
 
-In this case, an [`exactJoin`](../../reference/table-operations/join/exact-join.md) will fail. Instead, use [`naturalJoin`](../../reference/table-operations/join/natural-join.md), which appends a null value where no match exists.
+In this case, an [`exactJoin`](../../reference/table-operations/join/exact-join.md) fails. Instead, use [`naturalJoin`](../../reference/table-operations/join/natural-join.md), which appends a null value where no match exists. By default, `naturalJoin` throws an error if the right table has duplicate keys.
 
 ```groovy test-set=6
 tNaturalJoined = tLeft2.naturalJoin(tRight2, "Color")
@@ -483,7 +481,7 @@ tFullOuterJoined = OuterJoinTools.fullOuterJoin(tLeft3, tRight3, "Color")
 
 #### Time-series (inexact) joins
 
-Time-series (inexact) joins are joins where the key column(s) used to join the tables may not match exactly. Instead, the closest value is used to match the data when no exact match exists.
+Time-series (inexact) joins match on zero or more exact key columns plus a final key column, usually a timestamp, that does not need to match exactly. When no exact match exists in that final column, the closest value is used.
 
 Consider the following tables, which contain quotes and trades for two different stocks.
 
@@ -525,7 +523,7 @@ quotes = newTable(
 resultAj = trades.aj(quotes, "Ticker, Timestamp")
 ```
 
-[`raj`](../../reference/table-operations/join/raj.md) joins row values in the left table with the closest in the right table _without going under_. To see the first quote that comes after a trade, use [`raj`](../../reference/table-operations/join/raj.md).
+[`raj`](../../reference/table-operations/join/raj.md) joins row values in the left table with the closest in the right table _without going under_. To see the first quote at or after a trade, use [`raj`](../../reference/table-operations/join/raj.md).
 
 ```groovy test-set=8
 resultRaj = trades.raj(quotes, "Ticker, Timestamp")
@@ -533,7 +531,7 @@ resultRaj = trades.raj(quotes, "Ticker, Timestamp")
 
 ### More about joins
 
-Every join operation presented in this notebook works on real-time data. Don't believe us? Try it for yourself! For more information about joins, see:
+The join operations on this page also work on real-time data. The outer joins are currently experimental. For more information about joins, see:
 
 - [Joins: Exact and Relational](../../how-to-guides/joins-exact-relational.md)
 - [Joins: Time-Series and Range](../../how-to-guides/joins-timeseries-range.md)

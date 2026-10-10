@@ -7,14 +7,18 @@ title: Wrapping Up
 This wraps up the Deephaven crash course. In it, you learned about:
 
 - Deephaven's basic architecture
-- Table constructors
+- Creating tables
 - Table operations
+- Time and calendars
 - Query strings
+- Recipes, not loops
 - Python integrations
 - Plotting
+- `deephaven.ui`
 - Data I/O
+- Configuring your Deephaven instance
 
-This guide is your springboard into deeper exploration and utilization of Deephaven's powerful features in your real-time data analysis endeavors. Remember, this is just the beginning of your journey with Deephaven. To continue learning about Deephaven, check out any of these links:
+This crash course is a starting point. To continue learning about Deephaven, check out any of these links:
 
 - [Deephaven's design](../../conceptual/deephaven-design.md)
 - [Incremental update model](../../conceptual/table-update-model.md)
@@ -36,15 +40,13 @@ This guide is your springboard into deeper exploration and utilization of Deepha
 - [Query string overview](../../how-to-guides/query-string-overview.md)
 - [Python variables in query strings](../../how-to-guides/python-variables.md)
 - [Python functions in query strings](../../how-to-guides/python-functions.md)
-- [Python classes in query strings](../../how-to-guides/python-classes.md)
+- [Python classes and objects in query strings](../../how-to-guides/python-classes.md)
 - [Programmatically generate query strings](../../how-to-guides/generate-query-strings.md)
 - [Deephaven's Python package](../../how-to-guides/deephaven-python-package.md)
-- [Jupyter](../../how-to-guides/jupyter.md)
-- [Plotting](../../how-to-guides/plotting/overview.md)
+- [Use Deephaven in Jupyter](../../how-to-guides/jupyter.md)
+- [How to plot real-time data](../../how-to-guides/plotting/overview.md)
 - [Python server API documentation](/core/pydoc)
-
-As you integrate these concepts into your work, you'll unlock new levels of efficiency and insight in your data science projects and real-time analytics.
 
 ## Get help
 
-Learning Deephaven can be challenging at times, and we want you to succeed. To that end, Deephaven's [documentation](../../conceptual/deephaven-overview.md) is full of detailed descriptions and examples of what every piece of the system does. Additionally, the [community questions](../../reference/community-questions/cq-index.md) are a great resource for covering commonly-asked Deephaven questions. Finally, we encourage you to join our [community Slack channel](/slack), where we're happy to support you through your Deephaven journey and answer any questions you may have.
+Learning Deephaven can be challenging at times, and we want you to succeed. To that end, Deephaven's [documentation](../../conceptual/deephaven-overview.md) includes detailed descriptions and examples. Additionally, the [community questions](../../reference/community-questions/cq-index.md) cover commonly asked Deephaven questions. Finally, we encourage you to join our [community Slack channel](/slack), where we're happy to support you through your Deephaven journey and answer any questions you may have.

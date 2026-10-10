@@ -20,7 +20,7 @@ Query strings often use [literals](https://en.wikipedia.org/wiki/Literal_(comput
 
 - Literals not encapsulated by any special characters are interpreted as booleans, numeric values, column names, or variables.
 - Literals encapsulated in backticks (`` ` ``) are interpreted as strings.
-- Literals encapsulated in single quotes (`'`) are interpreted as date-time values.
+- Literals encapsulated in single quotes (`'`) are interpreted as date-time values (including dates, times, durations, periods, and time zones), except single characters, which are interpreted as `char`s.
 
 ```groovy test-set=1
 literals = emptyTable(10).update(
@@ -64,7 +64,7 @@ specialMeta = specialVars.meta()
 ```
 
 > [!NOTE]
-> The special variables `i` and `ii` can only be used in [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables.
+> The special variables `i` and `ii` are safe to use on static tables and on [append-only](../../conceptual/table-types.md#specialization-1-append-only) and blink tables. On other ticking tables, the engine throws an error.
 
 Additionally, Deephaven provides a range of common constants that can be accessed from query strings. These constants are always written with snake case in capital letters. They include [minimum and maximum values for various data types](/core/javadoc/io/deephaven/util/QueryConstants.html), [conversion factors for time types](/core/javadoc/io/deephaven/time/DateTimeUtils.html), and more. Of particular interest are the null constants for primitive types.
 
@@ -84,7 +84,7 @@ nullValues = emptyTable(1).update(
 nullValuesMeta = nullValues.meta()
 ```
 
-These are useful for representing and handling null values of a specific type. Built-in query language functions handle null values. For example, `sqrt(NULL_DOUBLE)` returns `NULL_DOUBLE`. Custom functions need to handle null values appropriately.
+These are useful for representing and handling null values of a specific type. Built-in numeric functions generally handle null values. For example, `sqrt(NULL_DOUBLE)` returns `NULL_DOUBLE`. Custom functions need to handle null values appropriately.
 
 ## Common operations
 
@@ -112,8 +112,8 @@ The `+` and `-` operators are defined for date-time types, making arithmetic on 
 timeOps = emptyTable(10).update(
         // Times in nanoseconds can be added or subtracted from date-times
         "Timestamp = '2021-07-11T12:00:00.000Z' + (ii * HOUR)",
-        // Durations or Periods can be added or subtracted from date-times
-        "TimestampPlusOneYear = Timestamp + 'P365d'",
+        // Durations or day-based Periods can be added or subtracted from date-times
+        "TimestampPlus365Days = Timestamp + 'P365d'",
         "TimestampMinusOneHour = Timestamp - 'PT1h'",
         // Timestamps can be subtracted to get their difference in nanoseconds
         // Use constants for unit conversion
@@ -140,8 +140,8 @@ conditional = emptyTable(10).update(
         "Parity = ii % 2 == 0 ? `Even!` : `Odd...`",
         // Any logical expression is a valid condition
         "IsDivisibleBy6 = ((ii % 2 == 0) && (ii % 3 == 0)) ? true : false",
-        // In-line conditionals can be chained together
         "RandomNumber = randomGaussian(0.0, 1.0)",
+        // In-line conditionals can be chained together
         "Score = RandomNumber < -1.282 ? `Bottom 10%` : RandomNumber > 1.282 ? `Top 10%` : `Middle of the pack`",
 )
 ```
@@ -189,8 +189,8 @@ fakeData = emptyTable(100).update(
         "Group = randomInt(1, 4)",
         "GroupIntercept = Group == 1 ? 0 : Group == 2 ? 5 : 10",
         "GroupSlope = abs(GroupIntercept * randomGaussian(0, 1))",
-        "GroupVariance = pow(sin(Group), 2)",
-        "Data = GroupIntercept + GroupSlope * ii + randomGaussian(0.0, GroupVariance)",
+        "GroupStdDev = pow(sin(Group), 2)",
+        "Data = GroupIntercept + GroupSlope * ii + randomGaussian(0.0, GroupStdDev)",
 )
 ```
 
@@ -202,7 +202,7 @@ timeFunctions = emptyTable(10).update(
         "CurrentTime = now()",
         "Timestamp = CurrentTime + (ii * DAY)",
         // Many time functions require timezone information, typically provided as literals
-        "DayOfWeek = dayOfWeek(Timestamp, 'ET')",
+        "DayOfWeek = dayOfWeekValue(Timestamp, 'ET')",
         "DayOfMonth = dayOfMonth(Timestamp, 'ET')",
         "Weekend = DayOfWeek == 6 || DayOfWeek == 7 ? true : false",
         "SecondsSinceY2K = nanosToSeconds(Timestamp - '2000-01-01T00:00:00 ET')",
@@ -265,7 +265,7 @@ callMethods = emptyTable(1).update("Timestamp = '2024-03-03T15:00:00.000 UTC'")
 callMethodsMeta = callMethods.meta()
 ```
 
-This column is a Java [Instant](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Instant.html). Java's [documentation](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Instant.html) provides all of the available [methods](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Instant.html#method.summary) that can be called. Here are just a few.
+This column is a Java [Instant](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html). Java's [documentation](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) provides all of the available [methods](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html#method.summary) that can be called. Here are just a few.
 
 ```groovy test-set=1
 callMethods = callMethods.update(
@@ -275,7 +275,7 @@ callMethods = callMethods.update(
 )
 ```
 
-Additionally, there are several ways to create Java objects for use in query strings. The following example uses the `new` keyword to create new instances of Java's [URL](https://docs.oracle.com/javase/7/docs/api/java/net/URL.html) class.
+Additionally, you can create Java objects for use in query strings with the `new` keyword. The following example creates new instances of Java's [URL](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/URL.html) class.
 
 ```groovy test-set=1 order=t1,m1
 // Use 'new' keyword to create a new URL object, then call methods
@@ -311,14 +311,14 @@ tArrayFuncs = tGrouped.update(
 )
 ```
 
-These results can then be ungrouped with [`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md), which is essentially the inverse of [`groupBy`](../../reference/table-operations/group-and-aggregate/groupBy.md).
+These results can then be ungrouped with [`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md), which expands array columns back into separate rows.
 
 ```groovy test-set=1
 tArrayFuncsUngrouped = tArrayFuncs.ungroup()
 ```
 
 > [!NOTE]
-> Aggregations done with Deephaven's [Aggregations](../../how-to-guides/combined-aggregations.md) are more performant than with array functions.
+> On ticking tables, [aggregations](../../how-to-guides/combined-aggregations.md) are more performant than `groupBy` followed by array functions.
 
 Deephaven provides array indexing and slicing operations.
 
@@ -331,7 +331,7 @@ tIndexed = tGrouped.update(
         "MiddleThree = X.subVector(1, 4)",
         // Indexing outside the range returns null
         "OffTheFront = X[-1]",
-        "OffTheEnd = X.subVector(3,6)",
+        "OffTheEnd = X[5]",
 )
 ```
 
@@ -352,7 +352,7 @@ columnAsArray = emptyTable(10).update(
 )
 ```
 
-This functionality is only supported for static and append-only ticking tables. See [working with arrays](../../how-to-guides/work-with-arrays.md) for more information.
+Simple constant-offset access such as `X_[ii-2]` works on all tables. Other uses of column arrays, such as `sum(X_)` or `X_.subVector(i, i+3)`, are supported only for static and blink tables; on other ticking tables, append-only ones included, the engine throws an error. See [working with arrays](../../how-to-guides/work-with-arrays.md) and the [special variables reference](../../reference/query-language/variables/special-variables.md#refreshing-table-restrictions) for more information.
 
 ## Groovy in query strings
 
@@ -465,7 +465,7 @@ addVarsClass = emptyTable(1).update(
 ```
 
 > [!NOTE]
-> In the two queries above, we used `ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)` to import our class into the query library. This is a quick and easy way to make a user-defined class available in query strings. However, it is not best practice. It is recommended to define classes in their own Groovy files, and import those files via the `docker-compose.yml` file at startup. For an in-depth guide on how to do this, see [here](../../how-to-guides/install-and-use-java-packages.md).
+> In the two queries above, we used `ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)` to import our class into the query library. This is a quick and easy way to make a user-defined class available in query strings. However, it is not best practice. It is recommended to define classes in their own Groovy files, and import those files via the `docker-compose.yml` file at startup. For an in-depth guide on how to do this, see [User-defined functions](../../how-to-guides/groovy-closures.md#import-packages-with-user-defined-functions).
 
 To learn more about using Groovy in query strings, see the user guides on [functions](../../how-to-guides/groovy-closures.md) and [classes](../../how-to-guides/groovy-classes.md#classes-and-objects-in-groovy).
 
@@ -496,7 +496,7 @@ result2 = compute(table, int2)
 
 For more information, see the [scoping rules](../../how-to-guides/query-scope.md).
 
-Be mindful of whether or not Groovy functions are stateless or stateful. Generally, stateless functions have no side effects - they don't modify any objects outside of their scope. Also, they are invariant to execution order, so function calls can be evaluated in any order without affecting the result. This stateless function extracts elements from a list in a query string.
+Be mindful of whether or not Groovy functions are stateless or stateful. Generally, stateless functions have no side effects — they don't modify any objects outside of their scope. Also, they are invariant to execution order, so function calls can be evaluated in any order without affecting the result. This stateless function extracts elements from a list in a query string.
 
 ```groovy test-set=2
 myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -511,7 +511,7 @@ tStateless = emptyTable(10).update("X = getElementStateless(ii)")
 
 `getElementStateless` is stateless because it does not modify any objects outside its local scope. It could be evaluated in any order and give the same result.
 
-Stateful functions modify objects outside their local scope - they do not leave the world as they found it. They also may depend on execution order. This stateful function achieves the same resulting table.
+Stateful functions modify objects outside their local scope — they do not leave the world as they found it. They also may depend on execution order. This stateful function achieves the same resulting table.
 
 ```groovy test-set=2
 myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -522,7 +522,9 @@ getElementStateful = {
     return myList[idx - 1]
 }
 
-tStateful = emptyTable(10).update("X = getElementStateful()")
+tStateful = emptyTable(10).update(
+    List.of(Selectable.parse("X = getElementStateful()").withSerial())
+)
 ```
 
 Print `idx` to verify it's been changed.
@@ -531,10 +533,10 @@ Print `idx` to verify it's been changed.
 println idx
 ```
 
-Since `getElementStateful` is stateful, it must be evaluated in the correct order to give the correct result.
+Because `getElementStateful` is stateful, it must be evaluated in the correct order to give the correct result. The engine assumes functions in query strings are stateless unless told otherwise, so mark stateful ones with [`withSerial`](../../conceptual/query-engine/parallelization.md), as the example above does. Without it, nothing guarantees the rows are evaluated in order.
 
 Queries should use stateless functions whenever possible because:
 
 - They minimize side effects when called.
-- They are deterministic.
-- They can be efficiently parallelized.
+- Their result does not depend on the order of evaluation.
+- They can be evaluated in parallel where the engine supports it.

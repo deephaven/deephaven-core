@@ -2,14 +2,17 @@
 title: Real-time Plots
 ---
 
-Whether your data is static or updating in real time, Deephaven supports plotting via multiple libraries, including its own built-in [plotting API](/core/pydoc/code/deephaven.plot.html#module-deephaven.plot).
+Whether your data is static or updating in real time, Deephaven supports plotting via multiple libraries, including its built-in [plotting API](/core/pydoc/code/deephaven.plot.html#module-deephaven.plot) and [Deephaven Express](/core/plotly/docs/), a real-time version of Plotly Express.
 
 ## Basic plots
 
 > [!NOTE]
-> Plotting with pip-installed Deephaven from Jupyter requires some additional setup you can read about [here](../../how-to-guides/jupyter.md).
+> Plotting with pip-installed Deephaven from Jupyter requires some additional setup. See [Use Deephaven in Jupyter](../../how-to-guides/jupyter.md).
 
-Deephaven's native plotting library supports many common plot types. To create a simple [line plot](https://en.wikipedia.org/wiki/Line_chart) that ticks in lock-step with the source table:
+> [!NOTE]
+> The built-in plotting API is no longer under active development. [Deephaven Express](/core/plotly/docs/) is recommended for most plotting tasks.
+
+The built-in plotting library supports many common plot types. To create a simple [line plot](https://en.wikipedia.org/wiki/Line_chart) that ticks in lock-step with the source table:
 
 ```python test-set=1 ticking-table order=null
 from deephaven import time_table
@@ -52,7 +55,7 @@ plot_twin = (
 )
 ```
 
-![A ticking plot with two x axes](../../assets/tutorials/crash-course/crash-course-8.gif)
+![A ticking plot with two y axes that share an x axis](../../assets/tutorials/crash-course/crash-course-8.gif)
 
 ## Subplots
 
@@ -73,7 +76,7 @@ plot_sub = (
 
 ![Two subplots, displayed side-by-side](../../assets/tutorials/crash-course/crash-course-9.gif)
 
-Far more plots are available, including [histograms](../../how-to-guides/plotting/api-plotting.md#histogram), [pie charts](../../how-to-guides/plotting/api-plotting.md#pie), [scatter plots](../../how-to-guides/plotting/api-plotting.md#xy-series-as-a-scatter-plot), and more. Deephaven also offers integrations with [Plotly-express](https://plotly.com/python/plotly-express/), [Matplotlib](https://matplotlib.org/), and [Seaborn](https://seaborn.pydata.org/) that are under active development.
+Far more plots are available, including [histograms](../../how-to-guides/plotting/api-plotting.md#histogram), [pie charts](../../how-to-guides/plotting/api-plotting.md#pie), [scatter plots](../../how-to-guides/plotting/api-plotting.md#xy-series-as-a-scatter-plot), and more. For other options, see the [plotting overview](../../how-to-guides/plotting/overview.md), which also covers [Matplotlib and Seaborn](../../how-to-guides/plotting/matplot-seaborn.md) for plotting snapshots of data.
 
 > [!TIP]
 > Prefer a no-code approach? Use the [Chart Builder](../../how-to-guides/user-interface/chart-builder.md) to create line, bar, scatter, and pie charts from any table directly in the UI.

@@ -2,7 +2,7 @@
 title: AI/ML workflows
 ---
 
-This guide explores some different AI/ML workflows in Deephaven. For training, it discusses using a [table iterator](./iterate-table-data.md). For testing and application, it covers using table operations, as well as a combination of a [table listener](./table-listeners-python.md) and [table publisher](./table-publisher.md). The workflows presented can be applied to any kind of table, including tables that are not append-only. The alternative to these workflows, [`deephaven.learn`](./use-deephaven-learn.md), only works on append-only tables.
+This guide explores some different AI/ML workflows in Deephaven. For training, it discusses using a [table iterator](./iterate-table-data.md). For testing and application, it covers using table operations, as well as a combination of a [table listener](./table-listeners-python.md) and [table publisher](./table-publisher.md). The workflows presented can be applied to any kind of table, including ticking tables that modify or remove rows. The alternative to these workflows, [`deephaven.learn`](./use-deephaven-learn.md), works on static tables and on ticking tables that are add-only (including append-only) or blink.
 
 ## Train a model
 

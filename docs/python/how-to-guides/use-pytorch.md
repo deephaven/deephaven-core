@@ -364,7 +364,7 @@ thread = threading.Thread(target=write_to_iris)
 thread.start()
 ```
 
-Now we use [`learn`](/core/pydoc/code/deephaven.learn.html#deephaven.learn.learn) on the ticking table. All it takes to change from static to live data is to change the table!
+Now we use [`learn`](/core/pydoc/code/deephaven.learn.html#deephaven.learn.learn) on the ticking table. All it takes to change from static to live data is to use an add-only table, such as the one from `DynamicTableWriter`.
 
 ```python test-set=1 ticking-table order=null skip-test
 # Use the learn function to create a new table with live predictions
