@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class HasherConfig<T> {
     final Class<T> baseClass;
@@ -44,6 +45,12 @@ public class HasherConfig<T> {
      * sizes its tables for that rate cannot disagree.
      */
     final CodeBlock rehashSlotsPerEntry;
+    /**
+     * If non-null, makes the condition a slot's state must meet before the generated build and probe methods compare
+     * the slot's key, given the name of the variable that holds the state; so a state that summarizes the key can skip
+     * the key comparison. If null, every occupied slot's key is compared.
+     */
+    final Function<String, String> stateMatch;
     final List<BiFunction<HasherConfig<T>, ChunkType[], MethodSpec>> extraMethods;
     final List<ParameterSpec> extraPartialRehashParameters;
     final List<ProbeSpec> probes;
@@ -58,6 +65,7 @@ public class HasherConfig<T> {
             boolean supportRehash,
             boolean includeRowSequence,
             CodeBlock rehashSlotsPerEntry,
+            Function<String, String> stateMatch,
             String mainStateName,
             String overflowOrAlternateStateName,
             String emptyStateName,
@@ -82,6 +90,7 @@ public class HasherConfig<T> {
         this.supportRehash = supportRehash;
         this.includeRowSequence = includeRowSequence;
         this.rehashSlotsPerEntry = rehashSlotsPerEntry;
+        this.stateMatch = stateMatch;
         this.mainStateName = mainStateName;
         this.overflowOrAlternateStateName = overflowOrAlternateStateName;
         this.emptyStateName = emptyStateName;
@@ -188,6 +197,7 @@ public class HasherConfig<T> {
         private boolean openAddressedAlternate = true;
         private boolean alwaysMoveMain = false;
         private CodeBlock rehashSlotsPerEntry = null;
+        private Function<String, String> stateMatch = null;
         private boolean includeOriginalSources = false;
         private boolean supportRehash = true;
         private boolean includeRowSequence = true;
@@ -245,6 +255,18 @@ public class HasherConfig<T> {
          */
         public Builder<T> rehashSlotsPerEntry(final Class<?> owner, final String constantName) {
             this.rehashSlotsPerEntry = CodeBlock.of("$T.$L", owner, constantName);
+            return this;
+        }
+
+        /**
+         * Compare a slot's key only when its state meets a condition, as well as when the slot is occupied.
+         *
+         * @param stateMatch makes the condition from the name of the variable that holds the slot's state; it must hold
+         *        for every slot whose key equals the key sought, including a tombstone's
+         * @return this builder
+         */
+        public Builder<T> stateMatch(final Function<String, String> stateMatch) {
+            this.stateMatch = stateMatch;
             return this;
         }
 
@@ -346,7 +368,7 @@ public class HasherConfig<T> {
 
             return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle,
                     openAddressedAlternate, supportTombstones, alwaysMoveMain, includeOriginalSources, supportRehash,
-                    includeRowSequence, rehashSlotsPerEntry, mainStateName,
+                    includeRowSequence, rehashSlotsPerEntry, stateMatch, mainStateName,
                     overflowOrAlternateStateName, emptyStateName, tombstoneStateName,
                     stateType, moveMainFull, moveMainAlternate, rehashFullSetup, extraPartialRehashParameters, probes,
                     builds, extraMethods, extraConstructorParameters);

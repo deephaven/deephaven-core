@@ -13,6 +13,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.jetbrains.annotations.NotNull;
@@ -42,7 +43,8 @@ public abstract class IncrementalKeyIdHasherTypedBase extends KeyIdHasher {
      */
     public static final int REHASH_SLOTS_PER_ENTRY = 3;
 
-    protected static final int TOMBSTONE_ID = -1;
+    /** The tag of a removed key's slot; neither {@link #EMPTY_TAG} nor any key's tag. */
+    protected static final byte TOMBSTONE_TAG = -1;
 
     // the number of slots in our alternate table, to start with "1" is a lie, but rehashPointer is zero; so our
     // location value is positive and can be compared against rehashPointer safely
@@ -57,6 +59,7 @@ public abstract class IncrementalKeyIdHasherTypedBase extends KeyIdHasher {
     protected long alternateEntries = 0;
 
     protected final WritableColumnSource[] alternateKeySources;
+    protected ImmutableByteArraySource alternateTag;
     protected ImmutableIntArraySource alternateId;
 
     // the slot, in the main or the alternate table, that holds each id's key
@@ -131,18 +134,28 @@ public abstract class IncrementalKeyIdHasherTypedBase extends KeyIdHasher {
         for (int ii = 0; ii < size; ++ii) {
             final int id = ids.get(ii);
             final int slot = idToSlot.getInt(id);
-            // the key stays in the slot, so that a probe for it stops here rather than searching on
-            if (slot < tableSize && mainId.getUnsafe(slot) == id) {
-                mainId.set(slot, TOMBSTONE_ID);
+            // the key stays in the slot, so that a probe for it stops here rather than searching on; an id is only
+            // meaningful in a slot that holds a key, so the slot's tag must show one before its id is compared
+            if (slot < tableSize && isTagged(mainTag.getUnsafe(slot)) && mainId.getUnsafe(slot) == id) {
+                mainTag.set(slot, TOMBSTONE_TAG);
             } else {
                 Assert.lt(slot, "slot", rehashPointer, "rehashPointer");
+                Assert.eqTrue(isTagged(alternateTag.getUnsafe(slot)), "isTagged(alternateTag.getUnsafe(slot))");
                 Assert.eq(alternateId.getUnsafe(slot), "alternateId.getUnsafe(slot)", id, "id");
-                alternateId.set(slot, TOMBSTONE_ID);
+                alternateTag.set(slot, TOMBSTONE_TAG);
             }
             freeIds.add(id);
         }
         liveEntries -= size;
         anyRemoved |= size > 0;
+    }
+
+    /**
+     * @param tag a slot's tag
+     * @return whether the slot holds a key: it is neither empty nor a tombstone
+     */
+    private static boolean isTagged(final byte tag) {
+        return tag >= 0;
     }
 
     @Override
@@ -267,6 +280,9 @@ public abstract class IncrementalKeyIdHasherTypedBase extends KeyIdHasher {
 
         alternateEntries = numEntries;
         numEntries = 0;
+        alternateTag = mainTag;
+        mainTag = new ImmutableByteArraySource();
+        mainTag.ensureCapacity(tableSize);
         alternateId = mainId;
         mainId = new ImmutableIntArraySource();
         mainId.ensureCapacity(tableSize);
@@ -281,6 +297,7 @@ public abstract class IncrementalKeyIdHasherTypedBase extends KeyIdHasher {
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
         }
+        alternateTag = null;
         alternateId = null;
     }
 

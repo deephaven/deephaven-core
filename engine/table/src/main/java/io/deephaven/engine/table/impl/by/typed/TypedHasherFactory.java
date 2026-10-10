@@ -103,37 +103,43 @@ public class TypedHasherFactory {
         } else if (baseClass.equals(StaticKeyIdHasherTypedBase.class)) {
             builder.classPrefix("StaticKeyIdHasher").packageGroup("join").packageMiddle("statickeyid")
                     .openAddressedAlternate(false)
-                    .stateType(int.class).mainStateName("mainId")
-                    .emptyStateName("EMPTY_ID")
+                    .stateType(byte.class).mainStateName("mainTag")
+                    .emptyStateName("EMPTY_TAG")
+                    .stateMatch(TypedKeyIdFactory::tagMatches)
                     .includeOriginalSources(false)
                     .includeRowSequence(false)
-                    .supportRehash(true);
+                    .supportRehash(true)
+                    .rehashFullSetup(TypedKeyIdFactory::rehashFullSetup)
+                    .moveMainFull(TypedKeyIdFactory::staticMoveMainFull)
+                    .alwaysMoveMain(true);
 
-            builder.addBuild(new HasherConfig.BuildSpec("build", "idValue", false, false, false,
+            builder.addBuild(new HasherConfig.BuildSpec("build", "tagValue", false, false, false,
                     TypedKeyIdFactory::found, TypedKeyIdFactory::staticInsert, keyIdsParam(), keyStatusesParam()));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("probe", "idValue", false,
+            builder.addProbe(new HasherConfig.ProbeSpec("probe", "tagValue", false,
                     TypedKeyIdFactory::probeFound, TypedKeyIdFactory::probeMissing, keyIdsParam()));
         } else if (baseClass.equals(IncrementalKeyIdHasherTypedBase.class)) {
             builder.classPrefix("IncrementalKeyIdHasher").packageGroup("join").packageMiddle("inckeyid")
                     .openAddressedAlternate(true)
                     .supportTombstones(true)
-                    .stateType(int.class).mainStateName("mainId")
-                    .overflowOrAlternateStateName("alternateId")
-                    .emptyStateName("EMPTY_ID")
-                    .tombstoneStateName("TOMBSTONE_ID")
+                    .stateType(byte.class).mainStateName("mainTag")
+                    .overflowOrAlternateStateName("alternateTag")
+                    .emptyStateName("EMPTY_TAG")
+                    .tombstoneStateName("TOMBSTONE_TAG")
+                    .stateMatch(TypedKeyIdFactory::tagOrTombstoneMatches)
                     .includeOriginalSources(false)
                     .includeRowSequence(false)
                     .supportRehash(true)
                     .rehashSlotsPerEntry(IncrementalKeyIdHasherTypedBase.class, "REHASH_SLOTS_PER_ENTRY")
-                    .moveMainFull(TypedKeyIdFactory::moveMain)
-                    .moveMainAlternate(TypedKeyIdFactory::moveMain)
+                    .rehashFullSetup(TypedKeyIdFactory::rehashFullSetup)
+                    .moveMainFull(TypedKeyIdFactory::incrementalMoveMainFull)
+                    .moveMainAlternate(TypedKeyIdFactory::incrementalMoveMainAlternate)
                     .alwaysMoveMain(true);
 
-            builder.addBuild(new HasherConfig.BuildSpec("build", "idValue", false, true, true,
+            builder.addBuild(new HasherConfig.BuildSpec("build", "tagValue", false, true, true,
                     TypedKeyIdFactory::found, TypedKeyIdFactory::insert, keyIdsParam(), keyStatusesParam()));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("probe", "idValue", false,
+            builder.addProbe(new HasherConfig.ProbeSpec("probe", "tagValue", false,
                     TypedKeyIdFactory::probeFound, TypedKeyIdFactory::probeMissing, keyIdsParam()));
         } else if (baseClass.equals(StaticKeyLongValueHasherTypedBase.class)) {
             builder.classPrefix("StaticKeyLongValueHasher").packageGroup("join").packageMiddle("statickeylongvalue")
@@ -985,8 +991,8 @@ public class TypedHasherFactory {
             doInsertion(hasherConfig, buildSpec, chunkTypes, builder, tableLocationName, true);
         }
         builder.addStatement("break");
-        final String keyEqualsExpression =
-                alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes);
+        final String keyEqualsExpression = withStateMatch(hasherConfig, buildSpec.stateValueName,
+                alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes));
         builder.nextControlFlow("else if (" + keyEqualsExpression + ")");
         if (hasherConfig.supportTombstones && buildSpec.checkDeletions) {
             builder.beginControlFlow("if (isStateDeleted($L))", buildSpec.stateValueName);
@@ -1148,8 +1154,8 @@ public class TypedHasherFactory {
                     stateSourceName, tableLocationName);
         }
 
-        final String equalsStatement =
-                alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes);
+        final String equalsStatement = withStateMatch(hasherConfig, stateValueName,
+                alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes));
         builder.beginControlFlow("if (" + equalsStatement + ")");
         if (hasherConfig.supportTombstones) {
             builder.beginControlFlow("if (isStateDeleted($L))", stateValueName);
@@ -1213,6 +1219,22 @@ public class TypedHasherFactory {
         }
         hashCodeBuilder.addStatement("return hash");
         return builder.addCode(hashCodeBuilder.build()).build();
+    }
+
+    /**
+     * @param hasherConfig the hasher spec
+     * @param stateValueName the variable that holds the state of the slot being searched
+     * @param keyEqualsExpression the comparison of the slot's key with the key sought
+     * @return the condition for a search to treat an occupied slot as holding the key sought: the key comparison, after
+     *         the hasher's {@link HasherConfig#stateMatch state match} if it has one
+     */
+    private static String withStateMatch(final HasherConfig<?> hasherConfig, final String stateValueName,
+            final String keyEqualsExpression) {
+        if (hasherConfig.stateMatch == null) {
+            return keyEqualsExpression;
+        }
+        Assert.neqNull(stateValueName, "stateValueName");
+        return "(" + hasherConfig.stateMatch.apply(stateValueName) + ") && " + keyEqualsExpression;
     }
 
     @NotNull

@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext;
 import io.deephaven.util.QueryConstants;
@@ -43,7 +44,7 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChun
  */
 public abstract class KeyIdHasher {
     /**
-     * The id {@link #probe} reports for a key that is not in the table, and the state of a slot that holds no key.
+     * The id {@link #probe} reports for a key that is not in the table.
      */
     public static final int NULL_ID = QueryConstants.NULL_INT;
 
@@ -52,7 +53,11 @@ public abstract class KeyIdHasher {
     /** The status of a built row whose key the build added to the table, with a new or reused id. */
     public static final byte ADDED = 1;
 
-    protected static final int EMPTY_ID = NULL_ID;
+    /**
+     * The tag of a slot that holds no key. A slot that holds a key is tagged with {@link #tagFor its hash's tag}, from
+     * 0 to 127, so the empty tag, the null byte that fills a new tag array, is never a key's.
+     */
+    protected static final byte EMPTY_TAG = QueryConstants.NULL_BYTE;
 
     /**
      * Receives the ids and statuses for one chunk of built rows.
@@ -139,7 +144,11 @@ public abstract class KeyIdHasher {
     // the keys for our hash entries
     protected final WritableColumnSource[] mainKeySources;
 
-    // the id of the key in each slot, or EMPTY_ID
+    // the tag of each slot: EMPTY_TAG, or the tag of the slot's key's hash; a search scans the tags, and compares a
+    // slot's key only when its tag matches, so most slots it passes cost a byte rather than a key and an id
+    protected ImmutableByteArraySource mainTag = new ImmutableByteArraySource();
+
+    // the id of the key in each slot that holds one; read only once a search finds its key
     protected ImmutableIntArraySource mainId = new ImmutableIntArraySource();
 
     // ids below nextId have been handed out
@@ -159,7 +168,17 @@ public abstract class KeyIdHasher {
             mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
                     tableKeySources[ii].getType(), tableKeySources[ii].getComponentType());
         }
+        mainTag.ensureCapacity(tableSize);
         mainId.ensureCapacity(tableSize);
+    }
+
+    /**
+     * @param hash the hash of a key, which may be negative when it combines several columns
+     * @return the tag for a slot holding the key, from 0 to 127: bits 24 to 30 of the hash, which pick the slot only in
+     *         tables of more than 2^24 slots
+     */
+    protected static byte tagFor(final int hash) {
+        return (byte) ((hash >>> 24) & 0x7F);
     }
 
     /**

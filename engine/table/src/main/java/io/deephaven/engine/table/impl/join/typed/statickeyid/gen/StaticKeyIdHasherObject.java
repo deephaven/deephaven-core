@@ -48,18 +48,19 @@ final class StaticKeyIdHasherObject extends StaticKeyIdHasherTypedBase {
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
             while (true) {
-                int idValue = mainId.getUnsafe(tableLocation);
-                if (isStateEmpty(idValue)) {
+                byte tagValue = mainTag.getUnsafe(tableLocation);
+                if (isStateEmpty(tagValue)) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     final int id = allocateId(tableLocation);
+                    mainTag.set(tableLocation, tagFor(hash));
                     mainId.set(tableLocation, id);
                     ids.set(chunkPosition, id);
                     statuses.set(chunkPosition, ADDED);
                     growIfFull();
                     break;
-                } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    ids.set(chunkPosition, idValue);
+                } else if ((tagValue == tagFor(hash)) && eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    ids.set(chunkPosition, mainId.getUnsafe(tableLocation));
                     statuses.set(chunkPosition, FOUND);
                     break;
                 } else {
@@ -81,10 +82,10 @@ final class StaticKeyIdHasherObject extends StaticKeyIdHasherTypedBase {
             final int firstTableLocation = hashToTableLocation(hash);
             boolean found = false;
             int tableLocation = firstTableLocation;
-            int idValue;
-            while (!isStateEmpty(idValue = mainId.getUnsafe(tableLocation))) {
-                if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    ids.set(chunkPosition, idValue);
+            byte tagValue;
+            while (!isStateEmpty(tagValue = mainTag.getUnsafe(tableLocation))) {
+                if ((tagValue == tagFor(hash)) && eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    ids.set(chunkPosition, mainId.getUnsafe(tableLocation));
                     found = true;
                     break;
                 }
@@ -104,21 +105,24 @@ final class StaticKeyIdHasherObject extends StaticKeyIdHasherTypedBase {
         return hash;
     }
 
-    private static boolean isStateEmpty(int state) {
-        return state == EMPTY_ID;
+    private static boolean isStateEmpty(byte state) {
+        return state == EMPTY_TAG;
     }
 
     @Override
     protected void rehashInternalFull(final int oldSize) {
         final Object[] destKeyArray0 = new Object[tableSize];
-        final int[] destState = new int[tableSize];
-        Arrays.fill(destState, EMPTY_ID);
+        final byte[] destState = new byte[tableSize];
+        Arrays.fill(destState, EMPTY_TAG);
         final Object [] originalKeyArray0 = mainKeySource0.getArray();
         mainKeySource0.setArray(destKeyArray0);
-        final int [] originalStateArray = mainId.getArray();
-        mainId.setArray(destState);
+        final byte [] originalStateArray = mainTag.getArray();
+        mainTag.setArray(destState);
+        final int[] destIds = new int[tableSize];
+        final int[] originalIds = mainId.getArray();
+        mainId.setArray(destIds);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
-            final int currentStateValue = originalStateArray[sourceBucket];
+            final byte currentStateValue = originalStateArray[sourceBucket];
             if (isStateEmpty(currentStateValue)) {
                 continue;
             }
@@ -130,6 +134,7 @@ final class StaticKeyIdHasherObject extends StaticKeyIdHasherTypedBase {
                 if (isStateEmpty(destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
+                    destIds[destinationTableLocation] = originalIds[sourceBucket];
                     break;
                 }
                 destinationTableLocation = nextTableLocation(destinationTableLocation);

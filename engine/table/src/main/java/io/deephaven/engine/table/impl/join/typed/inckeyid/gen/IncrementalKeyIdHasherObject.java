@@ -55,22 +55,22 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
             int tableLocation = firstTableLocation;
             int firstDeletedLocation = -1;
             MAIN_SEARCH: while (true) {
-                int idValue = mainId.getUnsafe(tableLocation);
-                if (firstDeletedLocation < 0 && isStateDeleted(idValue)) {
+                byte tagValue = mainTag.getUnsafe(tableLocation);
+                if (firstDeletedLocation < 0 && isStateDeleted(tagValue)) {
                     firstDeletedLocation = tableLocation;
                 }
-                if (isStateEmpty(idValue)) {
+                if (isStateEmpty(tagValue)) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
                     while (alternateTableLocation < rehashPointer) {
-                        idValue = alternateId.getUnsafe(alternateTableLocation);
-                        if (isStateEmpty(idValue)) {
+                        tagValue = alternateTag.getUnsafe(alternateTableLocation);
+                        if (isStateEmpty(tagValue)) {
                             break;
-                        } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            if (isStateDeleted(idValue)) {
+                        } else if ((tagValue == tagFor(hash) || isStateDeleted(tagValue)) && eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                            if (isStateDeleted(tagValue)) {
                                 break;
                             }
-                            ids.set(chunkPosition, idValue);
+                            ids.set(chunkPosition, alternateId.getUnsafe(alternateTableLocation));
                             statuses.set(chunkPosition, FOUND);
                             break MAIN_SEARCH;
                         } else {
@@ -88,22 +88,24 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
                     liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     final int id = allocateId(tableLocation);
+                    mainTag.set(tableLocation, tagFor(hash));
                     mainId.set(tableLocation, id);
                     ids.set(chunkPosition, id);
                     statuses.set(chunkPosition, ADDED);
                     break;
-                } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    if (isStateDeleted(idValue)) {
+                } else if ((tagValue == tagFor(hash) || isStateDeleted(tagValue)) && eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    if (isStateDeleted(tagValue)) {
                         tableLocation = firstDeletedLocation;
                         liveEntries++;
                         mainKeySource0.set(tableLocation, k0);
                         final int id = allocateId(tableLocation);
+                        mainTag.set(tableLocation, tagFor(hash));
                         mainId.set(tableLocation, id);
                         ids.set(chunkPosition, id);
                         statuses.set(chunkPosition, ADDED);
                         break;
                     }
-                    ids.set(chunkPosition, idValue);
+                    ids.set(chunkPosition, mainId.getUnsafe(tableLocation));
                     statuses.set(chunkPosition, FOUND);
                     break;
                 } else {
@@ -126,14 +128,14 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
             boolean found = false;
             boolean searchAlternate = true;
             int tableLocation = firstTableLocation;
-            int idValue;
-            while (!isStateEmpty(idValue = mainId.getUnsafe(tableLocation))) {
-                if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    if (isStateDeleted(idValue)) {
+            byte tagValue;
+            while (!isStateEmpty(tagValue = mainTag.getUnsafe(tableLocation))) {
+                if ((tagValue == tagFor(hash) || isStateDeleted(tagValue)) && eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    if (isStateDeleted(tagValue)) {
                         searchAlternate = false;
                         break;
                     }
-                    ids.set(chunkPosition, idValue);
+                    ids.set(chunkPosition, mainId.getUnsafe(tableLocation));
                     found = true;
                     break;
                 }
@@ -150,12 +152,12 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
                     boolean alternateFound = false;
                     if (firstAlternateTableLocation < rehashPointer) {
                         int alternateTableLocation = firstAlternateTableLocation;
-                        while (!isStateEmpty(idValue = alternateId.getUnsafe(alternateTableLocation))) {
-                            if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                                if (isStateDeleted(idValue)) {
+                        while (!isStateEmpty(tagValue = alternateTag.getUnsafe(alternateTableLocation))) {
+                            if ((tagValue == tagFor(hash) || isStateDeleted(tagValue)) && eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                                if (isStateDeleted(tagValue)) {
                                     break;
                                 }
-                                ids.set(chunkPosition, idValue);
+                                ids.set(chunkPosition, alternateId.getUnsafe(alternateTableLocation));
                                 alternateFound = true;
                                 break;
                             }
@@ -178,36 +180,38 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
         return hash;
     }
 
-    private static boolean isStateEmpty(int state) {
-        return state == EMPTY_ID;
+    private static boolean isStateEmpty(byte state) {
+        return state == EMPTY_TAG;
     }
 
-    private static boolean isStateDeleted(int state) {
-        return state == TOMBSTONE_ID;
+    private static boolean isStateDeleted(byte state) {
+        return state == TOMBSTONE_TAG;
     }
 
     private boolean migrateOneLocation(int locationToMigrate, boolean trueOnDeletedEntry) {
-        final int currentStateValue = alternateId.getUnsafe(locationToMigrate);
+        final byte currentStateValue = alternateTag.getUnsafe(locationToMigrate);
         if (isStateEmpty(currentStateValue)) {
             return false;
         }
         if (isStateDeleted(currentStateValue)) {
             alternateEntries--;
-            alternateId.set(locationToMigrate, EMPTY_ID);
+            alternateTag.set(locationToMigrate, EMPTY_TAG);
             return trueOnDeletedEntry;
         }
         final Object k0 = alternateKeySource0.getUnsafe(locationToMigrate);
         final int hash = hash(k0);
         int destinationTableLocation = hashToTableLocation(hash);
-        int candidateState;
-        while (!isStateEmpty(candidateState = mainId.getUnsafe(destinationTableLocation)) && !isStateDeleted(candidateState)) {
+        byte candidateState;
+        while (!isStateEmpty(candidateState = mainTag.getUnsafe(destinationTableLocation)) && !isStateDeleted(candidateState)) {
             destinationTableLocation = nextTableLocation(destinationTableLocation);
         }
         mainKeySource0.set(destinationTableLocation, k0);
         alternateKeySource0.set(locationToMigrate, null);
-        mainId.set(destinationTableLocation, currentStateValue);
-        idToSlot.set(currentStateValue, destinationTableLocation);
-        alternateId.set(locationToMigrate, EMPTY_ID);
+        mainTag.set(destinationTableLocation, currentStateValue);
+        final int id = alternateId.getUnsafe(locationToMigrate);
+        mainId.set(destinationTableLocation, id);
+        idToSlot.set(id, destinationTableLocation);
+        alternateTag.set(locationToMigrate, EMPTY_TAG);
         if (!isStateDeleted(candidateState)) {
             numEntries++;
         }
@@ -250,14 +254,17 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
     @Override
     protected void rehashInternalFull(final int oldSize) {
         final Object[] destKeyArray0 = new Object[tableSize];
-        final int[] destState = new int[tableSize];
-        Arrays.fill(destState, EMPTY_ID);
+        final byte[] destState = new byte[tableSize];
+        Arrays.fill(destState, EMPTY_TAG);
         final Object [] originalKeyArray0 = mainKeySource0.getArray();
         mainKeySource0.setArray(destKeyArray0);
-        final int [] originalStateArray = mainId.getArray();
-        mainId.setArray(destState);
+        final byte [] originalStateArray = mainTag.getArray();
+        mainTag.setArray(destState);
+        final int[] destIds = new int[tableSize];
+        final int[] originalIds = mainId.getArray();
+        mainId.setArray(destIds);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
-            final int currentStateValue = originalStateArray[sourceBucket];
+            final byte currentStateValue = originalStateArray[sourceBucket];
             if (isStateEmpty(currentStateValue)) {
                 continue;
             }
@@ -269,7 +276,9 @@ final class IncrementalKeyIdHasherObject extends IncrementalKeyIdHasherTypedBase
                 if (isStateEmpty(destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
-                    idToSlot.set(currentStateValue, destinationTableLocation);
+                    final int id = originalIds[sourceBucket];
+                    destIds[destinationTableLocation] = id;
+                    idToSlot.set(id, destinationTableLocation);
                     break;
                 }
                 destinationTableLocation = nextTableLocation(destinationTableLocation);
