@@ -12,6 +12,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -245,10 +246,9 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
 
     @Override
     final float[] allocateBlock(final int size, final boolean nullFilled) {
-        final float[] newBlock = new float[size];
-        if (nullFilled) {
-            Arrays.fill(newBlock, NULL_FLOAT);
-        }
+        // a recycled block holds arbitrary values, so it is filled either way
+        final float[] newBlock = takeBlock(size);
+        Arrays.fill(newBlock, nullFilled ? NULL_FLOAT : (float) 0);
         return newBlock;
     }
 
@@ -271,6 +271,13 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
     }
 
+    /**
+     * @return a block of {@code size} elements with arbitrary contents, from the recycler when it is a whole block
+     */
+    private static float[] takeBlock(final int size) {
+        return size == BLOCK_SIZE ? recycler.borrowItem() : new float[size];
+    }
+
     @Override
     void resetBlocks(float[][] newBlocks, float[][] newPrev) {
         blocks = newBlocks;
@@ -290,6 +297,20 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
     @Override
     Object getBlock(int blockIndex) {
         return blocks[blockIndex];
+    }
+
+    @Override
+    void releaseBlock(int blockIndex) {
+        final float[] block = blocks[blockIndex];
+        blocks[blockIndex] = null;
+        if (block != null) {
+            recycler.returnItem(block);
+        }
+    }
+
+    @Override
+    float[][] getBlocks() {
+        return blocks;
     }
 
     @Override
@@ -817,4 +838,108 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
 
     // region reinterpretation
     // endregion reinterpretation
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        if (shiftData.empty()) {
+            return;
+        }
+        // RowSetShiftData.apply's order, by index: each run of ranges that move down goes first to last, and each run
+        // that moves up goes last to first, so that no range overwrites a source still to be read
+        final Shifter shifter = new Shifter();
+        final int size = shiftData.size();
+        int ri = 0;
+        while (ri < size) {
+            final boolean up = shiftData.getShiftDelta(ri) > 0;
+            int runEnd = ri;
+            while (runEnd + 1 < size && (shiftData.getShiftDelta(runEnd + 1) > 0) == up) {
+                ++runEnd;
+            }
+            for (int rj = up ? runEnd : ri; up ? rj >= ri : rj <= runEnd; rj += up ? -1 : 1) {
+                shifter.shiftRange(shiftData.getBeginRange(rj), shiftData.getEndRange(rj), shiftData.getShiftDelta(rj));
+            }
+            ri = runEnd + 1;
+        }
+    }
+
+    /** Ranges no longer than this are copied with a loop rather than {@code System.arraycopy}. */
+    private static final int LOOP_COPY_LIMIT = 16;
+
+    /**
+     * Applies a shift one range at a time, keeping the arrays of the current source and destination blocks, and the
+     * destination's previous values and their in-use bitset, from one range to the next: the ranges of a collapse are
+     * short and mostly fall within the same pair of blocks. Each destination's previous value is recorded when previous
+     * values are tracked.
+     */
+    private final class Shifter {
+        private final boolean trackPrevious = prevFlusher != null;
+        private int sourceBlockIndex = -1;
+        private float[] sourceBlock;
+        private int destBlockIndex = -1;
+        private float[] destBlock;
+        private float[] prevBlock;
+        private long[] inUse;
+
+        private void sourceFor(final int blockIndex) {
+            if (blockIndex != sourceBlockIndex) {
+                sourceBlockIndex = blockIndex;
+                sourceBlock = blocks[blockIndex];
+            }
+        }
+
+        private void destinationFor(final int blockIndex) {
+            if (blockIndex != destBlockIndex) {
+                destBlockIndex = blockIndex;
+                destBlock = blocks[blockIndex];
+                if (trackPrevious) {
+                    inUse = prevInUseFor(blockIndex, prevBlocks, recycler);
+                    prevBlock = prevBlocks[blockIndex];
+                }
+            }
+        }
+
+        /**
+         * Move the values of {@code first} through {@code last} by {@code delta}, a piece at a time, each piece within
+         * one source block and one destination block.
+         */
+        private void shiftRange(final long first, final long last, final long delta) {
+            final long length = last - first + 1;
+            // moving up over the source must copy from the end
+            final boolean backward = delta > 0 && delta < length;
+            long done = 0;
+            while (done < length) {
+                final long remaining = length - done;
+                final long sourceKey = backward ? first + remaining - 1 : first + done;
+                final long destKey = sourceKey + delta;
+                final int sourceIndex = (int) (sourceKey & INDEX_MASK);
+                final int destIndex = (int) (destKey & INDEX_MASK);
+                final int count = (int) Math.min(remaining,
+                        backward ? Math.min(sourceIndex, destIndex) + 1 : BLOCK_SIZE - Math.max(sourceIndex, destIndex));
+                sourceFor((int) (sourceKey >> LOG_BLOCK_SIZE));
+                destinationFor((int) (destKey >> LOG_BLOCK_SIZE));
+                final int step = backward ? -1 : 1;
+                if (trackPrevious) {
+                    for (int jj = 0; jj < count; ++jj) {
+                        final int di = destIndex + step * jj;
+                        final int word = di >> LOG_INUSE_BITSET_SIZE;
+                        final long mask = 1L << (di & IN_USE_MASK);
+                        if ((inUse[word] & mask) == 0) {
+                            inUse[word] |= mask;
+                            prevBlock[di] = destBlock[di];
+                        }
+                        destBlock[di] = sourceBlock[sourceIndex + step * jj];
+                    }
+                } else if (count > LOOP_COPY_LIMIT) {
+                    final int firstSourceIndex = backward ? sourceIndex - count + 1 : sourceIndex;
+                    final int firstDestIndex = backward ? destIndex - count + 1 : destIndex;
+                    System.arraycopy(sourceBlock, firstSourceIndex, destBlock, firstDestIndex, count);
+                } else {
+                    for (int jj = 0; jj < count; ++jj) {
+                        destBlock[destIndex + step * jj] = sourceBlock[sourceIndex + step * jj];
+                    }
+                }
+                done += count;
+            }
+        }
+    }
 }

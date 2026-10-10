@@ -7,12 +7,15 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.sources.IntTestSource;
@@ -33,6 +36,7 @@ import static io.deephaven.engine.testutil.HierarchicalTableTestTools.snapshotTo
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
@@ -85,6 +89,69 @@ public class TestTreeTable extends RefreshingTableTestCase {
         freeSnapshotTableChunks(snapshot2);
 
         assertEquals(rebased.getAttribute("Dog"), "BestFriend");
+    }
+
+    @Test
+    public void testFilterAfterSourceRowLookupStatesRemoved() {
+        // The source row lookup is an aggregation by identifier. The filter reads a node's previous source row at the
+        // row it looks up now, so the lookup's states must stay put even when aggregations move states.
+        final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
+        ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = 0.5;
+        try {
+            final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+            final int size = 2 * blockSize + 1;
+            final long[] ids = new long[size];
+            final long[] parents = new long[size];
+            final int[] matches = new int[size];
+            for (int ii = 0; ii < size; ++ii) {
+                ids[ii] = ii;
+                parents[ii] = ii == 2 * blockSize ? blockSize : NULL_LONG;
+                matches[ii] = ii == 2 * blockSize ? 1 : 0;
+            }
+            final QueryTable source = testRefreshingTable(RowSetFactory.flat(size).toTracking(),
+                    longCol("ID", ids), longCol("Parent", parents), intCol("M", matches));
+            final TreeTable tree = source.tree("ID", "Parent");
+            final Table filteredSource = tree.getSource().apply(new TreeTableFilter.Operator((TreeTableImpl) tree,
+                    WhereFilterFactory.getExpressions("M == 1")));
+            assertEquals(2, filteredSource.size());
+
+            // a whole block of the lookup's states is removed, along with the matching node
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final WritableRowSet removed = RowSetFactory.fromRange(0, blockSize - 1);
+                removed.insert(2L * blockSize);
+                removeRows(source, removed);
+                source.notifyListeners(i(), removed, i());
+            });
+            assertEquals(0, filteredSource.size());
+        } finally {
+            ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse;
+        }
+    }
+
+    @Test
+    public void testFilterAfterParentAndChildRemoved() {
+        // the filter reads the previous source row of a parent removed in the same cycle as its matching child
+        final QueryTable source = testRefreshingTable(i(0, 1, 2).toTracking(),
+                longCol("ID", 1, 2, 3), longCol("Parent", NULL_LONG, NULL_LONG, 2), intCol("M", 0, 0, 1));
+        final TreeTable tree = source.tree("ID", "Parent");
+        final Table filteredSource = tree.getSource().apply(new TreeTableFilter.Operator((TreeTableImpl) tree,
+                WhereFilterFactory.getExpressions("M == 1")));
+        assertEquals(2, filteredSource.size());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(1, 2));
+            source.notifyListeners(i(), i(1, 2), i());
+        });
+        assertEquals(0, filteredSource.size());
+
+        // the parent and child come back at new rows
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(5, 6), longCol("ID", 2, 3), longCol("Parent", NULL_LONG, 2), intCol("M", 0, 1));
+            source.notifyListeners(i(5, 6), i(), i());
+        });
+        assertArrayEquals(new long[] {2, 3}, ColumnVectors.ofLong(filteredSource, "ID").toArray());
     }
 
     @Test

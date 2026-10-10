@@ -9,11 +9,13 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.base.FileUtils;
+import io.deephaven.chunk.util.hashing.ObjectChunkHasher;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
@@ -27,6 +29,7 @@ import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.SourceColumn;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
@@ -59,8 +62,8 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.nio.file.Files;
 import java.time.Instant;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -146,7 +149,8 @@ public class QueryTableAggregationTest {
             final Table aggregatedInput = ChunkedOperatorAggregationHelper.aggregation(
                     aggregationControl == null ? AggregationControl.DEFAULT : aggregationControl,
                     makeGroupByACF(adjustedInput, keyColumns),
-                    (QueryTable) adjustedInput, false, null, ColumnName.from(keyColumns));
+                    (QueryTable) adjustedInput, false, null, StateReclaimMode.configured(),
+                    ColumnName.from(keyColumns));
             actualKeys = keyColumns.length == 0
                     ? aggregatedInput.dropColumns(aggregatedInput.getDefinition().getColumnNamesArray())
                     : aggregatedInput.view(keyColumns);
@@ -270,10 +274,13 @@ public class QueryTableAggregationTest {
         public final Table get() {
             if (firstTime.compareAndSet(true, false)) {
                 return ChunkedOperatorAggregationHelper
-                        .aggregation(control, acf, input, false, null, ColumnName.from(columns)).sort(columns);
+                        .aggregation(control, acf, input, false, null, StateReclaimMode.configured(),
+                                ColumnName.from(columns))
+                        .sort(columns);
             }
             return ChunkedOperatorAggregationHelper
-                    .aggregation(control, acf, (QueryTable) input.silent(), false, null, ColumnName.from(columns))
+                    .aggregation(control, acf, (QueryTable) input.silent(), false, null, StateReclaimMode.configured(),
+                            ColumnName.from(columns))
                     .sort(columns);
         }
     }
@@ -1991,7 +1998,7 @@ public class QueryTableAggregationTest {
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").avgBy()),
-                EvalNugget.from(() -> queryTable.sort("Sym").avgBy("Sym")),
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").avgBy("Sym"), "Sym"),
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").sort("intCol").avgBy("intCol").sort("intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").avgBy("Sym", "intCol").sort("Sym", "intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym").update("x=intCol+1").avgBy("Sym").sort("Sym")),
@@ -2002,8 +2009,8 @@ public class QueryTableAggregationTest {
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1").avgBy("Sym").sort("Sym")),
                 new TableComparator(queryTable.dropColumns("Sym").avgBy(),
                         queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updates))),
-                new TableComparator(queryTable.avgBy("Sym"),
-                        queryTable.groupBy("Sym").update(Selectable.from(updates))),
+                new TableComparator(queryTable.avgBy("Sym").sort("Sym"),
+                        queryTable.groupBy("Sym").update(Selectable.from(updates)).sort("Sym")),
         };
         TstUtils.validate(en);
         for (int i = 0; i < 50; i++) {
@@ -2052,9 +2059,9 @@ public class QueryTableAggregationTest {
         final Table bigAsDouble = queryTable
                 .view("Sym", "bigI", "bigD", "doubleI=bigI.doubleValue()", "doubleD=bigD.doubleValue()").sort("Sym");
         final Table bigVsDoubleVar = bigAsDouble.varBy("Sym");
-        final Table doubleComparisonVar = bigVsDoubleVar.view("Sym", integerCmp, decimalCmp);
+        final Table doubleComparisonVar = bigVsDoubleVar.view("Sym", integerCmp, decimalCmp).sort("Sym");
         final Table bigVsDoubleStd = bigAsDouble.stdBy("Sym");
-        final Table doubleComparisonStd = bigVsDoubleStd.view("Sym", integerCmp, decimalCmp);
+        final Table doubleComparisonStd = bigVsDoubleStd.view("Sym", integerCmp, decimalCmp).sort("Sym");
 
         final List<String> updateStd =
                 queryTable.getDefinition().getColumnNames().stream().filter(c -> !c.equals("Sym"))
@@ -2066,16 +2073,8 @@ public class QueryTableAggregationTest {
                         .collect(Collectors.toList());
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new EvalNugget() {
-                    public Table e() {
-                        return queryTable.sort("Sym").stdBy("Sym");
-                    }
-                },
-                new EvalNugget() {
-                    public Table e() {
-                        return queryTable.sort("Sym").varBy("Sym");
-                    }
-                },
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").stdBy("Sym"), "Sym"),
+                EvalNugget.Sorted.from(() -> queryTable.sort("Sym").varBy("Sym"), "Sym"),
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.dropColumns("Sym").stdBy();
@@ -2106,12 +2105,12 @@ public class QueryTableAggregationTest {
                 },
                 new TableComparator(queryTable.dropColumns("Sym").stdBy(),
                         queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updateStd))),
-                new TableComparator(queryTable.stdBy("Sym"),
-                        queryTable.groupBy("Sym").update(Selectable.from(updateStd))),
+                new TableComparator(queryTable.stdBy("Sym").sort("Sym"),
+                        queryTable.groupBy("Sym").update(Selectable.from(updateStd)).sort("Sym")),
                 new TableComparator(queryTable.dropColumns("Sym").varBy(),
                         queryTable.dropColumns("Sym").groupBy().update(Selectable.from(updateVar))),
-                new TableComparator(queryTable.varBy("Sym"),
-                        queryTable.groupBy("Sym").update(Selectable.from(updateVar))),
+                new TableComparator(queryTable.varBy("Sym").sort("Sym"),
+                        queryTable.groupBy("Sym").update(Selectable.from(updateVar)).sort("Sym")),
         };
         for (int i = 0; i < 50; i++) {
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
@@ -2448,12 +2447,12 @@ public class QueryTableAggregationTest {
         final int[] sizes = {10, 20, 50, 200};
         for (final int size : sizes) {
             for (int seed = 0; seed < 1; ++seed) {
-                testMinMaxByIncremental(size, seed);
+                testMinMaxByIncremental(size, seed, 50);
             }
         }
     }
 
-    private void testMinMaxByIncremental(int size, int seed) {
+    private void testMinMaxByIncremental(int size, int seed, final int maxSteps) {
         final Random random = new Random(seed);
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
@@ -2490,8 +2489,8 @@ public class QueryTableAggregationTest {
         }
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.Sorted.from(() -> queryTable.maxBy("intCol"), "intCol"),
                 EvalNugget.Sorted.from(() -> queryTable.maxBy("Sym"), "Sym"),
-                EvalNugget.from(() -> queryTable.sort("Sym").maxBy("Sym")),
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").sort("intCol").maxBy("intCol").sort("intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").maxBy("Sym", "intCol").sort("Sym", "intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym").update("x=intCol+1").maxBy("Sym").sort("Sym")),
@@ -2502,7 +2501,7 @@ public class QueryTableAggregationTest {
                 EvalNugget.from(() -> queryTable.sort("Sym",
                         "intCol").update("x=intCol+1").maxBy("Sym").sort("Sym")),
                 EvalNugget.from(() -> queryTable.minBy("Sym").sort("Sym")),
-                EvalNugget.from(() -> queryTable.sort("Sym").minBy("Sym")),
+                EvalNugget.Sorted.from(() -> queryTable.minBy("Sym"), "Sym"),
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").sort("intCol").minBy("intCol").sort("intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").minBy("Sym", "intCol").sort("Sym", "intCol")),
                 EvalNugget.from(() -> queryTable.sort("Sym").update("x=intCol+1").minBy("Sym").sort("Sym")),
@@ -2518,7 +2517,7 @@ public class QueryTableAggregationTest {
                         queryTable.groupBy("Sym").update(minQueryStrings).sort("Sym")),
         };
         TstUtils.validate(en);
-        for (int step = 0; step < 50; step++) {
+        for (int step = 0; step < maxSteps; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Seed = " + seed + ", size=" + size + ", step=" + step);
             }
@@ -2649,12 +2648,14 @@ public class QueryTableAggregationTest {
     public void testMedianByIncremental() {
         final int[] sizes = {10, 50, 200};
         for (int size : sizes) {
-            testMedianByIncremental(size);
+            for (int seed = 0; seed < 1; ++seed) {
+                testMedianByIncremental(size, seed, 50);
+            }
         }
     }
 
-    private void testMedianByIncremental(int size) {
-        final Random random = new Random(0);
+    private void testMedianByIncremental(int size, final int seed, final int maxSteps) {
+        final Random random = new Random(seed);
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo =
@@ -2705,9 +2706,9 @@ public class QueryTableAggregationTest {
                 new TableComparator(withoutFloats.aggAllBy(percentile(0.75), "Sym").sort("Sym"),
                         withoutFloats.groupBy("Sym").update(percentile_075_QueryStrings).sort("Sym")),
         };
-        for (int step = 0; step < 50; step++) {
+        for (int step = 0; step < maxSteps; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {
-                System.out.println("size=" + size + ", step=" + step);
+                System.out.println("seed=" + seed + ", size=" + size + ", step=" + step);
             }
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
@@ -3328,6 +3329,17 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testSelectDistinctUpdates() {
+        final boolean original = ChunkedOperatorAggregationHelper.RECLAIM_STATES;
+        try (final SafeCloseable ignored = () -> {
+            ChunkedOperatorAggregationHelper.RECLAIM_STATES = original;
+        }) {
+            testSelectDistinctUpdates(false);
+            testSelectDistinctUpdates(true);
+        }
+    }
+
+    private void testSelectDistinctUpdates(final boolean withReclaim) {
+        ChunkedOperatorAggregationHelper.RECLAIM_STATES = withReclaim;
         final QueryTable table = testRefreshingTable(i(2, 4, 6, 8).toTracking(), col("x", 1, 2, 3, 2));
         final QueryTable result = (QueryTable) (table.selectDistinct("x"))
                 .withAttributes(Map.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true));
@@ -3406,8 +3418,11 @@ public class QueryTableAggregationTest {
 
         assertEquals(4, result.size());
 
+        // A returning group reuses its empty state when states are kept. When they are reclaimed, it is a new state
+        // after every existing one.
+        final long returnedRow = withReclaim ? 4 : 0;
         assertEquals(1, listener.getCount());
-        assertEquals(i(0), base.added);
+        assertEquals(i(returnedRow), base.added);
         assertEquals(i(), base.modified);
         assertEquals(i(), base.removed);
 
@@ -3438,8 +3453,10 @@ public class QueryTableAggregationTest {
 
         assertEquals(5, result.size());
 
+        // a new group takes the next row, which the returning group took when states are reclaimed
+        final long newRow = withReclaim ? 5 : 4;
         assertEquals(1, listener.getCount());
-        assertEquals(i(4), base.added);
+        assertEquals(i(newRow), base.added);
         assertEquals(i(), base.modified);
         assertEquals(i(), base.removed);
 
@@ -4288,6 +4305,932 @@ public class QueryTableAggregationTest {
         });
 
         // Without the fix, the prev state for the distinct table would be incorrect here and the TUV would fail.
+    }
+
+    @Test
+    public void testEmptyStateAtEnd() {
+        final QueryTable table =
+                testRefreshingTable(intCol("x", 0, 1, 2), stringCol("Key", "Apple", "Banana", "Cherry"));
+        final Table summed = table.sumBy("Key");
+
+        final TableUpdateValidator validated = TableUpdateValidator.make("testEmptyStateAtEnd", (QueryTable) summed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(1, 2));
+            table.notifyListeners(i(), i(1, 2), i());
+        });
+        assertTableEquals(newTable(stringCol("Key", "Apple"), longCol("x", 0)), summed);
+        assertEquals(i(0), summed.getRowSet());
+
+        // a new group goes after every row key assigned so far, rather than into the emptied ones
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(4), intCol("x", 4), stringCol("Key", "Dragonfruit"));
+            table.notifyListeners(i(4), i(), i());
+        });
+        assertTableEquals(newTable(stringCol("Key", "Apple", "Dragonfruit"), longCol("x", 0, 4)), summed);
+        assertEquals(i(0, 3), summed.getRowSet());
+    }
+
+    @Test
+    public void testEmptyState() {
+        final QueryTable table =
+                testRefreshingTable(intCol("x", 0, 1, 2, 3, 4),
+                        stringCol("Key", "Apple", "Banana", "Cherry", "Dragonfruit", "Eggplant"));
+        final Table summed = table.sumBy("Key");
+
+        final TableUpdateValidator validated = TableUpdateValidator.make("testEmptyState", (QueryTable) summed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(0, 2, 3));
+            table.notifyListeners(i(), i(0, 2, 3), i());
+        });
+        // the emptied groups leave, and the others keep their row keys
+        assertTableEquals(newTable(stringCol("Key", "Banana", "Eggplant"), longCol("x", 1, 4)), summed);
+        assertEquals(i(1, 4), summed.getRowSet());
+    }
+
+    @Test
+    public void testShiftedMin() {
+        final QueryTable table =
+                testRefreshingTable(intCol("x", 0, 1, 2, 3, 4),
+                        stringCol("Key", "Apple", "Banana", "Cherry", "Banana", "Cherry"));
+        final Table min = table.minBy("Key");
+
+        final TableUpdateValidator validated = TableUpdateValidator.make("testShiftedMin", (QueryTable) min);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(0, 2, 4));
+            table.notifyListeners(i(), i(0, 2, 4), i());
+        });
+        // Apple and Cherry empty and leave; Banana keeps its row key and its minimum, 1
+        assertTableEquals(newTable(stringCol("Key", "Banana"), intCol("x", 1)), min);
+        assertEquals(i(1), min.getRowSet());
+
+        // Banana's minimum row leaves as a larger row arrives
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(5), intCol("x", 5), stringCol("Key", "Banana"));
+            removeRows(table, i(1));
+            table.notifyListeners(i(5), i(1), i());
+        });
+        assertTableEquals(newTable(stringCol("Key", "Banana"), intCol("x", 3)), min);
+        assertEquals(i(1), min.getRowSet());
+    }
+
+    @Test
+    public void testShiftPartial() {
+        final QueryTable table =
+                testRefreshingTable(intCol("x", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
+                        stringCol("Key", "Apple", "Banana", "Cherry", "Banana", "Cherry", "Dragonfruit", "Eggplant",
+                                "Fig", "Grape", "Honeydew"));
+        final Table summed = table.sumBy("Key");
+
+        final PrintListener printListener = new PrintListener("summed", (QueryTable) summed, 10);
+
+        final TableUpdateValidator validated = TableUpdateValidator.make("testEmptyState", (QueryTable) summed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(0, 2, 4));
+            table.notifyListeners(i(), i(0, 2, 4), i());
+        });
+
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(10, 11, 12), intCol("x", 10, 11, NULL_INT),
+                    stringCol("Key", "Banana", "Kiwi", "Lemon"));
+            removeRows(table, i(1));
+            table.notifyListeners(i(10, 11, 12), i(1), i());
+        });
+
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(5, 7));
+            table.notifyListeners(i(), i(5, 7), i());
+        });
+
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(13, 14), intCol("x", 13, 14), stringCol("Key", "Mango", "Nectarine"));
+            removeRows(table, i(9, 11, 12));
+            table.notifyListeners(i(13, 14), i(9, 11, 12), i());
+        });
+
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+    }
+
+    @Test
+    public void testReclaimNullKeyAfterCollidingTombstone() {
+        // Find a key that hashes to the same slot as null for every table size up to 2^20. Inserted first, it takes
+        // the slot, so the null key's state lands later in the same probe sequence and its probes pass the
+        // colliding key's slot after that state is removed.
+        final int slotMask = (1 << 20) - 1;
+        final int nullSlot = ObjectChunkHasher.hashInitialSingle(null) & slotMask;
+        String colliding = null;
+        for (int ii = 0; colliding == null; ++ii) {
+            final String candidate = "K" + ii;
+            if ((ObjectChunkHasher.hashInitialSingle(candidate) & slotMask) == nullSlot) {
+                colliding = candidate;
+            }
+        }
+        final String collidingKey = colliding;
+
+        final QueryTable table = testRefreshingTable(i(0, 1, 2).toTracking(),
+                stringCol("Key", collidingKey, null, "Other"), intCol("x", 1, 2, 3));
+        final Table summed = table.sumBy("Key");
+
+        final TableUpdateValidator validated =
+                TableUpdateValidator.make("testReclaimNullKeyAfterCollidingTombstone", (QueryTable) summed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(0));
+            table.notifyListeners(i(), i(0), i());
+        });
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(1));
+            table.notifyListeners(i(), i(1), i());
+        });
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(3, 4), stringCol("Key", null, collidingKey), intCol("x", 4, 5));
+            table.notifyListeners(i(3, 4), i(), i());
+        });
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+    }
+
+    @Test
+    public void testInstantResultsWithReclaim() {
+        final QueryTable table = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                stringCol("Key", "A", "B", "C", "A"), longCol("N", 10, 20, 30, 40));
+        final Table formulas = table.aggBy(List.of(
+                AggFormula("Latest=epochNanosToInstant(max(N))"),
+                AggFormula("epochNanosToInstant(min(each))", "each", "Earliest=N")), "Key");
+        final Supplier<Table> expected = () -> table.groupBy("Key")
+                .update("Latest=epochNanosToInstant(max(N))", "Earliest=epochNanosToInstant(min(N))")
+                .dropColumns("N");
+
+        final QueryTable blink = testRefreshingTable(i(0, 1).toTracking(), stringCol("Key", "A", "B"),
+                instantCol("T", DateTimeUtils.epochNanosToInstant(1), DateTimeUtils.epochNanosToInstant(2)));
+        blink.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+        final Table blinkLast = blink.lastBy("Key");
+
+        assertTableEquals(expected.get().sort("Key"), formulas.sort("Key"));
+        assertTableEquals(TableTools.newTable(stringCol("Key", "A", "B"),
+                instantCol("T", DateTimeUtils.epochNanosToInstant(1), DateTimeUtils.epochNanosToInstant(2))),
+                blinkLast.sort("Key"));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(1, 2));
+            addToTable(table, i(4), stringCol("Key", "D"), longCol("N", 50));
+            table.notifyListeners(i(4), i(1, 2), i());
+
+            removeRows(blink, i(0, 1));
+            addToTable(blink, i(2), stringCol("Key", "B"), instantCol("T", DateTimeUtils.epochNanosToInstant(3)));
+            blink.notifyListeners(i(2), i(0, 1), i());
+        });
+
+        assertTableEquals(expected.get().sort("Key"), formulas.sort("Key"));
+        assertTableEquals(TableTools.newTable(stringCol("Key", "A", "B"),
+                instantCol("T", DateTimeUtils.epochNanosToInstant(1), DateTimeUtils.epochNanosToInstant(3))),
+                blinkLast.sort("Key"));
+    }
+
+    @Test
+    public void testReclaimWithInitialGroups() {
+        // Initial groups reserve row keys for groups that may not be in the result, which reclaiming does not model, so
+        // the configured mode does not reclaim: a group that empties and returns comes back at its original row key
+        // rather than at a new one after every other.
+        final Table initialGroups = TableTools.newTable(stringCol("Key", "A", "B", "C"));
+        final QueryTable table = testRefreshingTable(i(0).toTracking(), stringCol("Key", "A"), intCol("x", 1));
+        final Table summed = table.aggBy(List.of(AggSum("x")), false, initialGroups, ColumnName.from("Key"));
+
+        final TableUpdateValidator validated =
+                TableUpdateValidator.make("testReclaimWithInitialGroups", (QueryTable) summed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(0));
+            table.notifyListeners(i(), i(0), i());
+        });
+        assertEquals(0, summed.size());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(1), stringCol("Key", "A"), intCol("x", 3));
+            table.notifyListeners(i(1), i(), i());
+        });
+        assertTableEquals(TableTools.newTable(stringCol("Key", "A"), longCol("x", 3)), summed);
+        assertEquals(i(0), summed.getRowSet());
+    }
+
+    @Test
+    public void testReleaseBlocksSlidingWindow() {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int window = 3 * blockSize;
+        // not a multiple of the block size, so that blocks empty part way through a cycle
+        final int step = blockSize / 2 + 7;
+
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(window).toTracking(),
+                stringCol("Key", windowKeys(0, window)), longCol("x", windowValues(0, window)));
+        final Table summed = table.sumBy("Key");
+        final Table aggregated = table.aggBy(List.of(AggMin("Min=x"), AggAvg("Avg=x"), AggCountDistinct("CD=x"),
+                AggFirst("First=x"), AggLast("Last=x"), AggUnique("U=x")), "Key");
+
+        final List<TableUpdateValidator> validators = List.of(
+                TableUpdateValidator.make("summed", (QueryTable) summed),
+                TableUpdateValidator.make("aggregated", (QueryTable) aggregated));
+        final List<FailureListener> failureListeners = new ArrayList<>();
+        for (final TableUpdateValidator validator : validators) {
+            final FailureListener failureListener = new FailureListener();
+            validator.getResultTable().addUpdateListener(failureListener);
+            failureListeners.add(failureListener);
+        }
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int cycle = 0; cycle < 20; ++cycle) {
+            final long firstRemoved = (long) cycle * step;
+            final long firstAdded = firstRemoved + window;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet removed = RowSetFactory.fromRange(firstRemoved, firstRemoved + step - 1);
+                final RowSet added = RowSetFactory.fromRange(firstAdded, firstAdded + step - 1);
+                removeRows(table, removed);
+                addToTable(table, added, stringCol("Key", windowKeys(firstAdded, step)),
+                        longCol("x", windowValues(firstAdded, step)));
+                table.notifyListeners(added, removed, i());
+            });
+            assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+            assertTableEquals(table.aggBy(List.of(AggMin("Min=x"), AggAvg("Avg=x"), AggCountDistinct("CD=x"),
+                    AggFirst("First=x"), AggLast("Last=x"), AggUnique("U=x")), "Key").sort("Key"),
+                    aggregated.sort("Key"));
+        }
+
+        // the first block of output positions has been released
+        final ColumnSource<?> sums = summed.getColumnSource("x");
+        assertThrows(NullPointerException.class, () -> sums.getLong(0));
+
+        // a key whose state was released comes back as a new state
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final long added = 20L * step + window;
+            addToTable(table, i(added), stringCol("Key", "K0"), longCol("x", 7));
+            table.notifyListeners(i(added), i(), i());
+        });
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+        assertEquals(7, summed.where("Key=`K0`").getColumnSource("x").getLong(
+                summed.where("Key=`K0`").getRowSet().firstRowKey()));
+    }
+
+    @Test
+    public void testReclaimChurnWithBoundedLiveStates() {
+        // A thousand live keys at a time, but a hundred thousand distinct keys over the test: tombstones repeatedly
+        // cross the load factor while the live states fit, so the hash table rehashes at the same size, with inserts
+        // and new tombstones arriving while each rehash migrates.
+        final int window = 1000;
+        final int step = 500;
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(window).toTracking(),
+                stringCol("Key", windowKeys(0, window)), longCol("x", windowValues(0, window)));
+        final Table summed = table.sumBy("Key");
+
+        final TableUpdateValidator validated =
+                TableUpdateValidator.make("testReclaimChurnWithBoundedLiveStates", (QueryTable) summed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int cycle = 0; cycle < 200; ++cycle) {
+            final long firstRemoved = (long) cycle * step;
+            final long firstAdded = firstRemoved + window;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet removed = RowSetFactory.fromRange(firstRemoved, firstRemoved + step - 1);
+                final RowSet added = RowSetFactory.fromRange(firstAdded, firstAdded + step - 1);
+                removeRows(table, removed);
+                addToTable(table, added, stringCol("Key", windowKeys(firstAdded, step)),
+                        longCol("x", windowValues(firstAdded, step)));
+                table.notifyListeners(added, removed, i());
+            });
+            if (cycle % 20 == 0) {
+                assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+            }
+        }
+        assertTableEquals(table.sumBy("Key").sort("Key"), summed.sort("Key"));
+    }
+
+    @Test
+    public void testCollapseSparseBlocksRandomChurn() {
+        final double original = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
+        try (final SafeCloseable ignored = () -> ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = original) {
+            for (final double collapseFreeFraction : new double[] {0.25, 0.5, 0.75, 0.9}) {
+                ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = collapseFreeFraction;
+                testCollapseSparseBlocksRandomChurn(collapseFreeFraction);
+            }
+        }
+    }
+
+    private void testCollapseSparseBlocksRandomChurn(final double collapseFreeFraction) {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int initialSize = 4 * blockSize;
+        final int step = blockSize / 2;
+        final Random random = new Random(0);
+
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(initialSize).toTracking(),
+                stringCol("Key", windowKeys(0, initialSize)), longCol("x", windowValues(0, initialSize)));
+        final Supplier<Table> aggregation = () -> table.aggBy(List.of(AggSum("Sum=x"), AggMin("Min=x"),
+                AggAvg("Avg=x"), AggCountDistinct("CD=x"), AggFirst("First=x"), AggLast("Last=x"), AggUnique("U=x"),
+                AggMed("Med=x"), AggDistinct("D=x")), "Key");
+        final Table aggregated = aggregation.get();
+
+        final TableUpdateValidator validated = TableUpdateValidator.make(
+                "testCollapseSparseBlocksRandomChurn-" + collapseFreeFraction, (QueryTable) aggregated);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        long nextRowKey = initialSize;
+        for (int cycle = 0; cycle < 40; ++cycle) {
+            // remove a random half of a step's worth of rows, so blocks thin out unevenly
+            final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
+            final RowSet liveRows = table.getRowSet();
+            for (int ii = 0; ii < step; ++ii) {
+                removedBuilder.addKey(liveRows.get(random.nextInt(liveRows.intSize())));
+            }
+            final RowSet removed = removedBuilder.build();
+            final long firstAdded = nextRowKey;
+            final int addedCount = random.nextInt(step) + 1;
+            nextRowKey += addedCount;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet added = RowSetFactory.fromRange(firstAdded, firstAdded + addedCount - 1);
+                removeRows(table, removed);
+                addToTable(table, added, stringCol("Key", windowKeys(firstAdded, addedCount)),
+                        longCol("x", windowValues(firstAdded, addedCount)));
+                table.notifyListeners(added, removed, i());
+            });
+            assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
+        }
+    }
+
+    @Test
+    public void testFirstNonFiniteValueAfterBlocksReleased() {
+        // The NaN and infinity counters are created on the first such value, with storage only for the blocks the
+        // operator still has, so the first ones arrive after the sliding window has released blocks.
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int window = 3 * blockSize;
+        final int step = blockSize / 2 + 7;
+        final int cycles = 20;
+        final double[] finite = new double[window];
+        for (int ii = 0; ii < window; ++ii) {
+            finite[ii] = ii % 13;
+        }
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(window).toTracking(),
+                stringCol("Key", windowKeys(0, window)), doubleCol("d", finite), doubleCol("w", finite));
+        final List<Aggregation> aggregations = List.of(AggSum("Sum=d"), AggAbsSum("AbsSum=d"), AggAvg("Avg=d"),
+                AggVar("Var=d"), AggStd("Std=d"), AggWSum("w", "WSum=d"), AggWAvg("w", "WAvg=d"));
+        final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(aggregations), false, null,
+                ColumnName.from("Key"), StateReclaimMode.releaseBlocks(1));
+        final TableUpdateValidator validated =
+                TableUpdateValidator.make("testFirstNonFiniteValueAfterBlocksReleased", aggregated);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int cycle = 0; cycle < cycles; ++cycle) {
+            final long firstRemoved = (long) cycle * step;
+            final long firstAdded = firstRemoved + window;
+            final double[] values = new double[step];
+            for (int ii = 0; ii < step; ++ii) {
+                values[ii] = (firstAdded + ii) % 13;
+            }
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet removed = RowSetFactory.fromRange(firstRemoved, firstRemoved + step - 1);
+                final RowSet added = RowSetFactory.fromRange(firstAdded, firstAdded + step - 1);
+                removeRows(table, removed);
+                addToTable(table, added, stringCol("Key", windowKeys(firstAdded, step)), doubleCol("d", values),
+                        doubleCol("w", values));
+                table.notifyListeners(added, removed, i());
+            });
+        }
+        final ColumnSource<?> sums = aggregated.getColumnSource("Sum");
+        assertThrows(NullPointerException.class, () -> sums.getDouble(0));
+
+        // non-finite values for a live key in each block still in use, and for a new key
+        final long firstLive = table.getRowSet().firstRowKey();
+        final long lastLive = table.getRowSet().lastRowKey();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet modified = i(firstLive, firstLive + blockSize, lastLive);
+            final RowSet added = i(lastLive + 1);
+            addToTable(table, modified, stringCol("Key", windowKeys(firstLive, 1)[0],
+                    windowKeys(firstLive + blockSize, 1)[0], windowKeys(lastLive, 1)[0]),
+                    doubleCol("d", Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY),
+                    doubleCol("w", 1, 1, 1));
+            addToTable(table, added, stringCol("Key", "New"), doubleCol("d", Double.NaN), doubleCol("w", 1));
+            table.notifyListeners(added, i(), modified);
+        });
+        assertTableEquals(table.aggBy(aggregations, "Key").sort("Key"), aggregated.sort("Key"));
+
+        // and back to finite values
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet modified = i(firstLive, firstLive + blockSize, lastLive, lastLive + 1);
+            addToTable(table, modified, stringCol("Key", windowKeys(firstLive, 1)[0],
+                    windowKeys(firstLive + blockSize, 1)[0], windowKeys(lastLive, 1)[0], "New"),
+                    doubleCol("d", 1, 2, 3, 4), doubleCol("w", 1, 1, 1, 1));
+            table.notifyListeners(i(), i(), modified);
+        });
+        assertTableEquals(table.aggBy(aggregations, "Key").sort("Key"), aggregated.sort("Key"));
+    }
+
+    @Test
+    public void testExplicitReclaimModeMustBeSupported() {
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(4).toTracking(),
+                stringCol("Key", "A", "B", "A", "C"), longCol("x", 1, 2, 3, 4));
+        final AggregationContextFactory groupBy = AggregationProcessor.forAggregation(List.of(AggGroup("G=x")));
+        final AggregationContextFactory sum = AggregationProcessor.forAggregation(List.of(AggSum("S=x")));
+        final List<ColumnName> key = ColumnName.from("Key");
+
+        // an explicit mode the aggregation cannot use fails, naming the reason
+        assertReclaimRejected("the operators for [G] cannot reclaim states",
+                () -> table.aggNoMemo(groupBy, false, null, key, StateReclaimMode.releaseBlocks(0.5)));
+        assertReclaimRejected("it preserves empty groups",
+                () -> table.aggNoMemo(sum, true, null, key, StateReclaimMode.releaseBlocks(1)));
+        assertReclaimRejected("it has initial groups", () -> table.aggNoMemo(sum, false,
+                newTable(stringCol("Key", "A")), key, StateReclaimMode.releaseBlocks(0.5)));
+
+        // the configured mode uses none instead, as does an explicit none
+        final QueryTable configured = table.aggNoMemo(groupBy, false, null, key, StateReclaimMode.configured());
+        final QueryTable none = table.aggNoMemo(groupBy, false, null, key, StateReclaimMode.none());
+        // a static aggregation has no states to reclaim, so any mode is accepted
+        final QueryTable staticSum = ((QueryTable) table.snapshot()).aggNoMemo(sum, false, null, key,
+                StateReclaimMode.releaseBlocks(0.5));
+        // nor do add-only and blink aggregations, even with operators that cannot reclaim states
+        final List<Aggregation> addOnlyAggregations = List.of(AggMin("Min=x"), AggMax("Max=x"), AggFirst("First=x"),
+                AggLast("Last=x"), AggApproxPct(0.5, "P50=x"));
+        final AggregationContextFactory addOnlyOperators = AggregationProcessor.forAggregation(addOnlyAggregations);
+        final QueryTable addOnly = testRefreshingTable(RowSetFactory.flat(4).toTracking(),
+                stringCol("Key", "A", "B", "A", "C"), longCol("x", 1, 2, 3, 4));
+        addOnly.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        final QueryTable blink = testRefreshingTable(RowSetFactory.flat(4).toTracking(),
+                stringCol("Key", "A", "B", "A", "C"), longCol("x", 1, 2, 3, 4));
+        blink.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+        for (final QueryTable input : List.of(addOnly, blink)) {
+            final QueryTable aggregated =
+                    input.aggNoMemo(addOnlyOperators, false, null, key, StateReclaimMode.releaseBlocks(0.5));
+            assertTableEquals(input.aggBy(addOnlyAggregations, "Key"), aggregated);
+        }
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(1));
+            table.notifyListeners(i(), i(1), i());
+        });
+        final Table expected = table.snapshot().groupBy("Key").view("Key", "G=x").sort("Key");
+        assertTableEquals(expected, configured.sort("Key"));
+        assertTableEquals(expected, none.sort("Key"));
+        assertEquals(3, staticSum.size());
+    }
+
+    private static void assertReclaimRejected(final String reason, final Runnable aggregation) {
+        final Throwable thrown = assertThrows(Throwable.class, aggregation::run);
+        Throwable cause = thrown;
+        while (!(cause instanceof IllegalArgumentException) && cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        assertTrue(String.valueOf(thrown), cause instanceof IllegalArgumentException);
+        assertTrue(cause.getMessage(), cause.getMessage().contains(reason));
+    }
+
+    @Test
+    public void testCollapseAcrossReleasedBlocks() {
+        final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
+        try (final SafeCloseable ignored =
+                () -> ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse) {
+            ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = 0.5;
+            doTestCollapseAcrossReleasedBlocks();
+        }
+    }
+
+    /**
+     * Blocks 0 and 2 keep every eighth state and block 1 empties, so the two sparse blocks are separated by a released
+     * block. They still collapse: block 2's states follow block 0's in block 0, nothing moves onto block 1, and block 2
+     * is released.
+     */
+    private void doTestCollapseAcrossReleasedBlocks() {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int initialSize = 4 * blockSize;
+
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(initialSize).toTracking(),
+                shiftTestColumns(0, initialSize));
+        final Supplier<Table> aggregation = () -> table.aggBy(List.of(AggSum("Sum=x"), AggMin("MinS=s"),
+                AggVar("Var=y"), AggLast("Last=x"), AggCountDistinct("CD=s"), AggMed("Med=x")), "Key");
+        final QueryTable aggregated = (QueryTable) aggregation.get();
+
+        final TableUpdateValidator validated =
+                TableUpdateValidator.make("testCollapseAcrossReleasedBlocks", aggregated);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+        final SimpleListener listener = new SimpleListener(aggregated);
+        aggregated.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
+        removedBuilder.addRange(blockSize, 2L * blockSize - 1);
+        for (long row = 0; row < 3L * blockSize; ++row) {
+            if (row % 8 != 0 && (row < blockSize || row >= 2L * blockSize)) {
+                removedBuilder.addKey(row);
+            }
+        }
+        final RowSet removed = removedBuilder.build();
+        final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
+        for (long row = 2L * blockSize; row < 3L * blockSize; row += 64) {
+            modifiedBuilder.addKey(row);
+        }
+        final RowSet modified = modifiedBuilder.build();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, removed);
+            addToTable(table, modified, shiftTestModifiedColumns(modified));
+            table.notifyListeners(i(), removed, modified);
+        });
+        assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
+
+        // block 0's survivors at 8k move to k, and block 2's at 2 * blockSize + 8j follow them at survivors + j
+        final int survivors = blockSize / 8;
+        final RowSetShiftData shifted = listener.getUpdate().shifted();
+        assertEquals(2 * survivors - 1, shifted.size());
+        for (int ri = 0; ri < survivors - 1; ++ri) {
+            assertEquals(8L * (ri + 1), shifted.getBeginRange(ri));
+            assertEquals(8L * (ri + 1), shifted.getEndRange(ri));
+            assertEquals(-7L * (ri + 1), shifted.getShiftDelta(ri));
+        }
+        for (int jj = 0; jj < survivors; ++jj) {
+            final int ri = survivors - 1 + jj;
+            final long source = 2L * blockSize + 8L * jj;
+            assertEquals(source, shifted.getBeginRange(ri));
+            assertEquals(source, shifted.getEndRange(ri));
+            assertEquals(survivors + jj - source, shifted.getShiftDelta(ri));
+        }
+        assertEquals(2 * survivors, aggregated.getRowSet().subSetByKeyRange(0, 3L * blockSize - 1).size());
+        assertEquals(2L * survivors - 1, aggregated.getRowSet().subSetByKeyRange(0, 3L * blockSize - 1).lastRowKey());
+
+        // the released blocks hold no storage once the cycle has completed
+        final ColumnSource<?> sums = aggregated.getColumnSource("Sum");
+        assertThrows(NullPointerException.class, () -> sums.getLong(blockSize));
+        assertThrows(NullPointerException.class, () -> sums.getLong(2L * blockSize));
+
+        // the moved states keep changing, and a removed key comes back as a new state
+        final RowSet secondModified = RowSetFactory.fromKeys(2L * blockSize + 8, 2L * blockSize + 64);
+        final RowSet secondAdded = RowSetFactory.fromRange(initialSize, initialSize);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, secondModified, shiftTestModifiedColumns(secondModified));
+            addToTable(table, secondAdded, stringCol("Key", "K1"), longCol("x", 7), doubleCol("y", 2.5),
+                    intCol("w", 3), stringCol("s", "S7"));
+            table.notifyListeners(secondAdded, i(), secondModified);
+        });
+        assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
+        assertEquals(initialSize, aggregated.getRowSet().lastRowKey());
+    }
+
+    @Test
+    public void testOperatorsShiftCollapsedStates() {
+        final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
+        try (final SafeCloseable ignored =
+                () -> ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse) {
+            ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = 0.5;
+            doTestOperatorsShiftCollapsedStates();
+        }
+    }
+
+    /**
+     * Every key has one row, and the initial build gives the key of row {@code r} output position {@code r}. The first
+     * update leaves every eighth state of the first two blocks, which collapse onto the first block one state at a
+     * time, releasing the second. Each operator must move its values, with states added and modified in the same cycle.
+     */
+    private void doTestOperatorsShiftCollapsedStates() {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int initialSize = 4 * blockSize;
+
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(initialSize).toTracking(),
+                shiftTestColumns(0, initialSize));
+        final Supplier<Table> aggregation = () -> table.aggBy(List.of(AggSum("Sum=x"), AggAbsSum("AbsSum=y"),
+                AggMin("Min=x", "MinS=s"), AggMax("Max=y"), AggAvg("Avg=x"), AggVar("Var=y"), AggStd("Std=x"),
+                AggFirst("First=x"), AggLast("Last=s"), AggCount("N"), AggCountDistinct("CD=s"), AggDistinct("D=x"),
+                AggUnique("U=y"), AggMed("Med=x"), AggPct(0.25, "P25=y"), AggWAvg("w", "WAvg=x"),
+                AggWSum("w", "WSum=y"), AggSortedFirst("x", "SF=y"), AggSortedLast("y", "SL=s"),
+                AggCountWhere("CW", "x > 40")), "Key");
+        final QueryTable aggregated = (QueryTable) aggregation.get();
+
+        final TableUpdateValidator validated =
+                TableUpdateValidator.make("testOperatorsShiftCollapsedStates", aggregated);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+        final SimpleListener listener = new SimpleListener(aggregated);
+        aggregated.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // Keep every eighth state of blocks 0 and 1, so that both are sparse and collapse onto block 0, each moved
+        // state its own range. Modify states that move and states after the run, and add states, in the same cycle.
+        final RowSetBuilderRandom firstRemovedBuilder = RowSetFactory.builderRandom();
+        for (long row = 0; row < 2L * blockSize; ++row) {
+            if (row % 8 != 0) {
+                firstRemovedBuilder.addKey(row);
+            }
+        }
+        final RowSet firstRemoved = firstRemovedBuilder.build();
+        final RowSetBuilderRandom firstModifiedBuilder = RowSetFactory.builderRandom();
+        for (long row = 0; row < 2L * blockSize; row += 64) {
+            firstModifiedBuilder.addKey(row);
+        }
+        firstModifiedBuilder.addRange(2L * blockSize, 2L * blockSize + 99);
+        final RowSet firstModified = firstModifiedBuilder.build();
+        final RowSet firstAdded = RowSetFactory.fromRange(initialSize, initialSize + 29);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, firstRemoved);
+            addToTable(table, firstModified, shiftTestModifiedColumns(firstModified));
+            addToTable(table, firstAdded, shiftTestColumns(initialSize, firstAdded.intSize()));
+            table.notifyListeners(firstAdded, firstRemoved, firstModified);
+        });
+        assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
+        final RowSetShiftData cellShift = listener.getUpdate().shifted();
+        // the survivors are at 8k for k in [0, 2 * blockSize / 8); every one but the first moves, to k
+        final int survivors = 2 * blockSize / 8;
+        assertEquals(survivors - 1, cellShift.size());
+        for (int ri = 0; ri < survivors - 1; ++ri) {
+            final long first = cellShift.getBeginRange(ri);
+            assertEquals(first, cellShift.getEndRange(ri));
+            assertEquals(8L * (ri + 1), first);
+            assertEquals(-7L * (ri + 1), cellShift.getShiftDelta(ri));
+        }
+        // nothing after the collapsed run moves, and new states still go after every existing one
+        assertEquals(initialSize + 29, aggregated.getRowSet().lastRowKey());
+
+        // A removed key comes back as a new state, and the states after the collapsed run keep changing.
+        final RowSet secondAdded = RowSetFactory.fromRange(initialSize + 30, initialSize + 30);
+        final RowSet secondRemoved = RowSetFactory.fromRange(2L * blockSize + 200, 2L * blockSize + 299);
+        final RowSet secondModified = RowSetFactory.fromRange(8, 8);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, secondRemoved);
+            addToTable(table, secondModified, shiftTestModifiedColumns(secondModified));
+            addToTable(table, secondAdded, stringCol("Key", "K1"), longCol("x", 7), doubleCol("y", 2.5),
+                    intCol("w", 3), stringCol("s", "S7"));
+            table.notifyListeners(secondAdded, secondRemoved, secondModified);
+        });
+        assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
+        assertEquals(initialSize + 30, aggregated.getRowSet().lastRowKey());
+    }
+
+    /**
+     * Every value type through every operator that can reclaim states, under random churn in which blocks empty, sparse
+     * blocks collapse, and removed keys return. The result must match the same aggregation without reclaiming, cycle by
+     * cycle.
+     */
+    @Test
+    public void testReclaimAllTypes() {
+        final List<Aggregation> numeric = new ArrayList<>();
+        for (final String col : new String[] {"vb", "vsh", "vi", "vl", "vf", "vd", "vc", "vbi", "vbd"}) {
+            numeric.add(AggSum("Sum_" + col + "=" + col));
+            numeric.add(AggAvg("Avg_" + col + "=" + col));
+            numeric.add(AggVar("Var_" + col + "=" + col));
+            numeric.add(AggStd("Std_" + col + "=" + col));
+        }
+        for (final String col : new String[] {"vb", "vsh", "vi", "vl", "vf", "vd", "vbi", "vbd"}) {
+            numeric.add(AggAbsSum("AbsSum_" + col + "=" + col));
+        }
+        for (final String col : new String[] {"vb", "vsh", "vi", "vl", "vf", "vd"}) {
+            numeric.add(AggWSum("vw", "WSum_" + col + "=" + col));
+            numeric.add(AggWAvg("vw", "WAvg_" + col + "=" + col));
+            numeric.add(AggPct(0.25, "P25_" + col + "=" + col));
+        }
+        final List<Aggregation> any = new ArrayList<>();
+        for (final String col : new String[] {"vb", "vsh", "vi", "vl", "vf", "vd", "vc", "vbo", "vs", "vbi", "vbd",
+                "vt"}) {
+            any.add(AggMin("Min_" + col + "=" + col));
+            any.add(AggMax("Max_" + col + "=" + col));
+            any.add(AggFirst("First_" + col + "=" + col));
+            any.add(AggLast("Last_" + col + "=" + col));
+            any.add(AggCountDistinct("CD_" + col + "=" + col));
+            any.add(AggDistinct("D_" + col + "=" + col));
+            any.add(AggUnique("U_" + col + "=" + col));
+            any.add(AggSortedFirst("vl", "SF_" + col + "=" + col));
+            any.add(AggSortedLast("vd", "SL_" + col + "=" + col));
+        }
+        for (final String col : new String[] {"vb", "vsh", "vi", "vl", "vf", "vd", "vc", "vs", "vbi", "vbd", "vt"}) {
+            any.add(AggMed("Med_" + col + "=" + col));
+        }
+        any.add(AggCount("N"));
+        any.add(AggCountWhere("CW", "vl > 0"));
+        final List<Aggregation> freeze =
+                List.of(Aggregation.of(AggSpec.freeze(), "vb", "vsh", "vi", "vl", "vf", "vd", "vc",
+                        "vbo", "vs", "vbi", "vbd", "vt"));
+
+        final double originalCollapse = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
+        try (final SafeCloseable ignored =
+                () -> ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = originalCollapse) {
+            ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = 0.5;
+            for (final List<Aggregation> aggregations : List.of(numeric, any, freeze)) {
+                doTestReclaimAllTypes(aggregations);
+            }
+        }
+    }
+
+    private void doTestReclaimAllTypes(final List<Aggregation> aggregations) {
+        final int blockSize = ArrayBackedColumnSource.BLOCK_SIZE;
+        final int initialSize = 4 * blockSize;
+        final int step = blockSize / 2;
+        final Random random = new Random(0);
+
+        // the key of each row, by row key; a key has at most one row, so freezeBy applies
+        final long[] keyOfRow = new long[initialSize + 40 * 2 * step];
+        for (int ii = 0; ii < initialSize; ++ii) {
+            keyOfRow[ii] = ii;
+        }
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(initialSize).toTracking(),
+                allTypesColumns(RowSetFactory.flat(initialSize), keyOfRow, 0));
+        final AggregationContextFactory factory = AggregationProcessor.forAggregation(aggregations);
+        final List<ColumnName> key = ColumnName.from("Key");
+        final QueryTable expected = table.aggNoMemo(factory, false, null, key, StateReclaimMode.none());
+        final QueryTable reclaimed = table.aggNoMemo(factory, false, null, key, StateReclaimMode.releaseBlocks(0.5));
+
+        final TableUpdateValidator validated = TableUpdateValidator.make("testReclaimAllTypes", reclaimed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+        final SimpleListener listener = new SimpleListener(reclaimed);
+        reclaimed.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final List<Long> removedKeys = new ArrayList<>();
+        long nextRowKey = initialSize;
+        long nextKey = initialSize;
+        int collapsingCycles = 0;
+        for (int cycle = 1; cycle <= 40; ++cycle) {
+            final RowSet liveRows = table.getRowSet();
+            final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
+            for (int ii = 0; ii < step; ++ii) {
+                removedBuilder.addKey(liveRows.get(random.nextInt(liveRows.intSize())));
+            }
+            final RowSet removed = removedBuilder.build();
+            final RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
+            for (int ii = 0; ii < 64; ++ii) {
+                modifiedBuilder.addKey(liveRows.get(random.nextInt(liveRows.intSize())));
+            }
+            final RowSet modified = modifiedBuilder.build().minus(removed);
+
+            // new keys, and keys removed in earlier cycles coming back
+            final int addedCount = random.nextInt(step) + 1;
+            final RowSet added = RowSetFactory.fromRange(nextRowKey, nextRowKey + addedCount - 1);
+            for (int ii = 0; ii < addedCount; ++ii) {
+                keyOfRow[(int) nextRowKey + ii] = !removedKeys.isEmpty() && random.nextInt(4) == 0
+                        ? removedKeys.remove(random.nextInt(removedKeys.size()))
+                        : nextKey++;
+            }
+            removed.forAllRowKeys(row -> removedKeys.add(keyOfRow[(int) row]));
+            nextRowKey += addedCount;
+
+            final int salt = cycle;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(table, removed);
+                addToTable(table, modified, allTypesColumns(modified, keyOfRow, salt));
+                addToTable(table, added, allTypesColumns(added, keyOfRow, salt));
+                table.notifyListeners(added, removed, modified);
+            });
+            assertTableEquals(expected.sort("Key"), reclaimed.sort("Key"));
+            if (listener.getCount() > 0 && listener.getUpdate().shifted().nonempty()) {
+                ++collapsingCycles;
+            }
+            listener.reset();
+        }
+        // a run is only collapsed when that releases a block, so blocks were released too
+        assertTrue("collapsed in " + collapsingCycles + " cycles", collapsingCycles > 0);
+    }
+
+    /**
+     * A column of every value type, with nulls, and with NaN and infinities in the floating point columns. The values
+     * depend on the row key and {@code salt}, so a modification with a new salt changes them.
+     */
+    private static ColumnHolder<?>[] allTypesColumns(final RowSet rows, final long[] keyOfRow, final int salt) {
+        final int count = rows.intSize();
+        final String[] keys = new String[count];
+        final byte[] bs = new byte[count];
+        final short[] shs = new short[count];
+        final int[] is = new int[count];
+        final long[] ls = new long[count];
+        final float[] fs = new float[count];
+        final double[] ds = new double[count];
+        final char[] cs = new char[count];
+        final Boolean[] bos = new Boolean[count];
+        final String[] ss = new String[count];
+        final BigInteger[] bis = new BigInteger[count];
+        final BigDecimal[] bds = new BigDecimal[count];
+        final Instant[] ts = new Instant[count];
+        final int[] ws = new int[count];
+        final MutableInt ii = new MutableInt();
+        rows.forAllRowKeys(row -> {
+            final int pos = ii.getAndIncrement();
+            final long mixed = row * 31 + salt * 17L;
+            final int value = (int) (mixed % 23) - 11;
+            final boolean isNull = mixed % 53 == 0;
+            keys[pos] = "K" + keyOfRow[(int) row];
+            bs[pos] = isNull ? NULL_BYTE : (byte) value;
+            shs[pos] = isNull ? NULL_SHORT : (short) (value * 3);
+            is[pos] = isNull ? NULL_INT : value * 7;
+            ls[pos] = isNull ? NULL_LONG : value * 1000L;
+            final double special = mixed % 97 == 0 ? Double.NaN
+                    : mixed % 89 == 0 ? Double.POSITIVE_INFINITY
+                            : mixed % 83 == 0 ? Double.NEGATIVE_INFINITY : value * 0.5;
+            fs[pos] = isNull ? NULL_FLOAT : (float) special;
+            ds[pos] = isNull ? NULL_DOUBLE : special;
+            cs[pos] = isNull ? NULL_CHAR : (char) ('a' + value + 11);
+            bos[pos] = isNull ? null : value > 0;
+            ss[pos] = isNull ? null : "S" + (value + 11);
+            bis[pos] = isNull ? null : BigInteger.valueOf(value);
+            bds[pos] = isNull ? null : BigDecimal.valueOf(value, 1);
+            ts[pos] = isNull ? null : DateTimeUtils.epochNanosToInstant(1_700_000_000_000_000_000L + value * 1_000L);
+            ws[pos] = (int) (mixed % 5) + 1;
+        });
+        return new ColumnHolder<?>[] {stringCol("Key", keys), byteCol("vb", bs), shortCol("vsh", shs), intCol("vi", is),
+                longCol("vl", ls), floatCol("vf", fs), doubleCol("vd", ds), charCol("vc", cs), booleanCol("vbo", bos),
+                stringCol("vs", ss), col("vbi", bis), col("vbd", bds), instantCol("vt", ts), intCol("vw", ws)};
+    }
+
+    private static ColumnHolder<?>[] shiftTestColumns(final long firstRowKey, final int count) {
+        final String[] keys = new String[count];
+        final long[] xs = new long[count];
+        final double[] ys = new double[count];
+        final int[] ws = new int[count];
+        final String[] ss = new String[count];
+        for (int ii = 0; ii < count; ++ii) {
+            final long row = firstRowKey + ii;
+            keys[ii] = "K" + row;
+            xs[ii] = row % 97;
+            ys[ii] = (row % 13) * 0.5 - 3;
+            ws[ii] = (int) (row % 5) + 1;
+            ss[ii] = "S" + (row % 11);
+        }
+        return new ColumnHolder<?>[] {stringCol("Key", keys), longCol("x", xs), doubleCol("y", ys), intCol("w", ws),
+                stringCol("s", ss)};
+    }
+
+    /** The same keys as {@link #shiftTestColumns} for {@code rows}, with different values. */
+    private static ColumnHolder<?>[] shiftTestModifiedColumns(final RowSet rows) {
+        final int count = rows.intSize();
+        final String[] keys = new String[count];
+        final long[] xs = new long[count];
+        final double[] ys = new double[count];
+        final int[] ws = new int[count];
+        final String[] ss = new String[count];
+        final MutableInt ii = new MutableInt();
+        rows.forAllRowKeys(row -> {
+            final int pos = ii.getAndIncrement();
+            keys[pos] = "K" + row;
+            xs[pos] = 1000 + row % 89;
+            ys[pos] = -(row % 7) - 0.25;
+            ws[pos] = (int) (row % 3) + 2;
+            ss[pos] = "T" + (row % 5);
+        });
+        return new ColumnHolder<?>[] {stringCol("Key", keys), longCol("x", xs), doubleCol("y", ys), intCol("w", ws),
+                stringCol("s", ss)};
+    }
+
+    private static String[] windowKeys(final long firstRowKey, final int count) {
+        final String[] keys = new String[count];
+        for (int ii = 0; ii < count; ++ii) {
+            keys[ii] = "K" + (firstRowKey + ii);
+        }
+        return keys;
+    }
+
+    private static double[] windowDoubles(final long firstRowKey, final int count) {
+        final double[] values = new double[count];
+        for (int ii = 0; ii < count; ++ii) {
+            final long rowKey = firstRowKey + ii;
+            values[ii] = rowKey % 101 == 0 ? Double.NaN : (rowKey % 89) / 4.0;
+        }
+        return values;
+    }
+
+    private static long[] windowValues(final long firstRowKey, final int count) {
+        final long[] values = new long[count];
+        for (int ii = 0; ii < count; ++ii) {
+            values[ii] = (firstRowKey + ii) % 97;
+        }
+        return values;
     }
 
     /**

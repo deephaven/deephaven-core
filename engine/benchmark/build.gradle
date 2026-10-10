@@ -72,6 +72,8 @@ createJmhTask('jmhRunSymbolTableCombiner', 'SymbolTableCombinerBenchmark')
 createJmhTask('jmhRunSparseSelect', 'SparseSelectBenchmark')
 createJmhTask('jmhRunRCS', 'RegionedColumnSourceBenchmark')
 createJmhTask('jmhRunBy', 'ByBenchmark')
+createJmhTask('jmhRunAggregationBuild', 'AggregationBuildBenchmark')
+createJmhTask('jmhRunAggregationIncremental', 'AggregationIncrementalBenchmark')
 createJmhTask('jmhRunUnion', 'UnionBenchmark', [], '12g')
 createJmhTask('jmhRunBuilder', 'RowSetBuilderBenchmark')
 createJmhTask('jmhRunMatchHistorical',
@@ -85,6 +87,7 @@ createJmhTask('jmhRunRowSetSubsetOf', 'RowSetSubsetOfBench')
 createJmhTask('jmhRunRowSetSmallInsert', 'RowSetSmallInsertBench')
 createJmhTask('jmhRunRowSetSmallRemove', 'RowSetSmallRemoveBench')
 createJmhTask('jmhRunRowSetSubsume', 'RowSetSubsumeBench')
+createJmhTask('jmhRunRowSetShiftApply', 'RowSetShiftApplyBench')
 createJmhTask('jmhRunNullableLongLongMap', 'NullableLongLongMapBench')
 
 def createDeephavenTestExecTask = {

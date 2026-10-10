@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.sources;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
@@ -189,8 +190,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
     @Override
     final T[] allocateBlock(final int size, final boolean nullFilled) {
         // an object block is null-filled either way
-        // noinspection unchecked
-        return (T[]) new Object[size];
+        return takeBlock(size);
     }
 
     /** The previous values of blocks allocated during the current update cycle, all null; never written. */
@@ -203,6 +203,20 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
         }
         // noinspection unchecked
         return (T[]) FRESH_PREV_BLOCK;
+    }
+
+    /**
+     * @return a block of {@code size} null elements, from the recycler when it is a whole block
+     */
+    private T[] takeBlock(final int size) {
+        if (size != BLOCK_SIZE) {
+            // noinspection unchecked
+            return (T[]) new Object[size];
+        }
+        // a recycled previous-value block may still hold references
+        final T[] block = getRecycler().borrowItem();
+        Arrays.fill(block, null);
+        return block;
     }
 
     @Override
@@ -225,6 +239,22 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
     @Override
     Object getBlock(int blockIndex) {
         return blocks[blockIndex];
+    }
+
+    @Override
+    void releaseBlock(int blockIndex) {
+        final T[] block = blocks[blockIndex];
+        blocks[blockIndex] = null;
+        if (block != null) {
+            // drop the references now, rather than keep the objects reachable from the recycler
+            Arrays.fill(block, null);
+            getRecycler().returnItem(block);
+        }
+    }
+
+    @Override
+    T[][] getBlocks() {
+        return blocks;
     }
 
     @Override
@@ -693,6 +723,164 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                 System.arraycopy(blocks[sourceBlock], sourceIndexWithinBlock, blocks[destBlock], destIndexWithinBlock,
                         toMove);
                 ii += toMove;
+            }
+        }
+    }
+
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        if (shiftData.empty()) {
+            return;
+        }
+        // RowSetShiftData.apply's order, by index: each run of ranges that move down goes first to last, and each run
+        // that moves up goes last to first, so that no range overwrites a source still to be read
+        final Shifter shifter = new Shifter();
+        final int size = shiftData.size();
+        int ri = 0;
+        while (ri < size) {
+            final boolean up = shiftData.getShiftDelta(ri) > 0;
+            int runEnd = ri;
+            while (runEnd + 1 < size && (shiftData.getShiftDelta(runEnd + 1) > 0) == up) {
+                ++runEnd;
+            }
+            for (int rj = up ? runEnd : ri; up ? rj >= ri : rj <= runEnd; rj += up ? -1 : 1) {
+                final long first = shiftData.getBeginRange(rj);
+                final long last = shiftData.getEndRange(rj);
+                final long delta = shiftData.getShiftDelta(rj);
+                shifter.shiftRange(first, last, delta);
+            }
+            ri = runEnd + 1;
+        }
+    }
+
+    /** Ranges no longer than this are copied with a loop rather than {@code System.arraycopy}. */
+    private static final int LOOP_COPY_LIMIT = 16;
+
+    /**
+     * Applies a shift one range at a time, keeping the arrays of the current source and destination blocks, and the
+     * destination's previous values and their in-use bitset, from one range to the next: the ranges of a collapse are
+     * short and mostly fall within the same pair of blocks. Each destination's previous value is recorded when previous
+     * values are tracked.
+     * <p>
+     * The positions a range moves values out of and does not move others into are cleared, so that they no longer hold
+     * references to the moved objects. No range reads the positions an earlier one vacated, though it may write them,
+     * so each piece's vacated positions can be cleared as soon as it has moved.
+     */
+    private final class Shifter {
+        private final boolean trackPrevious = prevFlusher != null;
+        private int sourceBlockIndex = -1;
+        private T[] sourceBlock;
+        /** The block whose previous values {@link #sourcePrevBlock} and {@link #sourceInUse} are, or -1. */
+        private int sourcePrevBlockIndex = -1;
+        private T[] sourcePrevBlock;
+        private long[] sourceInUse;
+        private int destBlockIndex = -1;
+        private T[] destBlock;
+        private T[] prevBlock;
+        private long[] inUse;
+
+        private void sourceFor(final int blockIndex) {
+            if (blockIndex != sourceBlockIndex) {
+                sourceBlockIndex = blockIndex;
+                sourceBlock = blocks[blockIndex];
+            }
+        }
+
+        /** Fetch the current source block's previous values, allocating them if needed, to clear positions there. */
+        private void sourcePreviousFor() {
+            if (sourcePrevBlockIndex != sourceBlockIndex) {
+                sourcePrevBlockIndex = sourceBlockIndex;
+                sourceInUse = prevInUseFor(sourceBlockIndex, prevBlocks, getRecycler());
+                sourcePrevBlock = prevBlocks[sourceBlockIndex];
+            }
+        }
+
+        private void destinationFor(final int blockIndex) {
+            if (blockIndex != destBlockIndex) {
+                destBlockIndex = blockIndex;
+                destBlock = blocks[blockIndex];
+                if (trackPrevious) {
+                    inUse = prevInUseFor(blockIndex, prevBlocks, getRecycler());
+                    prevBlock = prevBlocks[blockIndex];
+                }
+            }
+        }
+
+        /**
+         * Move the values of {@code first} through {@code last} by {@code delta}, a piece at a time, each piece within
+         * one source block and one destination block.
+         */
+        private void shiftRange(final long first, final long last, final long delta) {
+            final long length = last - first + 1;
+            // moving up over the source must copy from the end
+            final boolean backward = delta > 0 && delta < length;
+            long done = 0;
+            while (done < length) {
+                final long remaining = length - done;
+                final long sourceKey = backward ? first + remaining - 1 : first + done;
+                final long destKey = sourceKey + delta;
+                final int sourceIndex = (int) (sourceKey & INDEX_MASK);
+                final int destIndex = (int) (destKey & INDEX_MASK);
+                final int count = (int) Math.min(remaining,
+                        backward ? Math.min(sourceIndex, destIndex) + 1
+                                : BLOCK_SIZE - Math.max(sourceIndex, destIndex));
+                sourceFor((int) (sourceKey >> LOG_BLOCK_SIZE));
+                destinationFor((int) (destKey >> LOG_BLOCK_SIZE));
+                final int step = backward ? -1 : 1;
+                if (trackPrevious) {
+                    for (int jj = 0; jj < count; ++jj) {
+                        final int di = destIndex + step * jj;
+                        final int word = di >> LOG_INUSE_BITSET_SIZE;
+                        final long mask = 1L << (di & IN_USE_MASK);
+                        if ((inUse[word] & mask) == 0) {
+                            inUse[word] |= mask;
+                            prevBlock[di] = destBlock[di];
+                        }
+                        destBlock[di] = sourceBlock[sourceIndex + step * jj];
+                    }
+                } else if (count > LOOP_COPY_LIMIT) {
+                    final int firstSourceIndex = backward ? sourceIndex - count + 1 : sourceIndex;
+                    final int firstDestIndex = backward ? destIndex - count + 1 : destIndex;
+                    System.arraycopy(sourceBlock, firstSourceIndex, destBlock, firstDestIndex, count);
+                } else {
+                    for (int jj = 0; jj < count; ++jj) {
+                        destBlock[destIndex + step * jj] = sourceBlock[sourceIndex + step * jj];
+                    }
+                }
+                clearVacated(backward ? sourceKey - count + 1 : sourceKey, count, first, last, delta);
+                done += count;
+            }
+        }
+
+        /**
+         * Clear the positions of one piece's source, {@code count} positions from {@code pieceFirstKey}, that the move
+         * of {@code first} through {@code last} by {@code delta} does not move values into: those after the range's
+         * destination when it moves down, and those before it when it moves up.
+         */
+        private void clearVacated(final long pieceFirstKey, final int count, final long first, final long last,
+                final long delta) {
+            final long pieceLastKey = pieceFirstKey + count - 1;
+            final long vacatedFirst = delta < 0 ? Math.max(pieceFirstKey, last + delta + 1) : pieceFirstKey;
+            final long vacatedLast = delta < 0 ? pieceLastKey : Math.min(pieceLastKey, first + delta - 1);
+            if (vacatedFirst > vacatedLast) {
+                return;
+            }
+            final int firstIndex = (int) (vacatedFirst & INDEX_MASK);
+            final int lastIndex = (int) (vacatedLast & INDEX_MASK);
+            if (!trackPrevious) {
+                Arrays.fill(sourceBlock, firstIndex, lastIndex + 1, null);
+                return;
+            }
+            sourcePreviousFor();
+            for (int si = firstIndex; si <= lastIndex; ++si) {
+                final int word = si >> LOG_INUSE_BITSET_SIZE;
+                final long mask = 1L << (si & IN_USE_MASK);
+                if ((sourceInUse[word] & mask) == 0) {
+                    sourceInUse[word] |= mask;
+                    sourcePrevBlock[si] = sourceBlock[si];
+                }
+                sourceBlock[si] = null;
             }
         }
     }

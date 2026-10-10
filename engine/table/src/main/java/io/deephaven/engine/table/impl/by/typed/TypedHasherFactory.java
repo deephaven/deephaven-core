@@ -178,6 +178,24 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("build", "outputPosition", false, true,
                     true, TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
+        } else if (baseClass
+                .equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class)) {
+            configureAggregation(builder);
+            builder.supportTombstones(true);
+            builder.tombstoneStateName("TOMBSTONE_STATE");
+            builder.rehashSlotsPerEntry(
+                    IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class,
+                    "REHASH_SLOTS_PER_ENTRY");
+            builder.classPrefix("IncrementalAggOpenHasherWithTombstone").packageMiddle("incopenaggts");
+            builder.overflowOrAlternateStateName("alternateOutputPosition");
+            builder.moveMainFull(TypedAggregationFactory::incAggMoveMain);
+            builder.moveMainAlternate(TypedAggregationFactory::incAggMoveMain);
+            builder.alwaysMoveMain(true);
+            builder.addProbe(new HasherConfig.ProbeSpec("probe", "outputPosition", false,
+                    TypedAggregationFactory::probeFound, TypedAggregationFactory::probeMissing));
+
+            builder.addBuild(new HasherConfig.BuildSpec("build", "outputPosition", false, true,
+                    true, TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
         } else if (baseClass.equals(StaticNaturalJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticNaturalJoinHasher").packageGroup("naturaljoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
@@ -583,6 +601,14 @@ public class TypedHasherFactory {
             } else if (hasherConfig.baseClass.equals(IncrementalKeyIdHasherTypedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.join.typed.inckeyid.gen.TypedHashDispatcher
+                        .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
+                if (pregeneratedHasher != null) {
+                    return pregeneratedHasher;
+                }
+            } else if (hasherConfig.baseClass
+                    .equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class)) {
+                // noinspection unchecked
+                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incopenaggts.gen.TypedHashDispatcher
                         .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;

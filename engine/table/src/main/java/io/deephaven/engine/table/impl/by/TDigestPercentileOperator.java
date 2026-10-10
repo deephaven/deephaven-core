@@ -254,6 +254,12 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
         }
     }
 
+    @Override
+    public boolean canReclaimStates() {
+        // t-digests cannot remove values, so no state becomes empty and there is nothing to reclaim
+        return false;
+    }
+
     private class TDigestContext implements SingletonContext, BucketedContext {
         final ToDoubleCast toDoubleCast;
 
@@ -363,6 +369,12 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
         @Override
         public void startTrackingPrevValues() {
             resultColumn.startTrackingPrevValues();
+        }
+
+        @Override
+        public boolean canReclaimStates() {
+            // reads the primary operator's t-digests, which cannot remove values
+            return false;
         }
 
         @Override

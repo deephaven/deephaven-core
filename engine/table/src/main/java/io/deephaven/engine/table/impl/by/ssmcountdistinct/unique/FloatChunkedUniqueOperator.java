@@ -8,6 +8,7 @@
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.unique;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext;
@@ -453,6 +454,25 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
         // endregion equality function
     }
     // endregion
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        internalResult.shift(shiftData);
+        singletonCount.shift(shiftData);
+        ssms.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        internalResult.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        singletonCount.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        ssms.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
 
     /**
      * Sorts {@code valueChunk}, compacts each run of equal values to one value, and sets each value's count in

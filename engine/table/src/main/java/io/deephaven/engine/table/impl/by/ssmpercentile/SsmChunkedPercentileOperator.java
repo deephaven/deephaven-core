@@ -8,6 +8,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -31,7 +32,7 @@ import java.util.function.Supplier;
 public class SsmChunkedPercentileOperator implements IterativeChunkedAggregationOperator {
     private static final int NODE_SIZE =
             Configuration.getInstance().getIntegerWithDefault("SsmChunkedMinMaxOperator.nodeSize", 4096);
-    private final WritableColumnSource internalResult;
+    private final ShiftableColumnSource internalResult;
     private final ColumnSource externalResult;
     /**
      * Even slots hold the low values, odd slots hold the high values.
@@ -83,10 +84,11 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
                     default:
                         // for things that are not int, long, double, or float we do not actually average the median;
                         // we just do the standard 50-%tile thing. It might be worth defining this to be friendlier.
-                        internalResult = ArrayBackedColumnSource.getMemoryColumnSource(0, type);
+                        internalResult =
+                                (ShiftableColumnSource<?>) ArrayBackedColumnSource.getMemoryColumnSource(0, type);
                 }
             } else {
-                internalResult = ArrayBackedColumnSource.getMemoryColumnSource(0, type);
+                internalResult = (ShiftableColumnSource<?>) ArrayBackedColumnSource.getMemoryColumnSource(0, type);
             }
             externalResult = internalResult;
         }
@@ -571,5 +573,31 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             lengthCopy.close();
             ssmsToMaybeClear.close();
         }
+    }
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        // output position p holds its SSMs at 2p and 2p + 1, so each range moves twice as far in the SSM source
+        final RowSetShiftData.Builder expandedShiftBuilder = new RowSetShiftData.Builder();
+        for (int si = 0; si < shiftData.size(); ++si) {
+            final long begin = shiftData.getBeginRange(si);
+            final long end = shiftData.getEndRange(si);
+            final long delta = shiftData.getShiftDelta(si);
+            expandedShiftBuilder.shiftRange(begin * 2, end * 2 + 1, delta * 2);
+        }
+        ssms.shift(expandedShiftBuilder.build());
+        internalResult.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        // each output position holds two SSMs
+        ssms.releaseBlocks(firstOutputPosition * 2, lastOutputPosition * 2 + 1);
+        internalResult.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
 }
