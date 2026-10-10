@@ -253,10 +253,11 @@ class NaturalJoinHelper {
                         bc.leftDataIndexTable.getRowSet(), leftHashSlots,
                         bc.leftDataIndexRowSetSource, control.getRedirectionType(leftTable));
             } else if (firstBuildFrom == LeftInput) {
-                // The number of distinct left keys is not known, so the table starts at the initial build size and
-                // doubles as keys are added; a rehash does not move the key id the build records for each left row.
+                // The table is sized for the possibility that all left rows have unique keys, so that the build does
+                // not rehash; a rehash would not move the key id the build records for each left row, but each
+                // doubling moves every key.
                 final StaticKeyIdNaturalJoinStateManager jsm = new StaticKeyIdNaturalJoinStateManager(
-                        bc.leftSources, bc.originalLeftSources, initialHashTableSize,
+                        bc.leftSources, bc.originalLeftSources, control.tableSize(leftTable.size()),
                         control.getMaximumLoadFactor(), joinType, rightAddOnly);
 
                 final IntegerArraySource leftHashSlots = new IntegerArraySource();
