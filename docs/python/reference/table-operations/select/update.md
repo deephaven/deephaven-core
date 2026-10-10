@@ -7,27 +7,27 @@ The `update` method creates a new table containing a new, in-memory column for e
 When using `update`, the new columns are evaluated and stored in memory. Existing columns are referenced without additional memory allocation.
 
 > [!NOTE]
-> The syntax for the `update`, [`update_view`](./update-view.md), and [`lazy_update`](./lazy-update.md) methods is identical, as is the resulting table. `update` is recommended when:
+> `update`, [`update_view`](./update-view.md), and [`lazy_update`](./lazy-update.md) accept the same formula strings and produce a table with the same columns. `update` is recommended when:
 >
 > 1. all the source columns are desired in the result,
 > 2. the formula is expensive to evaluate,
 > 3. cells are accessed many times, and/or
 > 4. a large amount of memory is available.
 >
-> When memory usage or computation needs to be reduced, consider using `select`, `view`, `update_view`, or `lazy_update`. These methods have different memory and computation expenses.
+> When memory usage or computation needs to be reduced, consider using [`select`](./select.md), [`view`](./view.md), [`update_view`](./update-view.md), or [`lazy_update`](./lazy-update.md). These methods have different memory and computation expenses.
 
 ## Syntax
 
 ```
-update(formulas: Union[str, Sequence[str]]) -> Table
+update(formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]) -> Table
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="formulas" type="Union[str, Sequence[str]]">
+<Param name="formulas" type="Union[str, Sequence[str], Selectable, Sequence[Selectable]]">
 
-Formulas to compute columns in the new table; e.g., `"X = A * sqrt(B)"`.
+Formulas to compute columns in the new table; e.g., `"X = A * sqrt(B)"`. A [`Selectable`](../../query-language/types/Selectable.md) carries the same formula plus concurrency controls such as [`with_serial`](../../query-language/types/Selectable.md#with_serial).
 
 </Param>
 </ParamTable>
@@ -38,7 +38,7 @@ A new table that includes all the original columns from the source table and the
 
 ## Examples
 
-In the following example, the new columns (`A`, `X`, and `Y`) allocate memory and are immediately populated with values. Columns `B` and `C` refer to columns in the source table and do not allocate memory.
+In the following example, the new column `Y` allocates memory and is immediately populated with values. `A`, `X`, `B`, and `C` refer to columns in the source table, which are already in memory, so they do not allocate memory.
 
 ```python order=source,result
 from deephaven import new_table
@@ -55,9 +55,35 @@ source = new_table(
 result = source.update(formulas=["A", "X = B", "Y = sqrt(C)"])
 ```
 
+## Serial execution
+
+By default, Deephaven can parallelize `update` calculations across multiple CPU cores when the input is large enough. If your formula has side effects or depends on row order, use [`with_serial`](../../query-language/types/Selectable.md#with_serial) to force sequential processing.
+
+```python order=result
+from deephaven.table import Selectable
+from deephaven import empty_table
+
+counter = 0
+
+
+def get_next_id() -> int:
+    global counter
+    counter += 1
+    return counter
+
+
+col = Selectable.parse("ID = get_next_id()").with_serial()
+result = empty_table(10).update(col)
+```
+
+For more information, see [Parallelization](../../../conceptual/query-engine/parallelization.md).
+
 ## Related documentation
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Selectable](../../query-language/types/Selectable.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#update(java.lang.String...))
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.update)

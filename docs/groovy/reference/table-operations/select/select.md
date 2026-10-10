@@ -3,7 +3,7 @@ title: select
 slug: ./select
 ---
 
-The `select` method creates a new in-memory table that includes one column for each argument. Any columns not specified in the arguments will not appear in the resulting table.
+The `select` method creates a new in-memory table that includes one column for each argument. Any columns not specified in the arguments do not appear in the resulting table.
 
 When using `select`, the entire requested dataset is evaluated and stored in memory.
 
@@ -15,7 +15,7 @@ When using `select`, the entire requested dataset is evaluated and stored in mem
 > 3. cells are accessed many times, and/or
 > 4. a large amount of memory is available.
 >
-> When memory usage or computation needs to be reduced, consider using `view`, `updateView`, `update`, or `lazyUpdate`. These methods have different memory and computation expenses.
+> When memory usage or computation needs to be reduced, consider using [`view`](./view.md), [`updateView`](./update-view.md), [`update`](./update.md), or [`lazyUpdate`](./lazy-update.md). These methods have different memory and computation expenses.
 
 ## Syntax
 
@@ -31,7 +31,6 @@ table.select(columns...)
 
 Formulas to compute columns in the new table:
 
-- `NULL`: returns all columns
 - Column from `table`: `"A"` (equivalent to `"A = A"`)
 - Renamed column from `table`: `"X = A"`
 - Calculated column: `"X = A * sqrt(B)"`
@@ -41,7 +40,6 @@ Formulas to compute columns in the new table:
 
 Formulas to compute columns in the new table:
 
-- `NULL`: returns all columns
 - Column from `table`: `"A"` (equivalent to `"A = A"`)
 - Renamed column from `table`: `"X = A"`
 - Calculated column: `"X = A * sqrt(B)"`
@@ -51,11 +49,11 @@ Formulas to compute columns in the new table:
 
 ## Returns
 
-A new in-memory table that includes one column for each argument. If no arguments are provided, there will be one column for each column of the source table.
+A new in-memory table that includes one column for each argument. If no arguments are provided, the result has one column for each column of the source table.
 
 ## Examples
 
-In the following example, `select` has zero arguments. All columns are selected. While this selection appears to do nothing, it is creating a compact, in-memory representation of the input table, with all formulas evaluated.
+In the following example, `select` has zero arguments, so all columns are selected. The result holds every column in memory. Columns that are already in memory, as here, are reused, and any other column is evaluated and stored.
 
 ```groovy order=source,result
 source = newTable(

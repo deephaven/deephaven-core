@@ -68,7 +68,7 @@ special_meta = special_vars.meta_table
 ```
 
 > [!NOTE]
-> The special variables `i` and `ii` can only be used in [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables.
+> On a refreshing table, the special variables `i` and `ii` can only be used when the table is [append-only](../../conceptual/table-types.md#specialization-1-append-only) or blink. Static tables have no restriction.
 
 Additionally, Deephaven provides a range of common constants that can be accessed from query strings. These constants are always written with snake case in capital letters. They include [minimum and maximum values for various data types](/core/javadoc/io/deephaven/util/QueryConstants.html), [conversion factors for time types](/core/javadoc/io/deephaven/time/DateTimeUtils.html), and more. Of particular interest are the null constants for primitive types.
 
@@ -430,7 +430,7 @@ column_as_array = empty_table(10).update(
 )
 ```
 
-This functionality is only supported for static and append-only ticking tables. See [working with arrays](../../how-to-guides/work-with-arrays.md) for more information.
+Column arrays such as `X_` work on static tables and on blink tables. On other refreshing tables, including append-only tables, the engine rejects them, except for constant-offset access such as `X_[ii - 2]`. See [working with arrays](../../how-to-guides/work-with-arrays.md) for more information.
 
 ## Python in query strings
 
@@ -543,7 +543,7 @@ add_vars_class_meta = add_vars_class.meta_table
 
 To learn more about using Python in query strings, see [Python in query strings](../../how-to-guides/query-string-overview.md#python).
 
-Scoping in Deephaven follows Python's [LEGB](https://realpython.com/python-scope-legb-rule/) scoping rules. Functions that return tables or otherwise make use of query strings should pay careful attention to scoping details.
+Query strings resolve variables from the function's local scope and then the global scope, similar to Python's [LEGB](https://realpython.com/python-scope-legb-rule/) rule but without the enclosing scope. Functions that return tables or otherwise use query strings should pay careful attention to scoping details.
 
 ```python test-set=2 order=source,result1,result2
 def f(a, b) -> int:
@@ -562,47 +562,6 @@ result2 = compute(source, 3)
 
 For more information, see [scoping rules](../../how-to-guides/query-scope.md).
 
-Be mindful of whether or not Python functions are stateless or stateful. Generally, stateless functions have no side effects - they don't modify any objects outside of their scope. Also, they are invariant to execution order, so function calls can be evaluated in any order without affecting the result. This stateless function extracts elements from a list in a query string.
+### Parallel-safety of query-string functions
 
-```python test-set=2
-my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-
-def get_element_stateless(idx) -> int:
-    return my_list[idx]
-
-
-t_stateless = empty_table(10).update("X = get_element_stateless(ii)")
-```
-
-`get_element` is stateless because it does not modify any objects outside its local scope. It could be evaluated in any order and give the same result.
-
-Stateful functions modify objects outside their local scope - they do not leave the world as they found it. They also may depend on execution order. This stateful function achieves the same resulting table.
-
-```python test-set=2
-my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-idx = 0
-
-
-def get_element_stateful() -> int:
-    global idx
-    idx += 1  # This modifies idx!
-    return my_list[idx - 1]
-
-
-t_stateful = empty_table(10).update("X = get_element_stateful()")
-```
-
-Print `idx` to verify it's been changed.
-
-```python test-set=2
-print(idx)
-```
-
-Now that `get_element` is stateful, it must be evaluated in the correct order to give the correct result.
-
-Queries should use stateless functions whenever possible because:
-
-- They minimize side effects when called.
-- They are deterministic.
-- They can be efficiently parallelized.
+When Deephaven parallelizes a query, it may process rows in any order on several CPU cores. A function you call from a query string is safe to run that way when it is **stateless**: its output depends only on its inputs, like `x * 2`. It is not safe when it is **stateful**: it reads or changes state outside the function that changes between calls, like a counter. See [Query parallelization](./parallelization.md) for a worked example of a stateful function producing corrupted output, and how to force sequential execution with [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial).

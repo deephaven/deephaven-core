@@ -64,7 +64,7 @@ specialMeta = specialVars.meta()
 ```
 
 > [!NOTE]
-> The special variables `i` and `ii` can only be used in [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables.
+> On a refreshing table, the special variables `i` and `ii` can only be used when the table is [append-only](../../conceptual/table-types.md#specialization-1-append-only) or blink. Static tables have no restriction.
 
 Additionally, Deephaven provides a range of common constants that can be accessed from query strings. These constants are always written with snake case in capital letters. They include [minimum and maximum values for various data types](/core/javadoc/io/deephaven/util/QueryConstants.html), [conversion factors for time types](/core/javadoc/io/deephaven/time/DateTimeUtils.html), and more. Of particular interest are the null constants for primitive types.
 
@@ -352,7 +352,7 @@ columnAsArray = emptyTable(10).update(
 )
 ```
 
-This functionality is only supported for static and append-only ticking tables. See [working with arrays](../../how-to-guides/work-with-arrays.md) for more information.
+Column arrays such as `X_` work on static tables and on blink tables. On other refreshing tables, including append-only tables, the engine rejects them, except for constant-offset access such as `X_[ii - 2]`. See [working with arrays](../../how-to-guides/work-with-arrays.md) for more information.
 
 ## Groovy in query strings
 
@@ -465,7 +465,7 @@ addVarsClass = emptyTable(1).update(
 ```
 
 > [!NOTE]
-> In the two queries above, we used `ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)` to import our class into the query library. This is a quick and easy way to make a user-defined class available in query strings. However, it is not best practice. It is recommended to define classes in their own Groovy files, and import those files via the `docker-compose.yml` file at startup. For an in-depth guide on how to do this, see [here](../../how-to-guides/install-and-use-java-packages.md).
+> In the two queries above, we used `ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)` to import our class into the query library. This is a quick and easy way to make a user-defined class available in query strings. However, it is not best practice. It is recommended to define classes in their own Groovy files, and import those files via the `docker-compose.yml` file at startup. For an in-depth guide on how to do this, see [Install and use Java packages](../../how-to-guides/install-and-use-java-packages.md).
 
 To learn more about using Groovy in query strings, see the user guides on [functions](../../how-to-guides/groovy-closures.md) and [classes](../../how-to-guides/groovy-classes.md#classes-and-objects-in-groovy).
 
@@ -496,45 +496,6 @@ result2 = compute(table, int2)
 
 For more information, see the [scoping rules](../../how-to-guides/query-scope.md).
 
-Be mindful of whether or not Groovy functions are stateless or stateful. Generally, stateless functions have no side effects - they don't modify any objects outside of their scope. Also, they are invariant to execution order, so function calls can be evaluated in any order without affecting the result. This stateless function extracts elements from a list in a query string.
+### Parallel-safety of query-string functions
 
-```groovy test-set=2
-myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-
-getElementStateless = { idx ->
-    return myList[idx]
-}
-
-tStateless = emptyTable(10).update("X = getElementStateless(ii)")
-```
-
-`getElementStateless` is stateless because it does not modify any objects outside its local scope. It could be evaluated in any order and give the same result.
-
-Stateful functions modify objects outside their local scope - they do not leave the world as they found it. They also may depend on execution order. This stateful function achieves the same resulting table.
-
-```groovy test-set=2
-myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-idx = 0
-
-getElementStateful = {
-    idx += 1  // This modifies idx!
-    return myList[idx - 1]
-}
-
-tStateful = emptyTable(10).update("X = getElementStateful()")
-```
-
-Print `idx` to verify it's been changed.
-
-```groovy test-set=2
-println idx
-```
-
-Since `getElementStateful` is stateful, it must be evaluated in the correct order to give the correct result.
-
-Queries should use stateless functions whenever possible because:
-
-- They minimize side effects when called.
-- They are deterministic.
-- They can be efficiently parallelized.
+When Deephaven parallelizes a query, it may process rows in any order on several CPU cores. A function you call from a query string is safe to run that way when it is **stateless**: its output depends only on its inputs, like `x * 2`. It is not safe when it is **stateful**: it reads or changes state outside the function that changes between calls, like a counter. See [Query parallelization](./parallelization.md) for a worked example of a stateful function producing corrupted output, and how to force sequential execution with [`withSerial`](../../reference/query-language/types/Selectable.md#withserial).

@@ -6,13 +6,13 @@ Predicate pushdown is a powerful feature in Deephaven that allows you to filter 
 
 ## Overview
 
-The filtering engine processes user-supplied filters sequentially in the order you specify. The first filter evaluates the rows of the full table and produces a subset of passing rows. The engine then passes this subset to subsequent filters, refining the data until only rows that satisfy every filter remain.
+By default, the filtering engine processes user-supplied filters one after another in the order you specify, unless predicate pushdown reorders them (see below). The first filter evaluates the rows of the full table and produces a subset of passing rows. The engine then passes this subset to subsequent filters, refining the data until only rows that satisfy every filter remain.
 
 Storage systems often divide tables into multiple regions. For instance, multiple files frequently compose a Parquet dataset, and multiple row groups further divide each individual file. Storage engines can apply specific optimization techniques to individual files and even to distinct data regions within those files.
 
-Predicate pushdown enhances row elimination by leveraging these underlying data structures. For example, match and range filters may use storage file metadata (such as min/max statistics) to eliminate entire row groups or files. Consequently, the engine avoids loading unnecessary data from storage — a massive advantage for large datasets in formats like Parquet and Iceberg. Although the engine generally processes filters sequentially, the pushdown mechanism may reorder them to maximize efficiency based on the capabilities of the data sources. Therefore, you cannot guarantee the final execution order of pushed-down filters. To enforce a specific order, use [barriers and serial execution](https://deephaven.io/core/docs/conceptual/query-engine/parallelization/#controlling-concurrency-for-select-update-and-where).
+Predicate pushdown enhances row elimination by leveraging these underlying data structures. For example, match and range filters may use storage file metadata (such as min/max statistics) to eliminate entire row groups or files. Consequently, the engine avoids loading unnecessary data from storage — a massive advantage for large datasets in formats like Parquet and Iceberg. Although the engine generally processes filters sequentially, the pushdown mechanism may reorder them to maximize efficiency based on the capabilities of the data sources. Therefore, you cannot guarantee the final execution order of pushed-down filters. To enforce a specific order, use [barriers and serial execution](../conceptual/query-engine/parallelization.md#controlling-execution-order).
 
-## Filter Priority
+## Filter priority
 
 Filters are prioritized for pushdown in the following order (from highest to lowest):
 
@@ -40,7 +40,7 @@ source = empty_table(1_000).update_view(formulas=["X = i", "Value = 42"])
 result = source.where(filters="Value = 42")
 ```
 
-When working with partitioned data, such as Parquet files, regions of the overall table will have a constant value. The engine will also filter these regions efficiently with a single comparison of the constant value,
+When working with partitioned data, such as Parquet files, regions of the overall table will have a constant value. The engine will also filter these regions efficiently with a single comparison of the constant value.
 
 ## Sorted data binary search
 

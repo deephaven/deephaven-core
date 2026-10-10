@@ -2,7 +2,7 @@
 title: updateView
 ---
 
-The `updateView` method creates a new table containing a new, formula column for each argument.
+The `updateView` method creates a new table containing a new formula column for each argument.
 
 When using `updateView`, the new columns are not stored in memory. Rather, a formula is stored that is used to recalculate each cell every time it is accessed.
 
@@ -14,10 +14,13 @@ When using `updateView`, the new columns are not stored in memory. Rather, a for
 > 3. cells are accessed very few times, or
 > 4. memory usage must be minimized.
 >
-> For other cases, consider using `select`, `view`, `update`, or `lazyUpdate`. These methods have different memory and computation expenses.
+> For other cases, consider using [`select`](./select.md), [`view`](./view.md), [`update`](./update.md), or [`lazyUpdate`](./lazy-update.md). These methods have different memory and computation expenses.
 
 > [!CAUTION]
 > When using [`view`](./view.md) or `updateView`, non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods should use [`select`](./select.md) or [`update`](./update.md) instead.
+
+> [!CAUTION]
+> Serial execution and respecting barriers are not supported for [`view`](./view.md) or `updateView`. Because these operations compute results lazily (on-demand when cells are accessed), rows may be evaluated in any order, at any time, and by any thread. This makes ordering guarantees meaningless. If your formula requires serial evaluation or must wait for another operation to complete, use [`select`](./select.md) or [`update`](./update.md) instead. See [Parallelizing queries](../../../conceptual/query-engine/parallelization.md#serialization) for more information.
 
 ## Syntax
 
@@ -81,4 +84,5 @@ irisWhereVirginica = iris.updateView(List.of(Selectable.of(ColumnName.of("IsVirg
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [Parallelizing queries](../../../conceptual/query-engine/parallelization.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#updateView(java.lang.String...))

@@ -20,7 +20,7 @@ A crash course in Deephaven that covers the basics of working with tables and pl
 
 ## Get started
 
-This guide provides a broad - but clear and technically informative - overview of Deephaven's capabilities. Dive in and unlock the potential of this powerful platform.
+This guide provides a broad, clear, and technically informative overview of Deephaven's capabilities. Dive in and unlock the potential of this powerful platform.
 
 </CoreTutorialCard>
 
@@ -56,6 +56,14 @@ Deephaven query strings are the primary way of expressing commands directly to t
 
 </CoreTutorialCard>
 
+<CoreTutorialCard to="/core/docs/getting-started/crash-course/parallelization/">
+
+## Query parallelization
+
+Learn how Deephaven automatically runs queries on multiple CPU cores, which formulas are safe to run that way, and how to force sequential processing when a formula needs it.
+
+</CoreTutorialCard>
+
 <CoreTutorialCard to="/core/docs/getting-started/crash-course/vectorization-vs-loops/">
 
 ## Recipes, not loops!
@@ -82,7 +90,7 @@ Data I/O is mission-critical for any real-time data analysis platform. Deephaven
 
 <CoreTutorialCard to="/core/docs/getting-started/crash-course/configure/">
 
-## Configure your Deephaven Instance
+## Configure your Deephaven instance
 
 This section covers configuration details needed to take your Deephaven instance beyond the defaults.
 
@@ -90,7 +98,7 @@ This section covers configuration details needed to take your Deephaven instance
 
 <CoreTutorialCard to="/core/docs/getting-started/crash-course/crash-course-wrap-up/">
 
-## Wrapping Up
+## Wrapping up
 
 Where to go from here.
 
