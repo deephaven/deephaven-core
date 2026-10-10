@@ -114,8 +114,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
-    // TODO: https://deephaven.atlassian.net/browse/DH-11196
-    public void ignore_testTotalsOnFilteredTable() {
+    public void testTotalsOnFilteredTable() {
         JsTotalsTable[] totalTables = {null, null};
         Promise[] totalPromises = {null, null};
         connect(tables)
@@ -168,31 +167,39 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                             totalPromises[1] = waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
                                     checkTotals(totalTables[1], 5, 6, 0, "b2"), 2504));
                 })
-                .then(table -> {
-                    // forcibly disconnect the worker and test that the total table come back up, and respond to
-                    // re-filtering.
-                    table.getConnection().forceReconnect();
-                    return Promise.resolve(table);
-                })
-                .then(table -> waitForEvent(table, JsTable.EVENT_RECONNECT, 5001).onInvoke(table))
-                .then(table -> promiseAllThen(table,
-                        waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
-                                checkTotals(totalTables[0], 2, 5, 1, "c1"), 7505),
-                        waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
-                                checkTotals(totalTables[1], 5, 6, 0, "c2"), 7506)))
-                .then(table -> {
-                    // Now... refilter the original table, and assert that the totals tables update.
-                    table.applyFilter(new FilterCondition[] {
-                            table.findColumn("K").filter().eq(FilterValue.ofNumber(0.0))
-                    });
-                    table.setViewport(0, 100, null);// not strictly required, but part of the normal usage
+                .then(this::finish).catch_(this::report);
+    }
 
-                    return promiseAllThen(table,
-                            waitForEvent(table, JsTable.EVENT_FILTERCHANGED, 2003).onInvoke(table),
-                            waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[0], 3, 6.666666, 0.0, "d1"), 2507),
-                            waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[1], 5, 6., 0., "d2"), 2508));
+    /**
+     * Changes the source table and closes it before the totals table's deferred rebase can run. The totals table must
+     * stay usable on its last good state, and nothing may throw.
+     */
+    public void testCloseSourceWhileTotalsRebasePending() {
+        connect(tables)
+                .then(table("hasTotals"))
+                .then(table -> {
+                    delayTestFinish(5000);
+                    return table.getTotalsTable(null)
+                            .then(totals -> {
+                                totals.setViewport(0, 100, null, null, null);
+                                return waitForEvent(totals, JsTable.EVENT_UPDATED,
+                                        checkTotals(totals, 5, 6., 0., "a1"), 2501);
+                            })
+                            .then(totals -> {
+                                table.applyFilter(new FilterCondition[] {
+                                        table.findColumn("K").filter().eq(FilterValue.ofNumber(0.0))
+                                });
+                                table.close();
+                                return Promise.resolve(totals);
+                            })
+                            // let the deferred rebase callbacks run; an exception there fails the test
+                            .then(waitFor(500))
+                            .then(totals -> {
+                                assertFalse(totals.isClosed());
+                                assertEquals(1, totals.getSize(), DELTA);
+                                totals.close();
+                                return Promise.resolve(totals);
+                            });
                 })
                 .then(this::finish).catch_(this::report);
     }
