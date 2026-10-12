@@ -288,8 +288,8 @@ up front, rather than re-deriving them per check.
   update graph; "Compilation" on a page about query plans reads as compiling code. Fix: use the
   page's own plain phrase for the behavior and keep the overloaded word for the body, where
   context disambiguates it. When
-  the fix renames a heading, sweep for inbound anchors to it across both languages (`grep -rn
-  '#old-anchor' docs/`) and update every one; a renamed heading with stale inbound links is a
+  the fix renames a heading, sweep for inbound anchors to it across both languages (search `docs/` for
+  `#old-anchor` with the Grep tool) and update every one; a renamed heading with stale inbound links is a
   worse state than the original.
 
 - **Illustrative output introduced as such:** This doc set renders real results as table
