@@ -65,7 +65,7 @@ Some builder methods apply only when reading, some only when writing, and some t
   - If you call neither method, the default depends on the write method:
     - [`writeTable`](../../reference/data-import-export/Parquet/writeTable.md) persists the indexes that already exist on the source table.
     - [`writeTables`](/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)) persists the indexes of the first source table.
-    - [`writeKeyValuePartitionedTable`](../../reference/data-import-export/Parquet/writeKeyValuePartitionedTable.md) with a regular table persists the source table's existing indexes, except indexes on a partitioning column. With a [`PartitionedTable`](/core/javadoc/io/deephaven/engine/table/PartitionedTable.html), it writes no indexes.
+    - [`writeKeyValuePartitionedTable`](../../reference/data-import-export/Parquet/writeKeyValuePartitionedTable.md) with a regular table persists the source table's existing indexes, except single-column indexes on a partitioning column. With a [`PartitionedTable`](/core/javadoc/io/deephaven/engine/table/PartitionedTable.html), it writes no indexes.
   - Use these methods to narrow the set of indexes to write, or to state the indexes expected on all sources.
   - Indexes that are specified but missing are computed on demand.
   - You can't add an index on a single partitioning column.
@@ -205,7 +205,7 @@ Set each of the following options with the [`S3Instructions.Builder`](/core/java
 - `endpointOverride`: The endpoint to connect to. Set it when connecting to a non-AWS, S3-compatible API. Callers connecting to AWS don't typically need it. By default, no endpoint override is set.
 - `fragmentSize`: The maximum byte size of each fragment to read from S3. The default is 65536, and the minimum is 8192.
 - `maxConcurrentRequests`: The maximum number of concurrent requests to make to S3. The default is 256.
-- `numConcurrentWriteParts`: The maximum number of parts that can upload concurrently when writing to S3 before the write blocks. The default is 64. The value can't exceed `maxConcurrentRequests`.
+- `numConcurrentWriteParts`: The maximum number of parts that can be uploaded concurrently when writing to S3 before the write blocks. The default is 64. The value can't exceed `maxConcurrentRequests`.
 - `profileName`: The AWS profile used to configure the default region, credentials, and other settings. If this is not set, the AWS SDK picks the profile from the `aws.profile` system property, the `AWS_PROFILE` environment variable, or `default`.
 - `readAheadCount`: The number of fragments to read asynchronously ahead of the fragment currently being read. The default is 32.
 - `readTimeout`: The amount of time to wait for a fragment read to complete before timing out. The default is 2 seconds.
