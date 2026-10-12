@@ -14,23 +14,25 @@ The `snapshot_when` method produces an in-memory copy of a source table that add
 
 ```
 source.snapshot_when(
-    trigger_table: Union[Table, PartitionedTableProxy],
-    stamp_cols: list[str],
+    trigger_table: Table,
+    stamp_cols: Union[str, Sequence[str]] = None,
     initial: bool = False,
     incremental: bool = False,
     history: bool = False,
-) -> PartitionedTableProxy
+) -> Table
 ```
+
+A [`PartitionedTableProxy`](https://deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTableProxy) has a `snapshot_when` method with the same parameters. It accepts a table or another proxy as the trigger table and returns a `PartitionedTableProxy`.
 
 ## Parameters
 
 <ParamTable>
-<Param name="trigger_table" type="Union[Table, PartitionedTableProxy]">
+<Param name="trigger_table" type="Table">
 
 The table that triggers the snapshot. This should be a ticking table, as changes in this table trigger the snapshot.
 
 </Param>
-<Param name="stamp_cols" type="list[str]" optional>
+<Param name="stamp_cols" type="Union[str, Sequence[str]]" optional>
 
 One or more column names to act as stamp columns. Each stamp column will be included in the final result, and will contain the value of the stamp column from the trigger table at the time of the snapshot. If only one column, a string or list can be used. If more than one column, a list must be used. The default value is `None`, which means that all columns from the trigger table will be appended to the source table.
 
@@ -47,13 +49,13 @@ Determines whether the resulting table should be incremental. The default value 
 </Param>
 <Param name="history" type="bool" optional>
 
-Determines whether the resulting table should keep history. The default value is `False`. When `True`, a full snapshot of the source table and the stamp column is appended to the resulting table every time the trigger table changes. This means that the resulting table will grow very fast. When `False`, only rows from the source table that have changed since the last snapshot will be appended to the resulting table. If this is `True`, `incremental` and `initial` must be `False`.
+Determines whether the resulting table should keep history. The default value is `False`. When `True`, a full snapshot of the source table and the stamp column is appended to the resulting table every time the trigger table changes. This means that the resulting table will grow very fast. When `False`, the result holds only the latest snapshot. If this is `True`, `incremental` and `initial` must be `False`.
 
 </Param>
 </ParamTable>
 
 > [!CAUTION]
-> The stamp column(s) from the trigger table appears in the result table. If the source table has a column with the same name as the stamp column, an error will be raised. To avoid this problem, rename the stamp column in the trigger table using [`rename_columns`](../select/rename-columns.md).
+> The stamp columns from the trigger table appear in the result table. If the source table has a column with the same name as a stamp column, a snapshot without `history` raises an error. With `history=True`, no error is raised, and the result keeps the source table's values for that column. To avoid the conflict, rename the stamp column in the trigger table using [`rename_columns`](../select/rename-columns.md).
 
 ## Returns
 
