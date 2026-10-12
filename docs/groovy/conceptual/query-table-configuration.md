@@ -91,7 +91,7 @@ Pushdown predicates refer to the mechanism whereby filtering conditions are appl
 | `QueryTable.dataIndexForWhereThreshold`                  | 0.0625 (double) | The maximum size of a data index table, as a fraction of the rows remaining to be filtered, for the index to be used by `where`                |
 | `QueryTable.dictionaryForWhereThreshold`                 | 0.25 (double)   | The dictionary size, as a fraction of the rows remaining to be filtered, that the dictionary must fall below for push-down filtering to use it |
 
-The two `*ForWhereThreshold` properties are cost heuristics rather than on/off switches. Scanning a data index table or a dictionary costs time proportional to its size, so the engine only does so when that structure is small relative to the rows it can eliminate. Rows skipped by this check are not eliminated — they are filtered directly by a later stage. Raise the value toward `1.0` to apply these optimizations to columns with more distinct values, or set it to `0` to effectively disable the technique.
+The two `*ForWhereThreshold` properties are cost heuristics rather than on/off switches. Scanning a data index table or a dictionary costs time proportional to its size, so the engine only does so when that structure is small relative to the rows it can eliminate. When the index table or dictionary exceeds its threshold, the engine does not use it, and the rows are filtered normally. Raise the value toward `1.0` to apply these optimizations to columns with more distinct values, or set it to `0` to effectively disable the technique.
 
 For more details, see [Predicate pushdown filtering](../how-to-guides/predicate-pushdown.md).
 
