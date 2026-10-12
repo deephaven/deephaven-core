@@ -288,6 +288,17 @@ section would get something wrong without it; otherwise cut it, or move it to wh
 belongs. A replacement sentence should be no longer or more qualified than it needs to be to be
 correct.
 
+Then run `deephaven-core-accuracy-spot-check` on every sentence the fix pass wrote or rewrote,
+before the change is pushed. The accuracy step (step 3) ran against the page as it was; a
+restructure that adds a summary table, a new intro sentence, or a reworded takeaway produces
+claims that step never saw. Those are the sentences most likely to overstate, because they
+compress several verified sentences into one: a table cell that turns a contract phrased as "never invoked
+concurrently with itself" into a resource the contract never names, or a Crash Course sentence
+that widens "shared mutable state" to any state at all. Treat the fix pass's own
+output as unreviewed content, list each new or changed sentence that makes a claim, and verify
+each against source. A review that finishes with "all findings applied" and no spot-check of the
+applied text is not finished.
+
 When the edits come from a set of review comments rather than from this review, triage
 them with `deephaven-docs-address-review-comments` first — it sorts each one into apply,
 redirect, decline, or ask before anything changes.

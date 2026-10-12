@@ -70,6 +70,10 @@ weigh:
   scenario each one demonstrates.
 - List every callout/admonition (`> [!NOTE]`, `> [!WARNING]`, `> [!IMPORTANT]`, etc.) with a
   one-line note on what it says.
+- List every markdown table (lines starting with `|`) with its line number and what it holds:
+  a quick reference, a configuration table, a comparison, or output. For each table that holds
+  output, note whether it is a rendered snapshot or hand-written, and whether the sentence before
+  it says which. The **Illustrative output introduced as such** check uses this list.
 - Note where any glossary, "Key concepts," or terminology-definition section sits relative to
   the start of the document.
 - Build a **term list** for the whole page: every domain term, mode name, setting name, or label
@@ -240,6 +244,72 @@ up front, rather than re-deriving them per check.
   list under a heading about one operation, reads as though the section's scope is wider or
   narrower than its heading says. Fix: move the list up to the parent that actually spans its
   contents, or split it so each part sits under the section it describes.
+
+- **Core model stated in one place:** A Concept guide that explains N cases (levels, modes,
+  phases) and the controls that apply to each should state that model once, early, in one
+  place, so a reader can hold the whole page in their head before the walkthrough. The failure
+  shape is a page whose cases are each explained well in their own section and whose controls
+  are each explained well in theirs, but which never puts cases and controls side by side; the
+  reader assembles the model from three or four sections and some never do. Check: can you point
+  to one paragraph, list, or table where every case appears next to what controls it? A
+  quick-reference table of situations and remedies does not count: it tells the reader what to
+  do in a case they already recognize, not what the cases are. If no such place exists,
+  propose one (a short table of "case / what happens by default / what controls it" at the top
+  of the section that enumerates the cases works well) and say which existing sentences it
+  draws from. This is distinct from **Closing-section and summary placement**, which asks
+  whether an existing summary table should move earlier; this check asks whether the model is
+  stated anywhere at all.
+
+- **Enumeration count consistency:** Every count the page gives for the same set must agree.
+  An intro that says "in four ways" and a later section that says "both kinds" for the same
+  mechanisms leaves the reader counting. Grep the page for number words and digits used as
+  counts ("three ways", "two levels", "four cases", "both") and, for each, name the set it
+  counts; then check every other count of that set, including ones phrased as "both" or
+  "either". Different counts are a defect even when a later sentence reconciles them ("two levels:
+  across tables, and within one operation (rows and columns)"), because the reader meets the
+  first count before the reconciliation and has already started counting. Fix: pick one
+  framing and use it everywhere, or put the reconciling clause at the first count.
+
+- **Block belongs to its heading:** For each list, bold run-in label, or paragraph under a
+  heading, ask whether a reader who chose that heading from the table of contents expects to
+  find this block there. A block introduced as "two other cases", "separately", or "also note" is a signal:
+  it means the author knew it didn't fit. A list of limitations sitting under **How to enable
+  it** fails, because a limitation is a behavior, not a step; a "what happens by default"
+  paragraph under **What you can control** fails for the same reason. Fix: move the
+  block under the heading that names its category, or give it its own heading at the same
+  depth as its siblings. This is narrower than **List contents match the enclosing section**:
+  that check is about a list whose items span more than the heading; this one is about a whole
+  block that belongs under a different heading.
+
+- **Heading with a different common meaning:** For each heading, ask what an engineer who has
+  not read the page would expect under it. A term whose dominant meaning in the wider industry
+  differs from its meaning here misleads at the one place readers scan fastest: "Replication"
+  reads as database replication, not as copying a table; "Scheduling" reads as cron, not as the
+  update graph; "Compilation" on a page about query plans reads as compiling code. Fix: use the
+  page's own plain phrase for the behavior and keep the overloaded word for the body, where
+  context disambiguates it. When
+  the fix renames a heading, sweep for inbound anchors to it across both languages (`grep -rn
+  '#old-anchor' docs/`) and update every one; a renamed heading with stale inbound links is a
+  worse state than the original.
+
+- **Illustrative output introduced as such:** This doc set renders real results as table
+  snapshots. A hand-written markdown table that shows what output *might* look like
+  (nondeterministic "wrong" values, a sketch of a shape) renders differently from a snapshot
+  and, with no introduction, reads as a real result that failed to render. Check every
+  markdown table that sits where an output would: if it isn't a snapshot, the sentence before
+  it must say that the table is hand-written, not a rendered result ("one possible result,
+  written out by hand", "the table below is illustrative; your values will differ"). A lead-in
+  such as "you may see results like:" names the content but not the form, so it does not pass:
+  the reader still takes the table for a snapshot that failed to render. A table that sits next
+  to real snapshots on the same page needs this most.
+
+- **Default column holds the value only:** In a configuration or property table, the Default
+  cell contains the literal default and nothing else. A cell such as `` `4096` (half of
+  `maxChunkSize`) `` mixes the value with a relationship, is not symmetrical with
+  the other rows, and gets scanned as part of the value. A dependency between properties, or a
+  note that the default follows another setting, belongs in the description column or on the
+  linked property page. Check each cell of a Default column for anything beyond the value (and
+  its unit).
 
 - **Closing-section and summary placement:** This is about structural placement, not the
   "Related documentation" requirement itself — that's `deephaven-writing-style`'s rule (with its

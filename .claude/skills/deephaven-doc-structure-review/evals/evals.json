@@ -58,6 +58,22 @@
         "Does not claim that the page defines these terms elsewhere"
       ],
       "id": 4
+    },
+    {
+      "prompt": "Do a structure review of this deephaven-core concept guide: .claude/skills/eval-fixtures/parallelization-3748-chip-round4.md. Treat it as docs/python/conceptual/query-engine/parallelization.md (resolve relative links from that path). Report only; don't edit anything.",
+      "expected_output": "Chip Kent's 2026-10-12 review of PR #7457: the page's mental model (three levels, two controls) is never stated in one place; the intro counts 'three ways' while a later section counts 'two levels'; the Deferred evaluation block sits under 'What you can control' although it is not a control; the heading 'Serialization' reads as data serialization; a hand-written table of wrong output is not introduced as illustrative; a Default cell carries a relationship as well as the value.",
+      "files": [
+        "../eval-fixtures/parallelization-3748-chip-round4.md"
+      ],
+      "expectations": [
+        "Reports that the page never states its model (the levels at which work is parallelized and what controls each) in one place, and proposes stating it once early, for example as a table or list under 'What is and isn't parallelized' that pairs each level with its default behavior and its control",
+        "Flags the count mismatch between the intro's 'three ways' (around line 25) and 'two levels' in 'What is and isn't parallelized' (around line 63), and asks for one framing",
+        "Flags the 'Deferred evaluation' block (the 'Two other cases work differently' list, around lines 80-84) as not belonging under the 'What you can control' run-in label, because deferred evaluation is a behavior rather than a control, and proposes moving it or giving it its own heading",
+        "Flags the heading '### Serialization' (around line 159) as a term whose common meaning (converting data to bytes) differs from its meaning here, and proposes a plain heading such as 'Serial execution'",
+        "Flags the hand-written ID table of wrong output (around lines 199-205) as not introduced as illustrative, and proposes a sentence saying it is one possible result",
+        "Flags the Default cell '`false` (opposite of `statelessSelectByDefault`)' in the Configuration table (around line 390) as holding more than the value, and proposes moving the relationship to the description column or the linked page"
+      ],
+      "id": 5
     }
   ]
 }
