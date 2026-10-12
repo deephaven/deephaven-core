@@ -297,7 +297,9 @@ concurrently with itself" into a resource the contract never names, or a Crash C
 that widens "shared mutable state" to any state at all. Treat the fix pass's own
 output as unreviewed content, list each new or changed sentence that makes a claim, and verify
 each against source. A review that finishes with "all findings applied" and no spot-check of the
-applied text is not finished.
+applied text is not finished. This check runs after **Style last**, and the spot-check skill skips
+its own style pass when this orchestrator invokes it, so if the spot-check changes any prose, run
+the style step's mechanical checks on those lines again before pushing.
 
 When the edits come from a set of review comments rather than from this review, triage
 them with `deephaven-docs-address-review-comments` first — it sorts each one into apply,
