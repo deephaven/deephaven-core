@@ -801,10 +801,6 @@
               {
                 "label": "MCP",
                 "path": "how-to-guides/mcp.md"
-              },
-              {
-                "label": "Copilot extension",
-                "path": "how-to-guides/copilot-extension.md"
               }
             ]
           },
