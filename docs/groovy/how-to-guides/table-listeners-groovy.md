@@ -542,6 +542,8 @@ listener = new InstrumentedTableUpdateListenerAdapter("listener", orders, false)
 orders.addUpdateListener(listener)
 ```
 
+![`orders` ticks while the listener prints a send line for each new order and a cancel line for each order that leaves the table](../assets/how-to/listener-orders.gif)
+
 ## Related documentation
 
 - [`timeTable`](../reference/table-operations/create/timeTable.md)
