@@ -79,7 +79,7 @@ parquet.write(
 
 ### To S3
 
-Use [`parquet.write`](../../reference/data-import-export/Parquet/writeTable.md) to write Deephaven tables to Parquet files on S3. The `path` should be the URI of the destination file in S3. Supply an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class to the `special_instructions` argument to specify the details of the connection to the S3 instance. See [Special instructions (S3 only)](#special-instructions-s3-only) for the `S3Instructions` arguments that apply when writing.
+Use [`parquet.write`](../../reference/data-import-export/Parquet/writeTable.md) to write Deephaven tables to Parquet files on S3. The `path` should be the URI of the destination file in S3. Supply an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class to the `special_instructions` argument to specify the details of the connection to the S3 instance. See [Special instructions (S3 and GCS)](#special-instructions-s3-and-gcs) for the `S3Instructions` arguments that apply when writing.
 
 ```python test-set=1
 from deephaven.experimental import s3
@@ -185,7 +185,7 @@ parquet.write_partitioned(
 
 ## Write to a flat partitioned Parquet directory
 
-A flat partitioned directory holds one Parquet file per table in a single directory.
+A flat partitioned directory holds one Parquet file per table, side by side in a single directory, with no nested subdirectories and no partitioning columns. This makes it simpler to manage than a key-value partitioned directory, but with many files, the larger directory listing can slow reads.
 
 ### To local storage
 
@@ -283,7 +283,7 @@ The [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write
   - [`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md) with a regular table: Writes the indexes on the source table, except single-column indexes on a partitioning column.
   - [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write): Writes the indexes on the first table.
   - `write_partitioned` with a partitioned table: Writes no indexes.
-- `special_instructions`: Connection details for writing to S3, provided as an [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) instance. See [Special instructions (S3 only)](#special-instructions-s3-only).
+- `special_instructions`: Connection details for writing to S3, provided as an [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) instance. See [Special instructions (S3 and GCS)](#special-instructions-s3-and-gcs).
 
 [`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md) also accepts a `base_name` argument, which sets the names of the Parquet files it writes in each partition directory.
 
@@ -299,7 +299,7 @@ The `col_instructions` argument to [`write`](/core/pydoc/code/deephaven.parquet.
 - `codec_args`: An implementation-specific argument string passed to the codec named by `codec_name`.
 - `use_dictionary`: A hint to keep [dictionary-based encoding](https://en.wikipedia.org/wiki/Dictionary_coder) for this column. The writer already tries dictionary encoding for every `String` column and every column of `String` arrays or vectors. Setting the hint to `True` removes the `max_dictionary_keys` and `max_dictionary_size` limits for the column, so the writer never falls back to non-dictionary encoding. The writer ignores the hint for other column types. The default is `False`.
 
-### Special instructions (S3 only)
+### Special instructions (S3 and GCS)
 
 The `special_instructions` argument to [`write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write), [`write_partitioned`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned), and [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) is relevant when writing to S3, an S3-compatible store, or Google Cloud Storage (`gs://` URIs), and takes an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class. This class specifies details for connecting to the store.
 

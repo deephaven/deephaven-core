@@ -191,7 +191,7 @@ ParquetTools.writeKeyValuePartitionedTable(
 
 ## Write to a flat partitioned Parquet directory
 
-A flat partitioned directory holds one Parquet file per table in a single directory.
+A flat partitioned directory holds one Parquet file per table, side by side in a single directory, with no nested subdirectories and no partitioning columns. This makes it simpler to manage than a key-value partitioned directory, but with many files, the larger directory listing can slow reads.
 
 ### To local storage
 

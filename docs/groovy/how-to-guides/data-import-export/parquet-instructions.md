@@ -63,7 +63,7 @@ Some builder methods apply only when reading, some only when writing, and some t
 
 - `addIndexColumns(indexColumns...)` and `addAllIndexColumns(indexColumns)`: Add columns to persist together as [indexes](../data-indexes.md#persist-data-indexes-with-parquet). `addIndexColumns` adds one list of columns as one index. `addAllIndexColumns` takes an iterable of lists, and each list is one index.
   - The write operation stores each index as a separate Parquet file in a `.dh_metadata/indexes/` subdirectory of the directory that holds the data file.
-  - If you call neither method, the writer persists every index that already exists on the source table.
+  - If you call neither method, the default depends on the write method. `writeTable` persists the indexes that already exist on the source table, and `writeTables` persists those of the first source table. `writeKeyValuePartitionedTable` with a regular table persists the source table's existing indexes, except indexes on a partitioning column. With a `PartitionedTable`, it writes no indexes.
   - Use these methods to narrow the set of indexes to write, or to state the indexes expected on all sources.
   - Indexes that are specified but missing are computed on demand.
   - You can't add an index on a single partitioning column.
