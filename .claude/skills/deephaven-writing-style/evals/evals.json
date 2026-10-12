@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Do a style review of this draft excerpt for a deephaven-core concept guide: .claude/skills/deephaven-writing-style/evals/files/parallel-excerpt.md. Report only — don't edit anything.",
+      "prompt": "Do a style review of this draft excerpt for a deephaven-core concept guide: .claude/skills/deephaven-writing-style/evals/files/parallel-excerpt.md. Report only \u2014 don't edit anything.",
       "expected_output": "A style report that flags coined terminology and non-synonym interchange, and the caveat parenthetical, along with the standard mechanical violations.",
       "files": [
         "evals/files/parallel-excerpt.md"
@@ -13,13 +13,13 @@
         "Suggests the standard term 'pure function' for 'only does math on its inputs and doesn't touch anything else'",
         "Flags that 'stateless' and 'thread-safe' are used interchangeably (including the sentence saying they mean the same thing) although they are different properties",
         "Flags the parenthetical carrying a configuration property ('controlled by QueryTable.statelessSelectByDefault') as not belonging mid-sentence",
-        "Flags `.with_serial()` in prose (leading dot and parentheses) — control assertion that both versions should pass",
+        "Flags `.with_serial()` in prose (leading dot and parentheses) \u2014 control assertion that both versions should pass",
         "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link"
       ]
     },
     {
       "id": 2,
-      "prompt": "Do a style review of this draft excerpt for a deephaven-core concept guide: .claude/skills/deephaven-writing-style/evals/files/fanout-excerpt.md. Report only — don't edit anything.",
+      "prompt": "Do a style review of this draft excerpt for a deephaven-core concept guide: .claude/skills/deephaven-writing-style/evals/files/fanout-excerpt.md. Report only \u2014 don't edit anything.",
       "expected_output": "A subtler terminology fixture than eval 1: coined 'fan-out' labels, a paraphrase of 'pure function', stateless/thread-safe used as synonyms without saying so, and a standalone configuration sentence in narrative.",
       "files": [
         "evals/files/fanout-excerpt.md"
@@ -33,7 +33,7 @@
       ]
     },
     {
-      "prompt": "Do a style review of this excerpt of a deephaven-core concept guide: .claude/skills/deephaven-writing-style/evals/files/awk-excerpt.md. Report only — don't edit anything.",
+      "prompt": "Do a style review of this excerpt of a deephaven-core concept guide: .claude/skills/deephaven-writing-style/evals/files/awk-excerpt.md. Report only \u2014 don't edit anything.",
       "expected_output": "Flags the real paragraphs Chip Kent called awkward (GIL paragraph, barrier definition, execution-order sentence, implicit-barriers opener, configuration intro) as hard to read (with the punctuation as the evidence), reports it as one pattern, proposes rewrites in plain short sentences or a bullet list, and leaves the two clean paragraphs alone.",
       "files": [
         "evals/files/awk-excerpt.md"
@@ -42,33 +42,33 @@
         "Flags the GIL paragraph ('Most Python builds use the GIL ...' with its semicolon) as hard to read because of its punctuation or compound structure, and proposes splitting it into separate sentences",
         "Flags the Barrier definition paragraph (colon, bold terms, and a semicolon in one sentence) as hard to read and proposes plain separate sentences or a short list",
         "Flags the 'Execution order: A and B run in parallel ...' paragraph and proposes a bullet list with one bullet per column (or equivalent enumeration)",
-        "Flags the implicit-barriers opener ('When implicit barriers are enabled ... — two serial columns ... without explicit barriers:' ) as hard to read because of its dash-and-colon structure and proposes splitting it",
+        "Flags the implicit-barriers opener ('When implicit barriers are enabled ... \u2014 two serial columns ... without explicit barriers:' ) as hard to read because of its dash-and-colon structure and proposes splitting it",
         "Flags the configuration intro ('Parallelization needs no configuration. These properties tune it; defaults ...') as hard to read because of its semicolon structure and proposes plain sentences",
         "Reports the problem as one named pattern (a hard-to-read sentence or paragraph, with punctuation such as colons, em dashes, parentheticals, or semicolons as the evidence) rather than only as unrelated one-off comments",
         "Rewritten text offered for the flagged paragraphs contains no semicolons and no em-dash or parenthetical asides inside a sentence (an acronym expansion such as '(global interpreter lock)' that defines a term on first use is not an aside)",
-        "Control: does not flag the 'Updates' paragraph under Query phases, or the 'Column A gets values 0–9. Column B gets values 10–19.' paragraph, as hard to read",
+        "Control: does not flag the 'Updates' paragraph under Query phases, or the 'Column A gets values 0\u20139. Column B gets values 10\u201319.' paragraph, as hard to read",
         "No proposed rewrite or replacement text puts a configuration property name or default into narrative prose (a separate sentence in the same paragraph counts); precise values are sent to a Configuration section or a reference link",
-        "Control: does not flag as hard to read the 'The three mechanisms above apply to operations that compute and store their results when they run:' sentence (a colon introducing a bullet list), the 'To fix this, create a `Selectable` object and apply `with_serial`:' sentence (a colon introducing a code block), or the 'Most users don't need to change this setting — see Configuration.' sentence (one dash before a pointer)"
+        "Control: does not flag as hard to read the 'The three mechanisms above apply to operations that compute and store their results when they run:' sentence (a colon introducing a bullet list), the 'To fix this, create a `Selectable` object and apply `with_serial`:' sentence (a colon introducing a code block), or the 'Most users don't need to change this setting \u2014 see Configuration.' sentence (one dash before a pointer)"
       ],
       "id": 3
     },
     {
-      "prompt": "Do a style review of the section 'Controlling execution order' (through the end of 'Serial filters') of this deephaven-core concept guide: .claude/skills/eval-fixtures/parallelization-609b-chip-round2.md. Treat the file as docs/python/conceptual/query-engine/parallelization.md when judging links. Report only — don't edit anything.",
-      "expected_output": "Finds identifiers in the section's opening that are bare even though the page links them earlier, recommends a bounded per-section linking rule, and does not ask for every occurrence to be linked or touch code blocks.",
+      "prompt": "Do a style review of the section 'Controlling execution order' (through the end of 'Serial filters') of this deephaven-core concept guide: .claude/skills/eval-fixtures/parallelization-609b-chip-round2.md. Treat the file as docs/python/conceptual/query-engine/parallelization.md when judging links. Report only \u2014 don't edit anything.",
+      "expected_output": "Finds identifiers in the section's opening paragraph and bullets that are bare even though the page links them earlier, states the per-paragraph and per-list-item linking rule, and does not ask for every occurrence within one sentence or paragraph to be linked or touch code blocks.",
       "files": [
         "../eval-fixtures/parallelization-609b-chip-round2.md"
       ],
       "expectations": [
         "Flags `with_serial` in the section's opening paragraph (its first mention in the section) as unlinked, even though the page's opening callout already links it, and gives the link target (Selectable.md#with_serial or the update.md serial-execution anchor)",
         "Flags `select` and `update` in the Selectable bullet and `where` in the Filter bullet as unlinked in the section and gives their reference-page targets",
-        "States the rule as linking the first mention of an identifier within each major section (or equivalent: readers who land on a section from its heading should find the links there), not only the first mention in the whole file",
-        "Does not ask for every later occurrence of an identifier to be linked (no 'link all N mentions of with_serial' recommendation)",
+        "States the rule as linking the first mention of an identifier within each paragraph, list, or section-opening (or equivalent: readers who land mid-page should find the links where they are), not only the first mention in the whole file",
+        "Does not ask for every occurrence within one sentence or one paragraph to be linked (no 'link all N mentions of with_serial in this paragraph' recommendation)",
         "Control: does not flag identifiers that appear only inside fenced code blocks, code comments, or headings"
       ],
       "id": 4
     },
     {
-      "prompt": "Do a style review of this excerpt of a deephaven-core concept guide, focusing on the bullet lists: .claude/skills/deephaven-writing-style/evals/files/bullets-excerpt.md. Report only — don't edit anything.",
+      "prompt": "Do a style review of this excerpt of a deephaven-core concept guide, focusing on the bullet lists: .claude/skills/deephaven-writing-style/evals/files/bullets-excerpt.md. Report only \u2014 don't edit anything.",
       "expected_output": "Flags the Filter bullet that carries an unrelated second sentence and the final Key takeaways bullet that holds three ideas, proposes splitting, and leaves the single-idea bullets alone.",
       "files": [
         "evals/files/bullets-excerpt.md"
@@ -82,13 +82,13 @@
       "id": 5
     },
     {
-      "prompt": "Do a style review of this excerpt of a deephaven-core concept guide, focusing on how column names are written in prose: .claude/skills/deephaven-writing-style/evals/files/column-names-excerpt.md. Report only — don't edit anything.",
+      "prompt": "Do a style review of this excerpt of a deephaven-core concept guide, focusing on how column names are written in prose: .claude/skills/deephaven-writing-style/evals/files/column-names-excerpt.md. Report only \u2014 don't edit anything.",
       "expected_output": "Flags bare column names (column A, column B), including names used alone in a coordinated phrase ('A and B run in parallel', 'D starts after A finishes'), states the backtick convention, and leaves code comments alone.",
       "files": [
         "evals/files/column-names-excerpt.md"
       ],
       "expectations": [
-        "Flags column names written bare in prose (for example 'column A', 'column B', 'Column A gets values 0–9') and proposes backticking the name, as in column `A`",
+        "Flags column names written bare in prose (for example 'column A', 'column B', 'Column A gets values 0\u20139') and proposes backticking the name, as in column `A`",
         "States that column names in prose are backticked as a convention of this doc set (a corpus count or a rule from the skill), not as personal preference",
         "Control: does not ask for the '# Column A: ...' comments inside the fenced code block to be changed",
         "Does not ask for the generic word 'column' itself, or the words 'declares' and 'respects', to be backticked",
@@ -97,7 +97,7 @@
       "id": 6
     },
     {
-      "prompt": "Do a style review of this draft excerpt for a deephaven-core Crash Course chapter: .claude/skills/eval-fixtures/crash-course-parallelization-pre-review.md. Report only — don't edit anything.",
+      "prompt": "Do a style review of this draft excerpt for a deephaven-core Crash Course chapter: .claude/skills/eval-fixtures/crash-course-parallelization-pre-review.md. Report only \u2014 don't edit anything.",
       "expected_output": "Held-out fixture, not used to write the new rules: finds the colon sentence that explains with_serial and the bare with_serial in Key takeaways, and does not over-flag the two-sentence bullets in 'When it breaks'.",
       "files": [
         "../eval-fixtures/crash-course-parallelization-pre-review.md"
@@ -111,7 +111,7 @@
     },
     {
       "id": 8,
-      "prompt": "Do a style review of this excerpt of a deephaven-core concept guide, focusing on links to reference pages: .claude/skills/deephaven-writing-style/evals/files/bare-types-excerpt.md. Treat it as docs/python/conceptual/query-engine/parallelization.md. Report only — don't edit anything.",
+      "prompt": "Do a style review of this excerpt of a deephaven-core concept guide, focusing on links to reference pages: .claude/skills/deephaven-writing-style/evals/files/bare-types-excerpt.md. Treat it as docs/python/conceptual/query-engine/parallelization.md. Report only \u2014 don't edit anything.",
       "expected_output": "Flags the bare type names Selectable and Filter in the opening section's bullets (their links appear only later in the section), gives the link targets, and leaves the code block alone.",
       "files": [
         "evals/files/bare-types-excerpt.md"
@@ -121,6 +121,35 @@
         "Flags `Filter` in the second bullet of the opening section as unlinked at its first mention and gives the link target (the Filter reference page, visible later in the excerpt)",
         "Treats the type names as needing the same first-mention link as method names (does not limit the finding to method-shaped identifiers like with_serial)",
         "Control: does not ask for `Selectable` in the fenced code block (the import line or `Selectable.parse`) to be linked"
+      ]
+    },
+    {
+      "prompt": "Check the code example tags in this excerpt of a deephaven-core how-to guide: .claude/skills/deephaven-writing-style/evals/files/order-tags-excerpt.md. Treat it as docs/python/how-to-guides/joins-exact-relational.md. Report only \u2014 don't edit anything.",
+      "expected_output": "Flags the two later blocks whose order= tags list employees and departments, which those blocks don't create (the setup block does), and says to list only result there.",
+      "files": [
+        "evals/files/order-tags-excerpt.md"
+      ],
+      "expectations": [
+        "Flags the natural_join and exact_join blocks' order= tags for listing employees and departments, which those blocks don't create",
+        "Recommends listing only the tables each block creates (result), leaving employees and departments in the setup block's order= tag",
+        "Control: does not flag the setup block's order=employees,departments tag or the shared test-set=1 tag"
+      ],
+      "id": 9
+    },
+    {
+      "id": 10,
+      "prompt": "Do a style review of this deephaven-core concept guide, focusing on links to reference pages and readability: .claude/skills/eval-fixtures/parallelization-bf29-chip-round3.md. Treat it as docs/python/conceptual/query-engine/parallelization.md (resolve relative links from that path). Report only; don't edit anything.",
+      "expected_output": "Flags the bare API mentions a reviewer flagged on this text: Filter and Selectable in the 'works the same way' sentence, with_serial and Barriers as bold lead terms in the contrast bullets, and select/update/where/view/update_view (and bare with_serial) in Key takeaways, each with a link target. Flags the Implicit barriers section as a wall of text and proposes a definition plus short lists. Addresses 'with no Deephaven configuration': either flags it as a qualifier with no concrete meaning or explains that it states a checkable fact.",
+      "files": [
+        "../eval-fixtures/parallelization-bf29-chip-round3.md"
+      ],
+      "expectations": [
+        "Flags `Filter` and `Selectable` as unlinked in the sentence 'Concurrency control works the same way for a `Filter` as for a `Selectable`.' (around line 139), even though the bullets just above link them, and gives the link targets",
+        "Flags `with_serial` and Barriers as unlinked bold lead terms in the bullets that contrast the two controls (around lines 143-144), and gives link targets (Selectable.md#with_serial and the #barriers anchor or equivalent)",
+        "Flags the bare `select`, `update`, `where`, `view`, and `update_view` in the Key takeaways bullets (around line 370) as needing links, with their reference-page targets",
+        "Flags the Implicit barriers section (around lines 342-346) as hard to read as dense prose (a wall of text), and proposes restructuring it, for example a one-sentence definition followed by short lists",
+        "Addresses 'with no Deephaven configuration' (around line 93): either flags it as vague and proposes the concrete fact or removing it, or explicitly explains that it already states a checkable fact (no property to set). Silence about the phrase fails",
+        "Control: does not ask for links inside headings or fenced code blocks, and does not ask for an identifier to be linked more than once within the same sentence"
       ]
     }
   ]

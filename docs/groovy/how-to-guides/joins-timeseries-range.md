@@ -5,7 +5,7 @@ title: Inexact, time-series, and range joins
 This guide covers as-of, reverse-as-of, and range joins in Deephaven. As-of joins are often referred to as time-series joins because they provide a mechanism for joining tables based on time columns, largely with the assumption that the match will often be inexact. All of these joins combine columns from two tables based on either 1) a single inexact key, like an ordered timestamp column, or 2) one or more exact, relational keys and a single inexact key.
 
 - As-of joins ([`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/table-operations/join/raj.md)) use inexact matches to join the data by looking for the closest match in the respective join-key column if no exact match exists. Think: "Go grab data from (i) the row in the right table that has a timestamp equal to the timestamp in this row of the left table, or (ii) the best candidate row from the right table with the timestamp closest to this timestamp.
-- A [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) de facto finds all of the rows from the right table matching the range criteria. One can imagine a range join performing an `aj` and an `raj` at the same time and providing all of the rows in between. This is often a set up for an aggregation: Sum all the records in Column XYZ in the right table between the Time1 and Time2 in this row of the left table.
+- A [`rangeJoin`](../reference/table-operations/join/range-join.md) de facto finds all of the rows from the right table matching the range criteria. One can imagine a range join performing an `aj` and an `raj` at the same time and providing all of the rows in between. This is often a set up for an aggregation: Sum all the records in Column XYZ in the right table between the Time1 and Time2 in this row of the left table.
 
 ## Syntax
 
@@ -25,6 +25,7 @@ The syntax for performing a range join is as follows:
 
 ```groovy syntax
 result = leftTable.rangeJoin(rightTable, exactMatches, rangeMatch, aggregations)
+result = leftTable.rangeJoin(rightTable, columnsToMatch, aggregations)
 ```
 
 Where:
@@ -32,10 +33,11 @@ Where:
 - `rightTable` is the table to join with.
 - `exactMatches` is a collection of [`JoinMatch`](/core/javadoc/io/deephaven/api/JoinMatch.html) objects that dictate exact-match criteria.
 - `rangeMatch` specifies the range match criteria for determining the responsive rows from `rightTable` for each row from the left table.
+- `columnsToMatch` is a collection of strings holding zero-or-more exact match expressions followed by a single range match expression, such as `List.of("Key", "LeftStart < RightValue < LeftEnd")`. It replaces `exactMatches` and `rangeMatch`.
 - `aggregations` are the aggregations to perform over the responsive ranges from `rightTable` for each row from the left table.
 
 > [!NOTE]
-> [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) only supports static tables and the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation. `null` and `NaN` values in the right range column are discarded. For all rows that are not discarded, the right table must be sorted according to the right range column for all rows within a group.
+> [`rangeJoin`](../reference/table-operations/join/range-join.md) only supports static tables and the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation. `null` and `NaN` values in the right range column are discarded. For all rows that are not discarded, the right table must be sorted according to the right range column for all rows within a group.
 
 The two types of joins have some common parameters:
 
@@ -46,9 +48,9 @@ For [`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/ta
 
 - `columnsToAdd`: The column(s) in the right table to join to the left table. If not specified, all columns are joined.
 
-For [`rangeJoin`](../reference/table-operations/join/rangeJoin.md), the third argument is also optional:
+For [`rangeJoin`](../reference/table-operations/join/range-join.md), the `aggregations` argument is required:
 
-- `aggregations`: The aggregation(s) to perform over the responsive ranges from the right table for each row from the left table. If not specified, no aggregations are performed. Currently, only the [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation is supported.
+- `aggregations`: The aggregation(s) to perform over the responsive ranges from the right table for each row from the left table. Currently, only the [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation is supported.
 
 ### Multiple match columns
 
@@ -194,7 +196,7 @@ result = trades.raj(quotes, "Ticker, Timestamp", "Quote_Time = Timestamp, Bid, A
 
 ## `rangeJoin`
 
-[`rangeJoin`](../reference/table-operations/join/rangeJoin.md) creates a new table containing _all_ of the rows and columns of the left table, plus additional columns containing aggregated data from the right table. It is a join plus an aggregation that:
+[`rangeJoin`](../reference/table-operations/join/range-join.md) creates a new table containing _all_ of the rows and columns of the left table, plus additional columns containing aggregated data from the right table. It is a join plus an aggregation that:
 
 - Joins arrays of data from the right table onto the left table.
 - Aggregates over the joined data.
@@ -202,9 +204,9 @@ result = trades.raj(quotes, "Ticker, Timestamp", "Quote_Time = Timestamp, Bid, A
 For columns appended to the left table (joins), cell values equal aggregations over vectors of values from the right table. These vectors are formed from all values in the right table where the right table keys fall within the ranges of keys defined by the left table (responsive ranges).
 
 > [!NOTE]
-> Reminders: (i) [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) currently only supports static tables, not yet live, real-time data; and (ii) the only aggregation currently supported is the `group` operation.
+> Reminders: (i) [`rangeJoin`](../reference/table-operations/join/range-join.md) currently only supports static tables, not yet live, real-time data; and (ii) the only aggregation currently supported is the `group` operation.
 
-The following example joins two tables with [`rangeJoin`](../reference/table-operations/join/rangeJoin.md). The `right` table is joined to `left` on the `Y` column. The **range match expression** specifies that matching rows should contain a value in the `RightValue` column that is greater than the corresponding `LeftStartValue` row and less than the corresponding `LeftEndValue` row. The last argument groups the `result` table's `X` column.
+The following example joins two tables with [`rangeJoin`](../reference/table-operations/join/range-join.md). The example uses no exact match columns, so every `right` row is a candidate for every `left` row. The **range match expression** specifies that matching rows should contain a value in the `RightValue` column that is greater than the corresponding `LeftStartValue` row and less than the corresponding `LeftEndValue` row. The last argument groups the `Y` values of the matching `right` rows into the `result` table's `Y` column.
 
 ```groovy test-set=1 order=result,left,right
 left = emptyTable(20).updateView("X = ii", "LeftStartValue = ii / 0.7", "LeftEndValue = ii / 0.1")
@@ -213,9 +215,9 @@ right = emptyTable(20).updateView("X = ii", "RightValue = ii / 0.3", "Y = X % 5"
 result = left.rangeJoin(right, List.of("LeftStartValue < RightValue < LeftEndValue"), List.of(AggGroup("Y")))
 ```
 
-For a detailed explanation of this example, see [`rangeJoin`](../reference/table-operations/join/rangeJoin.md#examples).
+For a detailed explanation of a similar example that also uses an exact match column, see [`rangeJoin`](../reference/table-operations/join/range-join.md#examples).
 
-Queries often follow up a [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) with an [`update`](../reference/table-operations/select/update.md) or [`updateView`](../reference/table-operations/select/update-view.md) that calls a Groovy closure that operates on the result. The following code block updates the `result` table from the previous example with a [user-defined function](./groovy-closures.md).
+Queries often follow up a [`rangeJoin`](../reference/table-operations/join/range-join.md) with an [`update`](../reference/table-operations/select/update.md) or [`updateView`](../reference/table-operations/select/update-view.md) that calls a Groovy closure that operates on the result. The following code block updates the `result` table from the previous example with a [user-defined function](./groovy-closures.md).
 
 ```groovy test-set=1 order=resultSummed
 sumGroup = { arr ->
@@ -229,7 +231,7 @@ sumGroup = { arr ->
 resultSummed = result.update("SumY = sumGroup(Y)")
 ```
 
-The following example uses [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) using date-time columns as range keys. This is the most common use case, since it groups all events that happened in a given time frame. Like the previous example, the resultant grouped column is summed.
+The following example uses [`rangeJoin`](../reference/table-operations/join/range-join.md) using date-time columns as range keys. This is the most common use case, since it groups all events that happened in a given time frame. Like the previous example, the resultant grouped column is summed. The grouped output is named `RightY` so that it does not replace the left table's `Y` column.
 
 ```groovy order=resultSummed,result,left,right
 left = emptyTable(20).update(
@@ -241,7 +243,7 @@ left = emptyTable(20).update(
 
 right = emptyTable(20).update("Timestamp = '2024-01-01T08:00:03 ET' + i * SECOND", "X = ii", "Y = X % 6")
 
-result = left.rangeJoin(right, List.of("StartTime < Timestamp < EndTime"), List.of(AggGroup("Y")))
+result = left.rangeJoin(right, List.of("StartTime < Timestamp < EndTime"), List.of(AggGroup("RightY = Y")))
 
 sumArr = { arr ->
     if (!arr) {
@@ -251,7 +253,7 @@ sumArr = { arr ->
     }
 }
 
-resultSummed = result.update("SumY = sumArr(Y)")
+resultSummed = result.update("SumRightY = sumArr(RightY)")
 ```
 
 ## Which method should you use?
@@ -261,9 +263,9 @@ Inexact join methods like [`aj`](../reference/table-operations/join/aj.md) and [
 - Use [`aj`](../reference/table-operations/join/aj.md) to find the closest match _before_ or at an event.
 - Use [`raj`](../reference/table-operations/join/raj.md) to find the closest match _after_ or at an event.
 
-A [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) currently only supports static tables and the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation.
+A [`rangeJoin`](../reference/table-operations/join/range-join.md) currently only supports static tables and the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation.
 
-- Use [`rangeJoin`](../reference/table-operations/join/rangeJoin.md) when data is static, and you want to group data that falls in a range between values in each table.
+- Use [`rangeJoin`](../reference/table-operations/join/range-join.md) when data is static, and you want to group data that falls in a range between values in each table.
 
 The following figure presents a flowchart to help choose the right join method for your query.
 
@@ -274,4 +276,4 @@ The following figure presents a flowchart to help choose the right join method f
 - [Exact and relational joins](./joins-exact-relational.md)
 - [`aj`](../reference/table-operations/join/aj.md)
 - [`raj`](../reference/table-operations/join/raj.md)
-- [`rangeJoin`](../reference/table-operations/join/rangeJoin.md)
+- [`rangeJoin`](../reference/table-operations/join/range-join.md)

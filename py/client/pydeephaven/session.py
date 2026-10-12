@@ -17,7 +17,6 @@ from typing import Any, NewType, Optional, Union, cast
 import grpc
 import pyarrow as pa
 import pyarrow.flight as paflight
-from bitstring import BitArray
 from pyarrow._flight import ClientMiddleware, ClientMiddlewareFactory
 
 from pydeephaven._app_service import AppService
@@ -168,7 +167,6 @@ class Session:
         )  # for thread-safety when accessing/changing session global state
         self._services_lock = threading.Lock()  # for lazy initialization of services
         self._last_export_ticket_number: int = 0
-        self._ticket_bitarray = BitArray(1024)
 
         if not host:
             self._host = os.environ.get("DH_HOST", "localhost")

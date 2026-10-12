@@ -19,13 +19,13 @@ An `IcebergTableAdapter` is constructed with [`IcebergCatalogAdapter.load_table`
 
 <!-- TODO: https://github.com/deephaven/deephaven.io/issues/4111 -->
 
-The following example creates an `IcebergTableAdapter` called `iceberg_taxis` from an `IcebergCatalogAdapter`. The catalog adapter is created using a local MinIO instance and a REST catalog. The table adapter is then used to get a table of all available snapshots, load the table definition, and load the `taxis` Iceberg table into a Deephaven table:
+The following example creates an `IcebergTableAdapter` called `iceberg_taxis` from an `IcebergCatalogAdapter`. The catalog adapter is created using a local RustFS instance and a REST catalog. The table adapter is then used to get a table of all available snapshots, load the table definition, and load the `taxis` Iceberg table into a Deephaven table:
 
 ```python docker-config=iceberg order=taxis,taxi_snapshots
 from deephaven.experimental import iceberg
 
 local_adapter = iceberg.adapter_s3_rest(
-    name="minio-iceberg",
+    name="rustfs-iceberg",
     catalog_uri=catalog_uri,
     warehouse_location=warehouse_location,
     region_name=aws_region,

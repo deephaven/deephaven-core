@@ -70,13 +70,13 @@ An [`IcebergCatalogAdapter`](./iceberg-catalog-adapter.md).
 
 ## Examples
 
-The following example creates a catalog adapter using a local MinIO instance and REST catalog:
+The following example creates a catalog adapter using a local RustFS instance and REST catalog:
 
 ```python docker-config=iceberg order=null
 from deephaven.experimental import iceberg
 
 local_adapter = iceberg.adapter_s3_rest(
-    name="minio-iceberg",
+    name="rustfs-iceberg",
     catalog_uri=catalog_uri,
     warehouse_location=warehouse_location,
     region_name=aws_region,

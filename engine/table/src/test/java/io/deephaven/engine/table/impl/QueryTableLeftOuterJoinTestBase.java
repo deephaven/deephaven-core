@@ -1185,9 +1185,9 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 boolean leftTicking = lt == 1;
                 boolean rightTicking = rt == 1;
                 testStaticJoin(types, cardinality, types.length, types.length, leftTicking, rightTicking,
-                        TestJoinControl.OVERFLOW_BUILD_LEFT);
+                        TestJoinControl.SMALL_TABLE_BUILD_LEFT);
                 testStaticJoin(types, cardinality, types.length, types.length, leftTicking, rightTicking,
-                        TestJoinControl.OVERFLOW_BUILD_RIGHT);
+                        TestJoinControl.SMALL_TABLE_BUILD_RIGHT);
             }
         }
     }
@@ -1357,11 +1357,11 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
             for (int seed = 0; seed < MAX_SEEDS; ++seed) {
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     testIncrementalWithKeyColumns("size == " + size, size, seed, false, new MutableInt(20),
-                            TestJoinControl.OVERFLOW_BUILD_LEFT);
+                            TestJoinControl.SMALL_TABLE_BUILD_LEFT);
                 }
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     testIncrementalWithKeyColumns("size == " + size, size, seed, false, new MutableInt(20),
-                            TestJoinControl.OVERFLOW_BUILD_RIGHT);
+                            TestJoinControl.SMALL_TABLE_BUILD_RIGHT);
                 }
             }
         }
@@ -1378,7 +1378,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                         intCol("RS", IntStream.range(sentinelOffset, sentinelOffset + size).toArray()));
 
         final Table result =
-                doLeftOuterJoin(leftTable, rightTable, "LK=RK", "RK,RS", TestJoinControl.OVERFLOW_BUILD_RIGHT);
+                doLeftOuterJoin(leftTable, rightTable, "LK=RK", "RK,RS", TestJoinControl.SMALL_TABLE_BUILD_RIGHT);
 
         TableTools.showWithRowSet(result);
 
@@ -1434,7 +1434,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                         intCol("RS", IntStream.range(sentinelOffset, sentinelOffset + size).toArray()));
 
         final Table result =
-                doLeftOuterJoin(leftTable, rightTable, "LK=RK", "RK,RS", TestJoinControl.OVERFLOW_BUILD_LEFT);
+                doLeftOuterJoin(leftTable, rightTable, "LK=RK", "RK,RS", TestJoinControl.SMALL_TABLE_BUILD_LEFT);
 
         TableTools.showWithRowSet(result);
 
@@ -1611,12 +1611,12 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
 
             @Override
             public double getMaximumLoadFactor() {
-                return 20;
+                return 0.95;
             }
 
             @Override
             public double getTargetLoadFactor() {
-                return 19;
+                return 0.9;
             }
         };
 

@@ -20,7 +20,7 @@ The following code block demonstrates reading an Iceberg table into Deephaven an
 from deephaven.experimental import iceberg
 
 local_adapter = iceberg.adapter_s3_rest(
-    name="minio-iceberg",
+    name="rustfs-iceberg",
     catalog_uri=catalog_uri,
     warehouse_location=warehouse_location,
     region_name=aws_region,
