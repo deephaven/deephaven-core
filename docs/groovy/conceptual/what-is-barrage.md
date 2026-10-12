@@ -72,7 +72,6 @@ Viewports are automatically managed by Deephaven's web UI and JavaScript client.
 
 > [!NOTE]
 > The Python `BarrageSession` API currently supports full-table subscriptions. Viewport functionality is available through the JavaScript client or by subscribing to pre-filtered tables.
-> The Python `BarrageSession` API currently supports full-table subscriptions. Viewport functionality is available through the JavaScript client.
 
 ### Update intervals and batching
 
@@ -119,7 +118,7 @@ Barrage is fully compatible with Arrow Flight — you can use a standard Flight 
 
 ## Related documentation
 
-- [Capture Python client tables](../how-to-guides/capture-tables.md) - Complete tutorial for using Barrage with the Python client
+- [Capture Python client tables with Barrage](../how-to-guides/capture-tables.md)
 - [Barrage metrics](../how-to-guides/performance/barrage-performance.md) - Monitor Barrage performance
 - [Interpret Barrage metrics](./barrage-metrics.md) - Understand what the metrics mean
 - [Barrage schema annotation](../how-to-guides/data-import-export/barrage-schema.md) - Annotate schemas for complex types

@@ -15,7 +15,8 @@ barrage_session(
   auth_type: str = 'Anonymous',
   auth_token: str = '',
   use_tls: bool = False,
-  tls_root_certs: bytes = None
+  tls_root_certs: bytes = None,
+  extra_headers: dict[str, str] = None,
 ) -> BarrageSession
 ```
 
@@ -49,7 +50,12 @@ If `True`, the connection will be encrypted using TLS. The default is `False`.
 </Param>
 <Param name="tls_root_certs" type="bytes" optional>
 
-The PEM-encoded root certificates to use for TLS connection, or `None` to use system defaults. `True` implies the use of a TLS connection and the `use_tls` argument should be passed as `True`. Defaults to `None`.
+The PEM-encoded root certificates to use for TLS connection, or `None` to use system defaults. A value other than `None` implies a TLS connection, so `use_tls` should also be `True`. Defaults to `None`.
+
+</Param>
+<Param name="extra_headers" type="dict[str, str]" optional>
+
+Extra headers to set when configuring the gRPC channel. Defaults to `None`.
 
 </Param>
 </ParamTable>

@@ -103,7 +103,7 @@ Create a keyed input table with [`InMemoryKeyBackedInputTable`](/core/javadoc/io
 // Single key column
 TableSpec singleKeySpec = InMemoryKeyBackedInputTable.of(header, java.util.List.of("DeviceId"));
 
-// Multiple key columns
+// Multiple key columns (the header must also define a Region column)
 TableSpec multiKeySpec = InMemoryKeyBackedInputTable.of(header, java.util.List.of("DeviceId", "Region"));
 ```
 
@@ -206,7 +206,7 @@ public class DeviceStatusTracker {
         // Use try-with-resources to ensure handle is closed even if publish() fails
         ScopeId scopeId;
         try (TableHandle inputTableHandle = flight.session().execute(inputTableSpec)) {
-            // Publish so it's visible in the UI (check http://localhost:10000/ide)
+            // Publish so it's visible in the web IDE (http://localhost:10000/ide)
             flight.session().publish("device_status", inputTableHandle).get(5, TimeUnit.SECONDS);
             // Handle closes here - the server-side table persists via the query scope
             scopeId = new ScopeId("device_status");

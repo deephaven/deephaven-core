@@ -496,6 +496,6 @@ To send data from the client without running code on the server, use [input tabl
 
 ## Related documentation
 
-- [Java client input tables](./java-client-input-tables.md)
+- [Send data to Deephaven from a Java client](./java-client-input-tables.md)
 - [Arrow Flight](./data-import-export/arrow-flight.md)
 - [Servers and clients](../conceptual/client-server-model.md)

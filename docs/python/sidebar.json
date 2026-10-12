@@ -836,7 +836,7 @@
                     "path": "how-to-guides/capture-tables.md"
                   },
                   {
-                    "label": "Stream data with Input Tables",
+                    "label": "Stream data with input tables",
                     "path": "how-to-guides/client-input-tables.md"
                   }
                 ]

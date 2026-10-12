@@ -119,7 +119,7 @@ Barrage is fully compatible with Arrow Flight — you can use a standard Flight 
 ## Related documentation
 
 - [`barrage_session` reference](../reference/data-import-export/barrage/barrage-session.md) - API reference for creating Barrage sessions
-- [Capture Python client tables](../how-to-guides/capture-tables.md) - Complete tutorial for using Barrage with the Python client
+- [Capture Python client tables with Barrage](../how-to-guides/capture-tables.md)
 - [Barrage metrics](../how-to-guides/performance/barrage-performance.md) - Monitor Barrage performance
 - [Interpret Barrage metrics](./barrage-metrics.md) - Understand what the metrics mean
 - [Barrage schema annotation](../how-to-guides/data-import-export/barrage-schema.md) - Annotate schemas for complex types
