@@ -274,7 +274,7 @@ Deephaven reads an S3 object in fragments, which are byte ranges of the file tha
 
 The `write_timeout`, `write_part_size`, and `num_concurrent_write_parts` arguments apply only when writing to S3. See the [`S3Instructions` pydoc](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) for details.
 
-The `access_key_id`, `secret_access_key`, and `anonymous_access` arguments are deprecated. Use [`Credentials.basic(access_key_id, secret_access_key)`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.basic) or [`Credentials.anonymous()`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.anonymous) for the `credentials` argument instead.
+The `access_key_id`, `secret_access_key`, and `anonymous_access` arguments are deprecated. Use [`Credentials.basic(access_key_id, secret_access_key)`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.basic) or [`Credentials.anonymous`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.anonymous) for the `credentials` argument instead.
 
 ## Related documentation
 

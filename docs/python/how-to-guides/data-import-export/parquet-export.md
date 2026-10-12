@@ -313,7 +313,7 @@ The following [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html
 
   If none of these gives the bucket's correct region, Deephaven looks up the region with one additional request.
 
-- `credentials`: The [credentials object](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials) for authenticating to the S3 instance. The default is `Credentials.resolving()`.
+- `credentials`: The [credentials object](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials) for authenticating to the S3 instance. The default is `Credentials.resolving`.
 - `endpoint_override`: The endpoint to connect to. Connections to AWS rarely need it. Set it when connecting to a non-AWS, S3-compatible API. The default is `None`.
 - `connection_timeout`: Time to wait for a successful S3 connection before timing out. The default is 2 seconds.
 - `write_timeout`: The amount of time to wait when writing a fragment before timing out. The default is 2 seconds.
@@ -324,7 +324,7 @@ The following [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html
 - `config_file_path`: The path to the AWS configuration file.
 - `credentials_file_path`: The path to the AWS credentials file.
 
-The `access_key_id`, `secret_access_key`, and `anonymous_access` arguments are deprecated. Use [`Credentials.basic(access_key_id, secret_access_key)`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.basic) or [`Credentials.anonymous()`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.anonymous) for the `credentials` argument instead.
+The `access_key_id`, `secret_access_key`, and `anonymous_access` arguments are deprecated. Use [`Credentials.basic(access_key_id, secret_access_key)`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.basic) or [`Credentials.anonymous`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.Credentials.anonymous) for the `credentials` argument instead.
 
 ## Related documentation
 

@@ -14,7 +14,7 @@ Deephaven reads four Parquet file layouts, one for each value of [`ParquetFileLa
 
 - A path ending in `.parquet` is read as a single file.
 - A path ending in `_metadata` or `_common_metadata` is read as metadata-partitioned.
-- Any other path is treated as a directory. Deephaven reads it as metadata-partitioned if it contains a `_metadata` file, and as key-value partitioned otherwise. Deephaven also reads flat directories this way. To read a single Parquet file whose name doesn't end in `.parquet`, set the [single-file layout](#single-parquet-file) explicitly.
+- Any other path is treated as a directory. Deephaven reads it as metadata-partitioned if it contains a `_metadata` file, and as key-value partitioned otherwise. Deephaven also reads flat directories this way. A single Parquet file must have a name ending in `.parquet`, even when you set the [single-file layout](#single-parquet-file) explicitly.
 
 ### Single Parquet file
 
@@ -28,9 +28,9 @@ A directory can contain multiple Parquet files, and Deephaven can [load them as 
 
 When you write data, a flat layout may be useful if:
 
-- You want to control the size of each file
-- You write one file at a time, for example, once per hour
-- Several systems write files to the same directory
+- You want to control the size of each file.
+- You write one file at a time, for example, once per hour.
+- Several systems write files to the same directory.
 
 To read this format explicitly, call [`setFileLayout`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setFileLayout(io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout)) with `ParquetFileLayout.FLAT_PARTITIONED` on a [`ParquetInstructions.Builder`](./parquet-instructions.md).
 
