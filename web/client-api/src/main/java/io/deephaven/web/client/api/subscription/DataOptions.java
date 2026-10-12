@@ -8,6 +8,7 @@ import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
+import elemental2.core.ReadonlyArray;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsRangeSet;
 import jsinterop.annotations.JsIgnore;
@@ -84,7 +85,7 @@ public class DataOptions {
      * Required property to indicate which columns should be included in the table data.
      */
     @JsProperty
-    public JsArray<Column> columns;
+    public ReadonlyArray<Column.ColumnOrName> columns;
 
     /**
      * Options for requesting a full-table subscription to a table.
@@ -104,7 +105,8 @@ public class DataOptions {
                 options.previewOptions = PreviewOptions.of(config.get("previewOptions").asPropertyMap());
             }
             if (config.has("columns")) {
-                options.columns = Js.<JsArray<Column>>uncheckedCast(config.get("columns")).slice();
+                options.columns =
+                        Js.<JsArray<Column.ColumnOrName>>uncheckedCast(config.get("columns")).slice();
             } else {
                 throw new IllegalArgumentException("Missing 'columns' property in subscription options");
             }
@@ -143,7 +145,7 @@ public class DataOptions {
             if (config.has("previewOptions")) {
                 options.previewOptions = PreviewOptions.of(config.get("previewOptions").asPropertyMap());
             }
-            JsArray<Column> columns = Js.uncheckedCast(config.get("columns"));
+            JsArray<Column.ColumnOrName> columns = Js.uncheckedCast(config.get("columns"));
             if (columns != null) {
                 options.columns = columns.slice();
             } // Skipping a null check for columns, we still allow legacy cases where no columns are specified
@@ -196,7 +198,8 @@ public class DataOptions {
                 options.previewOptions = PreviewOptions.of(config.get("previewOptions").asPropertyMap());
             }
             if (config.has("columns")) {
-                options.columns = Js.<JsArray<Column>>uncheckedCast(config.get("columns")).slice();
+                options.columns =
+                        Js.<JsArray<Column.ColumnOrName>>uncheckedCast(config.get("columns")).slice();
             } else {
                 throw new IllegalArgumentException("Missing 'columns' property in snapshot options");
             }

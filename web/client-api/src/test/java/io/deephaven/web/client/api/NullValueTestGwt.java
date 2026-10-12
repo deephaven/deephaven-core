@@ -81,7 +81,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                 // test previews with new subscription
                 .then(table -> {
                     DataOptions.SubscriptionOptions options = new DataOptions.SubscriptionOptions();
-                    options.columns = table.getColumns();
+                    options.columns = Js.cast(table.getColumns());
                     TableSubscription sub = table.createSubscription(options);
                     return assertUpdateReceived(sub, data -> {
                         validateSomeNulls(table, data);
@@ -91,7 +91,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                 // Test previews with new snapshot
                 .then(table -> {
                     DataOptions.SnapshotOptions snapshotOptions = new DataOptions.SnapshotOptions();
-                    snapshotOptions.columns = table.getColumns();
+                    snapshotOptions.columns = Js.cast(table.getColumns());
                     snapshotOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
                     return table.createSnapshot(snapshotOptions).then(data -> {
                         JsArray<? extends TableData.Row> rows = data.getRows();
@@ -187,7 +187,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     DataOptions.ViewportSubscriptionOptions options = new DataOptions.ViewportSubscriptionOptions();
                     options.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
-                    options.columns = table.getColumns();
+                    options.columns = Js.cast(table.getColumns());
                     TableViewportSubscription sub = table.createViewportSubscription(options);
                     return assertUpdateReceived(sub, viewport -> {
                         JsArray<? extends TableData.Row> rows = viewport.getRows();
@@ -359,7 +359,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
 
                     // Get a full table subscription, wait for data to load
                     DataOptions.SnapshotOptions snapshotOptions = new DataOptions.SnapshotOptions();
-                    snapshotOptions.columns = table.getColumns();
+                    snapshotOptions.columns = Js.cast(table.getColumns());
                     snapshotOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
                     return table.createSnapshot(snapshotOptions)
                             .then(s -> {
@@ -382,7 +382,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                                 // subscribe to the new table, verify it matches the existing one
                                 validateTypes(newTable);
                                 DataOptions.SubscriptionOptions options2 = new DataOptions.SubscriptionOptions();
-                                options2.columns = newTable.getColumns();
+                                options2.columns = Js.cast(table.getColumns());
                                 TableSubscription sub = newTable.createSubscription(options2);
                                 return assertUpdateReceived(sub, data -> {
                                     validateSomeNulls(newTable, data);

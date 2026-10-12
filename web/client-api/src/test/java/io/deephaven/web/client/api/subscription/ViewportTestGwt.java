@@ -900,7 +900,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     Column jColumn = t.findColumn("J");
 
                     DataOptions.SnapshotOptions snapshotOptions = new DataOptions.SnapshotOptions();
-                    snapshotOptions.columns = t.getColumns();
+                    snapshotOptions.columns = Js.cast(t.getColumns());
                     snapshotOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
                     snapshotOptions.previewOptions = new DataOptions.PreviewOptions();
                     snapshotOptions.previewOptions.array = 3.;
@@ -936,7 +936,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                         return null;
                     });
                     DataOptions.SubscriptionOptions subscriptionOptions = new DataOptions.SubscriptionOptions();
-                    subscriptionOptions.columns = t.getColumns();
+                    subscriptionOptions.columns = Js.cast(t.getColumns());
                     subscriptionOptions.previewOptions = new DataOptions.PreviewOptions();
                     subscriptionOptions.previewOptions.array = 3.;
                     TableSubscription subscription1 = t.createSubscription(subscriptionOptions);
@@ -973,7 +973,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
 
                     DataOptions.ViewportSubscriptionOptions viewportSubOptions =
                             new DataOptions.ViewportSubscriptionOptions();
-                    viewportSubOptions.columns = t.getColumns();
+                    viewportSubOptions.columns = Js.cast(t.getColumns());
                     viewportSubOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
                     viewportSubOptions.previewOptions = new DataOptions.PreviewOptions();
                     viewportSubOptions.previewOptions.array = 3.;
@@ -1024,7 +1024,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     delayTestFinish(8413);
 
                     DataOptions.SnapshotOptions snapshotOptions = new DataOptions.SnapshotOptions();
-                    snapshotOptions.columns = t.getColumns();
+                    snapshotOptions.columns = Js.cast(t.getColumns());
                     snapshotOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
                     return t.createSnapshot(snapshotOptions).then(snapshot -> {
                         for (int i = 0; i < t.getColumns().length; i++) {
@@ -1062,7 +1062,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     delayTestFinish(9001);
 
                     DataOptions.ViewportSubscriptionOptions options = new DataOptions.ViewportSubscriptionOptions();
-                    options.columns = t.getColumns();
+                    options.columns = Js.cast(t.getColumns());
                     options.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 1));
                     TableViewportSubscription sub = t.createViewportSubscription(options);
                     return waitForEvent(sub, TableSubscription.EVENT_UPDATED, 2000).onInvoke(sub)
