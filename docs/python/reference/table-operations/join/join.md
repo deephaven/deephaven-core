@@ -12,8 +12,9 @@ The output table contains rows that have matching values in both tables. Rows th
 ```
 left.join(
     table: Table,
-    on: Union[str, Sequence[str]],
+    on: Union[str, Sequence[str]] = None,
     joins: Union[str, Sequence[str]] = None,
+    reserve_bits: int = None,
 ) -> Table
 ```
 
@@ -25,23 +26,28 @@ left.join(
 The table data is added from (the right table).
 
 </Param>
-<Param name="on" type="Union[str, Sequence[str]]">
+<Param name="on" type="Union[str, Sequence[str]]" optional>
 
 Columns from the left and right tables used to join on.
 
 - `["A = B"]` will join when column `A` from the left table matches column `B` from the right table.
 - `["X"]` will join on column `X` from both the left and right table. Equivalent to `"X = X"`.
 - `["X, A = B"]` will join when column `X` matches from both the left and right tables, and when column `A` from the left table matches column `B` from the right table.
-- If this argument is left empty, a cross-join is performed. The result is a table with every possible combination of rows from the two tables.
+- If this argument is omitted or left empty, a cross-join is performed. The result is a table with every possible combination of rows from the two tables.
 
 </Param>
 <Param name="joins" type="Union[str, Sequence[str]]" optional>
 
 Columns from the right table to be added to the left table based on key may be specified in this list:
 
-- `[]` will add all columns from the right table to the left table (default).
+- `None` (the default) or `[]` will add all columns from the right table to the left table, except right table columns whose names match a left table column in `on`.
 - `["X"]` will add column `X` from the right table to the left table as column `X`.
 - `["Y = X"]` will add column `X` from right table to left table and rename it to be `Y`.
+
+</Param>
+<Param name="reserve_bits" type="int" optional>
+
+The number of bits of each result row key to reserve for the right table rows that match a left table row. The default value is `None`, which uses the configured value (10 bits unless configured otherwise).
 
 </Param>
 </ParamTable>
@@ -195,7 +201,7 @@ right = new_table(
 result = left.join(table=right, on=["DeptID"])
 ```
 
-In some cases, the matching columns have different names in the left and right table. Below, the left table has a column name `DeptNumber` that we want to match to the colomn `DeptID` in the right table. To perform this match, the second argument needs the name of each column in the left and right tables.
+In some cases, the matching columns have different names in the left and right table. Below, the left table has a column name `DeptNumber` that we want to match to the column `DeptID` in the right table. To perform this match, the second argument needs the name of each column in the left and right tables.
 
 ```python order=left,right,result
 from deephaven import new_table
@@ -278,7 +284,7 @@ right = new_table(
     ]
 )
 
-result = result = left.join(table=right, on=[""])
+result = left.join(table=right)
 ```
 
 ## Related documentation

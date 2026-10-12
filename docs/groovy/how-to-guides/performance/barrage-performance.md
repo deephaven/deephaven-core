@@ -33,7 +33,7 @@ Subscription statistics are presented in percentiles bucketed over a time period
 | -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | EnqueueNanos         | Sender            | The time it took to record changes that occurred during a single update graph cycle                                                                                |
 | AggregateNanos       | Sender            | The time it took to aggregate pending updates into a message; recorded for every compaction and for every range a propagation packages, even a range of one update |
-| PropagateNanos       | Sender            | The time it took to deliver an aggregated message to all subscribers                                                                                               |
+| PropagateNanos       | Sender            | The elapsed time of one propagation phase: writing one message to the subscribers it goes to                                                                       |
 | SnapshotNanos        | Sender            | The time it took to snapshot data for a new or changed subscription                                                                                                |
 | UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic                                                                                         |
 | WriteNanos           | Sender            | The time it took to write the update to a single subscriber                                                                                                        |
@@ -141,6 +141,15 @@ The two thresholds answer different questions. The fraction asks whether compact
 > [!NOTE]
 > The `PendingDeltaCount` and `PendingDeltaBytes` metrics in the subscription table measure what the server holds for subscribers it has not yet served, so they are the place to look when tuning these properties.
 
+## Write to subscribers in parallel
+
+Each time the server propagates an update to a table's subscribers, it writes each subscriber its own view of the update, which holds only the columns, rows, and encoding that subscriber asked for. Writing a message serializes it into the gRPC stream's buffers. Serializing is processor work that does not wait for the client, so the server can write to several subscribers at once. Parallel writes need a message that goes to more than one subscriber and `BarrageMessageProducer.propagationThreads` greater than `1`. Even then, the other threads come from a pool that every table shares, and when that pool is busy, the propagation thread writes to the remaining subscribers itself.
+
+- `-DBarrageMessageProducer.propagationThreads`: The most threads that write one update to a table's subscribers at once, counting the thread that runs the propagation. Default: the number of available processors. Above `1`, the other threads come from a pool that every table shares, which never holds more than this number less one. A value of `1` or less writes to subscribers one after another on the propagation thread, and the server makes no pool.
+
+> [!NOTE]
+> `PropagateNanos` measures the elapsed time of one propagation phase: writing one message to the subscribers it goes to. An update can take several phases, such as a snapshot for new subscribers and a delta for the others, and each records its own sample. With parallel writes a phase can take much less than the sum of its writes' `WriteNanos`. A single subscriber's write still runs on one thread.
+
 ## Additional Barrage configuration
 
 The following properties control other aspects of Barrage behavior:
@@ -179,7 +188,7 @@ If `WriteNanos` is high or `WriteBytes` is large:
 
 If `PropagateNanos` is consistently high:
 
-- Many subscribers may be connected to the same table. Consider load balancing across multiple server instances.
+- Many subscribers may be connected to the same table. Their writes overlap only as far as `BarrageMessageProducer.propagationThreads` and idle processors allow: check that the property is above `1` and not well below the number of subscribers (see [Write to subscribers in parallel](#write-to-subscribers-in-parallel)), and whether the server's processors are already busy. Consider load balancing across multiple server instances.
 - The server may be under memory pressure. Check JVM heap usage and garbage collection metrics.
 
 ### Subscription errors

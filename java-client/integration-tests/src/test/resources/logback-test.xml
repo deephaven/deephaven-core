@@ -1,0 +1,18 @@
+<configuration>
+    <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.err</target>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Netty reports buffer leaks here; TransportTest fails the run if any were recorded -->
+    <appender name="LEAKS" class="io.deephaven.client.integration.NettyLeakRecorder"/>
+    <logger name="io.netty.util.ResourceLeakDetector" level="ERROR" additivity="true">
+        <appender-ref ref="LEAKS"/>
+    </logger>
+
+    <root level="WARN">
+        <appender-ref ref="STDERR"/>
+    </root>
+</configuration>

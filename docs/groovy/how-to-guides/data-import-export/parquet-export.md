@@ -12,7 +12,7 @@ By default, Deephaven tables are written to Parquet files using `SNAPPY` compres
 
 First, create some tables that will be used for the examples in this guide.
 
-```groovy test-set=1 order=grades,mathGrades,scienceGrades,historyGrades docker-config=minio
+```groovy test-set=1 order=grades,mathGrades,scienceGrades,historyGrades docker-config=rustfs
 mathGrades = newTable(
     stringCol("Name", "Ashley", "Jeff", "Rita", "Zach"),
     stringCol("Class", "Math", "Math", "Math", "Math"),
@@ -84,7 +84,7 @@ ParquetTools.writeTable(
         .setSpecialInstructions(
             S3Instructions.builder()
                 .regionName("us-east-1")
-                .endpointOverride("http://minio.example.com:9000")
+                .endpointOverride("http://rustfs.example.com:9000")
                 .credentials(credentials)
                 .build()
         )
@@ -161,7 +161,7 @@ ParquetTools.writeKeyValuePartitionedTable(
         .setSpecialInstructions(
             S3Instructions.builder()
                 .regionName("us-east-1")
-                .endpointOverride("http://minio.example.com:9000")
+                .endpointOverride("http://rustfs.example.com:9000")
                 .credentials(credentials)
                 .build()
         )
@@ -235,7 +235,7 @@ ParquetTools.writeTables(
         .setSpecialInstructions(
             S3Instructions.builder()
                 .regionName("us-east-1")
-                .endpointOverride("http://minio.example.com:9000")
+                .endpointOverride("http://rustfs.example.com:9000")
                 .credentials(credentials)
                 .build()
         )

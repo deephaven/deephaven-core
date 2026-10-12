@@ -2,7 +2,7 @@
 title: left_outer_join
 ---
 
-`left_outer_join` joins data from a pair of tables - a left table and a right table - based upon one or more match columns. The match columns establish key identifiers in the source tables from which the tables are joined. Any data type can be used as keys.
+`left_outer_join` joins data from a pair of tables - a left table and a right table - based upon one or more match columns. The match columns establish key identifiers in the source tables from which the tables are joined. Any data type can be used as keys (custom objects must implement consistent equality and hashCode).
 
 The resultant table contains all rows from the left table (the first given) as well as rows from the right table that have matching keys in the identifier column(s).
 
@@ -15,8 +15,9 @@ The resultant table contains all rows from the left table (the first given) as w
 left_outer_join(
     l_table: Table,
     r_table: Table,
-    on: Union[str, Sequence[str]],
+    on: Union[str, Sequence[str]] = None,
     joins: Union[str, Sequence[str]] = None,
+    reserve_bits: int = None,
 ) -> Table
 ```
 
@@ -33,7 +34,7 @@ The left table from which data is joined.
 The right table from which data is joined.
 
 </Param>
-<Param name="on" type="Union[str, list[str]]">
+<Param name="on" type="Union[str, Sequence[str]]" optional>
 
 Columns from the left and right tables used to join on.
 
@@ -44,18 +45,23 @@ Columns from the left and right tables used to join on.
 </Param>
 <Param name="joins" type="Union[str, list[str]]" optional>
 
-The columns from the right table to add to the left table based on key. The default value is `None`
+The columns from the right table to add to the left table based on key. The default value is `None`.
 
-- `NULL` will add all columns from the right table to the left table.
+- `None` will add all columns from the right table to the left table, except right table columns whose names match a left table column in `on`.
 - `"X"` will add column `X` from the right table to the left table as column `X`.
 - `Y = X` will add column `X` from right table to left table and rename it to be `Y`.
+
+</Param>
+<Param name="reserve_bits" type="int" optional>
+
+The number of bits of each result row key to reserve for the right table rows that match a left table row. The default value is `None`, which uses the configured value (10 bits unless configured otherwise).
 
 </Param>
 </ParamTable>
 
 ## Returns
 
-A new table containing all rows from the left table and matching rows from the right table. Rows that do not have matching criteria will not be included in the result. If there are multiple matches between a row from the left table and rows from the right table, all matching combinations will be included. If no match columns are specified, every combination of left and right table rows is included.
+A new table containing all rows from the left table and matching rows from the right table. A left table row with no matching right table rows is included once, with null values in the columns from the right table. If there are multiple matches between a row from the left table and rows from the right table, all matching combinations will be included. If no match columns are specified, every combination of left and right table rows is included; if the right table is empty, each left table row is included once with null values in the columns from the right table.
 
 ## Examples
 
@@ -99,5 +105,5 @@ result = left_outer_join(l_table=left, r_table=right, on=["X1 = X2"], joins=["Z 
 
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
 - [Joins: Exact and Relational](../../../how-to-guides/joins-exact-relational.md)
-- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/OuterJoinTools.html#fullOuterJoin(io.deephaven.engine.table.Table,io.deephaven.engine.table.Table,java.util.Collection))
-- [Pydoc](/core/pydoc/code/deephaven.experimental.outer_joins.html#deephaven.experimental.outer_joins.full_outer_join)
+- [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/engine/util/OuterJoinTools.html#leftOuterJoin(io.deephaven.engine.table.Table,io.deephaven.engine.table.Table,java.util.Collection))
+- [Pydoc](/core/pydoc/code/deephaven.experimental.outer_joins.html#deephaven.experimental.outer_joins.left_outer_join)

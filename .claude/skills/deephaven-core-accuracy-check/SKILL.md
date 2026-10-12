@@ -2,7 +2,7 @@
 name: deephaven-core-accuracy-check
 description: >
   Review deephaven-core (Community) documentation for technical accuracy: verify claims against source code and validate internal links. **Invoke when:** reviewing or fact-checking a doc, confirming code examples work, verifying method signatures/config property names, or checking that described behavior matches implementation, for a full file or a change touching multiple sections or independent claims (use deephaven-core-accuracy-spot-check instead for one isolated snippet, sentence, or paragraph). Verifies against source in engine/, py/server/, server/, extensions/. **Do NOT use for:** deephaven-ent/iris docs (use deephaven-enterprise-accuracy-check), style/formatting (use deephaven-writing-style), or reorganization (use deephaven-doc-structure-review), or working through existing PR/Copilot review comments (use deephaven-docs-address-review-comments). For a full review covering accuracy+structure+style, use deephaven-docs-review-full.
-allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
+allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *), Bash(gh issue view *), Bash(gh api -H Accept:application/vnd.github.raw repos/deephaven/deephaven-server-docker/contents/*), Bash(gh api repos/deephaven/deephaven-server-docker/branches *)
 ---
 
 > [!IMPORTANT]
@@ -29,6 +29,27 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    itself is the exception to that exception — see `ref-deephaven-doc-categories` — and stays on
    the normal enumerable-reference path).
 
+3a. **Set the scope: the whole page, not the diff.** When asked to review a page, or when the
+   ticket is an audit or rewrite, every sentence on the page is in scope. That includes unchanged
+   sentences next to an edited one: an edit often rewords one clause and leaves the clause before
+   it, which is where the wrong claim sits. Build a claim ledger before verifying. List every
+   factual or behavioral claim wherever it appears: in prose, headings, list and table entries,
+   captions, and code comments (what an API does, how the engine works, when something is allowed,
+   a comparison between two things, a status like "legacy" or "recommended"). Mark each one
+   verified with a source citation or recorded as an author query. Identifier and signature checks
+   do not clear a claim; it has to be traced to the implementation.
+
+   **One row per clause, not per sentence.** A sentence that makes several claims gets several rows:
+   in "X works like Y in that…, It creates a table with just a Timestamp column," the comparison and
+   the column claim are separate rows, and verifying one does not clear the other. Give a comparison
+   a row for each side. Work through the page top to bottom, so no sentence is passed over because
+   it reads as framing.
+
+   **Show the ledger in the report** as a table with one row per claim: location, a few words of
+   the claim, verdict (verified, wrong, or author query), and the source checked. A reader should be
+   able to see which sentences were checked and which were not. State the row count and the number
+   of unverified claims above the table.
+
 4. **Technical accuracy review:**
    - **For EVERY code snippet**, search the source code FIRST. Never write or "correct" an example from memory.
      - Engine/server code: `engine/`, `server/`, `extensions/`
@@ -50,6 +71,7 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    - Verify file paths exist in the repository structure.
 
    **Docker and deployment:**
+   - **Published images come from another repo.** The `ghcr.io/deephaven/*` images readers pull (`server`, `server-slim`, `server-all-ai`, and the rest) are built from [deephaven/deephaven-server-docker](https://github.com/deephaven/deephaven-server-docker), not from this repo's `docker/` directory, which builds local and CI images and can differ. For any claim about what a published image contains — installed Python packages and versions, default properties, environment variables, JVM options — the source is that repo: the Dockerfile and property files under the image's `contexts/` directory. Read a file from the release branch that matches the image tag, not the default branch, which can hold unreleased changes: `gh api -H Accept:application/vnd.github.raw "repos/deephaven/deephaven-server-docker/contents/<path>?ref=release/v<version>"` (for example `contexts/<image>/Dockerfile` with `ref=release/v42.6` for `:42.6`; for `:latest`, use the newest `release/v*` branch, which `gh api repos/deephaven/deephaven-server-docker/branches --paginate -q '.[].name'` lists). If you can't read it, ask the caller to fetch the file or record an author query; don't cite `docker/` as evidence about a published image. A setting can come from a property file rather than an environment variable, so check every file the image copies in before calling a claim wrong.
    - Image names and tags are declared in Compose files (e.g., `containers/python/base/docker-compose.yml`) and external build-image mappings in `docker/registry/*/gradle.properties` — see `docker/README.md` for the registry structure. Do NOT rely solely on Dockerfiles for image names.
    - Check docker-compose examples against real compose files in the repository.
    - Verify port numbers, volume mounts, and network configurations.
@@ -88,6 +110,19 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    - **Listener attachment conditions:** `WhereListener` can exist for static sources with refreshing filter dependencies, not just refreshing parent tables.
    - **Incremental evaluation claims:** Filters can trigger broader re-evaluation (refilter path), not just changed rows. Avoid overstating "only changed rows."
    - **Update-cycle framing:** Avoid "instant" or claims of no micro-batching — the update cycle is effectively micro-batching. Avoid a blanket "work proportional to what changed" too: that holds for simple incremental paths, but operations like refilter can force broader or full-table re-evaluation. Frame it per-operation instead of with one universal claim.
+   - **How-it-works and comparison sentences:** A sentence of the form "X works similarly to Y in that…", "under the hood Deephaven does Z," or "this is faster because…" makes two claims, one about each side, and neither is checked by confirming the names exist. Read the implementation of both sides.
+   - **Restrictions: derive the full condition from the check that enforces it.** For "only works on X" and "can't be used with Y," find the validator or guard and state its whole condition, including every table type it applies to or exempts. Walk every branch and early return in that check, not only the main condition: a return that skips the check for some tables or attributes is part of the condition, and the doc has to state it. A paraphrase that sounds right usually drops one dimension, or states the default behavior as unconditional when a configuration property can turn the check off. Say "by default" and name the override when one exists.
+   - **Deprecated APIs in examples:** For every API an example calls, check the source for `@Deprecated`, a "Deprecated" docstring, or "Use X instead." A deprecated call still runs, so a run-and-see check passes, but the example teaches the superseded way. Unless the request limits the review to one language or file, check the other language's page for the same call: a deprecation caught in a Python example often has an unflagged Groovy twin, and the reverse. Cases: `S3Instructions` `access_key_id` and `secret_access_key` (use `Credentials.basic`), and the `adapter_s3_rest` and `createS3Rest` helpers (use `adapter` and `createAdapter`).
+   - **Counterexamples live on other pages:** For a thesis or universal claim ("queries are indifferent to static or streaming data," "works on real-time tables," "the native plotting library"), search the corpus for a restriction before accepting it: the reference pages for that operation family, restriction tables such as `special-variables.md`, and status notes such as "no longer under active development." The self-contradiction check below covers only the same paragraph; this one covers the whole docs tree. When a rule is stated on more than one page, the pages must agree: grep the corpus for its key terms and use the other pages as evidence. If one outside the requested scope disagrees, list it as follow-up work, clearly labeled, and don't report it as a finding against the page under review.
+   - **Trace the example's data against its prose:** When the text says what an example shows (a rolling window, a filter, "early trading," a round trip through pandas), carry the actual input values through the code. Check window length against row spacing, a filter against the dates it keeps (a holiday can empty the output), columns or indexes dropped on conversion, and variable scope (a Groovy closure that assigns an undeclared name writes a global). An example can run cleanly and still show nothing.
+   - **Prose against the code next to it:** Compare each sentence that introduces or follows a code block with what the block actually does. "There are several ways to…" followed by one way, "class methods don't support type hints" beside annotated class methods, or a comment that names a different column than the code uses are defects even when the code runs.
+   - **Broad quantifiers against source:** "all," "every," "only," "never," "always," "any," "the inverse of," and "follows X's rules" each claim the whole set. Verify them against the implementation, not just against the page's own text (the self-contradiction check below covers that). Most need narrowing to exactly the cases the source supports, or an explicit, complete list taken from the source (no trailing "…").
+   - **Current recommendations:** When a page tells readers which tool or API to use, check it is the one the project currently recommends and that product names are current. For example, a Python plotting page should point to Deephaven Express (`deephaven.plot.express`) rather than present only the built-in plotting API, which is no longer under active development. Search the docs tree and the source for "legacy," "no longer under active development," and "use X instead" before accepting a recommendation.
+   - **Enumerated rules above an example:** When prose lists what a construct can be or do (what a quoted literal is interpreted as, which Parquet layouts exist), derive the complete set from the parser or enum rather than from the example, then compare it with the prose. The same goes for a list of operations that accept a type or option ("used in `where`"): check every operation whose signature takes it, separately for each language, because the Python and Java APIs often differ.
+   - **Docstrings and Javadoc can be stale:** They are evidence, not the final word. When a docstring or Javadoc disagrees with the implementation and the tests that exercise it, trust the implementation and tests, and say which you checked. A docstring can keep calling an option unsupported long after the engine implemented it and tests exercised it. Report the stale docstring as follow-up work on the source, not as a finding against the page.
+   - **When the source doesn't settle a claim, say what to run:** If reading the implementation leaves the behavior ambiguous and no test covers the exact case the page describes, don't reason your way to a verdict. Mark the claim unverified, and give the smallest example that would settle it and what each outcome would mean, so the caller can run it through the snapshotter. Tests often cover only the common form of an API, so a claim about a less common form may have no test behind it either way.
+   - **Diagrams, flowcharts, and screenshots are claims:** Every label, branch, and arrow in an image asserts something. For an SVG, read its `<text>` elements and render it to follow the arrows; for a raster image, look at it. Check each branch and label against the page's prose and the source: a decision chart can be accurate branch by branch yet omit an option the page teaches. Note when one image is shared by several pages, because a fix changes all of them.
+   - **TODOs and issue links describe work that may be stale:** A TODO comment or a link to an issue claims that the work is still open and that the issue describes it. Check the issue's state (`gh issue view <number> -R <owner>/<repo>`). If you can't read the issue, record an author query asking for its state rather than assuming it is open. An issue can be closed, sometimes in a bulk cleanup, without the work being done. When that happens, report it so the TODO can point to a live ticket; don't delete a TODO for work that was never done.
    - **Repo scope:** Flag any feature described as available in deephaven-core if it's actually Enterprise-only (Persistent Query lifecycle, Controller/Worker/Dispatcher model, kv store/etcd config) — those live in deephaven-ent, not here.
    - **Duplicate claim propagation:** A wrong claim is rarely stated only once. When you find and correct one, grep the whole file — and its cross-language sibling — for every other place asserting the same fact: quick-reference tables, "operation pattern" summaries, cheat-sheet bullets, a one-line callout that restates the prose above it in different words, or an inline comment inside a fenced code block that gives the same (now-outdated) rationale for a line of code. Code comments are prose too, and are easy to forget precisely because they read as "just code" — treat them as a first-class sweep target, not an afterthought. The same wrong claim two screens below the paragraph you just fixed is a near-certainty, not a hypothetical; leaving it is what turns one review round into three.
    - **Self-contradiction radius:** After writing or reviewing any absolute claim ("all", "every", "only", "always", "never", "produces X"), scan the rest of its paragraph and section for an exception the doc's own text already names — e.g., asserting "transformations preserve refreshing behavior" right before describing `snapshot`, which deliberately returns a static result. An absolute claim sitting next to its own counterexample is a defect even when each sentence is individually defensible in isolation.
@@ -127,7 +162,8 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
    - **Before suggesting any new link:** confirm the target file actually exists in the repo (search/list the directory for it) rather than assuming a path is correct by pattern-matching similar pages.
    - Whether a "Related documentation" section exists at all is `deephaven-writing-style`'s Page-structure rule, not this step's — don't duplicate that check here even though it's link-shaped.
 
-6. Report findings organized by category with specific suggestions for fixes.
+6. Report findings organized by category with specific suggestions for fixes, followed by the
+   claim ledger table from step 3a.
 
 7. **Before applying any fixes:**
    - For each fix, show the reference source (quoted, briefly) that confirms it's correct.
@@ -159,5 +195,19 @@ allowed-tools: Read, Grep, Glob, Edit, Skill, Bash(git diff *)
 - [ ] Every classification (supported/unsupported, parallelized/not parallelized, incremental/recomputed) verified member-by-member under every evaluation mode, including deferred evaluation on the reader's thread
 - [ ] Every prescriptive row (quick-reference Scenario → Solution tables, "Choosing an approach," "Use X when…" takeaways) checked for whether the remedy's documented contract is actually sufficient for that scenario
 - [ ] Every proposed fix that adds a property name, default, or threshold to Concept-guide or Tutorial narrative redirected to a Configuration section or reference link instead; a non-configuration caveat the reader needs at that point kept as its own sentence, and any other caveat cut
+- [ ] Claim ledger built for the whole page (unchanged sentences next to edits included), each entry verified with a citation or recorded as an author query, with its size reported
+- [ ] Every "X works like Y" or "under the hood" sentence verified against the implementation of both sides
+- [ ] Every restriction ("only," "can't") traced to the check that enforces it, and its full condition stated
+- [ ] Every API called in an example checked for deprecation, in the sibling language's page too unless the request limits the scope
+- [ ] Every sentence that introduces or follows a code block compared with what the block does
+- [ ] Every broad quantifier ("all," "every," "only," "inverse," "follows X's rules") verified against source and narrowed or enumerated where needed
+- [ ] Every "use X" recommendation checked against what the project currently recommends
+- [ ] Every universal or thesis claim searched for counterexamples across the docs tree, and every other page stating the same rule compared, with disagreeing pages outside the requested scope listed as labeled follow-up
+- [ ] Every example's data traced through the code to confirm it shows what the prose says
+- [ ] Every claim about a published Docker image checked against deephaven/deephaven-server-docker, not this repo's `docker/`
+- [ ] Every docstring or Javadoc used as evidence cross-checked against the implementation and its tests
+- [ ] Every claim the source couldn't settle marked unverified, with the example that would settle it
+- [ ] Every diagram, flowchart, and screenshot checked label by label and branch by branch
+- [ ] Every TODO and issue link checked against the issue's current state
 - [ ] Every claim you couldn't verify recorded as an author query, not hedged
 - [ ] No style or structure comments included (those are out of scope), except the destination for a fix that would otherwise inject configuration detail

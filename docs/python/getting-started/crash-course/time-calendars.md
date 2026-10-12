@@ -16,15 +16,17 @@ Critical concepts covered in this crash course include:
 
 ## Time data types
 
-Deephaven tables natively support all data types found in the [`java.time`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/package-summary.html) package.
+Deephaven natively supports the following [`java.time`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/package-summary.html) types:
 
-Commonly used types include:
+- [**`Instant`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html): A specific point in time.
+- [**`ZonedDateTime`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/ZonedDateTime.html): A specific point in time with time zone information.
+- [**`LocalDate`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/LocalDate.html): A date without time zone information.
+- [**`LocalTime`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/LocalTime.html): A time of day without date or time zone information.
+- [**`Duration`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html): A length of time; e.g. 5 minutes, 1 hour, etc.
+- [**`Period`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Period.html): A date-based amount of time (like "2 months").
+- [**`ZoneId`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/ZoneId.html): A time zone, such as `America/New_York`.
 
-- [**`Instant`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Instant.html): A specific point in time.
-- [**`ZonedDateTime`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/ZonedDateTime.html): A specific point in time with time zone information.
-- [**`LocalDate`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html): A date without time zone information.
-- [**`Duration`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Duration.html): A length of time; e.g. 5 minutes, 1 hour, etc.
-- [**`Period`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Period.html): A date-based amount of time (like "2 months").
+See [Time in Deephaven](../../conceptual/time-in-deephaven.md#natively-supported-date-time-types) for details.
 
 ## Time constants
 
@@ -49,7 +51,7 @@ time_constants = empty_table(1).update(
 
 ## Create temporal data
 
-You can create temporal data with [query string](./query-strings.md) methods. For instance, you can construct columns with a single timestamp, sequences of timestamps, and more:
+You can create temporal data with [query string](./query-strings.md) methods. For instance, you can create timestamps, sequences of timestamps, and more:
 
 ```python test-set=2
 from deephaven import empty_table
@@ -65,7 +67,7 @@ temporal_data_table = empty_table(10).update(
 
 ## Time arithmetic and filtering
 
-Time arithmetic in tables should always be done with built-in methods. See [`DateTimeUtils`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html) for the available constants and methods.
+Time arithmetic in tables uses built-in methods, either called directly or through the `+` and `-` operators. See [`DateTimeUtils`](/core/javadoc/io/deephaven/time/DateTimeUtils.html) for the available constants and methods.
 
 ```python test-set=3
 from deephaven import empty_table
@@ -94,7 +96,7 @@ times_in_range = time_arithmetic_table.where(
 
 ## Time zones
 
-Time zones are a critical part of temporal data. For example, if it's 6 PM in Los Angeles, it's 3 AM the next day in Shanghai. There are many methods that require time zone information because the answer is dependent on the time zone.
+Time zones are a critical part of temporal data. For example, if it's 6 PM in Los Angeles during daylight saving time, it's 9 AM the next day in Shanghai. There are many methods that require time zone information because the answer is dependent on the time zone.
 
 ```python test-set=4
 from deephaven import empty_table
@@ -112,7 +114,7 @@ time_zone_arithmetic_table = empty_table(10).update(
 )
 ```
 
-All of the previous operations use [`Instant`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Instant.html) values, which contain no time zone information - hence the need to pass time zones like `'PT'` and `'Asia/Shanghai'`. Instead, you can bake the time zone information into the data by using [`ZonedDateTime`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/ZonedDateTime.html):
+All of the previous operations use [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) values, which contain no time zone information — hence the need to pass time zones like `'PT'` and `'Asia/Shanghai'`. Instead, you can bake the time zone information into the data by using [`ZonedDateTime`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/ZonedDateTime.html):
 
 ```python test-set=5
 from deephaven import empty_table
@@ -138,7 +140,7 @@ time_zone_arithmetic_table = (
 
 ## Business calendars
 
-Business calendars help you work with trading days, business hours, and holidays. Deephaven comes with built-in calendars for major exchanges.
+Business calendars help you work with trading days, business hours, and holidays.
 
 ```python test-set=6
 from deephaven import empty_table
@@ -158,10 +160,10 @@ trading_data = empty_table(num_trades).update(
 
 ### Built-in calendars
 
-Deephaven comes with a few built-in calendars.
+Deephaven includes a few example calendars.
 
 > [!NOTE]
-> The built-in calendars are examples. For any production system, a custom or other pre-defined calendar should be used.
+> The built-in calendars are examples. For any production system, use a custom calendar.
 
 ```python test-set=6
 from deephaven.calendar import calendar_names, calendar
@@ -191,23 +193,28 @@ Aggregations over windows of time are essential for time-series analysis.
 
 ### Daily summaries
 
-Combine time operations with aggregations for powerful analysis. For example, the following query calculates the daily sum of trades for each ticker:
+Combine time operations with aggregations for powerful analysis. For example, the following query calculates the number of trades, the total size, and the average price for each ticker on each day:
 
 ```python test-set=6 order=daily_summary
-daily_summary = (
-    trading_data.update(["Date = toLocalDate(Timestamp, 'America/New_York')"])
-    .drop_columns(["Timestamp"])
-    .sum_by(by=["Date", "Ticker"])
+from deephaven import agg
+
+daily_summary = trading_data.update(
+    ["Date = toLocalDate(Timestamp, 'America/New_York')"]
+).agg_by(
+    [
+        agg.count_("NumTrades"),
+        agg.sum_("TotalSize = Size"),
+        agg.avg("AvgPrice = Price"),
+    ],
+    by=["Date", "Ticker"],
 )
 ```
 
 ### Aggregations over time buckets
 
-Data is commonly placed into temporal buckets, allowing for analysis of trends over specific intervals. The following query places each trade into a 15-minute bucket, then calculates the average trade price and size for each bucket:
+Data is commonly placed into temporal buckets, allowing for analysis of trends over specific intervals. The following query places each trade into a 15-minute bucket, then calculates the average trade price and size for each ticker in each bucket:
 
 ```python test-set=6 order=avg_by_time_bucket
-from deephaven import agg
-
 avg_by_time_bucket = trading_data.update(
     ["TimeBucket = lowerBin(Timestamp, 15 * MINUTE)"]
 ).agg_by(
@@ -222,6 +229,7 @@ Here's a practical example that combines multiple time concepts:
 
 ```python test-set=7 order=market_data,processed_data,daily_summary
 from deephaven import empty_table
+from deephaven import agg
 from deephaven.calendar import calendar
 
 # Get NYSE calendar
@@ -241,16 +249,24 @@ market_data = empty_table(1000).update(
 processed_data = market_data.where(["nyse.isBusinessTime(Timestamp)"]).update(
     [
         "Date = toLocalDate(Timestamp, 'America/New_York')",
-        "MinutesSinceOpen = diffMinutes('2024-01-01T09:30:00 ET', Timestamp)",
-        "IsEarlyTrading = MinutesSinceOpen <= 60",
+        "MinuteOfDay = minuteOfDay(Timestamp, 'ET', true)",
+        # The first hour after the 9:30 AM open
+        "IsEarlyTrading = MinuteOfDay < 630",
     ]
 )
 
 # Calculate daily summary statistics
-daily_summary = processed_data.drop_columns(["Timestamp"]).sum_by(by=["Symbol", "Date"])
+daily_summary = processed_data.agg_by(
+    [
+        agg.count_("NumTrades"),
+        agg.sum_(["TotalVolume = Volume", "EarlyTrades = IsEarlyTrading"]),
+        agg.avg("AvgPrice = Price"),
+    ],
+    by=["Symbol", "Date"],
+)
 ```
 
-This example demonstrates filtering by business hours, extracting time components, and performing time-based aggregations - all common patterns in financial data analysis.
+This example demonstrates filtering by business hours, extracting time components, and aggregating by day — all common patterns in financial data analysis.
 
 ## Next steps
 

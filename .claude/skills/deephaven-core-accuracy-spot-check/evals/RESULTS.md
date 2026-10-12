@@ -18,3 +18,19 @@ Raw run outputs, grading files, and skill snapshots are kept out of the repo. Th
 - Runs are small, so treat pass counts as evidence that a behavior appears, not as stable rates.
 - There is only iteration 1: 1 run per configuration, graded inline, not blind.
 - Judgment-call expectations can vary between graders; the notes say where.
+
+## DOC-1560 (PR #8860): whole-page accuracy and audit fixes
+
+Method: "main" is the skill on `main`; "new" is the PR branch. Each trial read the skill from its configuration's folder and verified against the same checkout. A separate grader scored each eval's reports blind (shuffled, unlabeled) against the expectations. Two to three runs per cell unless noted, so treat counts as direction, not rates.
+
+First round, scored by the session that wrote it: eval 1 main 6/6, final 3/3 (1 run); eval 2 (new) main 0/6, final 2/9 (3 runs). Eval 2's unchanged "processed in sequence" claim needs the engine's parallel formula path to refute, and no configuration did.
+
+Second round:
+
+| Eval | What it tests | main | new |
+| --- | --- | --- | --- |
+| 3 (new) | An unchanged neighbor sentence calls `time_table` a blink table | 6/6 | 6/6 |
+| 4 (new) | A reaggregating-formula claim the source doesn't settle | 3/6 | 6/6 |
+
+- Eval 3 doesn't separate the configurations: in a two-sentence paragraph the `main` skill also checks the neighbor. It guards against losing that behavior.
+- Eval 4: one `main` run confirmed the false "output must have the same name as the input" requirement. Every new run either refuted it from `AggregationProcessor`'s reaggregated converter or marked it unverified with an example to run.
