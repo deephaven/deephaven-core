@@ -44,7 +44,7 @@ print(f"First three values: {first_three}")
 ```
 
 > [!WARNING]
-> [`to_numpy`](../reference/numpy/to-numpy.md) copies every row of the selected columns into memory, and for a [refreshing (ticking) table](../conceptual/table-types.md) it first takes a snapshot of the whole table. For large tables, keep only the columns you need with [`view`](../reference/table-operations/select/view.md), and reduce the rows with an operation such as [`where`](../reference/table-operations/filter/where.md) or [`head`](../reference/table-operations/filter/head.md), before converting.
+> [`to_numpy`](../reference/numpy/to-numpy.md) copies every row of the selected columns into memory, and for a [refreshing (ticking) table](../conceptual/table-types.md) it first takes a snapshot of the whole table. For large tables, keep only the columns you need with [`view`](../reference/table-operations/select/view.md), and reduce the rows with an operation such as [`where`](../reference/table-operations/filter/where.md) or [`head`](../reference/table-operations/filter/head.md), before converting. Because the snapshot is a table operation, don't call `to_numpy` on a refreshing table inside a [table listener](./table-listeners-python.md). Use a table iterator, such as [`iter_tuple`](../reference/data-import-export/iterate/iter-tuple.md), instead.
 
 > [!IMPORTANT]
 > All columns that [`to_numpy`](../reference/numpy/to-numpy.md) converts must have the same data type. If you omit `cols`, it converts every column in the table, so every column must have the same type. For mixed types, convert columns separately, or loop over rows with a table iterator. [Iterate with for loops](#iterate-with-for-loops) shows both.

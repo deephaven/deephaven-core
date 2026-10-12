@@ -349,11 +349,10 @@ A listener can read tables other than the one it listens to. Pass those tables t
 
 For example, `source_a` and `source_b` tick at the same time but share no key column, so instead of joining them, a listener on `source_a` reads `source_b` directly. Without a dependency, that listener might run before the engine finishes processing `source_b`.
 
-The following example creates `source_b_y`, a view of `source_b`'s `Y` column, before registering the listener, and passes it as the dependency. The listener reads `source_b_y` with [`to_numpy`](../reference/numpy/to-numpy.md).
+The following example creates `source_b_y`, a view of `source_b`'s `Y` column, before registering the listener, and passes it as the dependency. The listener reads `source_b_y` with [`iter_tuple`](../reference/data-import-export/iterate/iter-tuple.md), which reads the table directly. Don't use [`to_numpy`](../reference/numpy/to-numpy.md) inside a listener: for a refreshing table, it creates a snapshot, which is a table operation.
 
 ```python ticking-table order=null reset
 from deephaven.table_listener import listen
-from deephaven.numpy import to_numpy
 from deephaven import time_table
 from random import choice
 
@@ -365,7 +364,7 @@ def rand_letter() -> str:
 def listen_func(update, is_replay):
     added = update.added()
     print(f"From Source A: {added['X']}")
-    dependent_data = to_numpy(source_b_y)[:, 0]
+    dependent_data = [row.Y for row in source_b_y.iter_tuple()]
     print(f"From Source B: {', '.join([str(item) for item in dependent_data])}")
 
 
