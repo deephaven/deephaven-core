@@ -6,7 +6,7 @@ This guide shows you how to collect summary information for groups of data using
 
 When working with data, you often need to break the data into subgroups and then perform calculations on each group. For example, a large multinational corporation may want to know its average employee salary by country, or a teacher might want to analyze test scores for various classes.
 
-Each aggregation summarizes the data within each group, such as an average or a count.
+The process of breaking a table into subgroups and then performing one or more calculations on the subgroups is known as "combined aggregation." The term comes from most operations creating a summary of data within a group (aggregation), and from more than one operation being computed at once (combined).
 
 ## Why use combined aggregations?
 
