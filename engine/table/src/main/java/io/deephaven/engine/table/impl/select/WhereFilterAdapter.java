@@ -409,7 +409,9 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
             private RangeFilter range(Object rhsLiteral) {
                 // TODO(deephaven-core#3730): More efficient io.deephaven.api.filter.FilterComparison to RangeFilter
-                final String rhsLiteralAsStr = rhsLiteral.toString();
+                // a char is quoted, as RangeFilter reads an unquoted integer as a code point: 5 is (char) 5, not '5'
+                final String rhsLiteralAsStr =
+                        rhsLiteral instanceof Character ? "'" + rhsLiteral + "'" : rhsLiteral.toString();
                 switch (preferred.operator()) {
                     case LESS_THAN:
                         return new RangeFilter(lhs.name(), Condition.LESS_THAN, rhsLiteralAsStr);
@@ -483,7 +485,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
         private WhereFilter getExpression(String x) {
             // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
-            return WhereFilterFactory.getExpression((inverted ? "!isNull(" : "isNull(") + x + ")");
+            return WhereFilterFactory.getExpression((inverted ? "!" : "") + "isNull(" + x + ")");
         }
 
         @Override
@@ -544,7 +546,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
         private WhereFilter getExpression(String x) {
             // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
-            return WhereFilterFactory.getExpression((inverted ? "!isNaN" : "isNaN(") + x + ")");
+            return WhereFilterFactory.getExpression((inverted ? "!" : "") + "isNaN(" + x + ")");
         }
 
         @Override

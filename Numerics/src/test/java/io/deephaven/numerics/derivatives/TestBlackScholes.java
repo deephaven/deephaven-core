@@ -3,16 +3,18 @@
 //
 package io.deephaven.numerics.derivatives;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.util.QueryConstants;
 import org.junit.Test;
+
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Most of the values for the testcases are taken from the book "The Complete Guide to Option Pricing Formula" (Chapter
  * 2 and 12)
  *
  */
-public class TestBlackScholes extends BaseArrayTestCase {
+public class TestBlackScholes {
 
     @Test
     public void testPrices() {
@@ -248,7 +250,6 @@ public class TestBlackScholes extends BaseArrayTestCase {
         final double priceCall = BlackScholes.price(true, 59, 60, 0.25, 0.067, 0.067, v);
         assertEquals(v, Math.round(BlackScholes.impliedVolBisect(priceCall, true, 59, 60, 0.25, 0.067, 0.067) * 10000d)
                 / 10000d);
-
 
         final double pricePut = BlackScholes.price(false, 59, 60, 0.25, 0.067, 0.067, v);
         assertEquals(v, Math.round(BlackScholes.impliedVolBisect(pricePut, false, 59, 60, 0.25, 0.067, 0.067) * 10000d)

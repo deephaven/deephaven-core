@@ -12,6 +12,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 public class FloatRangeFilter extends AbstractRangeFilter {
@@ -70,6 +71,12 @@ public class FloatRangeFilter extends AbstractRangeFilter {
     }
 
     static WhereFilter makeFloatRangeFilter(String columnName, Condition condition, float value) {
+        if (Float.isNaN(value)) {
+            // Under IEEE 754 every ordered comparison against NaN is false, NaN itself included, so no row matches.
+            // Deephaven ordering would instead sort NaN above every other value, which is not what these operators
+            // ask for.
+            return WhereNoneFilter.INSTANCE;
+        }
         switch (condition) {
             case LESS_THAN:
                 return lt(columnName, value);
@@ -90,11 +97,17 @@ public class FloatRangeFilter extends AbstractRangeFilter {
             return;
         }
 
-        final ColumnDefinition def = tableDefinition.getColumn(columnName);
+        final ColumnDefinition<?> def = tableDefinition.getColumn(columnName);
         if (def == null) {
             throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
                     + tableDefinition.getColumnNames());
         }
+
+        final Class<?> colClass = TypeUtils.getUnboxedTypeIfBoxed(def.getDataType());
+        if (colClass != float.class) {
+            throw new RuntimeException("Column \"" + columnName + "\" expected to be float: " + colClass);
+        }
+
         chunkFilter = FloatRangeComparator.makeFloatFilter(lower, upper, lowerInclusive, upperInclusive);
     }
 

@@ -3,13 +3,15 @@
 //
 package io.deephaven.base.ringbuffer;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.math.BigInteger;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-public class TestAggregatingObjectRingBuffer extends TestCase {
+import static org.junit.Assert.*;
+
+public class TestAggregatingObjectRingBuffer {
 
     private void assertEmpty(AggregatingObjectRingBuffer rb) {
         assertTrue(rb.isEmpty());
@@ -30,6 +32,7 @@ public class TestAggregatingObjectRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testLargeAmounts() {
         final BigInteger id = BigInteger.valueOf(0);
         final AggregatingObjectRingBuffer<BigInteger> rb = new AggregatingObjectRingBuffer<>(3, id,
@@ -54,6 +57,7 @@ public class TestAggregatingObjectRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMinLargeAmounts() {
         final BigInteger id = BigInteger.valueOf(Long.MAX_VALUE);
         final AggregatingObjectRingBuffer<BigInteger> rb = new AggregatingObjectRingBuffer<>(3, id,
@@ -69,6 +73,7 @@ public class TestAggregatingObjectRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMaxLargeAmounts() {
         final BigInteger id = BigInteger.valueOf(Long.MIN_VALUE);
         final AggregatingObjectRingBuffer<BigInteger> rb = new AggregatingObjectRingBuffer<>(3, id,
@@ -86,6 +91,7 @@ public class TestAggregatingObjectRingBuffer extends TestCase {
 
     // region non-byte-tests
 
+    @Test
     public void testEvaluateSumLargeAmounts() {
         final BigInteger id = BigInteger.valueOf(0);
         final AggregatingObjectRingBuffer<BigInteger> rb = new AggregatingObjectRingBuffer<>(3, id,
@@ -125,6 +131,7 @@ public class TestAggregatingObjectRingBuffer extends TestCase {
         return (n * (n - 1) / 2);
     }
 
+    @Test
     public void testEvaluationEdgeCase() {
         final BigInteger id = BigInteger.valueOf(0);
         AggregatingObjectRingBuffer<BigInteger> rb = new AggregatingObjectRingBuffer<>(512, id,
@@ -205,7 +212,6 @@ public class TestAggregatingObjectRingBuffer extends TestCase {
             assertEquals(id, rb.evaluate());
         }
 
-
         rb.clear();
         // need to get the buffer to state where we have clean pushes and a wrapped pop
 
@@ -236,6 +242,7 @@ public class TestAggregatingObjectRingBuffer extends TestCase {
     }
     // endregion non-byte-tests
 
+    @Test
     public void testPushPopUnsafe() {
         final BigInteger id = BigInteger.valueOf(Long.MIN_VALUE);
         final AggregatingObjectRingBuffer<BigInteger> rb = new AggregatingObjectRingBuffer<>(512, id,
@@ -270,6 +277,7 @@ public class TestAggregatingObjectRingBuffer extends TestCase {
         assertEquals(BigInteger.valueOf(99), rb.evaluate()); // last value added is max
     }
 
+    @Test
     public void testPopMultiple() {
         final BigInteger id = BigInteger.valueOf(0);
         AggregatingObjectRingBuffer<BigInteger> rb = new AggregatingObjectRingBuffer<>(512, id,
@@ -300,6 +308,7 @@ public class TestAggregatingObjectRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testSpecialCaseA() {
         // overlapping push and pop ranges with popTail < pushTail
         final BigInteger id = BigInteger.valueOf(0);
@@ -313,6 +322,7 @@ public class TestAggregatingObjectRingBuffer extends TestCase {
         assertEquals(BigInteger.valueOf(5), rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseB() {
         // push the full capacity while wrapped
         final BigInteger id = BigInteger.valueOf(0);
@@ -327,6 +337,7 @@ public class TestAggregatingObjectRingBuffer extends TestCase {
         assertEquals(BigInteger.valueOf(64), rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseC() {
         // overlapping push and pop ranges with popTail < pushTail
         final BigInteger id = BigInteger.valueOf(0);

@@ -64,7 +64,6 @@ class GwtTools {
     static void applyModuleSettings(Project p, GwtCompileTask gwtc, String mod, String description) {
         gwtc.onlyIf WebTools.&shouldRun
         boolean gwtDev = p.findProperty('gwtDev') == 'true'
-        String extras = new File(p.buildDir, "gwt/dhapi/extra").absolutePath
 
         GwtExtension gwt = p.extensions.findByType(GwtExtension)
 
@@ -73,29 +72,23 @@ class GwtTools {
             compile.with {
                 style = 'PRETTY'
                 generateJsInteropExports = true
+                setExtraArgs('-includeJsInteropExports', 'io.deephaven.*')
+                saveSource = true
                 // TODO move this down a line when we want to give clients js that is not super strict / rigged to blow
                 checkAssertions = true
-                setExtraArgs('-includeJsInteropExports', 'io.deephaven.*')
                 if (gwtDev) {
                     extraArgs = [
                             '-includeJsInteropExports', 'io.deephaven.*',
                             '-setProperty', 'gwt.logging.logLevel=FINE',
                             '-setProperty', 'jre.logging.logLevel=ALL',
                     ]
-                    saveSource = true
-                    extra = extras
                     logLevel = 'INFO'
-                    draftCompile = true
                 }
             }
         }
 
         if (p.configurations.findByName('gwt') != null) {
             (gwtc.src as ConfigurableFileCollection).from(p.configurations.findByName('gwt'))
-        }
-
-        gwtDev && gwtc.doFirst {
-            gwtc.logger.quiet('Running in gwt dev mode; saving source to {}/dh/src', extras)
         }
     }
 

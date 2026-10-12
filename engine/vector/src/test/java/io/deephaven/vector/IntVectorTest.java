@@ -18,9 +18,10 @@ import org.junit.Test;
 // region NullConstantImport
 import java.util.stream.IntStream;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 // endregion NullConstantImport
-import static junit.framework.TestCase.*;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for various permutations of {@link IntVector}.

@@ -5,6 +5,7 @@ package io.deephaven.engine.rowset.impl.rsp.container;
 
 import org.junit.Test;
 
+import static io.deephaven.engine.rowset.impl.rsp.container.ContainerTestCommon.containersHolding;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -14,18 +15,6 @@ import static org.junit.Assert.assertTrue;
  * less than rank.
  */
 public class TestFindVersusRank {
-
-    private static Container[] containersHolding(final int... values) {
-        final ArrayContainer array = new ArrayContainer(values.length);
-        final BitmapContainer bitmap = new BitmapContainer();
-        RunContainer run = new RunContainer();
-        for (final int v : values) {
-            array.iset((short) v);
-            bitmap.iset((short) v);
-            run = (RunContainer) run.iset((short) v);
-        }
-        return new Container[] {array, bitmap, run};
-    }
 
     @Test
     public void testFindIsOneLessThanRankForValuesPresent() {

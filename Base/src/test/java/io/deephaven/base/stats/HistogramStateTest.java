@@ -3,12 +3,13 @@
 //
 package io.deephaven.base.stats;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class HistogramStateTest extends TestCase {
+public class HistogramStateTest {
 
     static long NOW = 123456789L;
 
+    @Test
     public void testSample() throws Exception {
         Item testItem = Stats.makeItem("HistogramStateTest", "testData", HistogramState.FACTORY, NOW,
                 new HistogramState.Spec("HistogramStateTest", "testDate", 0, 100, 10));

@@ -10,8 +10,10 @@ package io.deephaven.engine.table.impl.sort.permute;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import junit.framework.TestCase;
 import org.junit.Test;
+
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
 public class TestIntPermuteKernel {
     @Test
@@ -34,7 +36,7 @@ public class TestIntPermuteKernel {
 
         int value = (int) (startingValue() + 9);
         for (int ii = 0; ii < 10; ++ii) {
-            TestCase.assertEquals(value, outputValues.get(ii));
+            assertEquals(value, outputValues.get(ii));
             value--;
         }
     }
@@ -64,9 +66,9 @@ public class TestIntPermuteKernel {
 
         for (int ii = 0; ii < inputValues.size(); ++ii) {
             if (ii < half) {
-                TestCase.assertEquals(startingValue() + ii * 2, outputValues.get(ii));
+                assertEquals(startingValue() + ii * 2, outputValues.get(ii));
             } else {
-                TestCase.assertEquals(startingValue() + (ii - half) * 2 + 1, outputValues.get(ii));
+                assertEquals(startingValue() + (ii - half) * 2 + 1, outputValues.get(ii));
             }
         }
     }
@@ -97,11 +99,11 @@ public class TestIntPermuteKernel {
 
         for (int ii = 0; ii < outputValues.size(); ++ii) {
             if (ii % 2 == 1) {
-                TestCase.assertEquals(uninitializedValue(), outputValues.get(ii));
+                assertEquals(uninitializedValue(), outputValues.get(ii));
             } else if (ii / 2 < half) {
-                TestCase.assertEquals(startingValue() + ii, outputValues.get(ii));
+                assertEquals(startingValue() + ii, outputValues.get(ii));
             } else {
-                TestCase.assertEquals(startingValue() + (ii / 2 - half) * 2 + 1, outputValues.get(ii));
+                assertEquals(startingValue() + (ii / 2 - half) * 2 + 1, outputValues.get(ii));
             }
         }
     }

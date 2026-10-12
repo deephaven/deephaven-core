@@ -1,6 +1,5 @@
 ---
 title: How can I assume a specific role for S3 access?
-sidebar_label: How can I assume a specific role for S3?
 ---
 
 _I only have access to S3 via temporary credentials. How can I use these in Deephaven?_

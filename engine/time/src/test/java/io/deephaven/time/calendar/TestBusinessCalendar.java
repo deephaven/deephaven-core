@@ -4,12 +4,15 @@
 package io.deephaven.time.calendar;
 
 import io.deephaven.time.DateTimeUtils;
+import org.junit.Test;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.util.QueryConstants.*;
+import static org.junit.Assert.*;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class TestBusinessCalendar extends TestCalendar {
@@ -30,7 +33,7 @@ public class TestBusinessCalendar extends TestCalendar {
     private BusinessCalendar bCalendar;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
 
         holidays = new HashMap<>();
@@ -43,6 +46,7 @@ public class TestBusinessCalendar extends TestCalendar {
         calendar = bCalendar;
     }
 
+    @Test
     public void testSchedulesCacheKeys() {
         final int y = 2023;
         final int m = 7;
@@ -54,6 +58,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(ld, BusinessCalendar.schedulesCacheDateFromKey(key));
     }
 
+    @Test
     public void testBusinessGetters() {
         assertEquals(schedule, bCalendar.standardBusinessDay());
         assertEquals(schedule.businessNanos(), bCalendar.standardBusinessNanos());
@@ -64,6 +69,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(weekendDays, bCalendar.weekendDays());
     }
 
+    @Test
     public void testCalendarDay() {
         assertEquals(holiday, bCalendar.calendarDay(holidayDate1));
         assertEquals(holiday, bCalendar.calendarDay(holidayDate2));
@@ -135,6 +141,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.calendarDay((Instant) null));
     }
 
+    @Test
     public void testIsBusinessDay() {
         assertFalse(bCalendar.isBusinessDay(holidayDate1));
         assertFalse(bCalendar.isBusinessDay(holidayDate2));
@@ -201,6 +208,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertFalse(bCalendar.isBusinessDay((DayOfWeek) null));
     }
 
+    @Test
     public void testIsLastBusinessDayOfMonth() {
         LocalDate date = LocalDate.of(2023, 7, 31);
         assertTrue(bCalendar.isLastBusinessDayOfMonth(date));
@@ -256,6 +264,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertFalse(bCalendar.isLastBusinessDayOfMonth((Instant) null));
     }
 
+    @Test
     public void testIsLastBusinessDayOfWeek() {
         // FRI
         LocalDate date = LocalDate.of(2023, 7, 28);
@@ -329,6 +338,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertFalse(bCalendar.isLastBusinessDayOfWeek((Instant) null));
     }
 
+    @Test
     public void testIsLastBusinessDayOfYear() {
         LocalDate date = LocalDate.of(2023, 12, 29);
         assertFalse(bCalendar.isLastBusinessDayOfYear(date));
@@ -396,6 +406,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertFalse(bCalendar.isLastBusinessDayOfYear((Instant) null));
     }
 
+    @Test
     public void testIsBusinessTime() {
         // Normal bus day
         LocalDate date = LocalDate.of(2023, 7, 11);
@@ -445,6 +456,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertFalse(bCalendar.isBusinessTime((Instant) null));
     }
 
+    @Test
     public void testFractionStandardBusinessDay() {
         // Normal bus day
         LocalDate date = LocalDate.of(2023, 7, 11);
@@ -493,7 +505,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(NULL_DOUBLE, bCalendar.fractionStandardBusinessDay((Instant) null));
     }
 
-
+    @Test
     public void testFractionBusinessDayComplete() {
         // Normal bus day
         LocalDate date = LocalDate.of(2023, 7, 11);
@@ -560,6 +572,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(NULL_DOUBLE, bCalendar.fractionBusinessDayComplete((Instant) null));
     }
 
+    @Test
     public void testFractionBusinessDayRemaining() {
         // Normal bus day
         LocalDate date = LocalDate.of(2023, 7, 11);
@@ -626,6 +639,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(NULL_DOUBLE, bCalendar.fractionBusinessDayRemaining((Instant) null));
     }
 
+    @Test
     public void testBusinessDates() {
 
         final LocalDate start = LocalDate.of(2023, 7, 3);
@@ -718,6 +732,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(targetLong.toArray(LocalDate[]::new), bCalendar.businessDates(startLong, endLong));
     }
 
+    @Test
     public void testNumberBusinessDates() {
 
         final LocalDate start = LocalDate.of(2023, 7, 3);
@@ -771,7 +786,6 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(bus.length - 2, bCalendar.numberBusinessDates(start.atTime(1, 24).atZone(timeZone).toInstant(),
                 end.atTime(1, 24).atZone(timeZone).toInstant(), false, false));
 
-
         assertEquals(NULL_INT, bCalendar.numberBusinessDates(null, end, true, true));
         assertEquals(NULL_INT, bCalendar.numberBusinessDates(start, null, true, true));
         assertEquals(NULL_INT, bCalendar.numberBusinessDates(null, end.toString(), true, true));
@@ -800,6 +814,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(targetLong.size(), bCalendar.numberBusinessDates(startLong, endLong));
     }
 
+    @Test
     public void testBusinessDatesValidateCacheIteration() {
         // Construct a very simple calendar for counting business days that is easy to reason about
 
@@ -875,6 +890,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(target.length, bc.numberBusinessDates(start, end, false, false));
     }
 
+    @Test
     public void testNonBusinessDatesValidateCacheIteration() {
         // Construct a very simple calendar for counting business days that is easy to reason about
 
@@ -938,6 +954,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(target.length, bc.numberNonBusinessDates(start, end, false, false));
     }
 
+    @Test
     public void testNonBusinessDates() {
 
         final LocalDate start = LocalDate.of(2023, 7, 3);
@@ -1036,6 +1053,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(targetLong.toArray(LocalDate[]::new), bCalendar.nonBusinessDates(startLong, endLong));
     }
 
+    @Test
     public void testNumberNonBusinessDates() {
 
         final LocalDate start = LocalDate.of(2023, 7, 3);
@@ -1116,6 +1134,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(nonBusLong.length, bCalendar.numberNonBusinessDates(startLong, endLong));
     }
 
+    @Test
     public void testDiffBusinessNanos() {
         // Same day
         final ZonedDateTime zdt1 = LocalDate.of(2023, 7, 3).atTime(9, 27).atZone(timeZone);
@@ -1148,6 +1167,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(NULL_LONG, bCalendar.diffBusinessNanos(null, zdt3.toInstant()));
     }
 
+    @Test
     public void testDiffNonBusinessNanos() {
         // Same day
         final ZonedDateTime zdt1 = LocalDate.of(2023, 7, 3).atTime(6, 27).atZone(timeZone);
@@ -1178,6 +1198,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(NULL_LONG, bCalendar.diffNonBusinessNanos(null, zdt3.toInstant()));
     }
 
+    @Test
     public void testDiffBusinessDuration() {
         // Same day
         final ZonedDateTime zdt1 = LocalDate.of(2023, 7, 3).atTime(9, 27).atZone(timeZone);
@@ -1210,6 +1231,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.diffBusinessDuration(null, zdt3.toInstant()));
     }
 
+    @Test
     public void testDiffNonBusinessDuration() {
         // Same day
         final ZonedDateTime zdt1 = LocalDate.of(2023, 7, 3).atTime(6, 27).atZone(timeZone);
@@ -1243,6 +1265,7 @@ public class TestBusinessCalendar extends TestCalendar {
 
     }
 
+    @Test
     public void testDiffBusinessDays() {
         final ZonedDateTime zdt1 = LocalDate.of(2023, 7, 3).atTime(6, 27).atZone(timeZone);
         final ZonedDateTime zdt2 = LocalDate.of(2023, 7, 10).atTime(15, 10).atZone(timeZone);
@@ -1258,6 +1281,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(NULL_DOUBLE, bCalendar.diffBusinessDays(null, zdt2.toInstant()));
     }
 
+    @Test
     public void testDiffBusinessYears() {
         final ZonedDateTime zdt1 = LocalDate.of(2023, 1, 1).atTime(6, 27).atZone(timeZone);
         final ZonedDateTime zdt2 = LocalDate.of(2023, 12, 31).atTime(15, 10).atZone(timeZone);
@@ -1295,6 +1319,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(NULL_DOUBLE, bCalendar.diffBusinessYears(null, zdt2.toInstant()));
     }
 
+    @Test
     public void testPlusBusinessDays() {
         // 2023-07-03 normal day
         // 2023-07-04 holiday
@@ -1400,6 +1425,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.plusBusinessDays(i, NULL_INT));
     }
 
+    @Test
     public void testMinusBusinessDays() {
         // 2023-07-03 normal day
         // 2023-07-04 holiday
@@ -1505,6 +1531,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.minusBusinessDays(i, NULL_INT));
     }
 
+    @Test
     public void testPlusNonBusinessDays() {
         // 2023-07-03 normal day
         // 2023-07-04 holiday
@@ -1610,6 +1637,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.plusNonBusinessDays(i, NULL_INT));
     }
 
+    @Test
     public void testMinusNonBusinessDays() {
         // 2023-07-03 normal day
         // 2023-07-04 holiday
@@ -1715,6 +1743,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.minusNonBusinessDays(i, NULL_INT));
     }
 
+    @Test
     public void testFutureBusinessDate() {
         assertEquals(bCalendar.plusBusinessDays(bCalendar.calendarDate(), 3),
                 bCalendar.futureBusinessDate(3));
@@ -1723,6 +1752,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.futureBusinessDate(NULL_INT));
     }
 
+    @Test
     public void testPastBusinessDate() {
         assertEquals(bCalendar.minusBusinessDays(bCalendar.calendarDate(), 3),
                 bCalendar.pastBusinessDate(3));
@@ -1731,6 +1761,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.pastBusinessDate(NULL_INT));
     }
 
+    @Test
     public void testFutureNonBusinessDate() {
         assertEquals(bCalendar.plusNonBusinessDays(bCalendar.calendarDate(), 3),
                 bCalendar.futureNonBusinessDate(3));
@@ -1739,6 +1770,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.futureNonBusinessDate(NULL_INT));
     }
 
+    @Test
     public void testPastNonBusinessDate() {
         assertEquals(bCalendar.minusNonBusinessDays(bCalendar.calendarDate(), 3),
                 bCalendar.pastNonBusinessDate(3));
@@ -1747,6 +1779,7 @@ public class TestBusinessCalendar extends TestCalendar {
         assertNull(bCalendar.pastNonBusinessDate(NULL_INT));
     }
 
+    @Test
     public void testClearCache() {
         final LocalDate start = LocalDate.of(2023, 7, 3);
         final LocalDate end = LocalDate.of(2025, 7, 10);

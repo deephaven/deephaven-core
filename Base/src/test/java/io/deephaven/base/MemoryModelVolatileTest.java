@@ -3,9 +3,11 @@
 //
 package io.deephaven.base;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class MemoryModelVolatileTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class MemoryModelVolatileTest {
     private static class OddEven {
         private volatile boolean failed = false;
 
@@ -59,6 +61,7 @@ public class MemoryModelVolatileTest extends TestCase {
         }
     }
 
+    @Test
     public void testOddEven() {
         final OddEven oe = new OddEven();
         final long step = 1L << 20; // has to be power of 2.

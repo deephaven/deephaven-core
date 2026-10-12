@@ -11,11 +11,12 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.annotations.ReferentialIntegrity;
-import junit.framework.TestCase;
 import org.junit.Assert;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+
+import static org.junit.Assert.*;
 
 public class UpdateValidatorNugget implements EvalNuggetInterface {
 
@@ -64,7 +65,7 @@ public class UpdateValidatorNugget implements EvalNuggetInterface {
             exception = originalException;
             final StringWriter errors = new StringWriter();
             originalException.printStackTrace(new PrintWriter(errors));
-            TestCase.fail(errors.toString());
+            fail(errors.toString());
         }
     }
 }

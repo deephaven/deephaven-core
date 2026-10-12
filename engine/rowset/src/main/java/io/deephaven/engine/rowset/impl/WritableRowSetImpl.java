@@ -130,7 +130,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insertRange(final long startKey, final long endKey) {
         preMutationHook();
-        assign(innerSet.ixInsertRange(startKey, endKey));
+        if (endKey >= startKey) {
+            assign(innerSet.ixInsertRange(startKey, endKey));
+        }
         postMutationHook();
     }
 
@@ -158,6 +160,48 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     }
 
     @Override
+    public final void subsume(final WritableRowSet other) {
+        if (other == this) {
+            // Subsuming yourself has no answer: the union with ourselves is the keys we already hold, and emptying
+            // the argument would take them away.
+            throw new IllegalArgumentException("Cannot subsume a RowSet into itself");
+        }
+        if (!(other instanceof WritableRowSetImpl)) {
+            throw new UnsupportedOperationException("Unexpected RowSet type " + other.getClass());
+        }
+        final WritableRowSetImpl otherImpl = (WritableRowSetImpl) other;
+        // Both sides are mutated, so both hooks fire before either is touched; a tracking set snapshots its previous
+        // value here, which is what makes the set it snapshots shared and so safe to read through below.
+        preMutationHook();
+        otherImpl.preMutationHook();
+        final OrderedLongSet mine = innerSet;
+        final OrderedLongSet theirs = otherImpl.innerSet;
+        if (mine == theirs) {
+            // The two sets share their keys, so the union is what we already hold.
+            otherImpl.assign(OrderedLongSet.EMPTY);
+        } else {
+            final boolean reversed = InsertCostEstimation.shouldInsertReversed(mine, theirs);
+            final OrderedLongSet receiver = reversed ? theirs : mine;
+            final OrderedLongSet argument = reversed ? mine : theirs;
+            final OrderedLongSet result = receiver.ixInsert(argument);
+            invalidateRowSequenceAsChunkImpl();
+            otherImpl.invalidateRowSequenceAsChunkImpl();
+            innerSet = result;
+            otherImpl.innerSet = OrderedLongSet.EMPTY;
+            // We came in holding a reference to each side and leave holding only the result. The result stands in
+            // for the receiver's reference, which is the receiver itself when it was edited in place; the argument's
+            // reference is always still ours to give back, even when the result is the argument's set, since an
+            // insert that answers with its argument takes a reference of its own to it first.
+            if (result != receiver) {
+                receiver.ixRelease();
+            }
+            argument.ixRelease();
+        }
+        otherImpl.postMutationHook();
+        postMutationHook();
+    }
+
+    @Override
     public final void remove(final long key) {
         preMutationHook();
         assign(innerSet.ixRemove(key));
@@ -167,7 +211,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void removeRange(final long start, final long end) {
         preMutationHook();
-        assign(innerSet.ixRemoveRange(start, end));
+        if (end >= start && end >= 0) {
+            assign(innerSet.ixRemoveRange(Math.max(start, 0), end));
+        }
         postMutationHook();
     }
 
@@ -227,8 +273,12 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final void retainRange(final long startRowKey, final long endRowKey) {
+        if (endRowKey < startRowKey || endRowKey < 0) {
+            clear();
+            return;
+        }
         preMutationHook();
-        assign(innerSet.ixRetainRange(startRowKey, endRowKey));
+        assign(innerSet.ixRetainRange(Math.max(startRowKey, 0), endRowKey));
         postMutationHook();
     }
 
@@ -304,12 +354,24 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
+        if (length <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        if (startPositionInclusive < 0) {
+            if (startPositionInclusive + length <= 0) {
+                return RowSequenceFactory.EMPTY;
+            }
+            return innerSet.ixGetRowSequenceByPosition(0, startPositionInclusive + length);
+        }
         return innerSet.ixGetRowSequenceByPosition(startPositionInclusive, length);
     }
 
     @Override
     public final RowSequence getRowSequenceByKeyRange(final long startRowKeyInclusive, final long endRowKeyInclusive) {
-        return innerSet.ixGetRowSequenceByKeyRange(startRowKeyInclusive, endRowKeyInclusive);
+        if (endRowKeyInclusive < startRowKeyInclusive || endRowKeyInclusive < 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        return innerSet.ixGetRowSequenceByKeyRange(Math.max(startRowKeyInclusive, 0), endRowKeyInclusive);
     }
 
     @Override
@@ -335,7 +397,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final boolean overlapsRange(final long start, final long end) {
-        return innerSet.ixOverlapsRange(start, end);
+        if (end < start || end < 0) {
+            return false;
+        }
+        return innerSet.ixOverlapsRange(Math.max(start, 0), end);
     }
 
     @Override
@@ -375,13 +440,19 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
                 it.next();
                 final long start = it.currentRangeStart();
                 final long end = it.currentRangeEnd();
-                Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "rowSet");
-                Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "rowSet");
-                Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this,
-                        "rowSet");
-                Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start", lastEnd, "lastEnd",
-                        this,
-                        "rowSet");
+                // Check the ranges with primitive comparisons first; the Assert calls box their operands and build
+                // message strings, which we must not pay for on the (overwhelmingly common) success path. The guard
+                // is deliberately written as the negation of each assertion below, so the two can be compared term by
+                // term. Note that lastEnd + 1 overflows when lastEnd is Long.MAX_VALUE, but in that case
+                // !(start > lastEnd) already holds, so the guard fires and that assertion reports the failure.
+                if (!(start >= 0) || !(end >= start) || !(start > lastEnd) || !(start > lastEnd + 1)) {
+                    Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "rowSet");
+                    Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "rowSet");
+                    Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this,
+                            "rowSet");
+                    Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start", lastEnd,
+                            "lastEnd", this, "rowSet");
+                }
                 lastEnd = end;
 
                 totalSize += ((end - start) + 1);
@@ -403,12 +474,20 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final WritableRowSet subSetByPositionRange(final long startPos, final long endPos) {
-        return new WritableRowSetImpl(innerSet.ixSubindexByPosOnNew(startPos, endPos));
+        // Positions below zero hold no keys, and an exclusive end at or before the start asks for none at all.
+        final long start = Math.max(startPos, 0);
+        if (endPos <= start) {
+            return RowSetFactory.empty();
+        }
+        return new WritableRowSetImpl(innerSet.ixSubindexByPosOnNew(start, endPos));
     }
 
     @Override
     public final WritableRowSet subSetByKeyRange(final long startKey, final long endKey) {
-        return new WritableRowSetImpl(innerSet.ixSubindexByKeyOnNew(startKey, endKey));
+        if (endKey < startKey || endKey < 0) {
+            return RowSetFactory.empty();
+        }
+        return new WritableRowSetImpl(innerSet.ixSubindexByKeyOnNew(Math.max(startKey, 0), endKey));
     }
 
     @Override
@@ -425,7 +504,11 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
             return RowSetFactory.empty();
         }
         if (positions.isContiguous()) {
-            return subSetByPositionRange(positions.firstRowKey(), positions.lastRowKey() + 1);
+            // The exclusive end of a position range that runs to Long.MAX_VALUE cannot be represented; every position
+            // is below Long.MAX_VALUE anyway, so the saturated end asks for the same positions.
+            final long lastPosition = positions.lastRowKey();
+            return subSetByPositionRange(positions.firstRowKey(),
+                    lastPosition == Long.MAX_VALUE ? Long.MAX_VALUE : lastPosition + 1);
         }
         final MutableLong currentOffset = new MutableLong();
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
@@ -439,8 +522,15 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
                 if (!iter.hasMore()) {
                     return false;
                 }
-                iter.getNextRowSequenceWithLength(end + 1 - currentOffset.get())
+                // A range running to Long.MAX_VALUE has no representable exclusive end; it asks for the rest, and
+                // nothing can follow it.
+                final long lengthMinusOne = end - currentOffset.get();
+                iter.getNextRowSequenceWithLength(
+                        lengthMinusOne == Long.MAX_VALUE ? Long.MAX_VALUE : lengthMinusOne + 1)
                         .forAllRowKeyRanges(builder::appendRange);
+                if (end == Long.MAX_VALUE) {
+                    return false;
+                }
                 currentOffset.set(end + 1);
                 return iter.hasMore();
             });
@@ -502,6 +592,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final long find(final long key) {
+        if (key < 0) {
+            return -1;
+        }
         return innerSet.ixFind(key);
     }
 
@@ -533,6 +626,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final boolean containsRange(final long start, final long end) {
+        if (start < 0) {
+            return false;
+        }
         return innerSet.ixContainsRange(start, end);
     }
 
@@ -614,6 +710,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     public static void addToBuilderFromImpl(final OrderedLongSet.BuilderRandom builder,
             final WritableRowSetImpl rowSet) {
+        if (rowSet.innerSet.ixIsEmpty()) {
+            // An empty row set's implementation is the shared empty sentinel, which is none of the three types below.
+            return;
+        }
         if (rowSet.innerSet instanceof SingleRange) {
             builder.add((SingleRange) rowSet.innerSet);
             return;

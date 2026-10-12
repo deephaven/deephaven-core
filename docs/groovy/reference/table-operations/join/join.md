@@ -37,16 +37,14 @@ Columns from the left and right tables used to join on.
 
 The columns from the right table to be added to the left table based on key.
 
-- `NULL` will add all columns from the right table to the left table.
+- If this argument is omitted or left empty (`""`), all columns from the right table are added to the left table, except right table columns whose names match a left table column in `columnsToMatch`.
 - `"X"` will add column `X` from the right table to the left table as column `X`.
 - `"Y = X"` will add column `X` from right table to left table and rename it to be `Y`.
 
 </Param>
 <Param name="reserveBits" type="int">
 
-The number of bits to reserve for rightTable groups. If the maximum size of a right table's group is small, reserve fewer bits by setting reserveBits on initialization.
-
-If this parameter is used, the `columnsToMatch` and `columnsToAdd` parameters must be a `JoinMatch` and `JoinAddition` respectively.
+The number of bits of each result row key to reserve for the right table rows that match a left table row. Reserving enough bits for the largest group of matching right table rows avoids shifting result rows as groups grow. If the maximum size of a right table's group is small, reserve fewer bits by setting `reserveBits` on initialization.
 
 </Param>
 </ParamTable>
@@ -114,7 +112,7 @@ right = newTable(
 result = left.join(right, "DeptID")
 ```
 
-In some cases, the matching columns have different names in the left and right table. Below, the left table has a column name `DeptNumber` that we want to match to the colomn `DeptID` in the right table. To perform this match, the second argument needs the name of each column in the left and right tables. We will also set `reserveBits` to keep the table size small.
+In some cases, the matching columns have different names in the left and right table. Below, the left table has a column name `DeptNumber` that we want to match to the column `DeptID` in the right table. To perform this match, the second argument needs the name of each column in the left and right tables.
 
 ```groovy order=left,right,result
 left = newTable(
@@ -133,7 +131,7 @@ right = newTable(
 result = left.join(right, "DeptNumber = DeptID", "DeptName")
 ```
 
-This example is identical to the previous one, but we will set the `reserveBits` parameter to ensure that our table object does not take up much memory. Consequently, we must use a `JoinMatch` and `JoinAddition` for the `columnsToMatch` and `columnsToAdd` parameters rather than strings.
+This example is identical to the previous one, but sets the `reserveBits` parameter and passes `columnsToMatch` and `columnsToAdd` as collections of `JoinMatch` and `JoinAddition`. Because both tables in this example are static, the engine sizes the result from the actual right table groups, and `reserveBits` does not change the result. The setting matters when either table is refreshing.
 
 ```groovy order=left,right,result
 left = newTable(
@@ -149,7 +147,7 @@ right = newTable(
 )
 
 
-result = left.join(right, JoinMatch.from("DeptNumber = DeptID"), JoinAddition.from("DeptName"), 200)
+result = left.join(right, JoinMatch.from("DeptNumber = DeptID"), JoinAddition.from("DeptName"), 1)
 ```
 
 In some cases, the matching columns argument is absent. As a result all possible matches are joined.

@@ -14,8 +14,9 @@ import java.io.IOException;
  * One entry is logged per snapshot request, such as an Arrow Flight {@code DoGet}, at the time that request finishes
  * writing.
  * <p>
- * All durations are nanoseconds and {@code bytesWritten} is a count of bytes. These are the raw recorded units; the
- * in-memory table scales them to milliseconds and megabits to match its column names.
+ * All durations are nanoseconds and {@code bytesWritten} is a count of bytes, matching {@code UpdatePerformanceLog} and
+ * the rest of the engine's performance streams. The in-memory table publishes these same values unscaled, so it and
+ * this sink report identical numbers.
  *
  * @implNote implementations need not be thread safe; all calls to a given instance are serialized.
  */

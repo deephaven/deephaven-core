@@ -16,6 +16,11 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.sortedRangesOf;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.singleRangeOf;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.rspOf;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.render;
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.rangesOf;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -36,35 +41,6 @@ public class RowSetAtMaxKeyTest {
     private static final long MAX = Long.MAX_VALUE;
     /** The first key of the last block: the key space is a whole number of blocks. */
     private static final long TOP_BLOCK = MAX - BLOCK_SIZE + 1;
-
-    /**
-     * Built as an RspBitmap on purpose: a couple of ranges would otherwise be backed by SortedRanges, whose walks never
-     * reach the RSP span code.
-     */
-    private static WritableRowSet rspOf(final long[]... ranges) {
-        RspBitmap rb = RspBitmap.makeEmpty();
-        for (final long[] r : ranges) {
-            rb = rb.appendRangeUnsafe(r[0], r[1]);
-        }
-        rb.finishMutations();
-        return new WritableRowSetImpl(rb);
-    }
-
-    private static WritableRowSet singleRangeOf(final long start, final long end) {
-        return new WritableRowSetImpl(SingleRange.make(start, end));
-    }
-
-    /**
-     * Built as SortedRanges explicitly: going through RowSetFactory would hand back a SingleRange for a lone range, and
-     * these cases are about the sorted ranges code.
-     */
-    private static WritableRowSet sortedRangesOf(final long[]... ranges) {
-        SortedRanges sr = SortedRanges.makeSingleRange(ranges[0][0], ranges[0][1]);
-        for (int i = 1; i < ranges.length; ++i) {
-            sr = sr.addRange(ranges[i][0], ranges[i][1]);
-        }
-        return new WritableRowSetImpl(sr);
-    }
 
     /** Collects keys, failing rather than hanging if the walk runs past what the rowset holds. */
     private static List<Long> keysOf(final RowSequence seq, final long limit) {
@@ -106,23 +82,6 @@ public class RowSetAtMaxKeyTest {
         assertEquals("keys visited", expectedKeys, count[0]);
         assertEquals("first key", rs.firstRowKey(), first[0]);
         assertEquals("last key", expectedLast, last[0]);
-    }
-
-    private static List<long[]> rangesOf(final RowSet rs) {
-        final List<long[]> out = new ArrayList<>();
-        rs.forEachRowKeyRange((s, e) -> {
-            out.add(new long[] {s, e});
-            return true;
-        });
-        return out;
-    }
-
-    private static String render(final List<long[]> ranges) {
-        final StringBuilder sb = new StringBuilder();
-        for (final long[] r : ranges) {
-            sb.append(r[0]).append('-').append(r[1]).append(' ');
-        }
-        return sb.toString();
     }
 
     // A full block span walk bounded by one key past its end sees nothing at all when that wraps.

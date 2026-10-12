@@ -12,6 +12,8 @@ When using `aj`, the first `N-1` match columns are exactly matched. The last mat
 
 The output table contains all of the rows and columns of the left table plus additional columns containing data from the right table. For columns optionally appended to the left table, row values equal the row values from the right table where the keys from the left table most closely match the keys from the right table, as defined above. If there is no matching key in the right table, appended row values are `NULL`.
 
+When more than one right table row has the same exact match keys and the same closest value in the last match column, `aj` uses the last of those rows in the right table.
+
 ## Syntax
 
 ```

@@ -1,6 +1,5 @@
 ---
 title: URI cheat sheet
-sidebar_label: URI
 ---
 
 Deephaven allows users to share tables and other assets via [URIs](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier).

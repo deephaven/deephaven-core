@@ -239,6 +239,26 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         final long highEnd = highBits(end);
         final int lowEnd = RspArray.lowBitsAsInt(end);
         final boolean singleBlock = highStart == highEnd;
+        if (pendingContainerKey == -1 && rb != null && !rb.isEmpty()) {
+            // A key chunk or an RSP-backed row sequence appended in bitmap mode goes straight into rb and leaves
+            // nothing pending, so the block this range starts in may be the one rb already ends with. Appending a
+            // container to rb for that block would give the block a second span; the part of the range inside it is
+            // added to rb's last span instead.
+            final long lastBlockKey = rb.keyForLastBlock();
+            if (lastBlockKey >= highStart) {
+                if (check && (lastBlockKey > highStart || start <= rb.lastValue())) {
+                    throw new IllegalStateException(outOfOrderKeyErrorMsg +
+                            "last=" + rb.lastValue() + " while appending value=" + start);
+                }
+                if (singleBlock) {
+                    rb.appendRangeUnsafeNoWriteCheck(start, end);
+                    return;
+                }
+                rb.appendRangeUnsafeNoWriteCheck(start, highStart | BLOCK_LAST);
+                flushRangeToPendingContainer(highStart + BLOCK_SIZE, end);
+                return;
+            }
+        }
         if (singleBlock) { // short path.
             final long pendingContainerBlockKey = highBits(pendingContainerKey);
             if (pendingContainerKey != -1 && pendingContainerBlockKey == highStart) { // short path.

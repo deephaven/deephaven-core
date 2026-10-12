@@ -1,6 +1,5 @@
 ---
 title: Choose the right Deephaven Python packages to install
-sidebar_label: Choose Python packages
 ---
 
 This cheat sheet will help you choose the correct Deephaven Python packages to suit your needs.

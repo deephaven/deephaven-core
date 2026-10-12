@@ -1,5 +1,5 @@
 ---
-title: Kafka Overview
+title: Kafka overview
 description: Deephaven provides a suite of tools that makes Kafka integration easy. Learn how to connect to Kafka streams, consume messages, and process data in real-time.
 hide_table_of_contents: true
 ---

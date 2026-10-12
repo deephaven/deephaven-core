@@ -1,7 +1,6 @@
 ---
 id: source-setup
 title: Debug built-from-source Deephaven with PyCharm
-sidebar_label: Source
 ---
 
 When building Deephaven from source code for development tasks, you can debug both your own code and Deephaven's internal source code. This is particularly useful for:

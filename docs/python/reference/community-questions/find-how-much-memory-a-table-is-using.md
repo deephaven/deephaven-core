@@ -1,6 +1,5 @@
 ---
 title: Is there a way to find out how much memory a table is using?
-sidebar_label: Is there a way to find out how much memory a table is using?
 ---
 
 No. You can look at overall memory usage in the UI, but there's not a way to look at memory usage by a single table. You can approximate how much memory it uses based on the table's size and data types. Tables use additional memory for the row set and column sources.

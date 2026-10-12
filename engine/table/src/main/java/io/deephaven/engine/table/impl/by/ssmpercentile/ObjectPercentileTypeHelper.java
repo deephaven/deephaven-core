@@ -7,9 +7,6 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
-
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -18,7 +15,6 @@ import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
-import io.deephaven.engine.table.impl.ssms.ObjectSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.util.mutable.MutableInt;
 
@@ -52,7 +48,7 @@ public class ObjectPercentileTypeHelper implements SsmChunkedPercentileOperator.
                 ssmLo.moveBackToFront(ssmHi, loSize - targetLo);
             }
 
-            return setResult(destination, ((ObjectSegmentedSortedMultiset) ssmLo).getMaxObject());
+            return setResult(destination, ssmLo.getMax());
         }
     }
 
@@ -70,13 +66,13 @@ public class ObjectPercentileTypeHelper implements SsmChunkedPercentileOperator.
     public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy,
             IntChunk<ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
         final ObjectChunk<Object, ? extends Values> asObjectChunk = valueCopy.asObjectChunk();
-        final ObjectSegmentedSortedMultiset ssmLo = (ObjectSegmentedSortedMultiset) segmentedSortedMultiSet;
-        final Object hiValue = ssmLo.getMaxObject();
+        final SegmentedSortedMultiSet ssmLo = segmentedSortedMultiSet;
+        final Object hiValue = ssmLo.getMax();
 
         final int result = upperBound(asObjectChunk, startPosition, startPosition + runLength, hiValue);
 
         final long hiCount = ssmLo.getMaxCount();
-        if (result > startPosition && ObjectComparisons.eq(asObjectChunk.get(result - 1), hiValue)
+        if (result > startPosition && eq(asObjectChunk.get(result - 1), hiValue)
                 && counts.get(result - 1) > hiCount) {
             leftOvers.set((int) (counts.get(result - 1) - hiCount));
         } else {
@@ -90,12 +86,22 @@ public class ObjectPercentileTypeHelper implements SsmChunkedPercentileOperator.
     public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy,
             IntChunk<ChunkLengths> counts, int startPosition, int runLength) {
         final ObjectChunk<Object, ? extends Values> asObjectChunk = valueCopy.asObjectChunk();
-        final ObjectSegmentedSortedMultiset ssmLo = (ObjectSegmentedSortedMultiset) segmentedSortedMultiSet;
-        final Object hiValue = ssmLo.getMaxObject();
+        final SegmentedSortedMultiSet ssmLo = segmentedSortedMultiSet;
+        final Object hiValue = ssmLo.getMax();
 
         final int result = upperBound(asObjectChunk, startPosition, startPosition + runLength, hiValue);
 
         return result - startPosition;
+    }
+
+    /**
+     * Test two values for equality consistent with the ordering of the SSMs; each SSM holds one entry for each class of
+     * equal values.
+     */
+    private static boolean eq(Object lhs, Object rhs) {
+        // region equality function
+        return ObjectComparisons.compareEquals(lhs, rhs);
+        // endregion equality function
     }
 
     /**

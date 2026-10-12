@@ -15,6 +15,7 @@ import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.mutable.MutableInt;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.Arrays;
@@ -31,6 +32,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         super(1);
     }
 
+    @Test
     public void testIncrementalWithKeyColumnsShallow() {
         final int size = 10;
 
@@ -39,6 +41,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         }
     }
 
+    @Test
     public void testZeroKeyOutOfKeySpace() {
         // idea here is that left uses LARGE keyspace and the right uses SMALL keyspace.
         // (61-bits on the left, 2-bits on the right)
@@ -67,6 +70,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         }
     }
 
+    @Test
     public void testKeyColumnOutOfKeySpace() {
         // idea here is that left uses LARGE keyspace and the right uses SMALL keyspace.
         // (62-bits on the left, 1-bit on the right (per group))
@@ -95,6 +99,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         }
     }
 
+    @Test
     public void testLeftGroupChangesOnRightShift() {
         // On the step with the shift:
         // - one row to not change groups, but group gets smaller (grp 0)
@@ -152,6 +157,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         TstUtils.validate(en);
     }
 
+    @Test
     public void testLeftGroupChangesOnRightShiftWithAllInnerShifts() {
         // This test is similar to the above, but has at least one inner shift on every group (which hits different
         // logic).
@@ -212,6 +218,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         TstUtils.validate(en);
     }
 
+    @Test
     public void testLeftGroupChangesOnBothShift() {
         // On the step with the shift:
         // - one row to not change groups, but group gets smaller (grp 0)
@@ -272,6 +279,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         TstUtils.validate(en);
     }
 
+    @Test
     public void testLeftGroupChangesOnBothShiftWithInnerShifts() {
         // This test is similar to the above, but has at least one inner shift on every group (which hits different
         // logic).

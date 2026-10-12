@@ -5,10 +5,13 @@ package io.deephaven.plot;
 
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.gui.color.Color;
-import junit.framework.TestCase;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class TestBaseFigureImpl extends RefreshingTableTestCase {
 
+    @Test
     public void testSubplot() {
         BaseFigureImpl fig1 = new BaseFigureImpl();
 
@@ -37,7 +40,7 @@ public class TestBaseFigureImpl extends RefreshingTableTestCase {
 
         try {
             new BaseFigureImpl(0, 0);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("Grid must be at least 1x1"));
         }
@@ -50,31 +53,30 @@ public class TestBaseFigureImpl extends RefreshingTableTestCase {
 
         try {
             fig1.removeChart(0);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("exist"));
         }
 
         Chart c = fig1.newChart(0);
 
-
         try {
             c.rowSpan(100);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("not in grid"));
         }
 
         try {
             fig1.newChart(100);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("not in grid"));
         }
 
         try {
             fig1.newChart(-1);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("indices must be"));
         }
@@ -93,14 +95,14 @@ public class TestBaseFigureImpl extends RefreshingTableTestCase {
 
         try {
             c2.colSpan(2);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("not in grid"));
         }
 
         try {
             c2.rowSpan(3);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("not in grid"));
         }
@@ -109,6 +111,7 @@ public class TestBaseFigureImpl extends RefreshingTableTestCase {
         c1.colSpan(2);
     }
 
+    @Test
     public void testCopy() {
         final BaseFigureImpl figure = new BaseFigureImpl();
         final String title = "TEST";
@@ -125,6 +128,7 @@ public class TestBaseFigureImpl extends RefreshingTableTestCase {
         assertNotSame(figure, copy);
     }
 
+    @Test
     public void testNoCharts() {
         final Figure figure = FigureFactory.figure();
 

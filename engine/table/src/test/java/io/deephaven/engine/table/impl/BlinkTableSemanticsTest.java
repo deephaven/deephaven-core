@@ -20,8 +20,7 @@ import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import junit.framework.ComparisonFailure;
-import junit.framework.TestCase;
+import org.junit.ComparisonFailure;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests that exercise operations (like aggregations) which are specialized for blink tables.
@@ -97,7 +97,7 @@ public class BlinkTableSemanticsTest {
         TstUtils.assertTableEquals(expected, addOnlyExpected);
         TstUtils.assertTableEquals(expected, blinkExpected);
         // Specialized handling for these operations, therefore results are never blink tables
-        TestCase.assertFalse(((BaseTable<?>) blinkExpected).isBlink());
+        assertFalse(((BaseTable<?>) blinkExpected).isBlink());
 
         final PrimitiveIterator.OfLong refreshSizes = LongStream.concat(
                 LongStream.of(100, 0, 1, 2, 50, 0, 1000, 1, 0),

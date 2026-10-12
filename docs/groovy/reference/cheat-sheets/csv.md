@@ -1,6 +1,5 @@
 ---
 title: CSV Cheat Sheet
-sidebar_label: CSV
 ---
 
 - [`readCsv`](../data-import-export/CSV/readCsv.md)

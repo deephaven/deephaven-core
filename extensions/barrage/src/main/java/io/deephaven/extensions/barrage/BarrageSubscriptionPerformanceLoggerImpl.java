@@ -25,7 +25,6 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
     private final BarrageSubscriptionPerformanceSink sink;
     private final BarrageSubscriptionPerformanceStreamPublisher publisher;
     // Keep, may eventually want to manage / close
-    @SuppressWarnings("FieldCanBeLocal")
     private final StreamToBlinkTableAdapter adapter;
     private final Table blink;
 
@@ -64,12 +63,12 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
                 statType,
                 timestampEpochNanos,
                 hist.getTotalCount(),
-                hist.getValueAtPercentile(50) / 1e6,
-                hist.getValueAtPercentile(75) / 1e6,
-                hist.getValueAtPercentile(90) / 1e6,
-                hist.getValueAtPercentile(95) / 1e6,
-                hist.getValueAtPercentile(99) / 1e6,
-                hist.getMaxValue() / 1e6);
+                hist.getValueAtPercentile(50),
+                hist.getValueAtPercentile(75),
+                hist.getValueAtPercentile(90),
+                hist.getValueAtPercentile(95),
+                hist.getValueAtPercentile(99),
+                hist.getMaxValue());
 
         if (encounteredError) {
             return;
@@ -87,5 +86,12 @@ class BarrageSubscriptionPerformanceLoggerImpl implements BarrageSubscriptionPer
 
     public Table blinkTable() {
         return blink;
+    }
+
+    /**
+     * @return the adapter feeding {@link #blinkTable()}; exposed so tests can drive an update cycle directly
+     */
+    StreamToBlinkTableAdapter adapter() {
+        return adapter;
     }
 }

@@ -1,7 +1,6 @@
 ---
 id: docker-setup
 title: Debug Docker-run Deephaven with IntelliJ IDEA
-sidebar_label: Docker
 ---
 
 This guide shows you how to connect IntelliJ IDEA's remote debugger to Deephaven running in a Docker container.

@@ -61,6 +61,11 @@ import java.util.function.LongConsumer;
  * This class assumes that the statistics provided are valid and {@link ParquetPushdownUtils#areStatisticsUsable
  * usable}.
  * <p>
+ * The extracted min/max values describe the <i>non-null</i> values in a row group; parquet statistics never fold nulls
+ * into them. Nothing here, and nothing in the handlers built on top of it, can therefore see a row group's null rows.
+ * Callers that need to account for nulls must consult the null count separately, via
+ * {@link ParquetPushdownUtils#isProvenFreeOfNulls}.
+ * <p>
  * The general structure is that based on the type requested by user, we first try to extract the min/max values from
  * the logical type, and if that fails, we try to extract them from the primitive type. If both fail, we return
  * {@code false}.
@@ -87,9 +92,6 @@ final class MinMaxFromStatistics {
             @NotNull final Statistics<?> statistics,
             @NotNull final ByteConsumer minSetter,
             @NotNull final ByteConsumer maxSetter) {
-        if (!statistics.hasNonNullValue()) {
-            throw new IllegalStateException("Statistics must have a non-null value");
-        }
         final PrimitiveType parquetColType = statistics.type();
         final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
         if (logicalType instanceof LogicalTypeAnnotation.IntLogicalTypeAnnotation) {
@@ -363,14 +365,29 @@ final class MinMaxFromStatistics {
         return false;
     }
 
+    /**
+     * Whether {@link #getMinMaxForComparable} can decode statistics for {@code columnType}. Knowable from the type
+     * alone, so a handler can decline at evaluator-creation time rather than failing once per row group.
+     * <p>
+     * {@link String} is absent by design rather than for want of a decoder: {@link #getMinMaxForStrings} reads those
+     * statistics perfectly well, but only as bytes. Parquet orders them by unsigned bytes while the Comparable path
+     * would compare the decoded values with {@link String#compareTo} (UTF-16), a different order, so String columns are
+     * routed to {@link StringPushdownHandler} ahead of the Comparable handlers instead; see
+     * {@link StatisticsEvaluator#HANDLERS}.
+     */
+    static boolean canDecodeComparable(final Class<?> columnType) {
+        return columnType == Instant.class
+                || columnType == LocalDateTime.class
+                || columnType == LocalDate.class
+                || columnType == LocalTime.class;
+    }
+
     static boolean getMinMaxForComparable(
             @NotNull final Statistics<?> statistics,
             @NotNull final Consumer<Comparable<?>> minSetter,
             @NotNull final Consumer<Comparable<?>> maxSetter,
             final Class<?> columnType) {
-        if (columnType == String.class) {
-            return getMinMaxForStrings(statistics, minSetter::accept, maxSetter::accept);
-        } else if (columnType == Instant.class) {
+        if (columnType == Instant.class) {
             return getMinMaxForInstants(statistics, minSetter::accept, maxSetter::accept);
         } else if (columnType == LocalDateTime.class) {
             return getMinMaxForLocalDateTimes(statistics, minSetter::accept, maxSetter::accept);
@@ -379,26 +396,36 @@ final class MinMaxFromStatistics {
         } else if (columnType == LocalTime.class) {
             return getMinMaxForLocalTimes(statistics, minSetter::accept, maxSetter::accept);
         }
-        // TODO (DH-19666): Add support for more types like BigDecimal and BigInteger min/max values
+        // TODO (DH-19666): Add support for more types. Boolean is the cheapest: the format defines its column order
+        // as "false, true", Boolean is Comparable, and Deephaven writes a native Parquet BOOLEAN, so `flag == true`
+        // could prune where today it does not. BigDecimal and BigInteger are the other candidates.
+        //
+        // Note that adding a type here requires adding it to canDecodeComparable above as well, or the new support
+        // will never be reached -- the handlers decline undecodable types at evaluator-creation time. String is the
+        // one type deliberately left out of both; see canDecodeComparable.
         return false;
     }
 
     /**
-     * Attempts to retrieve the minimum and maximum string from the given {@code statistics}.
+     * Attempts to retrieve the minimum and maximum for a STRING/ENUM column, as raw bytes.
+     * <p>
+     * Parquet defines the extremes for these columns under unsigned byte-wise order, which is not Java's
+     * {@link String#compareTo} order, so the bytes must be compared as bytes. The values are also permitted to be
+     * <i>truncated</i> bounds rather than values present in the data: a truncated minimum is byte-wise less than or
+     * equal to the true minimum and a truncated maximum byte-wise greater than or equal to the true maximum, which
+     * keeps them valid bounds but means neither is necessarily a value in the row group, nor even valid UTF-8.
      */
     static boolean getMinMaxForStrings(
             @NotNull final Statistics<?> statistics,
-            @NotNull final Consumer<String> minSetter,
-            @NotNull final Consumer<String> maxSetter) {
+            @NotNull final Consumer<byte[]> minSetter,
+            @NotNull final Consumer<byte[]> maxSetter) {
         final PrimitiveType parquetColType = statistics.type();
         final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
         if (logicalType instanceof LogicalTypeAnnotation.StringLogicalTypeAnnotation
                 || logicalType instanceof LogicalTypeAnnotation.EnumLogicalTypeAnnotation) {
             verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.BINARY);
-            final String minString = statistics.minAsString();
-            final String maxString = statistics.maxAsString();
-            minSetter.accept(minString);
-            maxSetter.accept(maxString);
+            minSetter.accept(statistics.getMinBytes());
+            maxSetter.accept(statistics.getMaxBytes());
             return true;
         }
         return false;

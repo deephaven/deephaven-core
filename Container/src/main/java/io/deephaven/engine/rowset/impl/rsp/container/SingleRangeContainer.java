@@ -413,7 +413,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
         public SearchRangeIter(final SingleRangeContainer sr, final int skip) {
             start = sr.first() + skip;
             end = sr.last() + 1;
-            hasNext = true;
+            hasNext = start < end;
         }
 
         @Override
@@ -705,11 +705,11 @@ public final class SingleRangeContainer extends ImmutableContainer {
             inValues.next();
             final int vBegin = inValues.start();
             if (vBegin < begin) {
-                throw new IllegalStateException("begin=" + begin + ", vBegin=" + vBegin);
+                throw new IllegalArgumentException("findRanges for invalid key=" + vBegin);
             }
             final int vEnd = inValues.end();
             if (vEnd > end) {
-                throw new IllegalStateException("end=" + end + ", vEnd=" + vEnd);
+                throw new IllegalArgumentException("findRanges for invalid key=" + (vEnd - 1));
             }
             final int rBegin = vBegin - begin;
             if (rBegin > maxPos) {

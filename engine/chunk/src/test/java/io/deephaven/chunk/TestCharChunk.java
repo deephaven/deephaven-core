@@ -5,11 +5,13 @@ package io.deephaven.chunk;
 
 import io.deephaven.chunk.util.hashing.CharChunkEquals;
 import io.deephaven.chunk.attributes.Values;
-import junit.framework.TestCase;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Random;
+
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
 public class TestCharChunk {
     /**
@@ -156,8 +158,8 @@ public class TestCharChunk {
         char[] ca = CharChunk.makeArray(EMPTY_ARRAY_SIZE);
         CharChunk[] cca = CharChunkChunk.makeArray(EMPTY_ARRAY_SIZE);
 
-        TestCase.assertEquals(EMPTY_ARRAY_SIZE, ca.length);
-        TestCase.assertEquals(EMPTY_ARRAY_SIZE, cca.length);
+        assertEquals(EMPTY_ARRAY_SIZE, ca.length);
+        assertEquals(EMPTY_ARRAY_SIZE, cca.length);
     }
 
     @Test
@@ -166,11 +168,11 @@ public class TestCharChunk {
         final CharChunk<Values> c = CharChunk.getEmptyChunk();
         final CharChunkChunk<Values> cc = CharChunkChunk.getEmptyChunk();
 
-        TestCase.assertEquals(0, c.size());
-        TestCase.assertEquals(0, cc.size());
+        assertEquals(0, c.size());
+        assertEquals(0, cc.size());
 
-        TestCase.assertEquals(0, c.capacity); // internal state
-        TestCase.assertEquals(0, cc.capacity); // internal state
+        assertEquals(0, c.capacity); // internal state
+        assertEquals(0, cc.capacity); // internal state
     }
 
     @Test
@@ -180,31 +182,31 @@ public class TestCharChunk {
         final char[] data1 = ReplicatorHelpers.randomChars(rng, 100);
 
         final CharChunk<Values> c0 = CharChunk.chunkWrap(data0);
-        TestCase.assertEquals(data0.length, c0.size());
-        TestCase.assertEquals(data0.length, c0.capacity); // internal state
+        assertEquals(data0.length, c0.size());
+        assertEquals(data0.length, c0.capacity); // internal state
         verifyChunkEqualsArray(c0, data0, 0, data0.length);
 
         final CharChunk<Values> c0Slice = CharChunk.chunkWrap(data0, 6, 3);
-        TestCase.assertEquals(3, c0Slice.size());
-        TestCase.assertEquals(3, c0Slice.capacity); // internal state
+        assertEquals(3, c0Slice.size());
+        assertEquals(3, c0Slice.capacity); // internal state
         verifyChunkEqualsArray(c0Slice, data0, 6, 3);
 
         final CharChunk<Values> c1 = CharChunk.chunkWrap(data1);
         final CharChunk[] ccData = {c0, c1, c0, c1};
 
         final CharChunkChunk<Values> cc = CharChunkChunk.chunkWrap(ccData);
-        TestCase.assertEquals(ccData.length, cc.size());
-        TestCase.assertEquals(ccData.length, cc.capacity); // internal state
+        assertEquals(ccData.length, cc.size());
+        assertEquals(ccData.length, cc.capacity); // internal state
 
-        TestCase.assertSame(cc.get(0), c0);
-        TestCase.assertSame(cc.get(1), c1);
+        assertSame(cc.get(0), c0);
+        assertSame(cc.get(1), c1);
 
         final CharChunkChunk<Values> ccSlice = CharChunkChunk.chunkWrap(ccData, 1, 2);
-        TestCase.assertEquals(2, ccSlice.size());
-        TestCase.assertEquals(2, ccSlice.capacity); // internal state
+        assertEquals(2, ccSlice.size());
+        assertEquals(2, ccSlice.capacity); // internal state
 
-        TestCase.assertSame(ccSlice.get(0), c1);
-        TestCase.assertSame(ccSlice.get(1), c0);
+        assertSame(ccSlice.get(0), c1);
+        assertSame(ccSlice.get(1), c0);
     }
 
     @Test
@@ -215,13 +217,13 @@ public class TestCharChunk {
 
         final CharChunk<Values> c0 = CharChunk.chunkWrap(data0);
         final CharChunk<Values> c0Slice = c0.slice(5, 4);
-        TestCase.assertEquals(4, c0Slice.size());
-        TestCase.assertEquals(4, c0Slice.capacity); // internal state
+        assertEquals(4, c0Slice.size());
+        assertEquals(4, c0Slice.capacity); // internal state
         verifyChunkEqualsArray(c0Slice, data0, 5, 4);
 
         final CharChunk<Values> c0SliceSlice = c0Slice.slice(2, 2);
-        TestCase.assertEquals(2, c0SliceSlice.size());
-        TestCase.assertEquals(2, c0SliceSlice.capacity); // internal state
+        assertEquals(2, c0SliceSlice.size());
+        assertEquals(2, c0SliceSlice.capacity); // internal state
         verifyChunkEqualsArray(c0SliceSlice, data0, 7, 2);
 
         final CharChunk<Values> c1 = CharChunk.chunkWrap(data1);
@@ -229,15 +231,15 @@ public class TestCharChunk {
         final CharChunkChunk<Values> cc = CharChunkChunk.chunkWrap(ccData);
         final CharChunkChunk<Values> ccSlice = cc.slice(1, 2);
 
-        TestCase.assertEquals(2, ccSlice.size());
-        TestCase.assertEquals(2, ccSlice.capacity); // internal state
-        TestCase.assertSame(ccSlice.get(0), c1);
-        TestCase.assertSame(ccSlice.get(1), c0);
+        assertEquals(2, ccSlice.size());
+        assertEquals(2, ccSlice.capacity); // internal state
+        assertSame(ccSlice.get(0), c1);
+        assertSame(ccSlice.get(1), c0);
 
         final CharChunkChunk<Values> ccSliceSlice = ccSlice.slice(1, 1);
-        TestCase.assertEquals(1, ccSliceSlice.size());
-        TestCase.assertEquals(1, ccSliceSlice.capacity); // internal state
-        TestCase.assertSame(ccSliceSlice.get(0), c0);
+        assertEquals(1, ccSliceSlice.size());
+        assertEquals(1, ccSliceSlice.capacity); // internal state
+        assertSame(ccSliceSlice.get(0), c0);
     }
 
     @Test
@@ -250,14 +252,14 @@ public class TestCharChunk {
 
         final WritableCharChunk<Values> wc0 = WritableCharChunk.writableChunkWrap(data0);
         wc0.set(0, value0);
-        TestCase.assertEquals(value0, wc0.get(0));
-        TestCase.assertEquals(value0, data0[0]);
+        assertEquals(value0, wc0.get(0));
+        assertEquals(value0, data0[0]);
 
         final WritableCharChunk<Values> wc0Slice = wc0.slice(2, 3);
         wc0Slice.set(0, value1);
-        TestCase.assertEquals(value1, wc0Slice.get(0));
-        TestCase.assertEquals(value1, wc0.get(2));
-        TestCase.assertEquals(value1, data0[2]);
+        assertEquals(value1, wc0Slice.get(0));
+        assertEquals(value1, wc0.get(2));
+        assertEquals(value1, data0[2]);
 
         final char[] data1 = ReplicatorHelpers.randomChars(rng, 100);
         final WritableCharChunk<Values> wc1 = WritableCharChunk.writableChunkWrap(data0);
@@ -266,14 +268,14 @@ public class TestCharChunk {
         final WritableCharChunk[] wccData = {wc0, wc1, wc0, wc1};
         final WritableCharChunkChunk<Values> wcc = WritableCharChunkChunk.writableChunkWrap(wccData);
         wcc.set(0, wc1);
-        TestCase.assertSame(wc1, wcc.get(0));
-        TestCase.assertSame(wc1, wccData[0]);
+        assertSame(wc1, wcc.get(0));
+        assertSame(wc1, wccData[0]);
 
         final WritableCharChunkChunk<Values> wccSlice = wcc.slice(1, 2);
         wccSlice.set(0, wc0);
-        TestCase.assertSame(wc0, wccSlice.get(0));
-        TestCase.assertSame(wc0, wcc.get(1));
-        TestCase.assertSame(wc0, wccData[1]);
+        assertSame(wc0, wccSlice.get(0));
+        assertSame(wc0, wcc.get(1));
+        assertSame(wc0, wccData[1]);
     }
 
     @Test
@@ -285,35 +287,35 @@ public class TestCharChunk {
         final CharChunk<Values> c0 = CharChunk.chunkWrap(data0);
         final ResettableCharChunk<Values> rc1 = ResettableCharChunk.makeResettableChunk();
         rc1.resetFromArray(data1, 0, data1.length);
-        TestCase.assertEquals(data1[0], rc1.get(0));
+        assertEquals(data1[0], rc1.get(0));
 
         rc1.resetFromChunk(c0, 3, 2);
-        TestCase.assertEquals(data0[3], rc1.get(0));
+        assertEquals(data0[3], rc1.get(0));
 
-        TestCase.assertEquals(2, rc1.size());
-        TestCase.assertEquals(2, rc1.capacity); // internal state
+        assertEquals(2, rc1.size());
+        assertEquals(2, rc1.capacity); // internal state
 
         rc1.resetFromChunk(rc1, 1, 1); // Reset from itself
-        TestCase.assertEquals(1, rc1.size());
-        TestCase.assertEquals(1, rc1.capacity); // internal state
-        TestCase.assertEquals(data0[4], rc1.get(0));
+        assertEquals(1, rc1.size());
+        assertEquals(1, rc1.capacity); // internal state
+        assertEquals(data0[4], rc1.get(0));
 
         // WritableChunks are inherently resettable
         final WritableCharChunk<Values> wc0 = WritableCharChunk.writableChunkWrap(data0);
         final ResettableWritableCharChunk<Values> rwc1 = ResettableWritableCharChunk.makeResettableChunk();
         rwc1.resetFromArray(data1, 0, data1.length);
-        TestCase.assertEquals(data1[0], rwc1.get(0));
+        assertEquals(data1[0], rwc1.get(0));
 
         rwc1.resetFromChunk(wc0, 3, 2);
-        TestCase.assertEquals(data0[3], rwc1.get(0));
+        assertEquals(data0[3], rwc1.get(0));
 
-        TestCase.assertEquals(2, rwc1.size());
-        TestCase.assertEquals(2, rwc1.capacity); // internal state
+        assertEquals(2, rwc1.size());
+        assertEquals(2, rwc1.capacity); // internal state
 
         rwc1.resetFromChunk(wc0, 1, 1); // Reset from self
-        TestCase.assertEquals(1, rwc1.size());
-        TestCase.assertEquals(1, rwc1.capacity); // internal state
-        TestCase.assertEquals(data0[1], rwc1.get(0));
+        assertEquals(1, rwc1.size());
+        assertEquals(1, rwc1.capacity); // internal state
+        assertEquals(data0[1], rwc1.get(0));
     }
 
     @Test
@@ -326,17 +328,17 @@ public class TestCharChunk {
         CharChunk[] ccData = {c0, c1, c0, c1};
         final ResettableCharChunkChunk<Values> rcc1 = ResettableCharChunkChunk.makeResettableChunk();
         rcc1.resetFromArray(ccData, 0, ccData.length);
-        TestCase.assertSame(ccData[0], rcc1.get(0));
+        assertSame(ccData[0], rcc1.get(0));
 
         rcc1.resetFromChunk(rcc1, 1, 2); // Reset from self
-        TestCase.assertSame(ccData[1], rcc1.get(0));
-        TestCase.assertEquals(2, rcc1.size());
-        TestCase.assertEquals(2, rcc1.capacity); // internal state
+        assertSame(ccData[1], rcc1.get(0));
+        assertEquals(2, rcc1.size());
+        assertEquals(2, rcc1.capacity); // internal state
 
         rcc1.resetFromChunk(rcc1, 1, 1); // Reset from self again
-        TestCase.assertEquals(1, rcc1.size());
-        TestCase.assertEquals(1, rcc1.capacity); // internal state
-        TestCase.assertSame(ccData[2], rcc1.get(0));
+        assertEquals(1, rcc1.size());
+        assertEquals(1, rcc1.capacity); // internal state
+        assertSame(ccData[2], rcc1.get(0));
 
         // WritableChunks are inherently resettable
         final WritableCharChunk<Values> wc0 = WritableCharChunk.writableChunkWrap(data0);
@@ -344,17 +346,17 @@ public class TestCharChunk {
         WritableCharChunk[] wccData = {wc0, wc1, wc0, wc1};
         final ResettableWritableCharChunkChunk<Values> rwcc = ResettableWritableCharChunkChunk.makeResettableChunk();
         rwcc.resetFromArray(wccData, 0, wccData.length);
-        TestCase.assertSame(wccData[0], rwcc.get(0));
+        assertSame(wccData[0], rwcc.get(0));
 
         rwcc.resetFromChunk(rwcc, 1, 2); // Reset from self
-        TestCase.assertSame(wccData[1], rwcc.get(0));
-        TestCase.assertEquals(2, rwcc.size());
-        TestCase.assertEquals(2, rwcc.capacity); // internal state
+        assertSame(wccData[1], rwcc.get(0));
+        assertEquals(2, rwcc.size());
+        assertEquals(2, rwcc.capacity); // internal state
 
         rwcc.resetFromChunk(rwcc, 1, 1); // Reset from self again
-        TestCase.assertEquals(1, rwcc.size());
-        TestCase.assertEquals(1, rwcc.capacity); // internal state
-        TestCase.assertSame(wccData[2], rwcc.get(0));
+        assertEquals(1, rwcc.size());
+        assertEquals(1, rwcc.capacity); // internal state
+        assertSame(wccData[2], rwcc.get(0));
     }
 
     @Test
@@ -478,11 +480,11 @@ public class TestCharChunk {
                 copyLength);
         final CharChunk<Values> manualChunk = CharChunk.chunkWrap(manualData, destChunkOffset, destChunkCapacity);
         final boolean same = CharChunkEquals.equalReduce(destChunk, manualChunk);
-        TestCase.assertTrue("Chunks are not the same", same);
+        assertTrue("Chunks are not the same", same);
 
         // Compare the arrays, just for fun
         final boolean arraysSame = Arrays.equals(destData, manualData);
-        TestCase.assertTrue("Arrays are not the same", arraysSame);
+        assertTrue("Arrays are not the same", arraysSame);
     }
 
     @Test
@@ -511,8 +513,8 @@ public class TestCharChunk {
             data[ii][ii + 1] = value1;
             final char actual0 = cc.get(ii - 10, 0);
             final char actual1 = cc.get(ii - 10, 1);
-            TestCase.assertEquals(value0, actual0);
-            TestCase.assertEquals(value1, actual1);
+            assertEquals(value0, actual0);
+            assertEquals(value1, actual1);
         }
     }
 
@@ -546,26 +548,26 @@ public class TestCharChunk {
             final char actual1D1 = cc.get(ii - CHOFF).get(1);
             final char actual2D0 = cc.get(ii - CHOFF, 0);
             final char actual2D1 = cc.get(ii - CHOFF, 1);
-            TestCase.assertEquals(value0, actual1D0);
-            TestCase.assertEquals(value1, actual1D1);
-            TestCase.assertEquals(value0, actual2D0);
-            TestCase.assertEquals(value1, actual2D1);
+            assertEquals(value0, actual1D0);
+            assertEquals(value1, actual1D1);
+            assertEquals(value0, actual2D0);
+            assertEquals(value1, actual2D1);
 
             // set the chunk using the 1D API, check that the values appear in the array
             cc.getWritableChunk(ii - CHOFF).set(0, value1);
             cc.getWritableChunk(ii - CHOFF).set(1, value0);
             final char reverseActual1D1 = data[ii][ii];
             final char reverseActual1D0 = data[ii][ii + 1];
-            TestCase.assertEquals(value0, reverseActual1D0);
-            TestCase.assertEquals(value1, reverseActual1D1);
+            assertEquals(value0, reverseActual1D0);
+            assertEquals(value1, reverseActual1D1);
 
             // set the chunk using the 2D API, check that the values appear in the array
             cc.set(ii - CHOFF, 0, value0);
             cc.set(ii - CHOFF, 1, value1);
             final char reverseActual2D0 = data[ii][ii];
             final char reverseActual2D1 = data[ii][ii + 1];
-            TestCase.assertEquals(value0, reverseActual2D0);
-            TestCase.assertEquals(value1, reverseActual2D1);
+            assertEquals(value0, reverseActual2D0);
+            assertEquals(value1, reverseActual2D1);
         }
 
         // replace a chunk somewhere in the middle
@@ -582,26 +584,26 @@ public class TestCharChunk {
         final char actual1D1 = cc.get(3).get(18 - MIDCHOFF);
         final char actual2D0 = cc.get(3, 17 - MIDCHOFF);
         final char actual2D1 = cc.get(3, 18 - MIDCHOFF);
-        TestCase.assertEquals(value0, actual1D0);
-        TestCase.assertEquals(value1, actual1D1);
-        TestCase.assertEquals(value0, actual2D0);
-        TestCase.assertEquals(value1, actual2D1);
+        assertEquals(value0, actual1D0);
+        assertEquals(value1, actual1D1);
+        assertEquals(value0, actual2D0);
+        assertEquals(value1, actual2D1);
 
         // set the chunk using the 1D API, check that the values appear in the array
         cc.getWritableChunk(3).set(17 - MIDCHOFF, value1);
         cc.getWritableChunk(3).set(18 - MIDCHOFF, value0);
         final char reverseActual1D1 = replacementData[17];
         final char reverseActual1D0 = replacementData[18];
-        TestCase.assertEquals(value1, reverseActual1D1);
-        TestCase.assertEquals(value0, reverseActual1D0);
+        assertEquals(value1, reverseActual1D1);
+        assertEquals(value0, reverseActual1D0);
 
         // set the chunk using the 2D API, check that the values appear in the array
         cc.set(3, 17 - MIDCHOFF, value0);
         cc.set(3, 18 - MIDCHOFF, value1);
         final char reverseActual2D0 = replacementData[17];
         final char reverseActual2D1 = replacementData[18];
-        TestCase.assertEquals(value0, reverseActual2D0);
-        TestCase.assertEquals(value1, reverseActual2D1);
+        assertEquals(value0, reverseActual2D0);
+        assertEquals(value1, reverseActual2D1);
     }
 
     // region testArray
@@ -617,18 +619,18 @@ public class TestCharChunk {
         try (WritableCharChunk chunk = WritableCharChunk.writableChunkWrap(underlyingData, 10, 20)) {
             array = chunk.array();
             offset = chunk.arrayOffset();
-            TestCase.assertSame(underlyingData, array);
-            TestCase.assertEquals(10, offset);
+            assertSame(underlyingData, array);
+            assertEquals(10, offset);
 
             final int lastOffset = offset + chunk.size();
             for (int ii = offset; ii < lastOffset; ++ii) {
-                TestCase.assertEquals((char) ii, array[ii]);
+                assertEquals((char) ii, array[ii]);
             }
 
             array[offset] = 42;
-            TestCase.assertEquals((char) 42, chunk.get(0));
+            assertEquals((char) 42, chunk.get(0));
             chunk.set(1, (char) 97);
-            TestCase.assertEquals((char) 97, array[offset + 1]);
+            assertEquals((char) 97, array[offset + 1]);
         }
     }
     // endregion testArray
@@ -636,7 +638,7 @@ public class TestCharChunk {
     private static <ATTR extends Values> void verifyChunkEqualsArray(CharChunk<ATTR> chunk, char[] data, int offset,
             int size) {
         for (int ii = 0; ii < size; ++ii) {
-            TestCase.assertEquals(String.format("At rowSet %d", ii), data[ii + offset], chunk.get(ii));
+            assertEquals(String.format("At rowSet %d", ii), data[ii + offset], chunk.get(ii));
         }
     }
 

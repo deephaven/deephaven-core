@@ -45,7 +45,9 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
     /**
      * Creates a shared-backed registry for full subscriptions and growing subscriptions targeting a full subscription.
      * The {@code sharedDictionaries} map is owned by the {@code io.deephaven.server.barrage.BarrageMessageProducer} and
-     * lives for the lifetime of the table's producer; it is never cleared.
+     * lives for the lifetime of the table's producer; it is never cleared. Registries over the same map are used by
+     * different subscribers simultaneously, and add to it only while holding its lock. The producer resets dictionaries
+     * that have outgrown the table *before* a propagation phase's writes begin, when no registry is adding to it.
      */
     public DictionaryWriterRegistryImpl(
             @NotNull final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries) {
@@ -62,12 +64,8 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
         if (entry == null) {
             final DictionaryWriterState state;
             if (sharedDictionaries != null) {
-                SharedWriterDictionary shared = sharedDictionaries.get(dictId);
-                if (shared == null) {
-                    shared = new SharedWriterDictionary(dictId, valuesChunkType);
-                    sharedDictionaries.put(dictId, shared);
-                }
-                state = new SharedDictionaryWriterState(shared);
+                state = new SharedDictionaryWriterState(
+                        getOrCreateShared(sharedDictionaries, dictId, valuesChunkType));
             } else {
                 state = new LocalDictionaryWriterState(dictId, valuesChunkType);
             }
@@ -75,6 +73,26 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
             entries.put(dictId, entry);
         }
         return entry.state;
+    }
+
+    /**
+     * Returns (or creates) the producer-level {@link SharedWriterDictionary} for {@code dictId} in
+     * {@code sharedDictionaries}. Full subscribers write in parallel, and any of their registries may be the first to
+     * need an id, so the lookup and insert happen under the map's monitor.
+     */
+    @NotNull
+    private static SharedWriterDictionary getOrCreateShared(
+            @NotNull final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries,
+            final long dictId,
+            @NotNull final ChunkType valuesChunkType) {
+        synchronized (sharedDictionaries) {
+            SharedWriterDictionary shared = sharedDictionaries.get(dictId);
+            if (shared == null) {
+                shared = new SharedWriterDictionary(dictId, valuesChunkType);
+                sharedDictionaries.put(dictId, shared);
+            }
+            return shared;
+        }
     }
 
     @Override

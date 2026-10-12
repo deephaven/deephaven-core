@@ -11,6 +11,7 @@ import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.StringGenerator;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.*;
@@ -25,6 +26,7 @@ import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 @Category(OutOfBandTest.class)
 public class QueryTableSortComparatorPerformanceTest extends QueryTableTestBase {
     @SuppressWarnings("rawtypes")
+    @Test
     public void testComparatorPerformance() throws CsvReaderException {
         final Random random = new Random(0);
         // For better results, use a bigger table; but I don't want to make a test take forever. With 10M rows;

@@ -26,7 +26,6 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,6 +47,7 @@ import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.shortCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
+import static org.junit.Assert.*;
 
 /**
  * Verifies that {@link QueryTable#sort} produces identical results whether the multi-column timsort kernel or the
@@ -190,7 +190,7 @@ public class TestMultiColumnSort {
                 try (final MultiColumnSortKernel<Any> kernel = IndirectTimsortKernelFactory.makeContext(
                         new ChunkType[] {first, second},
                         new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending}, new Comparator[2], 16)) {
-                    TestCase.assertNotNull(kernel);
+                    assertNotNull(kernel);
                 }
             }
         }
@@ -199,36 +199,36 @@ public class TestMultiColumnSort {
         for (final SortingOrder order : SortingOrder.values()) {
             try (final MultiColumnSortKernel<Any> kernel = IndirectTimsortKernelFactory.makeContext(
                     new ChunkType[] {ChunkType.Object}, new SortingOrder[] {order}, new Comparator[1], 16)) {
-                TestCase.assertNotNull(kernel);
+                assertNotNull(kernel);
             }
-            TestCase.assertNull(IndirectTimsortKernelFactory.makeContext(
+            assertNull(IndirectTimsortKernelFactory.makeContext(
                     new ChunkType[] {ChunkType.Int}, new SortingOrder[] {order}, new Comparator[1], 16));
             try (final MultiColumnSortKernel<Any> kernel = IndirectTimsortKernelFactory.makeContext(
                     new ChunkType[] {ChunkType.Object}, new SortingOrder[] {order},
                     new Comparator[] {Comparator.naturalOrder()}, 16)) {
-                TestCase.assertNotNull(kernel);
+                assertNotNull(kernel);
             }
         }
         // descending, three-column, and comparator shapes compile on demand
         try (final MultiColumnSortKernel<Any> kernel = IndirectTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Int, ChunkType.Long},
                 new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Descending}, new Comparator[2], 16)) {
-            TestCase.assertNotNull(kernel);
+            assertNotNull(kernel);
         }
         try (final MultiColumnSortKernel<Any> kernel = IndirectTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Int, ChunkType.Long, ChunkType.Object},
                 new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending, SortingOrder.Ascending},
                 new Comparator[3], 16)) {
-            TestCase.assertNotNull(kernel);
+            assertNotNull(kernel);
         }
         try (final MultiColumnSortKernel<Any> kernel = IndirectTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Object, ChunkType.Int},
                 new SortingOrder[] {SortingOrder.Descending, SortingOrder.Ascending},
                 new Comparator[] {Comparator.nullsFirst(Comparator.naturalOrder()), null}, 16)) {
-            TestCase.assertNotNull(kernel);
+            assertNotNull(kernel);
         }
         // boolean chunks have no kernel; the caller falls back
-        TestCase.assertNull(IndirectTimsortKernelFactory.makeContext(
+        assertNull(IndirectTimsortKernelFactory.makeContext(
                 new ChunkType[] {ChunkType.Boolean, ChunkType.Int},
                 new SortingOrder[] {SortingOrder.Ascending, SortingOrder.Ascending}, new Comparator[2], 16));
     }
@@ -282,7 +282,7 @@ public class TestMultiColumnSort {
     @Test
     public void testParallelSort() {
         // the comparisons below are only meaningful if this environment can actually parallelize
-        TestCase.assertTrue(ExecutionContext.getContext().getOperationInitializer().canParallelize());
+        assertTrue(ExecutionContext.getContext().getOperationInitializer().canParallelize());
 
         // a minimum size of one splits into parallelismFactor segments, exercising the full merge tree; the small
         // sizes stress the single-element-segment and odd-segment-count edges of the tree
@@ -411,7 +411,7 @@ public class TestMultiColumnSort {
             });
         }
 
-        TestCase.assertFalse("sorted.isFailed()", ((BaseTable<?>) sorted).isFailed());
+        assertFalse("sorted.isFailed()", ((BaseTable<?>) sorted).isFailed());
         final int[] constValues = new int[intA.length];
         java.util.Arrays.fill(constValues, QueryConstants.NULL_INT);
         final Table expected = TableTools.newTable(
@@ -427,7 +427,7 @@ public class TestMultiColumnSort {
      */
     @Test
     public void testAllRowKeyAgnosticSortColumns() {
-        TestCase.assertFalse(IndirectTimsortKernelFactory.hasKernel(new ChunkType[0], new Comparator[0]));
+        assertFalse(IndirectTimsortKernelFactory.hasKernel(new ChunkType[0], new Comparator[0]));
 
         final QueryTable base = TstUtils.testRefreshingTable(intCol("IntA"));
         final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>(base.getColumnSourceMap());
@@ -450,7 +450,7 @@ public class TestMultiColumnSort {
         });
 
         for (final Table sorted : new Table[] {sortedOne, sortedBoth, sortedWithData}) {
-            TestCase.assertFalse("sorted.isFailed()", ((BaseTable<?>) sorted).isFailed());
+            assertFalse("sorted.isFailed()", ((BaseTable<?>) sorted).isFailed());
         }
         assertTableEquals(source, sortedOne);
         assertTableEquals(source, sortedBoth);

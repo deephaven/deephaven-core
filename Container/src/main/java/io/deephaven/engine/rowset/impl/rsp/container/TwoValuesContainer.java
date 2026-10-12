@@ -983,7 +983,7 @@ public final class TwoValuesContainer extends ImmutableContainer {
 
     @Override
     public Container toLargeContainer() {
-        return new ArrayContainer(new short[] {v1, v2});
+        return new ArrayContainer(v1, v2);
     }
 
     @Override

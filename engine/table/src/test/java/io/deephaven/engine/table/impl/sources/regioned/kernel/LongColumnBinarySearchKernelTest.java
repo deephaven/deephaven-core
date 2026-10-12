@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -553,5 +554,75 @@ public class LongColumnBinarySearchKernelTest {
             source.clear(true);
         }
     }
-}
 
+    /**
+     * A match search walks its value list once against the data, advancing a cursor as it goes, so the list must be
+     * ordered the way the data is -- the engine's null-aware order, in which the null sentinel sorts first ascending --
+     * or every value after the first is searched only in the tail and can be missed.
+     *
+     * <p>
+     * Only a multi-value list can detect a mismatch, and only one containing the null sentinel can detect one that
+     * affects the sentinel specifically; every other call site in this class passes a single value.
+     */
+    @Test
+    public void testMatchMultipleValuesIncludingNull() {
+        final List<Long> ascending =
+                List.of(NULL_LONG, (long) 1, (long) 2, (long) 5, (long) 5, (long) 9);
+
+        // The null sentinel alongside an ordinary value, listed both ways round.
+        assertMatchPositions(ascending, new Long[] {(long) 5, NULL_LONG}, List.of(0L, 3L, 4L));
+        assertMatchPositions(ascending, new Long[] {NULL_LONG, (long) 5}, List.of(0L, 3L, 4L));
+
+        // Several ordinary values plus the sentinel, listed out of order.
+        assertMatchPositions(ascending, new Long[] {(long) 9, (long) 1, NULL_LONG}, List.of(0L, 1L, 5L));
+
+        // The sentinel on its own, and ordinary values without it.
+        assertMatchPositions(ascending, new Long[] {NULL_LONG}, List.of(0L));
+        assertMatchPositions(ascending, new Long[] {(long) 1, (long) 9}, List.of(1L, 5L));
+
+        // A value absent from the data, between two that are present.
+        assertMatchPositions(ascending, new Long[] {(long) 1, (long) 3, (long) 9}, List.of(1L, 5L));
+
+        // Nothing present at all.
+        assertMatchPositions(ascending, new Long[] {(long) 3, (long) 7}, List.of());
+    }
+
+    /**
+     * Asserts that searching {@code ascendingData} for {@code searchValues} returns exactly
+     * {@code expectedAscendingPositions}, checked in both sort directions; for descending the data and the expected
+     * positions are mirrored.
+     */
+    private static void assertMatchPositions(
+            final List<Long> ascendingData,
+            final Long[] searchValues,
+            final List<Long> expectedAscendingPositions) {
+        for (final boolean descending : new boolean[] {false, true}) {
+            final List<Long> data;
+            final List<Long> expected = new ArrayList<>();
+            if (descending) {
+                data = new ArrayList<>(ascendingData);
+                Collections.reverse(data);
+                for (int ii = expectedAscendingPositions.size() - 1; ii >= 0; --ii) {
+                    expected.add(ascendingData.size() - 1 - expectedAscendingPositions.get(ii));
+                }
+            } else {
+                data = ascendingData;
+                expected.addAll(expectedAscendingPositions);
+            }
+            final LongChunkColumnSource source = makeChunkColumnSource(data);
+            final SortColumn sortColumn = descending
+                    ? SortColumn.desc(ColumnName.of("test"))
+                    : SortColumn.asc(ColumnName.of("test"));
+            try (final RowSet selection = RowSetFactory.fromRange(0, data.size() - 1);
+                    final RowSet matched = LongColumnBinarySearchKernel.binarySearchMatch(
+                            source, selection, sortColumn, searchValues, false)) {
+                final List<Long> actual = new ArrayList<>();
+                matched.forAllRowKeys(actual::add);
+                assertEquals("descending=" + descending + " values=" + Arrays.toString(searchValues),
+                        expected, actual);
+            } finally {
+                source.clear(true);
+            }
+        }
+    }
+}

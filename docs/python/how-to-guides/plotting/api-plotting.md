@@ -1,6 +1,5 @@
 ---
 title: Built-in plotting API
-sidebar_label: Built-in API
 ---
 
 Deephaven's built-in plotting API offers methods for creating figures, plots, and charts using data sourced directly from tables. This guide provides an overview of its capabilities.

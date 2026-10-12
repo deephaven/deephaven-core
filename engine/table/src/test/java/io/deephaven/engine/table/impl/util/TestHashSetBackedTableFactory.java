@@ -13,13 +13,17 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.tuple.ArrayTuple;
+import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 
+import static org.junit.Assert.*;
+
 public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
+    @Test
     public void testSimple() {
         final HashSet<ArrayTuple> set = new HashSet<>();
         set.add(new ArrayTuple("Raylan", "USMS"));
@@ -40,6 +44,7 @@ public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
         assertEquals(set, tableAsSet);
     }
 
+    @Test
     public void testIterative() {
         final HashSet<ArrayTuple> set = new HashSet<>();
 
@@ -53,7 +58,6 @@ public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
                         () -> result.update("Arg0=Arg.substring(0, 1)"))),
                 new UpdateValidatorNugget(result),
         };
-
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int ii = 0; ii < 1000; ++ii) {

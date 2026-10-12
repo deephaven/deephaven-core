@@ -1,6 +1,5 @@
 ---
 title: Read CSV or other delimited files
-sidebar_label: Read CSV files
 ---
 
 This guide will show you how to read data from CSV (and other delimited) files into in-memory Deephaven tables with the [`read_csv`](../../reference/data-import-export/CSV/readCsv.md) method.

@@ -41,6 +41,7 @@ import io.deephaven.proto.util.ScopeTicketHelper;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.arrow.ExchangeMarshallerModule;
+import io.deephaven.server.runner.scheduler.PropagationJobSchedulerTestModule;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.console.ConsoleModule;
@@ -133,6 +134,7 @@ public abstract class FlightMessageRoundTripTest {
             ObfuscatingErrorTransformerModule.class,
             PluginsModule.class,
             ExchangeMarshallerModule.class,
+            PropagationJobSchedulerTestModule.class,
             ExpressionValidatorModule.class,
     })
     public static class FlightTestModule {

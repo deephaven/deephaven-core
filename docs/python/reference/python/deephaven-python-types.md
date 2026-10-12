@@ -1,6 +1,5 @@
 ---
 title: Data types in the Deephaven Python dtypes package
-sidebar_label: Data types
 ---
 
 Deephaven defines its Python types in the `deephaven.dtypes` package.

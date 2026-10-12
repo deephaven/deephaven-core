@@ -4,18 +4,21 @@
 
 package io.deephaven.function;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
 import io.deephaven.vector.*;
 
 import static io.deephaven.function.Cast.*;
 import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Test Cast.
  */
 @SuppressWarnings({"RedundantArrayCreation", "ConstantConditions"})
-public class TestCast extends BaseArrayTestCase {
+public class TestCast {
 
+    @Test
     public void testCastIntOverflow() {
 
         assertEquals(3, castInt(3L));
@@ -38,6 +41,7 @@ public class TestCast extends BaseArrayTestCase {
         assertEquals((int)(Integer.MIN_VALUE-1L), castInt(Integer.MIN_VALUE-1L, false));
     }
 
+    @Test
     public void testCastDoubleOverflow() {
 
         assertEquals(3.0, castDouble(3.0));
@@ -80,6 +84,7 @@ public class TestCast extends BaseArrayTestCase {
 
     <#if pt.valueType.isInteger >
 
+    @Test
     public void testCastInt${pt.boxed}() {
         assertEquals(3, castInt((${pt.primitive})3));
 
@@ -92,6 +97,7 @@ public class TestCast extends BaseArrayTestCase {
         assertEquals(new int[]{1,2,3,NULL_INT}, castInt(new ${pt.vectorDirect}(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}}), true));
     }
 
+    @Test
     public void testCastLong${pt.boxed}() {
         assertEquals(3L, castLong((${pt.primitive})3));
 
@@ -107,6 +113,7 @@ public class TestCast extends BaseArrayTestCase {
     </#if>
 
 
+    @Test
     public void testCastDouble${pt.boxed}() {
 
         assertEquals(3.0, castDouble((${pt.primitive})3));

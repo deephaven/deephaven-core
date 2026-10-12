@@ -5,11 +5,14 @@ package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.Random;
 
-public class MixedBuilderTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class MixedBuilderTest {
+    @Test
     public void testMixedBuilder() {
         final Random r = new Random();
         final MixedBuilderRandom mb = new MixedBuilderRandom(16);
@@ -33,6 +36,7 @@ public class MixedBuilderTest extends TestCase {
         }
     }
 
+    @Test
     public void testAddRowSetReleasesReplacedAccumulator() {
         // Both inputs are big enough (>= addAsIndexThreshold) that the builder accumulates them as
         // cow references rather than iterating their ranges.

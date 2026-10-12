@@ -52,7 +52,6 @@ public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
             handleTableLocationKeyRemoved(locationKey, null);
         }
 
-
         public void beginTransaction(@NotNull Object token) {
             super.beginTransaction(token);
         }
@@ -221,7 +220,6 @@ public class AbstractTableLocationProviderTest extends RefreshingTableTestCase {
                 "provider.hasTableLocationKey(initialKeys.get(4))");
         Assert.eqTrue(tableLocations.get(4).isDestroyed(), "tableLocations.get(4).isDestroyed()");
     }
-
 
     /**
      * Test the management and release of the liveness of table location keys is correct when using transactions.

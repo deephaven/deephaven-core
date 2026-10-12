@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.rspOf;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
 
@@ -24,16 +25,6 @@ import static org.junit.Assert.assertEquals;
 public class RspGetRowSequenceByKeyRangeGapTest {
 
     private static final long BS = BLOCK_SIZE;
-
-    /** Built as an RspBitmap explicitly: a handful of ranges would otherwise be backed by SortedRanges. */
-    private static WritableRowSet rspOf(final long[]... ranges) {
-        RspBitmap rb = RspBitmap.makeEmpty();
-        for (final long[] r : ranges) {
-            rb = rb.appendRangeUnsafe(r[0], r[1]);
-        }
-        rb.finishMutations();
-        return new WritableRowSetImpl(rb);
-    }
 
     private static List<Long> keysOf(final RowSequence rowSequence) {
         final List<Long> out = new ArrayList<>();

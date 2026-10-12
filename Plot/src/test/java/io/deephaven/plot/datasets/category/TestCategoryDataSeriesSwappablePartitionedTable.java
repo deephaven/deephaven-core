@@ -7,9 +7,11 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.BaseFigureImpl;
+import org.junit.Test;
 
 public class TestCategoryDataSeriesSwappablePartitionedTable extends RefreshingTableTestCase {
 
+    @Test
     public void testCategoryDataSeriesPartitionedTable() {
         final BaseFigureImpl figure = new BaseFigureImpl();
         figure.newChart().newAxes();
@@ -27,6 +29,7 @@ public class TestCategoryDataSeriesSwappablePartitionedTable extends RefreshingT
         // todo test oneClick
     }
 
+    @Test
     public void testRefreshingTable() {
         final BaseFigureImpl figure = new BaseFigureImpl();
         figure.newChart().newAxes();
@@ -44,6 +47,7 @@ public class TestCategoryDataSeriesSwappablePartitionedTable extends RefreshingT
         // todo test oneClick
     }
 
+    @Test
     public void testCopy() {
         final BaseFigureImpl figure = new BaseFigureImpl();
         figure.newChart().newAxes();

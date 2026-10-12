@@ -20,11 +20,15 @@ import java.util.function.BiFunction;
 public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<DATA_TYPE> {
 
     final ColumnSource<DATA_TYPE> columnSource;
-    private final RowSet rowSet;
 
+    // Released when the final requested key is consumed, or on close
+    private RowSet.SearchIterator keyIterator;
     private final long lastRowPositionExclusive;
 
     private long nextRowPosition;
+    // Whether keyIterator has been advanced to the first row key, which must then be consumed via currentValue()
+    // rather than nextLong()
+    private boolean pendingAdvancedKey;
 
     /**
      * Create a new SerialColumnIterator.
@@ -40,7 +44,6 @@ public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<
             final long firstRowKey,
             final long length) {
         this.columnSource = columnSource;
-        this.rowSet = rowSet;
         if (firstRowKey == rowSet.firstRowKey()) {
             nextRowPosition = 0;
         } else if ((nextRowPosition = rowSet.find(firstRowKey)) < 0) {
@@ -53,6 +56,15 @@ public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<
                     length, rowSet.size(), nextRowPosition));
         }
         lastRowPositionExclusive = nextRowPosition + length;
+        if (length == 0) {
+            keyIterator = null;
+        } else {
+            keyIterator = rowSet.searchIterator();
+            if (nextRowPosition != 0) {
+                keyIterator.advance(firstRowKey);
+                pendingAdvancedKey = true;
+            }
+        }
     }
 
     @Override
@@ -74,7 +86,26 @@ public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<
         if (nextRowPosition == lastRowPositionExclusive) {
             throw new NoSuchElementException();
         }
-        return rowSet.get(nextRowPosition++);
+        ++nextRowPosition;
+        final long result;
+        if (pendingAdvancedKey) {
+            pendingAdvancedKey = false;
+            result = keyIterator.currentValue();
+        } else {
+            result = keyIterator.nextLong();
+        }
+        if (nextRowPosition == lastRowPositionExclusive) {
+            close();
+        }
+        return result;
+    }
+
+    @Override
+    public final void close() {
+        if (keyIterator != null) {
+            keyIterator.close();
+            keyIterator = null;
+        }
     }
 
     @SuppressWarnings("unchecked")

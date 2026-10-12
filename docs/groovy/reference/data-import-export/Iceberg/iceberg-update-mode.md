@@ -1,6 +1,5 @@
 ---
 title: IcebergUpdateMode
-sidebar_label: IcebergUpdateMode
 ---
 
 The `IcebergUpdateMode` class defines the modes available for updating Deephaven tables that are backed by Iceberg tables. The update modes determine how the Deephaven table reflects changes made to the underlying Iceberg table.

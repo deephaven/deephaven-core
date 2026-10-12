@@ -205,12 +205,7 @@ public final class TimeTable extends QueryTable implements Runnable, HasRefreshi
         final boolean rowsAdded = rangeStart <= lastIndex;
         final boolean rowsRemoved = isBlinkTable && getRowSet().isNonempty();
         if (rowsAdded || rowsRemoved) {
-            final RowSet addedRange = rowsAdded
-                    ? RowSetFactory.fromRange(rangeStart, lastIndex)
-                    : RowSetFactory.empty();
-            final RowSet removedRange = rowsRemoved
-                    ? RowSetFactory.fromRange(getRowSet().firstRowKey(), rangeStart - 1)
-                    : RowSetFactory.empty();
+            final long firstRemovedRowKey = rowsRemoved ? getRowSet().firstRowKey() : RowSequence.NULL_ROW_KEY;
             if (rowsAdded) {
                 getRowSet().writableCast().insertRange(rangeStart, lastIndex);
             }
@@ -218,7 +213,14 @@ public final class TimeTable extends QueryTable implements Runnable, HasRefreshi
                 getRowSet().writableCast().removeRange(0, rangeStart - 1);
             }
             if (notifyListeners) {
-                notifyListeners(addedRange, removedRange, RowSetFactory.empty());
+                notifyListeners(
+                        rowsAdded
+                                ? RowSetFactory.fromRange(rangeStart, lastIndex)
+                                : RowSetFactory.empty(),
+                        rowsRemoved
+                                ? RowSetFactory.fromRange(firstRemovedRowKey, rangeStart - 1)
+                                : RowSetFactory.empty(),
+                        RowSetFactory.empty());
             }
         }
     }

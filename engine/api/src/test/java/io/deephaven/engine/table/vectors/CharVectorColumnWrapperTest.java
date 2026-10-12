@@ -8,11 +8,11 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.vector.CharVector;
 import io.deephaven.vector.CharVectorDirect;
 import io.deephaven.vector.CharVectorTest;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import static org.junit.Assert.*;
 
 /**
  * {@link CharVectorTest} implementation for {@link io.deephaven.engine.table.vectors.CharVectorColumnWrapper}.
@@ -87,16 +87,16 @@ public class CharVectorColumnWrapperTest extends CharVectorTest {
 
     private static void checkPairs(final CharVector a0, final CharVector a1, final CharVector a3,
             final CharVector b0, final CharVector b1, final CharVector b3) {
-        TestCase.assertEquals(0, a0.compareTo(b0));
-        TestCase.assertTrue(a0.compareTo(b1) < 0);
-        TestCase.assertTrue(a0.compareTo(b3) < 0);
+        assertEquals(0, a0.compareTo(b0));
+        assertTrue(a0.compareTo(b1) < 0);
+        assertTrue(a0.compareTo(b3) < 0);
 
-        TestCase.assertTrue(a1.compareTo(b0) > 0);
-        TestCase.assertEquals(0, a1.compareTo(b1));
-        TestCase.assertTrue(a1.compareTo(b3) < 0);
+        assertTrue(a1.compareTo(b0) > 0);
+        assertEquals(0, a1.compareTo(b1));
+        assertTrue(a1.compareTo(b3) < 0);
 
-        TestCase.assertTrue(a3.compareTo(b0) > 0);
-        TestCase.assertTrue(a3.compareTo(b1) > 0);
-        TestCase.assertEquals(0, a3.compareTo(b3));
+        assertTrue(a3.compareTo(b0) > 0);
+        assertTrue(a3.compareTo(b1) > 0);
+        assertEquals(0, a3.compareTo(b3));
     }
 }

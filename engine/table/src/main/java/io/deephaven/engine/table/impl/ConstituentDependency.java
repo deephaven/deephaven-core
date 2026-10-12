@@ -70,6 +70,9 @@ public class ConstituentDependency implements Dependency {
 
     private long lastQueriedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private long firstUnsatisfiedRowPosition = 0;
+    // The row key at firstUnsatisfiedRowPosition when it is nonzero. The result row set cannot change between polls on
+    // the same step, because we only examine it after the result-updated dependency is satisfied.
+    private long firstUnsatisfiedRowKey = RowSequence.NULL_ROW_KEY;
 
     private ConstituentDependency(
             @NotNull final Dependency resultUpdatedDependency,
@@ -118,6 +121,7 @@ public class ConstituentDependency implements Dependency {
                 // Re-initialize for this cycle
                 lastQueriedStep = step;
                 firstUnsatisfiedRowPosition = 0;
+                firstUnsatisfiedRowKey = RowSequence.NULL_ROW_KEY;
             }
             final int chunkSize = Math.toIntExact(Math.min(DEFAULT_CHUNK_SIZE, resultRows.size()));
             final int numColumns = dependencyColumns.length;
@@ -126,7 +130,7 @@ public class ConstituentDependency implements Dependency {
                     final SafeCloseable ignored = new SafeCloseableArray<>(contexts);
                     final RowSequence.Iterator rows = resultRows.getRowSequenceIterator()) {
                 if (firstUnsatisfiedRowPosition > 0) {
-                    rows.advance(resultRows.get(firstUnsatisfiedRowPosition));
+                    rows.advance(firstUnsatisfiedRowKey);
                 }
                 for (int ci = 0; ci < numColumns; ++ci) {
                     contexts[ci] = dependencyColumns[ci].makeGetContext(chunkSize, sharedContext);
@@ -145,6 +149,7 @@ public class ConstituentDependency implements Dependency {
                                         .append(this).append(", constituent=").append(constituent)
                                         .endl();
                                 firstUnsatisfiedRowPosition += di;
+                                firstUnsatisfiedRowKey = sliceRows.asRowKeyChunk().get(di);
                                 return false;
                             }
                         }

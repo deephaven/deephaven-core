@@ -7,12 +7,15 @@
 // @formatter:off
 package io.deephaven.base.ringbuffer;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-public class TestAggregatingDoubleRingBuffer extends TestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
+public class TestAggregatingDoubleRingBuffer {
 
     private void assertEmpty(AggregatingDoubleRingBuffer rb) {
         assertTrue(rb.isEmpty());
@@ -33,6 +36,7 @@ public class TestAggregatingDoubleRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testLargeAmounts() {
         final AggregatingDoubleRingBuffer rb = new AggregatingDoubleRingBuffer(3, (double) 0, (a, b) -> (double) (a + b));
 
@@ -55,6 +59,7 @@ public class TestAggregatingDoubleRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMinLargeAmounts() {
         final AggregatingDoubleRingBuffer rb =
                 new AggregatingDoubleRingBuffer(3, Double.MAX_VALUE, (a, b) -> (double) Math.min(a, b));
@@ -71,6 +76,7 @@ public class TestAggregatingDoubleRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMaxLargeAmounts() {
         final AggregatingDoubleRingBuffer rb =
                 new AggregatingDoubleRingBuffer(3, Double.MIN_VALUE, (a, b) -> (double) Math.max(a, b));
@@ -89,6 +95,7 @@ public class TestAggregatingDoubleRingBuffer extends TestCase {
 
     // region non-byte-tests
 
+    @Test
     public void testEvaluateSumLargeAmounts() {
         final AggregatingDoubleRingBuffer rb = new AggregatingDoubleRingBuffer(3, (double) 0, (a, b) -> (double) (a + b));
         double runningSum = (double) 0;
@@ -123,6 +130,7 @@ public class TestAggregatingDoubleRingBuffer extends TestCase {
         return (double) (n * (n - 1) / 2);
     }
 
+    @Test
     public void testEvaluationEdgeCase() {
         AggregatingDoubleRingBuffer rb = new AggregatingDoubleRingBuffer(512, (double) 0, (a, b) -> (double) (a + b));
 
@@ -201,7 +209,6 @@ public class TestAggregatingDoubleRingBuffer extends TestCase {
             assertEquals((double) 0, rb.evaluate());
         }
 
-
         rb = new AggregatingDoubleRingBuffer(512, (double) 0, (a, b) -> (double) (a + b));
         // need to get the buffer to state where we have clean pushes and a wrapped pop
 
@@ -232,6 +239,7 @@ public class TestAggregatingDoubleRingBuffer extends TestCase {
     }
     // endregion non-byte-tests
 
+    @Test
     public void testPushPopUnsafe() {
         final AggregatingDoubleRingBuffer rb =
                 new AggregatingDoubleRingBuffer(3, (double) -Double.MAX_VALUE, (a, b) -> (double) Math.max(a, b));
@@ -264,6 +272,7 @@ public class TestAggregatingDoubleRingBuffer extends TestCase {
         assertEquals((double) 99, rb.evaluate()); // last value added is max
     }
 
+    @Test
     public void testPopMultiple() {
         final AggregatingDoubleRingBuffer rb = new AggregatingDoubleRingBuffer(3, (double) 0, (a, b) -> (double) (a + b));
 
@@ -292,6 +301,7 @@ public class TestAggregatingDoubleRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testSpecialCaseA() {
         // overlapping push and pop ranges with popTail < pushTail
         final AggregatingDoubleRingBuffer rb = new AggregatingDoubleRingBuffer(4, (double) 0, (a, b) -> (double) (a + b));
@@ -302,6 +312,7 @@ public class TestAggregatingDoubleRingBuffer extends TestCase {
         assertEquals((double) 5, rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseB() {
         // push the full capacity while wrapped
         final AggregatingDoubleRingBuffer rb = new AggregatingDoubleRingBuffer(64, (double) 0, (a, b) -> (double) (a + b));
@@ -314,6 +325,7 @@ public class TestAggregatingDoubleRingBuffer extends TestCase {
         assertEquals((double) 64, rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseC() {
         // overlapping push and pop ranges with popTail < pushTail
         final AggregatingDoubleRingBuffer rb = new AggregatingDoubleRingBuffer(16, (double) 0, (a, b) -> (double) (a + b));

@@ -3,7 +3,7 @@
 //
 package io.deephaven.base.array;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -11,8 +11,12 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Random;
 
-public class FastFloatArrayTest extends TestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
+public class FastFloatArrayTest {
+
+    @Test
     public void testAdd() {
         FastFloatArray array = new FastFloatArray();
         assertEquals(0, array.getLength());
@@ -46,6 +50,7 @@ public class FastFloatArrayTest extends TestCase {
         assertEquals(0, array.getLength());
     }
 
+    @Test
     public void testRemove() {
         FastFloatArray array = new FastFloatArray();
         assertEquals(0, array.getLength());
@@ -78,7 +83,6 @@ public class FastFloatArrayTest extends TestCase {
         assertEquals(1, array.getLength());
         assertTrue(array.getUnsafeArray()[0] == item1);
 
-
         try {
             array.removeThisIndex(-1);
             fail("removing index -1 should throw");
@@ -92,7 +96,6 @@ public class FastFloatArrayTest extends TestCase {
         } catch (Exception e) {
             // expected exception
         }
-
 
         // add a bunch
         float item2 = 2.0f;
@@ -231,6 +234,7 @@ public class FastFloatArrayTest extends TestCase {
 
     }
 
+    @Test
     public void testReset() {
         Random myRandom = new Random(88974352L);
         int nItems = 6;
@@ -250,6 +254,7 @@ public class FastFloatArrayTest extends TestCase {
 
     }
 
+    @Test
     public void testDeepCopyAndEquals() {
         float orig = 99.99f;
         float copy = orig;
@@ -333,6 +338,7 @@ public class FastFloatArrayTest extends TestCase {
         }
     }
 
+    @Test
     public void testExternalizationEmptyWithEmptyReceiver() throws Exception {
         Random myRandom = new Random(88974352L);
         FastFloatArray arrayInput = makeArrayWithRandomJunk(0, myRandom);
@@ -340,6 +346,7 @@ public class FastFloatArrayTest extends TestCase {
         checkExternalization(arrayInput, arrayReceiver);
     }
 
+    @Test
     public void testExternalizationOneItemWithEmptyReceiver() throws Exception {
         Random myRandom = new Random(88974352L);
         FastFloatArray arrayInput = makeArrayWithRandomJunk(1, myRandom);
@@ -347,6 +354,7 @@ public class FastFloatArrayTest extends TestCase {
         checkExternalization(arrayInput, arrayReceiver);
     }
 
+    @Test
     public void testExternalizationManyItemsWithEmptyReceiver() throws Exception {
         Random myRandom = new Random(88974352L);
         FastFloatArray arrayInput = makeArrayWithRandomJunk(6, myRandom);
@@ -354,6 +362,7 @@ public class FastFloatArrayTest extends TestCase {
         checkExternalization(arrayInput, arrayReceiver);
     }
 
+    @Test
     public void testExternalizationEmptyWithOneReceiver() throws Exception {
         Random myRandom = new Random(88974352L);
         FastFloatArray arrayInput = makeArrayWithRandomJunk(0, myRandom);
@@ -361,6 +370,7 @@ public class FastFloatArrayTest extends TestCase {
         checkExternalization(arrayInput, arrayReceiver);
     }
 
+    @Test
     public void testExternalizationOneItemWithOneReceiver() throws Exception {
         Random myRandom = new Random(88974352L);
         FastFloatArray arrayInput = makeArrayWithRandomJunk(1, myRandom);
@@ -368,6 +378,7 @@ public class FastFloatArrayTest extends TestCase {
         checkExternalization(arrayInput, arrayReceiver);
     }
 
+    @Test
     public void testExternalizationManyItemsWithOneReceiver() throws Exception {
         Random myRandom = new Random(88974352L);
         FastFloatArray arrayInput = makeArrayWithRandomJunk(6, myRandom);
@@ -375,6 +386,7 @@ public class FastFloatArrayTest extends TestCase {
         checkExternalization(arrayInput, arrayReceiver);
     }
 
+    @Test
     public void testExternalizationEmptyWithManyReceiver() throws Exception {
         Random myRandom = new Random(88974352L);
         FastFloatArray arrayInput = makeArrayWithRandomJunk(0, myRandom);
@@ -382,6 +394,7 @@ public class FastFloatArrayTest extends TestCase {
         checkExternalization(arrayInput, arrayReceiver);
     }
 
+    @Test
     public void testExternalizationOneItemWithManyReceiver() throws Exception {
         Random myRandom = new Random(88974352L);
         FastFloatArray arrayInput = makeArrayWithRandomJunk(1, myRandom);
@@ -389,6 +402,7 @@ public class FastFloatArrayTest extends TestCase {
         checkExternalization(arrayInput, arrayReceiver);
     }
 
+    @Test
     public void testExternalizationManyItemsWithManyReceiver() throws Exception {
         Random myRandom = new Random(88974352L);
         FastFloatArray arrayInput = makeArrayWithRandomJunk(6, myRandom);
@@ -396,6 +410,7 @@ public class FastFloatArrayTest extends TestCase {
         checkExternalization(arrayInput, arrayReceiver);
     }
 
+    @Test
     public void testExternalizationGeneralScan() throws Exception {
         Random myRandom = new Random(88974352L);
         for (int i = 0; i < 10; i++) {
@@ -459,18 +474,22 @@ public class FastFloatArrayTest extends TestCase {
         }
     }
 
+    @Test
     public void testCopyValuesDeepNoItems() {
         checkCopyValuesDeep(0);
     }
 
+    @Test
     public void testCopyValuesDeepOneItem() {
         checkCopyValuesDeep(1);
     }
 
+    @Test
     public void testCopyValuesDeepManyItems() {
         checkCopyValuesDeep(6);
     }
 
+    @Test
     public void testCopyValuesDeepGeneralScan() {
         for (int nItems = 0; nItems < 10; nItems++) {
             checkCopyValuesDeep(nItems);
@@ -496,18 +515,22 @@ public class FastFloatArrayTest extends TestCase {
         }
     }
 
+    @Test
     public void testDeepCloneNoItems() {
         checkDeepClone(0);
     }
 
+    @Test
     public void testDeepCloneOneItem() {
         checkDeepClone(1);
     }
 
+    @Test
     public void testDeepCloneManyItems() {
         checkDeepClone(8);
     }
 
+    @Test
     public void testDeepCloneManyItemsGeneralScan() {
         for (int nItems = 0; nItems < 10; nItems++) {
             checkDeepClone(nItems);
@@ -515,5 +538,4 @@ public class FastFloatArrayTest extends TestCase {
     }
 
 }
-
 

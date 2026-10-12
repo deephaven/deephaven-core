@@ -92,26 +92,12 @@ public class IntChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Bas
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
-        final IntChunk<Values> intChunk = context.getChunk().asIntChunk();
-        subset.forAllRowKeys(row -> {
-            if (intChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         final IntChunk<Values> intChunk = context.getChunk().asIntChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(intChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(intChunk.isNull((int) row)));
     }
 
     private class IntChunkInputStream extends BaseChunkInputStream<Context> {
@@ -148,8 +134,9 @@ public class IntChunkWriter<SOURCE_CHUNK_TYPE extends Chunk<Values>> extends Bas
             // write the validity buffer
             bytesWritten += writeValidityBuffer(dos);
 
-            // write the payload buffer in bounded windows, encoding each value into little-endian bytes and flushing a
-            // full window with a single bulk write rather than one DataOutput value (four bytes) at a time
+            // write the payload buffer in bounded windows, encoding each value into little-endian bytes (via
+            // LittleEndianCodec) and flushing a full window with a single bulk write rather than one DataOutput value,
+            // i.e. one individual byte write per byte of the value, at a time.
             final IntChunk<Values> intChunk = context.getChunk().asIntChunk();
             final byte[] buffer = new byte[BULK_WRITE_ELEMENTS * Integer.BYTES];
             final MutableInt bufferPos = new MutableInt(0);

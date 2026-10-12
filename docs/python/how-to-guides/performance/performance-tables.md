@@ -1,6 +1,5 @@
 ---
 title: How to use Deephaven's performance tables for system monitoring
-sidebar_label: Use performance tables
 ---
 
 This guide shows how to use Deephaven's internal performance tables.

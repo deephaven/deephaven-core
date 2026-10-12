@@ -12,11 +12,11 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.vector.FloatVector;
 import io.deephaven.vector.FloatVectorDirect;
 import io.deephaven.vector.FloatVectorTest;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static org.junit.Assert.*;
 
 /**
  * {@link FloatVectorTest} implementation for {@link io.deephaven.engine.table.vectors.FloatVectorColumnWrapper}.
@@ -91,16 +91,16 @@ public class FloatVectorColumnWrapperTest extends FloatVectorTest {
 
     private static void checkPairs(final FloatVector a0, final FloatVector a1, final FloatVector a3,
             final FloatVector b0, final FloatVector b1, final FloatVector b3) {
-        TestCase.assertEquals(0, a0.compareTo(b0));
-        TestCase.assertTrue(a0.compareTo(b1) < 0);
-        TestCase.assertTrue(a0.compareTo(b3) < 0);
+        assertEquals(0, a0.compareTo(b0));
+        assertTrue(a0.compareTo(b1) < 0);
+        assertTrue(a0.compareTo(b3) < 0);
 
-        TestCase.assertTrue(a1.compareTo(b0) > 0);
-        TestCase.assertEquals(0, a1.compareTo(b1));
-        TestCase.assertTrue(a1.compareTo(b3) < 0);
+        assertTrue(a1.compareTo(b0) > 0);
+        assertEquals(0, a1.compareTo(b1));
+        assertTrue(a1.compareTo(b3) < 0);
 
-        TestCase.assertTrue(a3.compareTo(b0) > 0);
-        TestCase.assertTrue(a3.compareTo(b1) > 0);
-        TestCase.assertEquals(0, a3.compareTo(b3));
+        assertTrue(a3.compareTo(b0) > 0);
+        assertTrue(a3.compareTo(b1) > 0);
+        assertEquals(0, a3.compareTo(b3));
     }
 }

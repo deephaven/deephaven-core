@@ -1,6 +1,5 @@
 ---
 title: Deephaven and PyArrow
-sidebar_label: PyArrow
 ---
 
 This guide covers the intersection of Deephaven and [PyArrow](https://arrow.apache.org/docs/python/index.html). PyArrow is a Python library for [Apache Arrow](https://arrow.apache.org/), which is a columnar memory format similar to Deephaven's table format. Deephaven's [Arrow integration](./deephaven-python-package.md#arrow) provides the ability to do two things:

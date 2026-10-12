@@ -1,6 +1,5 @@
 ---
 title: Iterate over tables with ColumnVectors
-sidebar_label: Iterate over tables
 ---
 
 This guide will show you how to iterate over table data in Groovy queries via [`ColumnVectors`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html). [`ColumnVectors`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html) is a helper class that makes it easy to iterate over a column of data. When iterating over columns via these vectors, the iterator uses chunks internally for high performance and lower overhead.

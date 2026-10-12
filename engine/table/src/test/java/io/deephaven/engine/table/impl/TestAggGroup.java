@@ -26,6 +26,7 @@ import static io.deephaven.engine.table.impl.by.RollupConstants.ROLLUP_COLUMN_SU
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestAggGroup extends RefreshingTableTestCase {

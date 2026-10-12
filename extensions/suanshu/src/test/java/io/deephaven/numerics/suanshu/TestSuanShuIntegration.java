@@ -3,7 +3,6 @@
 //
 package io.deephaven.numerics.suanshu;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.vector.*;
 import io.deephaven.util.QueryConstants;
@@ -11,17 +10,21 @@ import com.numericalmethod.suanshu.matrix.doubles.Matrix;
 import com.numericalmethod.suanshu.matrix.doubles.matrixtype.dense.DenseMatrix;
 import com.numericalmethod.suanshu.matrix.doubles.matrixtype.mathoperation.SimpleMatrixMathOperation;
 import com.numericalmethod.suanshu.vector.doubles.dense.DenseVector;
+import org.junit.Test;
 
 import java.math.BigDecimal;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.numerics.suanshu.SuanShuIntegration.ssMat;
 import static io.deephaven.numerics.suanshu.SuanShuIntegration.ssVec;
+import static org.junit.Assert.*;
 
 /**
  * Testcases for {@link SuanShuIntegration}
  */
-public class TestSuanShuIntegration extends BaseArrayTestCase {
+public class TestSuanShuIntegration {
 
+    @Test
     public void testConvertByteArrayToVector() throws Exception {
         final byte[] bytes = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
         final double[] doubles = new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
@@ -33,6 +36,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
                 (byte) 9, (byte) 10, (byte) 11, (byte) 12, (byte) 13, (byte) 14));
     }
 
+    @Test
     public void testConvertDhByteVectorToVector() throws Exception {
         final ByteVectorDirect dhByteVectorDirect =
                 new ByteVectorDirect(new byte[] {1, 2, 3, 4, QueryConstants.NULL_BYTE, 6});
@@ -43,6 +47,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testVecEquals(expected, actual);
     }
 
+    @Test
     public void testConvertShortArrayToVector() throws Exception {
         final short[] shorts = new short[] {1, 2, 3, 4, 5, 6};
         final double[] doubles = new double[] {1, 2, 3, 4, 5, 6};
@@ -53,6 +58,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testVecEquals(expected, ssVec((short) 1, (short) 2, (short) 3, (short) 4, (short) 5, (short) 6));
     }
 
+    @Test
     public void testConvertDhShortVectorToVector() throws Exception {
         final ShortVectorDirect dhShortVectorDirect =
                 new ShortVectorDirect(new short[] {1, 2, 3, 4, QueryConstants.NULL_SHORT, 6});
@@ -63,6 +69,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testVecEquals(expected, actual);
     }
 
+    @Test
     public void testConvertIntArrayToVector() throws Exception {
         final int[] ints = new int[] {-1, 2, -3, 4, 5, 6};
         final double[] doubles = new double[] {-1, 2, -3, 4, 5, 6};
@@ -73,6 +80,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testVecEquals(expected, ssVec(-1, 2, -3, 4, 5, 6));
     }
 
+    @Test
     public void testConvertDhIntVectorToVector() throws Exception {
         final IntVectorDirect dhIntVectorDirect = new IntVectorDirect(-1, 2, -3, 4, QueryConstants.NULL_INT, 6);
         final double[] doubles = new double[] {-1, 2, -3, 4, Double.NaN, 6};
@@ -82,6 +90,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testVecEquals(expected, actual);
     }
 
+    @Test
     public void testConvertFloatArrayToVector() throws Exception {
         final float[] floats = new float[] {1.2f, -562, -23.069f, 4.56f, 5.89f, 6f};
         final double[] doubles = new double[] {1.2f, -562, -23.069f, 4.56f, 5.89f, 6f};
@@ -92,6 +101,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testVecEquals(expected, ssVec(1.2f, -562, -23.069f, 4.56f, 5.89f, 6f));
     }
 
+    @Test
     public void testConvertDhFloatVectorToVector() throws Exception {
         final FloatVectorDirect dhFloatVectorDirect =
                 new FloatVectorDirect(1.2f, -562, -23.069f, 4.56f, QueryConstants.NULL_FLOAT, 6f);
@@ -102,6 +112,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testVecEquals(expected, actual);
     }
 
+    @Test
     public void testConvertLongArrayToVector() throws Exception {
         final long[] longs = new long[] {-126564L, 256746545L, 3545678945136L, 4544L, 5L, 6654845L};
         final double[] doubles = new double[] {-126564d, 256746545d, 3545678945136d, 4544d, 5d, 6654845L};
@@ -112,6 +123,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testVecEquals(expected, ssVec(-126564L, 256746545L, 3545678945136L, 4544L, 5L, 6654845L));
     }
 
+    @Test
     public void testConvertDhLongVectorToVector() throws Exception {
         final LongVectorDirect dhLongVectorDirect =
                 new LongVectorDirect(-126564L, 256746545L, 3545678945136L, 4544L, QueryConstants.NULL_LONG, 6654845L);
@@ -122,6 +134,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testVecEquals(expected, actual);
     }
 
+    @Test
     public void testConvertDoubleArrayToVector() throws Exception {
         final double[] doublesActual = new double[] {2.365d, 2125.5698d, -98231.2656897451d, 697, 3457836.7283648723d};
         final double[] doubles = new double[] {2.365d, 2125.5698d, -98231.2656897451d, 697, 3457836.7283648723d};
@@ -132,6 +145,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testVecEquals(expected, ssVec(2.365d, 2125.5698d, -98231.2656897451d, 697, 3457836.7283648723d));
     }
 
+    @Test
     public void testConvertDhDoubleVectorToVector() throws Exception {
         final DoubleVectorDirect dhDoubleVectorDirect = new DoubleVectorDirect(2.365d, 2125.5698d, -98231.2656897451d,
                 QueryConstants.NULL_DOUBLE, 3457836.7283648723d);
@@ -142,6 +156,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testVecEquals(expected, actual);
     }
 
+    @Test
     public void testConvertDhNumberVectorToVector() throws Exception {
         ObjectVector vector =
                 new ObjectVectorDirect<>(BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE, null,
@@ -180,6 +195,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         assertEquals(expected.toArray(), actual.toArray());
     }
 
+    @Test
     public void testConvertDhNumberVectorToVectorException() throws Exception {
         ObjectVector vector = new ObjectVectorDirect<>("A", "B");
         try {
@@ -198,6 +214,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testConvertNumberArrayToVector() throws Exception {
         final Integer[] integers = new Integer[] {1, 2, 3, 4, null, 6};
         final Double[] doubleArrays = new Double[] {1d, 2d, 3d, 4d, null, 6d};
@@ -212,6 +229,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         assertTrue(expected.equals(ssVec(1, 2, 3, 4, null, 6)));
     }
 
+    @Test
     public void testConvertByte2dArrayToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, 16},
                 {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
@@ -226,6 +244,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertDhByteVectorToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
                 {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
@@ -242,6 +261,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertShort2dArrayToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, 16},
                 {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
@@ -255,6 +275,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertDhShortVectorToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
                 {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
@@ -271,6 +292,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertInt2dArrayToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, 16},
                 {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
@@ -284,6 +306,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertDhIntVectorToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
                 {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
@@ -300,6 +323,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertFloat2dArrayToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1f, 2f, 3f, 4f, 5f, 6f}, {11f, 12f, 13f, 14f, 15f, 16f},
                 {21f, 22f, 23f, 24f, 25f, 26f}, {31f, 32f, 33f, 34f, 35f, 36f}};
@@ -313,6 +337,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertDhFloatVectorToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1f, 2f, 3f, 4f, 5f, 6f}, {11f, 12f, 13f, 14f, 15f, Double.NaN},
                 {21f, 22f, 23f, 24f, 25f, 26f}, {31f, 32f, 33f, 34f, 35f, 36f}};
@@ -329,6 +354,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertLong2dArrayToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1L, 2L, 3L, 4L, 5L, 6L}, {11L, 12L, 13L, 14L, 15L, 16L},
                 {21L, 22L, 23L, 24L, 25L, 26L}, {31L, 32L, 33L, 34L, 35L, 36L}};
@@ -342,6 +368,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertDhLongVectorToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1l, 2l, 3l, 4l, 5l, 6l}, {11l, 12l, 13l, 14l, 15l, Double.NaN},
                 {21l, 22l, 23l, 24l, 25l, 26l}, {31l, 32l, 33l, 34l, 35l, 36l}};
@@ -358,6 +385,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertDouble2dArrayToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, 16},
                 {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
@@ -369,6 +397,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertDhDoubleVectorToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
                 {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
@@ -385,6 +414,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertVectorBasesToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {1, 2, 3, 4, 5, 6}, {1, 2, 3, 4, 5, 6},
                 {11, 12, 13, 14, 15, 16}, {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}, {0, 1, 0, 1, 0, 1}};
@@ -402,6 +432,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertVectorsToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1, 2, 3, 4, Double.NaN, 6}, {1, 2, 3, 4, Double.NaN, 6},
                 {1, 2, 3, 4, Double.NaN, 6}, {11, 12, 13, 14, Double.NaN, 16}, {21, 22, 23, 24, Double.NaN, 26},
@@ -424,6 +455,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testMatEquals(expected, actual);
     }
 
+    @Test
     public void testConvertVectorBasesToMatrixException() throws Exception {
 
         Vector[] vectors = new Vector[] {new ObjectVectorDirect<>(1, 2, "3", 4, 5, 6)};
@@ -443,6 +475,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testConvertNumber2dArrayToMatrix() throws Exception {
         final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
                 {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
@@ -551,6 +584,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testssMatAmbiguity() {
         try {
             ssMat(new DoubleVectorDirect(1d, 2d, 3d, 4d, 5d, 6d));

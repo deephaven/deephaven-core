@@ -69,7 +69,7 @@ public class RspBitmapTimeDrivenTest {
                 SPLIT_SEARCH_SPACE_PIECES = 1;
                 SPLIT_SEARCH_SPACE_FIRST_PIECE = 0;
                 SPLIT_SEARCH_SPACE_LAST_PIECE = 0;
-                PER_TEST_TIME_BUDGET_MILLIS = 2 * 60 * 1000;
+                PER_TEST_TIME_BUDGET_MILLIS = 60 * 1000;
                 TEST_WORKERS = 1;
             } else {
                 // Good for manual checks.

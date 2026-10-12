@@ -11,6 +11,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.deephaven.engine.rowset.impl.RowSetTestCommon.rspOf;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -23,15 +24,6 @@ import static org.junit.Assert.fail;
 public class RspReverseIteratorFullBlockSpanTest {
 
     private static final long BS = BLOCK_SIZE;
-
-    private static WritableRowSet rspOf(final long[]... ranges) {
-        RspBitmap rb = RspBitmap.makeEmpty();
-        for (final long[] r : ranges) {
-            rb = rb.appendRangeUnsafe(r[0], r[1]);
-        }
-        rb.finishMutations();
-        return new WritableRowSetImpl(rb);
-    }
 
     /** Collect a reverse iteration, refusing to run away: the bug this covers never terminates. */
     private static List<Long> reverseKeys(final RowSet rs) {

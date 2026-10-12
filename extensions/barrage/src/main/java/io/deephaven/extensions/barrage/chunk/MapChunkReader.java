@@ -83,9 +83,7 @@ public class MapChunkReader<T> extends BaseChunkReader<WritableObjectChunk<T, Va
                 throw new IllegalStateException(
                         "map offset buffer is too short for the expected number of elements");
             }
-            for (int ii = 0; ii < numOffsets; ++ii) {
-                offsets.set(ii, is.readInt());
-            }
+            readIntBuffer(is, offsets, numOffsets);
             if (offBufRead < offsetsBufferLength) {
                 is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBufferLength - offBufRead));
             }

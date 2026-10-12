@@ -1,6 +1,5 @@
 ---
 title: Track processing time and measure latency
-sidebar_label: Track processing time
 ---
 
 This guide explains how to track when Deephaven processes row modifications, which is useful for measuring end-to-end latency in real-time data pipelines.

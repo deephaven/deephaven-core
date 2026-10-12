@@ -40,21 +40,9 @@ public class ReplicateStampKernel {
         stampKernels.add(objectStamp);
         stampKernels.add(objectNoExactStamp);
 
-        stampKernels.add(ReplicateDupCompactKernel.fixupCharNullComparisons(charStampPath));
-        stampKernels.add(ReplicateDupCompactKernel.fixupCharNullComparisons(
-                charNoExactStampPath));
-
         for (String stampKernel : stampKernels) {
             final String stampReversePath = stampKernel.replaceAll("StampKernel", "ReverseStampKernel");
             invertSense(stampKernel, stampReversePath);
-
-            if (stampKernel.contains("Double")) {
-                ReplicateDupCompactKernel.nanFixup(stampKernel, "Double", true);
-                ReplicateDupCompactKernel.nanFixup(stampReversePath, "Double", false);
-            } else if (stampKernel.contains("Float")) {
-                ReplicateDupCompactKernel.nanFixup(stampKernel, "Float", true);
-                ReplicateDupCompactKernel.nanFixup(stampReversePath, "Float", false);
-            }
         }
     }
 
@@ -64,7 +52,7 @@ public class ReplicateStampKernel {
         List<String> lines = ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset()));
 
         if (path.contains("Object")) {
-            lines = ReplicateSortKernel.fixupObjectComparisons(lines, false);
+            lines = ReplicateSortKernel.fixupObjectComparisons(lines, false, true);
         } else {
             lines = ReplicateSortKernel.invertComparisons(lines);
         }
@@ -77,18 +65,22 @@ public class ReplicateStampKernel {
         final String className = new File(path).getName().replaceAll(".java$", "");
         final String newName = className.replace("StampKernel", "ReverseStampKernel");
 
-        // Skip, re-add file header
-        lines = Stream.concat(
-                ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(path)),
-                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
+        lines = globalReplacements(
+                lines.stream().dropWhile(line -> line.startsWith("//")).collect(Collectors.toList()),
+                className, newName);
 
-        return globalReplacements(lines, className, newName);
+        // the header names the Char class that every variant is replicated from, and follows the class name
+        // replacements because their patterns also match the source class name
+        final String charClassName = className.replaceFirst("^(Byte|Short|Int|Long|Float|Double|Object)", "Char");
+        return Stream.concat(ReplicationUtils.fileHeaderStream(TASK, charClassName), lines.stream())
+                .collect(Collectors.toList());
     }
 
     private static void fixupObjectStamp(String objectPath) throws IOException {
         final File objectFile = new File(objectPath);
         final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        FileUtils.writeLines(objectFile, ReplicateSortKernel.fixupObjectComparisons(fixupChunkAttributes(lines)));
+        FileUtils.writeLines(objectFile,
+                ReplicateSortKernel.fixupObjectComparisons(fixupChunkAttributes(lines), true, true));
     }
 
     @NotNull

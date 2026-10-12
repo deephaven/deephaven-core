@@ -1,6 +1,5 @@
 ---
 title: "A Kafka introduction: basic terms"
-sidebar_label: "Basic terms"
 ---
 
 [Apache Kafka](https://kafka.apache.org/) lets you read, write, store, and process streaming events (also called records). Deephaven's Kafka integration enables data interchange between tables and Kafka streams. This guide introduces Kafka concepts that provide the basis for a fundamental understanding of Kafka itself, as well as Deephaven's Kafka integration.

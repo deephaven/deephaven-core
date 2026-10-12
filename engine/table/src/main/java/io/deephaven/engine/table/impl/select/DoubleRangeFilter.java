@@ -16,6 +16,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 public class DoubleRangeFilter extends AbstractRangeFilter {
@@ -74,6 +75,12 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
     }
 
     static WhereFilter makeDoubleRangeFilter(String columnName, Condition condition, double value) {
+        if (Double.isNaN(value)) {
+            // Under IEEE 754 every ordered comparison against NaN is false, NaN itself included, so no row matches.
+            // Deephaven ordering would instead sort NaN above every other value, which is not what these operators
+            // ask for.
+            return WhereNoneFilter.INSTANCE;
+        }
         switch (condition) {
             case LESS_THAN:
                 return lt(columnName, value);
@@ -94,11 +101,17 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
             return;
         }
 
-        final ColumnDefinition def = tableDefinition.getColumn(columnName);
+        final ColumnDefinition<?> def = tableDefinition.getColumn(columnName);
         if (def == null) {
             throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
                     + tableDefinition.getColumnNames());
         }
+
+        final Class<?> colClass = TypeUtils.getUnboxedTypeIfBoxed(def.getDataType());
+        if (colClass != double.class) {
+            throw new RuntimeException("Column \"" + columnName + "\" expected to be double: " + colClass);
+        }
+
         chunkFilter = DoubleRangeComparator.makeDoubleFilter(lower, upper, lowerInclusive, upperInclusive);
     }
 

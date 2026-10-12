@@ -1,6 +1,5 @@
 ---
 title: Use Application Mode libraries
-sidebar_label: Application Mode libraries
 ---
 
 This guide shows you how to use the main library for [Application Mode scripts](./application-mode-script.md), `ApplicationState`. This library gives you more control over Deephaven's state during launch.

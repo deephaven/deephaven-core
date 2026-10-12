@@ -7,15 +7,18 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import io.deephaven.base.testing.SimpleTestSupport;
-import junit.framework.TestCase;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 // --------------------------------------------------------------------
 /**
  * Tests for {@link LowGarbageArraySet}.
  */
-public class TestLowGarbageArraySet extends TestCase {
+public class TestLowGarbageArraySet {
 
     // ----------------------------------------------------------------
+    @Test
     public void testLowGarbageArraySet() throws Exception {
 
         // test construction, isEmpty
@@ -126,7 +129,6 @@ public class TestLowGarbageArraySet extends TestCase {
             fail("expected iterator.remove() before beginning of set to fail");
         } catch (IllegalStateException e) {
         }
-
 
         // test clone
         LowGarbageArraySet<Object> lowGarbageArraySet2 = lowGarbageArraySet.clone();

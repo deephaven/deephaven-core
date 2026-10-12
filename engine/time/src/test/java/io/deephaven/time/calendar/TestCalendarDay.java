@@ -3,18 +3,18 @@
 //
 package io.deephaven.time.calendar;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
+import org.junit.Test;
 
 import java.time.*;
 import java.util.Arrays;
 import java.util.List;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
-public class TestCalendarDay extends BaseArrayTestCase {
+public class TestCalendarDay {
     private final Instant open1 = DateTimeUtils.parseInstant("2017-03-11T10:00:00.000000000 NY");
     private final Instant close1 = DateTimeUtils.parseInstant("2017-03-11T11:00:00.000000000 NY");
     private final TimeRange<Instant> period1 = new TimeRange<>(open1, close1, true);
@@ -22,6 +22,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
     private final Instant close2 = DateTimeUtils.parseInstant("2017-03-11T17:00:00.000000000 NY");
     private final TimeRange<Instant> period2 = new TimeRange<>(open2, close2, true);
 
+    @Test
     public void testEmpty() {
         final CalendarDay<Instant> empty = new CalendarDay<>();
         assertEquals(List.of(), empty.businessTimeRanges());
@@ -53,6 +54,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertFalse(empty.isBusinessTime(null));
     }
 
+    @Test
     public void testSinglePeriod() {
         final CalendarDay<Instant> single = new CalendarDay<>(new TimeRange[] {period1});
         assertEquals(List.of(period1), single.businessTimeRanges());
@@ -97,6 +99,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertFalse(single.isBusinessTime(null));
     }
 
+    @Test
     public void testMultiPeriod() {
         final CalendarDay<Instant> multi = new CalendarDay<>(new TimeRange[] {period1, period2});
         assertEquals(List.of(period1, period2), multi.businessTimeRanges());
@@ -189,6 +192,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertFalse(multi2.isBusinessTime(null));
     }
 
+    @Test
     public void testPeriodsOverlap() {
         try {
             new CalendarDay<>(new TimeRange[] {period1, period1});
@@ -198,6 +202,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testToInstant() {
         final TimeRange<LocalTime> p1 = new TimeRange<>(LocalTime.of(1, 2), LocalTime.of(3, 4), true);
         final TimeRange<LocalTime> p2 = new TimeRange<>(LocalTime.of(5, 6), LocalTime.of(7, 8), true);
@@ -212,6 +217,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertEquals(target, actual);
     }
 
+    @Test
     public void testEqualsHash() {
         final CalendarDay<Instant> multi = new CalendarDay<>(new TimeRange[] {period1, period2});
         assertEquals(List.of(period1, period2), multi.businessTimeRanges());
@@ -228,6 +234,7 @@ public class TestCalendarDay extends BaseArrayTestCase {
         assertNotEquals(multi2, multi3);
     }
 
+    @Test
     public void testToString() {
         final CalendarDay<Instant> multi = new CalendarDay<>(new TimeRange[] {period1, period2});
         assertEquals(

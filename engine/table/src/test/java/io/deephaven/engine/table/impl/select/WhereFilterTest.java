@@ -14,14 +14,14 @@ import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.api.literal.Literal;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class WhereFilterTest extends TestCase {
+public class WhereFilterTest {
 
     private static final ColumnName FOO = ColumnName.of("Foo");
     private static final ColumnName BAR = ColumnName.of("Bar");
@@ -29,26 +29,31 @@ public class WhereFilterTest extends TestCase {
     private static final Literal V42 = Literal.of(42L);
     private static final Literal HELLO = Literal.of("Hello");
 
+    @Test
     public void testFooIsTrue() {
         regular(Filter.isTrue(FOO), MatchFilter.class, "Foo in [true]");
         inverse(Filter.isTrue(FOO), MatchFilter.class, "Foo not in [true]");
     }
 
+    @Test
     public void testFooIsFalse() {
         regular(Filter.isFalse(FOO), MatchFilter.class, "Foo in [false]");
         inverse(Filter.isFalse(FOO), MatchFilter.class, "Foo not in [false]");
     }
 
+    @Test
     public void testFooIsNull() {
         regular(Filter.isNull(FOO), MatchFilter.class, "Foo in [null]");
         inverse(Filter.isNull(FOO), MatchFilter.class, "Foo not in [null]");
     }
 
+    @Test
     public void testFooIsNotNull() {
         regular(Filter.isNotNull(FOO), MatchFilter.class, "Foo not in [null]");
         inverse(Filter.isNotNull(FOO), MatchFilter.class, "Foo in [null]");
     }
 
+    @Test
     public void testFooAndBar() {
         regular(Filter.and(Filter.isTrue(FOO), Filter.isTrue(BAR)), ConjunctiveFilter.class,
                 "ConjunctiveFilter([Foo in [true], Bar in [true]])");
@@ -56,6 +61,7 @@ public class WhereFilterTest extends TestCase {
                 "DisjunctiveFilter([Foo not in [true], Bar not in [true]])");
     }
 
+    @Test
     public void testFooOrBar() {
         regular(Filter.or(Filter.isTrue(FOO), Filter.isTrue(BAR)), DisjunctiveFilter.class,
                 "DisjunctiveFilter([Foo in [true], Bar in [true]])");
@@ -63,11 +69,13 @@ public class WhereFilterTest extends TestCase {
                 "ConjunctiveFilter([Foo not in [true], Bar not in [true]])");
     }
 
+    @Test
     public void testRawString() {
         regular(RawString.of("X * y > foo(Z)"), ConditionFilter.class, "X * y > foo(Z)");
         inverse(RawString.of("X * y > foo(Z)"), WhereFilterInvertedImpl.class, "not(X * y > foo(Z))");
     }
 
+    @Test
     public void testEq() {
         regular(FilterComparison.eq(FOO, V42), MatchFilter.class, "Foo in [42]");
         regular(FilterComparison.eq(V42, FOO), MatchFilter.class, "Foo in [42]");
@@ -82,6 +90,7 @@ public class WhereFilterTest extends TestCase {
         inverse(FilterComparison.eq(FOO, BAR), MatchFilter.class, "Foo not in [Bar]");
     }
 
+    @Test
     public void testNeq() {
         regular(FilterComparison.neq(FOO, V42), MatchFilter.class, "Foo not in [42]");
         regular(FilterComparison.neq(V42, FOO), MatchFilter.class, "Foo not in [42]");
@@ -96,6 +105,7 @@ public class WhereFilterTest extends TestCase {
         inverse(FilterComparison.neq(FOO, BAR), MatchFilter.class, "Foo in [Bar]");
     }
 
+    @Test
     public void testGt() {
         regular(FilterComparison.gt(FOO, V42), RangeFilter.class,
                 "RangeFilter(Foo greater than 42)");
@@ -118,6 +128,7 @@ public class WhereFilterTest extends TestCase {
         inverse(FilterComparison.gt(FOO, BAR), RangeFilter.class, "RangeFilter(Foo less than or equal to Bar)");
     }
 
+    @Test
     public void testGte() {
         regular(FilterComparison.geq(FOO, V42), RangeFilter.class,
                 "RangeFilter(Foo greater than or equal to 42)");
@@ -140,6 +151,7 @@ public class WhereFilterTest extends TestCase {
         inverse(FilterComparison.geq(FOO, BAR), RangeFilter.class, "RangeFilter(Foo less than Bar)");
     }
 
+    @Test
     public void testLt() {
         regular(FilterComparison.lt(FOO, V42), RangeFilter.class,
                 "RangeFilter(Foo less than 42)");
@@ -162,6 +174,7 @@ public class WhereFilterTest extends TestCase {
         inverse(FilterComparison.lt(FOO, BAR), RangeFilter.class, "RangeFilter(Foo greater than or equal to Bar)");
     }
 
+    @Test
     public void testLte() {
         regular(FilterComparison.leq(FOO, V42), RangeFilter.class,
                 "RangeFilter(Foo less than or equal to 42)");
@@ -184,6 +197,7 @@ public class WhereFilterTest extends TestCase {
         inverse(FilterComparison.leq(FOO, BAR), RangeFilter.class, "RangeFilter(Foo greater than Bar)");
     }
 
+    @Test
     public void testFunction() {
         regular(Function.of("someMethod"), ConditionFilter.class, "someMethod()");
         inverse(Function.of("someMethod"), ConditionFilter.class, "!someMethod()");
@@ -195,6 +209,7 @@ public class WhereFilterTest extends TestCase {
         inverse(Function.of("someMethod", FOO, BAR), ConditionFilter.class, "!someMethod(Foo, Bar)");
     }
 
+    @Test
     public void testFunctionIsNull() {
         regular(Filter.isNull(Function.of("someMethod", FOO, BAR)), ConditionFilter.class,
                 "isNull(someMethod(Foo, Bar))");
@@ -202,6 +217,7 @@ public class WhereFilterTest extends TestCase {
                 "!isNull(someMethod(Foo, Bar))");
     }
 
+    @Test
     public void testFunctionIsNotNull() {
         regular(Filter.isNotNull(Function.of("someMethod", FOO, BAR)), ConditionFilter.class,
                 "!isNull(someMethod(Foo, Bar))");
@@ -209,6 +225,7 @@ public class WhereFilterTest extends TestCase {
                 "isNull(someMethod(Foo, Bar))");
     }
 
+    @Test
     public void testMethod() {
         regular(Method.of(BAZ, "someMethod"), ConditionFilter.class, "Baz.someMethod()");
         inverse(Method.of(BAZ, "someMethod"), ConditionFilter.class, "!Baz.someMethod()");
@@ -220,26 +237,31 @@ public class WhereFilterTest extends TestCase {
         inverse(Method.of(BAZ, "someMethod", FOO, BAR), ConditionFilter.class, "!Baz.someMethod(Foo, Bar)");
     }
 
+    @Test
     public void testLiteralIsTrue() {
         regular(Filter.isTrue(Literal.of(42)), ConditionFilter.class, "(int)42 == true");
         inverse(Filter.isTrue(Literal.of(42)), ConditionFilter.class, "(int)42 != true");
     }
 
+    @Test
     public void testLiteralIsFalse() {
         regular(Filter.isFalse(Literal.of(42)), ConditionFilter.class, "(int)42 == false");
         inverse(Filter.isFalse(Literal.of(42)), ConditionFilter.class, "(int)42 != false");
     }
 
+    @Test
     public void testLiteralIsNull() {
         regular(Filter.isNull(Literal.of(42)), ConditionFilter.class, "isNull((int)42)");
         inverse(Filter.isNull(Literal.of(42)), ConditionFilter.class, "!isNull((int)42)");
     }
 
+    @Test
     public void testLiteralIsNotNull() {
         regular(Filter.isNotNull(Literal.of(42)), ConditionFilter.class, "!isNull((int)42)");
         inverse(Filter.isNotNull(Literal.of(42)), ConditionFilter.class, "isNull((int)42)");
     }
 
+    @Test
     public void testFilterTrue() {
         try {
             WhereFilter.of(Filter.ofTrue());
@@ -249,6 +271,7 @@ public class WhereFilterTest extends TestCase {
         }
     }
 
+    @Test
     public void testFilterFalse() {
         try {
             WhereFilter.of(Filter.ofFalse());
@@ -258,18 +281,21 @@ public class WhereFilterTest extends TestCase {
         }
     }
 
+    @Test
     public void testAnd() {
         final Filter filter = Filter.and(Filter.isNull(FOO), Filter.isNotNull(BAR));
         regular(filter, ConjunctiveFilter.class, "ConjunctiveFilter([Foo in [null], Bar not in [null]])");
         inverse(filter, DisjunctiveFilter.class, "DisjunctiveFilter([Foo not in [null], Bar in [null]])");
     }
 
+    @Test
     public void testOr() {
         final Filter filter = Filter.or(Filter.isNull(FOO), Filter.isNotNull(BAR));
         regular(filter, DisjunctiveFilter.class, "DisjunctiveFilter([Foo in [null], Bar not in [null]])");
         inverse(filter, ConjunctiveFilter.class, "ConjunctiveFilter([Foo not in [null], Bar in [null]])");
     }
 
+    @Test
     public void testPattern() {
         final String str = "FilterPattern(ColumnName(Foo), myregex, 0, FIND, false)";
         final FilterPattern pattern = FilterPattern.of(FOO, Pattern.compile("myregex"), Mode.FIND, false);
@@ -277,55 +303,63 @@ public class WhereFilterTest extends TestCase {
         regularInverse(pattern, WhereFilterPatternImpl.class, str);
     }
 
+    @Test
     public void testInSingle() {
         final FilterIn in = FilterIn.of(FOO, Literal.of(40));
         regular(in, MatchFilter.class, "Foo in [40]");
         inverse(in, MatchFilter.class, "Foo not in [40]");
     }
 
+    @Test
     public void testInSingleString() {
         final FilterIn in = FilterIn.of(FOO, Literal.of("mystr"));
         regular(in, MatchFilter.class, "Foo in [mystr]");
         inverse(in, MatchFilter.class, "Foo not in [mystr]");
     }
 
+    @Test
     public void testInLiterals() {
         final FilterIn in = FilterIn.of(FOO, Literal.of(40), Literal.of(42));
         regular(in, MatchFilter.class, "Foo in [40, 42]");
         inverse(in, MatchFilter.class, "Foo not in [40, 42]");
     }
 
+    @Test
     public void testInLiteralsDifferentTypes() {
         final FilterIn in = FilterIn.of(FOO, Literal.of(40), Literal.of("mystr"));
         regular(in, MatchFilter.class, "Foo in [40, mystr]");
         inverse(in, MatchFilter.class, "Foo not in [40, mystr]");
     }
 
+    @Test
     public void testInSingleNotLiteral() {
         final FilterIn in = FilterIn.of(FOO, BAR);
         regular(in, MatchFilter.class, "Foo in [Bar]");
         inverse(in, MatchFilter.class, "Foo not in [Bar]");
     }
 
-
+    @Test
     public void testInNotAllLiterals() {
         final FilterIn in = FilterIn.of(FOO, Literal.of(40), BAR);
         regular(in, ConditionFilter.class, "(Foo == (int)40) || (Foo == Bar)");
         inverse(in, ConditionFilter.class, "(Foo != (int)40) && (Foo != Bar)");
     }
 
+    @Test
     public void testLiteralInColumnName() {
         final FilterIn in = FilterIn.of(Literal.of(42), FOO);
         regular(in, MatchFilter.class, "Foo in [42]");
         inverse(in, MatchFilter.class, "Foo not in [42]");
     }
 
+    @Test
     public void testLiteralInMultipleColumns() {
         final FilterIn in = FilterIn.of(Literal.of(42), FOO, BAR, BAZ);
         regular(in, DisjunctiveFilter.class, "DisjunctiveFilter([Foo in [42], Bar in [42], Baz in [42]])");
         inverse(in, ConjunctiveFilter.class, "ConjunctiveFilter([Foo not in [42], Bar not in [42], Baz not in [42]])");
     }
 
+    @Test
     public void testRaw() {
         final RawString filter = RawString.of("some_crazy_thing(x, y, z)");
         regular(filter, ConditionFilter.class, "some_crazy_thing(x, y, z)");

@@ -134,13 +134,16 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
 
     @Override
     public void shift(final RowSet keysToShift, final long shiftDelta) {
-        final RowSet.SearchIterator it =
-                (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
-        it.forEachLong((i) -> {
-            set(i + shiftDelta, get(i));
-            setNull(i);
-            return true;
-        });
+        // Shifting up has to walk the keys in descending order so that a shifted value never overwrites one that has
+        // not been read yet.
+        try (final RowSet.SearchIterator it =
+                (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator()) {
+            it.forEachLong((i) -> {
+                set(i + shiftDelta, get(i));
+                setNull(i);
+                return true;
+            });
+        }
     }
 
     // region boxed methods

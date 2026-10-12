@@ -100,6 +100,16 @@ def gwtOutput = tasks.register('gwtOutput', Sync) {
         include 'dhapi/**'
         eachFile { it.path = 'jsapi/' + it.path.substring('dhapi/'.length()) }
     }
+    from(tasks.getByName('gwtCompile').outputs.files) {
+        // from the extras dir, copy sourcemaps to output
+        include 'extra/dhapi/symbolMaps/*.json'
+        eachFile { it.path = 'jsapi/' + it.path.substring('extra/dhapi/symbolMaps/'.length()) }
+    }
+    from(tasks.getByName('gwtCompile').outputs.files) {
+        // copy sources for sourcemap support
+        include 'extra/dhapi/src/**/*'
+        eachFile { it.path = 'jsapi/' + it.path.substring('extra/dhapi/src/'.length()) }
+    }
     into jsOutput
 }
 
@@ -227,6 +237,8 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
     t.useJUnit()
     t.scanForTestClasses = false
 }
+
+deephavenDocker.shouldLogIfTaskFails gwtIntegrationTest
 
 tasks.register('manualGwtTest', Test) {t ->
     t.group = 'verification'

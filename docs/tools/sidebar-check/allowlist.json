@@ -1,0 +1,42 @@
+{
+  "single_page_groups": {
+    "python": [
+      "Reference > Work with tables > Transpose"
+    ]
+  },
+  "case_exempt_subtrees": [
+    "Getting Started > A Crash Course in Deephaven"
+  ],
+  "case_exempt_paths": {},
+  "capitalized_phrases": [
+    "Application Mode",
+    "Data Index",
+    "Deephaven Vector",
+    "Execution Context",
+    "Input Table",
+    "Liveness Scope",
+    "Periodic Update Graph",
+    "Predicate Pushdown",
+    "Query Scope",
+    "Systemic Object Marking",
+    "Table API",
+    "Update By"
+  ],
+  "proper_nouns": [
+    "Arrow",
+    "Barrage",
+    "Confluent",
+    "Core",
+    "Deephaven",
+    "Docker",
+    "Express",
+    "Flight",
+    "Groovy",
+    "Instant",
+    "Java",
+    "Javadocs",
+    "Parquet",
+    "Python",
+    "Seaborn"
+  ]
+}

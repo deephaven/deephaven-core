@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.util.file;
 
-import junit.framework.TestCase;
 import org.assertj.core.api.Assumptions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
@@ -22,6 +21,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
+import static org.junit.Assert.*;
 
 /**
  * Test case for {@link TestTrackedSeekableByteChannel}.
@@ -46,77 +46,77 @@ public class TestTrackedSeekableByteChannel {
 
     @After
     public void tearDown() throws IOException {
-        TestCase.assertFalse(channel.isOpen());
+        assertFalse(channel.isOpen());
         TestFileHandle.tryToDelete(file);
     }
 
     @Test
     public void testChannel() throws IOException {
         handle.close();
-        TestCase.assertEquals(0, channel.size());
+        assertEquals(0, channel.size());
         handle.close();
-        TestCase.assertEquals(0, channel.position());
+        assertEquals(0, channel.position());
 
         handle.close();
         channel.write(ByteBuffer.wrap("Hello".getBytes()));
         handle.close();
-        TestCase.assertEquals(5, channel.size());
+        assertEquals(5, channel.size());
         handle.close();
-        TestCase.assertEquals(5, channel.position());
+        assertEquals(5, channel.position());
 
         handle.close();
         channel.position(1);
         ByteBuffer readBuffer = ByteBuffer.wrap(new byte[4]);
         handle.close();
         channel.read(readBuffer);
-        TestCase.assertEquals("ello", new String(readBuffer.array()));
+        assertEquals("ello", new String(readBuffer.array()));
 
         handle.close();
-        TestCase.assertEquals(5, channel.size());
+        assertEquals(5, channel.size());
         handle.close();
-        TestCase.assertEquals(5, channel.position());
+        assertEquals(5, channel.position());
 
         handle.close();
         channel.truncate(1);
         handle.close();
-        TestCase.assertEquals(1, channel.size());
+        assertEquals(1, channel.size());
         handle.close();
-        TestCase.assertEquals(1, channel.position());
+        assertEquals(1, channel.position());
 
         handle.close();
         channel.position(0);
         readBuffer = ByteBuffer.wrap(new byte[1]);
         handle.close();
         channel.read(readBuffer);
-        TestCase.assertEquals("H", new String(readBuffer.array()));
+        assertEquals("H", new String(readBuffer.array()));
 
         handle.close();
         channel.position(0);
         handle.close();
         channel.write(ByteBuffer.wrap("Hello".getBytes()));
         handle.close();
-        TestCase.assertEquals(5, channel.size());
+        assertEquals(5, channel.size());
         handle.close();
-        TestCase.assertEquals(5, channel.position());
+        assertEquals(5, channel.position());
         handle.close();
         channel.write(ByteBuffer.wrap("World".getBytes()));
         handle.close();
-        TestCase.assertEquals(10, channel.size());
+        assertEquals(10, channel.size());
         handle.close();
-        TestCase.assertEquals(10, channel.position());
+        assertEquals(10, channel.position());
 
         handle.close();
         channel.position(5);
         readBuffer = ByteBuffer.wrap(new byte[5]);
         handle.close();
         channel.read(readBuffer);
-        TestCase.assertEquals("World", new String(readBuffer.array()));
+        assertEquals("World", new String(readBuffer.array()));
 
         channel.close();
 
         try {
             channel.position();
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (ClosedChannelException expected) {
         }
     }

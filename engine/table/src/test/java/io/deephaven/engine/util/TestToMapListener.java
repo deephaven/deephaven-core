@@ -8,11 +8,14 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import org.junit.Test;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
+import static org.junit.Assert.*;
 
 public class TestToMapListener extends RefreshingTableTestCase {
+    @Test
     public void testToMap() {
         final QueryTable source = testRefreshingTable(
                 i(2, 4, 6, 8).toTracking(),

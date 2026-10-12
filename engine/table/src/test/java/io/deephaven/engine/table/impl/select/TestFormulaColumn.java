@@ -29,8 +29,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.engine.table.impl.select.FormulaTestUtil.*;
-import static junit.framework.TestCase.*;
+import static org.junit.Assert.*;
 
 /**
  * Create a simple formula column.

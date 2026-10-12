@@ -203,7 +203,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
             };
             return;
         }
-        sitView.init(p.arr(), p.arrIdx(), spanInfo, s);
+        sitView.init(spanInfo, s);
         final Container c = sitView.getContainer();
         final int intSkipCount = (int) (((long) Integer.MAX_VALUE) & skipCount);
         sit = new SingleSpanIterator() {

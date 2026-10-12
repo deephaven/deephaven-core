@@ -89,7 +89,7 @@ public abstract class ArrayBackedColumnSource<T>
     // final long maskWithinInUse = 1L << (indexWithinBlock & inUseMask);
     static final int LOG_INUSE_BITSET_SIZE = 6;
     private static final int LOG_INUSE_BLOCK_SIZE = LOG_BLOCK_SIZE - LOG_INUSE_BITSET_SIZE;
-    private static final int IN_USE_BLOCK_SIZE = 1 << LOG_INUSE_BLOCK_SIZE;
+    static final int IN_USE_BLOCK_SIZE = 1 << LOG_INUSE_BLOCK_SIZE;
     static final int IN_USE_MASK = (1 << LOG_INUSE_BITSET_SIZE) - 1;
 
     static final SoftRecycler<long[]> inUseRecycler =

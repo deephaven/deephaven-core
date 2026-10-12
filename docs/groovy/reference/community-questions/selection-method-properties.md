@@ -1,6 +1,5 @@
 ---
 title: How efficient are my table selection operations?
-sidebar_label: How efficient are my table selection operations?
 ---
 
 _How much memory do my [`select`](../table-operations/select/select.md) and [`update`](../table-operations/select/update.md) operations waste? Are they efficient?_

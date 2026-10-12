@@ -5,9 +5,12 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.expression.ExpressionException;
 import io.deephaven.engine.table.impl.MatchPair;
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class MatchPairFactoryTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class MatchPairFactoryTest {
+    @Test
     public void testMatchPair() {
         MatchPair[] results;
 

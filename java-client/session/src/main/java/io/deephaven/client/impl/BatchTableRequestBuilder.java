@@ -321,7 +321,8 @@ class BatchTableRequestBuilder {
         @Override
         public Operation visit(NaturalJoinTable j) {
             NaturalJoinTablesRequest.Builder builder = NaturalJoinTablesRequest.newBuilder()
-                    .setResultId(ticket).setLeftId(ref(j.left())).setRightId(ref(j.right()));
+                    .setResultId(ticket).setLeftId(ref(j.left())).setRightId(ref(j.right()))
+                    .setJoinType(adapt(j.joinType()));
             for (JoinMatch match : j.matches()) {
                 builder.addColumnsToMatch(Strings.of(match));
             }
@@ -329,6 +330,21 @@ class BatchTableRequestBuilder {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
             return op(Builder::setNaturalJoin, builder.build());
+        }
+
+        private static NaturalJoinTablesRequest.JoinType adapt(NaturalJoinType joinType) {
+            switch (joinType) {
+                case ERROR_ON_DUPLICATE:
+                    return NaturalJoinTablesRequest.JoinType.ERROR_ON_DUPLICATE;
+                case FIRST_MATCH:
+                    return NaturalJoinTablesRequest.JoinType.FIRST_MATCH;
+                case LAST_MATCH:
+                    return NaturalJoinTablesRequest.JoinType.LAST_MATCH;
+                case EXACTLY_ONE_MATCH:
+                    return NaturalJoinTablesRequest.JoinType.EXACTLY_ONE_MATCH;
+                default:
+                    throw new IllegalArgumentException("Unsupported natural join type: " + joinType);
+            }
         }
 
         @Override

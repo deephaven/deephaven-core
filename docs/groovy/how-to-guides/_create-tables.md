@@ -1,6 +1,5 @@
 ---
 title: Create static tables
-sidebar_label: Static tables
 ---
 
 Deephaven excels as an interface for ingesting data, parsing it as a table, and manipulating the data. However, Deephaven also includes a range of versatile methods for creating tables from scratch. This guide will show you how to create tables in Deephaven using the following methods:
