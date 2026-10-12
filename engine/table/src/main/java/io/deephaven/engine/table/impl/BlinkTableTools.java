@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -95,6 +96,10 @@ public class BlinkTableTools {
         }
         if (!isBlink(blinkTable)) {
             throw new IllegalArgumentException("Input is not a blink table!");
+        }
+        if (sizeLimit == 0) {
+            // Nothing can ever be appended.
+            return TableTools.newTable(blinkTable.getDefinition());
         }
         final UpdateGraph updateGraph = blinkTable.getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
@@ -187,7 +192,7 @@ public class BlinkTableTools {
             }
 
             final RowSet rowSetToUse = usePrev ? parent.getRowSet().prev() : parent.getRowSet();
-            final RowSet initialRowSet = rowSetToUse.isEmpty() || sizeLimit == 0
+            final RowSet initialRowSet = rowSetToUse.isEmpty()
                     ? RowSetFactory.empty()
                     : appendRows(0, rowSetToUse, usePrev);
             resultTable = new QueryTable(initialRowSet.writableCast().toTracking(), resultColumns);
