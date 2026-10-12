@@ -116,7 +116,7 @@ All of these examples share the same property: each row's result depends only on
 
 ## When it breaks
 
-Parallelization produces incorrect results when a row's calculation depends on something outside that row. Two common cases:
+Parallelization can produce incorrect results when a row's calculation changes shared state or depends on the order in which rows are processed. Two common cases:
 
 - **Shared state**: The formula reads or modifies a variable that other rows also use. When multiple cores access the same variable simultaneously, they can overwrite each other's changes.
 - **Row ordering**: The formula assumes rows are processed in a specific order (e.g., row 1 before row 2). With parallelization, row 2 might be processed before row 1, or both might be processed at the same time.

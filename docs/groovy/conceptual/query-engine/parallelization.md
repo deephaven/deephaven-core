@@ -58,11 +58,11 @@ Also within a single table, when you compute multiple columns in the same operat
 
 Deephaven parallelizes work at three levels. Each level has its own default and its own control:
 
-| Level                               | By default                                  | What controls it                                                                                                     |
-| ----------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Separate tables                     | Independent tables update at the same time. | Nothing to set. Code that several tables share must be thread-safe.                                                  |
-| Columns in one `select` or `update` | Independent columns run at the same time.   | [Barriers](#barriers) make one column finish before another starts.                                                  |
-| Rows in one column or filter        | A large input is split across cores.        | [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) keeps the rows in order on one thread. |
+| Level                               | By default                                  | What controls it                                                                                                                                           |
+| ----------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Separate tables                     | Independent tables update at the same time. | Nothing to set. Code that several tables share must be thread-safe.                                                                                        |
+| Columns in one `select` or `update` | Independent columns run at the same time.   | [Barriers](#barriers) make one column finish before another starts.                                                                                        |
+| Rows in one column or filter        | A large input is split across cores.        | [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) keeps the rows in order and never runs the formula concurrently with itself. |
 
 The update graph never updates a table before the tables it depends on have finished. That ordering is automatic.
 
