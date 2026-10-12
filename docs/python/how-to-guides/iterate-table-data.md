@@ -171,7 +171,7 @@ The [update graph](../conceptual/dag.md#update-graph-ug-cycles) processes table 
 - On a thread you start yourself, the iterator acquires the update graph's [shared lock](../conceptual/query-engine/engine-locking.md#shared-lock) and holds it until the generator is exhausted, closed, or destroyed. It does this only when [`auto_locking`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking) is enabled, which it is by default, and the thread isn't already marked as safe to run table operations without a lock.
 - Code on your own thread already holds a lock it acquired explicitly, for example with [`update_graph.shared_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock). The iterator uses that lock instead of acquiring another one.
 
-Code that runs as part of an update cycle, such as a [table listener](./table-listeners-python.md) callback, doesn't acquire a lock, because the update graph is already processing that cycle.
+Code that runs as part of an update cycle, such as a [table listener](./table-listeners-python.md) callback, doesn't acquire a lock, because the update graph is already processing that cycle. A listener can safely iterate over the table it listens to and any table it [registers as a dependency](./table-listeners-python.md#dependent-tables). Other refreshing tables may not have finished updating in that cycle.
 
 While the update graph is locked, it can't start a new update cycle. That stops every refreshing table from updating, including tables you aren't iterating over. Keep loop bodies short so the update graph can start its next cycle sooner.
 
