@@ -8,7 +8,7 @@ The `time_table` method creates a time table that adds new rows at a specified i
 
 ```python syntax
 time_table(
-  period: Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timdelta],
+  period: Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta],
   start_time: Union[None, str, datetime.datetime, np.datetime64] = None,
   blink_table: bool = False,
   ) -> Table
@@ -17,19 +17,19 @@ time_table(
 ## Parameters
 
 <ParamTable>
-<Param name="period" type="Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timdelta]">
+<Param name="period" type="Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]">
 
 The time interval between new row additions. Can be given as:
 
 - [Duration](../../query-language/types/durations.md) string such as `"PT1S"` or `"PT00:01:00"`.
 - Integer format is in nanoseconds.
-- String input format is "PT00:00:00:00.001" - days, hours, minutes, seconds, and milliseconds.
+- Clock-style strings such as `"PT00:00:00.001"` (hours:minutes:seconds.fraction).
 - A [datetime.timedelta](https://docs.python.org/3/library/datetime.html#datetime.timedelta) object.
 - A [numpy.timedelta64](https://numpy.org/doc/stable/reference/arrays.scalars.html#numpy.timedelta64) object.
 - A [pandas.Timedelta](https://pandas.pydata.org/docs/reference/api/pandas.Timedelta.html) object.
 
 </Param>
-<Param name="start_time" type="Union[None, str, datetime.datetime, np.datetime64" optional>
+<Param name="start_time" type="Union[None, str, datetime.datetime, np.datetime64]" optional>
 
 The value of the [date-time](../../query-language/types/date-time.md) in the first row of the table. String inputs must be given in syntax matching `YYYY-MM-DDThh:mm:ss.dddddddd TZ`. See the [details on the `start_time` parameter](#details-on-the-start_time-parameter) for information on default behavior.
 

@@ -31,7 +31,7 @@ The time interval between new row additions.
 Data replayer.
 
 </Param>
-<Param name="startTime" type="DateTime">
+<Param name="startTime" type="Instant">
 
 Start time for adding new rows. See the [details on the `startTime` parameter](#details-on-the-starttime-parameter) for information on default behavior.
 

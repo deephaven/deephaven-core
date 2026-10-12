@@ -38,7 +38,7 @@ An int list of partition numbers to subscribe to. The default is to subscribe to
 </Param>
 <Param name="offsets" type="dict[int, int]" optional>
 
-- `ALL_PARTITIONS_DONT_SEEK` (default) - Only recieve new messages produced after this call is processed (default). This matches the default if `offsets` is not specified.
+- `ALL_PARTITIONS_DONT_SEEK` (default) - Start from the consumer's current position without seeking (the default). This matches the default if `offsets` is not specified.
 - `ALL_PARTITIONS_SEEK_TO_END` - Go to the newest available message for every partition.
 - `ALL_PARTITIONS_SEEK_TO_BEGINNING` - Go to the oldest available message for every partition.
 - `{ _number_ : _offset_, ... }` Map partition numbers to numeric offsets or one of the constants `DONT_SEEK`, `SEEK_TO_END`, `SEEK_TO_BEGINNING`.
@@ -122,9 +122,8 @@ result = kc.consume(
 In the following example, `consume` is used to read Kafka topic `share_price` with additional settings enabled and a
 specific `key_spec` spec and `value_spec` defined.
 
-- `partitions` is set to `ALL_PARTITIONS`, which listens to all partitions.
-- `offsets` is set to `ALL_PARTITIONS_DONT_SEEK`, which only listens to new messages produced after this call is
-  processed.
+- `partitions` is set to `None`, which listens to all partitions.
+- `offsets` is set to `ALL_PARTITIONS_DONT_SEEK`, which starts from the consumer's current position without seeking.
 - `key_spec` is set to `simple_spec('Symbol', dht.string)`, which expects messages with a Kafka key field of
   type `string`, and creates a `Symbol` column to store the information.
 - `value_spec` is set to `simple_spec('Price', dht.double)`, which expects messages with a Kafka value field of
@@ -139,7 +138,7 @@ import deephaven.dtypes as dht
 result = kc.consume(
     {"bootstrap.servers": "redpanda:9092"},
     "share_price",
-    partitions=kc.ALL_PARTITIONS,
+    partitions=None,
     offsets=kc.ALL_PARTITIONS_DONT_SEEK,
     key_spec=kc.simple_spec("Symbol", dht.string),
     value_spec=kc.simple_spec("Price", dht.double),
@@ -152,7 +151,7 @@ result = kc.consume(
 In the following example, `consume` reads the Kafka topic `share_price` with an additional dictionary set and keys
 ignored.
 
-- `deephaven.partition.column.name` is set to `None`. The result table will not include a column for the partition
+- `deephaven.partition.column.name` is set to an empty string (`""`). The result table will not include a column for the partition
   field.
 - `key_spec` is set to `IGNORE`. The result table will not include a column associated with the Kafka field `key`.
 
@@ -162,7 +161,7 @@ from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
 import deephaven.dtypes as dht
 
 result = kc.consume(
-    {"bootstrap.servers": "redpanda:9092", "deephaven.partition.column.name": None},
+    {"bootstrap.servers": "redpanda:9092", "deephaven.partition.column.name": ""},
     "share_price",
     key_spec=KeyValueSpec.IGNORE,
     value_spec=kc.simple_spec("Price", dht.double),
@@ -245,7 +244,7 @@ result = kc.consume(
     "share_price",
     key_spec=KeyValueSpec.IGNORE,
     value_spec=kc.avro_spec("share_price_record", schema_version="1"),
-    table_type=TableType.Append,
+    table_type=TableType.append(),
 )
 ```
 

@@ -39,7 +39,7 @@ The Kafka topic name.
 </Param>
 <Param name="offsets" type="dict[int, int]" optional>
 
-- `ALL_PARTITIONS_DONT_SEEK` (default) - Only receive new messages produced after this call is processed. This matches the default if `offsets` is not specified.
+- `ALL_PARTITIONS_DONT_SEEK` (default) - Start from the consumer's current position without seeking. This matches the default if `offsets` is not specified.
 - `ALL_PARTITIONS_SEEK_TO_END` - Go to the newest available message for every partition.
 - `ALL_PARTITIONS_SEEK_TO_BEGINNING` - Go to the oldest available message for every partition.
 - `{ _number_ : _offset_, ... }` - Map partition numbers to numeric offsets or one of the constants `DONT_SEEK`, `SEEK_TO_END`, `SEEK_TO_BEGINNING`.

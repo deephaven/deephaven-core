@@ -37,7 +37,7 @@ The table generator function. This function must return a table, or `None` to de
 </Param>
 <Param name="source_tables" type="Union[Table, List[Table]]" optional>
 
-The source tables to be used by the generator function.
+The source tables to be used by the generator function. Every source table must be a refreshing table.
 
 This parameter and `refresh_interval_ms` are mutually exclusive. When neither is specified, the result is static.
 
@@ -51,7 +51,7 @@ This parameter and `source_tables` are mutually exclusive. When neither is speci
 </Param>
 <Param name="exec_ctx" type="ExecutionContext" optional>
 
-A custom [execution context](../../../conceptual/execution-context.md) to use for this operation. If not specified, the default [execution context](../../../conceptual/execution-context.md) will be used.
+A custom [execution context](../../../conceptual/execution-context.md) to use for this operation. If not specified, the current execution context is used. If there is no current execution context, a `ValueError` is raised.
 
 </Param>
 <Param name="args" type="tuple" optional>
