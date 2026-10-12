@@ -5,9 +5,9 @@ title: Parallelization
 Parallelization is running multiple calculations at the same time on different CPU cores instead of one after another. Deephaven automatically parallelizes table operations like [`select`](../../reference/table-operations/select/select.md), [`update`](../../reference/table-operations/select/update.md), and [`where`](../../reference/table-operations/filter/where.md) to make queries faster, with no configuration required. This guide explains how that parallelization works and when you need to control it.
 
 > [!IMPORTANT]
-> **Breaking change in Deephaven 41.0**: In version 0.40.0 and earlier, Deephaven ran a formula in parallel only when it could tell the formula was safe, and ran the rest, such as formulas that call your own functions, one row at a time. Deephaven 41.0 and later assumes all formulas can run in parallel by default. Code that modifies shared variables or depends on rows being processed in a specific order now produces incorrect results unless you mark it with [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial).
+> **Breaking change in Deephaven 41.0**: In version 0.40.0 and earlier, Deephaven ran a formula in parallel only when it could tell the formula was safe, and ran the rest, such as formulas that call your own functions, one row at a time. Deephaven 41.0 and later assumes all formulas can run in parallel by default. Code that modifies shared variables or depends on rows being processed in a specific order can now produce incorrect results unless you mark it with [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial).
 >
-> **Quick check**: Does your code use global variables, depend on rows being processed in a specific order, or modify external state? If yes, see [Controlling execution order](#controlling-execution-order) below, or the [Crash Course guide](../../getting-started/crash-course/parallelization.md) for a faster introduction.
+> **Quick check**: Does your code modify shared state, read state that changes while rows are processed, or depend on rows being processed in a specific order? If yes, see [Controlling execution order](#controlling-execution-order) below, or the [Crash Course guide](../../getting-started/crash-course/parallelization.md) for a faster introduction.
 
 ## Quick reference
 
@@ -93,13 +93,13 @@ Queries execute in two phases, and Deephaven uses a separate thread pool for eac
 
 For live (refreshing) tables, Deephaven also registers the result in the [update graph](../dag.md) during initialization so it receives future updates.
 
-**Updates**: After initialization, a live table updates whenever its source data changes. Each update uses the same concurrent row and column calculations as initialization, and independent tables update concurrently. This work runs on the update graph thread pool.
+**Updates**: After initialization, a live table updates whenever its source data changes. Each update can use the same concurrent row and column calculations as initialization, and independent tables update concurrently. This work runs on the update graph thread pool.
 
 Both pools use all CPU cores by default. See [Configuration](#configuration) to size them.
 
 ## Python formulas and free-threading
 
-Most Python builds use a global interpreter lock, or GIL, which lets only one thread at a time run Python code. Formulas and filters that call Python functions are Python-backed, and the GIL changes how Deephaven parallelizes them:
+Most Python builds use a global interpreter lock, or GIL, which lets only one thread at a time run Python code. Formulas and filters that call Python functions or read Python objects are Python-backed, and the GIL changes how Deephaven parallelizes them:
 
 - On a standard build with the GIL enabled, Deephaven never splits the calculation of one Python-backed column or filter across cores.
 - On a [free-threaded Python build](https://docs.python.org/3/howto/free-threading-python.html), Deephaven splits the calculation of Python-backed columns and filters across cores like any other column or filter.
@@ -112,7 +112,7 @@ By default, Deephaven safely parallelizes operations that are **stateless**, mea
 
 **An operation is stateless if it**:
 
-- Doesn't read or modify global variables.
+- Doesn't modify global variables, or read ones that change while rows are processed.
 - Doesn't depend on which row is processed first.
 - Produces the same output for the same input, regardless of when or how it runs.
 
@@ -161,7 +161,7 @@ When columns share state, you often need both. [`with_serial`](../../reference/q
 
 Serialization processes rows one at a time, in order, and never runs a column concurrently with itself. Use it when your code cannot safely run in parallel. For example, a formula that:
 
-- Reads or modifies global variables.
+- Modifies global variables, or reads ones that change while rows are processed.
 - Calls external functions that aren't safe to call from multiple threads at the same time.
 - Depends on rows being processed in a specific order.
 
@@ -249,7 +249,7 @@ result = (
 )
 ```
 
-When a [`Filter`](../../reference/query-language/types/Filter.md) is serial, Deephaven evaluates every input row in order, never reorders the filter relative to other filters, and runs stateful side effects one at a time. On a table from a partitioned source, such as a directory of Parquet files or an Iceberg table, Deephaven normally applies a filter on partitioning columns, the columns whose values identify each partition, to whole partitions before it reads any data. Marking that filter serial turns this off. See [Filters on partitioning columns](../../reference/table-operations/filter/where.md#filters-on-partitioning-columns).
+When a [`Filter`](../../reference/query-language/types/Filter.md) is serial, Deephaven evaluates every input row in order, never reorders the filter relative to other filters, and runs stateful side effects one at a time. On a table from a partitioned source, such as a directory of Parquet files or an Iceberg table, Deephaven normally applies a filter on partitioning columns, the columns whose values identify each partition, to whole partitions before it reads any data. Marking that filter serial, or any filter before it in the argument list, turns this off. See [Filters on partitioning columns](../../reference/table-operations/filter/where.md#filters-on-partitioning-columns).
 
 > [!WARNING]
 > When Deephaven cannot apply a filter on partitioning columns to whole partitions first, it includes every partition in the table and evaluates the filter against every row instead of once per partition. On a large partitioned source, that can be much slower. Mark a filter on partitioning columns serial only when its evaluation order matters.

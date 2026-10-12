@@ -18,7 +18,7 @@ from deephaven.concurrency_control import Barrier
 barrier = Barrier()
 ```
 
-Create one `Barrier` instance per ordering constraint you need. Reusing the same instance for unrelated constraints would incorrectly link them together; use a separate instance for each independent constraint.
+Create one `Barrier` instance per ordering constraint you need. Each barrier can be declared by only one expression (declaring the same instance twice is an error), and every expression that respects it waits for that one declarer, so one instance cannot express two independent constraints; use a separate instance for each.
 
 ## Using a barrier
 
@@ -30,7 +30,7 @@ One operation **declares** the barrier — it goes first. Another operation **re
 > [!IMPORTANT]
 > A barrier only coordinates expressions passed to the **same** [`select`](../../table-operations/select/select.md), [`update`](../../table-operations/select/update.md), or [`where`](../../table-operations/filter/where.md) call — it cannot order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a barrier is respected before it is declared, or never declared at all.
 >
-> For a [`Selectable`](./Selectable.md), a constant-valued expression cannot declare or respect a barrier either — the engine never evaluates constants during [`select`](../../table-operations/select/select.md)/[`update`](../../table-operations/select/update.md) processing, so it raises an error if you try. "Constant" here is narrower than "does not depend on a column or row-position variable": it means a literal, or literals combined with arithmetic/comparison operators, such as `Selectable.parse("A = 1")` or `Selectable.parse("A = 1 + 2")`. A no-argument function call like `get_and_increment_counter()` in the example below does not depend on a column or row variable either, but it is not constant — it is still evaluated for each row, so it can freely use barriers.
+> For a [`Selectable`](./Selectable.md), a constant-valued expression cannot declare or respect a barrier either — the engine never evaluates constants during [`select`](../../table-operations/select/select.md)/[`update`](../../table-operations/select/update.md) processing, so it raises an error if you try. "Constant" here is narrower than "does not depend on a column or row-position variable": it means a literal, or literals joined by binary operators (arithmetic, comparison, logical, or bitwise), optionally parenthesized, such as `Selectable.parse("A = 1")` or `Selectable.parse("A = 1 + 2")`. A no-argument function call like `get_and_increment_counter()` in the example below does not depend on a column or row variable either, but it is not constant — it is still evaluated for each row, so it can freely use barriers.
 
 ### Example: coordinating two columns
 

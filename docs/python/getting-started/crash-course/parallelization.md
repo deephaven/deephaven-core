@@ -53,7 +53,7 @@ large_table = empty_table(100).update(
 )
 ```
 
-With millions of rows and four cores, Deephaven would divide each column's rows into four groups and compute them at the same time, so the work finishes sooner than on one core.
+With tens of millions of rows and four cores, Deephaven would divide each column's rows into four groups and compute them at the same time, so the work finishes sooner than on one core.
 
 ### Concurrent column calculations
 
@@ -133,7 +133,7 @@ All of these examples share the same property: each row's result depends only on
 
 Parallelization can produce incorrect results when a row's calculation changes shared state or depends on the order in which rows are processed. Two common cases:
 
-- **Shared state**: The formula reads or modifies a variable that other rows also use. When multiple cores access the same variable simultaneously, they can overwrite each other's changes.
+- **Shared state**: The formula modifies a variable that other rows use, or reads one that other rows modify. When multiple cores access the same variable simultaneously, they can overwrite each other's changes.
 - **Row ordering**: The formula assumes rows are processed in a specific order (e.g., row 1 before row 2). With parallelization, row 2 might be processed before row 1, or both might be processed at the same time.
 
 ### Example: a broken counter

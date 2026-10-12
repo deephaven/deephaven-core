@@ -6,7 +6,7 @@ A [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.h
 
 ## Creating a Selectable
 
-There are two ways to create a `Selectable` object, depending on whether you want to parse a complete formula string or build one from separate components.
+There are two common ways to create a `Selectable` object, depending on whether you want to parse a complete formula string or build one from separate components.
 
 ### From a formula string
 
@@ -20,7 +20,7 @@ col = Selectable.parse("NewColumn = ExistingColumn * 2")
 
 ### From column name and expression
 
-Use `Selectable.of` with [`ColumnName`](https://deephaven.io/core/javadoc/io/deephaven/api/ColumnName.html) and [`RawString`](https://deephaven.io/core/javadoc/io/deephaven/api/RawString.html) when the column name and expression are separate values you construct programmatically, such as from application variables. Only build a `RawString` from a trusted source: it stores the expression unparsed and the engine executes it verbatim, so passing untrusted user input to `RawString.of` lets an attacker inject arbitrary query code.
+Use `Selectable.of` with [`ColumnName`](https://deephaven.io/core/javadoc/io/deephaven/api/ColumnName.html) and [`RawString`](https://deephaven.io/core/javadoc/io/deephaven/api/RawString.html) when the column name and expression are separate values you construct programmatically, such as from application variables. Only build a `RawString` from a trusted source: it stores the expression unparsed and the engine compiles it as query code without validating it, so passing untrusted user input to `RawString.of` lets an attacker inject arbitrary query code.
 
 ```groovy syntax
 import io.deephaven.api.Selectable
@@ -36,7 +36,7 @@ These methods control how Deephaven executes the column calculation. By default,
 
 ### `withSerial`
 
-Forces the column calculation to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the formula has side effects or depends on row order.
+Forces the column calculation to never run concurrently with itself; its rows are evaluated sequentially, in row-set order. Use this when the formula has side effects or depends on row order. With default settings, a calculation becomes eligible for parallel evaluation once it processes about 4.2 million rows or more: the whole table on initialization, or that cycle's added and modified rows on each update of a refreshing table; use `withSerial` to protect calculations that cannot tolerate that.
 
 ```groovy order=result
 import io.deephaven.api.Selectable
