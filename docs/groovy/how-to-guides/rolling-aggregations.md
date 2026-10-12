@@ -320,13 +320,13 @@ Deephaven offers two more rolling operations that don't compute a fixed statisti
 | Grouping          | [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md)     |
 | Custom formula    | [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) |
 
-[`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) collects the values in each window into an array. [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) applies a formula you write to the values in each window.
+[`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) collects the values in each window into a vector. [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) applies a formula you write to the values in each window.
 
 #### Rolling groups
 
-The following examples create rolling groups with tick-based windows, then with time-based windows. To work with the resulting arrays, see [how to work with arrays](./work-with-arrays.md).
+The following examples create rolling groups with tick-based windows, then with time-based windows. To work with the resulting vectors, see [how to work with arrays](./work-with-arrays.md).
 
-Use [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) to create tick-based rolling groups, where each row's array holds the values from a window of rows set by `revTicks` and `fwdTicks`. Here's an example that collects the three previous rows and the current row:
+Use [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) to create tick-based rolling groups, where each row's vector holds the values from a window of rows set by `revTicks` and `fwdTicks`. Here's an example that collects the three previous rows and the current row:
 
 ```groovy order=result
 source = emptyTable(100).update("Letter = randomBool() ? `A` : `B`", "X = randomInt(0, 100)")
@@ -357,7 +357,7 @@ result = source.updateBy(
 )
 ```
 
-A time-based rolling group contains only the rows whose timestamps fall inside the window, so the array's size varies from row to row. When no other row with the same `Letter` falls inside the window, the array holds only the current row's value. A backward-looking tick-based array reaches a fixed size once enough rows exist.
+A time-based rolling group contains only the rows whose timestamps fall inside the window, so the vector's size varies from row to row. When no other row with the same `Letter` falls inside the window, the vector holds only the current row's value. A backward-looking tick-based vector reaches a fixed size once enough rows exist.
 
 Use `fwdTime` to include rows after the current row. The following example groups every row with the same `Letter` whose timestamp is within five seconds of the current row:
 
@@ -378,7 +378,7 @@ result = source.updateBy(RollingGroup("Timestamp", parseDuration("PT5s"), parseD
 
 A rolling formula can use any of Deephaven's [built-in functions](../reference/query-language/query-library/auto-imported/index.md), [arithmetic operators](./operators.md), or [user-defined Groovy functions](./groovy-closures.md).
 
-Use [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) to create custom tick-based rolling formulas. Here's an example that computes the rolling geometric mean of a column `X` by group. The formula names the output column (`GeomMeanX`) and refers to the input column (`X`) directly. Within the formula, `X` is the array of the window's values:
+Use [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) to create custom tick-based rolling formulas. Here's an example that computes the rolling geometric mean of a column `X` by group. The formula names the output column (`GeomMeanX`) and refers to the input column (`X`) directly. Within the formula, `X` is the vector of the window's values:
 
 ```groovy order=result
 source = emptyTable(100).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = randomInt(0, 100)")
@@ -687,7 +687,7 @@ By default, [`updateBy`](../reference/table-operations/update-by-operations/upda
 - **Cumulative operations** ([`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md), [`CumMax`](../reference/table-operations/update-by-operations/cum-max.md), etc.): Skip null values and continue with the last valid result.
 - **Rolling statistics** ([`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md), [`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md), etc.): Exclude null values from window calculations.
 - **Count-where operations** ([`CumCountWhere`](../reference/table-operations/update-by-operations/cum-count-where.md), [`RollingCountWhere`](../reference/table-operations/update-by-operations/rolling-count-where.md)): Evaluate their filter on every row, so a row with a null value is counted when the filter matches it.
-- **Rolling groups and formulas** ([`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md), [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md)): Keep null values in the window's array, so your formula decides how to treat them.
+- **Rolling groups and formulas** ([`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md), [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md)): Keep null values in the window's vector, so your formula decides how to treat them.
 - **Exponential operations** ([`Ema`](../reference/table-operations/update-by-operations/ema.md), [`EmMax`](../reference/table-operations/update-by-operations/em-max.md), etc.): Skip null values unless configured otherwise via [`OperationControl`](../reference/table-operations/update-by-operations/OperationControl.md).
 
 ### Operations with explicit error handling controls
@@ -739,7 +739,7 @@ result = source.sumBy("TimeGroup", "Symbol")
 
 - **Standard operations**: Use built-in methods such as [`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md), [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md), and [`CumMax`](../reference/table-operations/update-by-operations/cum-max.md) for common statistical calculations.
 - **Custom formulas**: Use [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) when you need to apply custom mathematical expressions to windowed data.
-- **Grouping operations**: Use [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) when you need to collect data into arrays for further processing.
+- **Grouping operations**: Use [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) when you need to collect data into vectors for further processing.
 
 ### Do you need to handle missing or erroneous data?
 

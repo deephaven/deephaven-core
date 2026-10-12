@@ -40,10 +40,10 @@ A number of built-in aggregations are available:
 - [`agg.count_`](../reference/table-operations/group-and-aggregate/AggCount.md) - Number of rows for each group.
 - [`agg.count_distinct`](../reference/table-operations/group-and-aggregate/AggCountDistinct.md) - Number of unique values for each group.
 - [`agg.count_where`](../reference/table-operations/group-and-aggregate/AggCountWhere.md) - Number of rows for each group that pass a set of filters.
-- [`agg.distinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md) - Array of unique values for each group.
+- [`agg.distinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md) - Vector of unique values for each group.
 - [`agg.first`](../reference/table-operations/group-and-aggregate/AggFirst.md) - First value for each group.
 - [`agg.formula`](../reference/table-operations/group-and-aggregate/AggFormula.md) - Custom formula for each group.
-- [`agg.group`](../reference/table-operations/group-and-aggregate/AggGroup.md) - Array of values for each group.
+- [`agg.group`](../reference/table-operations/group-and-aggregate/AggGroup.md) - Vector of values for each group.
 - [`agg.last`](../reference/table-operations/group-and-aggregate/AggLast.md) - Last value for each group.
 - [`agg.max_`](../reference/table-operations/group-and-aggregate/AggMax.md) - Maximum value for each group.
 - [`agg.median`](../reference/table-operations/group-and-aggregate/AggMed.md) - Median value for each group.

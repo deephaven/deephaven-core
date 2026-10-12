@@ -367,11 +367,11 @@ Deephaven offers two more kinds of rolling operations that don't compute a fixed
 | Grouping          | [`rolling_group_tick`](../reference/table-operations/update-by-operations/rolling-group-tick.md)     | [`rolling_group_time`](../reference/table-operations/update-by-operations/rolling-group-time.md)     |
 | Custom formula    | [`rolling_formula_tick`](../reference/table-operations/update-by-operations/rolling-formula-tick.md) | [`rolling_formula_time`](../reference/table-operations/update-by-operations/rolling-formula-time.md) |
 
-The grouping operations collect the values in each window into an array. The custom formula operations apply a formula you write to the values in each window. To work with the grouped arrays, see [how to work with arrays](./work-with-arrays.md).
+The grouping operations collect the values in each window into a vector. The custom formula operations apply a formula you write to the values in each window. To work with the grouped vectors, see [how to work with arrays](./work-with-arrays.md).
 
 #### Rolling groups
 
-The following example uses [`rolling_group_tick`](../reference/table-operations/update-by-operations/rolling-group-tick.md) to collect the values of the current row and the 3 rows before it into an array, separately for each `ID` value:
+The following example uses [`rolling_group_tick`](../reference/table-operations/update-by-operations/rolling-group-tick.md) to collect the values of the current row and the 3 rows before it into a vector, separately for each `ID` value:
 
 ```python order=source,result
 from deephaven.updateby import rolling_group_tick
@@ -409,7 +409,7 @@ result = source.update_by(
 
 A rolling formula can use any of Deephaven's [built-in functions](../reference/query-language/query-library/auto-imported/index.md), [arithmetic operators](./operators.md), or [user-defined Python functions](./python-functions.md).
 
-The following example uses [`rolling_formula_tick`](../reference/table-operations/update-by-operations/rolling-formula-tick.md) to compute the rolling geometric mean of the `X` column, grouped by the `Letter` column. The formula names the output column (`GeomMeanX`) and refers to the input column (`X`) directly. Within the formula, `X` is the array of the window's values:
+The following example uses [`rolling_formula_tick`](../reference/table-operations/update-by-operations/rolling-formula-tick.md) to compute the rolling geometric mean of the `X` column, grouped by the `Letter` column. The formula names the output column (`GeomMeanX`) and refers to the input column (`X`) directly. Within the formula, `X` is the vector of the window's values:
 
 ```python order=source,result
 from deephaven.updateby import rolling_formula_tick
@@ -823,7 +823,7 @@ By default, [`update_by`](../reference/table-operations/update-by-operations/upd
 - **Cumulative operations** ([`cum_sum`](../reference/table-operations/update-by-operations/cum-sum.md), [`cum_max`](../reference/table-operations/update-by-operations/cum-max.md), etc.): Skip null values and continue with the last valid result.
 - **Rolling statistics** ([`rolling_avg_tick`](../reference/table-operations/update-by-operations/rolling-avg-tick.md), [`rolling_sum_time`](../reference/table-operations/update-by-operations/rolling-sum-time.md), etc.): Exclude null values from window calculations.
 - **Count-where operations** ([`cum_count_where`](../reference/table-operations/update-by-operations/cum-count-where.md), [`rolling_count_where_tick`](../reference/table-operations/update-by-operations/rolling-count-where-tick.md), [`rolling_count_where_time`](../reference/table-operations/update-by-operations/rolling-count-where-time.md)): Evaluate their filter on every row, so a row with a null value is counted when the filter matches it.
-- **Rolling groups and formulas** ([`rolling_group_tick`](../reference/table-operations/update-by-operations/rolling-group-tick.md), [`rolling_formula_time`](../reference/table-operations/update-by-operations/rolling-formula-time.md), etc.): Keep null values in the window's array, so your formula decides how to treat them.
+- **Rolling groups and formulas** ([`rolling_group_tick`](../reference/table-operations/update-by-operations/rolling-group-tick.md), [`rolling_formula_time`](../reference/table-operations/update-by-operations/rolling-formula-time.md), etc.): Keep null values in the window's vector, so your formula decides how to treat them.
 - **Exponential operations** ([`ema_tick`](../reference/table-operations/update-by-operations/ema-tick.md), [`emmax_time`](../reference/table-operations/update-by-operations/emmax-time.md), etc.): Skip null values unless configured otherwise via `op_control`.
 
 ### Operations with explicit error handling controls
@@ -879,7 +879,7 @@ result = source.sum_by(by=["TimeGroup", "Symbol"])
 
 - **Standard operations**: Use built-in functions such as [`rolling_sum_tick`](../reference/table-operations/update-by-operations/rolling-sum-tick.md), [`rolling_avg_time`](../reference/table-operations/update-by-operations/rolling-avg-time.md), and [`cum_max`](../reference/table-operations/update-by-operations/cum-max.md) for common statistical calculations.
 - **Custom formulas**: Use [`rolling_formula_tick`](../reference/table-operations/update-by-operations/rolling-formula-tick.md) or [`rolling_formula_time`](../reference/table-operations/update-by-operations/rolling-formula-time.md) when you need to apply custom mathematical expressions to windowed data.
-- **Grouping operations**: Use [`rolling_group_tick`](../reference/table-operations/update-by-operations/rolling-group-tick.md) or [`rolling_group_time`](../reference/table-operations/update-by-operations/rolling-group-time.md) when you need to collect data into arrays for further processing.
+- **Grouping operations**: Use [`rolling_group_tick`](../reference/table-operations/update-by-operations/rolling-group-tick.md) or [`rolling_group_time`](../reference/table-operations/update-by-operations/rolling-group-time.md) when you need to collect data into vectors for further processing.
 
 ### Do you need to handle missing or erroneous data?
 
