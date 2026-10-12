@@ -53,10 +53,10 @@
       "id": 3
     },
     {
-      "prompt": "Do a style review of the section 'Controlling execution order' (through the end of 'Serial filters') of this deephaven-core concept guide: .claude/skills/eval-fixtures/parallelization-609b-chip-round2.md. Treat the file as docs/python/conceptual/query-engine/parallelization.md when judging links. Report only — don't edit anything.",
+      "prompt": "Do a style review of the section 'Controlling execution order' (through the end of 'Serial filters') of this deephaven-core concept guide: .claude/skills/deephaven-writing-style/evals/files/parallelization-609b-chip-round2.md. Treat the file as docs/python/conceptual/query-engine/parallelization.md when judging links. Report only — don't edit anything.",
       "expected_output": "Finds identifiers in the section's opening paragraph and bullets that are bare even though the page links them earlier, states the per-paragraph and per-list-item linking rule, and does not ask for every occurrence within one sentence or paragraph to be linked or touch code blocks.",
       "files": [
-        "../eval-fixtures/parallelization-609b-chip-round2.md"
+        "evals/files/parallelization-609b-chip-round2.md"
       ],
       "expectations": [
         "Flags `with_serial` in the section's opening paragraph (its first mention in the section) as unlinked, even though the page's opening callout already links it, and gives the link target (Selectable.md#with_serial or the update.md serial-execution anchor)",
@@ -97,10 +97,10 @@
       "id": 6
     },
     {
-      "prompt": "Do a style review of this draft excerpt for a deephaven-core Crash Course chapter: .claude/skills/eval-fixtures/crash-course-parallelization-pre-review.md. Report only — don't edit anything.",
+      "prompt": "Do a style review of this draft excerpt for a deephaven-core Crash Course chapter: .claude/skills/deephaven-writing-style/evals/files/crash-course-parallelization-pre-review.md. Report only — don't edit anything.",
       "expected_output": "Held-out fixture, not used to write the new rules: finds the colon sentence that explains with_serial and the bare with_serial in Key takeaways, and does not over-flag the two-sentence bullets in 'When it breaks'.",
       "files": [
-        "../eval-fixtures/crash-course-parallelization-pre-review.md"
+        "evals/files/crash-course-parallelization-pre-review.md"
       ],
       "expectations": [
         "Flags the sentence under 'The fix' that begins 'The with_serial method tells Deephaven to process this formula serially: never running concurrently with itself, with rows evaluated one at a time ...' as hard to read (for example because of its colon-introduced run of clauses) and proposes separate sentences or a list",
@@ -138,10 +138,10 @@
     },
     {
       "id": 10,
-      "prompt": "Do a style review of this deephaven-core concept guide, focusing on links to reference pages and readability: .claude/skills/eval-fixtures/parallelization-bf29-chip-round3.md. Treat it as docs/python/conceptual/query-engine/parallelization.md (resolve relative links from that path). Report only; don't edit anything.",
+      "prompt": "Do a style review of this deephaven-core concept guide, focusing on links to reference pages and readability: .claude/skills/deephaven-writing-style/evals/files/parallelization-bf29-chip-round3.md. Treat it as docs/python/conceptual/query-engine/parallelization.md (resolve relative links from that path). Report only; don't edit anything.",
       "expected_output": "Flags the bare API mentions a reviewer flagged on this text: Filter and Selectable in the 'works the same way' sentence, with_serial and Barriers as bold lead terms in the contrast bullets, and select/update/where/view/update_view (and bare with_serial) in Key takeaways, each with a link target. Flags the Implicit barriers section as a wall of text and proposes a definition plus short lists. Addresses 'with no Deephaven configuration': either flags it as a qualifier with no concrete meaning or explains that it states a checkable fact.",
       "files": [
-        "../eval-fixtures/parallelization-bf29-chip-round3.md"
+        "evals/files/parallelization-bf29-chip-round3.md"
       ],
       "expectations": [
         "Flags `Filter` and `Selectable` as unlinked in the sentence 'Concurrency control works the same way for a `Filter` as for a `Selectable`.' (around line 139), even though the bullets just above link them, and gives the link targets",
@@ -150,13 +150,14 @@
         "Flags the Implicit barriers section (around lines 342-346) as hard to read as dense prose (a wall of text), and proposes restructuring it, for example a one-sentence definition followed by short lists",
         "Addresses 'with no Deephaven configuration' (around line 93): either flags it as vague and proposes the concrete fact or removing it, or explicitly explains that it already states a checkable fact (no property to set). Silence about the phrase fails",
         "Control: does not ask for links inside headings or fenced code blocks, and does not ask for an identifier to be linked more than once within the same sentence"
-      ]
+      ],
+      "notes": "Expectation 5 was corrected during PR #8821 review: the rule lets a qualifier pass when it states a checkable fact, so the expectation accepts a rewrite, a removal, or an explicit explanation; silence still fails. The linking rule's bold-lead-term example was also changed from with_serial (the fixture's case) to sort_descending, and the new skill rerun scored 10/12 (2 runs) against main 4/12."
     },
     {
-      "prompt": "Do a style review of the 'What is and isn't parallelized' section of this deephaven-core concept guide: .claude/skills/eval-fixtures/parallelization-3748-chip-round4.md (the section is around lines 61-86). Treat the file as docs/python/conceptual/query-engine/parallelization.md (resolve relative links from that path). Report only; don't edit anything.",
+      "prompt": "Do a style review of the 'What is and isn't parallelized' section of this deephaven-core concept guide: .claude/skills/deephaven-writing-style/evals/files/parallelization-3748-chip-round4.md (the section is around lines 61-86). Treat the file as docs/python/conceptual/query-engine/parallelization.md (resolve relative links from that path). Report only; don't edit anything.",
       "expected_output": "Chip Kent's 2026-10-12 review of PR #7457: the operations list is not parallel (two items start with a category, four with the operation name); 'don't split their own work' is a coined phrase for 'are not currently parallelized'; 'aggregations' is bare while every method around it is linked.",
       "files": [
-        "../eval-fixtures/parallelization-3748-chip-round4.md"
+        "evals/files/parallelization-3748-chip-round4.md"
       ],
       "expectations": [
         "Flags the six-item list under 'Within one operation' (around lines 69-74) as not parallel, because 'Column calculations in `update` and `select`' and 'Filters in `where` ...' start with a category while the other items start with the operation name, and proposes rewriting the items in one shape",
@@ -164,7 +165,8 @@
         "Flags the bare 'aggregations' (around line 76) as a category noun that should link to its page, and names a target under docs/python/how-to-guides (for example dedicated-aggregations.md)",
         "Control: does not report the already-linked identifiers in that sentence (`range_join`, `ungroup`, `head`, `tail`, `merge`, `snapshot`) as unlinked"
       ],
-      "id": 11
+      "id": 11,
+      "notes": "DOC-1990 round 5 (PR #8897): new 11/12, baseline 5/12 (3 runs each, blind). The coined-phrase expectation went 0/2 before the rule gained its search step and 2/3 after."
     }
   ]
 }

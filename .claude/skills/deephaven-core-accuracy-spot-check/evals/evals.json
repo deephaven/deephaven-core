@@ -54,17 +54,18 @@
       ]
     },
     {
-      "prompt": "Spot-check a sentence I just rewrote in the Crash Course parallelization chapter: line 134 of .claude/skills/eval-fixtures/crash-course-parallelization-d186.md ('Parallelization produces incorrect results when a row's calculation depends on something outside that row.'). Treat the file as docs/python/getting-started/crash-course/parallelization.md. Is the sentence right?",
+      "prompt": "Spot-check a sentence I just rewrote in the Crash Course parallelization chapter: line 134 of .claude/skills/deephaven-core-accuracy-spot-check/evals/files/crash-course-parallelization-d186.md ('Parallelization produces incorrect results when a row's calculation depends on something outside that row.'). Treat the file as docs/python/getting-started/crash-course/parallelization.md. Is the sentence right?",
       "expected_output": "Copilot's finding on PR #7457 after the restructure: 'depends on something outside that row' is too broad. Reading an immutable global or a constant is safe (the query-strings chapter's stateless examples do it); the unsafe cases are shared mutable state and dependence on row order, which are exactly the two cases the next two bullets name.",
       "files": [
-        "../eval-fixtures/crash-course-parallelization-d186.md"
+        "evals/files/crash-course-parallelization-d186.md"
       ],
       "expectations": [
         "Reports the sentence as too broad rather than confirming it: reading state that is not modified (an immutable global, a constant, or a library call that is both thread-safe and order-independent) does not produce incorrect results under parallel execution",
         "Proposes a narrower sentence that names the unsafe cases as state that other rows change (unsynchronized shared state) and dependence on the order in which rows are processed, or equivalent wording; the two may be stated together at the Crash Course's level of precision",
         "Control: confirms the two bullets that follow (a shared variable that rows modify; an assumed row order) as correct examples rather than flagging them; proposing a wording tightening such as 'modifies' for 'reads or modifies' still passes"
       ],
-      "id": 5
+      "id": 5,
+      "notes": "DOC-1990 round 5 (PR #8897): new 9/9, baseline 8/9. The baseline skill already verifies a changed sentence against source well enough to catch this; the eval guards that behavior."
     }
   ]
 }
