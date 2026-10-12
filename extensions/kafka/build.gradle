@@ -7,7 +7,9 @@ plugins {
 def kafka_images = [
         'cp-kafka',
         'kafka',
-        'kafka-native',
+        // Disabled because kafka-native can occasionally segfault on startup; fixed upstream in Kafka 4.4.0.
+        // https://issues.apache.org/jira/browse/KAFKA-20314
+        // 'kafka-native',
         'redpanda'
 ]
 kafka_images.each { name ->
