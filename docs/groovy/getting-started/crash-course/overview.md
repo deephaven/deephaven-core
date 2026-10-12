@@ -28,7 +28,7 @@ This guide provides a broad, clear, and technically informative overview of Deep
 
 ## Architecture overview
 
-Deephaven's power is largely due to the concept that everything is a table.
+Deephaven's central concept is that everything is a table.
 
 </CoreTutorialCard>
 
@@ -44,7 +44,7 @@ Learn to create tables from scratch with synthetic data or by importing data fro
 
 ## Table operations
 
-This section will cover some table operations that appear in almost all queries.
+This section covers some table operations that appear in almost all queries.
 
 </CoreTutorialCard>
 
@@ -76,7 +76,7 @@ Understand why Deephaven uses declarative recipes instead of loops. Learn the pa
 
 ## Real-time plots
 
-Whether your data is static or updating in real time, Deephaven supports plotting via multiple libraries, including its own built-in plotting API.
+Whether your data is static or updating in real time, Deephaven supports plotting through its built-in plot package.
 
 </CoreTutorialCard>
 
