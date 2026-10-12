@@ -8,7 +8,7 @@ The first sections cover general Kafka terms: topics, record fields, and formats
 
 ## Topics
 
-Individual Kafka feeds are called topics, and each topic has a name. Kafka doesn't require it, but messages in a topic typically follow a uniform schema. Two roles interact with a topic:
+Individual Kafka feeds are called topics, and each topic has a name. Messages in a topic typically follow a uniform schema, but they are not required to. Two roles interact with a topic:
 
 - **Producers** write data to topics.
 - **Consumers** read data from topics.
