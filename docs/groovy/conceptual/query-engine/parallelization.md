@@ -119,7 +119,7 @@ result3 = source3.where("Age > 21")
 
 // Built-in functions
 source4 = emptyTable(10).update("X = i * 2.0")
-result4 = source4.update("Squared = sqrt(X)")
+result4 = source4.update("SquareRoot = sqrt(X)")
 ```
 
 > [!NOTE]
