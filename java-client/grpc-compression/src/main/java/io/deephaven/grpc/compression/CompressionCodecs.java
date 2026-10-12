@@ -131,7 +131,7 @@ public final class CompressionCodecs {
 
     /**
      * @param name an encoding name
-     * @return {@code name}, lower-cased
+     * @return {@code name}, trimmed and lower-cased
      * @throws IllegalArgumentException if {@code name} is not {@link #SUPPORTED supported}
      */
     public static String checkSupported(@NotNull final String name) {
