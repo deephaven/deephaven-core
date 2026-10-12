@@ -1,4 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200" width="1600" height="1200" font-family="Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200" width="1600" height="1200" font-family="Helvetica, Arial, sans-serif" role="img" aria-labelledby="chart-title">
+<title id="chart-title">Flowchart for choosing between update_by, partition_by, rollup, group_by, agg_by, and the single aggregations such as sum_by and first_by.</title>
 <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e1e1e"/></marker></defs>
 <rect width="1600" height="1200" fill="#ffffff"/>
 <line x1="280" y1="90" x2="280" y2="195" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
@@ -94,10 +95,8 @@
 <rect x="1000" y="565" width="300" height="70" rx="14" fill="#a5d8ff" stroke="#4a9eed" stroke-width="2"/>
 <text x="1150.0" y="594.0" font-size="20" fill="#1e1e1e" text-anchor="middle">update_by</text>
 <text x="1150.0" y="619.0" font-size="20" fill="#1e1e1e" text-anchor="middle">rolling_*_tick</text>
-<text x="1000" y="730" font-size="20" fill="#757575">Every operation except partition_by also</text>
-<text x="1000" y="756" font-size="20" fill="#757575">works with no key columns (by).</text>
-<text x="1000" y="782" font-size="20" fill="#757575"></text>
-<text x="1000" y="808" font-size="20" fill="#757575">Blink tables: group_by and partition_by are</text>
-<text x="1000" y="834" font-size="20" fill="#757575">not supported. Most other aggregations summarize</text>
-<text x="1000" y="860" font-size="20" fill="#757575">all rows seen since they started.</text>
+<text x="1000" y="730" font-size="20" fill="#757575">Blink tables: group_by, partition_by, and</text>
+<text x="1000" y="756" font-size="20" fill="#757575">agg.formula are not supported. Most other</text>
+<text x="1000" y="782" font-size="20" fill="#757575">aggregations summarize all rows seen since</text>
+<text x="1000" y="808" font-size="20" fill="#757575">they started.</text>
 </svg>

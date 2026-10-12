@@ -1,4 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200" width="1600" height="1200" font-family="Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200" width="1600" height="1200" font-family="Helvetica, Arial, sans-serif" role="img" aria-labelledby="chart-title">
+<title id="chart-title">Flowchart for choosing between updateBy, partitionBy, rollup, groupBy, aggBy, and the single aggregations such as sumBy and firstBy.</title>
 <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e1e1e"/></marker></defs>
 <rect width="1600" height="1200" fill="#ffffff"/>
 <line x1="280" y1="90" x2="280" y2="195" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
@@ -96,7 +97,8 @@
 <text x="1150.0" y="588.5" font-size="20" fill="#1e1e1e" text-anchor="middle">updateBy</text>
 <text x="1150.0" y="613.5" font-size="20" fill="#1e1e1e" text-anchor="middle">RollingAvg with</text>
 <text x="1150.0" y="638.5" font-size="20" fill="#1e1e1e" text-anchor="middle">a tick window</text>
-<text x="1000" y="730" font-size="20" fill="#757575">Blink tables: groupBy and partitionBy are</text>
-<text x="1000" y="756" font-size="20" fill="#757575">not supported. Most other aggregations summarize</text>
-<text x="1000" y="782" font-size="20" fill="#757575">all rows seen since they started.</text>
+<text x="1000" y="730" font-size="20" fill="#757575">Blink tables: groupBy, partitionBy, and</text>
+<text x="1000" y="756" font-size="20" fill="#757575">AggFormula are not supported. Most other</text>
+<text x="1000" y="782" font-size="20" fill="#757575">aggregations summarize all rows seen since</text>
+<text x="1000" y="808" font-size="20" fill="#757575">they started.</text>
 </svg>
