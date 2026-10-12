@@ -453,7 +453,7 @@ Once the client has a local ticking table, such as `statsTable` from [Subscribe 
 Read the table or add the listener inside the `try` block that opened the liveness scope, and keep that block open for as long as the listener should receive updates. The [`SubscribeTable`](https://github.com/deephaven/deephaven-core/blob/main/java-client/barrage-examples/src/main/java/io/deephaven/client/examples/SubscribeTable.java) example does this by waiting on a [`CountDownLatch`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CountDownLatch.html) inside the block until it has received the number of updates it asked for. When the block exits, the scope closes and releases the subscription and the table, and the listener stops receiving updates.
 
 ```java
-statsTable.addUpdateListener(listener = new InstrumentedTableUpdateListenerAdapter(statsTable, false) {
+final InstrumentedTableUpdateListenerAdapter listener = new InstrumentedTableUpdateListenerAdapter(statsTable, false) {
     @Override
     public void onUpdate(TableUpdate upstream) {
         // Process the update as needed. The TableUpdate describes:
@@ -463,10 +463,11 @@ statsTable.addUpdateListener(listener = new InstrumentedTableUpdateListenerAdapt
         // 4) What rows have been structurally shifted in address space, but without changes to column data
         // 5) What columns were affected by the changes
     }
-});
+};
+statsTable.addUpdateListener(listener);
 ```
 
-The `false` argument tells [`InstrumentedTableUpdateListenerAdapter`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html) not to keep its own reference to the listener, so the code keeps one in the `listener` field. Without that field, the JVM can garbage collect the listener, and the listener stops receiving updates.
+The `false` argument tells [`InstrumentedTableUpdateListenerAdapter`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html) not to keep its own reference to the listener, so the code keeps one in the `listener` variable, which stays in scope while the `try` block is open. Without that reference, the JVM can garbage collect the listener, and the listener stops receiving updates.
 
 ### Run code on the server
 
