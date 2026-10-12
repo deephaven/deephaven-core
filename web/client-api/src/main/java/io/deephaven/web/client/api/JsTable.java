@@ -1205,7 +1205,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                                             if (wrapped.isClosed() || isClosed() || source != state()) {
                                                 return;
                                             }
-                                            // when ever the main table changes its state, reload the totals table from
+                                            // whenever the main table changes its state, reload the totals table from
                                             // the new state
                                             final ClientTableState existing = wrapped.state();
                                             final ClientTableState nextState =

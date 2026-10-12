@@ -25,7 +25,7 @@ import static java.util.Map.entry;
 public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
     private final TableSourceBuilder tables = new TableSourceBuilder()
             .script("from deephaven import empty_table")
-            .script("strings", "empty_table(1).update([\"str=`abcdefg`\", \"nostr=(String)null\"])")
+            .script("strings", "empty_table(1).update([\"str=`abcdefg`\", \"nostr=(String)null\", \"n=1\"])")
             .script("hasTotals",
                     "empty_table(5).update_view([(\"I = (double)i\", \"J = (double) i * i\", \"K = (double) i % 2\")])"
                             +
@@ -50,27 +50,28 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
     public void testQueryDefinedConfigs() {
         connect(tables)
                 .then(session -> {
-                    session.getTable("strings", true)
+                    return session.getTable("strings", true)
                             .then(table1 -> {
                                 // make sure the config is null, since it wasn't defined in the config
                                 assertNull(table1.getTotalsTableConfig());
 
-                                // check that we get a totals table back, even though it won't have any columns
+                                // check that we get a totals table back from the default config, with only the
+                                // column that the default operation can aggregate
                                 // noinspection unchecked
                                 return (Promise<Object[]>) Promise.all(new Promise[] {
                                         table1.getTotalsTable(null).then(totals1 -> {
-                                            assertEquals(0, totals1.getColumns().length);
+                                            assertEquals(1, totals1.getColumns().length);
                                             assertEquals(1, totals1.getSize(), DELTA);
                                             return Promise.resolve(totals1);
                                         }),
                                         table1.getGrandTotalsTable(null).then(totals11 -> {
-                                            assertEquals(0, totals11.getColumns().length);
+                                            assertEquals(1, totals11.getColumns().length);
                                             assertEquals(1, totals11.getSize(), DELTA);
                                             return Promise.resolve(totals11);
                                         }),
                                 });
-                            });
-                    return Promise.resolve(session);
+                            })
+                            .then(ignored -> Promise.resolve(session));
                 })
                 .then(table("hasTotals"))
                 .then(table -> {
