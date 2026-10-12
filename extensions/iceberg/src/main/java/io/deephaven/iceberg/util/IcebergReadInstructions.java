@@ -7,6 +7,8 @@ import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.engine.table.TableDefinition;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.expressions.Expression;
+import org.apache.iceberg.expressions.Expressions;
 import org.apache.iceberg.mapping.NameMapping;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
@@ -108,6 +110,26 @@ public abstract class IcebergReadInstructions {
         return false;
     }
 
+    /**
+     * An Iceberg {@link Expression} used to prune the {@link DataFile data files} Deephaven discovers, with field names
+     * resolved against the Iceberg {@link Resolver#schema() schema} rather than Deephaven column names. By default,
+     * {@link Expressions#alwaysTrue()}.
+     *
+     * <p>
+     * This prunes, it does not filter: Iceberg prunes using partition values and data file statistics, so surviving
+     * data files are read in full and the result is a superset of the matching rows. Apply an equivalent Deephaven
+     * {@link io.deephaven.api.filter.Filter filter} to the result if you need exactly those rows.
+     */
+    @Value.Default
+    public Expression pruningExpression() {
+        return Expressions.alwaysTrue();
+    }
+
+    /**
+     * Return a copy of this instructions object with the pruning expression replaced by {@code value}.
+     */
+    public abstract IcebergReadInstructions withPruningExpression(Expression value);
+
     public interface Builder {
 
         @Deprecated
@@ -134,6 +156,8 @@ public abstract class IcebergReadInstructions {
         Builder snapshot(Snapshot snapshot);
 
         Builder ignoreResolvingErrors(boolean ignoreResolvingErrors);
+
+        Builder pruningExpression(Expression pruningExpression);
 
         IcebergReadInstructions build();
     }

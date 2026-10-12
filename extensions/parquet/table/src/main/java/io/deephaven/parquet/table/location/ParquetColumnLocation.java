@@ -333,7 +333,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 return;
             }
             initializeReaders();
-            final int pageStoreCount = columnChunkReaders.length;
+            final int pageStoreCount = columnChunkReaders == null ? 0 : columnChunkReaders.length;
             pageStores = new ColumnChunkPageStore[pageStoreCount];
             dictionaryChunkSuppliers = new Supplier[pageStoreCount];
             dictionaryKeysPageStores = new ColumnChunkPageStore[pageStoreCount];
