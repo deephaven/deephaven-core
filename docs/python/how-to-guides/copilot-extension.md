@@ -1,127 +1,80 @@
 ---
-title: Deephaven's GitHub Copilot extension
+title: Deephaven's GitHub Copilot extension (discontinued)
 ---
 
-Deephaven's [GitHub Copilot extension](https://github.com/apps/deephaven) gives users direct access to an AI model trained specifically on Deephaven's documentation and codebase. You can leverage the extension for things like:
+> [!WARNING]
+> GitHub [disabled all GitHub App-based Copilot Extensions on November 10, 2025](https://github.blog/changelog/2025-09-24-deprecate-github-copilot-extensions-github-apps/) in favor of Model Context Protocol (MCP) servers. The Deephaven Copilot extension on this page is a GitHub App-based extension, so starting a Copilot Chat message with `@deephaven` no longer gets a response. To get Deephaven-specific help in Copilot and other AI tools, use [Deephaven MCP](./mcp.md) instead. Its docs server answers natural-language questions about Deephaven.
 
-- Auto-completion for Deephaven-specific code snippets.
+Deephaven's [GitHub Copilot extension](https://github.com/apps/deephaven) gave GitHub Copilot access to Deephaven's documentation and code so it could answer Deephaven-specific questions. The rest of this page describes how the extension worked. While it was available, you could use it for things like:
+
 - Writing Deephaven queries using natural language.
 - Proofreading, refactoring, and suggesting improvements to your Deephaven code.
 - Reviewing, critiquing, and providing feedback on your queries.
 - Answering questions about Deephaven's API and features.
-- And more!
 
 ## Prerequisites
 
-There are only two prerequisites to use the Deephaven GitHub Copilot extension:
+To use the Deephaven GitHub Copilot extension, you needed:
 
-- [GitHub Copilot](https://github.com/features/copilot) - You'll need a GitHub account to use Copilot. Any tier of GitHub Copilot will work, from the free tier all the way to the enterprise tier.
-- Deephaven - [Community Core](/community) or [Enterprise](/enterprise).
-
-## Recommendations
-
-On top of the [prerequisites](#prerequisites), it's recommended to install one or more of the IDEs supported by GitHub Copilot. They include:
-
-- [Microsoft Visual Studio Code (VS Code)](https://code.visualstudio.com/)
-- [Microsoft Visual Studio](https://visualstudio.microsoft.com/)
-- Any [JetBrains IDE](https://www.jetbrains.com/ides/)
-- [XCode](https://developer.apple.com/xcode/)
-- [Neovim](https://neovim.io/)
-- [Azure Data Studio](https://azure.microsoft.com/en-us/products/data-studio)
-- [Eclipse](https://eclipseide.org/)
-
-If you use Visual Studio Code, it's also recommended you install the [Deephaven Extension](https://marketplace.visualstudio.com/items?itemName=deephaven.vscode-deephaven), as it allows you to connect to running Deephaven servers to execute queries from the IDE directly. This makes using and testing Copilot's suggestions simpler and easier.
+- A GitHub account.
+- [GitHub Copilot](https://github.com/features/copilot) on any plan, from Free to Enterprise.
+- Deephaven ([Community Core](/community) or [Enterprise](/enterprise)) to run the code that Copilot suggested, installed with [Docker](../getting-started/docker-install.md), [pip](../getting-started/pip-install.md), [from source](../getting-started/launch-build.md), or as a [production application](../getting-started/production-application.md). The extension itself didn't need a running server.
 
 ## Installation
 
-Installation is simple - follow these steps to get started:
+These were the setup steps while the extension was available. Following them now doesn't make `@deephaven` respond. For a working setup, see [Deephaven MCP](./mcp.md).
 
-1. Install GitHub Copilot
+### 1. Install the Deephaven GitHub Copilot extension
 
-Head to [github.com/features/copilot](https://github.com/features/copilot) and get started with the plan of your choice - Free, Pro, Business, or Enterprise. If you already have this installed, you can skip this step.
+You installed the extension by selecting **Install** at [github.com/apps/deephaven](https://github.com/apps/deephaven) and following the instructions.
 
-2. Install Deephaven
+### 2. Set up Copilot in your IDE (optional)
 
-If you do not yet have Deephaven installed, there are several ways to get started:
+You could use Copilot on [github.com](https://github.com/copilot), but we recommended using it from one or more of the IDEs that GitHub Copilot supports. For each IDE, you installed the IDE and then its Copilot plugin:
 
-- [Docker](../getting-started/docker-install.md)
-- [pip](../getting-started/pip-install.md)
-- [Build from source](../getting-started/launch-build.md)
-- [Production application](../getting-started/production-application.md)
+- [Microsoft Visual Studio Code (VS Code)](https://code.visualstudio.com/) — [Copilot setup](https://code.visualstudio.com/docs/copilot/setup)
+- [Microsoft Visual Studio](https://visualstudio.microsoft.com/) — [Copilot setup](https://learn.microsoft.com/en-us/visualstudio/ide/visual-studio-github-copilot-install-and-states?view=vs-2022)
+- Any [JetBrains IDE](https://www.jetbrains.com/ides/) — [Copilot plugin](https://plugins.jetbrains.com/plugin/17718-github-copilot)
+- [Xcode](https://developer.apple.com/xcode/) — [Copilot for Xcode](https://github.com/github/CopilotForXcode)
+- [Eclipse](https://eclipseide.org/) — [GitHub Copilot plugin](https://marketplace.eclipse.org/content/github-copilot)
 
-For Java/Groovy:
-
-- [Docker](/core/groovy/docs/getting-started/docker-install)
-- [Build from source](/core/groovy/docs/getting-started/launch-build)
-- [Production application](/core/groovy/docs/getting-started/production-application)
-
-3. Install the Deephaven GitHub Copilot extension
-
-Head to [github.com/apps/deephaven](https://github.com/apps/deephaven), and click the big green **Install** button. Follow the instructions to install the extension.
-
-4. Install any recommended IDEs you wish to use
-
-See the [Recommendations](#recommendations) section above for a list of IDEs that support GitHub Copilot. Follow the instructions provided for whichever IDE(s) you choose to install.
-
-5. Install GitHub Copilot in your IDE
-
-Copilot is a plugin for any of the IDEs listed [above](#recommendations). See the following links for the Copilot plugin in each:
-
-- [Visual Studio Code](https://code.visualstudio.com/docs/copilot/setup)
-- [Visual Studio](https://learn.microsoft.com/en-us/visualstudio/ide/visual-studio-github-copilot-install-and-states?view=vs-2022)
-- [JetBrains IDEs](https://plugins.jetbrains.com/plugin/17718-github-copilot)
-- [XCode](https://github.com/github/CopilotForXcode)
-- [Neovim](https://github.com/github/copilot.vim)
-- [Azure Data Studio](https://learn.microsoft.com/en-us/azure-data-studio/extensions/github-copilot-extension-overview)
-- [Eclipse](https://marketplace.eclipse.org/content/copilot4eclipse)
-
-Once these steps are completed, you're ready to go!
+If you used VS Code, the [Deephaven VS Code extension](https://marketplace.visualstudio.com/items?itemName=deephaven.vscode-deephaven) let you run Copilot's suggestions directly from the IDE by connecting to a running Deephaven server. That extension is separate from the Copilot extension and is still available.
 
 ## Usage
 
-When querying the Deephaven GitHub Copilot extension, preface your queries with `@deephaven` to tell it you're asking a Deephaven-specific question.
+While the extension was available, you started a message with `@deephaven` to tell Copilot you were asking a Deephaven-specific question. This worked in Copilot Chat in your IDE and in Copilot on [github.com](https://github.com/copilot). `@deephaven` no longer responds. Use [Deephaven MCP](./mcp.md) instead.
 
 ## Examples
 
-The following examples show how to use the Deephaven GitHub Copilot extension effectively.
+The following examples show how the Deephaven GitHub Copilot extension responded to prompts while it was available. For the same kind of help now, use [Deephaven MCP](./mcp.md).
 
 ### Knowledge reference
 
-Copilot is a great tool for learning about core concepts. For example, ask Deephaven about the difference between a [Dynamic Table Writer](./table-publisher.md#dynamictablewriter) and a [Table Publisher](./table-publisher.md#table-publisher):
+The extension could explain core Deephaven concepts. For example, the following screenshot shows it explaining the difference between a [`DynamicTableWriter`](./table-publisher.md#dynamictablewriter) and a [table publisher](./table-publisher.md#table-publisher):
 
 ![Knowledge reference](../assets/how-to/copilot/knowledge_reference.png)
 
-### Natural language queries
+### Natural-language queries
 
-Have it write entire queries for you based on natural language descriptions. For example, ask it to write code that creates a ticking table with sine and cosine waves. Not only do you get the code, you also get an explanation of what it does. Always review generated code before you run it.
+The Deephaven Copilot extension could write entire queries from natural-language descriptions. For example, the following screenshot shows a request for code that creates a ticking table with sine and cosine waves. The response included the code and an explanation of what it does.
+
+Always review generated code before you run it. For example, the plot code at the end of the following response calls `plot` on a `Figure`, but `Figure` has no `plot` method. The method that creates an XY series plot is [`plot_xy`](../reference/plot/plot.md), and for new plotting code we recommend [Deephaven Express](/core/plotly/docs/).
 
 ![Natural language query](../assets/how-to/copilot/nat-lang-query.png)
 
 ### Semantic search of documentation and code
 
-Want a succinct summary of documentation and/or source code? Just ask! For example, ask it to point you to the documentation on a [Table iterator](./iterate-table-data.md). Not only do you get the link to the documentation, it also provides a summary:
+The extension could summarize documentation or source code. For example, when asked to point to the documentation on [table iterators](./iterate-table-data.md), it returned both a link to the documentation and a summary:
 
 ![Semantic search](../assets/how-to/copilot/semantic.png)
 
 ### File context
 
-The tool has file context, meaning you can ask it to review, generate, or critique code based on file input, the current selection, what's in the editor, and more. For example, here's Copilot explaining this query:
+The Deephaven Copilot extension could use your open files as context. You could ask it to review, generate, or critique code based on a file, the current selection, or the contents of the editor. In the following screenshot, Copilot explains the query in the open editor file:
 
 ![File context](../assets/how-to/copilot/filecontext.png)
 
-## Troubleshooting
-
-You may find that the Deephaven GitHub Copilot extension does not work as expected. If you type `@`, and `@deephaven` does not appear as an option, it means that the extension is not registered in your chat. There are some common reasons for this:
-
-- You are not logged into GitHub in your IDE. IDEs may log you out of GitHub after a period of inactivity or if you restart your IDE. Make sure you are logged in.
-- The Deephaven extension is not installed. Ensure you've installed the extension by following the instructions presented in this guide.
-- Use of another extension in a chat may prevent the Deephaven extension from appearing as an option. Try starting a new chat and typing `@` to see if the Deephaven extension appears.
-- If using Copilot from GitHub's website, you may have to type `@deephaven` and ask a question before the extension appears.
-- If using an IDE, you may need to restart it for the extension to appear.
-
 ## Related documentation
 
-- [Run with Docker](../getting-started/docker-install.md)
-- [Run with pip](../getting-started/pip-install.md)
-- [Build from source](../getting-started/launch-build.md)
-- [Build from the production application](../getting-started/production-application.md)
+- [Deephaven MCP](./mcp.md)
+- [Deephaven VS Code extension](https://marketplace.visualstudio.com/items?itemName=deephaven.vscode-deephaven)
