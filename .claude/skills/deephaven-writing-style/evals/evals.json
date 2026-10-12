@@ -151,7 +151,7 @@
         "Addresses 'with no Deephaven configuration' (around line 93): either flags it as vague and proposes the concrete fact or removing it, or explicitly explains that it already states a checkable fact (no property to set). Silence about the phrase fails",
         "Control: does not ask for links inside headings or fenced code blocks, and does not ask for an identifier to be linked more than once within the same sentence"
       ],
-      "notes": "Expectation 5 was corrected during PR #8821 review: the rule lets a qualifier pass when it states a checkable fact, so the expectation accepts a rewrite, a removal, or an explicit explanation; silence still fails. The linking rule's bold-lead-term example was also changed from with_serial (the fixture's case) to sort_descending, and the new skill rerun scored 10/12 (2 runs) against main 4/12."
+      "notes": "Expectation 5 was corrected during PR #8860 review: the rule lets a qualifier pass when it states a checkable fact, so the expectation accepts a rewrite, a removal, or an explicit explanation; silence still fails. The linking rule's bold-lead-term example was also changed from with_serial (the fixture's case) to sort_descending, and the new skill rerun scored 10/12 (2 runs) against main 4/12."
     },
     {
       "prompt": "Do a style review of the 'What is and isn't parallelized' section of this deephaven-core concept guide: .claude/skills/deephaven-writing-style/evals/files/parallelization-3748-chip-round4.md (the section is around lines 61-86). Treat the file as docs/python/conceptual/query-engine/parallelization.md (resolve relative links from that path). Report only; don't edit anything.",
