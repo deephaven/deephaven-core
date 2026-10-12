@@ -153,7 +153,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                             checkTotals(totals, 5, 6., 0., "a2"), 2502);
                                 })))
                 .then(table -> {
-                    // Now, change the filter on the original table, and expect the totals tables to automatically
+                    // Now, change the filter on the original table, and expect the totals table to automatically
                     // update.
 
                     table.applyFilter(new FilterCondition[] {
@@ -164,9 +164,14 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     return promiseAllThen(table,
                             waitForEvent(table, JsTable.EVENT_FILTERCHANGED, 2002).onInvoke(table),
                             totalPromises[0] = waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[0], 2, 5, 1, "b1"), 2503),
-                            totalPromises[1] = waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[1], 5, 6, 0, "b2"), 2504));
+                                    checkTotals(totalTables[0], 2, 5, 1, "b1"), 2503));
+                })
+                .then(table -> {
+                    // The grand totals ignore the filter, so they neither update nor change.
+                    return totalTables[1].getViewportData().then(viewportData -> {
+                        assertTotals(viewportData, totalTables[1], 5, 6, 0, "b2");
+                        return Promise.resolve(table);
+                    });
                 })
                 .then(this::finish).catch_(this::report);
     }
@@ -201,6 +206,57 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                 totals.close();
                                 return Promise.resolve(totals);
                             });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * A filter change on the source table rebases the totals table exactly once, and does not rebase the grand totals
+     * table at all, since its source is the same unfiltered ancestor before and after.
+     */
+    public void testFilterChangeRebasesTotalsOnce() {
+        JsTotalsTable[] totalTables = {null, null};
+        int[] totalsRebases = {0};
+        int[] grandRebases = {0};
+        connect(tables)
+                .then(table("hasTotals"))
+                .then(table -> {
+                    delayTestFinish(6000);
+                    return promiseAllThen(table,
+                            table.getTotalsTable(null)
+                                    .then(totals -> {
+                                        totalTables[0] = totals;
+                                        totals.addEventListener(JsTable.INTERNAL_EVENT_STATECHANGED,
+                                                e -> totalsRebases[0]++);
+                                        totals.setViewport(0, 100, null, null, null);
+                                        return waitForEvent(totals, JsTable.EVENT_UPDATED,
+                                                checkTotals(totals, 5, 6., 0., "a1"), 2501);
+                                    }),
+                            table.getGrandTotalsTable(null)
+                                    .then(totals -> {
+                                        totalTables[1] = totals;
+                                        totals.addEventListener(JsTable.INTERNAL_EVENT_STATECHANGED,
+                                                e -> grandRebases[0]++);
+                                        totals.setViewport(0, 100, null, null, null);
+                                        return waitForEvent(totals, JsTable.EVENT_UPDATED,
+                                                checkTotals(totals, 5, 6., 0., "a2"), 2502);
+                                    }));
+                })
+                .then(table -> {
+                    table.applyFilter(new FilterCondition[] {
+                            table.findColumn("K").filter().eq(FilterValue.ofNumber(0.0))
+                    });
+                    return promiseAllThen(table,
+                            waitForEvent(table, JsTable.EVENT_FILTERCHANGED, 2003).onInvoke(table),
+                            waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
+                                    checkTotals(totalTables[0], 3, 6.666666, 0.0, "b1"), 2504));
+                })
+                // give any superfluous rebase time to show up before counting
+                .then(waitFor(500))
+                .then(table -> {
+                    assertEquals("totals rebases", 1, totalsRebases[0]);
+                    assertEquals("grand totals rebases", 0, grandRebases[0]);
+                    return Promise.resolve(table);
                 })
                 .then(this::finish).catch_(this::report);
     }
@@ -530,21 +586,20 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
             double avg,
             double min,
             String messages) {
-        String ext = messages;
-        return update -> {
-            ViewportData viewportData = update.getDetail();
+        return update -> assertTotals(update.getDetail(), totals, i, avg, min, messages);
+    }
 
-            assertEquals(1, viewportData.getRows().length);
-            assertEquals(3, viewportData.getColumns().length);
+    private void assertTotals(TableData viewportData, JsTotalsTable totals, long i, double avg, double min,
+            String ext) {
+        assertEquals(1, viewportData.getRows().length);
+        assertEquals(3, viewportData.getColumns().length);
 
-            assertEquals("I" + ext, i,
-                    viewportData.getRows().getAt(0).get(totals.findColumn("I")).<LongWrapper>cast().getWrapped());
-            assertEquals("J_Avg" + ext, avg,
-                    viewportData.getRows().getAt(0).get(totals.findColumn("J__Avg")).asDouble(), 0.0001);
-            assertEquals("J_Min" + ext, min,
-                    viewportData.getRows().getAt(0).get(totals.findColumn("J__Min")).asDouble(), 0.0001);
-
-        };
+        assertEquals("I" + ext, i,
+                viewportData.getRows().getAt(0).get(totals.findColumn("I")).<LongWrapper>cast().getWrapped());
+        assertEquals("J_Avg" + ext, avg,
+                viewportData.getRows().getAt(0).get(totals.findColumn("J__Avg")).asDouble(), 0.0001);
+        assertEquals("J_Min" + ext, min,
+                viewportData.getRows().getAt(0).get(totals.findColumn("J__Min")).asDouble(), 0.0001);
     }
 
     private Consumer<Event<ViewportData>> checkTotals(
