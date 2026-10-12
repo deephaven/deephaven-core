@@ -18,8 +18,8 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Chooses the gRPC message encoding for a Barrage response from the table's {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE
- * allowed-encoding list} and the encodings the client advertised.
+ * Chooses the compression type for a Barrage response from the table's {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE
+ * allowed list} and the compression types the client accepts.
  */
 public final class BarrageCompression {
     private static final Logger log = LoggerFactory.getLogger(BarrageCompression.class);
@@ -27,15 +27,15 @@ public final class BarrageCompression {
     private BarrageCompression() {}
 
     /**
-     * Sets the response encoding of {@code responseObserver} to the first encoding in {@code attributes}' allowed list
-     * that the client accepts. Leaves the response uncompressed when the table has no list, nothing matches, the list
-     * is malformed, or the observer cannot be compressed. Must be called before the first response message is sent.
+     * Sets the compression of {@code responseObserver} to the first type in {@code attributes}' allowed list that the
+     * client accepts. Leaves the response uncompressed when the table has no list, nothing matches, the list is
+     * malformed, or the observer cannot be compressed. Must be called before the first response message is sent.
      *
      * @param responseObserver the raw gRPC response observer for the call
-     * @param accepted the encodings the client advertised, from {@link ClientAcceptEncodingInterceptor}
+     * @param accepted the compression types the client accepts, from {@link ClientAcceptCompressionInterceptor}
      * @param attributes the attributes of the object being sent, or {@code null} if it has none
      * @param logName a description of the object being sent, for log messages
-     * @return the chosen encoding, or empty if the response is not compressed
+     * @return the chosen compression type, or empty if the response is not compressed
      */
     public static Optional<String> apply(
             @NotNull final StreamObserver<?> responseObserver,
@@ -59,9 +59,9 @@ public final class BarrageCompression {
             return Optional.empty();
         }
 
-        final Optional<String> encoding = CompressionCodecs.choose(allowed, accepted);
-        if (encoding.isEmpty()) {
-            return encoding;
+        final Optional<String> chosen = CompressionCodecs.choose(allowed, accepted);
+        if (chosen.isEmpty()) {
+            return chosen;
         }
         if (!(responseObserver instanceof ServerCallStreamObserver)) {
             return Optional.empty();
@@ -72,14 +72,14 @@ public final class BarrageCompression {
             // lock as GrpcUtil does for every other call on this observer
             // noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (call) {
-                call.setCompression(encoding.get());
+                call.setCompression(chosen.get());
             }
         } catch (final IllegalStateException e) {
             // headers were already sent; the response stays uncompressed
-            log.warn().append("Unable to compress ").append(logName).append(" with ").append(encoding.get())
+            log.warn().append("Unable to compress ").append(logName).append(" with ").append(chosen.get())
                     .append(": ").append(e.getMessage()).endl();
             return Optional.empty();
         }
-        return encoding;
+        return chosen;
     }
 }

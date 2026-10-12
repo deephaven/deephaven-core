@@ -64,10 +64,10 @@ public abstract class ClientConfig {
     }
 
     /**
-     * The gRPC message encodings this client advertises in {@code grpc-accept-encoding}, and so allows the server to
-     * compress responses with. Any of {@code gzip}, {@code zstd} and {@code snappy}; defaults to all three. The server
-     * only compresses tables that allow it, and picks the encoding from the table's own list. An empty set requests
-     * uncompressed responses.
+     * The compression types this client accepts, which it lists in its {@code grpc-accept-encoding} header, and so
+     * allows the server to compress responses with. Any of {@code gzip}, {@code zstd} and {@code snappy}; defaults to
+     * all three. The server only compresses tables that allow it, and picks the type from the table's own list. An
+     * empty set requests uncompressed responses.
      */
     @Default
     @SuppressWarnings("immutables:untype") // a defaulted set is set as a whole, without add methods

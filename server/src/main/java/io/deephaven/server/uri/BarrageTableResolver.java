@@ -50,9 +50,9 @@ public final class BarrageTableResolver implements UriResolver {
                     100 * 1024 * 1024); // 100MB default limit
 
     /**
-     * The gRPC message encodings that remote-table sessions advertise, as a comma-separated list of {@code gzip},
-     * {@code zstd} and {@code snappy}. When unset, sessions use the {@link ClientConfig#acceptCompression()} default;
-     * when blank, they advertise none and always receive uncompressed data.
+     * The compression types that remote-table sessions accept, as a comma-separated list of {@code gzip}, {@code zstd}
+     * and {@code snappy}. When unset, sessions use the {@link ClientConfig#acceptCompression()} default; when blank,
+     * they accept none and always receive uncompressed data.
      */
     public static final String ACCEPT_COMPRESSION_PROPERTY = "BarrageTableResolver.acceptCompression";
 

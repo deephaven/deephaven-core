@@ -11,8 +11,8 @@ import java.util.List;
 
 /**
  * Prints, as a Markdown table, the total wire size of a {@code DoGet}-style snapshot for every combination of
- * {@link DataShape}, row count and {@link MessageCodec} that {@link BarrageCompressionBenchmark} times. Every
- * configuration is verified to round trip before it is reported.
+ * {@link DataShape}, row count and compression type that {@link BarrageCompressionBenchmark} times, plus uncompressed.
+ * Every configuration is verified to round trip before it is reported.
  * <p>
  * Optional arguments narrow the report: {@code shape=MIXED}, {@code numRows=65536} (each may be comma separated).
  */
@@ -58,7 +58,7 @@ public class BarrageCompressionSizeReport {
         final BarrageCompressionHarness harness = new BarrageCompressionHarness(table);
         final List<byte[]> flightData = harness.serialize();
         final long baseline = totalBytes(flightData);
-        for (final MessageCodec codec : MessageCodec.values()) {
+        for (final MessageCodec codec : MessageCodec.all()) {
             final List<byte[]> wire = BarrageCompressionHarness.compressAll(flightData, codec);
             harness.verify(flightData, wire, codec);
             final long bytes = totalBytes(wire);

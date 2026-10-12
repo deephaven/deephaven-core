@@ -20,7 +20,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE} must stay on the table it was set on and not leak into derived tables.
  */
-public class BarrageCompressionAttributeTest {
+public class BarrageCompressionAttributeCopyTest {
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();

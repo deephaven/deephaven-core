@@ -8,6 +8,8 @@ import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.extensions.barrage.BarrageCompressionAttribute;
+import io.deephaven.grpc.compression.CompressionType;
 import io.deephaven.server.hierarchicaltable.HierarchicalTableView;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.ServerCallStreamObserver;
@@ -27,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 /**
- * Covers how {@link BarrageCompression} picks a response encoding, including for rollup and tree views, whose
+ * Covers how {@link BarrageCompression} picks a response compression type, including for rollup and tree views, whose
  * attributes come from the hierarchical table rather than from its source.
  */
 public class BarrageCompressionTest {
@@ -45,7 +47,7 @@ public class BarrageCompressionTest {
     }
 
     @Test
-    public void chooseFirstAllowedEncodingTheClientAccepts() {
+    public void chooseFirstAllowedTypeTheClientAccepts() {
         final Table table = TableTools.emptyTable(10)
                 .withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,snappy,gzip"));
 
@@ -53,6 +55,14 @@ public class BarrageCompressionTest {
         assertEquals(Optional.of("zstd"), apply(Set.of("identity", "gzip", "zstd"), table));
         assertEquals(Optional.empty(), apply(Set.of("identity", "deflate"), table));
         assertEquals(Optional.empty(), apply(Set.of(), table));
+    }
+
+    @Test
+    public void typesFromWithCompressionAreChosen() {
+        final Table table = BarrageCompressionAttribute.withCompression(TableTools.emptyTable(10),
+                CompressionType.SNAPPY, CompressionType.GZIP);
+        assertEquals(Optional.of("snappy"), apply(Set.of("gzip", "zstd", "snappy"), table));
+        assertEquals(Optional.of("gzip"), apply(Set.of("gzip", "deflate"), table));
     }
 
     @Test
@@ -105,7 +115,7 @@ public class BarrageCompressionTest {
     }
 
     /**
-     * Applies compression to a fresh recording observer and checks that the observer saw the returned encoding.
+     * Applies compression to a fresh recording observer and checks that the observer saw the returned compression type.
      */
     private static Optional<String> apply(
             final Set<String> accepted,

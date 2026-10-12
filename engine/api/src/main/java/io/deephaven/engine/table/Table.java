@@ -230,11 +230,14 @@ public interface Table extends
      */
     String BARRAGE_SCHEMA_ATTRIBUTE = "BarrageSchema";
     /**
-     * Set this attribute to a comma-separated, ordered list of gRPC message encodings (any of {@code gzip},
-     * {@code zstd} and {@code snappy}, e.g. {@code "zstd,snappy,gzip"}) to allow compressing this table's Barrage
-     * snapshots and subscriptions. The server uses the first listed encoding that the client advertises in its
-     * {@code grpc-accept-encoding} header, and sends uncompressed data when none match. Tables without this attribute
-     * are never compressed.
+     * A comma-separated, ordered list of compression types (any of {@code gzip}, {@code zstd} and {@code snappy}, e.g.
+     * {@code "zstd,snappy,gzip"}) that allows compressing this table's Barrage snapshots and subscriptions. The server
+     * uses the first listed type that the client accepts, as listed in its {@code grpc-accept-encoding} header, and
+     * sends uncompressed data when none match. Tables without this attribute are never compressed.
+     * <p>
+     * Prefer setting it with {@code io.deephaven.extensions.barrage.BarrageCompressionAttribute.withCompression}, which
+     * takes {@code io.deephaven.grpc.compression.CompressionType} values. The server ignores a value it cannot parse,
+     * and logs a warning when a client fetches the table.
      * <p>
      * The attribute is not copied to tables derived from this one, except by coalescing an uncoalesced source table.
      */

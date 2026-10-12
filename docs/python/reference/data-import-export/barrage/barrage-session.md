@@ -55,7 +55,7 @@ The PEM-encoded root certificates to use for TLS connection, or `None` to use sy
 </Param>
 <Param name="accept_compression" type="Union[str, Sequence[str]]" optional>
 
-The gRPC message encoding, or encodings, that the session can decode: any of `"gzip"`, `"zstd"`, and `"snappy"`. The remote server compresses only tables that allow one of these encodings; see [Compress Barrage data](../../../how-to-guides/performance/barrage-performance.md#compress-barrage-data). `None` accepts all three. An empty sequence accepts none, so data is always sent uncompressed. Defaults to `None`.
+The compression type, or types, that the session accepts: any of `"gzip"`, `"zstd"`, and `"snappy"`. The remote server compresses only tables that allow one of these types; see [Compress Barrage data](../../../how-to-guides/performance/barrage-performance.md#compress-barrage-data). `None` accepts all three. An empty sequence accepts none, so data is always sent uncompressed. Defaults to `None`.
 
 </Param>
 </ParamTable>

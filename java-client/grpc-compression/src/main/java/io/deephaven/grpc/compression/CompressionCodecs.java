@@ -10,28 +10,30 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * The gRPC message encodings Deephaven supports ({@code gzip}, {@code zstd} and {@code snappy}), their registries, and
- * the rule that picks a response encoding from a server-side allowed list and a client's {@code grpc-accept-encoding}.
+ * The gRPC registries for every {@link CompressionType}, and the rule that picks a response encoding from a server-side
+ * allowed list and a client's {@code grpc-accept-encoding}.
  */
 public final class CompressionCodecs {
 
-    public static final String GZIP = "gzip";
-    public static final String ZSTD = ZstdCodec.ENCODING;
-    public static final String SNAPPY = SnappyCodec.ENCODING;
-
     /**
-     * Every supported encoding name, excluding {@code identity}.
+     * The {@link CompressionType#encodingName() encoding name} of every {@link CompressionType}, excluding
+     * {@code identity}.
      */
-    public static final List<String> SUPPORTED = List.of(GZIP, ZSTD, SNAPPY);
+    public static final List<String> SUPPORTED = Arrays.stream(CompressionType.values())
+            .map(CompressionType::encodingName)
+            .collect(Collectors.toUnmodifiableList());
 
     private CompressionCodecs() {}
 
@@ -41,9 +43,9 @@ public final class CompressionCodecs {
     public static CompressorRegistry compressorRegistry() {
         final CompressorRegistry registry = CompressorRegistry.newEmptyInstance();
         registry.register(Codec.Identity.NONE);
-        registry.register(new Codec.Gzip());
-        registry.register(ZstdCodec.INSTANCE);
-        registry.register(SnappyCodec.INSTANCE);
+        for (final CompressionType type : CompressionType.values()) {
+            registry.register(type.codec());
+        }
         return registry;
     }
 
@@ -55,15 +57,15 @@ public final class CompressionCodecs {
      * @return the registry
      */
     public static DecompressorRegistry decompressorRegistry(@NotNull final Collection<String> advertised) {
-        final Set<String> advertise = new LinkedHashSet<>();
+        final Set<CompressionType> advertise = EnumSet.noneOf(CompressionType.class);
         for (final String name : advertised) {
-            advertise.add(checkSupported(name));
+            advertise.add(CompressionType.fromEncodingName(name));
         }
-        return DecompressorRegistry.emptyInstance()
-                .with(Codec.Identity.NONE, false)
-                .with(new Codec.Gzip(), advertise.contains(GZIP))
-                .with(ZstdCodec.INSTANCE, advertise.contains(ZSTD))
-                .with(SnappyCodec.INSTANCE, advertise.contains(SNAPPY));
+        DecompressorRegistry registry = DecompressorRegistry.emptyInstance().with(Codec.Identity.NONE, false);
+        for (final CompressionType type : CompressionType.values()) {
+            registry = registry.with(type.codec(), advertise.contains(type));
+        }
+        return registry;
     }
 
     /**
@@ -133,11 +135,6 @@ public final class CompressionCodecs {
      * @throws IllegalArgumentException if {@code name} is not {@link #SUPPORTED supported}
      */
     public static String checkSupported(@NotNull final String name) {
-        final String lower = name.trim().toLowerCase(Locale.ROOT);
-        if (!SUPPORTED.contains(lower)) {
-            throw new IllegalArgumentException(
-                    "Unsupported compression '" + name + "'; supported values are " + String.join(", ", SUPPORTED));
-        }
-        return lower;
+        return CompressionType.fromEncodingName(name).encodingName();
     }
 }

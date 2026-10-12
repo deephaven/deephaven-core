@@ -55,7 +55,7 @@ createJmhTask('jmhRunBarrageRoundTrip', 'BarrageMessageRoundTripBenchmark')
 
 createJmhTask('jmhRunBarrageCopyKernel', 'BarrageCopyKernelBenchmark')
 
-// gRPC message compression (gzip, zstd, snappy) of a DoGet snapshot; narrow it with JMH options, e.g.
+// gRPC message compression (every CompressionType) of a DoGet snapshot; narrow it with JMH options, e.g.
 // --args='BarrageCompressionBenchmark -p shape=MIXED -p numRows=65536'
 createJmhTask('jmhRunBarrageCompression', 'BarrageCompressionBenchmark')
 

@@ -3,8 +3,7 @@
 //
 package io.deephaven.benchmark.barrage;
 
-import io.deephaven.grpc.compression.SnappyCodec;
-import io.deephaven.grpc.compression.ZstdCodec;
+import io.deephaven.grpc.compression.CompressionType;
 import io.grpc.Codec;
 
 import java.io.ByteArrayInputStream;
@@ -13,25 +12,45 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * gRPC message compression, applied to each serialized {@code FlightData} message as a whole, using the same
- * {@link Codec} implementations the Deephaven server and Java client register. The 5-byte gRPC frame prefix is the same
- * size for every configuration and is not counted.
+ * gRPC message compression, applied to each serialized {@code FlightData} message as a whole, using the codec of a
+ * {@link CompressionType}: the same codec the Deephaven server and Java client register. The 5-byte gRPC frame prefix
+ * is the same size for every configuration and is not counted.
  */
-public enum MessageCodec {
-    IDENTITY(null),
-    /** grpc-java's built-in gzip codec (deflate level 6). */
-    GZIP(new Codec.Gzip()),
-    /** zstd at its default level 3. */
-    ZSTD(ZstdCodec.INSTANCE),
-    /** Snappy, framed. */
-    SNAPPY(SnappyCodec.INSTANCE);
+final class MessageCodec {
+    /** no compression; the baseline */
+    static final MessageCodec IDENTITY = new MessageCodec("IDENTITY", null);
 
+    private final String name;
     private final Codec codec;
 
-    MessageCodec(final Codec codec) {
+    private MessageCodec(final String name, final Codec codec) {
+        this.name = name;
         this.codec = codec;
+    }
+
+    static MessageCodec of(final CompressionType type) {
+        return new MessageCodec(type.name(), type.codec());
+    }
+
+    /**
+     * @return {@link #IDENTITY} followed by every {@link CompressionType}
+     */
+    static List<MessageCodec> all() {
+        final List<MessageCodec> codecs = new ArrayList<>();
+        codecs.add(IDENTITY);
+        for (final CompressionType type : CompressionType.values()) {
+            codecs.add(of(type));
+        }
+        return codecs;
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 
     byte[] compress(final byte[] message) {

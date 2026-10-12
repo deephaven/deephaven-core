@@ -55,8 +55,8 @@ public class ConnectOptions {
     Map<String, String> headers;
 
     @Option(names = {"--accept-compression"}, split = ",",
-            description = "The gRPC message encodings to advertise (gzip, zstd, snappy); "
-                    + "defaults to all three. Pass an empty value to advertise none.")
+            description = "The compression types to accept (gzip, zstd, snappy); "
+                    + "defaults to all three. Pass an empty value to accept none.")
     Set<String> acceptCompression;
 
     public ClientConfig config() {

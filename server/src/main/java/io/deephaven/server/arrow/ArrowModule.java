@@ -35,7 +35,7 @@ public abstract class ArrowModule {
 
     @Binds
     @IntoSet
-    abstract ServerInterceptor bindClientAcceptEncodingInterceptor(ClientAcceptEncodingInterceptor interceptor);
+    abstract ServerInterceptor bindClientAcceptCompressionInterceptor(ClientAcceptCompressionInterceptor interceptor);
 
     @Provides
     @Singleton

@@ -5,6 +5,7 @@ package io.deephaven.benchmark.barrage;
 
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.grpc.compression.CompressionType;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -26,8 +27,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Times gRPC message compression ({@link MessageCodec}) of a full {@code DoGet}-style snapshot of a static table. Each
- * invocation processes the whole table; run {@link BarrageCompressionSizeReport} for the matching wire sizes.
+ * Times gRPC message compression ({@link CompressionType}) of a full {@code DoGet}-style snapshot of a static table.
+ * Each invocation processes the whole table; run {@link BarrageCompressionSizeReport} for the matching wire sizes.
  * <ul>
  * <li>{@link #compress} and {@link #decompress} time only the compression work, starting from and ending at serialized
  * bytes.</li>
@@ -50,7 +51,10 @@ public class BarrageCompressionBenchmark {
     @Param({"1024", "65536", "1048576"})
     private int numRows;
 
-    @Param({"GZIP", "ZSTD", "SNAPPY"})
+    /** every {@link CompressionType}, since no values are listed */
+    @Param
+    private CompressionType compression;
+
     private MessageCodec codec;
 
     private SafeCloseable executionContext;
@@ -63,6 +67,7 @@ public class BarrageCompressionBenchmark {
     @Setup(Level.Trial)
     public void setup() {
         executionContext = TestExecutionContext.createForUnitTests().open();
+        codec = MessageCodec.of(compression);
         final Table table = shape.makeTable(numRows);
         harness = new BarrageCompressionHarness(table);
         flightData = harness.serialize();

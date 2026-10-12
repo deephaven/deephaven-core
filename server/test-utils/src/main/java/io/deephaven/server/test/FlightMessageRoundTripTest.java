@@ -29,6 +29,7 @@ import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.grpc.compression.CompressionCodecs;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.plugin.Registration;
@@ -110,6 +111,7 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import static org.junit.Assert.*;
@@ -1740,7 +1742,7 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
-    public void testCompressionUsesFirstAllowedEncodingTheClientAccepts() throws Exception {
+    public void testCompressionUsesFirstAllowedTypeTheClientAccepts() throws Exception {
         final Table table = compressionTestTable("zstd,snappy,gzip");
         assertEquals(expectedEncodings("zstd"), fetchWithCompression(table, Set.of("gzip", "zstd", "snappy")));
         assertEquals(expectedEncodings("snappy"), fetchWithCompression(table, Set.of("gzip", "snappy")));
@@ -1764,6 +1766,110 @@ public abstract class FlightMessageRoundTripTest {
     public void testMalformedCompressionAttributeIsIgnored() throws Exception {
         assertEquals(expectedEncodings("identity"),
                 fetchWithCompression(compressionTestTable("zstd,lz4"), Set.of("gzip", "zstd", "snappy")));
+    }
+
+    /**
+     * Compresses every DoPut request with {@code compression}, and records the {@code grpc-encoding} each one was sent
+     * with and its uncompressed and on-the-wire sizes.
+     */
+    private static final class RequestCompressionRecorder implements ClientInterceptor {
+        private final String compression;
+        private final List<String> sentEncodings = Collections.synchronizedList(new ArrayList<>());
+        private final AtomicLong uncompressedBytes = new AtomicLong();
+        private final AtomicLong wireBytes = new AtomicLong();
+
+        private RequestCompressionRecorder(final String compression) {
+            this.compression = compression;
+        }
+
+        @Override
+        public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
+                final MethodDescriptor<ReqT, RespT> method,
+                final CallOptions callOptions,
+                final Channel next) {
+            if (!"DoPut".equals(method.getBareMethodName())) {
+                return next.newCall(method, callOptions);
+            }
+            // the tracer sees the request headers after gRPC adds grpc-encoding, and the size of every message sent
+            final ClientStreamTracer.Factory tracerFactory = new ClientStreamTracer.Factory() {
+                @Override
+                public ClientStreamTracer newClientStreamTracer(
+                        final ClientStreamTracer.StreamInfo info,
+                        final Metadata headers) {
+                    sentEncodings.add(headers.get(GRPC_ENCODING));
+                    return new ClientStreamTracer() {
+                        @Override
+                        public void outboundUncompressedSize(final long bytes) {
+                            uncompressedBytes.addAndGet(bytes);
+                        }
+
+                        @Override
+                        public void outboundWireSize(final long bytes) {
+                            wireBytes.addAndGet(bytes);
+                        }
+                    };
+                }
+            };
+            return next.newCall(method,
+                    callOptions.withCompression(compression).withStreamTracerFactory(tracerFactory));
+        }
+    }
+
+    /**
+     * Uploads {@code table} with a DoPut whose request messages are compressed with {@code compression}, and checks
+     * that they were sent compressed and that the server rebuilt the table intact.
+     */
+    private void putWithRequestCompression(final Table table, final String compression) throws Exception {
+        final Flight.Ticket sourceTicket = FlightExportTicketHelper.exportIdToFlightTicket(nextTicket++);
+        currentSession.newExport(sourceTicket, "test").submit(() -> table);
+
+        final RequestCompressionRecorder recorder = new RequestCompressionRecorder(compression);
+        final ClientConfig config = ClientConfig.builder()
+                .target(io.deephaven.uri.DeephavenTarget.of(java.net.URI.create("dh+plain://localhost:" + localPort)))
+                .build();
+        // ChannelHelper registers only decompressors; a client that compresses requests needs the compressors too
+        final ManagedChannel channel = ChannelHelper.channelBuilder(config)
+                .compressorRegistry(CompressionCodecs.compressorRegistry())
+                .intercept(recorder)
+                .intercept(new TestAuthClientInterceptor(currentSession.getExpiration().token.toString()))
+                .build();
+        final int uploadTicket = nextTicket++;
+        try (final FlightClient putClient = FlightGrpcUtils.createFlightClientWithSharedChannel(allocator, channel);
+                final FlightStream source =
+                        flightClient.getStream(new Ticket(sourceTicket.getTicket().toByteArray()))) {
+            final FlightClient.ClientStreamListener putStream = putClient.startPut(
+                    FlightDescriptor.path("export", Integer.toString(uploadTicket)),
+                    source.getRoot(),
+                    new AsyncPutListener());
+            while (source.next()) {
+                putStream.putNext();
+            }
+            putStream.completed();
+            putStream.getResult();
+        } finally {
+            channel.shutdownNow();
+            channel.awaitTermination(10, TimeUnit.SECONDS);
+        }
+
+        assertEquals(List.of(compression), recorder.sentEncodings);
+        assertTrue(compression + " sent " + recorder.wireBytes + " bytes for " + recorder.uncompressedBytes,
+                recorder.wireBytes.get() < recorder.uncompressedBytes.get());
+
+        final CompletableFuture<Table> uploaded = new CompletableFuture<>();
+        final SessionState.ExportObject<Table> export = currentSession.getExport(uploadTicket);
+        currentSession.nonExport()
+                .onErrorHandler(error -> uploaded.completeExceptionally(error))
+                .require(export)
+                .submit(() -> uploaded.complete(export.get()));
+        io.deephaven.engine.testutil.TstUtils.assertTableEquals(table, uploaded.get(30, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testServerAcceptsCompressedRequests() throws Exception {
+        final Table table = compressionTestTable(null);
+        for (final String compression : CompressionCodecs.SUPPORTED) {
+            putWithRequestCompression(table, compression);
+        }
     }
 
     // endregion gRPC message compression

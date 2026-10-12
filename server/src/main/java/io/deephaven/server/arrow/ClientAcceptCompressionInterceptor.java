@@ -17,30 +17,30 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * Captures the message encodings a client advertises in its {@code grpc-accept-encoding} header, so that Barrage
- * handlers can pick a response encoding once they know which table is being sent.
+ * Captures the compression types a client accepts, as listed in its {@code grpc-accept-encoding} header, so that
+ * Barrage handlers can pick a response compression once they know which table is being sent.
  * <p>
- * The value is only visible on the gRPC thread that handles the call; handlers must read {@link #acceptedEncodings()}
+ * The value is only visible on the gRPC thread that handles the call; handlers must read {@link #acceptedCompression()}
  * at entry and carry it to any work they schedule elsewhere.
  */
 @Singleton
-public class ClientAcceptEncodingInterceptor implements ServerInterceptor {
+public class ClientAcceptCompressionInterceptor implements ServerInterceptor {
 
     private static final Metadata.Key<String> ACCEPT_ENCODING_HEADER =
             Metadata.Key.of("grpc-accept-encoding", Metadata.ASCII_STRING_MARSHALLER);
 
-    private static final Context.Key<Set<String>> ACCEPTED_ENCODINGS_KEY =
-            Context.key("deephaven-accepted-encodings");
+    private static final Context.Key<Set<String>> ACCEPTED_COMPRESSION_KEY =
+            Context.key("deephaven-accepted-compression");
 
     @Inject
-    public ClientAcceptEncodingInterceptor() {}
+    public ClientAcceptCompressionInterceptor() {}
 
     /**
-     * @return the encodings the current call's client advertised, or an empty set if it advertised none or this is not
+     * @return the compression types the current call's client accepts, or an empty set if it listed none or this is not
      *         a gRPC thread handling a call
      */
-    public static Set<String> acceptedEncodings() {
-        final Set<String> accepted = ACCEPTED_ENCODINGS_KEY.get();
+    public static Set<String> acceptedCompression() {
+        final Set<String> accepted = ACCEPTED_COMPRESSION_KEY.get();
         return accepted == null ? Set.of() : accepted;
     }
 
@@ -57,7 +57,7 @@ public class ClientAcceptEncodingInterceptor implements ServerInterceptor {
         for (final String value : values) {
             accepted.addAll(CompressionCodecs.parseAcceptEncoding(value));
         }
-        final Context context = Context.current().withValue(ACCEPTED_ENCODINGS_KEY, Set.copyOf(accepted));
+        final Context context = Context.current().withValue(ACCEPTED_COMPRESSION_KEY, Set.copyOf(accepted));
         return Contexts.interceptCall(context, call, headers, next);
     }
 }

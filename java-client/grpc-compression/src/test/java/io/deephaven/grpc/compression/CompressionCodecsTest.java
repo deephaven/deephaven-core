@@ -107,7 +107,7 @@ public class CompressionCodecsTest {
         assertThatThrownBy(() -> CompressionCodecs.parseList("zstd,identity"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("identity")
-                .hasMessageContaining("gzip, zstd, snappy");
+                .hasMessageContaining("zstd, gzip, snappy");
     }
 
     @Test
