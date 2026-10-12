@@ -367,6 +367,35 @@ The snippets in the following sections use these variables from the application:
 - `flightScheduler` is a [`ScheduledExecutorService`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html), such as one created with `Executors.newScheduledThreadPool(4)`. It runs the client's background work, including refreshing the session token.
 - `place` is the location the user typed.
 - `log` is the application's logger, a Deephaven [`Logger`](/core/javadoc/io/deephaven/io/logger/Logger.html). Substitute your application's own logger.
+- `managedChannel` and `barrageSession` are fields of type `ManagedChannel` and `BarrageSession`, which the snippets below assign.
+
+They also use these imports:
+
+```java
+import io.deephaven.client.impl.BarrageSession;
+import io.deephaven.client.impl.BarrageSessionFactory;
+import io.deephaven.client.impl.BarrageSubscription;
+import io.deephaven.client.impl.ConsoleSession;
+import io.deephaven.client.impl.DaggerDeephavenBarrageRoot;
+import io.deephaven.client.impl.TableHandle;
+import io.deephaven.client.impl.script.Changes;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.qst.table.TicketTable;
+import io.deephaven.util.SafeCloseable;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.memory.RootAllocator;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+```
 
 ### Connect to the server
 
