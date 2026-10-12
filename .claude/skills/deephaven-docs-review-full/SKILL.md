@@ -289,7 +289,7 @@ belongs. A replacement sentence should be no longer or more qualified than it ne
 correct.
 
 Then run `deephaven-core-accuracy-spot-check` on every sentence the fix pass wrote or rewrote,
-before the change is pushed. The accuracy step (step 2) ran against the page as it was; a
+before the change is pushed. The Accuracy step ran against the page as it was; a
 restructure that adds a summary table, a new intro sentence, or a reworded takeaway produces
 claims that step never saw. Those are the sentences most likely to overstate, because they
 compress several verified sentences into one: a table cell that turns a contract phrased as "never invoked
