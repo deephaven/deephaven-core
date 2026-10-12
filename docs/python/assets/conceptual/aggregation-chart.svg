@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200" width="1600" height="1200" font-family="Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e1e1e"/></marker></defs>
+<rect width="1600" height="1200" fill="#ffffff"/>
+<line x1="280" y1="90" x2="280" y2="195" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="292.0" y="149.5" font-size="20" fill="#1e1e1e">No</text>
+<line x1="280" y1="275" x2="280" y2="380" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="292.0" y="334.5" font-size="20" fill="#1e1e1e">No</text>
+<line x1="280" y1="460" x2="280" y2="565" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="292.0" y="519.5" font-size="20" fill="#1e1e1e">No</text>
+<line x1="280" y1="645" x2="280" y2="750" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="292.0" y="704.5" font-size="20" fill="#1e1e1e">No</text>
+<line x1="280" y1="830" x2="280" y2="935" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="292.0" y="889.5" font-size="20" fill="#1e1e1e">No</text>
+<line x1="520" y1="235" x2="640" y2="235" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="580.0" y="225.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Yes</text>
+<line x1="520" y1="420" x2="640" y2="420" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="580.0" y="410.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Yes</text>
+<line x1="520" y1="605" x2="640" y2="605" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="580.0" y="595.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Yes</text>
+<line x1="520" y1="790" x2="640" y2="790" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="580.0" y="780.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Yes</text>
+<line x1="520" y1="975" x2="640" y2="975" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="580.0" y="965.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Yes</text>
+<line x1="280" y1="1015" x2="280" y2="1120" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="292.0" y="1074.5" font-size="20" fill="#1e1e1e">No</text>
+<line x1="520" y1="50" x2="1000" y2="50" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="760.0" y="40.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Yes</text>
+<line x1="1150" y1="90" x2="1150" y2="195" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="1162.0" y="149.5" font-size="20" fill="#1e1e1e">No</text>
+<line x1="1150" y1="275" x2="1150" y2="380" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="1162.0" y="334.5" font-size="20" fill="#1e1e1e">No</text>
+<line x1="1150" y1="460" x2="1150" y2="565" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="1162.0" y="519.5" font-size="20" fill="#1e1e1e">No</text>
+<line x1="1300" y1="50" x2="1390" y2="50" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="1345.0" y="40.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Yes</text>
+<line x1="1300" y1="235" x2="1390" y2="235" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="1345.0" y="225.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Yes</text>
+<line x1="1300" y1="420" x2="1390" y2="420" stroke="#1e1e1e" stroke-width="2" marker-end="url(#a)"/>
+<text x="1345.0" y="410.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Yes</text>
+<rect x="40" y="10" width="480" height="80" rx="14" fill="#fff3bf" stroke="#f59e0b" stroke-width="2"/>
+<text x="280.0" y="43.4" font-size="22" fill="#1e1e1e" text-anchor="middle">Need a value on</text>
+<text x="280.0" y="70.9" font-size="22" fill="#1e1e1e" text-anchor="middle">every source row?</text>
+<rect x="40" y="195" width="480" height="80" rx="14" fill="#fff3bf" stroke="#f59e0b" stroke-width="2"/>
+<text x="280.0" y="228.4" font-size="22" fill="#1e1e1e" text-anchor="middle">Need a separate table</text>
+<text x="280.0" y="255.9" font-size="22" fill="#1e1e1e" text-anchor="middle">for each group?</text>
+<rect x="40" y="380" width="480" height="80" rx="14" fill="#fff3bf" stroke="#f59e0b" stroke-width="2"/>
+<text x="280.0" y="413.4" font-size="22" fill="#1e1e1e" text-anchor="middle">Need an expandable</text>
+<text x="280.0" y="440.9" font-size="22" fill="#1e1e1e" text-anchor="middle">hierarchy in the UI?</text>
+<rect x="40" y="565" width="480" height="80" rx="14" fill="#fff3bf" stroke="#f59e0b" stroke-width="2"/>
+<text x="280.0" y="598.4" font-size="22" fill="#1e1e1e" text-anchor="middle">Need each group's rows</text>
+<text x="280.0" y="625.9" font-size="22" fill="#1e1e1e" text-anchor="middle">kept as vectors?</text>
+<rect x="40" y="750" width="480" height="80" rx="14" fill="#fff3bf" stroke="#f59e0b" stroke-width="2"/>
+<text x="280.0" y="783.4" font-size="22" fill="#1e1e1e" text-anchor="middle">Need several or custom</text>
+<text x="280.0" y="810.9" font-size="22" fill="#1e1e1e" text-anchor="middle">statistics per group?</text>
+<rect x="40" y="935" width="480" height="80" rx="14" fill="#fff3bf" stroke="#f59e0b" stroke-width="2"/>
+<text x="280.0" y="968.4" font-size="22" fill="#1e1e1e" text-anchor="middle">Need the first or last</text>
+<text x="280.0" y="995.9" font-size="22" fill="#1e1e1e" text-anchor="middle">row of each group?</text>
+<rect x="640" y="200" width="320" height="70" rx="14" fill="#ffd8a8" stroke="#f59e0b" stroke-width="2"/>
+<text x="800.0" y="229.0" font-size="20" fill="#1e1e1e" text-anchor="middle">partition_by</text>
+<text x="800.0" y="254.0" font-size="20" fill="#1e1e1e" text-anchor="middle">returns a PartitionedTable</text>
+<rect x="640" y="385" width="320" height="70" rx="14" fill="#ffd8a8" stroke="#f59e0b" stroke-width="2"/>
+<text x="800.0" y="414.0" font-size="20" fill="#1e1e1e" text-anchor="middle">rollup</text>
+<text x="800.0" y="439.0" font-size="20" fill="#1e1e1e" text-anchor="middle">returns a RollupTable</text>
+<rect x="640" y="570" width="320" height="70" rx="14" fill="#d0bfff" stroke="#8b5cf6" stroke-width="2"/>
+<text x="800.0" y="599.0" font-size="20" fill="#1e1e1e" text-anchor="middle">group_by</text>
+<text x="800.0" y="624.0" font-size="20" fill="#1e1e1e" text-anchor="middle">one row of vectors per group</text>
+<rect x="640" y="755" width="320" height="70" rx="14" fill="#b2f2bb" stroke="#22c55e" stroke-width="2"/>
+<text x="800.0" y="784.0" font-size="20" fill="#1e1e1e" text-anchor="middle">agg_by</text>
+<text x="800.0" y="809.0" font-size="20" fill="#1e1e1e" text-anchor="middle">agg.sum_, agg.avg, agg.formula</text>
+<rect x="640" y="940" width="320" height="70" rx="14" fill="#b2f2bb" stroke="#22c55e" stroke-width="2"/>
+<text x="800.0" y="969.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Single aggregation</text>
+<text x="800.0" y="994.0" font-size="20" fill="#1e1e1e" text-anchor="middle">first_by, last_by</text>
+<rect x="40" y="1120" width="480" height="70" rx="14" fill="#b2f2bb" stroke="#22c55e" stroke-width="2"/>
+<text x="280.0" y="1149.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Single aggregation</text>
+<text x="280.0" y="1174.0" font-size="20" fill="#1e1e1e" text-anchor="middle">sum_by, avg_by, count_by, ...</text>
+<rect x="1000" y="10" width="300" height="80" rx="14" fill="#fff3bf" stroke="#f59e0b" stroke-width="2"/>
+<text x="1150.0" y="44.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Accumulate from</text>
+<text x="1150.0" y="69.0" font-size="20" fill="#1e1e1e" text-anchor="middle">the first row?</text>
+<rect x="1000" y="195" width="300" height="80" rx="14" fill="#fff3bf" stroke="#f59e0b" stroke-width="2"/>
+<text x="1150.0" y="229.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Weight recent values</text>
+<text x="1150.0" y="254.0" font-size="20" fill="#1e1e1e" text-anchor="middle">more heavily?</text>
+<rect x="1000" y="380" width="300" height="80" rx="14" fill="#fff3bf" stroke="#f59e0b" stroke-width="2"/>
+<text x="1150.0" y="414.0" font-size="20" fill="#1e1e1e" text-anchor="middle">Is the window</text>
+<text x="1150.0" y="439.0" font-size="20" fill="#1e1e1e" text-anchor="middle">sized by time?</text>
+<rect x="1390" y="15" width="190" height="70" rx="14" fill="#a5d8ff" stroke="#4a9eed" stroke-width="2"/>
+<text x="1485.0" y="44.0" font-size="20" fill="#1e1e1e" text-anchor="middle">update_by</text>
+<text x="1485.0" y="69.0" font-size="20" fill="#1e1e1e" text-anchor="middle">cum_sum, cum_max</text>
+<rect x="1390" y="200" width="190" height="70" rx="14" fill="#a5d8ff" stroke="#4a9eed" stroke-width="2"/>
+<text x="1485.0" y="229.0" font-size="20" fill="#1e1e1e" text-anchor="middle">update_by</text>
+<text x="1485.0" y="254.0" font-size="20" fill="#1e1e1e" text-anchor="middle">ema_tick, ema_time</text>
+<rect x="1390" y="385" width="190" height="70" rx="14" fill="#a5d8ff" stroke="#4a9eed" stroke-width="2"/>
+<text x="1485.0" y="414.0" font-size="20" fill="#1e1e1e" text-anchor="middle">update_by</text>
+<text x="1485.0" y="439.0" font-size="20" fill="#1e1e1e" text-anchor="middle">rolling_*_time</text>
+<rect x="1000" y="565" width="300" height="70" rx="14" fill="#a5d8ff" stroke="#4a9eed" stroke-width="2"/>
+<text x="1150.0" y="594.0" font-size="20" fill="#1e1e1e" text-anchor="middle">update_by</text>
+<text x="1150.0" y="619.0" font-size="20" fill="#1e1e1e" text-anchor="middle">rolling_*_tick</text>
+<text x="1000" y="730" font-size="20" fill="#757575">Every operation except partition_by also</text>
+<text x="1000" y="756" font-size="20" fill="#757575">works with no key columns (by).</text>
+<text x="1000" y="782" font-size="20" fill="#757575"></text>
+<text x="1000" y="808" font-size="20" fill="#757575">Blink tables: group_by and partition_by are</text>
+<text x="1000" y="834" font-size="20" fill="#757575">not supported. Most other aggregations summarize</text>
+<text x="1000" y="860" font-size="20" fill="#757575">all rows seen since they started.</text>
+</svg>

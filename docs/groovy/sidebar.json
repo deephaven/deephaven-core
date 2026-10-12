@@ -118,6 +118,10 @@
               {
                 "label": "Column types",
                 "path": "conceptual/column-types.md"
+              },
+              {
+                "label": "Aggregations",
+                "path": "conceptual/aggregations.md"
               }
             ]
           },
