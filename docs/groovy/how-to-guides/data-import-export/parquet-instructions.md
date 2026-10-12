@@ -4,7 +4,7 @@ title: Parquet instructions
 
 [`readTable`](../../reference/data-import-export/Parquet/readTable.md), [`writeTable`](../../reference/data-import-export/Parquet/writeTable.md), and [`writeKeyValuePartitionedTable`](../../reference/data-import-export/Parquet/writeKeyValuePartitionedTable.md) take their options as an instance of the [`ParquetInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.html) class. Use this class to specify the layout of the Parquet files, the table definition, and how the files are compressed and encoded.
 
-To read or write Parquet files on S3, pass an [`S3Instructions`](#s3instructions) instance with the connection settings to the builder's [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method.
+To read or write Parquet files on S3, S3-compatible stores, or Google Cloud Storage, pass an [`S3Instructions`](#s3instructions) instance with the connection settings to the builder's [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method.
 
 ## `ParquetInstructions`
 
@@ -169,7 +169,7 @@ The `ParquetInstructions` class also has the following methods:
 
 ## `S3Instructions`
 
-To read Parquet files from or write them to S3, pass an [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) instance to the [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method of [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html). Create the instance with [`S3Instructions.builder`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html#builder()), call the builder's methods to set options, and then call [`build`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.Builder.html#build()):
+To read Parquet files from or write them to S3, S3-compatible stores, or Google Cloud Storage, pass an [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) instance to the [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method of [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html). Create the instance with [`S3Instructions.builder`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html#builder()), call the builder's methods to set options, and then call [`build`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.Builder.html#build()):
 
 ```groovy order=null
 import io.deephaven.extensions.s3.S3Instructions

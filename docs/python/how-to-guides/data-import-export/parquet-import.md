@@ -224,7 +224,7 @@ The `col_instructions` argument to `parquet.read` takes a list of [`ColumnInstru
 
 [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) has the following arguments:
 
-- `column_name`: The Deephaven column name. The codec and `unsigned_long_target` settings take effect only when it is set. Required when writing.
+- `column_name`: The Deephaven column name. Required when reading and when writing.
 - `parquet_column_name`: The name of the corresponding column in the Parquet dataset. Required when reading.
 - `codec_name`: The fully qualified name of an [`ObjectCodec`](/core/javadoc/io/deephaven/util/codec/ObjectCodec.html) class that serializes the column's values to and from bytes, such as `io.deephaven.util.codec.LocalDateCodec`. Use a codec for types that have no language-agnostic Parquet representation. This is not a compression codec.
 - `codec_args`: An implementation-specific argument string passed to the codec named by `codec_name`.

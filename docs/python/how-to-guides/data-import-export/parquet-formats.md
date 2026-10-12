@@ -75,7 +75,7 @@ Deephaven maps Parquet [logical types](https://github.com/apache/parquet-format/
 
 `BigInteger` represents every `UINT_64` value exactly but allocates an object per value. To read the column as a primitive `long` instead, pass [`read`](../../reference/data-import-export/Parquet/readTable.md) a [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) for the column.
 
-The `ColumnInstruction` must set `parquet_column_name`, which `read` requires on every `ColumnInstruction`, and `column_name`. If you don't set `column_name`, Deephaven ignores `unsigned_long_target`.
+When reading, every `ColumnInstruction` must set both `parquet_column_name` and `column_name`. Omitting either raises an error.
 
 Set `unsigned_long_target` to one of two [`UnsignedLongTarget`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.UnsignedLongTarget) options:
 

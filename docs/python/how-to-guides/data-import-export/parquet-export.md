@@ -270,7 +270,7 @@ The [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write
   - [`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md) with a regular table: Writes the indexes on the source table, except single-column indexes on a partitioning column.
   - [`batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write): Writes the indexes on the first table.
   - `write_partitioned` with a partitioned table: Writes no indexes.
-- `special_instructions`: Connection details for writing to S3, provided as an [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) instance. See [Special instructions (S3 and GCS)](#special-instructions-s3-and-gcs).
+- `special_instructions`: Connection details for writing to S3 or Google Cloud Storage, provided as an [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) instance. See [Special instructions (S3 and GCS)](#special-instructions-s3-and-gcs).
 
 [`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md) also accepts a `base_name` argument, which sets the names of the Parquet files it writes in each partition directory.
 
