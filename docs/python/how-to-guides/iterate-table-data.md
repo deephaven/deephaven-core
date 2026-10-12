@@ -60,7 +60,9 @@ The row-based methods also let you choose a chunk size with the `chunk_size` arg
 
 Set the number of rows in each chunk with the `chunk_size` argument. The default is 2048 rows.
 
-Null values in primitive columns arrive as Deephaven's [null constants](../reference/query-language/types/nulls.md), not as `None` or `NaN`. For example, a null `int` value arrives as `-2147483648`, the value of `NULL_INT`. This applies to the row-based methods as well as the chunk-based ones. Null values in object columns, such as `String` or `Boolean` columns, arrive as `None`.
+Null values in primitive columns arrive as Deephaven's [null constants](../reference/query-language/types/nulls.md), not as `None` or `NaN`. For example, a null `int` value arrives as `-2147483648`, the value of `NULL_INT`. This applies to the row-based methods as well as the chunk-based ones.
+
+Null values in object columns arrive differently in the two kinds of method. The row-based methods return `None`. The chunk-based methods convert each column to a NumPy array, so a null `String` arrives as the string `"None"`, a null `Instant` arrives as `NaT`, and a null `Boolean` arrives as `True`. If a `String` or `Boolean` column can contain nulls, use a row-based method, or filter out the nulls with [`where`](../reference/table-operations/filter/where.md) before you iterate.
 
 The following example iterates over a table one chunk of rows at a time and prints its values. The table has 10 rows and the chunk size is 5, so each loop body runs twice, once per chunk:
 
@@ -146,7 +148,7 @@ Unpacking values in the `for` statement, as in `for x, y in source.iter_tuple()`
 
 There are two ways to guard against these problems:
 
-- Access values by name inside the loop. Use [`iter_dict`](../reference/data-import-export/iterate/iter-dict.md) or [`iter_chunk_dict`](../reference/data-import-export/iterate/iter-chunk-dict.md), or use [`iter_tuple`](../reference/data-import-export/iterate/iter-tuple.md) or [`iter_chunk_tuple`](../reference/data-import-export/iterate/iter-chunk-tuple.md) either without a column list or with the columns listed in table order.
+- Access values by name inside the loop. Use [`iter_dict`](../reference/data-import-export/iterate/iter-dict.md) or [`iter_chunk_dict`](../reference/data-import-export/iterate/iter-chunk-dict.md), or use [`iter_tuple`](../reference/data-import-export/iterate/iter-tuple.md) or [`iter_chunk_tuple`](../reference/data-import-export/iterate/iter-chunk-tuple.md) without a column list.
 - Use [`view`](../reference/table-operations/select/view.md) to put the columns in the order you unpack them before you iterate.
 
 In the following example, `reordered` has the same columns as `source`, but in the order `Y`, `X`. Accessing values by name gives the right values, positional unpacking assigns the `Y` values to `x`, and calling [`view`](../reference/table-operations/select/view.md) first restores the correct order:
@@ -177,7 +179,7 @@ for x, y in reordered.view(["X", "Y"]).iter_tuple():
 The [update graph](../conceptual/dag.md#update-graph-ug-cycles) processes table updates in cycles. When you iterate over a [refreshing table](../conceptual/table-types.md), Deephaven can lock the update graph for the whole iteration. The lock stops the table from updating, so all of the values come from one consistent view of the table. Iteration runs under an update graph lock in the following cases:
 
 - Code you run in the console or in a script already holds the update graph's [exclusive lock](../conceptual/query-engine/engine-locking.md#exclusive-lock), so no table can update until the code finishes.
-- On a thread you start yourself, the iterator acquires the update graph's [shared lock](../conceptual/query-engine/engine-locking.md#shared-lock) when [`auto_locking`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking) is enabled, unless the thread already holds an update graph lock or is otherwise marked as safe to run table operations without one. `auto_locking` is enabled by default. The iterator holds the lock until the generator is exhausted, closed, or destroyed.
+- On a thread you start yourself, the iterator acquires the update graph's [shared lock](../conceptual/query-engine/engine-locking.md#shared-lock) and holds it until the generator is exhausted, closed, or destroyed. It does this only when [`auto_locking`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking) is enabled, which it is by default, and the thread isn't already marked as safe to run table operations without a lock.
 - Code on your own thread already holds a lock it acquired explicitly, for example with [`update_graph.shared_lock`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock). The iterator uses that lock instead of acquiring another one.
 
 Code that runs as part of an update cycle, such as a [table listener](./table-listeners-python.md) callback, doesn't acquire a lock, because the update graph is already processing that cycle.

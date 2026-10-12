@@ -18,7 +18,7 @@ When listening to changes in a single table, use the Deephaven [`listen`](/core/
 
 ## Listen to one ticking table
 
-Pass a listener function or a listener class instance to [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) to register it with a table. The listener starts receiving updates as soon as it is registered.
+Pass a listener function or a listener class instance to [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) to register it with a table. The table must be refreshing; `listen` raises an error for a static table. The listener starts receiving updates as soon as it is registered.
 
 ### With a listener function
 
@@ -66,17 +66,17 @@ class ExampleListener(TableListener):
         print(f"is_replay: {is_replay}")
 
 
-listener_class = ExampleListener()
+listener_instance = ExampleListener()
 
 table = time_table("PT1S").update(formulas=["X = i"]).tail(5)
-handle = listen(table, listener_class)
+handle = listen(table, listener_instance)
 ```
 
 ![`table` updates while the listener prints updates to the log](../assets/how-to/listener-class.gif)
 
 ## Listen to multiple ticking tables
 
-Pass a merged listener function or a [`MergedListener`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.MergedListener) instance to [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen), along with the list of tables to listen to. The listener starts receiving updates as soon as it is registered.
+Pass a merged listener function or a [`MergedListener`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.MergedListener) instance to [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen), along with the list of tables to listen to. The list must contain at least two tables, and each must be refreshing. The listener starts receiving updates as soon as it is registered.
 
 ### With a merged listener function
 
@@ -87,12 +87,12 @@ A merged listener function takes two arguments:
 
 The following example listens to two time tables, one ticking every two seconds and the other ticking every three seconds. `updates[t1]` and `updates[t2]` return a [`TableUpdate`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate) object if that table changed during the update cycle, and `None` otherwise.
 
-```python ticking-table order=null
+```python ticking-table order=null reset
 from deephaven.table_listener import merged_listen
 from deephaven import time_table
 
-t1 = time_table("PT2s").update(["X = i"])
-t2 = time_table("PT3s").update(["Y = ii"])
+t1 = time_table("PT2S").update(["X = i"])
+t2 = time_table("PT3S").update(["Y = ii"])
 
 
 def listener_function(updates, is_replay):
@@ -116,7 +116,7 @@ Subclass [`MergedListener`](/core/pydoc/code/deephaven.table_listener.html#deeph
 
 Listener classes are useful in cases where the listener must keep track of state. In this example, the listener keeps track of how many times it has been called.
 
-```python ticking-table order=null
+```python ticking-table order=null reset
 from deephaven.table_listener import merged_listen, MergedListener
 from deephaven import time_table
 
@@ -138,8 +138,8 @@ class ExampleListener(MergedListener):
         print(f"is_replay: {is_replay}")
 
 
-listener_class = ExampleListener()
-handle = merged_listen([source1, source2], listener_class)
+listener_instance = ExampleListener()
+handle = merged_listen([source1, source2], listener_instance)
 ```
 
 ![Log output from the listener](../assets/how-to/merged-listen-class.gif)
@@ -167,7 +167,7 @@ def listener_function(update, is_replay):
     print(data_added)
 
 
-source = time_table("PT1s").update("X = i").tail(5)
+source = time_table("PT1S").update("X = i").tail(5)
 
 handle = listen(source, listener_function)
 ```
@@ -193,14 +193,14 @@ def listener_function(update, is_replay):
         print(f"Change previous={prev} current={curr}")
 
 
-table = time_table("PT0.1s").update("X = i").last_by()
+table = time_table("PT0.1S").update("X = i").last_by()
 
 handle = listen(table, listener_function)
 ```
 
 ![`table` updates while the listener prints modified rows](../assets/how-to/listen-modified-prev.gif)
 
-Each chunked accessor returns a generator. Each iteration of the generator yields a subset (chunk) of the changed rows as a dictionary, with column names as keys and [NumPy arrays](https://numpy.org/doc/stable/reference/generated/numpy.array.html) as values. To see all rows, iterate over all chunks in the generator. The chunked accessors are:
+Each chunked accessor takes a required `chunk_size` argument and returns a generator. Each iteration of the generator yields a subset (chunk) of the changed rows as a dictionary, with column names as keys and [NumPy arrays](https://numpy.org/doc/stable/reference/generated/numpy.array.html) as values. To see all rows, iterate over all chunks in the generator. The chunked accessors are:
 
 - [`added_chunks`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.added_chunks): Rows added during the current update cycle.
 - [`modified_chunks`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_chunks): Rows modified during the current update cycle.
@@ -221,7 +221,7 @@ def listener_function(update, is_replay):
         print(f"Chunk #{idx + 1}: {len(curr_x_chunk)} rows.")
 
 
-source = time_table("PT0.001s").update("X = i")
+source = time_table("PT0.001S").update("X = i")
 
 handle = listen(source, listener_function)
 ```
@@ -230,7 +230,9 @@ handle = listen(source, listener_function)
 
 ## Error handling
 
-You can give a table listener an error handler. Deephaven calls the handler when the listener function or class raises an exception, or when a table the listener listens to fails. It passes the handler a [`RuntimeError`](https://docs.python.org/3/library/exceptions.html#RuntimeError) whose message contains the stack trace of the original error. The handler can take any action, such as notifying the user, client APIs, or other services. How you supply it depends on the kind of listener:
+You can give a table listener an error handler. Deephaven calls the handler when the listener function or class raises an exception, or when a table the listener listens to fails. It passes the handler a [`RuntimeError`](https://docs.python.org/3/library/exceptions.html#RuntimeError) whose message contains the stack trace of the original error.
+
+The handler can take any action, such as notifying the user, client APIs, or other services. How you supply it depends on the kind of listener:
 
 - For a listener function, pass the error handler to the `on_error` parameter of [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) or [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen). If you don't pass one, a default handler prints the error.
 - For a [`TableListener`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableListener) or [`MergedListener`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.MergedListener) subclass, override its [`on_error`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableListener.on_error) method instead. The default `on_error` method prints the error. Passing `on_error` to [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) or [`merged_listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.merged_listen) together with a listener class instance raises an error.
@@ -257,7 +259,7 @@ def error_function(e: Exception):
     print("A value over 10 was detected. Please investigate.")
 
 
-tt = time_table("PT1s").update("X = i + 6")
+tt = time_table("PT1S").update("X = i + 6")
 handle = listen(t=tt, listener=listener_function, on_error=error_function)
 ```
 
@@ -269,7 +271,7 @@ Most applications keep a table listener registered for their whole lifetime. To 
 
 Keep a reference to the handle. If the handle is garbage collected, the listener stops receiving updates.
 
-The following example uses [`threading.Timer`](https://docs.python.org/3/library/threading.html#timer-objects) to deregister a listener after 3 seconds and then re-register it after 6 seconds.
+The following example uses [`threading.Timer`](https://docs.python.org/3/library/threading.html#timer-objects) to deregister a listener after 3 seconds and then re-register it after 6 seconds. The timer callbacks run on a background thread. `start` acquires the update graph lock it needs automatically, because [`auto_locking`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking) is enabled by default. See [Update graph locks and thread safety](#update-graph-locks-and-thread-safety).
 
 ```python ticking-table order=null reset
 from deephaven.table_listener import listen
@@ -311,7 +313,7 @@ The following example creates a time table:
 ```python ticking-table order=null test-set=replay reset
 from deephaven import time_table
 
-source = time_table("PT0.3s").update("X = i")
+source = time_table("PT0.3S").update("X = i")
 ```
 
 After a few seconds, run the following code to register two listeners with the table. Only the one that sets `do_replay` to `True` receives the rows the table already holds when it is registered.
@@ -380,7 +382,7 @@ ctx = get_exec_ctx()
 with ctx:
     # First lock: create the table
     with update_graph.shared_lock(ctx.update_graph):
-        table = time_table("PT1s").update("X = i")
+        table = time_table("PT1S").update("X = i")
     # RACE WINDOW: table can update here before listener is added
     handle = listen(table, listener_function)  # listen() locks, but too late
 ```
@@ -402,7 +404,7 @@ ctx = get_exec_ctx()
 # On background thread: reopen context, then lock both operations together
 with ctx:
     with update_graph.shared_lock(ctx.update_graph):
-        table = time_table("PT1s").update("X = i")
+        table = time_table("PT1S").update("X = i")
         handle = listen(table, listener_function)
 ```
 
@@ -419,7 +421,7 @@ For example, `source_a` and `source_b` tick at the same time but share no key co
 
 The following example creates `source_b_y`, a view of `source_b`'s `Y` column, before registering the listener, and passes it as the dependency. The listener reads `source_b_y` with [`to_numpy`](../reference/numpy/to-numpy.md).
 
-```python ticking-table order=null
+```python ticking-table order=null reset
 from deephaven.table_listener import listen
 from deephaven.numpy import to_numpy
 from deephaven import time_table
@@ -433,13 +435,13 @@ def rand_letter() -> str:
 def listen_func(update, is_replay):
     added = update.added()
     print(f"From Source A: {added['X']}")
-    dependent_data = to_numpy(source_b_y).flatten()
+    dependent_data = to_numpy(source_b_y)[:, 0]
     print(f"From Source B: {', '.join([str(item) for item in dependent_data])}")
 
 
-source_a = time_table("PT2s").update_view(["X = ii"])
+source_a = time_table("PT2S").update_view(["X = ii"])
 source_b = (
-    time_table("PT2s")
+    time_table("PT2S")
     .update(["Letter = rand_letter()", "Y = randomDouble(0, 10)"])
     .drop_columns("Timestamp")
     .last_by("Letter")
@@ -469,8 +471,9 @@ def listener_function(update, is_replay):
     print(f"FUNCTION LISTENER for even values: update={update}")
 
 
-source = time_table("PT0.5s").update(formulas=["X = i"]).tail(5)
-trigger = time_table("PT2s").rename_columns("DateTime = Timestamp")
+source = time_table("PT0.5S").update(formulas=["X = i"]).tail(5)
+# Rename Timestamp so it doesn't clash with source's Timestamp column in the snapshot
+trigger = time_table("PT2S").rename_columns("DateTime = Timestamp")
 result = source.where(filters=["X % 2 = 0"]).snapshot_when(trigger_table=trigger)
 handle = listen(result, listener_function)
 ```
@@ -498,7 +501,7 @@ def listener_function(update, is_replay):
 
 
 source = (
-    time_table("PT0.33s", blink_table=True)
+    time_table("PT0.33S", blink_table=True)
     .update("X = randomDouble(0, 10)")
     .drop_columns("Timestamp")
 )

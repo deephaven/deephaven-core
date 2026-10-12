@@ -4,12 +4,16 @@ title: Extract table values
 
 Deephaven provides several ways to extract values from tables into Groovy. Most queries don't need this. It's useful for debugging, for logging, and for code that reads table data directly, such as [table listeners](./table-listeners-groovy.md).
 
-To read a value by its position in the table, use [`ColumnVectors`](#columnvectors-positional-index-access). To loop over every value in a column, see [Iterate over a column](#iterate-over-a-column). To read a value by the engine's internal row key, use a [`ColumnSource`](#advanced-columnsource-row-key-access).
+Choose a method based on how you need to find the values:
+
+- To read a value by its position in the table, use [`ColumnVectors`](#columnvectors-positional-index-access). This is the simplest option, and most code should use it.
+- To loop over every value in a column, use a [column iterator](#iterate-over-a-column). An iterator reads values in bulk, so it's faster than reading each position separately.
+- To read a value by the engine's internal row key, use a [`ColumnSource`](#advanced-columnsource-row-key-access). Use this when your code already has row keys, such as the row sets a table listener receives.
 
 > [!NOTE]
 > These methods are for **extracting** values from Deephaven to Groovy, not for **transforming** table data. To create or modify columns, use operations like [`update`](../reference/table-operations/select/update.md). See [Recipes, not loops!](../getting-started/crash-course/vectorization-vs-loops.md) for more details.
 
-## ColumnVectors (positional index access)
+## `ColumnVectors` (positional index access)
 
 A row's positional index is its position in the table, counting from 0. The recommended way to extract values by positional index is [`ColumnVectors`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html). Each `ColumnVectors` method wraps one column in a vector, such as an [`IntVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/IntVector.html) for an `int` column. The vector's `get` method returns the value at a row position.
 
@@ -42,13 +46,13 @@ The generic `ColumnVectors.of` method works for any column, but it is declared t
 > Random access via the vector's `get(position)` method is less efficient than bulk iteration. Use iteration when processing multiple values. See [Iterate over a column](#iterate-over-a-column).
 
 > [!NOTE]
-> For a [refreshing (ticking) table](../conceptual/table-types.md), a vector is only valid for the current update cycle. Inside a [listener](./table-listeners-groovy.md), read previous values (each row's values before the current update cycle's changes) by passing `true` as the final `usePreviousValues` argument. For example, `ColumnVectors.ofInt(table, "Integers", true)` reads the previous values of the `Integers` column. See [Engine locking](../conceptual/query-engine/engine-locking.md).
+> For a [refreshing (ticking) table](../conceptual/table-types.md), a vector is only valid for the current update cycle. Inside a [listener](./table-listeners-groovy.md), read previous values (each row's values before the current update cycle's changes) by passing `true` as the final `usePreviousValues` argument. For example, `ColumnVectors.ofInt(table, "Integers", true)` reads the previous values of the `Integers` column. For the limits on previous-values vectors, see [Refreshing tables](./iterate-table-vectors.md#refreshing-tables).
 
 ## Iterate over a column
 
 To loop over all values in a column, use [`columnIterator`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#columnIterator(java.lang.String)). To read primitive values without wrapping each one in a Java object, use a typed variant such as [`integerColumnIterator`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#integerColumnIterator(java.lang.String)). If you stop before the iterator is exhausted, call its `close` method to release its resources.
 
-This example loops over the `result` table created in [ColumnVectors (positional index access)](#columnvectors-positional-index-access):
+This example loops over the `result` table created in [`ColumnVectors` (positional index access)](#columnvectors-positional-index-access):
 
 ```groovy order=:log test-set=1
 iterator = result.integerColumnIterator("Integers")
@@ -60,7 +64,7 @@ while (iterator.hasNext()) {
 
 If you already have a vector from [`ColumnVectors`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html), you can iterate over it directly with its `iterator` method instead. See [Iterate over tables with ColumnVectors](./iterate-table-vectors.md).
 
-## Advanced: ColumnSource (row key access)
+## Advanced: `ColumnSource` (row key access)
 
 Most code should use [`ColumnVectors`](#columnvectors-positional-index-access). Use row-key access when your code already has row keys rather than positions, such as the `added` and `modified` row sets a [table listener](./table-listeners-groovy.md) receives.
 
@@ -72,7 +76,7 @@ result = newTable(
 )
 
 columnSource = result.getColumnSource("Integers")
-println columnSource
+println columnSource.getType()
 ```
 
 To find the row key for a position, look it up in the table's [`RowSet`](https://deephaven.io/core/javadoc/io/deephaven/engine/rowset/RowSet.html), the ordered set of row keys the table contains. Then read the value with a type-specific method:
@@ -101,7 +105,10 @@ Type-specific [`ColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/en
 `get` also works on primitive columns, but it wraps each value in a Java object, so prefer the type-specific methods for primitives.
 
 > [!NOTE]
-> For a refreshing table, values read through a [`ColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) are only consistent within the current update cycle. Inside a [listener](./table-listeners-groovy.md), use the `getPrev*` methods, such as `getPrevInt`, to read previous values, meaning each row's values before the current update cycle's changes. These methods take a previous row key: one from the update's `removed` or `getModifiedPreShift` row sets, or one you look up in the table's previous `RowSet`, for example `result.getRowSet().prev().get(2)`. See [Engine locking](../conceptual/query-engine/engine-locking.md).
+> For a refreshing table, values read through a [`ColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) are consistent only while no update can change them: inside a [listener](./table-listeners-groovy.md), or while your code holds the table's update graph [shared or exclusive lock](../conceptual/query-engine/engine-locking.md#using-locks). Console scripts already hold the exclusive lock, so this matters mainly for code that runs on other threads. See [Engine locking](../conceptual/query-engine/engine-locking.md).
+
+> [!NOTE]
+> Inside a listener, use the `getPrev*` methods, such as `getPrevInt`, to read previous values, meaning each row's values before the current update cycle's changes. These methods take a previous row key: one from the update's [`removed`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#removed()) or [`getModifiedPreShift`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#getModifiedPreShift()) row sets, or one you look up in the table's previous `RowSet`, for example `result.getRowSet().prev().get(2)`.
 
 ## Related documentation
 

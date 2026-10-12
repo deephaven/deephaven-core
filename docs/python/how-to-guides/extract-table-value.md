@@ -4,12 +4,16 @@ title: Extract table values
 
 Deephaven provides several ways to extract values from tables into Python. Most queries don't need this. It's useful for debugging, for logging, and for code that reads table data directly, such as [table listeners](./table-listeners-python.md).
 
-To read a value by its position in the table, use [`to_numpy`](#to_numpy-positional-index-access). To loop over every value in a column, see [Iterate with for loops](#iterate-with-for-loops). To read a value by the engine's internal row key, use a [`ColumnSource`](#advanced-columnsource-row-key-access).
+Choose a method based on how you need to find the values:
+
+- To read a value by its position in the table, use [`to_numpy`](#to_numpy-positional-index-access). It copies the selected columns into a NumPy array, so it suits small tables or a few columns.
+- To loop over every value in a column, or over several columns of different types, use a [`for` loop](#iterate-with-for-loops) over a NumPy array or a table iterator. Table iterators read the table in chunks instead of copying whole columns into memory.
+- To read a value by the engine's internal row key, use a [`ColumnSource`](#advanced-columnsource-row-key-access). This advanced option calls the Java API directly, so use it only when you need row keys rather than positions.
 
 > [!NOTE]
 > These methods are for **extracting** values from Deephaven to Python, not for **transforming** table data. To create or modify columns, use operations like [`update`](../reference/table-operations/select/update.md). See [Recipes, not loops!](../getting-started/crash-course/vectorization-vs-loops.md) for more details.
 
-## to_numpy (positional index access)
+## `to_numpy` (positional index access)
 
 A row's positional index is its position in the table, counting from 0. The recommended way to extract values by positional index is [`to_numpy`](../reference/numpy/to-numpy.md). It converts the selected columns into a 2D NumPy array with one array column per table column. You then read values from the array by index.
 
@@ -20,11 +24,11 @@ from deephaven.numpy import to_numpy
 result = empty_table(5).update(["Integers = i + 1"])
 ```
 
-To extract a single value by positional index, convert the column to a NumPy array, flatten it to one dimension, and read the value by index:
+To extract a single value by positional index, convert the column to a NumPy array, select its only column as a one-dimensional array, and read the value by index:
 
 ```python order=:log test-set=1
 # Convert column to numpy array
-integers_array = to_numpy(result, cols=["Integers"]).flatten()
+integers_array = to_numpy(result, cols=["Integers"])[:, 0]
 
 # Access value at positional index 1 (second row)
 value = integers_array[1]
@@ -40,14 +44,14 @@ print(f"First three values: {first_three}")
 ```
 
 > [!WARNING]
-> [`to_numpy`](../reference/numpy/to-numpy.md) copies every row of the selected columns into memory, and for a [refreshing (ticking) table](../conceptual/table-types.md) it first takes a snapshot of the whole table. For large tables, pass only the columns you need in `cols`, and reduce the rows with an operation such as [`where`](../reference/table-operations/filter/where.md) or [`head`](../reference/table-operations/filter/head.md) before converting.
+> [`to_numpy`](../reference/numpy/to-numpy.md) copies every row of the selected columns into memory, and for a [refreshing (ticking) table](../conceptual/table-types.md) it first takes a snapshot of the whole table. For large tables, keep only the columns you need with [`view`](../reference/table-operations/select/view.md), and reduce the rows with an operation such as [`where`](../reference/table-operations/filter/where.md) or [`head`](../reference/table-operations/filter/head.md), before converting.
 
 > [!IMPORTANT]
 > All columns that [`to_numpy`](../reference/numpy/to-numpy.md) converts must have the same data type. If you omit `cols`, it converts every column in the table, so every column must have the same type. For mixed types, convert columns separately, or loop over rows with a table iterator. [Iterate with for loops](#iterate-with-for-loops) shows both.
 
-## Iterate with for loops
+## Iterate with `for` loops
 
-To loop over a column's values, convert the column to a NumPy array with [`to_numpy`](../reference/numpy/to-numpy.md), then use a standard Python `for` loop. This example loops over `integers_array`, created in [to_numpy (positional index access)](#to_numpy-positional-index-access):
+To loop over a column's values, convert the column to a NumPy array with [`to_numpy`](../reference/numpy/to-numpy.md), then use a standard Python `for` loop. This example loops over `integers_array`, created in [`to_numpy` (positional index access)](#to_numpy-positional-index-access):
 
 ```python order=:log test-set=1
 # Iterate over all values
@@ -73,7 +77,7 @@ multi_col_table = empty_table(5).update(
 xy_array = to_numpy(multi_col_table, cols=["X", "Y"])
 
 # Z is a String column, so convert it separately
-z_array = to_numpy(multi_col_table, cols=["Z"]).flatten()
+z_array = to_numpy(multi_col_table, cols=["Z"])[:, 0]
 
 # Each row of xy_array holds one X value and one Y value
 for (x_val, y_val), z_val in zip(xy_array, z_array):
@@ -88,7 +92,7 @@ for row in multi_col_table.iter_tuple(cols=["X", "Y", "Z"]):
     print(f"X: {row.X}, Y: {row.Y}, Z: {row.Z}")
 ```
 
-## Advanced: ColumnSource (row key access)
+## Advanced: `ColumnSource` (row key access)
 
 For advanced use cases, you can access the underlying Java [`ColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) through the table's `j_object` attribute, which holds the Java table that the Python [`Table`](https://deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Table) wraps. This bypasses the Python API and isn't idiomatic Python, so use [`to_numpy`](../reference/numpy/to-numpy.md) for most use cases.
 
@@ -101,7 +105,7 @@ result = empty_table(5).update(["Integers = i + 1"])
 
 # Access the underlying Java ColumnSource
 column_source = result.j_object.getColumnSource("Integers")
-print(column_source)
+print(column_source.getType())
 ```
 
 To find the row key for a position, look it up in the table's [`RowSet`](https://deephaven.io/core/javadoc/io/deephaven/engine/rowset/RowSet.html), the ordered set of row keys the table contains. Then read the value with a type-specific method:
@@ -130,7 +134,10 @@ Type-specific [`ColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/en
 `get` also works on primitive columns, but it wraps each value in a Java object, so prefer the type-specific methods for primitives.
 
 > [!NOTE]
-> Unlike [`to_numpy`](../reference/numpy/to-numpy.md), which takes a snapshot of a refreshing table before copying it, a [`ColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) reads the table's live data. For a refreshing table, values read this way are only consistent within the current update cycle. Inside a [listener](./table-listeners-python.md), use the `getPrev*` methods, such as `getPrevInt`, to read previous values, meaning each row's values before the current update cycle's changes. These methods take a previous row key, which you look up in the table's previous `RowSet`, for example `result.j_object.getRowSet().prev().get(2)`. See [Engine locking](../conceptual/query-engine/engine-locking.md).
+> Unlike [`to_numpy`](../reference/numpy/to-numpy.md), which takes a snapshot of a refreshing table before copying it, a [`ColumnSource`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ColumnSource.html) reads the table's live data. For a refreshing table, values read this way are consistent only while no update can change them: inside a [listener](./table-listeners-python.md), or inside a [`shared_lock`](https://deephaven.io/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.shared_lock) or [`exclusive_lock`](https://deephaven.io/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.exclusive_lock) block. Console scripts already hold the exclusive lock, so this matters mainly for code that runs on other threads. See [Engine locking](../conceptual/query-engine/engine-locking.md).
+
+> [!NOTE]
+> Inside a listener, use the `getPrev*` methods, such as `getPrevInt`, to read previous values, meaning each row's values before the current update cycle's changes. These methods take a previous row key, which you look up in the table's previous `RowSet`, for example `result.j_object.getRowSet().prev().get(2)`.
 
 ## Related documentation
 

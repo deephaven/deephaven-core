@@ -114,7 +114,7 @@ The following methods return a [`RowSet`](/core/javadoc/io/deephaven/engine/rows
 
 These methods return row keys, not column values. To read a value, look up its row key in a [`ColumnSource`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) with the accessor that matches the key:
 
-- [`added`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#added()) and [`modified`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#modified()) return post-shift row keys. Read them with current-value accessors such as [`getInt`](/core/javadoc/io/deephaven/engine/table/ElementSource.html#getInt(long)).
+- [`added`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#added()) and [`modified`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#modified()) return post-shift row keys, the keys rows have at the end of the update cycle. Read them with current-value accessors such as [`getInt`](/core/javadoc/io/deephaven/engine/table/ElementSource.html#getInt(long)).
 - [`removed`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#removed()) and [`getModifiedPreShift`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#getModifiedPreShift()) return pre-shift row keys. Read them with previous-value accessors such as [`getPrevInt`](/core/javadoc/io/deephaven/engine/table/ElementSource.html#getPrevInt(long)).
 
 The following example listens to added rows during each update cycle. It prints the data as the listener receives it.
@@ -160,7 +160,7 @@ import io.deephaven.engine.table.ColumnSource
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 import io.deephaven.engine.rowset.RowSet
 
-t1 = timeTable("PT0.1s").update("X = i").lastBy()
+t1 = timeTable("PT0.1S").update("X = i").lastBy()
 
 h1 = new InstrumentedTableUpdateListenerAdapter("listener", t1, false) {
     @Override
@@ -178,10 +178,10 @@ h1 = new InstrumentedTableUpdateListenerAdapter("listener", t1, false) {
         RowSet.Iterator currIt = currModified.iterator()
 
         while (prevIt.hasNext() && currIt.hasNext()) {
-            long prevRowIdx = prevIt.next()
-            long currRowIdx = currIt.next()
-            int prev = xCol.getPrevInt(prevRowIdx)
-            int curr = xCol.getInt(currRowIdx)
+            long prevRowKey = prevIt.next()
+            long currRowKey = currIt.next()
+            int prev = xCol.getPrevInt(prevRowKey)
+            int curr = xCol.getInt(currRowKey)
             println "Change previous=${prev} current=${curr}"
         }
     }
@@ -192,17 +192,18 @@ t1.addUpdateListener(h1)
 
 ![`t1` updates while `h1` prints modified rows](../assets/how-to/listener-mod-prev.gif)
 
-A [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) is normally valid only inside [`onUpdate`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onUpdate(io.deephaven.engine.table.TableUpdate)). If you pass an update to code that runs later in the same update cycle, call [`acquire`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#acquire()) on it first and [`release`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#release()) when that code is done. An acquired update is never valid after the cycle that created it ends.
+> [!NOTE]
+> A [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) is normally valid only inside [`onUpdate`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onUpdate(io.deephaven.engine.table.TableUpdate)). If you pass an update to code that runs later in the same update cycle, call [`acquire`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#acquire()) on it first and [`release`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#release()) when that code is done. An acquired update is never valid after the cycle that created it ends.
 
 ## Error handling
 
-If a listener encounters an error, it should throw an exception rather than catch and suppress it. When [`onUpdate`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onUpdate(io.deephaven.engine.table.TableUpdate)) throws an exception:
+If a listener encounters an error, it should throw an exception rather than catch and suppress it. When [`onUpdate`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onUpdate(io.deephaven.engine.table.TableUpdate)) throws an exception, or the table the listener listens to fails:
 
 - Deephaven logs the error and marks the listener as failed.
 - The failed listener stops receiving updates.
 - Deephaven calls the listener's [`onFailureInternal`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onFailureInternal(java.lang.Throwable,io.deephaven.engine.table.TableListener.Entry)) method.
 
-Override [`onFailureInternal`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onFailureInternal(java.lang.Throwable,io.deephaven.engine.table.TableListener.Entry)) to notify the user, client APIs, or other services, and call `super.onFailureInternal` to keep the default logging.
+Override [`onFailureInternal`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onFailureInternal(java.lang.Throwable,io.deephaven.engine.table.TableListener.Entry)) to notify the user, client APIs, or other services, and call `super.onFailureInternal` to keep the default error reporting.
 
 In the following example, the listener throws a [`RuntimeException`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/RuntimeException.html) when it receives a value greater than 10. The overridden [`onFailureInternal`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onFailureInternal(java.lang.Throwable,io.deephaven.engine.table.TableListener.Entry)) method prints a message and then calls `super.onFailureInternal`.
 
@@ -211,7 +212,7 @@ import io.deephaven.engine.table.TableListener
 import io.deephaven.engine.table.TableUpdate
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 
-source = timeTable("PT1s").update("X = i + 6")
+source = timeTable("PT1S").update("X = i + 6")
 
 listener = new InstrumentedTableUpdateListenerAdapter("listener", source, false) {
 
@@ -261,7 +262,7 @@ class ExampleListener extends InstrumentedTableUpdateListenerAdapter {
 }
 
 // Console code is already protected — no lock needed here
-t = timeTable("PT1s").update("X = i").tail(5)
+t = timeTable("PT1S").update("X = i").tail(5)
 listener = new ExampleListener("Test Listener", t, true)
 println "Adding listener"
 t.addUpdateListener(listener)
@@ -296,7 +297,7 @@ Add the listener with the two-argument [`addUpdateListener`](/core/javadoc/io/de
 The following example creates a time table:
 
 ```groovy ticking-table order=null test-set=replay reset
-source = timeTable("PT0.3s").update("X = i")
+source = timeTable("PT0.3S").update("X = i")
 ```
 
 After a few seconds, run the following code to register two listeners with the table. Only the one added with `replayInitialImage` set to `true` receives the rows the table already holds when it is registered.
@@ -369,7 +370,7 @@ ctx = ExecutionContext.getContext()
 try (SafeCloseable ignored = ctx.open()) {
     // First lock: create the table
     ctx.getUpdateGraph().sharedLock().doLocked(() -> {
-        t = timeTable("PT1s").update("X = i")
+        t = timeTable("PT1S").update("X = i")
     })
     // RACE WINDOW: table can update here before listener is added
     ctx.getUpdateGraph().sharedLock().doLocked(() -> {
@@ -397,7 +398,7 @@ ctx = ExecutionContext.getContext()
 // On background thread: reopen context, then lock both operations together
 try (SafeCloseable ignored = ctx.open()) {
     ctx.getUpdateGraph().sharedLock().doLocked(() -> {
-        t = timeTable("PT1s").update("X = i")
+        t = timeTable("PT1S").update("X = i")
         listener = new InstrumentedTableUpdateListenerAdapter("listener", t, false) {
             @Override
             void onUpdate(TableUpdate upstream) { println "update=${upstream}" }
@@ -436,8 +437,8 @@ randomLetter = { ->
     return letters[rng.nextInt(4)]
 }
 
-sourceA = timeTable("PT2s").updateView("X = ii")
-sourceB = timeTable("PT2s")
+sourceA = timeTable("PT2S").updateView("X = ii")
+sourceB = timeTable("PT2S")
     .update("Letter = randomLetter()", "Y = randomDouble(0, 10)")
     .dropColumns("Timestamp")
     .lastBy("Letter")
@@ -491,8 +492,9 @@ The following example filters a table and reduces its tick frequency before list
 import io.deephaven.engine.table.TableUpdate
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 
-source = timeTable("PT0.5s").update("X = i").tail(5)
-trigger = timeTable("PT2s").renameColumns("DateTime = Timestamp")
+source = timeTable("PT0.5S").update("X = i").tail(5)
+// Rename Timestamp so it doesn't clash with source's Timestamp column in the snapshot
+trigger = timeTable("PT2S").renameColumns("DateTime = Timestamp")
 result = source.where("X % 2 = 0").snapshotWhen(trigger)
 
 h1 = new InstrumentedTableUpdateListenerAdapter(result, false) {
