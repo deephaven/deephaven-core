@@ -44,7 +44,7 @@ Determines whether an initial snapshot is taken upon construction. The default v
 </Param>
 <Param name="incremental" type="bool" optional>
 
-Determines whether the resulting table should be incremental. The default value is `False`. When `False`, the stamp column in the resulting table will always contain the _latest_ value from the stamp column in the trigger table. This means that every single row in the resulting table will be updated each cycle. When `True`, only rows that have been added or updated to the source table since the last snapshot will have the latest value from the stamp column.
+Determines whether the resulting table should be incremental. The default value is `False`. When `False`, the stamp column in the resulting table will always contain the _latest_ value from the stamp column in the trigger table. This means that every single row in the resulting table will be updated each time the trigger table updates. When `True`, only rows that have been added or updated to the source table since the last snapshot will have the latest value from the stamp column.
 
 </Param>
 <Param name="history" type="bool" optional>
@@ -55,7 +55,7 @@ Determines whether the resulting table should keep history. The default value is
 </ParamTable>
 
 > [!CAUTION]
-> The stamp columns from the trigger table appear in the result table. If the source table has a column with the same name as a stamp column, a snapshot without `history` raises an error. With `history=True`, no error is raised, and the result keeps the source table's values for that column. To avoid the conflict, rename the stamp column in the trigger table using [`rename_columns`](../select/rename-columns.md).
+> The stamp columns from the trigger table appear in the result table. If the source table has a column with the same name as a stamp column, a snapshot without `history` raises an error. With `history=True`, Deephaven doesn't check for the conflict. If the two columns have the same type, the result keeps the source table's values for that column. If their types differ, the snapshot fails with an error. To avoid the conflict, rename the stamp column in the trigger table using [`rename_columns`](../select/rename-columns.md).
 
 ## Returns
 
@@ -82,8 +82,8 @@ result = source.snapshot_when(trigger_table=trigger)
 Notice three things:
 
 1. `stamp_cols` is left blank, so every column from `trigger` is included in `result`.
-2. `incremental` is `false`, so the _entire_ `TriggerTimestamp` column in `result` is updated every cycle and always contains the latest value from the `TriggerTimestamp` column in `trigger`.
-3. `historical` is `false`, so only _updated_ rows from `source` get appended to `result` on each snapshot.
+2. `incremental` is `False`, so the _entire_ `TriggerTimestamp` column in `result` is updated each time the trigger table updates and always contains the latest value from the `TriggerTimestamp` column in `trigger`.
+3. `history` is `False`, so `result` holds only the latest snapshot of `source`. Each snapshot replaces the previous one instead of being appended.
 
 In the following example, the code is nearly identical to the one above it. However, in this case, the `Y` column is given as the stamp key. Thus, the `Timestamp` column in the `trigger` table is omitted from the `result` table, which avoids a name conflict error. This is an alternative to renaming the column in the trigger table.
 
@@ -104,12 +104,12 @@ from deephaven import time_table
 
 source = time_table("PT1S").update_view(["X = i"])
 trigger = time_table("PT5S").update_view(["Y = i"])
-result = source.snapshot_when(trigger_table=trigger, history=True)
+result = source.snapshot_when(trigger_table=trigger, stamp_cols=["Y"], history=True)
 ```
 
 ![The above `source`, `trigger`, and `result` tables](../../../assets/reference/table-operations/snapshot-when-3.gif)
 
-In the following example, `incremental` is set to `True`. Thus, the `Y` column in `result` only updates when corresponding rows in `trigger` have changed. Contrast this with the first and second examples given above.
+In the following example, `incremental` is set to `True`. Thus, only the rows of `source` that were added or modified since the last snapshot get the latest `Y` value. Earlier rows keep the `Y` value from the snapshot that captured them. Contrast this with the first and second examples given above.
 
 ```python ticking-table order=null
 from deephaven import time_table
