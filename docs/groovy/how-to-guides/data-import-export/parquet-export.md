@@ -218,11 +218,15 @@ ParquetTools.writeTables(
 )
 ```
 
-To write a [Deephaven partitioned table](../../how-to-guides/partitioned-tables.md) to a flat partitioned Parquet directory, get its constituent tables with [`constituents`](../../reference/table-operations/partitioned-tables/constituents.md) and pass them to [`ParquetTools.writeTables`](/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)).
+To write a [Deephaven partitioned table](../../how-to-guides/partitioned-tables.md) to a flat partitioned Parquet directory, look up each constituent table by key with [`constituentFor`](../../reference/table-operations/partitioned-tables/constituentFor.md), so that each file name matches its class, and pass the tables to [`ParquetTools.writeTables`](/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)).
 
 ```groovy test-set=1
 ParquetTools.writeTables(
-    gradesPartitioned.constituents(),
+    new Table[] {
+        gradesPartitioned.constituentFor("Math"),
+        gradesPartitioned.constituentFor("Science"),
+        gradesPartitioned.constituentFor("History"),
+    },
     new String[] {
         "/data/gradesFlat3/math.parquet",
         "/data/gradesFlat3/science.parquet",

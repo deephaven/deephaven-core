@@ -214,12 +214,15 @@ parquet.batch_write(
 )
 ```
 
-To write a [Deephaven partitioned table](../../how-to-guides/partitioned-tables.md) to a flat partitioned Parquet directory, get its constituent tables from the [`constituent_tables`](/core/pydoc/code/deephaven.table.html#deephaven.table.PartitionedTable.constituent_tables) property and pass them to [`parquet.batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write).
+To write a [Deephaven partitioned table](../../how-to-guides/partitioned-tables.md) to a flat partitioned Parquet directory, look up each constituent table by key with [`get_constituent`](../../reference/table-operations/partitioned-tables/get-constituent.md), so that each file name matches its class, and pass the tables to [`parquet.batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write).
 
 ```python test-set=1
-# write each constituent table to Parquet using batch_write
+# look up each constituent by its Class value so file names match
 parquet.batch_write(
-    tables=grades_partitioned.constituent_tables,
+    tables=[
+        grades_partitioned.get_constituent(key)
+        for key in ["Math", "Science", "History"]
+    ],
     paths=[
         "/data/grades_flat_3/math.parquet",
         "/data/grades_flat_3/science.parquet",
