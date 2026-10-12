@@ -245,7 +245,7 @@ The method also takes an optional second argument, `readInstructions`, which is 
 - [`addColumnCodec`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#addColumnCodec(java.lang.String,java.lang.String)): Sets the [`ObjectCodec`](/core/javadoc/io/deephaven/util/codec/ObjectCodec.html) class that converts a column's values to and from bytes, for types with no language-agnostic Parquet representation. This is not a compression codec.
 - [`setUnsignedLongTarget`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setUnsignedLongTarget(java.lang.String,io.deephaven.parquet.table.ParquetInstructions.UnsignedLongTarget)): Sets the Deephaven type to read an unsigned 64-bit integer (`UINT_64`) column as, provided as an [`UnsignedLongTarget`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.UnsignedLongTarget.html). If you don't call this method, Deephaven reads such columns as `BigInteger`. It applies only when Deephaven infers the table definition.
 
-See the [Parquet instructions guide](./parquet-instructions.md) for the full list of `ParquetInstructions.Builder` and `S3Instructions` methods.
+See the [Parquet instructions guide](./parquet-instructions.md) for the `ParquetInstructions.Builder` and `S3Instructions` methods most users need. The Javadoc is the complete API reference.
 
 ## Related documentation
 

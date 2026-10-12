@@ -106,7 +106,7 @@ Some builder methods apply only when reading, some only when writing, and some t
   - The value must be at least the `Parquet.minTargetPageSize` configuration property, which defaults to 2048.
 - `useDictionary(columnName, useDictionary)`: Sets a hint that the writer should keep dictionary encoding for this column.
   - The writer already tries dictionary encoding for every `String` column and every column of `String` arrays or vectors.
-  - Setting the hint to `true` removes the [`setMaximumDictionaryKeys`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setMaximumDictionaryKeys(int)) and [`setMaximumDictionarySize`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setMaximumDictionarySize(int)) limits for the column, so the writer never falls back to non-dictionary encoding.
+  - Setting the hint to `true` removes the [`setMaximumDictionaryKeys`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setMaximumDictionaryKeys(int)) and [`setMaximumDictionarySize`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setMaximumDictionarySize(int)) limits for the column, so the writer never falls back to non-dictionary encoding. The writer holds the column's dictionary and encoded pages in memory until it finishes the column, so setting the hint on a high-cardinality `String` column can exhaust the JVM heap. Set it only when the number of unique values is bounded.
   - The writer ignores this hint for other column types.
 
 #### Reading and writing options
