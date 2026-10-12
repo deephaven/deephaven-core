@@ -79,7 +79,7 @@ parquet.write(
 
 ### To S3
 
-Use [`parquet.write`](../../reference/data-import-export/Parquet/writeTable.md) to write Deephaven tables to Parquet files on S3. The `path` should be the URI of the destination file in S3. Supply an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class to the `special_instructions` argument to specify the details of the connection to the S3 instance. See [Special instructions (S3 and GCS)](#special-instructions-s3-and-gcs) for the `S3Instructions` arguments that apply when writing.
+Use [`parquet.write`](../../reference/data-import-export/Parquet/writeTable.md) to write Deephaven tables to Parquet files on S3. The `path` should be the URI of the destination file in S3. Supply an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class to the `special_instructions` argument to specify the details of the connection to the S3 instance. See [Special instructions (S3 and GCS)](#special-instructions-s3-and-gcs) for the `S3Instructions` arguments that apply when writing. The example defines `s3_instructions` once. The later S3 examples in this guide reuse it.
 
 ```python test-set=1
 from deephaven.experimental import s3
@@ -88,14 +88,16 @@ credentials = s3.Credentials.basic(
     access_key_id="example_username", secret_access_key="example_password"
 )
 
+s3_instructions = s3.S3Instructions(
+    region_name="us-east-1",
+    endpoint_override="http://rustfs.example.com:9000",
+    credentials=credentials,
+)
+
 parquet.write(
     table=grades,
     path="s3://example-bucket/grades.parquet",
-    special_instructions=s3.S3Instructions(
-        region_name="us-east-1",
-        endpoint_override="http://rustfs.example.com:9000",
-        credentials=credentials,
-    ),
+    special_instructions=s3_instructions,
 )
 ```
 
@@ -113,6 +115,8 @@ When a query filters on a partitioning column, Deephaven can skip the subdirecto
 A key-value partitioned directory stores each partition in a `key=value` subdirectory, as described in [Partitioned Parquet directories](#partitioned-parquet-directories). Writing the `grades` table with `Class` as the partitioning column produces the subdirectories `Class=Math`, `Class=Science`, and `Class=History`.
 
 You can write a key-value partitioned directory from a regular Deephaven table or from a [partitioned table](../../how-to-guides/partitioned-tables.md). When you write a partitioned table, its key columns become the partitioning columns.
+
+### Define a table definition
 
 A regular table needs a table definition, which is the table's schema with the partitioning columns marked. A regular table's own definition usually has no partitioning columns, so the write fails unless you pass a definition that has them. Pass it as the `table_definition` argument to [`write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md).
 
@@ -163,23 +167,13 @@ parquet.write_partitioned(
 
 ### To S3
 
-Use [`parquet.write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md) to write key-value partitioned Parquet directories to S3. The `destination_dir` should be the URI of the destination directory in S3. Supply an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class to the `special_instructions` argument to specify the details of the connection to the S3 instance.
+Use [`parquet.write_partitioned`](../../reference/data-import-export/Parquet/writePartitioned.md) to write key-value partitioned Parquet directories to S3. The `destination_dir` should be the URI of the destination directory in S3. Use the `s3_instructions` defined in [Write to a single Parquet file](#to-s3) as the `special_instructions` argument.
 
 ```python test-set=1
-from deephaven.experimental import s3
-
-credentials = s3.Credentials.basic(
-    access_key_id="example_username", secret_access_key="example_password"
-)
-
 parquet.write_partitioned(
     table=grades_partitioned,
     destination_dir="s3://example-bucket/partitioned-directory/",
-    special_instructions=s3.S3Instructions(
-        region_name="us-east-1",
-        endpoint_override="http://rustfs.example.com:9000",
-        credentials=credentials,
-    ),
+    special_instructions=s3_instructions,
 )
 ```
 
@@ -233,15 +227,9 @@ parquet.batch_write(
 
 ### To S3
 
-Use [`parquet.batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) to write a list of Deephaven tables to a flat partitioned Parquet directory in S3. The `paths` should be the URIs of the destination files in S3. Supply an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class to the `special_instructions` argument to specify the details of the connection to the S3 instance.
+Use [`parquet.batch_write`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.batch_write) to write a list of Deephaven tables to a flat partitioned Parquet directory in S3. The `paths` should be the URIs of the destination files in S3. Use the `s3_instructions` defined in [Write to a single Parquet file](#to-s3) as the `special_instructions` argument.
 
 ```python test-set=1
-from deephaven.experimental import s3
-
-credentials = s3.Credentials.basic(
-    access_key_id="example_username", secret_access_key="example_password"
-)
-
 parquet.batch_write(
     tables=[math_grades, science_grades, history_grades],
     paths=[
@@ -249,11 +237,7 @@ parquet.batch_write(
         "s3://example-bucket/grades-flat/science.parquet",
         "s3://example-bucket/grades-flat/history.parquet",
     ],
-    special_instructions=s3.S3Instructions(
-        region_name="us-east-1",
-        endpoint_override="http://rustfs.example.com:9000",
-        credentials=credentials,
-    ),
+    special_instructions=s3_instructions,
 )
 ```
 

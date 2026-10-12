@@ -92,7 +92,7 @@ grades_metadata = parquet.read(
 
 #### From S3
 
-Use `parquet.read` to read a key-value partitioned Parquet directory from S3. Supply the `special_instructions` argument with an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class. To skip the check for a `_metadata` file, set the `file_layout` argument to [`parquet.ParquetFileLayout.KV_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.KV_PARTITIONED). For performance, run Deephaven in the same AWS region as the bucket, as described in [Read a single Parquet file from S3](#from-s3).
+Use `parquet.read` to read a key-value partitioned Parquet directory from S3. Supply the `special_instructions` argument with an instance of the [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) class. To skip the check for a `_metadata` file, set the `file_layout` argument to [`parquet.ParquetFileLayout.KV_PARTITIONED`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout.KV_PARTITIONED). For performance, run Deephaven in the same AWS region as the bucket, as described in [Read a single Parquet file from S3](#from-s3). Reading from S3 differs from reading locally only in the S3 path and the `special_instructions` argument; the layout arguments work the same way.
 
 ```python test-set=4 order=grades_inferred,grades_provided docker-config=rustfs
 from deephaven import parquet
@@ -204,20 +204,7 @@ grades_provided = parquet.read(
 )
 ```
 
-To read an S3-hosted dataset through its metadata files, set the `file_layout` argument to `parquet.ParquetFileLayout.METADATA_PARTITIONED`.
-
-```python test-set=6 docker-config=rustfs
-# read through the metadata files
-grades_metadata = parquet.read(
-    path="s3://example-bucket/grades_flat_meta/",
-    file_layout=parquet.ParquetFileLayout.METADATA_PARTITIONED,
-    special_instructions=s3.S3Instructions(
-        region_name="us-east-1",
-        endpoint_override="http://rustfs.example.com:9000",
-        credentials=credentials,
-    ),
-)
-```
+Reading a flat directory from S3 differs from reading it locally only in the S3 path and the `special_instructions` argument. To read a flat S3 dataset through its metadata files, set `file_layout` to `parquet.ParquetFileLayout.METADATA_PARTITIONED` and follow the key-value S3 metadata example above.
 
 ## Arguments
 

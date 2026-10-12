@@ -96,7 +96,7 @@ gradesMetadata = ParquetTools.readTable(
 
 #### From S3
 
-Use `ParquetTools.readTable` to read a key-value partitioned Parquet directory from S3. Pass an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method. To skip the check for a `_metadata` file, pass `ParquetFileLayout.KV_PARTITIONED` to the `setFileLayout` method. Pass the built `ParquetInstructions` as the `readInstructions` argument. For performance, run Deephaven in the same AWS region as the bucket, as described in [Read a single Parquet file from S3](#from-s3).
+Use `ParquetTools.readTable` to read a key-value partitioned Parquet directory from S3. Pass an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method. To skip the check for a `_metadata` file, pass `ParquetFileLayout.KV_PARTITIONED` to the `setFileLayout` method. Pass the built `ParquetInstructions` as the `readInstructions` argument. For performance, run Deephaven in the same AWS region as the bucket, as described in [Read a single Parquet file from S3](#from-s3). Reading from S3 differs from reading locally only in the S3 path and the `S3Instructions` passed through `setSpecialInstructions`; the layout arguments work the same way.
 
 ```groovy test-set=4 order=gradesInferred,gradesProvided docker-config=rustfs
 import io.deephaven.parquet.table.ParquetTools
@@ -228,24 +228,7 @@ gradesProvided = ParquetTools.readTable(
 )
 ```
 
-To read an S3-hosted dataset through its metadata files, pass `ParquetFileLayout.METADATA_PARTITIONED` to the `setFileLayout` method.
-
-```groovy test-set=6 docker-config=rustfs
-// read through the metadata files
-gradesMetadata = ParquetTools.readTable(
-    "s3://example-bucket/grades_flat_meta/",
-    ParquetInstructions.builder()
-        .setFileLayout(ParquetFileLayout.METADATA_PARTITIONED)
-        .setSpecialInstructions(
-            S3Instructions.builder()
-                .regionName("us-east-1")
-                .endpointOverride("http://rustfs.example.com:9000")
-                .credentials(credentials)
-                .build()
-        )
-        .build()
-)
-```
+Reading a flat directory from S3 differs from reading it locally only in the S3 path and the `S3Instructions` passed through `setSpecialInstructions`. To read a flat S3 dataset through its metadata files, pass `ParquetFileLayout.METADATA_PARTITIONED` to `setFileLayout` and follow the key-value S3 metadata example above.
 
 ## Optional arguments
 

@@ -129,27 +129,34 @@ The builder also has methods for integrations such as Iceberg, including `setCol
 
 A `ParquetInstructions` instance has an accessor for each builder setting listed above:
 
-| Builder method                          | `ParquetInstructions` accessor                                                                                           |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `addAllIndexColumns`, `addIndexColumns` | `getIndexColumns`                                                                                                        |
-| `addColumnCodec`                        | `getCodecName(columnName)`, `getCodecArgs(columnName)`                                                                   |
-| `addColumnNameMapping`                  | `getColumnNameFromParquetColumnName(parquetColumnName)`                                                                  |
-| `setBaseNameForPartitionedParquetData`  | `baseNameForPartitionedParquetData`                                                                                      |
-| `setCompressionCodecName`               | `getCompressionCodecName`                                                                                                |
-| `setFieldId`                            | `getFieldId(columnName)`                                                                                                 |
-| `setFileLayout`                         | `getFileLayout`                                                                                                          |
-| `setGenerateMetadataFiles`              | `generateMetadataFiles`                                                                                                  |
-| `setIsLegacyParquet`                    | `isLegacyParquet`                                                                                                        |
-| `setIsRefreshing`                       | `isRefreshing`                                                                                                           |
-| `setMaximumDictionaryKeys`              | `getMaximumDictionaryKeys`                                                                                               |
-| `setMaximumDictionarySize`              | `getMaximumDictionarySize`                                                                                               |
-| `setOnWriteCompleted`                   | `onWriteCompleted`                                                                                                       |
-| `setRowGroupInfo`                       | `getRowGroupInfo`, which returns a [`RowGroupInfo`](/core/javadoc/io/deephaven/parquet/table/metadata/RowGroupInfo.html) |
-| `setSpecialInstructions`                | `getSpecialInstructions`                                                                                                 |
-| `setTableDefinition`                    | `getTableDefinition`                                                                                                     |
-| `setTargetPageSize`                     | `getTargetPageSize`                                                                                                      |
-| `setUnsignedLongTarget`                 | `getUnsignedLongTarget(columnName)`, which returns an empty `Optional` if no target was set                              |
-| `useDictionary`                         | `useDictionary(columnName)`, which returns `false` if no hint was set                                                    |
+| Builder method                          | `ParquetInstructions` accessor       |
+| --------------------------------------- | ------------------------------------ |
+| `addAllIndexColumns`, `addIndexColumns` | `getIndexColumns`                    |
+| `addColumnCodec`                        | `getCodecName`, `getCodecArgs`       |
+| `addColumnNameMapping`                  | `getColumnNameFromParquetColumnName` |
+| `setBaseNameForPartitionedParquetData`  | `baseNameForPartitionedParquetData`  |
+| `setCompressionCodecName`               | `getCompressionCodecName`            |
+| `setFieldId`                            | `getFieldId`                         |
+| `setFileLayout`                         | `getFileLayout`                      |
+| `setGenerateMetadataFiles`              | `generateMetadataFiles`              |
+| `setIsLegacyParquet`                    | `isLegacyParquet`                    |
+| `setIsRefreshing`                       | `isRefreshing`                       |
+| `setMaximumDictionaryKeys`              | `getMaximumDictionaryKeys`           |
+| `setMaximumDictionarySize`              | `getMaximumDictionarySize`           |
+| `setOnWriteCompleted`                   | `onWriteCompleted`                   |
+| `setRowGroupInfo`                       | `getRowGroupInfo`                    |
+| `setSpecialInstructions`                | `getSpecialInstructions`             |
+| `setTableDefinition`                    | `getTableDefinition`                 |
+| `setTargetPageSize`                     | `getTargetPageSize`                  |
+| `setUnsignedLongTarget`                 | `getUnsignedLongTarget`              |
+| `useDictionary`                         | `useDictionary`                      |
+
+Some accessors take or return more than their names suggest:
+
+- `getCodecName`, `getCodecArgs`, `getFieldId`, `getUnsignedLongTarget`, and `useDictionary` take a `columnName` argument. `getColumnNameFromParquetColumnName` takes a `parquetColumnName` argument.
+- `getRowGroupInfo` returns a [`RowGroupInfo`](/core/javadoc/io/deephaven/parquet/table/metadata/RowGroupInfo.html).
+- `getUnsignedLongTarget` returns an empty `Optional` if no target was set.
+- `useDictionary` returns `false` if no hint was set.
 
 The `ParquetInstructions` class also has the following methods:
 

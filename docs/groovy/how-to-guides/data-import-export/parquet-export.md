@@ -72,7 +72,7 @@ ParquetTools.writeTable(
 
 ### To S3
 
-Use [`ParquetTools.writeTable`](../../reference/data-import-export/Parquet/writeTable.md) to write Deephaven tables to Parquet files on S3. The `destination` should be the URI of the destination file in S3. Supply an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method of [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html) to specify the details of the connection to the S3 instance. A `gs://` URI writes to Google Cloud Storage with the same instructions.
+Use [`ParquetTools.writeTable`](../../reference/data-import-export/Parquet/writeTable.md) to write Deephaven tables to Parquet files on S3. The `destination` should be the URI of the destination file in S3. Supply an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method of [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html) to specify the details of the connection to the S3 instance. A `gs://` URI writes to Google Cloud Storage with the same instructions. The example defines `s3Instructions` once. The later S3 examples in this guide reuse it.
 
 ```groovy test-set=1
 import io.deephaven.extensions.s3.S3Instructions
@@ -80,17 +80,17 @@ import io.deephaven.extensions.s3.Credentials
 
 credentials = Credentials.basic("example_username", "example_password")
 
+s3Instructions = S3Instructions.builder()
+    .regionName("us-east-1")
+    .endpointOverride("http://rustfs.example.com:9000")
+    .credentials(credentials)
+    .build()
+
 ParquetTools.writeTable(
     grades,
     "s3://example-bucket/grades.parquet",
     ParquetInstructions.builder()
-        .setSpecialInstructions(
-            S3Instructions.builder()
-                .regionName("us-east-1")
-                .endpointOverride("http://rustfs.example.com:9000")
-                .credentials(credentials)
-                .build()
-        )
+        .setSpecialInstructions(s3Instructions)
         .build()
 )
 ```
@@ -109,6 +109,8 @@ When a query filters on a partitioning column, Deephaven can skip the subdirecto
 A key-value partitioned directory stores each partition in a `key=value` subdirectory, as described in [Partitioned Parquet directories](#partitioned-parquet-directories). Writing the `grades` table with `Class` as the partitioning column produces the subdirectories `Class=Math`, `Class=Science`, and `Class=History`.
 
 You can write a key-value partitioned directory from a regular Deephaven table or from a [partitioned table](../../how-to-guides/partitioned-tables.md). When you write a partitioned table, its key columns become the partitioning columns.
+
+### Define a table definition
 
 A regular table needs a table definition, which is the table's schema with the partitioning columns marked. A regular table's own definition usually has no partitioning columns, so the write fails unless you pass a definition that has them. Pass it to [`ParquetInstructions.Builder.setTableDefinition`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setTableDefinition(io.deephaven.engine.table.TableDefinition)).
 
@@ -165,25 +167,14 @@ ParquetTools.writeKeyValuePartitionedTable(
 
 ### To S3
 
-Use [`ParquetTools.writeKeyValuePartitionedTable`](../../reference/data-import-export/Parquet/writeKeyValuePartitionedTable.md) to write key-value partitioned Parquet directories to S3. The `destinationDir` should be the URI of the destination directory in S3. Supply an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method of [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html) to specify the details of the connection to the S3 instance. A `gs://` URI writes to Google Cloud Storage with the same instructions.
+Use [`ParquetTools.writeKeyValuePartitionedTable`](../../reference/data-import-export/Parquet/writeKeyValuePartitionedTable.md) to write key-value partitioned Parquet directories to S3. The `destinationDir` should be the URI of the destination directory in S3. Pass the `s3Instructions` defined in [Write to a single Parquet file](#to-s3) to the `setSpecialInstructions` method of `ParquetInstructions.Builder`. A `gs://` URI writes to Google Cloud Storage with the same instructions.
 
 ```groovy test-set=1
-import io.deephaven.extensions.s3.S3Instructions
-import io.deephaven.extensions.s3.Credentials
-
-credentials = Credentials.basic("example_username", "example_password")
-
 ParquetTools.writeKeyValuePartitionedTable(
     gradesPartitioned,
     "s3://example-bucket/partitioned-directory/",
     ParquetInstructions.builder()
-        .setSpecialInstructions(
-            S3Instructions.builder()
-                .regionName("us-east-1")
-                .endpointOverride("http://rustfs.example.com:9000")
-                .credentials(credentials)
-                .build()
-        )
+        .setSpecialInstructions(s3Instructions)
         .build()
 )
 ```
@@ -238,14 +229,9 @@ ParquetTools.writeTables(
 
 ### To S3
 
-Use [`ParquetTools.writeTables`](/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)) to write an array of Deephaven tables to a flat partitioned Parquet directory in S3. The `destinations` should be the URIs of the destination files in S3. Supply an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method of [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html) to specify the details of the connection to the S3 instance. A `gs://` URI writes to Google Cloud Storage with the same instructions.
+Use [`ParquetTools.writeTables`](/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)) to write an array of Deephaven tables to a flat partitioned Parquet directory in S3. The `destinations` should be the URIs of the destination files in S3. Pass the `s3Instructions` defined in [Write to a single Parquet file](#to-s3) to the `setSpecialInstructions` method of `ParquetInstructions.Builder`. A `gs://` URI writes to Google Cloud Storage with the same instructions.
 
 ```groovy test-set=1
-import io.deephaven.extensions.s3.S3Instructions
-import io.deephaven.extensions.s3.Credentials
-
-credentials = Credentials.basic("example_username", "example_password")
-
 ParquetTools.writeTables(
     new Table[] {mathGrades, scienceGrades, historyGrades},
     new String[] {
@@ -254,13 +240,7 @@ ParquetTools.writeTables(
         "s3://example-bucket/grades-flat/history.parquet",
     },
     ParquetInstructions.builder()
-        .setSpecialInstructions(
-            S3Instructions.builder()
-                .regionName("us-east-1")
-                .endpointOverride("http://rustfs.example.com:9000")
-                .credentials(credentials)
-                .build()
-        )
+        .setSpecialInstructions(s3Instructions)
         .build()
 )
 ```
