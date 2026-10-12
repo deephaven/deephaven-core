@@ -114,7 +114,7 @@ Like the Parquet read, [`updateView`](../reference/table-operations/select/updat
 
 The code above also calls the Groovy closure `secs` inside column expressions. Because `updateView` doesn't store results, the query engine calls `secs` again every time an operation reads a `Secs` value, including when it computes `OrdinalDay`.
 
-`SecondsInDay` and `DayOfWeek` use the time zone `tz`, rounded to the 10-second sampling period, so a sample keeps the same keys at the same local time on either side of a daylight saving time change. The baseline and the live data later use the same keys.
+`SecondsInDay` and `DayOfWeek` use the time zone `tz`. `SecondsInDay` is truncated to the start of its 10-second sampling period. As a result, a sample keeps the same keys at the same local time on either side of a daylight saving time change. The baseline and the live data later use the same keys.
 
 Filtering this new table and graphing the results confirms the seasonality. Holidays are the exception, because their daily pattern resembles the one for Sundays. A production model would need to account for holidays, but this example ignores them.
 
