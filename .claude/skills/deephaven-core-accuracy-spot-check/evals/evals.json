@@ -60,7 +60,7 @@
         "../eval-fixtures/crash-course-parallelization-d186.md"
       ],
       "expectations": [
-        "Reports the sentence as too broad rather than confirming it: reading state that is not modified (an immutable global, a constant, a thread-safe library) does not produce incorrect results under parallel execution",
+        "Reports the sentence as too broad rather than confirming it: reading state that is not modified (an immutable global, a constant, or a library call that is both thread-safe and order-independent) does not produce incorrect results under parallel execution",
         "Proposes a narrower sentence that names the unsafe cases as state that other rows change (unsynchronized shared state) and dependence on the order in which rows are processed, or equivalent wording; the two may be stated together at the Crash Course's level of precision",
         "Control: confirms the two bullets that follow (a shared variable that rows modify; an assumed row order) as correct examples rather than flagging them; proposing a wording tightening such as 'modifies' for 'reads or modifies' still passes"
       ],

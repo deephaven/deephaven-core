@@ -70,7 +70,7 @@ weigh:
   scenario each one demonstrates.
 - List every callout/admonition (`> [!NOTE]`, `> [!WARNING]`, `> [!IMPORTANT]`, etc.) with a
   one-line note on what it says.
-- List every markdown table (lines starting with `|`) with its line number and what it holds:
+- List every markdown table (runs of lines whose first non-space character is `|`, including tables indented under a list item) with its line number and what it holds:
   a quick reference, a configuration table, a comparison, or output. For each table that holds
   output, note whether it is a rendered snapshot or hand-written, and whether the sentence before
   it says which. The **Illustrative output introduced as such** check uses this list.
