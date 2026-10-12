@@ -2,7 +2,7 @@
 title: leftOuterJoin
 ---
 
-`leftOuterJoin` joins data from a pair of tables - a left table and a right table - based upon one or more match columns (`columnsToMatch`). The match columns establish key identifiers in the source tables from which the tables are joined. Any data type can be used as keys.
+`leftOuterJoin` joins data from a pair of tables - a left table and a right table - based upon one or more match columns (`columnsToMatch`). The match columns establish key identifiers in the source tables that are joined. Any data type can be used as keys (custom objects must implement consistent equality and `hashCode`).
 
 The resultant table contains all rows from the left table (the first given) as well as rows from the right table that have matching keys in the identifier column(s).
 
@@ -40,18 +40,18 @@ Columns from the left and right tables used to join on.
 </Param>
 <Param name="columnsToMatch" type="Collection<String>">
 
-Columns from the left and right tables used to join on.
+Columns from the left and right tables used to join on. Each element of the collection is a single match.
 
 - `"A = B"` will join when column `A` from the left table matches column `B` from the right table.
 - `"X"` will join on column `X` from both the left and right table. Equivalent to `"X = X"`.
-- `"X, A = B"` will join when column `X` matches from both the left and right tables, and when column `A` from the left table matches column `B` from the right table.
+- `["X", "A = B"]` will join when column `X` matches from both the left and right tables, and when column `A` from the left table matches column `B` from the right table.
 
 </Param>
 <Param name="columnsToAdd" type="String">
 
 The columns from the right table to add to the left table based on key.
 
-- `NULL` will add all columns from the right table to the left table.
+- If this argument is omitted or left empty (`""`), all columns from the right table are added to the left table, except right table columns whose names match a left table column in `columnsToMatch`.
 - `"X"` will add column `X` from the right table to the left table as column `X`.
 - `Y = X` will add column `X` from right table to left table and rename it to be `Y`.
 
@@ -60,7 +60,7 @@ The columns from the right table to add to the left table based on key.
 
 The columns from the right table to add to the left table based on key.
 
-- `NULL` will add all columns from the right table to the left table.
+- An empty collection adds all columns from the right table to the left table, except right table columns whose names match a left table column in `columnsToMatch`.
 - `"X"` will add column `X` from the right table to the left table as column `X`.
 - `Y = X` will add column `X` from right table to left table and rename it to be `Y`.
 
@@ -69,7 +69,7 @@ The columns from the right table to add to the left table based on key.
 
 ## Returns
 
-A new table containing all rows from the left table and matching rows from the right table. Rows that do not have matching criteria will not be included in the result. If there are multiple matches between a row from the left table and rows from the right table, all matching combinations will be included. If no match columns are specified, every combination of left and right table rows is included.
+A new table containing all rows from the left table and matching rows from the right table. A left table row with no matching right table rows is included once, with null values in the columns from the right table. If there are multiple matches between a row from the left table and rows from the right table, all matching combinations will be included. If no match columns are specified, every combination of left and right table rows is included; if the right table is empty, each left table row is included once with null values in the columns from the right table.
 
 ## Examples
 

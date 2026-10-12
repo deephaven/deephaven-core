@@ -94,3 +94,31 @@ Grader note: the recurring eval 3 miss ("(global interpreter lock)" kept in a re
 Wording note: eval 4 expectation 1 now requires the flag on the section's opening paragraph (the first mention), not a later bullet. Re-graded on the new wording, the scores are unchanged (new 3/3, baseline 0/3, and 3/3 for iteration 2).
 
 Eval 6 extension (review follow-up): the column-name sweep now also searches the prose for names the page defines, used alone or in a coordinated phrase ("A and B run in parallel"). The fixture gained that passage and eval 6 gained a fifth expectation. New skill only, 3 runs, graded blind: 14/15, and the new expectation passed in all 3 runs. The one miss stated the backtick rule without citing the corpus count or the skill.
+
+## DOC-1560 (PR #8860): whole-page accuracy and audit fixes
+
+Method: "main" is the skill on `main`; "new" is the PR branch. Each trial read the skill from its configuration's folder and verified against the same checkout. A separate grader scored each eval's reports blind (shuffled, unlabeled) against the expectations. Two to three runs per cell unless noted, so treat counts as direction, not rates.
+
+| Eval | What it tests | main | new |
+| --- | --- | --- | --- |
+| 9 (new) | `order=` tags list tables their block didn't create | 4/6 | 6/6 |
+
+One `main` run also flagged the setup block's `order=` tag or the shared `test-set`, which the control expectation rules out.
+
+### Chip Kent's 2026-10-09 review of #7457 (linking and readability)
+
+Chip's third review of the parallelization concept guide flagged bare API names that the per-`##`-section linking rule allows (later mentions in a new paragraph, bold lead terms in a contrast list, every name in Key takeaways), a "wall of text" section, and a qualifier with no concrete meaning. He asked twice for these real cases to become evals. Changes: the linking unit is now each paragraph, list, and table, with every API name linked in summary blocks; new **Walls of text** and **Qualifiers with no concrete referent** rules, each with a search step; the example identifiers were removed from the rule text so the new eval stays held out. Eval 10 uses the page exactly as Chip reviewed it (#7457 at bf296eeffa); eval 4's expectations moved from the per-section rule to the per-paragraph rule.
+
+| Eval | main | new (first rule text) | new (with search steps) |
+| --- | --- | --- | --- |
+| 10 (Chip's cases, 6 expectations) | 4/12 | 8/12 | 10/12 |
+| 4 (regression, new only) | - | 10/10 | - |
+
+- Both `main` runs missed the per-paragraph bare names (line 139, the bold lead terms at 143-144); every new run caught them.
+- The wall-of-text check passed in 1 of 2 runs before its search step and 2 of 2 after.
+- No run, in either configuration, flagged "with no Deephaven configuration". After the search step, both new runs found the phrase and judged it a checkable fact ("there is no property to set"), which is what the rule asks for; Chip read it as unclear. This stays a judgment call; not tuned further.
+
+**Correction (expectation 5 of eval 10).** As first written, expectation 5 required flagging "with no Deephaven configuration", but the rule lets a qualifier pass when it states a checkable fact, and the final new runs made exactly that call explicitly. The expectation now accepts either a rewrite/removal or an explicit explanation; silence still fails. Rescored from the graders' recorded reasons (no rerun): `main` 4/12 (neither run mentioned the phrase), new first rule text 8/12 (neither run mentioned it), new with search steps 12/12 (both runs explained why the phrase passes).
+
+**Held-out rerun (eval 10).** Copilot noted that the linking rule's bold-lead-term example was `with_serial`, the exact case eval 10 checks. The example is now `sort_descending`, which the fixture doesn't contain, and the new skill was rerun (2 runs): 10/12. One run met all six expectations; the other missed the **Barriers** lead term and didn't mention the qualifier. This replaces the 12/12 above as the score to cite; `main` stays at 4/12.
+

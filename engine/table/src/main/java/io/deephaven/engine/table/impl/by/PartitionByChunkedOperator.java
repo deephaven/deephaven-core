@@ -36,6 +36,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -88,6 +89,11 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     private final QueryTable parentTable;
     private final String resultName;
     private final Map<String, Object> subTableAttributes;
+    /**
+     * Whether this operator was created on a systemic thread. Sub-tables are made with the current thread's systemic
+     * marking set accordingly, so that they match the creator of the operation whichever thread makes them.
+     */
+    private final boolean systemic;
 
     private final String callSite;
 
@@ -154,6 +160,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         // MCS.
         resultModifiedColumnSet = new ModifiedColumnSet(parentTable.getModifiedColumnSetForUpdates());
 
+        systemic = SystemicObjectTracker.isSystemicThread();
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             // noinspection resource
             final QueryTable attributeDestination = parentTable.getSubTable(RowSetFactory.empty().toTracking());
@@ -804,8 +811,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     private QueryTable makeSubTable(@NotNull final WritableRowSet initialRowSetToInsert) {
         initialRowSetToInsert.compact();
-        final QueryTable subTable = parentTable.getSubTable(
-                initialRowSetToInsert.toTracking(), resultModifiedColumnSet, subTableAttributes);
+        final QueryTable subTable = SystemicObjectTracker.executeSystemically(systemic, () -> parentTable.getSubTable(
+                initialRowSetToInsert.toTracking(), resultModifiedColumnSet, subTableAttributes));
         subTable.setRefreshing(parentTable.isRefreshing());
         return subTable;
     }

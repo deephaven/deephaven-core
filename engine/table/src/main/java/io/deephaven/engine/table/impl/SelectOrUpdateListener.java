@@ -142,7 +142,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             updateHelper.close();
             final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
             // if the entry exists, then we install a terminal notification so that we don't lose the performance from
-            // this execution
+            // this execution: this runs on the last job to finish, which adds its own only after this returns
             if (accumulated != null) {
                 getUpdateGraph().addNotification(new TerminalNotification() {
                     @Override
