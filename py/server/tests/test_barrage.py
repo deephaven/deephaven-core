@@ -143,6 +143,8 @@ class BarrageTestCase(BaseTestCase):
 
         with self.assertRaises(DHError):
             t.with_compression("zstd")
+        with self.assertRaises(DHError):
+            t.with_compression(None)
 
     def test_compression_types_match_java(self):
         # CompressionType wraps the Java enum, so it needs a member for every Java constant
