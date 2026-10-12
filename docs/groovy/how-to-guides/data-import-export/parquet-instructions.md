@@ -2,11 +2,15 @@
 title: Parquet instructions
 ---
 
-[`readTable`](../../reference/data-import-export/Parquet/readTable.md), [`writeTable`](../../reference/data-import-export/Parquet/writeTable.md), and [`writeKeyValuePartitionedTable`](../../reference/data-import-export/Parquet/writeKeyValuePartitionedTable.md) take their options as an instance of the [`ParquetInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.html) class. Use this class to specify the layout of the Parquet files, the table definition, and how the files are compressed and encoded. To read or write Parquet files on S3, pass an [`S3Instructions`](#s3instructions) instance with the connection settings to the builder's `setSpecialInstructions` method.
+[`readTable`](../../reference/data-import-export/Parquet/readTable.md), [`writeTable`](../../reference/data-import-export/Parquet/writeTable.md), and [`writeKeyValuePartitionedTable`](../../reference/data-import-export/Parquet/writeKeyValuePartitionedTable.md) take their options as an instance of the [`ParquetInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.html) class. Use this class to specify the layout of the Parquet files, the table definition, and how the files are compressed and encoded.
+
+To read or write Parquet files on S3, pass an [`S3Instructions`](#s3instructions) instance with the connection settings to the builder's [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method.
 
 ## `ParquetInstructions`
 
-To create a [`ParquetInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.html) instance, call `ParquetInstructions.builder`, which returns a [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html) instance. Call the builder's methods to set options, and then call `build` to create the `ParquetInstructions` instance. For example, to specify that the source is a single Parquet file, use the following code:
+To create a [`ParquetInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.html) instance, call [`ParquetInstructions.builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.html#builder()), which returns a [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html) instance. Call the builder's methods to set options, and then call [`build`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#build()) to create the `ParquetInstructions` instance.
+
+For example, to specify that the source is a single Parquet file, use the following code:
 
 ```groovy test-set=1 order=taxi
 import io.deephaven.parquet.table.ParquetInstructions
@@ -47,23 +51,21 @@ Some builder methods apply only when reading, some only when writing, and some t
   - `ParquetFileLayout.FLAT_PARTITIONED`: A single directory of Parquet files with no nested subdirectories.
   - `ParquetFileLayout.KV_PARTITIONED`: A directory of Parquet files partitioned by key-value pairs.
   - `ParquetFileLayout.METADATA_PARTITIONED`: A single Parquet `_metadata` or `_common_metadata` file, or a directory containing a `_metadata` file and an optional `_common_metadata` file.
-- `setIsLegacyParquet(isLegacyParquet)`: Sets whether to read a binary column as `String` instead of `byte[]` when the column has no Parquet logical type and the file's Deephaven metadata records no codec for it. The default is `false`.
+- `setIsLegacyParquet(isLegacyParquet)`: Sets whether to read a `BINARY` or `FIXED_LEN_BYTE_ARRAY` column that has no Parquet logical type and no codec recorded in the file's Deephaven metadata as `String` instead of `byte[]`. The default is `false`.
 - `setIsRefreshing(isRefreshing)`: Sets whether the resulting table refreshes to pick up new files added to the source directory. A read with the `SINGLE_FILE` or `METADATA_PARTITIONED` layout can't be refreshing.
-- `setUnsignedLongTarget(columnName, target)`: Sets the Deephaven type to read the specified unsigned 64-bit integer (`UINT_64`) column as.
-  - This setting applies only to columns with the `UINT_64` logical type.
-  - Writes ignore it, because Deephaven never writes `UINT_64`.
-  - You can't set two different targets for one column name.
-  - A table definition supplied with `setTableDefinition` (see [Reading and writing options](#reading-and-writing-options)) governs the column type instead. If that definition disagrees with this target, `build` rejects it.
-  - The available [`UnsignedLongTarget`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.UnsignedLongTarget.html) targets are:
-    - `UnsignedLongTarget.BIG_INTEGER`: (default) Read the column as `java.math.BigInteger`, which represents every `UINT_64` value exactly.
-    - `UnsignedLongTarget.LONG`: Read the column as `long`. Values greater than 2<sup>63</sup> - 1 have no `long` representation, so reading a page that contains one raises an error.
-    - `UnsignedLongTarget.SIGNED_LONG`: Read the column as `long`, reinterpreting the bit pattern as signed. Values greater than 2<sup>63</sup> - 1 read as negative numbers, and 2<sup>63</sup> reads as `NULL_LONG`, which is indistinguishable from a null.
+- `setUnsignedLongTarget(columnName, target)`: Sets the Deephaven type to read the specified unsigned 64-bit integer (`UINT_64`) column as. It applies only when Deephaven infers the table definition. You can't set two different targets for one column name. See [Reading `UINT_64` as a `long`](./parquet-formats.md#reading-uint_64-as-a-long) for how a table definition supplied with [`setTableDefinition`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setTableDefinition(io.deephaven.engine.table.TableDefinition)) takes precedence and for write behavior. The available [`UnsignedLongTarget`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.UnsignedLongTarget.html) targets are:
+  - `UnsignedLongTarget.BIG_INTEGER`: (default) Read the column as `java.math.BigInteger`, which represents every `UINT_64` value exactly.
+  - `UnsignedLongTarget.LONG`: Read the column as `long`. Values greater than 2<sup>63</sup> - 1 have no `long` representation, so reading a page that contains one raises an error.
+  - `UnsignedLongTarget.SIGNED_LONG`: Read the column as `long`, reinterpreting the bit pattern as signed. Values greater than 2<sup>63</sup> - 1 read as negative numbers, and 2<sup>63</sup> reads as [`NULL_LONG`](../../reference/query-language/types/nulls.md), which is indistinguishable from a null.
 
 #### Writing options
 
 - `addIndexColumns(indexColumns...)` and `addAllIndexColumns(indexColumns)`: Add columns to persist together as [indexes](../data-indexes.md#persist-data-indexes-with-parquet). `addIndexColumns` adds one list of columns as one index. `addAllIndexColumns` takes an iterable of lists, and each list is one index.
   - The write operation stores each index as a separate Parquet file in a `.dh_metadata/indexes/` subdirectory of the directory that holds the data file.
-  - If you call neither method, the default depends on the write method. `writeTable` persists the indexes that already exist on the source table, and `writeTables` persists those of the first source table. `writeKeyValuePartitionedTable` with a regular table persists the source table's existing indexes, except indexes on a partitioning column. With a `PartitionedTable`, it writes no indexes.
+  - If you call neither method, the default depends on the write method:
+    - [`writeTable`](../../reference/data-import-export/Parquet/writeTable.md) persists the indexes that already exist on the source table.
+    - [`writeTables`](/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)) persists the indexes of the first source table.
+    - [`writeKeyValuePartitionedTable`](../../reference/data-import-export/Parquet/writeKeyValuePartitionedTable.md) with a regular table persists the source table's existing indexes, except indexes on a partitioning column. With a [`PartitionedTable`](/core/javadoc/io/deephaven/engine/table/PartitionedTable.html), it writes no indexes.
   - Use these methods to narrow the set of indexes to write, or to state the indexes expected on all sources.
   - Indexes that are specified but missing are computed on demand.
   - You can't add an index on a single partitioning column.
@@ -79,21 +81,33 @@ Some builder methods apply only when reading, some only when writing, and some t
   - `LZO`: Compression codec based on or interoperable with the [LZO compression library](https://www.oberhumer.com/opensource/lzo/).
   - `GZIP`: Compression codec based on the GZIP format defined by [RFC 1952](https://tools.ietf.org/html/rfc1952). This is a different format from the closely related zlib and deflate formats.
   - `ZSTD`: Compression codec with a high compression ratio based on the Zstandard format defined by [RFC 8478](https://tools.ietf.org/html/rfc8478).
-  - `BROTLI`: Compression codec based on [Brotli](https://github.com/google/brotli), offering high compression ratios. Deephaven doesn't include a Brotli codec. To use this option, add a Brotli codec (`org.apache.hadoop.io.compress.BrotliCodec`) to the server classpath. Without one, the write fails with a `Failed to find CompressionCodec` error.
+  - `BROTLI`: Compression codec based on [Brotli](https://github.com/google/brotli), offering high compression ratios.
+    - Deephaven doesn't include a Brotli codec. To use this option, add a Brotli codec (`org.apache.hadoop.io.compress.BrotliCodec`) to the server classpath.
+    - Without a Brotli codec on the classpath, the write fails with a `Failed to find CompressionCodec` error.
   - `LZ4`: **Deprecated.** Use `LZ4_RAW` instead.
 - `setFieldId(columnName, fieldId)`: Sets the Parquet field ID written for the specified column. Most users don't need to set field IDs.
 - `setGenerateMetadataFiles(generateMetadataFiles)`: Sets whether to generate `_metadata` and `_common_metadata` files while writing Parquet files.
-- `setMaximumDictionaryKeys(maximumDictionaryKeys)`: Sets the maximum number of unique keys the writer adds to a column's dictionary before it switches to non-dictionary encoding. The writer applies this setting only to `String` columns and columns of `String` arrays or vectors. It ignores the setting for a column where `useDictionary` is set to `true`. The default is 1048576, the value of `ParquetInstructions.DEFAULT_MAXIMUM_DICTIONARY_KEYS`.
-- `setMaximumDictionarySize(maximumDictionarySize)`: Sets the maximum number of bytes the writer adds to a column's dictionary before it switches to non-dictionary encoding. The writer applies this setting only to `String` columns and columns of `String` arrays or vectors. It ignores the setting for a column where `useDictionary` is set to `true`. The default is 1048576, the value of `ParquetInstructions.DEFAULT_MAXIMUM_DICTIONARY_SIZE`.
+- `setMaximumDictionaryKeys(maximumDictionaryKeys)`: Sets the maximum number of unique keys the writer adds to a column's dictionary before it switches to non-dictionary encoding. The default is 1048576, the value of `ParquetInstructions.DEFAULT_MAXIMUM_DICTIONARY_KEYS`.
+  - The writer applies this setting only to `String` columns and columns of `String` arrays or vectors.
+  - The writer ignores the setting for a column where [`useDictionary`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#useDictionary(java.lang.String,boolean)) is set to `true`.
+- `setMaximumDictionarySize(maximumDictionarySize)`: Sets the maximum number of bytes the writer adds to a column's dictionary before it switches to non-dictionary encoding. The default is 1048576, the value of `ParquetInstructions.DEFAULT_MAXIMUM_DICTIONARY_SIZE`.
+  - The writer applies this setting only to `String` columns and columns of `String` arrays or vectors.
+  - The writer ignores the setting for a column where `useDictionary` is set to `true`.
 - `setOnWriteCompleted(onWriteCompleted)`: Sets a callback invoked after each Parquet data file is written, excluding index and metadata files.
 - `setRowGroupInfo(rowGroupInfo)`: Sets how the writer splits the table into [row groups](./parquet-formats.md). The available options are:
   - [`RowGroupInfo.singleGroup`](/core/javadoc/io/deephaven/parquet/table/metadata/RowGroupInfo.html#singleGroup()): The default `RowGroupInfo` implementation. All data is written within a single row group.
   - [`RowGroupInfo.maxRows(maxRows)`](/core/javadoc/io/deephaven/parquet/table/metadata/RowGroupInfo.html#maxRows(long)): Splits the table into row groups of no more than `maxRows` rows each.
   - [`RowGroupInfo.maxGroups(numRowGroups)`](/core/javadoc/io/deephaven/parquet/table/metadata/RowGroupInfo.html#maxGroups(long)): Splits the table into the requested number of row groups of nearly equal size. If the row count isn't evenly divisible by the number of row groups, some row groups contain one fewer row than others.
-  - [`RowGroupInfo.byGroups(groups)`](/core/javadoc/io/deephaven/parquet/table/metadata/RowGroupInfo.html#byGroups(java.lang.String...)): Splits each unique group into a row group. If the values of the grouping columns aren't contiguous in the input table, the [`writeTable`](../../reference/data-import-export/Parquet/writeTable.md) call throws an exception.
-  - [`RowGroupInfo.byGroups(maxRows, groups)`](/core/javadoc/io/deephaven/parquet/table/metadata/RowGroupInfo.html#byGroups(long,java.lang.String...)): Splits each unique group into a row group. If the values of the grouping columns aren't contiguous in the input table, the `writeTable` call throws an exception. The writer splits any group with more than `maxRows` rows further, as `RowGroupInfo.maxRows(maxRows)` does.
-- `setTargetPageSize(targetPageSize)`: Sets the target size, in bytes, of each data page the writer produces. The default is 65536, the value of `ParquetInstructions.DEFAULT_TARGET_PAGE_SIZE`. You can override it with the `Parquet.defaultTargetPageSize` [configuration property](../configuration/configuration-properties.md). The value must be at least the `Parquet.minTargetPageSize` configuration property, which defaults to 2048.
-- `useDictionary(columnName, useDictionary)`: Sets a hint that the writer should keep dictionary encoding for this column. The writer already tries dictionary encoding for every `String` column and every column of `String` arrays or vectors. Setting the hint to `true` removes the `setMaximumDictionaryKeys` and `setMaximumDictionarySize` limits for the column, so the writer never falls back to non-dictionary encoding. The writer ignores this hint for other column types.
+  - [`RowGroupInfo.byGroups(groups)`](/core/javadoc/io/deephaven/parquet/table/metadata/RowGroupInfo.html#byGroups(java.lang.String...)): Splits each unique group into a row group.
+  - [`RowGroupInfo.byGroups(maxRows, groups)`](/core/javadoc/io/deephaven/parquet/table/metadata/RowGroupInfo.html#byGroups(long,java.lang.String...)): Splits each unique group into a row group, and splits any group with more than `maxRows` rows further, as `RowGroupInfo.maxRows(maxRows)` does.
+  - For both `byGroups` options, the write throws an exception if the values of the grouping columns aren't contiguous in the input table.
+- `setTargetPageSize(targetPageSize)`: Sets the target size, in bytes, of each data page the writer produces. The default is 65536, the value of `ParquetInstructions.DEFAULT_TARGET_PAGE_SIZE`.
+  - You can override the default with the `Parquet.defaultTargetPageSize` configuration property.
+  - The value must be at least the `Parquet.minTargetPageSize` configuration property, which defaults to 2048.
+- `useDictionary(columnName, useDictionary)`: Sets a hint that the writer should keep dictionary encoding for this column.
+  - The writer already tries dictionary encoding for every `String` column and every column of `String` arrays or vectors.
+  - Setting the hint to `true` removes the [`setMaximumDictionaryKeys`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setMaximumDictionaryKeys(int)) and [`setMaximumDictionarySize`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setMaximumDictionarySize(int)) limits for the column, so the writer never falls back to non-dictionary encoding.
+  - The writer ignores this hint for other column types.
 
 #### Reading and writing options
 
@@ -106,6 +120,7 @@ Some builder methods apply only when reading, some only when writing, and some t
 #### Other builder methods
 
 - `build`: Builds the `ParquetInstructions` instance.
+- `new ParquetInstructions.Builder(existingInstructions)`: Creates a builder pre-populated with the settings of an existing `ParquetInstructions` instance.
 - `getTakenNames`: Returns the set of Deephaven column names that already have per-column settings on this builder. The per-column settings come from `addColumnNameMapping`, `addColumnCodec`, `setFieldId`, `setUnsignedLongTarget`, and `useDictionary`.
 
 The builder also has methods for integrations such as Iceberg, including `setColumnResolverFactory`. Users don't typically call these methods, so this page doesn't list them.
@@ -138,16 +153,16 @@ A `ParquetInstructions` instance has an accessor for each builder setting listed
 
 The `ParquetInstructions` class also has the following methods:
 
-- `builder`: Returns a new [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html) instance.
+- `builder`: Returns a new `ParquetInstructions.Builder` instance.
 - `getColumnNameFromParquetColumnNameOrDefault(parquetColumnName)`: Returns the column name in the Deephaven table corresponding to the specified Parquet column name, or the Parquet column name if no mapping exists.
 - `getParquetColumnNameFromColumnNameOrDefault(columnName)`: Returns the Parquet column name corresponding to the specified column name, or the column name if no mapping exists.
-- `withLayout(fileLayout)`: Returns a new `ParquetInstructions` instance with the supplied [`ParquetFileLayout`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html).
+- `withLayout(fileLayout)`: Returns a new `ParquetInstructions` instance with the supplied `ParquetFileLayout`.
 - `withTableDefinition(tableDefinition)`: Returns a new `ParquetInstructions` instance with the supplied table definition.
 - `withTableDefinitionAndLayout(tableDefinition, fileLayout)`: Returns a new `ParquetInstructions` instance with the supplied table definition and `ParquetFileLayout`.
 
 ## `S3Instructions`
 
-To read Parquet files from or write them to S3, pass an [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) instance to the `setSpecialInstructions` method of [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html). Create the instance with `S3Instructions.builder`, call the builder's methods to set options, and then call `build`:
+To read Parquet files from or write them to S3, pass an [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) instance to the [`setSpecialInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html#setSpecialInstructions(java.lang.Object)) method of [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html). Create the instance with [`S3Instructions.builder`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html#builder()), call the builder's methods to set options, and then call [`build`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.Builder.html#build()):
 
 ```groovy order=null
 import io.deephaven.extensions.s3.S3Instructions
@@ -188,17 +203,15 @@ Set each of the following options with the [`S3Instructions.Builder`](/core/java
 - `readAheadCount`: The number of fragments to read asynchronously ahead of the fragment currently being read. The default is 32.
 - `readTimeout`: The amount of time to wait for a fragment read to complete before timing out. The default is 2 seconds.
 - `regionName`: The region name of the AWS S3 bucket where the Parquet data exists. If you don't set it, the AWS SDK picks the region from the first of these sources that provides one:
-  - The `aws.region` system property.
-  - The `AWS_REGION` environment variable.
-  - The `{user.home}/.aws/credentials` or `{user.home}/.aws/config` file.
-  - The EC2 metadata service, when running in EC2.
-
-  If none of these sources provides a region, or the region is wrong for the bucket, Deephaven derives the correct region with one additional request.
-
+  - The `aws.region` system property
+  - The `AWS_REGION` environment variable
+  - The `{user.home}/.aws/credentials` or `{user.home}/.aws/config` file
+  - The EC2 metadata service, when running in EC2
+  - If none of these sources provides a region, or the region is wrong for the bucket, Deephaven derives the correct region with one additional request
 - `writePartSize`: The size of each part (in bytes) to upload when writing to S3. The default is 10485760, and the minimum is 5242880.
 - `writeTimeout`: The amount of time to wait for a fragment write to complete before timing out. The default is 2 seconds.
 
-A built `S3Instructions` instance also has the `withEndpointOverride(endpointOverride)` method, which returns a copy of the instance with the supplied endpoint override.
+A built `S3Instructions` instance also has the [`withEndpointOverride(endpointOverride)`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html#withEndpointOverride(java.net.URI)) method, which returns a copy of the instance with the supplied endpoint override.
 
 ## Related documentation
 

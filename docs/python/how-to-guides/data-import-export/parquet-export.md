@@ -2,7 +2,7 @@
 title: Export Deephaven tables to Parquet files
 ---
 
-The [Deephaven Parquet Python module](/core/pydoc/code/deephaven.parquet.html#module-deephaven.parquet) provides tools to integrate Deephaven with the Parquet file format. This document covers writing Deephaven tables to single Parquet files, key-value partitioned Parquet directories, and flat partitioned Parquet directories. You can write each layout to local storage or to S3.
+The [Deephaven Parquet Python module](/core/pydoc/code/deephaven.parquet.html#module-deephaven.parquet) provides tools to integrate Deephaven with the Parquet file format. This document covers writing Deephaven tables to single Parquet files, key-value partitioned Parquet directories, and flat partitioned Parquet directories. You can write each layout to local storage, S3, or Google Cloud Storage.
 
 By default, Deephaven writes Parquet files with `SNAPPY` compression. To choose a different codec or set other write options, see [Optional arguments](#optional-arguments).
 
@@ -106,7 +106,7 @@ Deephaven can also write tables to a directory of Parquet files instead of a sin
 - A _key-value_ partitioned directory nests its Parquet files in subdirectories named `key=value`, one level per _partitioning column_. A partitioning column's values name the subdirectories, such as `Class=Math`, instead of being stored inside each file.
 - A _flat_ partitioned directory holds its Parquet files side by side in a single directory. It has no partitioning columns.
 
-When a query filters on a partitioning column, Deephaven can skip the subdirectories the filter excludes. A flat directory has no nested subdirectories, so it is simpler to manage, but with many files the single directory listing grows large, which can slow reads.
+When a query filters on a partitioning column, Deephaven can skip the subdirectories the filter excludes.
 
 ## Write to a key-value partitioned Parquet directory
 
@@ -185,7 +185,7 @@ parquet.write_partitioned(
 
 ## Write to a flat partitioned Parquet directory
 
-A flat partitioned directory holds one Parquet file per table, side by side in a single directory, with no nested subdirectories and no partitioning columns. This makes it simpler to manage than a key-value partitioned directory, but with many files, the larger directory listing can slow reads.
+A flat partitioned directory holds one Parquet file per table, as described in [Partitioned Parquet directories](#partitioned-parquet-directories).
 
 ### To local storage
 
@@ -271,7 +271,7 @@ The [`write`](../../reference/data-import-export/Parquet/writeTable.md), [`write
   - `LZ4`: **Deprecated.** Use `LZ4_RAW` instead.
 - `max_dictionary_keys`: The maximum number of unique keys the writer should add to a dictionary page before switching to non-dictionary encoding. [Dictionary-based encoding](https://en.wikipedia.org/wiki/Dictionary_coder) stores each column's unique values in dictionary pages. The writer applies this limit only to `String` columns and columns of `String` arrays or vectors, and ignores it for a column whose [`use_dictionary`](#column-instructions) hint is `True`. Defaults to 2^20 (1,048,576).
 - `max_dictionary_size`: The maximum number of bytes the writer should add to the dictionary before switching to non-dictionary encoding. The writer applies this limit only to `String` columns and columns of `String` arrays or vectors, and ignores it for a column whose [`use_dictionary`](#column-instructions) hint is `True`. Defaults to 2^20 (1,048,576).
-- `target_page_size`: The target page size in bytes. Defaults to 65,536 bytes (64 KiB), which you can change with the `Parquet.defaultTargetPageSize` [configuration property](../configuration/configuration-properties.md).
+- `target_page_size`: The target page size in bytes. Defaults to 65,536 bytes (64 KiB), which you can change with the `Parquet.defaultTargetPageSize` configuration property.
 - `generate_metadata_files`: Whether to generate Parquet `_metadata` and `_common_metadata` files. Defaults to `False`.
 - `row_group_info`: Sets how the written data is divided into [row groups](./parquet-formats.md), the horizontal slices of rows that make up a Parquet file. The available [`RowGroupInfo`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.RowGroupInfo) options are:
   - `RowGroupInfo.single_group`: All data is within a single row group. This is the default.
@@ -306,10 +306,10 @@ The `special_instructions` argument to [`write`](/core/pydoc/code/deephaven.parq
 The following [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) arguments are relevant when writing. The API documentation lists the rest, including arguments that apply only to reads.
 
 - `region_name`: The region name of the AWS S3 bucket. If you don't set it, the AWS SDK looks for a region in these places, in order:
-  - The `aws.region` system property.
-  - The `AWS_REGION` environment variable.
-  - The `{user.home}/.aws/credentials` and `{user.home}/.aws/config` files.
-  - The EC2 metadata service, when running on EC2.
+  - The `aws.region` system property
+  - The `AWS_REGION` environment variable
+  - The `{user.home}/.aws/credentials` and `{user.home}/.aws/config` files
+  - The EC2 metadata service, when running on EC2
 
   If none of these gives the bucket's correct region, Deephaven looks up the region with one additional request.
 
