@@ -28,6 +28,7 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.*;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.*;
@@ -95,6 +96,9 @@ public abstract class UpdateBy {
     /** Store every bucket in this list for processing */
     protected final IntrusiveDoublyLinkedQueue<UpdateByBucketHelper> buckets;
 
+    /** The sparse array sources the operators write at the source table's row keys */
+    private final SparseArrayColumnSource<?>[] sparseSourcesToFree;
+
     static class UpdateByRedirectionHelper {
         @Nullable
         private final RowRedirection rowRedirection;
@@ -158,6 +162,7 @@ public abstract class UpdateBy {
                     writableRowRedirection.applyShift(prevRowSetLessRemoves, upstream.shifted());
                 }
             }
+            writableRowRedirection.releaseVacatedStorage(upstream.removed(), upstream.shifted(), sourceRowSet);
 
             if (upstream.added().isNonempty()) {
                 final WritableRowSet.Iterator freeIt = freeRows.iterator();
@@ -208,6 +213,10 @@ public abstract class UpdateBy {
         this.timestampColumnName = timestampColumnName;
         this.redirHelper = new UpdateByRedirectionHelper(rowRedirection);
         this.control = control;
+
+        final Set<SparseArrayColumnSource<?>> sparseSources = Collections.newSetFromMap(new IdentityHashMap<>());
+        forAllOperators(op -> op.collectSparseSources(sparseSources::add));
+        sparseSourcesToFree = sparseSources.toArray(SparseArrayColumnSource<?>[]::new);
 
         this.inputSourceCacheNeeded = new boolean[inputSources.length];
         cacheableSourceIndices = IntStream.range(0, inputSources.length)
@@ -940,13 +949,15 @@ public abstract class UpdateBy {
             // clear the sparse output columns for rows that no longer exist
             if (!initialStep && !redirHelper.isRedirected() && !toClear.isEmpty()) {
                 forAllOperators(op -> op.clearOutputRows(toClear));
+                SparseArrayColumnSource.clearBlocksWithoutLiveRows(toClear, source.getRowSet(), sparseSourcesToFree);
             }
 
             // release remaining resources
             SafeCloseable.closeAll(changedRows, toClear);
             upstream.release();
 
-            // accumulate performance data
+            // accumulate performance data, in a terminal notification: this runs on the last job to finish, which adds
+            // its own only after this returns
             if (!initialStep) {
                 final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
                 if (accumulated != null) {

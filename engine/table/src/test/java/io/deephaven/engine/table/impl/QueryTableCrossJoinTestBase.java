@@ -15,12 +15,15 @@ import io.deephaven.chunk.ResettableWritableIntChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.sources.CrossJoinRightColumnSource;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -357,7 +360,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             cardinality[i] = i * i;
         }
         testStaticJoin(types, cardinality, types.length, types.length, false, false,
-                TestJoinControl.OVERFLOW_JOIN_CONTROL);
+                TestJoinControl.SMALL_TABLE_JOIN_CONTROL);
     }
 
     // generate a table such that all pairs of types exist and are part of the cross-join
@@ -605,12 +608,12 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
             @Override
             double getMaximumLoadFactor() {
-                return 20;
+                return 0.95;
             }
 
             @Override
             double getTargetLoadFactor() {
-                return 19;
+                return 0.9;
             }
         };
 
@@ -765,12 +768,12 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
             @Override
             double getMaximumLoadFactor() {
-                return 20;
+                return 0.95;
             }
 
             @Override
             double getTargetLoadFactor() {
-                return 19;
+                return 0.9;
             }
         };
 
@@ -826,5 +829,90 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
             TstUtils.validate(" step == " + numSteps.get(), en);
         }
+    }
+
+    @Test
+    public void testBothTickingKeyChurn() {
+        // Keys come from a small pool, and whole keys frequently leave both sides at once; a key that leaves releases
+        // its slot, and a key that arrives later may reuse it.
+        final Random random = new Random(0);
+        final QueryTable left = TstUtils.testRefreshingTable(i().toTracking(), longCol("LK"), intCol("LV"));
+        final QueryTable right = TstUtils.testRefreshingTable(i().toTracking(), longCol("RK"), intCol("RV"));
+        final MatchPair[] columnsToMatch = MatchPairFactory.getExpressions("LK=RK");
+
+        final EvalNugget[] en = new EvalNugget[] {
+                EvalNugget.from(() -> CrossJoinHelper.join(left, right, columnsToMatch,
+                        MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve,
+                        TestJoinControl.SMALL_TABLE_JOIN_CONTROL)),
+                EvalNugget.from(() -> CrossJoinHelper.leftOuterJoin(left, right, columnsToMatch,
+                        MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve,
+                        TestJoinControl.SMALL_TABLE_JOIN_CONTROL)),
+        };
+
+        final Table joined = CrossJoinHelper.join(left, right, columnsToMatch,
+                MatchPairFactory.getExpressions("RV"), numRightBitsToReserve,
+                TestJoinControl.SMALL_TABLE_JOIN_CONTROL);
+        final RightIncrementalChunkedCrossJoinStateManager stateManager =
+                (RightIncrementalChunkedCrossJoinStateManager) ((CrossJoinRightColumnSource<?>) joined
+                        .getColumnSource("RV")).getCrossJoinManager();
+
+        final MutableLong nextRowKey = new MutableLong();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step < 300; ++step) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                churnKeys(random, left, "LK", "LV", nextRowKey);
+                churnKeys(random, right, "RK", "RV", nextRowKey);
+            });
+            TstUtils.validate("step == " + step, en);
+
+            // only the keys still on either side have a slot, and released slots are reused rather than new ones
+            // handed out
+            final Set<Long> liveKeys = new HashSet<>();
+            left.getRowSet().forAllRowKeys(rowKey -> liveKeys.add(left.getColumnSource("LK").getLong(rowKey)));
+            right.getRowSet().forAllRowKeys(rowKey -> liveKeys.add(right.getColumnSource("RK").getLong(rowKey)));
+            assertEquals("step == " + step, liveKeys.size(), stateManager.liveSlotCount());
+            assertTrue("step == " + step, stateManager.slotCapacity() <= 8);
+        }
+    }
+
+    /**
+     * Remove some (or all) of the rows of {@code table}, change the key of some of the rest, and add a few rows.
+     */
+    private static void churnKeys(final Random random, final QueryTable table, final String keyName,
+            final String valueName, final MutableLong nextRowKey) {
+        if (random.nextInt(4) == 0) {
+            return;
+        }
+        final boolean removeAll = random.nextInt(3) == 0;
+        final RowSetBuilderSequential removedBuilder = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential modifiedBuilder = RowSetFactory.builderSequential();
+        table.getRowSet().forAllRowKeys(rowKey -> {
+            final int choice = random.nextInt(10);
+            if (removeAll || choice < 4) {
+                removedBuilder.appendKey(rowKey);
+            } else if (choice < 6) {
+                modifiedBuilder.appendKey(rowKey);
+            }
+        });
+        final WritableRowSet removed = removedBuilder.build();
+        final WritableRowSet modified = modifiedBuilder.build();
+        final int numAdded = random.nextInt(6);
+        final WritableRowSet added = numAdded == 0 ? RowSetFactory.empty()
+                : RowSetFactory.fromRange(nextRowKey.get(), nextRowKey.get() + numAdded - 1);
+        nextRowKey.add(numAdded);
+
+        TstUtils.removeRows(table, removed);
+        final int numChanged = modified.intSize() + numAdded;
+        final long[] keys = new long[numChanged];
+        final int[] values = new int[numChanged];
+        for (int ii = 0; ii < numChanged; ++ii) {
+            keys[ii] = random.nextInt(8);
+            values[ii] = random.nextInt(1000);
+        }
+        // the modified rows precede the added rows, which have new row keys
+        try (final WritableRowSet changed = modified.union(added)) {
+            TstUtils.addToTable(table, changed, longCol(keyName, keys), intCol(valueName, values));
+        }
+        table.notifyListeners(added, removed, modified);
     }
 }

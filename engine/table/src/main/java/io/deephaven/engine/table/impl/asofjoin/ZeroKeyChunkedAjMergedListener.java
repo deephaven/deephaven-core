@@ -159,6 +159,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
             // process the relevant right hand side changes
             if (leftTicked) {
                 final RowSet leftRemoved = leftRecorder.getRemoved();
+                rowRedirection.releaseVacatedStorage(leftRemoved, leftRecorder.getShifted(), leftTable.getRowSet());
 
                 final RowSet leftRestampRemovals;
                 if (leftStampModified) {

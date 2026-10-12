@@ -1,6 +1,6 @@
 ---
 name: ref-deephaven-doc-categories
-description: Reference — the four deephaven-core documentation categories (Tutorial, How-to guide, Concept guide, Reference guide), which repo directory each lives in, and the tone/structure expectations tied to each. Loaded by deephaven-writing-style, deephaven-doc-structure-review, deephaven-core-accuracy-check, and deephaven-docs-review-full to calibrate their checks to the doc's actual category. Not invoked directly — there is no scenario where a human asks for this skill by itself.
+description: Reference — the four deephaven-core documentation categories (Tutorial, How-to guide, Concept guide, Reference guide), which repo directory each lives in, and the tone/structure expectations tied to each. Loaded by deephaven-writing-style, deephaven-doc-structure-review, deephaven-core-accuracy-check, deephaven-docs-review-full, and deephaven-docs-address-review-comments to calibrate their checks to the doc's actual category. Not invoked directly — there is no scenario where a human asks for this skill by itself.
 user-invocable: false
 ---
 
@@ -8,11 +8,12 @@ user-invocable: false
 
 Identify a doc's category before applying any category-dependent check — tone, structure, and
 depth expectations all depend on it. This is the single source of truth for the categories;
-`deephaven-writing-style`, `deephaven-doc-structure-review`, `deephaven-core-accuracy-check`, and
-`deephaven-docs-review-full` read this file rather than each defining categories independently.
-`deephaven-core-accuracy-spot-check` is deliberately not a consumer — it's scoped to one small,
-already-isolated edit and stays category-agnostic on purpose; don't add a category-identification
-prerequisite to it.
+`deephaven-writing-style`, `deephaven-doc-structure-review`, `deephaven-core-accuracy-check`,
+`deephaven-docs-review-full`, and `deephaven-docs-address-review-comments` read this file rather than
+each defining categories independently. `deephaven-core-accuracy-spot-check` is deliberately not a
+consumer — it's scoped to one small, already-isolated edit; don't add a category-identification
+prerequisite to it. Its placement gate needs only one distinction, which it states inline: narrative
+pages (Concept guides, Tutorials) versus Reference and configuration pages.
 
 ## The four categories
 

@@ -13,6 +13,19 @@ import java.util.Deque;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Consumer;
 
+/**
+ * A {@link JobScheduler} that runs jobs on the thread that submits them, with a {@link #threadCount() thread count} of
+ * one.
+ * <p>
+ * A {@link #submit submit} from a thread that is not already running this scheduler's jobs runs the job before
+ * returning, along with every job submitted while it runs. Jobs submitted from within a running job are queued rather
+ * than run recursively, and the queue is drained most recently submitted first, so nested work runs depth-first rather
+ * than in submission order.
+ * <p>
+ * Only one thread may run this scheduler's jobs at a time: a submit from any other thread while jobs are running throws
+ * {@link IllegalCallerException}. A job that completes asynchronously must therefore resume on the running thread, or
+ * after the jobs have finished. An {@link Error} thrown by a job propagates out of the submit that is running it.
+ */
 public class ImmediateJobScheduler implements JobScheduler {
 
     private volatile Thread processingThread;

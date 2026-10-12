@@ -67,6 +67,8 @@ createJmhTask('jmhRunSortMulti', 'SortMultiBenchmark')
 createJmhTask('jmhRunRangeFilter', 'RangeFilterBenchmark')
 createJmhTask('jmhRunNaturalJoin', 'NaturalJoinBenchmark')
 createJmhTask('jmhRunNaturalJoinIncrementalUpdate', 'NaturalJoinIncrementalUpdateBenchmark')
+createJmhTask('jmhRunCrossJoin', 'CrossJoin.*Benchmark')
+createJmhTask('jmhRunSymbolTableCombiner', 'SymbolTableCombinerBenchmark')
 createJmhTask('jmhRunSparseSelect', 'SparseSelectBenchmark')
 createJmhTask('jmhRunRCS', 'RegionedColumnSourceBenchmark')
 createJmhTask('jmhRunBy', 'ByBenchmark')
@@ -84,6 +86,7 @@ createJmhTask('jmhRunRowSetSmallInsert', 'RowSetSmallInsertBench')
 createJmhTask('jmhRunRowSetSmallRemove', 'RowSetSmallRemoveBench')
 createJmhTask('jmhRunRowSetSubsume', 'RowSetSubsumeBench')
 createJmhTask('jmhRunNullableLongLongMap', 'NullableLongLongMapBench')
+createJmhTask('jmhRunPercentileBy', 'PercentileByBenchmark', [], '12g')
 
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->

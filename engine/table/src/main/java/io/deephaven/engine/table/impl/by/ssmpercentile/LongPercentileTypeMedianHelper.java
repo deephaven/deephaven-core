@@ -47,8 +47,9 @@ public class LongPercentileTypeMedianHelper extends LongPercentileTypeHelper {
 
             if (ssmLo.totalSize() == ssmHi.totalSize()) {
                 // region averageEvenlyDivided
-                return setResult(destination, (((LongSegmentedSortedMultiset) ssmLo).getMaxLong()
-                        + ((LongSegmentedSortedMultiset) ssmHi).getMinLong()) / 2.0);
+                return setResult(destination, PercentileAverages.average(
+                        ((LongSegmentedSortedMultiset) ssmLo).getMaxLong(),
+                        ((LongSegmentedSortedMultiset) ssmHi).getMinLong()));
                 // endregion averageEvenlyDivided
             } else {
                 return setResult(destination, ((LongSegmentedSortedMultiset) ssmLo).getMaxLong());

@@ -144,11 +144,7 @@ public class ReplicateSegmentedSortedArray {
         final File file = new File(path);
 
         List<String> lines = ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset()));
-
-        // Skip, re-add file header
-        lines = Stream.concat(
-                ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(path)),
-                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
+        lines = lines.stream().dropWhile(line -> line.startsWith("//")).collect(Collectors.toList());
 
         if (path.contains("ChunkSsaStamp") || path.contains("SsaSsaStamp") || path.contains("SsaChecker")) {
             lines = globalReplacements(lines, "\\BSegmentedSortedArray", "ReverseSegmentedSortedArray");
@@ -157,6 +153,13 @@ public class ReplicateSegmentedSortedArray {
         if (path.contains("SegmentedSortedArray")) {
             lines = globalReplacements(lines, "\\BSsaChecker", "ReverseSsaChecker");
         }
+
+        // the header names the Char class that every variant is replicated from, and follows the class name
+        // replacements because their patterns also match the task name
+        final String charClassName = ReplicationUtils.className(path)
+                .replaceFirst("^(Byte|Short|Int|Long|Float|Double|Object)", "Char");
+        lines = Stream.concat(ReplicationUtils.fileHeaderStream(TASK, charClassName), lines.stream())
+                .collect(Collectors.toList());
 
 
         lines = simpleFixup(lines, "isReversed", "false", "true");

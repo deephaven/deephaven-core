@@ -144,7 +144,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         ) {
             // Convert the tuples in liveValues to be lookup keys in the sourceDataIndex.
             staticSetLookupKeys = new ArrayList<>(sharedSet.kernel().size());
-            final int indexKeySize = sourceDataIndex.keyColumns().length;
+            final int indexKeySize = sourceDataIndex.keyColumnNames().size();
             if (indexKeySize > 1) {
                 final Function<Object, Object> keyMappingFunction = indexKeySize == keyColumnNames.length
                         ? tupleToFullKeyMappingFunction()
@@ -191,7 +191,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                 .filter(subset -> !subset.isEmpty() && subset.size() < columnSources.size())
                 .map(indexer::getDataIndex)
                 .filter(Objects::nonNull)
-                .max(Comparator.comparingLong(dataIndex -> dataIndex.table().size()))
+                .max(Comparator
+                        .comparingLong(dataIndex -> dataIndex.table(DataIndexOptions.USING_PARTIAL_TABLE).size()))
                 .orElse(null),
                 inputTable.isRefreshing(), (final DataIndex result) -> result != null && result.isRefreshing());
     }
@@ -205,7 +206,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private void computeTupleIndexMaps() {
         assert sourceDataIndex != null;
 
-        if (sourceDataIndex.keyColumns().length == 1 && sourceKeyColumns.length == 1) {
+        if (sourceDataIndex.keyColumnNames().size() == 1 && sourceKeyColumns.length == 1) {
             // Trivial mapping, no need to compute anything.
             return;
         }
@@ -262,7 +263,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private Function<Object, Object> tupleToPartialKeyMappingFunction() {
         assert sourceDataIndex != null;
 
-        final int partialKeySize = sourceDataIndex.keyColumns().length;
+        final int partialKeySize = sourceDataIndex.keyColumnNames().size();
 
         // This function is not needed when the partial key is a single column and should not be called.
         Assert.gt(partialKeySize, "partialKeySize", 1);
@@ -309,8 +310,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             // Use previous size when filtering with previous values, so the heuristic is consistent with the data
             // we are about to read.
             final long indexTableSize = usePrev
-                    ? sourceDataIndex.table().getRowSet().sizePrev()
-                    : sourceDataIndex.table().getRowSet().size();
+                    ? sourceDataIndex.table(DataIndexOptions.USING_PARTIAL_TABLE).getRowSet().sizePrev()
+                    : sourceDataIndex.table(DataIndexOptions.USING_PARTIAL_TABLE).getRowSet().size();
             final long threshold = (long) (indexTableSize / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
             if (selection.size() <= threshold) {
                 return filterLinear(selection, inclusion, usePrev);
@@ -415,8 +416,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
 
         // noinspection DataFlowIssue
-        final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
-        final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
+        final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup(DataIndexOptions.USING_PARTIAL_TABLE);
+        final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn(DataIndexOptions.USING_PARTIAL_TABLE);
 
         final long kernelGeneration = sharedSet.beginRead();
         final Iterator<Object> values;
@@ -470,8 +471,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         // First, compute a possibly-matching subset of selection based on the partial index.
 
         // noinspection DataFlowIssue
-        final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
-        final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
+        final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup(DataIndexOptions.USING_PARTIAL_TABLE);
+        final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn(DataIndexOptions.USING_PARTIAL_TABLE);
 
         final long kernelGeneration = sharedSet.beginRead();
         final Iterator<Object> values;
@@ -685,7 +686,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
     @Override
     public boolean satisfied(final long step) {
-        final boolean indexSatisfied = sourceDataIndex == null || sourceDataIndex.table().satisfied(step);
+        final boolean indexSatisfied =
+                sourceDataIndex == null || sourceDataIndex.table(DataIndexOptions.USING_PARTIAL_TABLE).satisfied(step);
         return indexSatisfied && sharedSet.satisfied(step);
     }
 

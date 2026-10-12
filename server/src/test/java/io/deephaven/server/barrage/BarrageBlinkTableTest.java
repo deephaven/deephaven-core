@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -105,7 +106,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         barrageMessageProducer = blinkTable.getResult(new BarrageMessageProducer.Operation(
                 scheduler, new SessionService.ObfuscatingErrorTransformer(), daggerRoot.getStreamGeneratorFactory(),
                 blinkTable, UPDATE_INTERVAL, () -> {
-                }));
+                }, ImmediateJobScheduler::new));
 
         originalTUV = TableUpdateValidator.make(blinkTable);
         originalTUVListener = new FailureListener("Original Table Update Validator");
