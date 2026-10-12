@@ -86,6 +86,19 @@
         "Control: does not report the flowchart's existing branches (exact join on no match raising an error, natural join filling nulls, left and full outer joins, as-of and reverse as-of joins, range join) as wrong"
       ],
       "id": 6
+    },
+    {
+      "prompt": "Check the 'What is and isn't parallelized' section of this deephaven-core concept guide for technical accuracy against the source: .claude/skills/eval-fixtures/parallelization-d186-post-restructure.md (the section is around lines 61-95; its three-row table is around lines 65-69). The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from a PR branch; treat it as that path. Review only that section. Report only; don't edit anything.",
+      "expected_output": "Copilot's finding on PR #7457 after the restructure: the table cell says `with_serial` 'keeps the rows in order on one thread', but ConcurrencyControl promises only that the expression is never invoked concurrently with itself and that rows are evaluated in row-set order; nothing pins it to a thread.",
+      "files": [
+        "../eval-fixtures/parallelization-d186-post-restructure.md"
+      ],
+      "expectations": [
+        "Flags 'keeps the rows in order on one thread' in the table's 'Rows in one column or filter' row (around line 69) as overstating the `with_serial` contract, quoting or paraphrasing ConcurrencyControl's guarantee (never invoked concurrently with itself; rows evaluated in row-set order) and saying that it does not promise a single thread",
+        "Proposes a replacement that drops the thread claim (for example 'keeps the rows in order and never runs the formula concurrently with itself')",
+        "Control: does not report the table's other two rows (independent tables update at the same time; independent columns run at the same time) as wrong"
+      ],
+      "id": 7
     }
   ]
 }
