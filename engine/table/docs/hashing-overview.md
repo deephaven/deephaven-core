@@ -283,8 +283,9 @@ the right side ticking, at 2 forks, ran 7% faster than upstream at 1M keys and w
 ### Cross join
 
 The cross join already used the key id hashers in the baseline, so DH-24013 changes it only through the shared hasher
-code. The build benchmarks join 1M rows on each side, with keys drawn from a key space of 100K, 1M or 10M values; the
-sliding window moves a window of keys through a key space 2 or 16 times the live keys. In ms per operation:
+code, slot tag included. The build benchmarks join 1M rows on each side, with keys drawn from a key space of 100K, 1M or
+10M values; the sliding window moves a window of keys through a key space 2 or 16 times the live keys. In ms per
+operation:
 
 | Benchmark | Upstream | DH-24013 | Change |
 | --- | ---: | ---: | ---: |
@@ -298,10 +299,10 @@ sliding window moves a window of keys through a key space 2 or 16 times the live
 | Sliding window, key space 16x | 13.81 ± 0.53 | 14.09 ± 0.30 | +2.0%¹ |
 
 The cross join and the natural join churn ran on 2026-10-11, against upstream main at 3c29c12bf7, with the same code as
-the overnight run. The static build at a 100K key space and both sliding windows were 4.3 to 9.5% slower on their first
-run and within noise on their second, which the table gives; the both-ticking build at a 1M key space also ran twice,
-because one upstream fork of its first run was disturbed. Seven of the eight cases are within 3.5% of upstream, as
-unchanged logic should be.
+the overnight run, including the slot tag. The static build at a 100K key space and both sliding windows were 4.3 to
+9.5% slower on their first run and within noise on their second, which the table gives; the both-ticking build at a 1M
+key space also ran twice, because one upstream fork of its first run was disturbed. Seven of the eight cases are within
+3.5% of upstream, as unchanged logic should be.
 
 ## Open questions
 
