@@ -305,7 +305,7 @@ The following [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html
 - `connection_timeout`: Time to wait for a successful S3 connection before timing out. The default is 2 seconds.
 - `write_timeout`: The amount of time to wait when writing a fragment before timing out. The default is 2 seconds.
 - `write_part_size`: The part or chunk size, in bytes, when writing to S3. The default is 10 MiB, and the minimum is 5,242,880 bytes (5 MiB).
-- `num_concurrent_write_parts`: The maximum number of parts that can be uploaded concurrently without blocking. The default is 64. This value cannot exceed `max_concurrent_requests`.
+- `num_concurrent_write_parts`: The maximum number of parts that can be uploaded concurrently without blocking. The default is 64. This value cannot exceed `max_concurrent_requests`. Each write can hold up to this many parts in heap memory, each `write_part_size` bytes. The defaults allow about 640 MiB for one write, so raising either value increases heap use.
 - `max_concurrent_requests`: The maximum number of concurrent requests to make to S3, for reads and writes. The default is 256.
 - `profile_name`: The AWS profile name used to configure the default region, credentials, and other settings.
 - `config_file_path`: The path to the AWS configuration file.

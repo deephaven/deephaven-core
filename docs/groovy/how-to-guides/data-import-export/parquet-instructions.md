@@ -205,7 +205,7 @@ Set each of the following options with the [`S3Instructions.Builder`](/core/java
 - `endpointOverride`: The endpoint to connect to. Set it when connecting to a non-AWS, S3-compatible API. Callers connecting to AWS don't typically need it. By default, no endpoint override is set.
 - `fragmentSize`: The maximum byte size of each fragment to read from S3. The default is 65536, and the minimum is 8192.
 - `maxConcurrentRequests`: The maximum number of concurrent requests to make to S3. The default is 256.
-- `numConcurrentWriteParts`: The maximum number of parts that can be uploaded concurrently when writing to S3 before the write blocks. The default is 64. The value can't exceed `maxConcurrentRequests`.
+- `numConcurrentWriteParts`: The maximum number of parts that can be uploaded concurrently when writing to S3 before the write blocks. The default is 64. The value can't exceed `maxConcurrentRequests`. Each write can hold up to this many parts in heap memory, each `writePartSize` bytes. The defaults allow about 640 MiB for one write, so raising either value increases heap use.
 - `profileName`: The AWS profile used to configure the default region, credentials, and other settings. If this is not set, the AWS SDK picks the profile from the `aws.profile` system property, the `AWS_PROFILE` environment variable, or `default`.
 - `readAheadCount`: The number of fragments to read asynchronously ahead of the fragment currently being read. The default is 32.
 - `readTimeout`: The amount of time to wait for a fragment read to complete before timing out. The default is 2 seconds.
