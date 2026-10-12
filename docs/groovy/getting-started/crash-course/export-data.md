@@ -6,7 +6,12 @@ Data I/O is mission-critical for any real-time data analysis platform. Deephaven
 
 ## CSV
 
-Deephaven can [read CSV](../../how-to-guides/data-import-export/csv-import.md) files that exist locally or remotely. This example reads a local CSV file.
+Deephaven can [read CSV](../../how-to-guides/data-import-export/csv-import.md) files that exist locally or remotely.
+
+> [!TIP]
+> To import a CSV without writing code, use **Upload Table from File** in the Console Options menu (⋮). See [Upload a table from a file](../../how-to-guides/user-interface/upload-table-from-file.md).
+
+This example reads a local CSV file.
 
 ```groovy test-set=1 order=iris
 import static io.deephaven.csv.CsvTools.readCsv
@@ -14,12 +19,7 @@ import static io.deephaven.csv.CsvTools.readCsv
 iris = readCsv("/data/examples/Iris/csv/iris.csv")
 ```
 
-Deephaven can read and [write CSV](../../how-to-guides/data-import-export/csv-export.md) files to and from local and remote locations.
-
-> [!TIP]
-> To import a CSV without writing code, use **Upload Table from File** in the Console Options menu (⋮). See [Upload a table from a file](../../how-to-guides/user-interface/upload-table-from-file.md).
-
-This example writes a table to a local CSV file.
+It can also [write data to CSV](../../how-to-guides/data-import-export/csv-export.md). The code below writes that same table back to a local CSV file.
 
 ```groovy test-set=1 order=null
 import static io.deephaven.csv.CsvTools.writeCsv
@@ -35,7 +35,7 @@ irisNew = readCsv("/data/irisNew.csv")
 
 ## Parquet
 
-[Apache Parquet](../../reference/cheat-sheets/parquet.md) is a columnar storage format that supports compression to store more data in less space. Deephaven supports reading and writing single, nested, and partitioned Parquet files. Parquet data can be stored locally or in [S3](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html).
+[Apache Parquet](../../reference/cheat-sheets/parquet.md) is a columnar storage format that supports compression to store more data in less space. Deephaven supports reading and writing single Parquet files and partitioned Parquet directories. Parquet data can be stored locally or in [S3](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html).
 
 The example below reads from a local Parquet file.
 
@@ -61,8 +61,9 @@ cryptoTradesNew = ParquetTools.readTable("/data/cryptoTradesNew.parquet")
 
 The example below reads a Parquet file from S3. This example uses [RustFS](https://rustfs.com/) as a local S3-compatible object store. The `S3Instructions` class in Deephaven provides a way to specify how to connect to the S3 instance.
 
-```groovy skip-test
+```groovy test-set=7 docker-config=rustfs order=grades
 import io.deephaven.parquet.table.ParquetTools
+import io.deephaven.parquet.table.ParquetInstructions
 import io.deephaven.extensions.s3.S3Instructions
 import io.deephaven.extensions.s3.Credentials
 
@@ -71,13 +72,15 @@ credentials = Credentials.basic("example_username", "example_password")
 
 grades = ParquetTools.readTable(
     "s3://example-bucket/grades/grades.parquet",
-    ParquetTools.readInstructions(
-        S3Instructions.builder()
-            .regionName("us-east-1")
-            .endpointOverride("http://rustfs.example.com:9000")
-            .credentials(credentials)
-            .build()
-    )
+    ParquetInstructions.builder()
+        .setSpecialInstructions(
+            S3Instructions.builder()
+                .regionName("us-east-1")
+                .endpointOverride("http://rustfs.example.com:9000")
+                .credentials(credentials)
+                .build()
+        )
+        .build()
 )
 ```
 
@@ -131,19 +134,23 @@ writeTopic = KafkaTools.produceFromTable(
 The following example reads data from an existing Iceberg table into a Deephaven table. It uses a custom Docker deployment found [here](../../how-to-guides/data-import-export/iceberg.md#a-deephaven-deployment-for-iceberg).
 
 ```groovy test-set=5 docker-config=iceberg order=deephavenTable
-import io.deephaven.iceberg.util.IcebergToolsS3
+import io.deephaven.iceberg.util.IcebergTools
 import io.deephaven.iceberg.util.IcebergReadInstructions
 import io.deephaven.iceberg.util.IcebergUpdateMode
 
 // Configure the Iceberg catalog adapter for a REST catalog.
-icebergCatalogAdapter = IcebergToolsS3.createS3Rest(
+icebergCatalogAdapter = IcebergTools.createAdapter(
     "rustfs-iceberg",
-    "http://rest:8181",
-    "s3a://warehouse/wh",
-    "us-east-1",
-    "admin",
-    "password",
-    "http://rustfs:9000"
+    [
+        "type": "rest",
+        "uri": "http://rest:8181",
+        "warehouse": "s3a://warehouse/wh",
+        "client.region": "us-east-1",
+        "s3.access-key-id": "admin",
+        "s3.secret-access-key": "password",
+        "s3.endpoint": "http://rustfs:9000",
+        "io-impl": "org.apache.iceberg.aws.s3.S3FileIO"
+    ]
 )
 
 // Load the Iceberg table adapter, assuming 'nyc.taxis' exists.
@@ -158,22 +165,26 @@ deephavenTable = myIcebergTableAdapter.table(staticInstructions)
 // Now 'deephavenTable' can be used like any other Deephaven table.
 ```
 
-Similarly, this code writes a Deephaven table to an Iceberg table. If the target table does not exist, it will be created.
+Similarly, this code creates a new Iceberg table and writes a Deephaven table to it. [`createTable`](/core/javadoc/io/deephaven/iceberg/util/IcebergCatalogAdapter.html#createTable(java.lang.String,io.deephaven.engine.table.TableDefinition)) fails if the table already exists; use [`loadTable`](/core/javadoc/io/deephaven/iceberg/util/IcebergCatalogAdapter.html#loadTable(io.deephaven.iceberg.util.LoadTableOptions)) to write to an existing table.
 
 ```groovy docker-config=iceberg order=null
-import io.deephaven.iceberg.util.IcebergToolsS3
+import io.deephaven.iceberg.util.IcebergTools
 import io.deephaven.iceberg.util.IcebergWriteInstructions
 import io.deephaven.iceberg.util.TableParquetWriterOptions
 
 // Configure the Iceberg catalog adapter.
-icebergCatalogAdapter = IcebergToolsS3.createS3Rest(
+icebergCatalogAdapter = IcebergTools.createAdapter(
     "rustfs-iceberg",
-    "http://rest:8181",
-    "s3a://warehouse/wh",
-    "us-east-1",
-    "admin",
-    "password",
-    "http://rustfs:9000"
+    [
+        "type": "rest",
+        "uri": "http://rest:8181",
+        "warehouse": "s3a://warehouse/wh",
+        "client.region": "us-east-1",
+        "s3.access-key-id": "admin",
+        "s3.secret-access-key": "password",
+        "s3.endpoint": "http://rustfs:9000",
+        "io-impl": "org.apache.iceberg.aws.s3.S3FileIO"
+    ]
 )
 
 // Create a sample Deephaven table.
@@ -183,8 +194,7 @@ myDeephavenTable = newTable(
     intCol("Value", 100, 200, 300)
 )
 
-// Create or load an Iceberg table adapter.
-// If 'crashCourseDb.outputTable' doesn't exist, it will be created.
+// Create a new Iceberg table. This fails if 'crashCourseDb.outputTable' already exists.
 icebergTargetAdapter = icebergCatalogAdapter.createTable(
     "crashCourseDb.outputTable",
     myDeephavenTable.getDefinition()
@@ -202,7 +212,7 @@ icebergWriter.append(IcebergWriteInstructions.builder().addTables(myDeephavenTab
 
 ## HTML
 
-Deephaven tables can be converted into an HTML representation using the `toHtml` method from the `io.deephaven.engine.util.TableTools` class. This is useful for displaying tables in web pages or for creating simple HTML reports.
+Deephaven tables can be converted into an HTML representation using the [`html`](/core/javadoc/io/deephaven/engine/util/TableTools.html#html(io.deephaven.engine.table.Table)) method from the `io.deephaven.engine.util.TableTools` class. This is useful for displaying small tables in web pages or for creating simple HTML reports. The HTML string is built in memory, so avoid converting large tables.
 
 ```groovy
 import io.deephaven.engine.util.TableTools
@@ -224,7 +234,7 @@ htmlString = TableTools.html(sourceTable)
 
 [Function generated tables](../../how-to-guides/function-generated-tables.md) are tables populated by a Groovy function. The function is reevaluated when source tables change or at a regular interval. The following example re-generates data in a table once per second.
 
-```groovy test-set=5 order=fgt
+```groovy test-set=6 ticking-table order=fgt
 import io.deephaven.engine.context.ExecutionContext
 import io.deephaven.util.SafeCloseable
 import io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory
@@ -235,14 +245,13 @@ defaultCtx = ExecutionContext.getContext()
 // define tableGenerator function
 tableGenerator = { ->
     try (SafeCloseable ignored = defaultCtx.open()) {
-        myTable = emptyTable(10).update(
+        return emptyTable(10).update(
             "Group = randomInt(1, 4)",
             "GroupMean = Group == 1 ? -10.0 : Group == 2 ? 0.0 : Group == 3 ? 10.0 : NULL_DOUBLE",
             "GroupStd = Group == 1 ? 2.5 : Group == 2 ? 0.5 : Group == 3 ? 1.0 : NULL_DOUBLE",
             "X = randomGaussian(GroupMean, GroupStd)"
         )
     }
-    return myTable
 }
 
 fgt = FunctionGeneratedTableFactory.create(tableGenerator, 1000)
