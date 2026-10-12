@@ -66,7 +66,7 @@ The components are:
   - A Docker container name (for container-to-container communication within the same Docker network).
   - A hostname/IP address (for network communication).
 - **`<port>`** is optional and only needed when:
-  - The Deephaven instance is running on a non-default port (something other than 10000).
+  - The Deephaven instance is running on a port other than the scheme's default: `10000` for `dh+plain`, `443` for `dh`.
   - You're connecting across a network to a specific port.
 - **`<scope>`** identifies the namespace where the resource exists. This is typically `scope` for variables created in interactive console sessions, or `app/<app_name>/field` for resources exported from Application Mode applications.
 - **`<resource_name>`** is the exact name of the table or resource you want to access.
@@ -87,26 +87,7 @@ table = resolve("dh+plain://hostname:9876/scope/table_name")
 
 The `resolve` function connects to the specified Deephaven instance, retrieves the table, and returns it as a local reference that you can use in your code.
 
-> [!CAUTION]
-> When you resolve a URI, the first update cycle of the subscribed table is empty. If you run `resolve` and immediately operate on the table data in the same execution, you may see an empty table. To work with the actual data, either:
->
-> - **In a notebook**: Run the `resolve` call in a separate execution before operating on the table.
-> - **In a script**: Use [`await_update`](../reference/table-operations/table-listeners/await-update.md) to wait for the table to populate before accessing its data.
-
-For example, the following code often prints 0:
-
-```python skip-test
-remote_table = resolve("dh+plain://hostname/scope/some_table")
-print(remote_table.size)  # Often prints 0 before the table populates
-```
-
-To get the actual table size, use [`await_update`](../reference/table-operations/table-listeners/await-update.md) to wait for the table to populate:
-
-```python skip-test
-remote_table = resolve("dh+plain://hostname/scope/some_table")
-remote_table.await_update()
-print(remote_table.size)  # Prints the actual size
-```
+`resolve` waits until the table's initial snapshot arrives, so the returned table already holds the remote table's current data.
 
 Let's explore this with a couple of examples.
 
@@ -202,7 +183,7 @@ The query scope contains variables created in interactive console sessions - whe
 from deephaven import empty_table
 
 my_table = empty_table(100).update(["X = i", "Y = i * 2"])
-# Accessible via: dh://hostname/scope/my_table
+# Accessible via: dh+plain://hostname/scope/my_table
 ```
 
 ### Application scope (`app/<app_name>/field`)
@@ -211,7 +192,7 @@ The application scope contains fields exported from [Application Mode](./applica
 
 ```python syntax
 # In an Application Mode script, this exports a field
-# Accessible via: dh://hostname/app/trading_app/field/market_data
+# Accessible via: dh+plain://hostname/app/trading_app/field/market_data
 ```
 
 Scopes ensure that:
@@ -241,7 +222,7 @@ You can also share tables across networks, public or private. Just like the prev
 
 > [!NOTE]
 >
-> - When sharing tables across a network, you do **not** need to specify the port if Deephaven is running on the default port `10000`.
+> - When sharing tables across a network with `dh+plain`, you do **not** need to specify the port if Deephaven is running on the default port `10000`. A `dh` URI without a port uses `443`.
 > - You **must** specify the port in the URI when:
 >   - The remote Deephaven instance runs on a non-default port (not 10000).
 >   - You're connecting to a custom port forwarding configuration.
@@ -293,7 +274,7 @@ When using URIs to share tables across instances, particularly over networks, th
 ### Optimization strategies
 
 - **Only share what's needed**: Filter, aggregate, and limit the amount of data you're sharing to only what a downstream consumer actually needs. This includes applying filters at the source, projecting only necessary columns, and pre-aggregating large datasets to reduce the volume of transferred data.
-- **Avoid repeated URI resolution**: Store resolved table references in variables rather than calling `resolve` multiple times for the same URI. Each call to `resolve` creates a new connection, so reuse the table reference when possible within your application.
+- **Avoid repeated URI resolution**: Store resolved table references in variables rather than calling `resolve` multiple times for the same URI. Each call to `resolve` creates a new subscription to the remote table, so reuse the table reference when possible within your application.
 - **Use appropriate data consistency models**: For analysis requiring consistent data across multiple operations, use table snapshots instead of live updating tables. Point-in-time consistency ensures all your data represents the same moment in time, preventing issues where some data updates mid-analysis while other data remains static. Snapshots freeze the table state at a specific moment, guaranteeing consistent results and reducing network overhead from continuous updates.
 
 ## Related documentation
@@ -305,5 +286,4 @@ When using URIs to share tables across instances, particularly over networks, th
 - [Capture Python client tables](./capture-tables.md)
 - [Application Mode](./application-mode.md)
 - [URI cheat sheet](../reference/cheat-sheets/uri-cheat-sheet.md)
-- [Enterprise URIs](https://deephaven.io/enterprise/docs/deephaven-database/remote-tables-python/#uris)
 - [Pydoc](https://deephaven.io/core/pydoc/code/deephaven.uri.html)
