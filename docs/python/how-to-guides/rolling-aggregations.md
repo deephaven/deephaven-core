@@ -28,7 +28,7 @@ Rolling aggregations differ from [dedicated](./dedicated-aggregations.md) and [c
 
 ### Preservation of data history
 
-[Dedicated](./dedicated-aggregations.md) and [combined](./combined-aggregations.md) aggregations output a single row for each group. In contrast, rolling aggregation tables have the same number of rows as the source table. Thus, they preserve data history, whereas the others do not.
+Most [dedicated](./dedicated-aggregations.md) and [combined](./combined-aggregations.md) aggregations output a single row for each group. The exceptions are [`head_by`](../reference/table-operations/group-and-aggregate/headBy.md) and [`tail_by`](../reference/table-operations/group-and-aggregate/tailBy.md), which output up to `n` rows for each group. In contrast, rolling aggregation tables have the same number of rows as the source table, so they preserve the data history that other aggregations discard.
 
 To illustrate this, consider a cumulative sum on a single grouping column with two key values. Notice how `result_dedicated` and `result_combined` have two rows — one for each group. In contrast, `result_rolling` has 20 rows — one for each row in the source table. You can see how the cumulative sum increases over time in the latter case.
 

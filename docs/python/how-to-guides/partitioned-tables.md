@@ -211,6 +211,8 @@ There are two ways to apply table operations to every constituent of a partition
 
 A [`transform`](../reference/table-operations/partitioned-tables/transform.md) applies a user-defined transformation function to every constituent of a partitioned table. The function receives each constituent as a standard table, so it can call any standard table operation. When the transformation function uses operations that compile formulas or use the [query scope](./query-scope.md), such as [`update`](../reference/table-operations/select/update.md) and [`where`](../reference/table-operations/filter/where.md), it must run them inside an [execution context](../conceptual/execution-context.md). In a console session, open the context inside the function, as shown below.
 
+The engine can call the transformation function on several constituents at once, and on an empty constituent. Write it so that it keeps no state between calls, is safe to run concurrently, and returns a valid table for an empty input.
+
 The following code block uses [`transform`](../reference/table-operations/partitioned-tables/transform.md) to apply an [`update`](../reference/table-operations/select/update.md) to every constituent of the `pt_trades` table.
 
 ```python test-set=1 order=trades_updated
@@ -259,7 +261,7 @@ A [`transform`](#transform) and a [`proxy`](#proxy) produce the same results for
 
 You combine standard tables with [joins](./joins-exact-relational.md). To join two partitioned tables constituent by constituent, use [`partitioned_transform`](../reference/table-operations/partitioned-tables/partitioned-transform.md).
 
-A partitioned transform is similar to a [`transform`](#transform), except the transformation function takes two tables as input and returns a single table. The function can apply any table operations to either input table.
+A partitioned transform is similar to a [`transform`](#transform), except the transformation function takes two tables as input and returns a single table. The function can apply any table operations to either input table. It has the same requirements as a transform function: it keeps no state between calls, is safe to run concurrently, and returns a valid table for empty inputs.
 
 Most uses of [`partitioned_transform`](../reference/table-operations/partitioned-tables/partitioned-transform.md) join the two partitioned tables together, as in the following example.
 
