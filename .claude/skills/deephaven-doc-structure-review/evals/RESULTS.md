@@ -57,3 +57,17 @@ The one control expectation (the named, restated opener isn't a defect) went fro
 
 Wording note: eval 2's rule expectation now accepts a pointer to any earlier section that names its target and restates what it needs, regardless of distance, matching the control that accepts "Building on the counter example above".
 
+
+## DOC-1990 round 5: Chip Kent's fourth review of the parallelization guide (2026-10-12)
+
+Chip's review of the guide at `3748d6ab90` (with a Copilot readability critique he asked us to evaluate) found: the page explained three levels of parallelism and two controls but never put levels and controls side by side; the intro said "three ways" and a later section "two levels"; "Deferred evaluation" sat under the run-in label **What you can control** as one of "two other cases"; `### Serialization` reads as data serialization; a hand-written table of nondeterministic output looked like a snapshot that failed to render; and a Default cell read `` `false` (opposite of `statelessSelectByDefault`) ``. This round adds six checks: **Core model stated in one place**, **Enumeration count consistency**, **Block belongs to its heading**, **Heading with a different common meaning**, **Illustrative output introduced as such**, and **Default column holds the value only**, plus a table list in the structure map. Eval 5 holds the six cases. Fixture: [`eval-fixtures/parallelization-3748-chip-round4.md`](../../eval-fixtures/parallelization-3748-chip-round4.md). Baseline is the skill at `upstream/main` (29668d5d0c).
+
+3 runs per configuration, graded blind (reports shuffled and relabeled), one grader agent for the eval. The skill's examples use other wording than the fixture ("four ways" vs "both kinds", "Replication"/"Scheduling"/"Compilation", `` `4096` (half of `maxChunkSize`) ``), so a run cannot pass by repeating them.
+
+| Eval | Check tested | New | Baseline |
+| --- | --- | --- | --- |
+| 5 (6 expectations) | Model in one place, count consistency, block under its label, heading meaning, illustrative table, Default cell | 15/18 | 3/18 |
+
+- Every baseline run flagged only the count mismatch (as parent/child terminology continuity). None flagged the Serialization heading's meaning, the hand-written table, or the Default cell, and none proposed a one-place model; two of them said the Quick reference table already serves as the model.
+- Every new run flagged the heading, the table, the Default cell, and the count, and proposed a level / default / control table. Two earlier new runs, made before the rule said that a situation-and-remedy quick reference does not count and that "You may see results like:" names the content but not the form, missed those two; the final wording fixed both.
+- The one miss in every new run is expectation 3. All three flagged the "Two other cases" list by its signal words and moved the controls text out from under the mechanism section, but each kept the deferred-evaluation bullet in place rather than naming it as a behavior mislabeled as a control. The result page would no longer have deferred evaluation under "What you can control", so the rule's intent is met; the expectation as written asks for a particular diagnosis and the grader held to it.

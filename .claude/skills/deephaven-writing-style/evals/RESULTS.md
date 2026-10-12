@@ -122,3 +122,18 @@ Chip's third review of the parallelization concept guide flagged bare API names 
 
 **Held-out rerun (eval 10).** Copilot noted that the linking rule's bold-lead-term example was `with_serial`, the exact case eval 10 checks. The example is now `sort_descending`, which the fixture doesn't contain, and the new skill was rerun (2 runs): 10/12. One run met all six expectations; the other missed the **Barriers** lead term and didn't mention the qualifier. This replaces the 12/12 above as the score to cite; `main` stays at 4/12.
 
+
+### DOC-1990 round 5: Chip Kent's 2026-10-12 review of #7457
+
+Chip's fourth review of the parallelization concept guide flagged a six-item list where two items began with a category and four with the operation name ("bullet list is not parallel and could be easier to read"), the coined phrase "don't split their own work" where "are not parallelized" is plain, and a bare "aggregations" in a sentence that linked every method around it. Changes: a **Parallel list items** rule (items in one list share a grammatical shape; run-in bold labels too), a sharper coined-phrase rule with a search step (negated capability phrases built from the page's own verbs, checked against the industry term; the page's own earlier use of a phrase does not excuse it), and the linking rule extended to category nouns that have their own page. Eval 11 holds the three cases plus a control. Fixture: the guide at `3748d6ab90` ([`eval-fixtures/parallelization-3748-chip-round4.md`](../../eval-fixtures/parallelization-3748-chip-round4.md)). Baseline is the skill at `upstream/main` (29668d5d0c).
+
+3 runs per configuration, graded blind (reports shuffled and relabeled), one grader agent for the eval. Skill examples were written away from the fixture's wording (a file-format list, "forgets its result each time", "joins"/"time tables"), so a run cannot pass by repeating the example.
+
+| Eval | Check tested | New | Baseline |
+| --- | --- | --- | --- |
+| 11 (4 expectations) | Parallel list, coined phrase, category-noun link, control | 11/12 | 5/12 |
+
+- Every run in both configurations flagged the non-parallel list except one baseline run, which only fixed the passive voice in the first item.
+- The coined phrase separated the configurations: 2 of 3 new runs flagged "don't split their own work" and proposed "are not parallelized"; no baseline run did (two baseline runs flagged other phrases, "per-call control" and "Deferred evaluation", and kept "don't split their own work" in their own rewrites). The first version of the rule, without the search step, went 0 for 2 in pre-rerun trials, so the search step is what moves it.
+- "aggregations": all 3 new runs linked it (and "joins") to a how-to page; 1 of 3 baseline runs did.
+- The control (not re-flagging linked identifiers) passed in every run.

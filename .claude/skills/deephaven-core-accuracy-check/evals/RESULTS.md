@@ -71,3 +71,16 @@ Copilot pointed out that several worked examples in the skills named the exact d
 - Eval 4: one run still raised the `START_OPTS` concern as a hedged finding with an author query; the other took the console type from the published image's property file.
 
 - Coverage gap: no accuracy-check eval yet exercises the deprecation rule (a runnable but deprecated API, with `@Deprecated` or "Use X instead" as evidence) or checks that the Python and Groovy twins are both reviewed. Copilot flagged this on #8860; it's follow-up work.
+
+## DOC-1990 round 5: two overstatements a fix pass wrote (2026-10-12)
+
+While restructuring the parallelization guide for PR #7457, a fix pass wrote a summary table cell saying `with_serial` "keeps the rows in order on one thread", and a Crash Course sentence saying parallelization fails "when a row's calculation depends on something outside that row". Copilot caught both; the review skills had already run on the page before the restructure. The **Overstated-guarantee wording** pitfall now names the two shapes: *Thread affinity* (serial execution promises never-invoked-concurrently-with-itself and row-set order, never a thread; a `ThreadLocal` user would be misled) and *Over-broad unsafe condition* (the unsafe cases are shared mutable state and order dependence, not any outside input). Eval 7 holds the thread-affinity case; the over-broad case is `deephaven-core-accuracy-spot-check` eval 5. Fixture: [`eval-fixtures/parallelization-d186-post-restructure.md`](../../eval-fixtures/parallelization-d186-post-restructure.md). Baseline is the skill at `upstream/main` (29668d5d0c).
+
+3 runs per configuration, graded blind, one grader agent. The skill's examples ("runs on a single thread", "reads anything but its own row") differ from the fixture's wording.
+
+| Eval | What it tests | New | Baseline |
+| --- | --- | --- | --- |
+| 7 (3 expectations) | "on one thread" flagged against the contract; thread-free rewrite; control on the other two rows | 9/9 | 7/9 |
+
+- Every new run flagged the cell, quoted the `ConcurrencyControl` javadoc, and proposed "keeps the rows in order and never runs the formula concurrently with itself". Two of three baseline runs did the same from the existing "single CPU core" example; the third marked the cell "verified (per pass)" and proposed nothing.
+- Every run in both configurations also found, outside the expectations, that `update_by` with `rolling_formula_tick`/`rolling_formula_time` runs a user formula per bucket in parallel with no serial or barrier hook, so the page's "run only Deephaven's own code" sentence is wrong for that operation. That is a real defect in the PR text, recorded for the PR, not an eval matter.

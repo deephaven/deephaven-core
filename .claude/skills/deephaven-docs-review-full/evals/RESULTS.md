@@ -79,3 +79,17 @@ The audit exception now requires the caller's list of recorded findings (Copilot
 - Both `main` runs copied the recorded fix wording that replaced "leaf nodes" with "the _leaf_ level", dropping a term the page defines. Both new runs kept it.
 - Every run applied the minor and style findings (the `AggApproxPct` row, the `syntax` tag, tense and voice fixes).
 
+
+## DOC-1990 round 5: spot-check what the fix pass writes (2026-10-12)
+
+Two overstatements reached PR #7457 after its full review had passed: the restructure that followed Chip Kent's 2026-10-12 review added a summary table cell ("keeps the rows in order on one thread") and a Crash Course sentence ("depends on something outside that row") that the accuracy step never saw, because it ran before they existed. The placement gate now ends with a rule: run `deephaven-core-accuracy-spot-check` on every sentence the fix pass writes or rewrites, before pushing, treating the fix pass's own output as unreviewed content. Eval 4 (edit mode) gives the pre-fix guide at `3748d6ab90` with four recorded structure and style findings whose fixes force new sentences about `with_serial`, and checks that the report verifies them and that the new text stays inside the contract. Fixtures: `evals/files/parallelization/python-parallelization.md` and `evals/files/parallelization-findings/parallelization-review-findings.md`. Baseline is the skill at `upstream/main` (29668d5d0c).
+
+3 runs per configuration, graded blind from each run's report and a diff of the file it left, one grader agent.
+
+| Eval | What it tests | New | Baseline |
+| --- | --- | --- | --- |
+| 4 (6 expectations) | Summary table added; new sentences verified against source; no thread-affinity wording; block moved and counts aligned; parallel list; scope and traceability | 17/18 | 18/18 |
+
+- Every run in both configurations applied the four findings, wrote a per-sentence verification table citing the `ConcurrencyControl` javadoc, and kept the new `with_serial` wording to "one row at a time, in order". The baseline skill's existing re-verify step for moved or rewritten prose already produces this behavior on a page this size, so the eval does not separate the configurations; it guards the behavior and documents the case that motivated the rule.
+- The one new-skill miss was traceability: one run reworded the `transform`/`proxy` item while reporting items 3 to 6 unchanged.
+- Two baseline runs went beyond the findings and found the `update_by` rolling-formula defect (see the accuracy-check results); one of them also replaced the sort sentence on the strength of `PeriodicUpdateGraph.configureRefreshThread`, which contradicts the `SortHelpers` javadoc the sentence rests on. Both are recorded as follow-ups for the PR, not as eval outcomes.
