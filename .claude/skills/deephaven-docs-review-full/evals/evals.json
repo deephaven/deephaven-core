@@ -3,8 +3,8 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Do a full review of this parallelization concept guide before we merge it: .claude/skills/eval-fixtures/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only \u2014 don't edit anything.",
-      "expected_output": "A prioritized editorial report: summary with verdict, developmental notes first, per-dimension findings, style as patterns, author queries \u2014 and it catches the view/update_view deferred-evaluation error.",
+      "prompt": "Do a full review of this parallelization concept guide before we merge it: .claude/skills/eval-fixtures/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
+      "expected_output": "A prioritized editorial report: summary with verdict, developmental notes first, per-dimension findings, style as patterns, author queries — and it catches the view/update_view deferred-evaluation error.",
       "files": [
         "../eval-fixtures/parallelization-pre-review.md"
       ],
@@ -61,6 +61,24 @@
         "Every change the report lists traces to a stated problem; the report doesn't describe rewording correct sentences without a reason"
       ],
       "id": 3
+    },
+    {
+      "prompt": "Apply the reviewer's recorded findings to the query parallelization concept guide. Work on the copy at .claude/skills/deephaven-docs-review-full/evals/files/parallelization/python-parallelization.md, which stands for docs/python/conceptual/query-engine/parallelization.md (resolve relative links from that path). The findings are in .claude/skills/deephaven-docs-review-full/evals/files/parallelization-findings/parallelization-review-findings.md. Edit only that copy, never the files under docs/ or the findings file. When you're done, tell me what you changed and how you verified the text you wrote.",
+      "mode": "edit",
+      "expected_output": "Applies the four findings (a levels-and-controls summary at the top of 'What is and isn't parallelized', one count framing, deferred evaluation moved out from under 'What you can control', a parallel operations list), then spot-checks every sentence it wrote against source before reporting. The new summary describes `with_serial` within its contract (never invoked concurrently with itself; rows in row-set order) and does not say it runs on one thread or single-threaded.",
+      "files": [
+        "evals/files/parallelization/python-parallelization.md",
+        "evals/files/parallelization-findings/parallelization-review-findings.md"
+      ],
+      "expectations": [
+        "Adds a summary (table or list) at the start of 'What is and isn't parallelized' that pairs each level (tables, columns, rows) with its default behavior and its control",
+        "The report says it verified the sentences it wrote or rewrote against source (for example by running the accuracy spot-check or by citing ConcurrencyControl for the new with_serial wording), not only the findings it applied",
+        "The new or rewritten text describing `with_serial` does not say it runs on one thread, a single thread, or single-threaded; it stays within never-invoked-concurrently-with-itself and row-set order",
+        "Moves the deferred evaluation text out from under the 'What you can control' label, and makes the intro and the section agree on one count",
+        "Rewrites the operations list so every item has the same shape (operation name first), and keeps every operation the list already names",
+        "Does not edit any file other than the copy, and every change the report lists traces to a finding or to a problem the report states"
+      ],
+      "id": 4
     }
   ]
 }
