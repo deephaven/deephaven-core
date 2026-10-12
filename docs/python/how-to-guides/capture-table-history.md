@@ -2,44 +2,63 @@
 title: Capture table history with snapshots
 ---
 
-This guide will show you how to capture the history of ticking tables.
+This guide shows you how to capture the history of [ticking tables](../conceptual/table-types.md).
 
-Append-only tables are simple. New rows are added at the bottom of the table, and rows are never deleted or modified. This makes examining the history of append-only tables very easy. If a table is not append-only, rows are added, deleted, and modified, which makes examining the history more complex. By using [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md), you can capture the history of a table, even if it is not append-only.
+An [append-only](../conceptual/table-types.md#specialization-1-append-only) table only adds rows at the bottom and never deletes or modifies them, so the table itself is its history. Other ticking tables can also modify or remove rows, or insert rows in the middle, so the table alone doesn't preserve earlier values. By using [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md), you can capture the history of a table, even if it is not append-only. To keep only the latest state of a table each time another table ticks, instead of its full history, see [Reduce the update frequency of ticking tables](./performance/reduce-update-frequency.md).
 
 ## Syntax
 
-[`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md) can produce an in-memory table containing the history of the source table if `history` is set to `True` in the input. Values are added to the history every time the trigger table ticks.
+[`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md) with `history=True` produces an in-memory table that records the history of a source table. Two tables control it:
+
+- The source table is the table you call [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md) on. `snapshot_when` copies this table into the result.
+- The trigger table is the table whose rows cause snapshots. For each row the trigger table adds, [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md) appends a full copy of the source table to the result. When you create the result, `snapshot_when` also appends one copy for each row the trigger table already has. If the source table is empty when the trigger table adds a row, that trigger row adds nothing to the result.
+
+The trigger table is often a [time table](../reference/table-operations/create/timeTable.md), which adds rows at a regular, user-defined interval. A time table adds its new rows once per [update graph cycle](../conceptual/periodic-update-graph-configuration.md), which is one second by default. A time table whose period is at least one cycle adds one row per interval, so the result gets one snapshot per interval. A time table created without a start time starts empty and adds exactly one row in the first update graph cycle after you create it. Because the time table has no rows when you create the result, it adds no initial snapshot.
+
+Stamp columns are columns from the trigger table that [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md) adds to every row of a snapshot, so each row shows which trigger event captured it.
+
+- Use `stamp_cols` to choose them.
+- If you omit `stamp_cols` or pass an empty list, every column of the trigger table is a stamp column.
 
 ```python syntax
 result = source.snapshot_when(trigger_table=trigger, history=True)
 result = source.snapshot_when(
-    trigger_table=trigger, stamp_cols=stamp_keys, history=True
+    trigger_table=trigger, stamp_cols=stamp_columns, history=True
 )
 ```
 
-> [!NOTE]
-> The trigger table is often a [time table](../reference/table-operations/create/timeTable.md), a special type of table that adds new rows at a regular, user-defined interval.
+## Requirements and limitations
+
+With `history=True`, the trigger table must be append-only. A time table meets this requirement unless you pass `blink_table=True` to [`time_table`](../reference/table-operations/create/timeTable.md), which makes it a [blink table](../conceptual/table-types.md#specialization-3-blink). A blink table keeps only the rows added in the current [update graph cycle](../conceptual/periodic-update-graph-configuration.md). If the trigger table modifies or removes rows, or adds a row anywhere but after its last row, the snapshot raises an assertion error and the result table stops updating.
+
+You can't combine `history=True` with the [`initial` or `incremental`](../reference/table-operations/snapshot/snapshot-when.md#parameters) parameters.
+
+The result records the source table only at trigger events. If the source table changes more than once between two trigger rows, the result keeps only the state at the next trigger.
 
 > [!CAUTION]
-> The stamp column(s) from the trigger table appears in the result table. If the source table has a column with the same name as the stamp column, an error will be raised. To avoid this problem, rename the stamp column in the trigger table using [`rename_columns`](../reference/table-operations/select/rename-columns.md).
+> If the source table has a column with the same name as a stamp column, the result table doesn't keep the trigger table's values for that column. With `history=True`, Deephaven doesn't check for this conflict when you create the result. If the two columns have the same type, the source table's column silently replaces the stamp column. If their types differ, the snapshot fails with an error. To avoid this problem, rename the stamp column, either in the trigger table with [`rename_columns`](../reference/table-operations/select/rename-columns.md) or in `stamp_cols` itself (for example, `stamp_cols=["TriggerTimestamp = Timestamp"]`). You can also pass only the stamp columns you need in `stamp_cols`.
 
 > [!CAUTION]
-> When using [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md) to capture full table history, a copy of the entire source table is stored for every trigger event. Large source tables or rapidly changing trigger tables can result in intensive memory usage.
+> When you use [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md) to capture full table history, Deephaven stores a copy of the entire source table for every trigger event. A large source table or a frequently ticking trigger table can use a lot of memory.
 
-## Include a history
+## Capture the history of a ticking table
 
-In this example, there are two input tables. The `source` table is built from a time table with a 0.2-second period. A time table adds its new rows once per update graph cycle, so `source` updates about once per second, with roughly 5 new time-table rows each time. The `trigger` table is a time table with a two-second period, and each row it adds triggers a new snapshot of the `source` table to be added to the `result` table. This design pattern is useful for examining the history of a table.
+The example uses two input tables:
+
+- `source` starts from a [time table](../reference/table-operations/create/timeTable.md) with a 0.2-second period. A time table adds its new rows once per update graph cycle, as described in [Syntax](#syntax). So the time table adds roughly five rows about once per second, and `source` updates at the same rate.
+- `trigger` is a time table with a 2-second period. Each row it adds makes [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md) append a snapshot of `source` to `result`.
+
+Both tables have a `Timestamp` column. The example doesn't pass `stamp_cols`, so every column of `trigger` becomes a stamp column. It renames the `Timestamp` column of `trigger` to `TriggerTimestamp` to avoid the stamp-column name conflict described in [Requirements and limitations](#requirements-and-limitations).
 
 ```python ticking-table order=null
 from deephaven import time_table
-import random
 
 source = (
     time_table("PT0.2S")
     .update(
         formulas=[
-            "X = i%2 == 0 ? `A` : `B`",
-            "Y = (int)random.randint(0, 100)",
+            "X = i % 2 == 0 ? `A` : `B`",
+            "Y = randomInt(0, 100)",
             "Z = sqrt(Y)",
         ]
     )
@@ -51,13 +70,21 @@ trigger = time_table("PT2S").rename_columns(["TriggerTimestamp = Timestamp"])
 result = source.snapshot_when(trigger_table=trigger, history=True)
 ```
 
-![A user navigates between the `source` and `trigger` tables in the console](../assets/how-to/snapshot-when-history.gif)
+Because of [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md), `source` has at most two rows: the latest row for `X = A` and the latest row for `X = B`.
+
+Usually both time tables get their first row in the same update graph cycle. Each time table adds only one row in its first cycle, as described in [Syntax](#syntax), so at that point `source` has only the `X = A` row. The first snapshot usually copies that one row. Every later snapshot appends a copy of both rows. Each copied row carries the `TriggerTimestamp` of the trigger row that captured it.
+
+Existing rows in `result` never change, so `result` keeps a record of `source` as it was at each trigger event.
+
+As described in [Requirements and limitations](#requirements-and-limitations), `result` doesn't record changes to `source` between two trigger events. In this example, `source` updates about once per second, but `trigger` adds a row only every two seconds, so [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md) appends a snapshot only every two seconds.
 
 ## Related documentation
 
-- [Create a time table](../how-to-guides/time-table.md)
+- [Create a time table](./time-table.md)
 - [Reduce the update frequency of ticking tables](./performance/reduce-update-frequency.md)
-- [`rename_column`](../reference/table-operations/select/rename-columns.md)
+- [Table types](../conceptual/table-types.md)
+- [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md)
+- [`rename_columns`](../reference/table-operations/select/rename-columns.md)
 - [`snapshot`](../reference/table-operations/snapshot/snapshot.md)
 - [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md)
 - [`time_table`](../reference/table-operations/create/timeTable.md)
