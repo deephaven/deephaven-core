@@ -70,7 +70,7 @@ Where `INITIAL`, `INCREMENTAL`, and `HISTORY` are booleans and `stampColumns` is
 
 - `INITIAL` (Boolean): Whether or not to take an initial snapshot upon creating the result table. The default is `false`.
 - `INCREMENTAL` (Boolean): Determines whether the resulting table should be incremental. The default value is `false`. When `false`, the stamp column in the resulting table will always contain the _latest_ value from the stamp column in the trigger table. This means that every row in the resulting table will be updated each cycle. When `true`, only rows that have been added or updated to the source table since the last snapshot will have the latest value from the stamp column.
-- `HISTORY` (Boolean): Determines whether the resulting table should keep history. The default value is `false`. When `true`, a full snapshot of the source table and the stamp column is appended to the resulting table every time the trigger table changes. This means that the resulting table will grow very fast. When `false`, the result holds only the latest snapshot.
+- `HISTORY` (Boolean): Determines whether the resulting table should keep history. The default value is `false`. When `true`, the result appends a full snapshot of the source table and the stamp columns for each row the trigger table already has when you create the result, and for each row it adds later, so the result grows very fast. The trigger table must be append-only; if it modifies or removes rows, the result fails and stops updating. When `false`, the result holds only the latest snapshot.
 - `stampColumns` (String...): One or more column names to act as stamp columns. Each stamp column will be included in the final result and will contain the value of the stamp column from the trigger table at the time of the snapshot. The default value is `None`, meaning all trigger table columns will be appended to the source table.
 
 > [!NOTE]
@@ -108,7 +108,7 @@ result = source.snapshotWhen(trigger, myOpts)
 
 ![The above `source`, `trigger`, and `result` tables](../../../assets/reference/table-operations/snapshot-when-2.gif)
 
-In the following example, `HISTORY` is set to `true`. Therefore, _every_ row in `source` gets snapshotted and appended to `result` when `trigger` changes, regardless of whether `source` has changed.
+In the following example, `HISTORY` is set to `true`. Therefore, _every_ row in `source` gets snapshotted and appended to `result` each time `trigger` adds a row, regardless of whether `source` has changed.
 
 ```groovy ticking-table order=null
 import io.deephaven.api.snapshot.SnapshotWhenOptions

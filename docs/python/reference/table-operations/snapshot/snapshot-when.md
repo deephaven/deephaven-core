@@ -15,7 +15,7 @@ The `snapshot_when` method produces an in-memory copy of a source table that add
 ```
 source.snapshot_when(
     trigger_table: Table,
-    stamp_cols: Union[str, Sequence[str]] = None,
+    stamp_cols: Optional[Union[str, Sequence[str]]] = None,
     initial: bool = False,
     incremental: bool = False,
     history: bool = False,
@@ -32,7 +32,7 @@ A [`PartitionedTableProxy`](https://deephaven.io/core/pydoc/code/deephaven.table
 The table that triggers the snapshot. This should be a ticking table, as changes in this table trigger the snapshot.
 
 </Param>
-<Param name="stamp_cols" type="Union[str, Sequence[str]]" optional>
+<Param name="stamp_cols" type="Optional[Union[str, Sequence[str]]]" optional>
 
 One or more column names to act as stamp columns. Each stamp column will be included in the final result, and will contain the value of the stamp column from the trigger table at the time of the snapshot. If only one column, a string or list can be used. If more than one column, a list must be used. The default value is `None`, which means that all columns from the trigger table will be appended to the source table.
 
@@ -49,7 +49,7 @@ Determines whether the resulting table should be incremental. The default value 
 </Param>
 <Param name="history" type="bool" optional>
 
-Determines whether the resulting table should keep history. The default value is `False`. When `True`, a full snapshot of the source table and the stamp column is appended to the resulting table every time the trigger table changes. This means that the resulting table will grow very fast. When `False`, the result holds only the latest snapshot. If this is `True`, `incremental` and `initial` must be `False`.
+Determines whether the resulting table should keep history. The default value is `False`. When `True`, the result appends a full snapshot of the source table and the stamp columns for each row the trigger table already has when you create the result, and for each row it adds later, so the result grows very fast. The trigger table must be append-only; if it modifies or removes rows, the result fails and stops updating. When `False`, the result holds only the latest snapshot. If this is `True`, `incremental` and `initial` must be `False`.
 
 </Param>
 </ParamTable>
@@ -97,7 +97,7 @@ result = source.snapshot_when(trigger_table=trigger, stamp_cols=["Y"])
 
 ![The above `source`, `trigger`, and `result` tables](../../../assets/reference/table-operations/snapshot-when-2.gif)
 
-In the following example, `history` is set to `True`. Therefore, _every_ row in `source` gets snapshotted and appended to `result` when `trigger` changes, regardless of whether `source` has changed or not.
+In the following example, `history` is set to `True`. Therefore, _every_ row in `source` gets snapshotted and appended to `result` each time `trigger` adds a row, regardless of whether `source` has changed or not.
 
 ```python ticking-table order=null
 from deephaven import time_table

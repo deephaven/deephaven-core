@@ -9,7 +9,7 @@ The static methods of the [`Calendars`](/core/javadoc/io/deephaven/time/calendar
 - List calendars with [`calendarNames`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendarNames()).
 - Add and remove calendars with [`addCalendarFromFile`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#addCalendarFromFile(java.lang.String)) and [`removeCalendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#removeCalendar(java.lang.String)).
 - Get a calendar with [`calendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendar(java.lang.String)).
-- Get or set the default calendar with [`calendarName`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendarName()) and [`setCalendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#setCalendar(java.lang.String)). The default calendar is the one that [`calendar()`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendar()) returns when you don't pass a name.
+- Get or set the default calendar with [`calendarName`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendarName()) and [`setCalendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#setCalendar(java.lang.String)). The default calendar is the one that [`calendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendar()) returns when you don't pass a name.
 
 This guide uses the methods that list, get, and add calendars. See [Related documentation](#related-documentation) for the others.
 
