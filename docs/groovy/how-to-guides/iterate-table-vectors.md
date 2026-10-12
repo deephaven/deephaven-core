@@ -4,6 +4,9 @@ title: Iterate over tables with ColumnVectors
 
 This guide shows you how to iterate over table data in Groovy queries using [`ColumnVectors`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html).
 
+> [!NOTE]
+> Iterate over a column when Groovy code must handle each value, for example to log values or pass them to other code. To compute a result such as a sum or a maximum, use a table operation such as [`sumBy`](../reference/table-operations/group-and-aggregate/sumBy.md) instead. The examples below compute simple results only to keep them short. See [Recipes, not loops!](../getting-started/crash-course/vectorization-vs-loops.md).
+
 ## The `ColumnVectors` class
 
 [`ColumnVectors`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html) is a helper class with factory methods that create a [`Vector`](https://deephaven.io/core/javadoc/io/deephaven/vector/Vector.html) from a table column. A vector provides bulk and random access to column data by row position.
@@ -16,7 +19,7 @@ Iterating over a vector is bulk access. The iterator walks the rows in order ins
 - For any other type, including `String` and `Boolean`, use [`ofObject`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html#ofObject(io.deephaven.engine.table.Table,java.lang.String,java.lang.Class)) and pass the column's class as the third argument. Deephaven checks that the column's data type can be cast to that class and throws a `ClassCastException` if it can't.
 
 > [!NOTE]
-> To read individual values by row position instead, see [Extract table values](./extract-table-value.md). To iterate over a column without creating a vector, call the table's [`columnIterator`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#columnIterator(java.lang.String)) method or a typed variant such as [`integerColumnIterator`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#integerColumnIterator(java.lang.String)). See [Iterate over a column](./extract-table-value.md#iterate-over-a-column).
+> To read individual values by row position instead, see [Extract table values](./extract-table-value.md). A vector's iterator reads values the same way as a table's column iterator, so create a vector when you also need its other methods, such as `size`, `get`, or `copyToArray`, or want to pass a `Vector` to other code. To iterate over a column without creating a vector, call the table's [`columnIterator`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#columnIterator(java.lang.String)) method or a typed variant such as [`integerColumnIterator`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#integerColumnIterator(java.lang.String)). See [Iterate over a column](./extract-table-value.md#iterate-over-a-column).
 
 ## Iterate over a column vector
 
@@ -77,7 +80,24 @@ while (objectIterator.hasNext()) {
 println "Even values in Z: ${evenCount}"
 ```
 
-Each loop above runs until [`hasNext`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html#hasNext()) returns `false`, at which point the iterator releases its resources. If you stop iterating early, for example with `break`, call the iterator's [`close`](https://deephaven.io/core/javadoc/io/deephaven/engine/primitive/iterator/CloseableIterator.html#close()) method.
+Each loop above runs until [`hasNext`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Iterator.html#hasNext()) returns `false`, at which point the iterator releases its resources. If you stop iterating early, for example with `break`, call the iterator's [`close`](https://deephaven.io/core/javadoc/io/deephaven/engine/primitive/iterator/CloseableIterator.html#close()) method. The following example stops at the first `X` value over 90 and closes the iterator in a `finally` block:
+
+```groovy test-set=1 order=:log
+firstLarge = null
+intIterator = ColumnVectors.ofInt(source, 'X').iterator()
+try {
+    while (intIterator.hasNext()) {
+        int value = intIterator.nextInt()
+        if (value > 90) {
+            firstLarge = value
+            break
+        }
+    }
+} finally {
+    intIterator.close()
+}
+println "First X over 90: ${firstLarge}"
+```
 
 ## Refreshing tables
 
@@ -92,6 +112,27 @@ Inside a [table listener](./table-listeners-groovy.md), you can read the values 
 
 - It is valid only while the engine is processing an update, for example during the listener's `onUpdate` call.
 - Its contents are undefined in the cycle in which `myTable` is created.
+
+The following listener prints the previous and current values of `X` each time `myTable` updates:
+
+```groovy ticking-table order=null reset
+import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
+import io.deephaven.engine.table.vectors.ColumnVectors
+
+myTable = timeTable("PT1S").update("X = ii").tail(3)
+
+listener = new InstrumentedTableUpdateListenerAdapter("listener", myTable, false) {
+    @Override
+    void onUpdate(TableUpdate upstream) {
+        def current = ColumnVectors.ofLong(myTable, 'X')
+        def previous = ColumnVectors.ofLong(myTable, 'X', true)
+        println "Previous X: ${previous}, current X: ${current}"
+    }
+}
+
+myTable.addUpdateListener(listener)
+```
 
 ## Related documentation
 

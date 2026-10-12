@@ -29,18 +29,7 @@ value = ColumnVectors.ofInt(result, "Integers").get(1)
 println "Value at index 1: ${value}"
 ```
 
-For different data types, use the appropriate [`ColumnVectors`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html) method:
-
-- `ColumnVectors.ofInt` for `int` columns
-- `ColumnVectors.ofLong` for `long` columns
-- `ColumnVectors.ofDouble` for `double` columns
-- `ColumnVectors.ofFloat` for `float` columns
-- `ColumnVectors.ofShort` for `short` columns
-- `ColumnVectors.ofByte` for `byte` columns
-- `ColumnVectors.ofChar` for `char` columns
-- `ColumnVectors.ofObject(table, columnName, type)` for object columns, for example `ColumnVectors.ofObject(t, "Sym", String)`
-
-The generic `ColumnVectors.of` method works for any column, but it is declared to return [`Vector<?>`](https://deephaven.io/core/javadoc/io/deephaven/vector/Vector.html) rather than a specific vector type such as [`IntVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/IntVector.html), so prefer the typed methods above.
+Use the method that matches the column's type, such as `ofInt` for an `int` column or `ofObject(table, columnName, type)` for an object column, for example `ColumnVectors.ofObject(t, "Sym", String)`. For the full list of methods, see [The `ColumnVectors` class](./iterate-table-vectors.md#the-columnvectors-class).
 
 > [!WARNING]
 > Random access via the vector's `get(position)` method is less efficient than bulk iteration. Use iteration when processing multiple values. See [Iterate over a column](#iterate-over-a-column).

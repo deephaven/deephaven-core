@@ -335,84 +335,6 @@ source.removeUpdateListener(noReplayListener)
 source.removeUpdateListener(replayListener)
 ```
 
-## Update graph locks and thread safety
-
-When code running outside the Deephaven console creates a ticking table and adds a listener, the table may update between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
-
-The [Update Graph](../conceptual/table-update-model.md) coordinates all table updates in Deephaven. By holding a lock while creating the table _and_ adding the listener, you ensure no updates occur in between.
-
-Deephaven provides two types of locks:
-
-- **Shared lock** ([`sharedLock`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock())): Pauses table updates while your code runs. Use this for table operations like creating tables and adding listeners.
-- **Exclusive lock** ([`exclusiveLock`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#exclusiveLock())): Blocks all Update Graph activity. Use this only for advanced cases, such as waiting for specific update conditions.
-
-![Diagram showing how locks prevent missed updates](../assets/how-to/update-graph-lock.png)
-
-> [!NOTE]
-> Code you run in the Deephaven console already runs under the Update Graph's exclusive lock, so no updates can slip between the lines of a single console execution. Updates can still happen between separate executions. This section applies to code running on other threads, such as timer callbacks or background workers.
-
-> [!NOTE]
-> Background threads don't have an execution context by default. Table operations like [`timeTable`](../reference/table-operations/create/timeTable.md) require a valid context. Capture the context before dispatching, then reopen it on the background thread. See [Execution context](../conceptual/execution-context.md) for details.
-
-**Separate locks (race condition):**
-
-If you lock each operation separately, a race window exists between them:
-
-```groovy skip-test
-import io.deephaven.engine.table.TableUpdate
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
-import io.deephaven.util.SafeCloseable
-
-// Before dispatching to background thread: capture the context
-ctx = ExecutionContext.getContext()
-
-// On background thread with reopened context
-try (SafeCloseable ignored = ctx.open()) {
-    // First lock: create the table
-    ctx.getUpdateGraph().sharedLock().doLocked(() -> {
-        t = timeTable("PT1S").update("X = i")
-    })
-    // RACE WINDOW: table can update here before listener is added
-    ctx.getUpdateGraph().sharedLock().doLocked(() -> {
-        listener = new InstrumentedTableUpdateListenerAdapter("listener", t, false) {
-            @Override
-            void onUpdate(TableUpdate upstream) { println "update=${upstream}" }
-        }
-        t.addUpdateListener(listener)  // May miss updates!
-    })
-}
-```
-
-**Single lock (safe):**
-
-Wrap both operations in a single lock to eliminate the race:
-
-```groovy skip-test
-import io.deephaven.engine.table.TableUpdate
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
-import io.deephaven.util.SafeCloseable
-
-// Before dispatching to background thread: capture the context
-ctx = ExecutionContext.getContext()
-
-// On background thread: reopen context, then lock both operations together
-try (SafeCloseable ignored = ctx.open()) {
-    ctx.getUpdateGraph().sharedLock().doLocked(() -> {
-        t = timeTable("PT1S").update("X = i")
-        listener = new InstrumentedTableUpdateListenerAdapter("listener", t, false) {
-            @Override
-            void onUpdate(TableUpdate upstream) { println "update=${upstream}" }
-        }
-        t.addUpdateListener(listener)
-    })
-}
-```
-
-> [!NOTE]
-> Keep locks brief. Tables cannot update while a lock is held, so long-held locks can delay data.
-
-For more details on locks and thread safety, see [Synchronization and locking](../conceptual/query-engine/engine-locking.md).
-
 ## Dependent tables
 
 A listener can read tables other than the one it listens to. Register those tables as dependencies of the listener, and the query engine waits to call the listener until it has processed all of them. A table that isn't a dependency may be in an inconsistent state when the listener reads it.
@@ -482,6 +404,89 @@ sourceA.addUpdateListener(listener)
 > [!WARNING]
 > Don't create derived tables inside the listener. A table you derive inside [`onUpdate`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onUpdate(io.deephaven.engine.table.TableUpdate)) is not one the listener waits on, so reading it may return inconsistent data. Derive tables before you add the listener, and include each derived table in the [`canExecute`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#canExecute(long)) check, as the example above does for `sourceB`.
 
+## Update graph locks and thread safety
+
+When code running outside the Deephaven console creates a ticking table and adds a listener, the table may update between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
+
+The [Update Graph](../conceptual/table-update-model.md) coordinates all table updates in Deephaven. By holding a lock while creating the table _and_ adding the listener, you ensure no updates occur in between.
+
+Deephaven provides two types of locks:
+
+- **Shared lock** ([`sharedLock`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock())): Pauses table updates while your code runs. Use this for table operations like creating tables and adding listeners.
+- **Exclusive lock** ([`exclusiveLock`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#exclusiveLock())): Blocks all Update Graph activity. Use this only for advanced cases, such as waiting for specific update conditions.
+
+![Diagram showing how locks prevent missed updates](../assets/how-to/update-graph-lock.png)
+
+> [!NOTE]
+> Code you run in the Deephaven console already runs under the Update Graph's exclusive lock, so no updates can slip between the lines of a single console execution. Updates can still happen between separate executions. This section applies to code running on other threads, such as timer callbacks or background workers.
+
+> [!NOTE]
+> Background threads don't have an execution context by default. Table operations like [`timeTable`](../reference/table-operations/create/timeTable.md) require a valid context. Capture the context before dispatching, then reopen it on the background thread. See [Execution context](../conceptual/execution-context.md) for details.
+
+**Separate locks (race condition):**
+
+The following examples run on a background thread that [`Thread.start`](https://docs.groovy-lang.org/latest/html/groovy-jdk/java/lang/Thread.html#start(java.lang.Thread,%20groovy.lang.Closure)) creates. Assigning `t` and `listener` without `def` stores them in the script's variables, so they stay reachable after the thread ends.
+
+If you lock each operation separately, a race window exists between them:
+
+```groovy ticking-table order=null reset
+import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
+import io.deephaven.util.SafeCloseable
+
+// Capture the execution context before starting the thread
+ctx = ExecutionContext.getContext()
+
+Thread.start {
+    try (SafeCloseable ignored = ctx.open()) {
+        // First lock: create the table
+        ctx.getUpdateGraph().sharedLock().doLocked(() -> {
+            t = timeTable("PT1S").update("X = i")
+        })
+        // RACE WINDOW: the table can update here, before the listener is added
+        ctx.getUpdateGraph().sharedLock().doLocked(() -> {
+            listener = new InstrumentedTableUpdateListenerAdapter("listener", t, false) {
+                @Override
+                void onUpdate(TableUpdate upstream) { println "update=${upstream}" }
+            }
+            t.addUpdateListener(listener)
+        })
+    }
+}
+```
+
+**Single lock (safe):**
+
+Wrap both operations in a single lock to eliminate the race:
+
+```groovy ticking-table order=null reset
+import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
+import io.deephaven.util.SafeCloseable
+
+// Capture the execution context before starting the thread
+ctx = ExecutionContext.getContext()
+
+Thread.start {
+    try (SafeCloseable ignored = ctx.open()) {
+        // One lock: create the table and add the listener together
+        ctx.getUpdateGraph().sharedLock().doLocked(() -> {
+            t = timeTable("PT1S").update("X = i")
+            listener = new InstrumentedTableUpdateListenerAdapter("listener", t, false) {
+                @Override
+                void onUpdate(TableUpdate upstream) { println "update=${upstream}" }
+            }
+            t.addUpdateListener(listener)
+        })
+    }
+}
+```
+
+> [!NOTE]
+> Keep locks brief. Tables cannot update while a lock is held, so long-held locks can delay data.
+
+For more details on locks and thread safety, see [Synchronization and locking](../conceptual/query-engine/engine-locking.md).
+
 ## Reduce data volumes
 
 Tables often tick at high frequencies and with large quantities of incoming data. Listen only to the data an operation needs. [Filters](./use-filters.md) and [reduced tick frequencies](./performance/reduce-update-frequency.md) cut both the amount of data a listener receives and how often it arrives.
@@ -509,40 +514,33 @@ result.addUpdateListener(h1)
 
 ![`h1` receives filtered and downsampled updates](../assets/how-to/listener-downsampled.gif)
 
-## Example: alert on outlier values
+## Example: send and cancel orders
 
-The following example reads each added row's value and prints any value greater than 9. In a real-world use case, the listener could send a notification by email, Slack, Discord, or another service instead of printing the value. The source is a [blink table](../conceptual/table-types.md#specialization-3-blink), which holds only the rows added in the current update cycle, so the table doesn't grow as values arrive.
+This example follows the order scenario from the start of this page. `orders` holds the five most recent orders, so each new order pushes the oldest one out. The listener reads the added rows to send new orders and the removed rows to cancel old ones. In a real application, it would call a broker's API instead of printing.
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 
-source = timeTableBuilder()
-    .period("PT0.33S")
-    .blinkTable(true)
-    .build()
-    .update("X = randomDouble(0, 10)")
-    .dropColumns("Timestamp")
+orders = timeTable("PT1S").update("OrderId = ii").tail(5)
 
-listener = new InstrumentedTableUpdateListenerAdapter("listener", source, false) {
-
+listener = new InstrumentedTableUpdateListenerAdapter("listener", orders, false) {
     @Override
     void onUpdate(TableUpdate upstream) {
-        def x = source.getColumnSource("X", double.class)
+        def orderId = orders.getColumnSource("OrderId", long.class)
 
         upstream.added().forAllRowKeys { long rowKey ->
-            def value = x.getDouble(rowKey)
-            if (value > 9) {
-                println "Value over 9 detected: ${value}"
-            }
+            println "Send order ${orderId.getLong(rowKey)} to the broker"
+        }
+        // Removed rows have pre-shift keys, so read their previous values
+        upstream.removed().forAllRowKeys { long rowKey ->
+            println "Cancel order ${orderId.getPrevLong(rowKey)} with the broker"
         }
     }
 }
 
-source.addUpdateListener(listener)
+orders.addUpdateListener(listener)
 ```
-
-![Log readout from the listener](../assets/how-to/listener-over9.gif)
 
 ## Related documentation
 

@@ -60,10 +60,6 @@ The row-based methods also let you choose a chunk size with the `chunk_size` arg
 
 Set the number of rows in each chunk with the `chunk_size` argument. The default is 2048 rows.
 
-Null values in primitive columns arrive as Deephaven's [null constants](../reference/query-language/types/nulls.md), not as `None` or `NaN`. For example, a null `int` value arrives as `-2147483648`, the value of `NULL_INT`. This applies to the row-based methods as well as the chunk-based ones.
-
-Null values in object columns arrive differently in the two kinds of method. The row-based methods return `None`. The chunk-based methods convert each column to a NumPy array, so a null `String` arrives as the string `"None"`, a null `Instant` arrives as `NaT`, and a null `Boolean` arrives as `True`. If a `String` or `Boolean` column can contain nulls, use a row-based method, or filter out the nulls with [`where`](../reference/table-operations/filter/where.md) before you iterate.
-
 The following example iterates over a table one chunk of rows at a time and prints its values. The table has 10 rows and the chunk size is 5, so each loop body runs twice, once per chunk:
 
 ```python order=:log,source
@@ -85,15 +81,24 @@ for x, y in source.iter_chunk_tuple(chunk_size=5):
     print(f"X: {x}\tY: {y}")
 ```
 
-The following example doesn't set `chunk_size`, so it uses the default. The table it iterates over is only 6 rows long, so there is only one chunk:
+## Null values
+
+Null values in primitive columns arrive as Deephaven's [null constants](../reference/query-language/types/nulls.md), not as `None` or `NaN`. For example, a null `int` value arrives as `-2147483648`, the value of `NULL_INT`. This applies to both the row-based and chunk-based methods.
+
+Null values in object columns arrive differently in the two kinds of method. The row-based methods return `None`. The chunk-based methods convert each column to a NumPy array, so a null `String` arrives as the string `"None"`, a null `Instant` arrives as `NaT`, and a null `Boolean` arrives as `True`. If a `String` or `Boolean` column can contain nulls, use a row-based method, or filter out the nulls with [`where`](../reference/table-operations/filter/where.md) before you iterate.
+
+The following example iterates over a table that has a null in its second row, first one row at a time and then one chunk at a time:
 
 ```python order=:log,source
 from deephaven import empty_table
 
-source = empty_table(6).update(["X = i", "Y = randomBool()"])
+source = empty_table(3).update(["I = i == 1 ? NULL_INT : i", "S = i == 1 ? null : `a`"])
 
-for x, y in source.iter_chunk_tuple():
-    print(f"X: {x}\tY: {y}")
+for row in source.iter_dict():
+    print(row)
+
+for chunk in source.iter_chunk_dict():
+    print(chunk)
 ```
 
 ## Iterate over specific columns
@@ -119,22 +124,6 @@ for row in source.iter_dict(["X", "Z"]):
 for row in source.iter_tuple(["X", "Z"]):
     x = row.X
     z = row.Z
-    print(f"X: {x}\tZ: {z}")
-
-for x, z in source.iter_tuple(["X", "Z"]):
-    print(f"X: {x}\tZ: {z}")
-
-for chunk in source.iter_chunk_dict(["X", "Z"], chunk_size=5):
-    x = chunk["X"]
-    z = chunk["Z"]
-    print(f"X: {x}\tZ: {z}")
-
-for chunk in source.iter_chunk_tuple(["X", "Z"], chunk_size=5):
-    x = chunk.X
-    z = chunk.Z
-    print(f"X: {x}\tZ: {z}")
-
-for x, z in source.iter_chunk_tuple(["X", "Z"], chunk_size=5):
     print(f"X: {x}\tZ: {z}")
 ```
 
@@ -193,6 +182,21 @@ While the update graph is locked, it can't start a new update cycle. That stops 
 > - Consume it without a `for` loop, for example by calling `next` on it.
 >
 > To close it, call its `close` method, or release the last reference to it with `del` or by setting it to `None`.
+
+The following example reads only the first row, so it closes the generator itself:
+
+```python order=:log,source
+from deephaven import empty_table
+
+source = empty_table(100).update("X = i")
+
+rows = source.iter_dict()
+first_row = next(rows)
+print(first_row)
+
+# The generator isn't exhausted, so close it to release its resources
+rows.close()
+```
 
 ## Related documentation
 
