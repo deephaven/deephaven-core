@@ -522,6 +522,8 @@ orders = time_table("PT1S").update("OrderId = ii").tail(5)
 handle = listen(orders, listener_function)
 ```
 
+![`orders` ticks while the listener prints a send line for each new order and a cancel line for each order that leaves the table](../assets/how-to/listener-orders.gif)
+
 ## Related documentation
 
 - [NumPy and Deephaven](./use-numpy.md)
