@@ -109,7 +109,7 @@ barrage_sesh = barrage_session(
 )
 ```
 
-The following example creates a session that accepts only `zstd`-compressed data from the remote server.
+The following example creates a session that accepts only `zstd` compression from the remote server. Tables that do not allow `zstd` still arrive uncompressed.
 
 ```python skip-test
 from deephaven.barrage import barrage_session

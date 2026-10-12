@@ -74,8 +74,9 @@ public final class BarrageCompression {
             synchronized (call) {
                 call.setCompression(chosen.get());
             }
-        } catch (final IllegalStateException e) {
-            // headers were already sent; the response stays uncompressed
+        } catch (final IllegalStateException | IllegalArgumentException e) {
+            // headers were already sent, or the server's compressor registry lacks this codec; the response stays
+            // uncompressed
             log.warn().append("Unable to compress ").append(logName).append(" with ").append(chosen.get())
                     .append(": ").append(e.getMessage()).endl();
             return Optional.empty();

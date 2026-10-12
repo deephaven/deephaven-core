@@ -90,6 +90,19 @@ public class BarrageCompressionTest {
     }
 
     @Test
+    public void codecsMissingFromTheServerRegistryAreNotUsed() {
+        final Table table = TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd"));
+        // ServerCallImpl.setCompression throws this when the server's compressor registry has no such codec
+        final RecordingObserver noCodecs = new RecordingObserver() {
+            @Override
+            public void setCompression(final String compression) {
+                throw new IllegalArgumentException("Unable to find compressor by name " + compression);
+            }
+        };
+        assertEquals(Optional.empty(), BarrageCompression.apply(noCodecs, Set.of("zstd"), table, "noCodecs"));
+    }
+
+    @Test
     public void rollupViewsUseTheRollupsAttributes() {
         final Table source = TableTools.emptyTable(10).update("A = ii % 3", "B = ii");
         final HierarchicalTableViewExchangeMarshaller marshaller =
@@ -126,7 +139,7 @@ public class BarrageCompressionTest {
         return chosen;
     }
 
-    private static final class RecordingObserver extends ServerCallStreamObserver<InputStream> {
+    private static class RecordingObserver extends ServerCallStreamObserver<InputStream> {
         private String compression;
 
         @Override
