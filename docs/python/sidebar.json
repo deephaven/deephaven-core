@@ -390,12 +390,12 @@
                 "label": "Time",
                 "items": [
                   {
-                    "label": "Work with calendars",
-                    "path": "how-to-guides/business-calendar.md"
-                  },
-                  {
                     "label": "Work with time",
                     "path": "conceptual/time-in-deephaven.md"
+                  },
+                  {
+                    "label": "Work with calendars",
+                    "path": "how-to-guides/business-calendar.md"
                   },
                   {
                     "label": "Downsample data",

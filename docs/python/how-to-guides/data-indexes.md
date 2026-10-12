@@ -228,7 +228,7 @@ Different joins will use indexes differently:
 | [`left_outer_join`](../reference/table-operations/join/left-outer-join.md) | :no_entry_sign:    | :no_entry_sign:           | :no_entry_sign:            |
 | [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) | :no_entry_sign:    | :no_entry_sign:           | :no_entry_sign:            |
 | [`multi_join`](../reference/table-operations/join/multi-join.md)           | :no_entry_sign:    | :no_entry_sign:           | :no_entry_sign:            |
-| [`range_join`](../reference/table-operations/join/range-join.md)           | :no_entry_sign:    | :no_entry_sign:           | :no_entry_sign:            |
+| [`range_join`](../reference/table-operations/join/range-join.md)           | :white_check_mark: | :white_check_mark:        | :no_entry_sign:            |
 
 #### Natural join
 

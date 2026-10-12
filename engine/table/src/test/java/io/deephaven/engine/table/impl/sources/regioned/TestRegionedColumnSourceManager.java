@@ -8,12 +8,14 @@ import io.deephaven.base.testing.JMockRule;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
@@ -30,6 +32,8 @@ import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
+import io.deephaven.engine.table.impl.select.WhereFilterImpl;
+import io.deephaven.engine.table.impl.sources.IntegerSingleValueSource;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -944,6 +948,80 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     }
 
     /**
+     * Cost estimation samples a bounded number of regions. The sample must be spread across the selection rather than
+     * taken from its leading regions; otherwise a selection whose leading locations lack a pushdown capability that
+     * later ones have (e.g. only newer partitions carry an index) never attempts pushdown at all.
+     */
+    @Test
+    public void testEstimateSamplesAcrossSelection() {
+        SUT = new RegionedColumnSourceManager(false, false, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+
+        final int numRegions = 10;
+        final WritableRowSet selection = RowSetFactory.empty();
+        for (int ri = 0; ri < numRegions; ++ri) {
+            selection.insert(RegionedColumnSource.getFirstRowKey(ri));
+        }
+
+        final Set<Integer> sampled = new HashSet<>();
+        final AtomicLong cost = new AtomicLong(-1);
+        final AtomicReference<Exception> error = new AtomicReference<>();
+        try (selection) {
+            SUT.estimatePushdownFilterCostHelper(selection, "testEstimateSamplesAcrossSelection",
+                    new ImmediateJobScheduler(),
+                    (regionIndex, location, shiftedRowSet, onCost, nec) -> {
+                        sampled.add(regionIndex);
+                        // Only the later half of the regions support a pushdown action.
+                        onCost.accept(regionIndex >= numRegions / 2
+                                ? PushdownResult.REGION_SORTED_DATA_COST
+                                : PushdownResult.UNSUPPORTED_ACTION_COST);
+                    },
+                    cost::set, error::set);
+        }
+
+        assertNull(error.get());
+        assertTrue("estimation should sample, not visit every region: " + sampled, sampled.size() < numRegions);
+        assertEquals("sampled regions " + sampled, PushdownResult.REGION_SORTED_DATA_COST, cost.get());
+    }
+
+    /**
+     * Sampling seeks to evenly spaced regions rather than visiting every region in the selection, and must still reach
+     * the selection's last region when the selection is sparse.
+     */
+    @Test
+    public void testEstimateSamplesSparseSelection() {
+        SUT = new RegionedColumnSourceManager(false, false, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+
+        final int lastRegion = 999;
+        final WritableRowSet selection = RowSetFactory.empty();
+        for (int ri = 0; ri < 5; ++ri) {
+            selection.insert(RegionedColumnSource.getFirstRowKey(ri));
+        }
+        selection.insert(RegionedColumnSource.getFirstRowKey(lastRegion));
+
+        final Set<Integer> sampled = new HashSet<>();
+        final AtomicLong cost = new AtomicLong(-1);
+        final AtomicReference<Exception> error = new AtomicReference<>();
+        try (selection) {
+            SUT.estimatePushdownFilterCostHelper(selection, "testEstimateSamplesSparseSelection",
+                    new ImmediateJobScheduler(),
+                    (regionIndex, location, shiftedRowSet, onCost, nec) -> {
+                        sampled.add(regionIndex);
+                        // Only the far region supports a pushdown action.
+                        onCost.accept(regionIndex == lastRegion
+                                ? PushdownResult.REGION_SORTED_DATA_COST
+                                : PushdownResult.UNSUPPORTED_ACTION_COST);
+                    },
+                    cost::set, error::set);
+        }
+
+        assertNull(error.get());
+        assertTrue("sampled regions " + sampled, sampled.contains(0) && sampled.contains(lastRegion));
+        assertEquals("sampled regions " + sampled, PushdownResult.REGION_SORTED_DATA_COST, cost.get());
+    }
+
+    /**
      * Removing every location for a partition value empties that key's bucket in the partitioning column's data index.
      * The index table reports the key as removed, so the key must also leave the index table's row set and its lookup.
      */
@@ -1121,6 +1199,212 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                 final RowSet modified = modifiedDuringUpdate.get()) {
             assertRowSetEquals(RowSetFactory.fromRange(0, 1), added);
             assertTrue("modified " + modified + " overlaps added " + added, modified.isEmpty());
+        }
+    }
+
+    /**
+     * Includes all four locations, as regions 0 through 3, and expects a pushdown to the locations of regions 0 and 1.
+     * Each completes with its whole selection as maybe matches, recorded in {@code completed}, except that region 1
+     * fails with {@code regionOneFailure} if that is non-null.
+     *
+     * @return a selection covering regions 0 and 1
+     */
+    private WritableRowSet setUpTwoRegionPushdown(
+            final List<PushdownResult> completed,
+            @Nullable final Exception regionOneFailure) {
+        SUT = new RegionedColumnSourceManager(true, true, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+        captureIndexes(SUT.initialize());
+        checkIndexes();
+
+        Arrays.stream(tableLocations).forEach(SUT::addLocation);
+        setSizeExpectations(true, true, 5, 1000, 5003, 2);
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
+        checkIndexes();
+
+        final CustomAction complete = new CustomAction("complete pushdown") {
+            @Override
+            public Object invoke(final Invocation invocation) {
+                final PushdownResult result = PushdownResult.allMaybeMatch((RowSet) invocation.getParameter(1));
+                completed.add(result);
+                // noinspection unchecked
+                ((Consumer<PushdownResult>) invocation.getParameter(6)).accept(result);
+                return null;
+            }
+        };
+        jmock.checking(new Expectations() {
+            {
+                oneOf(tableLocation0A).pushdownFilter(
+                        with(any(WhereFilter.class)), with(any(RowSet.class)), with(false),
+                        with(any(PushdownFilterContext.class)), with(any(Long.class)), with(any(JobScheduler.class)),
+                        with(any(Consumer.class)), with(any(Consumer.class)));
+                will(complete);
+                oneOf(tableLocation1A).pushdownFilter(
+                        with(any(WhereFilter.class)), with(any(RowSet.class)), with(false),
+                        with(any(PushdownFilterContext.class)), with(any(Long.class)), with(any(JobScheduler.class)),
+                        with(any(Consumer.class)), with(any(Consumer.class)));
+                if (regionOneFailure == null) {
+                    will(complete);
+                } else {
+                    will(new CustomAction("fail pushdown") {
+                        @Override
+                        public Object invoke(final Invocation invocation) {
+                            // noinspection unchecked
+                            ((Consumer<Exception>) invocation.getParameter(7)).accept(regionOneFailure);
+                            return null;
+                        }
+                    });
+                }
+            }
+        });
+
+        final WritableRowSet selection = RowSetFactory.fromRange(0, 4);
+        selection.insertRange(RegionedColumnSource.getFirstRowKey(1), RegionedColumnSource.getFirstRowKey(1) + 999);
+        return selection;
+    }
+
+    /** Expect the included table locations to be cleaned up via LivenessScope release as the test exits. */
+    private void expectIncludedLocationCleanup() {
+        IntStream.range(0, tableLocations.length).forEachOrdered(li -> {
+            final TableLocation tl = tableLocations[li];
+            jmock.checking(new Expectations() {
+                {
+                    oneOf(tl).supportsSubscriptions();
+                    if (li % 2 == 0) {
+                        // Even locations don't support subscriptions
+                        will(returnValue(false));
+                    } else {
+                        will(returnValue(true));
+                        oneOf(tl).unsubscribe(with(subscriptionBuffers[li]));
+                    }
+                }
+            });
+        });
+    }
+
+    private static void assertClosed(final PushdownResult result) {
+        assertNull("match must be closed", ((WritableRowSetImpl) result.match()).getInnerSet());
+        assertNull("maybeMatch must be closed", ((WritableRowSetImpl) result.maybeMatch()).getInnerSet());
+    }
+
+    /**
+     * When one region's pushdown fails, the results of the regions that already completed must be closed.
+     */
+    @Test
+    public void testPushdownRegionFailureClosesCompletedResults() {
+        final List<PushdownResult> completed = new ArrayList<>();
+        final IllegalStateException failure = new IllegalStateException("injected region failure");
+
+        try (final WritableRowSet selection = setUpTwoRegionPushdown(completed, failure)) {
+            final AtomicReference<PushdownResult> result = new AtomicReference<>();
+            final AtomicReference<Exception> error = new AtomicReference<>();
+            SUT.pushdownFilter(WhereFilterFactory.getExpression("RCS_2 = `x`"), selection, false,
+                    PushdownFilterContext.NO_PUSHDOWN_CONTEXT, Long.MAX_VALUE, new ImmediateJobScheduler(),
+                    result::set, error::set);
+
+            assertNull(result.get());
+            assertSame(failure, error.get());
+            jmock.assertIsSatisfied();
+        }
+        // Registered before the assertions below, so that a failing assertion is not masked by the teardown.
+        expectIncludedLocationCleanup();
+        assertEquals("sanity: region 0 completed", 1, completed.size());
+        assertClosed(completed.get(0));
+    }
+
+    /**
+     * When the consumer of the combined result throws, the per-region results must still be closed.
+     */
+    @Test
+    public void testPushdownConsumerFailureClosesRegionResults() {
+        final List<PushdownResult> completed = new ArrayList<>();
+        final IllegalStateException failure = new IllegalStateException("injected consumer failure");
+
+        try (final WritableRowSet selection = setUpTwoRegionPushdown(completed, null)) {
+            final AtomicReference<Exception> error = new AtomicReference<>();
+            SUT.pushdownFilter(WhereFilterFactory.getExpression("RCS_2 = `x`"), selection, false,
+                    PushdownFilterContext.NO_PUSHDOWN_CONTEXT, Long.MAX_VALUE, new ImmediateJobScheduler(),
+                    result -> {
+                        result.close();
+                        throw failure;
+                    }, error::set);
+
+            assertSame(failure, error.get());
+            jmock.assertIsSatisfied();
+        }
+        // Registered before the assertions below, so that a failing assertion is not masked by the teardown.
+        expectIncludedLocationCleanup();
+        assertEquals("sanity: both regions completed", 2, completed.size());
+        completed.forEach(TestRegionedColumnSourceManager::assertClosed);
+    }
+
+    /** A filter on {@code A}, with no chunk filter, that fails whenever it is evaluated. */
+    private static final class FailingFilter extends WhereFilterImpl {
+        static final String MESSAGE = "injected filter failure";
+
+        @Override
+        public List<String> getColumns() {
+            return List.of("A");
+        }
+
+        @Override
+        public List<String> getColumnArrays() {
+            return List.of();
+        }
+
+        @Override
+        public void init(@NotNull final TableDefinition tableDefinition) {}
+
+        @NotNull
+        @Override
+        public WritableRowSet filter(
+                @NotNull final RowSet selection,
+                @NotNull final RowSet fullSet,
+                @NotNull final Table table,
+                final boolean usePrev) {
+            throw new IllegalStateException(MESSAGE);
+        }
+
+        @Override
+        public boolean isSimpleFilter() {
+            return true;
+        }
+
+        @Override
+        public void setRecomputeListener(final RecomputeListener result) {}
+
+        @Override
+        public WhereFilter copy() {
+            return this;
+        }
+    }
+
+    /**
+     * A region pushdown action that fails must be delivered to the pushdown's error handler, not thrown.
+     */
+    @Test
+    public void testRegionPushdownFailureDeliveredToOnError() {
+        // The fixture expects every test to build a manager, though this one exercises a region directly.
+        SUT = new RegionedColumnSourceManager(false, false, componentFactory, ColumnToCodecMappings.EMPTY,
+                tableDefinition);
+
+        final ColumnRegionInt<Values> region =
+                new ColumnRegionInt.Constant<>(RegionedColumnSourceBase.PARAMETERS.regionMask, 5);
+        final WhereFilter filter = new FailingFilter();
+        final IntegerSingleValueSource source = new IntegerSingleValueSource();
+        source.set(5);
+
+        try (final PushdownFilterContext context = new RegionedPushdownFilterContextImpl(
+                filter, List.of(source), List.of(ColumnDefinition.ofInt("A")), Map.of());
+                final RowSet selection = RowSetFactory.flat(10)) {
+            final AtomicReference<Exception> error = new AtomicReference<>();
+            region.pushdownFilter(filter, selection, false, context, Long.MAX_VALUE, new ImmediateJobScheduler(),
+                    result -> {
+                        result.close();
+                        fail("the pushdown must fail");
+                    }, error::set);
+            assertNotNull("the failure must reach onError", error.get());
+            assertEquals(FailingFilter.MESSAGE, error.get().getMessage());
         }
     }
 

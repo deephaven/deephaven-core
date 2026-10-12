@@ -23,6 +23,9 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.vectors.IntVectorColumnWrapper;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
@@ -38,6 +41,7 @@ import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.GrpcMarshallingException;
+import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
@@ -65,6 +69,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -86,6 +93,12 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
     static final long UPDATE_INTERVAL = 1000; // arbitrary; we enforce coalescing on both sides
 
     TestControlledScheduler scheduler;
+    /**
+     * Supplies the scheduler each producer writes a propagation phase to its subscribers on; see
+     * {@link #propagationThreads()}.
+     */
+    Supplier<JobScheduler> propagationJobSchedulerFactory;
+    private ThreadPoolExecutor propagationPool;
     Deque<Throwable> exceptions;
     UpdateSourceCombiner updateSourceCombiner;
     boolean useDeephavenNulls;
@@ -123,10 +136,42 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
                 .builder()
                 .withScheduler(scheduler)
                 .build();
+
+        final int threads = propagationThreads();
+        if (threads > 1) {
+            // shaped like the server's pool, with dedicated chunk pools on its threads, but one the test can shut down
+            final AtomicInteger threadCount = new AtomicInteger();
+            propagationPool = ExecutorJobScheduler.newHelperPool(threads - 1, runnable -> {
+                final Thread thread = new Thread(() -> {
+                    MultiChunkPool.enableDedicatedPoolForThisThread();
+                    runnable.run();
+                }, getClass().getSimpleName() + "-propagation-" + threadCount.incrementAndGet());
+                thread.setDaemon(true);
+                return thread;
+            });
+            final ThreadPoolExecutor pool = propagationPool;
+            propagationJobSchedulerFactory = () -> new ExecutorJobScheduler(pool, threads);
+        } else {
+            propagationJobSchedulerFactory = ImmediateJobScheduler::new;
+        }
+    }
+
+    /**
+     * The most threads that write one propagation phase to its subscribers at once, for every producer this test makes
+     * through {@link RemoteNugget}. One, the default, writes to subscribers in turn; subclasses return more to run the
+     * same tests with parallel writes.
+     */
+    protected int propagationThreads() {
+        return 1;
     }
 
     @Override
     public void tearDown() throws Exception {
+        if (propagationPool != null) {
+            propagationPool.shutdownNow();
+            assertTrue("propagation threads did not exit", propagationPool.awaitTermination(10, TimeUnit.SECONDS));
+            propagationPool = null;
+        }
         openMessageReaders.forEach(BarrageMessageReaderImpl::close);
         openMessageReaders = null;
         updateSourceCombiner = null;
@@ -454,7 +499,7 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
             this.originalTable = (QueryTable) makeTable.get();
             this.barrageMessageProducer = originalTable.getResult(new BarrageMessageProducer.Operation(scheduler,
                     new SessionService.ObfuscatingErrorTransformer(), daggerRoot.getStreamGeneratorFactory(),
-                    originalTable, UPDATE_INTERVAL, this::onGetSnapshot));
+                    originalTable, UPDATE_INTERVAL, this::onGetSnapshot, propagationJobSchedulerFactory));
 
             originalTUV = TableUpdateValidator.make(originalTable);
             originalTUVListener = new FailureListener("Original Table Update Validator");
@@ -708,6 +753,8 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
     public static class DummyObserver implements StreamObserver<BarrageMessageWriter.MessageView> {
         volatile boolean completed = false;
         volatile Throwable failure = null;
+        /** When set, the next {@link #onNext} throws, as writing to a broken stream would; it then clears. */
+        volatile boolean failNextMessage = false;
 
         final BarrageDataMarshaller marshaller;
         final Queue<BarrageMessage> receivedCommands;
@@ -746,6 +793,10 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
 
         @Override
         public void onNext(final BarrageMessageWriter.MessageView messageView) {
+            if (failNextMessage) {
+                failNextMessage = false;
+                throw new IllegalStateException("injected failure writing to this subscriber");
+            }
             try {
                 messageView.forEachStream(inputStream -> {
                     try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
