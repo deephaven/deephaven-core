@@ -210,7 +210,7 @@ Reading a flat directory from S3 differs from reading it locally only in the S3 
 
 [`parquet.read`](../../reference/data-import-export/Parquet/readTable.md) accepts the following arguments. The examples above use only some of them.
 
-- `path` (required): The Parquet file, metadata file (`_metadata` or `_common_metadata`), or directory to read. This is typically a string containing a local path, an S3 URI, or a Google Cloud Storage (`gs://`) URI.
+- `path` (required): The Parquet file, metadata file (`_metadata` or `_common_metadata`, with the `_metadata` file in the same directory), or directory to read. This is typically a string containing a local path, an S3 URI, or a Google Cloud Storage (`gs://`) URI.
 - `col_instructions`: Per-column read settings, such as the Parquet column name to read into each Deephaven column, provided as a list of [`ColumnInstruction`](../../reference/data-import-export/Parquet/ColumnInstruction.md) objects. The default is `None`, which means no specialization for any column.
 - `is_legacy_parquet`: `True` or `False` indicating if the Parquet data is in legacy Parquet format. When `True`, Deephaven reads binary columns that have no logical type annotation and no recorded codec as strings rather than as byte arrays. Some older Parquet writers store strings this way. The default is `False`.
 - `is_refreshing`: `True` or `False` indicating if the Parquet data represents a refreshing source. When `True`, Deephaven checks a partitioned directory for new Parquet files and adds their rows to the table, so the result is a [refreshing table](../../conceptual/table-types.md). Refreshing reads aren't supported for a single Parquet file or for a directory read through its metadata files. The default is `False`.

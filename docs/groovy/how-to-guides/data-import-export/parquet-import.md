@@ -232,7 +232,7 @@ Reading a flat directory from S3 differs from reading it locally only in the S3 
 
 ## Optional arguments
 
-The required first argument to [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md), `source`, is the Parquet file, metadata file (`_metadata` or `_common_metadata`), or directory to read. This is typically a string containing a local path, an S3 URI, or a Google Cloud Storage (`gs://`) URI.
+The required first argument to [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md), `source`, is the Parquet file, metadata file (`_metadata` or `_common_metadata`, with the `_metadata` file in the same directory), or directory to read. This is typically a string containing a local path, an S3 URI, or a Google Cloud Storage (`gs://`) URI.
 
 The method also takes an optional second argument, `readInstructions`, which is a [`ParquetInstructions`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.html) object built with [`ParquetInstructions.builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.html#builder()). The [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html) methods that apply when reading include:
 

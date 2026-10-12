@@ -13,7 +13,7 @@ Parquet is a standard interchange format for batch and interactive workloads. De
 Deephaven reads four Parquet file layouts, one for each value of [`ParquetFileLayout`](/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.ParquetFileLayout). When you call [`read`](../../reference/data-import-export/Parquet/readTable.md) without a `file_layout` argument, Deephaven infers the layout from the path:
 
 - A path ending in `.parquet` is read as a single file.
-- A path whose last component is `_metadata` or `_common_metadata` is read as metadata-partitioned.
+- A path whose last component is `_metadata` or `_common_metadata` is read as metadata-partitioned. The `_metadata` file must exist in the same directory.
 - Any other path is treated as a directory. Deephaven reads it as metadata-partitioned if it contains a `_metadata` file, and as key-value partitioned otherwise. Deephaven also reads flat directories this way. A single Parquet file must have a name ending in `.parquet`, even when you set the [single-file layout](#single-parquet-file) explicitly.
 
 To read a layout explicitly, pass its value as the `file_layout` argument to `read`:
