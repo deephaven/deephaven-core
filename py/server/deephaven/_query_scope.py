@@ -43,9 +43,11 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return None
 
 
-# The files whose functions call query_scope_ctx. They are matched against each frame's co_filename, so they are
-# built from this module's co_filename too. __file__ would not match in an install without sources, where it names
-# the .pyc file.
+# query_scope_ctx uses these files to find the user's code on the stack. It walks out to the first frame from one of
+# them, a Deephaven table operation. The next frame out is the user code that called it, and its globals and locals
+# become the query scope.
+# The paths come from co_filename, the same field the walk reads. __file__ would name the .pyc file when the package
+# ships without .py files, and then nothing would match.
 _THIS_FILE = _j_py_script_session.__code__.co_filename
 _DH_FILES = frozenset(
     _THIS_FILE.replace("_query_scope.py", name)
