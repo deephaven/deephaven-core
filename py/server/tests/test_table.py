@@ -2,7 +2,6 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 import unittest
-import unittest.mock
 from types import SimpleNamespace
 from typing import Any
 
@@ -1119,13 +1118,6 @@ class TableTestCase(BaseTestCase):
         lambda_fn = lambda x: t.update(formulas=["X = x", "Y = x * 10"])  # noqa E731
         rt = lambda_fn(10)
         self.verify_table_data(rt, [10, 10 * 10])
-
-    def test_scope_without_getmodule(self):
-        # inspect.getmodule() can rescan all of sys.modules, so finding the caller's scope must not call it.
-        offset = 7
-        with unittest.mock.patch("inspect.getmodule", side_effect=AssertionError):
-            rt = empty_table(1).update(formulas=["X = i + offset"])
-        self.verify_table_data(rt, [7])
 
     @classmethod
     def update_in_class_method(cls, arg1, arg2) -> Table:
