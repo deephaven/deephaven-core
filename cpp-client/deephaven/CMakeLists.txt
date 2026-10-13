@@ -101,6 +101,21 @@ if(NOT DHCORE_ONLY)
                     PATTERN "cmake" EXCLUDE
             )
         endif()
+
+        # Redistributing those libraries means redistributing their license
+        # texts. vcpkg installs each port's as <triplet>/share/<port>/copyright
+        # (release tree only; it is the same text for Debug); collect them as
+        # share/deephaven/licenses/<port>.txt.
+        file(GLOB vcpkg_copyright_files LIST_DIRECTORIES false
+            ${vcpkg_triplet_dir}/share/*/copyright)
+        foreach(copyright_file ${vcpkg_copyright_files})
+            get_filename_component(port_dir ${copyright_file} DIRECTORY)
+            get_filename_component(port_name ${port_dir} NAME)
+            install(FILES ${copyright_file}
+                DESTINATION ${CMAKE_INSTALL_DATADIR}/deephaven/licenses
+                RENAME ${port_name}.txt
+            )
+        endforeach()
     endif()
 
       include(CMakePackageConfigHelpers)
