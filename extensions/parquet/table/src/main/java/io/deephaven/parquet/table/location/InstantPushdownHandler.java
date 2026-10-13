@@ -61,9 +61,9 @@ final class InstantPushdownHandler {
     @Nullable
     private static long[] decodeMinMaxNanos(@NotNull final Statistics<?> statistics) {
         final long[] minMax = new long[2];
-        if (!MinMaxFromStatistics.getMinMaxForInstants(statistics,
-                v -> minMax[0] = DateTimeUtils.epochNanos(v),
-                v -> minMax[1] = DateTimeUtils.epochNanos(v))) {
+        if (!MinMaxFromStatistics.getMinMaxForInstantNanos(statistics,
+                v -> minMax[0] = v,
+                v -> minMax[1] = v)) {
             // Statistics could not be processed.
             return null;
         }

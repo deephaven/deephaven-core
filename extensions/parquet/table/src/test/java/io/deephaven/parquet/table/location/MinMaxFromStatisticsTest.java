@@ -6,6 +6,7 @@ package io.deephaven.parquet.table.location;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.bytes.BytesUtils;
 import org.apache.parquet.column.statistics.Statistics;
@@ -28,7 +29,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 
+import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.MAX_CONVERTIBLE_MICROS;
+import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.MAX_CONVERTIBLE_MILLIS;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BOOLEAN;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.DOUBLE;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.FLOAT;
@@ -39,6 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 @Category(OutOfBandTest.class)
 public class MinMaxFromStatisticsTest {
@@ -739,6 +744,153 @@ public class MinMaxFromStatisticsTest {
                 MinMaxFromStatistics.getMinMaxForInstants(stats, min::setValue, max::setValue),
                 min, Instant.ofEpochSecond(0, 100_000_000L),
                 max, Instant.ofEpochSecond(0, 500_000_000L));
+    }
+
+    /** 9999-12-31T00:00:00Z in millis, the sentinel that made every pushed-down filter on its column throw. */
+    private static final long SENTINEL_9999_MILLIS = 253_402_214_400_000L;
+    /** 0001-01-01T00:00:00Z in millis, as far below the epoch-nanosecond range as the sentinel is above it. */
+    private static final long YEAR_1_MILLIS = -62_135_596_800_000L;
+
+    /**
+     * MILLIS and MICROS statistics reach far beyond epoch nanoseconds (roughly the years 1677 to 2262). As
+     * {@link Instant}s they convert exactly, without the detour through nanoseconds that used to throw (DH-23756,
+     * PD-009).
+     */
+    @Test
+    public void timestampStatisticsBeyondTheNanosRangeAreMaterialisedExactly() {
+        final long[][] millisRanges = {
+                {YEAR_1_MILLIS, SENTINEL_9999_MILLIS},
+                {1_600_000_000_000L, SENTINEL_9999_MILLIS},
+                {SENTINEL_9999_MILLIS, SENTINEL_9999_MILLIS + 86_399_999L},
+                {-1L, MAX_CONVERTIBLE_MILLIS + 1},
+                {Long.MIN_VALUE, Long.MAX_VALUE},
+        };
+        for (final long[] range : millisRanges) {
+            final MutableObject<Instant> min = new MutableObject<>();
+            final MutableObject<Instant> max = new MutableObject<>();
+            assertMatches(
+                    MinMaxFromStatistics.getMinMaxForInstants(
+                            buildTimestampStats(LogicalTypeAnnotation.TimeUnit.MILLIS, true, range[0], range[1]),
+                            min::setValue, max::setValue),
+                    min, Instant.ofEpochMilli(range[0]),
+                    max, Instant.ofEpochMilli(range[1]));
+        }
+
+        final long[][] microsRanges = {
+                {YEAR_1_MILLIS * 1_000L, SENTINEL_9999_MILLIS * 1_000L},
+                {-1L, 1L},
+                {-1_500_000L, MAX_CONVERTIBLE_MICROS + 1},
+                {Long.MIN_VALUE, Long.MAX_VALUE},
+        };
+        for (final long[] range : microsRanges) {
+            final MutableObject<Instant> min = new MutableObject<>();
+            final MutableObject<Instant> max = new MutableObject<>();
+            assertMatches(
+                    MinMaxFromStatistics.getMinMaxForInstants(
+                            buildTimestampStats(LogicalTypeAnnotation.TimeUnit.MICROS, true, range[0], range[1]),
+                            min::setValue, max::setValue),
+                    min, Instant.EPOCH.plus(range[0], ChronoUnit.MICROS),
+                    max, Instant.EPOCH.plus(range[1], ChronoUnit.MICROS));
+        }
+    }
+
+    /** The comparable path materialises Instants through the same method, so it is covered by the same fix. */
+    @Test
+    public void comparableInstantStatisticsBeyondTheNanosRangeAreMaterialised() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.MILLIS, /* adjustedToUTC */ true,
+                1_600_000_000_000L, SENTINEL_9999_MILLIS);
+        final MutableObject<Comparable<?>> min = new MutableObject<>();
+        final MutableObject<Comparable<?>> max = new MutableObject<>();
+        assertMatches(
+                MinMaxFromStatistics.getMinMaxForComparable(stats, min::setValue, max::setValue, Instant.class),
+                min, Instant.ofEpochMilli(1_600_000_000_000L),
+                max, Instant.ofEpochMilli(SENTINEL_9999_MILLIS));
+    }
+
+    /**
+     * As epoch nanoseconds, MILLIS and MICROS statistics convert exactly up to the limit the reader enforces and
+     * saturate beyond it, so the other extreme still bounds the row group. Below the range they saturate to
+     * {@code MIN_LONG}, not to {@code Long.MIN_VALUE}, which is {@code NULL_LONG} and would read as null.
+     */
+    @Test
+    public void timestampStatisticsAsNanosSaturateBeyondTheNanosRange() {
+        // {statistic, expected epoch nanoseconds}
+        final long[][] millisCases = {
+                {0L, 0L},
+                {-1L, -1_000_000L},
+                {1_600_000_000_000L, 1_600_000_000_000_000_000L},
+                {MAX_CONVERTIBLE_MILLIS, MAX_CONVERTIBLE_MILLIS * 1_000_000L},
+                {-MAX_CONVERTIBLE_MILLIS, -MAX_CONVERTIBLE_MILLIS * 1_000_000L},
+                {MAX_CONVERTIBLE_MILLIS + 1, Long.MAX_VALUE},
+                {-MAX_CONVERTIBLE_MILLIS - 1, QueryConstants.MIN_LONG},
+                {SENTINEL_9999_MILLIS, Long.MAX_VALUE},
+                {YEAR_1_MILLIS, QueryConstants.MIN_LONG},
+                {Long.MAX_VALUE, Long.MAX_VALUE},
+                {Long.MIN_VALUE, QueryConstants.MIN_LONG},
+        };
+        assertInstantNanos(LogicalTypeAnnotation.TimeUnit.MILLIS, millisCases);
+
+        final long[][] microsCases = {
+                {0L, 0L},
+                {-1L, -1_000L},
+                {1_600_000_000_000_000L, 1_600_000_000_000_000_000L},
+                {MAX_CONVERTIBLE_MICROS, MAX_CONVERTIBLE_MICROS * 1_000L},
+                {-MAX_CONVERTIBLE_MICROS, -MAX_CONVERTIBLE_MICROS * 1_000L},
+                {MAX_CONVERTIBLE_MICROS + 1, Long.MAX_VALUE},
+                {-MAX_CONVERTIBLE_MICROS - 1, QueryConstants.MIN_LONG},
+                {SENTINEL_9999_MILLIS * 1_000L, Long.MAX_VALUE},
+                {YEAR_1_MILLIS * 1_000L, QueryConstants.MIN_LONG},
+                {Long.MAX_VALUE, Long.MAX_VALUE},
+                {Long.MIN_VALUE, QueryConstants.MIN_LONG},
+        };
+        assertInstantNanos(LogicalTypeAnnotation.TimeUnit.MICROS, microsCases);
+    }
+
+    /**
+     * NANOS statistics are already epoch nanoseconds and pass through unchanged, including the top of the {@code long}
+     * range that a round trip through {@link Instant} could not convert back (DH-23756, PD-008).
+     */
+    @Test
+    public void timestampNanosStatisticsAsNanosPassThrough() {
+        final long[] values = {
+                0L, -1L, 1L,
+                9_223_372_036_000_000_000L, // the first value an Instant round trip rejected
+                9_223_372_036_854_775_000L,
+                Long.MAX_VALUE - 1, Long.MAX_VALUE,
+                Long.MIN_VALUE + 1, Long.MIN_VALUE,
+        };
+        final long[][] cases = new long[values.length][];
+        for (int ii = 0; ii < values.length; ++ii) {
+            cases[ii] = new long[] {values[ii], values[ii]};
+        }
+        assertInstantNanos(LogicalTypeAnnotation.TimeUnit.NANOS, cases);
+    }
+
+    @Test
+    public void timestampNonUTCStatisticsAsNanosAreRejected() {
+        final Statistics<?> stats = buildTimestampStats(
+                LogicalTypeAnnotation.TimeUnit.MILLIS, /* adjustedToUTC */ false,
+                0L, 1_000L);
+        assertFalse(MinMaxFromStatistics.getMinMaxForInstantNanos(stats, v -> fail(), v -> fail()));
+    }
+
+    /**
+     * Each case's statistic is used as both the minimum and, paired with the next case's, the maximum, so every value
+     * is checked in both positions.
+     */
+    private static void assertInstantNanos(final LogicalTypeAnnotation.TimeUnit unit, final long[][] cases) {
+        for (int ii = 0; ii < cases.length; ++ii) {
+            final long[] minCase = cases[ii];
+            final long[] maxCase = cases[(ii + 1) % cases.length];
+            final long[] actual = {Long.MIN_VALUE + 7, Long.MIN_VALUE + 7};
+            assertTrue(MinMaxFromStatistics.getMinMaxForInstantNanos(
+                    buildTimestampStats(unit, /* adjustedToUTC */ true, minCase[0], maxCase[0]),
+                    v -> actual[0] = v,
+                    v -> actual[1] = v));
+            assertEquals(unit + " min " + minCase[0], minCase[1], actual[0]);
+            assertEquals(unit + " max " + maxCase[0], maxCase[1], actual[1]);
+        }
     }
 
     @Test

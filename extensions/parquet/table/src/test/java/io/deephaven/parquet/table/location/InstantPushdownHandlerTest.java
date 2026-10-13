@@ -27,40 +27,17 @@ import static org.junit.Assert.*;
 @Category(OutOfBandTest.class)
 public class InstantPushdownHandlerTest {
 
-    private static Statistics<?> instantStatsMillis(Instant minInc, Instant maxInc) {
-        final PrimitiveType col = Types.required(INT64)
-                .as(LogicalTypeAnnotation.timestampType(/* adjustedToUTC */ true,
-                        LogicalTypeAnnotation.TimeUnit.MILLIS))
-                .named("instCol");
-        return Statistics.getBuilderForReading(col)
-                .withMin(BytesUtils.longToBytes(minInc.toEpochMilli()))
-                .withMax(BytesUtils.longToBytes(maxInc.toEpochMilli()))
-                .withNumNulls(0L)
-                .build();
+    private static Statistics<?> instantStatsMillis(final Instant minInc, final Instant maxInc) {
+        return instantStats(LogicalTypeAnnotation.TimeUnit.MILLIS, minInc.toEpochMilli(), maxInc.toEpochMilli());
     }
 
     private static Statistics<?> instantStatsMicros(final Instant minInc, final Instant maxInc) {
-        final PrimitiveType col = Types.required(INT64)
-                .as(LogicalTypeAnnotation.timestampType(/* adjustedToUTC */ true,
-                        LogicalTypeAnnotation.TimeUnit.MICROS))
-                .named("instCol");
-        return Statistics.getBuilderForReading(col)
-                .withMin(BytesUtils.longToBytes(DateTimeUtils.epochMicros(minInc)))
-                .withMax(BytesUtils.longToBytes(DateTimeUtils.epochMicros(maxInc)))
-                .withNumNulls(0L)
-                .build();
+        return instantStats(LogicalTypeAnnotation.TimeUnit.MICROS,
+                DateTimeUtils.epochMicros(minInc), DateTimeUtils.epochMicros(maxInc));
     }
 
     private static Statistics<?> instantStatsNanos(final long minNanos, final long maxNanos) {
-        final PrimitiveType col = Types.required(INT64)
-                .as(LogicalTypeAnnotation.timestampType(/* adjustedToUTC */ true,
-                        LogicalTypeAnnotation.TimeUnit.NANOS))
-                .named("instCol");
-        return Statistics.getBuilderForReading(col)
-                .withMin(BytesUtils.longToBytes(minNanos))
-                .withMax(BytesUtils.longToBytes(maxNanos))
-                .withNumNulls(0L)
-                .build();
+        return instantStats(LogicalTypeAnnotation.TimeUnit.NANOS, minNanos, maxNanos);
     }
 
     /**
@@ -264,6 +241,122 @@ public class InstantPushdownHandlerTest {
      * Resolves the filter to an evaluator and applies it to one row group's statistics, as
      * {@code StatisticsEvaluator.makeForFilter} does per location.
      */
+    private static Statistics<?> instantStats(
+            final LogicalTypeAnnotation.TimeUnit unit, final long minInc, final long maxInc) {
+        final PrimitiveType col = Types.required(INT64)
+                .as(LogicalTypeAnnotation.timestampType(/* adjustedToUTC */ true, unit))
+                .named("instCol");
+        return Statistics.getBuilderForReading(col)
+                .withMin(BytesUtils.longToBytes(minInc))
+                .withMax(BytesUtils.longToBytes(maxInc))
+                .withNumNulls(0L)
+                .build();
+    }
+
+    private static long nanos(final String instant) {
+        return DateTimeUtils.epochNanos(Instant.parse(instant));
+    }
+
+    /**
+     * DH-23756, PD-009: a MILLIS or MICROS statistic beyond the epoch-nanosecond range -- the common {@code 9999-12-31}
+     * sentinel -- made every pushed-down filter on its column throw. The out-of-range extreme now saturates, so the row
+     * group is still bounded by the other one: a filter wholly before it excludes it, and anything overlapping keeps
+     * it.
+     */
+    @Test
+    public void statisticsBeyondTheNanosRangeStillPrune() {
+        final long sentinelMillis = Instant.parse("9999-12-31T00:00:00Z").toEpochMilli();
+        final long year1Millis = Instant.parse("0001-01-01T00:00:00Z").toEpochMilli();
+        final long startOf2020Millis = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+
+        for (final LogicalTypeAnnotation.TimeUnit unit : new LogicalTypeAnnotation.TimeUnit[] {
+                LogicalTypeAnnotation.TimeUnit.MILLIS, LogicalTypeAnnotation.TimeUnit.MICROS}) {
+            final long perMilli = unit == LogicalTypeAnnotation.TimeUnit.MILLIS ? 1L : 1_000L;
+
+            // Real dates up to the sentinel: the maximum is out of range, the minimum is not.
+            final Statistics<?> upToSentinel = instantStats(unit, startOf2020Millis * perMilli,
+                    sentinelMillis * perMilli);
+            assertFalse(unit + " before", evaluate(new InstantRangeFilter("t",
+                    nanos("2019-01-01T00:00:00Z"), nanos("2019-12-31T00:00:00Z"), true, true), upToSentinel));
+            assertTrue(unit + " overlapping", evaluate(new InstantRangeFilter("t",
+                    nanos("2021-01-01T00:00:00Z"), nanos("2022-01-01T00:00:00Z"), true, true), upToSentinel));
+            assertTrue(unit + " to the top", evaluate(new InstantRangeFilter("t",
+                    nanos("2200-01-01T00:00:00Z"), Long.MAX_VALUE, true, true), upToSentinel));
+            assertFalse(unit + " match before", evaluate(new MatchFilter(MatchOptions.REGULAR, "t",
+                    Instant.parse("2019-06-01T00:00:00Z")), upToSentinel));
+            assertTrue(unit + " match inside", evaluate(new MatchFilter(MatchOptions.REGULAR, "t",
+                    Instant.parse("2021-06-01T00:00:00Z")), upToSentinel));
+
+            // Nothing but the sentinel, or nothing but values before the range: an ordinary filter excludes it.
+            final Statistics<?> onlySentinel = instantStats(unit, sentinelMillis * perMilli,
+                    sentinelMillis * perMilli);
+            assertFalse(unit + " only sentinel", evaluate(new InstantRangeFilter("t",
+                    nanos("2020-01-01T00:00:00Z"), nanos("2021-01-01T00:00:00Z"), true, true), onlySentinel));
+            final Statistics<?> onlyYear1 = instantStats(unit, year1Millis * perMilli, year1Millis * perMilli);
+            assertFalse(unit + " only year 1", evaluate(new InstantRangeFilter("t",
+                    nanos("2020-01-01T00:00:00Z"), nanos("2021-01-01T00:00:00Z"), true, true), onlyYear1));
+        }
+    }
+
+    /**
+     * DH-23756: a MILLIS or MICROS statistic before the epoch-nanosecond range -- the common {@code 0001-01-01}
+     * sentinel -- saturates to {@code MIN_LONG}, not to {@code NULL_LONG}. Such a value is not null, so a row group of
+     * nothing else must survive every filter that keeps non-null rows, and an is-null filter may exclude it. Saturating
+     * to the sentinel had it the other way round: the row group looked like nothing but nulls, and an is-not-null
+     * filter silently dropped all of its rows.
+     */
+    @Test
+    public void statisticsBeforeTheNanosRangeAreNotNull() {
+        final long year1Millis = Instant.parse("0001-01-01T00:00:00Z").toEpochMilli();
+        final long year1000Millis = Instant.parse("1000-01-01T00:00:00Z").toEpochMilli();
+        final long startOf2020Millis = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        final MatchFilter isNull = new MatchFilter(MatchOptions.REGULAR, "t", new Object[] {null});
+        final MatchFilter isNotNull = new MatchFilter(MatchOptions.INVERTED, "t", new Object[] {null});
+        // `t > null`: every non-null value.
+        final InstantRangeFilter aboveNull =
+                new InstantRangeFilter("t", QueryConstants.NULL_LONG, Long.MAX_VALUE, false, true);
+
+        for (final LogicalTypeAnnotation.TimeUnit unit : new LogicalTypeAnnotation.TimeUnit[] {
+                LogicalTypeAnnotation.TimeUnit.MILLIS, LogicalTypeAnnotation.TimeUnit.MICROS}) {
+            final long perMilli = unit == LogicalTypeAnnotation.TimeUnit.MILLIS ? 1L : 1_000L;
+
+            // Both extremes before the range, equal or not: both saturate to the same value.
+            final Statistics<?> onlyYear1 = instantStats(unit, year1Millis * perMilli, year1Millis * perMilli);
+            final Statistics<?> allBefore = instantStats(unit, year1Millis * perMilli, year1000Millis * perMilli);
+            for (final Statistics<?> stats : List.of(onlyYear1, allBefore)) {
+                assertTrue(unit + " is not null", evaluate(isNotNull, stats));
+                assertTrue(unit + " above null", evaluate(aboveNull, stats));
+                assertFalse(unit + " is null", evaluate(isNull, stats));
+            }
+
+            // Only the minimum before the range.
+            final Statistics<?> fromYear1 = instantStats(unit, year1Millis * perMilli, startOf2020Millis * perMilli);
+            assertTrue(unit + " mixed, is not null", evaluate(isNotNull, fromYear1));
+            assertTrue(unit + " mixed, above null", evaluate(aboveNull, fromYear1));
+            assertFalse(unit + " mixed, is null", evaluate(isNull, fromYear1));
+        }
+    }
+
+    /**
+     * DH-23756, PD-008: NANOS statistics at the top of the {@code long} range are legal epoch nanoseconds, but the
+     * evaluator used to round-trip them through {@link Instant}, and {@link DateTimeUtils#epochNanos(Instant)} cannot
+     * convert the top ~0.855 s back. They are now used as they are.
+     */
+    @Test
+    public void nanosStatisticsAtTheTopOfTheLongRangePrune() {
+        final long firstRejected = 9_223_372_036_000_000_000L;
+        for (final long max : new long[] {
+                firstRejected, firstRejected + 500_000_000L, Long.MAX_VALUE - 1, Long.MAX_VALUE}) {
+            final Statistics<?> stats = instantStats(LogicalTypeAnnotation.TimeUnit.NANOS, firstRejected, max);
+            assertFalse("before, max " + max,
+                    evaluate(new InstantRangeFilter("t", 0L, 1_000_000L, true, true), stats));
+            assertTrue("overlapping, max " + max,
+                    evaluate(new InstantRangeFilter("t", firstRejected, Long.MAX_VALUE, true, true), stats));
+            assertFalse("match just below, max " + max, evaluate(new MatchFilter(MatchOptions.REGULAR, "t",
+                    Instant.ofEpochSecond(9_223_372_035L, 999_999_999L)), stats));
+        }
+    }
+
     private static boolean evaluate(final InstantRangeFilter filter, final Statistics<?> stats) {
         return InstantPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
     }

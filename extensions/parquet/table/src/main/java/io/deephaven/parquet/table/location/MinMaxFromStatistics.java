@@ -12,8 +12,6 @@ import io.deephaven.parquet.base.materializers.CharMaterializer;
 import io.deephaven.parquet.base.materializers.DoubleFromFloatMaterializer;
 import io.deephaven.parquet.base.materializers.DoubleMaterializer;
 import io.deephaven.parquet.base.materializers.FloatMaterializer;
-import io.deephaven.parquet.base.materializers.InstantNanosFromMicrosMaterializer;
-import io.deephaven.parquet.base.materializers.InstantNanosFromMillisMaterializer;
 import io.deephaven.parquet.base.materializers.IntFromBooleanMaterializer;
 import io.deephaven.parquet.base.materializers.IntFromUnsignedByteMaterializer;
 import io.deephaven.parquet.base.materializers.IntFromUnsignedShortMaterializer;
@@ -34,6 +32,8 @@ import io.deephaven.parquet.base.materializers.LongMaterializer;
 import io.deephaven.parquet.base.materializers.ShortFromBooleanMaterializer;
 import io.deephaven.parquet.base.materializers.ShortFromUnsignedByteMaterializer;
 import io.deephaven.parquet.base.materializers.ShortMaterializer;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 import org.apache.parquet.column.statistics.BooleanStatistics;
 import org.apache.parquet.column.statistics.DoubleStatistics;
 import org.apache.parquet.column.statistics.FloatStatistics;
@@ -52,6 +52,9 @@ import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
+
+import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.MAX_CONVERTIBLE_MICROS;
+import static io.deephaven.parquet.base.materializers.ParquetMaterializerUtils.MAX_CONVERTIBLE_MILLIS;
 
 
 /**
@@ -434,42 +437,114 @@ final class MinMaxFromStatistics {
     /**
      * Attempts to retrieve the minimum and maximum values for instants from the given {@code statistics}.
      * <p>
-     * Instant values can be read from parquet statistics of logical type TIMESTAMP (when adjusted to UTC)
+     * Instant values can be read from parquet statistics of logical type TIMESTAMP (when adjusted to UTC). Each unit
+     * converts straight to an {@link Instant}, never by way of epoch nanoseconds: {@link Instant} covers every value a
+     * MILLIS or MICROS statistic can hold, whereas epoch nanoseconds stop short of the year 2262 and would reject, for
+     * example, the common {@code 9999-12-31} sentinel.
      */
     static boolean getMinMaxForInstants(
             @NotNull final Statistics<?> statistics,
             @NotNull final Consumer<Instant> minSetter,
             @NotNull final Consumer<Instant> maxSetter) {
-        final PrimitiveType parquetColType = statistics.type();
-        final LogicalTypeAnnotation logicalType = parquetColType.getLogicalTypeAnnotation();
+        final LogicalTypeAnnotation.TimeUnit unit = utcTimestampUnit(statistics);
+        if (unit == null) {
+            return false;
+        }
+        final long minLong = ((LongStatistics) statistics).getMin();
+        final long maxLong = ((LongStatistics) statistics).getMax();
+        switch (unit) {
+            case MILLIS:
+                minSetter.accept(Instant.ofEpochMilli(minLong));
+                maxSetter.accept(Instant.ofEpochMilli(maxLong));
+                return true;
+            case MICROS:
+                minSetter.accept(epochMicrosToInstant(minLong));
+                maxSetter.accept(epochMicrosToInstant(maxLong));
+                return true;
+            case NANOS:
+                minSetter.accept(ParquetPushdownUtils.epochNanosToInstant(minLong));
+                maxSetter.accept(ParquetPushdownUtils.epochNanosToInstant(maxLong));
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Attempts to retrieve the minimum and maximum values for instants from the given {@code statistics}, as epoch
+     * nanoseconds -- the representation Deephaven stores an {@link Instant} column in.
+     * <p>
+     * NANOS statistics are already epoch nanoseconds and pass through unchanged; going by way of an {@link Instant}
+     * would fail for the top of the {@code long} range, which {@link DateTimeUtils#epochNanos} cannot convert back.
+     * <p>
+     * MILLIS and MICROS statistics beyond the range of epoch nanoseconds (roughly the years 1677 to 2262) saturate
+     * instead of failing, so the other extreme goes on pruning. A saturated extreme is not a value the row group holds,
+     * but it compares with every filter bound or value other than itself just as the true value would. A value after
+     * the range saturates to {@link Long#MAX_VALUE}. Deephaven orders null below every value, so a value before the
+     * range belongs above {@code NULL_LONG} and below every other {@code long}; it saturates to
+     * {@link QueryConstants#MIN_LONG}. Saturating it to {@link Long#MIN_VALUE}, which is {@code NULL_LONG}, would make
+     * a row group of such values look like nothing but nulls, and an is-not-null filter would exclude it.
+     */
+    static boolean getMinMaxForInstantNanos(
+            @NotNull final Statistics<?> statistics,
+            @NotNull final LongConsumer minSetter,
+            @NotNull final LongConsumer maxSetter) {
+        final LogicalTypeAnnotation.TimeUnit unit = utcTimestampUnit(statistics);
+        if (unit == null) {
+            return false;
+        }
+        final long minLong = ((LongStatistics) statistics).getMin();
+        final long maxLong = ((LongStatistics) statistics).getMax();
+        switch (unit) {
+            case MILLIS:
+                minSetter.accept(saturatingToNanos(minLong, MAX_CONVERTIBLE_MILLIS, DateTimeUtils.MILLI));
+                maxSetter.accept(saturatingToNanos(maxLong, MAX_CONVERTIBLE_MILLIS, DateTimeUtils.MILLI));
+                return true;
+            case MICROS:
+                minSetter.accept(saturatingToNanos(minLong, MAX_CONVERTIBLE_MICROS, DateTimeUtils.MICRO));
+                maxSetter.accept(saturatingToNanos(maxLong, MAX_CONVERTIBLE_MICROS, DateTimeUtils.MICRO));
+                return true;
+            case NANOS:
+                minSetter.accept(minLong);
+                maxSetter.accept(maxLong);
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * The unit of a TIMESTAMP column adjusted to UTC -- the columns read as {@link Instant} -- or {@code null} for any
+     * other column.
+     */
+    private static LogicalTypeAnnotation.TimeUnit utcTimestampUnit(@NotNull final Statistics<?> statistics) {
+        final LogicalTypeAnnotation logicalType = statistics.type().getLogicalTypeAnnotation();
         if (logicalType instanceof LogicalTypeAnnotation.TimestampLogicalTypeAnnotation) {
             final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType =
                     (LogicalTypeAnnotation.TimestampLogicalTypeAnnotation) logicalType;
             if (timestampLogicalType.isAdjustedToUTC()) {
                 verifyPrimitive(statistics, PrimitiveType.PrimitiveTypeName.INT64);
-                final long minLong = ((LongStatistics) statistics).getMin();
-                final long maxLong = ((LongStatistics) statistics).getMax();
-                switch (timestampLogicalType.getUnit()) {
-                    case MILLIS:
-                        minSetter.accept(ParquetPushdownUtils.epochNanosToInstant(
-                                InstantNanosFromMillisMaterializer.convertValue(minLong)));
-                        maxSetter.accept(ParquetPushdownUtils.epochNanosToInstant(
-                                InstantNanosFromMillisMaterializer.convertValue(maxLong)));
-                        return true;
-                    case MICROS:
-                        minSetter.accept(ParquetPushdownUtils.epochNanosToInstant(
-                                InstantNanosFromMicrosMaterializer.convertValue(minLong)));
-                        maxSetter.accept(ParquetPushdownUtils.epochNanosToInstant(
-                                InstantNanosFromMicrosMaterializer.convertValue(maxLong)));
-                        return true;
-                    case NANOS:
-                        minSetter.accept(ParquetPushdownUtils.epochNanosToInstant(minLong));
-                        maxSetter.accept(ParquetPushdownUtils.epochNanosToInstant(maxLong));
-                        return true;
-                }
+                return timestampLogicalType.getUnit();
             }
         }
-        return false;
+        return null;
+    }
+
+    private static Instant epochMicrosToInstant(final long micros) {
+        return Instant.ofEpochSecond(Math.floorDiv(micros, 1_000_000L), Math.floorMod(micros, 1_000_000L) * 1_000L);
+    }
+
+    /**
+     * {@code value * nanosPerUnit}, saturated to {@link QueryConstants#MIN_LONG} or {@link Long#MAX_VALUE} beyond
+     * {@code maxConvertible}, the same limit the reader's materializers enforce. See {@link #getMinMaxForInstantNanos}
+     * for why the bottom is not {@link Long#MIN_VALUE}.
+     */
+    private static long saturatingToNanos(final long value, final long maxConvertible, final long nanosPerUnit) {
+        if (value > maxConvertible) {
+            return Long.MAX_VALUE;
+        }
+        if (value < -maxConvertible) {
+            return QueryConstants.MIN_LONG;
+        }
+        return value * nanosPerUnit;
     }
 
     /**
