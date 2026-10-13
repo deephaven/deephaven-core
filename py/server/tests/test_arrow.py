@@ -3,10 +3,12 @@
 #
 import os
 import unittest
+from collections.abc import Sequence
 from datetime import date
 from decimal import Decimal
 from typing import Any
 
+import jpy
 import numpy as np
 import pandas as pd
 import pyarrow as pa
@@ -14,7 +16,7 @@ import pyarrow.feather as feather
 import pyarrow.parquet as papq
 
 from deephaven import arrow as dharrow
-from deephaven import new_table, time_table
+from deephaven import empty_table, new_table, time_table
 from deephaven.column import (
     bool_col,
     byte_col,
@@ -29,6 +31,20 @@ from deephaven.column import (
 )
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
+
+_JBarrageUtil = jpy.get_type("io.deephaven.extensions.barrage.util.BarrageUtil")
+_JSchema = jpy.get_type("org.apache.arrow.vector.types.pojo.Schema")
+_JField = jpy.get_type("org.apache.arrow.vector.types.pojo.Field")
+_JFieldType = jpy.get_type("org.apache.arrow.vector.types.pojo.FieldType")
+_JDictionaryEncoding = jpy.get_type(
+    "org.apache.arrow.vector.types.pojo.DictionaryEncoding"
+)
+_JArrowTypeInt = jpy.get_type("org.apache.arrow.vector.types.pojo.ArrowType$Int")
+_JRunEndEncoded = jpy.get_type(
+    "org.apache.arrow.vector.types.pojo.ArrowType$RunEndEncoded"
+)
+_JArrayList = jpy.get_type("java.util.ArrayList")
+_JCollections = jpy.get_type("java.util.Collections")
 
 
 class ArrowTestCase(BaseTestCase):
@@ -421,6 +437,88 @@ class ArrowTestCase(BaseTestCase):
         t = dharrow.read_feather(f_path)
         self.assert_table_equals(t, self.test_table)
         os.remove(f_path)
+
+    def test_to_arrow_with_barrage_encodings(self):
+        # A table whose Barrage schema attribute asks for dictionary, run-end, and run-end over dictionary encoded
+        # columns keeps those encodings in to_arrow, and decodes to the same values as the table without them.
+        source = empty_table(100).update(
+            [
+                "Sym = i % 3 == 0 ? `AAPL` : `MSFT`",
+                "Block = (int) (i / 10)",
+                "Both = ((int) (i / 10)) % 2 == 0 ? `X` : null",
+            ]
+        )
+        encoded = _with_barrage_encodings(
+            source, dict_cols=["Sym"], ree_cols=["Block"], ree_dict_cols=["Both"]
+        )
+
+        pa_plain = dharrow.to_arrow(source)
+        pa_encoded = dharrow.to_arrow(encoded)
+
+        self.assertTrue(pa.types.is_dictionary(pa_encoded.schema.field("Sym").type))
+        self.assertTrue(
+            pa.types.is_run_end_encoded(pa_encoded.schema.field("Block").type)
+        )
+        both_type = pa_encoded.schema.field("Both").type
+        self.assertTrue(pa.types.is_run_end_encoded(both_type))
+        self.assertTrue(pa.types.is_dictionary(both_type.value_type))
+        for name in ["Sym", "Block", "Both"]:
+            self.assertEqual(
+                pa_plain.column(name).to_pylist(),
+                pa_encoded.column(name).to_pylist(),
+                name,
+            )
+
+
+def _with_barrage_encodings(
+    table: Table,
+    dict_cols: Sequence[str] = (),
+    ree_cols: Sequence[str] = (),
+    ree_dict_cols: Sequence[str] = (),
+) -> Table:
+    """Returns the table with a Barrage schema attribute that dictionary encodes dict_cols, run-end encodes ree_cols,
+    and run-end encodes ree_dict_cols over dictionary encoded values."""
+    j_natural = _JBarrageUtil.schemaFromTable(table.j_table)
+    j_natural_fields = j_natural.getFields()
+    j_fields = _JArrayList()
+    next_dict_id = 0
+    for i in range(j_natural_fields.size()):
+        j_field = jpy.cast(j_natural_fields.get(i), _JField)
+        name = j_field.getName()
+        j_encoding = None
+        if name in dict_cols or name in ree_dict_cols:
+            j_encoding = _JDictionaryEncoding(
+                next_dict_id, False, _JArrowTypeInt(32, True)
+            )
+            next_dict_id += 1
+        j_values_type = _JFieldType(
+            j_field.isNullable(), j_field.getType(), j_encoding, j_field.getMetadata()
+        )
+        if name in ree_cols or name in ree_dict_cols:
+            j_children = _JArrayList()
+            j_children.add(
+                _JField(
+                    "run_ends",
+                    _JFieldType(False, _JArrowTypeInt(32, True), None),
+                    _JCollections.emptyList(),
+                )
+            )
+            j_children.add(_JField("values", j_values_type, j_field.getChildren()))
+            j_field = _JField(
+                name,
+                _JFieldType(
+                    j_field.isNullable(),
+                    _JRunEndEncoded.INSTANCE,
+                    None,
+                    j_field.getMetadata(),
+                ),
+                j_children,
+            )
+        else:
+            j_field = _JField(name, j_values_type, j_field.getChildren())
+        j_fields.add(j_field)
+    j_schema = _JSchema(j_fields, j_natural.getCustomMetadata())
+    return table.with_attributes({"BarrageSchema": j_schema})
 
 
 if __name__ == "__main__":

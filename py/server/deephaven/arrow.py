@@ -3,6 +3,8 @@
 #
 """This module supports conversions between pyarrow tables and Deephaven tables."""
 
+import io
+import struct
 from collections.abc import Sequence
 from typing import Optional
 
@@ -140,6 +142,37 @@ def to_table(pa_table: pa.Table, cols: Optional[Sequence[str]] = None) -> Table:
         j_barrage_table_builder.releaseDictionaries()
 
 
+class _ConverterStream(io.RawIOBase):
+    """A read-only stream of a TableToArrowConverter's Arrow IPC messages: its schema message, then every message it
+    produces, fetched one at a time as the stream is read."""
+
+    def __init__(self, j_arrow_builder: jpy.JType):
+        super().__init__()
+        self._j_arrow_builder = j_arrow_builder
+        # The schema message's length field leaves out the padding that follows its metadata. Read alone it parses,
+        # but a stream reader takes that padding for the next message's length, reads zero, and ends the stream. Count
+        # the padding in the length, as the Arrow IPC format specifies.
+        schema = bytearray(j_arrow_builder.getSchema())
+        if len(schema) >= 8 and schema[:4] == b"\xff\xff\xff\xff":
+            struct.pack_into("<i", schema, 4, len(schema) - 8)
+        self._message = memoryview(schema)
+        self._offset = 0
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, b) -> int:
+        while self._offset == len(self._message):
+            if not self._j_arrow_builder.hasNext():
+                return 0
+            self._message = memoryview(self._j_arrow_builder.next()).cast("B")
+            self._offset = 0
+        n = min(len(b), len(self._message) - self._offset)
+        b[:n] = self._message[self._offset : self._offset + n]
+        self._offset += n
+        return n
+
+
 def to_arrow(table: Table, cols: Optional[Sequence[str]] = None) -> pa.Table:
     """Creates a pyarrow table from a Deephaven table.
 
@@ -159,18 +192,10 @@ def to_arrow(table: Table, cols: Optional[Sequence[str]] = None) -> pa.Table:
 
         j_arrow_builder = _JTableToArrowConverter(table.j_table)
 
-        pa_schema_buffer = j_arrow_builder.getSchema()
-        with pa.ipc.open_stream(pa.py_buffer(pa_schema_buffer)) as reader:
-            schema = reader.schema
-
-        record_batches = []
-        while j_arrow_builder.hasNext():
-            pa_rb_buffer = j_arrow_builder.next()
-            message = pa.ipc.read_message(pa_rb_buffer)
-            record_batch = pa.ipc.read_record_batch(message, schema=schema)
-            record_batches.append(record_batch)
-
-        return pa.Table.from_batches(record_batches, schema=schema)
+        # Read the messages as one IPC stream, so that the dictionary batches of dictionary-encoded columns reach the
+        # record batches that refer to them.
+        with pa.ipc.open_stream(_ConverterStream(j_arrow_builder)) as reader:
+            return reader.read_all()
     except Exception as e:
         raise DHError(
             e, message="failed to create a pyarrow table from a Deephaven table."
