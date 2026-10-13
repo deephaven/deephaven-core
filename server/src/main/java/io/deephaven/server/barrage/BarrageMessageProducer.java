@@ -1957,7 +1957,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
                 // Growing full subscriptions add the snapshot's values to the shared dictionaries, so make room for
                 // them first. The snapshot does not cover the whole table, so do not compact by the live row count.
-                resetOverflowedSharedDictionaries(snapshot, Long.MAX_VALUE);
+                maybeResetSharedDictionaries(snapshot, Long.MAX_VALUE);
 
                 // Each subscription's snapshot is written independently of the others', so they are written in
                 // parallel; the writer is closed only once every one of them has finished.
@@ -2000,7 +2000,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             final BarrageMessage message,
             final RowSet propRowSetForMessagePrev,
             final RowSet propRowSetForMessage) {
-        resetOverflowedSharedDictionaries(message, propRowSetForMessage.size());
+        maybeResetSharedDictionaries(message, propRowSetForMessage.size());
 
         final List<Subscription> targets = collectPropagationTargets();
 
@@ -2024,7 +2024,7 @@ public class BarrageMessageProducer extends LivenessArtifact
      * @param message the message about to be written
      * @param liveRowCount the number of rows in the table once {@code message} is applied
      */
-    private void resetOverflowedSharedDictionaries(final BarrageMessage message, final long liveRowCount) {
+    private void maybeResetSharedDictionaries(final BarrageMessage message, final long liveRowCount) {
         for (final SharedWriterDictionary sharedState : sharedDictionaryStates.values()) {
             if (sharedState.getTotalSize() > maxDictionarySizeBeforeWriting(
                     sharedState.getDictId(), message, liveRowCount)) {
@@ -2051,13 +2051,16 @@ public class BarrageMessageProducer extends LivenessArtifact
         if (columns == null || columns.maxSize == Long.MAX_VALUE) {
             return liveRowCount;
         }
-        // Each row written to a dictionary encoded column adds at most one value to its dictionary.
+        // Each row written to a dictionary encoded column adds at most one value to its dictionary, unless the
+        // dictionary encodes the elements of a list or map; a row may then add any number, so assume it fills the
+        // index.
+        final long maxValuesPerRow = columns.multiValued ? columns.maxSize : 1;
         long maxAddedValues = 0;
         for (int ii = 0; ii < columns.columnIndices.size(); ++ii) {
             final int ci = columns.columnIndices.getInt(ii);
-            maxAddedValues += message.rowsIncluded.size();
+            maxAddedValues += message.rowsIncluded.size() * maxValuesPerRow;
             if (ci < message.modColumnData.length) {
-                maxAddedValues += message.modColumnData[ci].rowsModified.size();
+                maxAddedValues += message.modColumnData[ci].rowsModified.size() * maxValuesPerRow;
             }
         }
         return Math.min(liveRowCount, Math.max(0, columns.maxSize - maxAddedValues));
@@ -2067,31 +2070,55 @@ public class BarrageMessageProducer extends LivenessArtifact
     private static final class DictionaryColumns {
         private final IntArrayList columnIndices = new IntArrayList();
         private long maxSize = Long.MAX_VALUE;
+        /** Whether one row of a column may add more than one value, as when the dictionary encodes list elements. */
+        private boolean multiValued;
     }
 
     /**
-     * Finds the dictionary encoded columns of {@code schema}, including run-end encoded columns whose values are
-     * dictionary encoded.
+     * Finds the dictionary encoded fields of {@code schema}, at any depth: a column's own field, or a field nested in
+     * it, such as the values of a run-end encoded column or the elements of a list.
      */
     private static Long2ObjectOpenHashMap<DictionaryColumns> findDictionaryColumns(
             final org.apache.arrow.vector.types.pojo.Schema schema) {
         final Long2ObjectOpenHashMap<DictionaryColumns> result = new Long2ObjectOpenHashMap<>();
         final List<Field> fields = schema.getFields();
         for (int ci = 0; ci < fields.size(); ++ci) {
-            Field field = fields.get(ci);
-            if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
-                field = field.getChildren().get(1);
-            }
-            final DictionaryEncoding encoding = field.getDictionary();
-            if (encoding == null) {
-                continue;
-            }
-            final DictionaryColumns columns = result.computeIfAbsent(encoding.getId(), id -> new DictionaryColumns());
-            columns.columnIndices.add(ci);
-            columns.maxSize = Math.min(columns.maxSize,
-                    DictionaryChunkWriter.maxDictionarySize(encoding.getIndexType().getBitWidth()));
+            findDictionaryColumns(result, ci, fields.get(ci), false);
         }
         return result;
+    }
+
+    /**
+     * Records the dictionary encoded fields of column {@code ci} found at or below {@code field}.
+     *
+     * @param multiValued whether a row of the column may hold more than one value of {@code field}
+     */
+    private static void findDictionaryColumns(
+            final Long2ObjectOpenHashMap<DictionaryColumns> result,
+            final int ci,
+            final Field field,
+            final boolean multiValued) {
+        final DictionaryEncoding encoding = field.getDictionary();
+        if (encoding != null) {
+            final DictionaryColumns columns = result.computeIfAbsent(encoding.getId(), id -> new DictionaryColumns());
+            final int numColumns = columns.columnIndices.size();
+            if (numColumns == 0 || columns.columnIndices.getInt(numColumns - 1) != ci) {
+                columns.columnIndices.add(ci);
+            }
+            columns.maxSize = Math.min(columns.maxSize,
+                    DictionaryChunkWriter.maxDictionarySize(encoding.getIndexType().getBitWidth()));
+            columns.multiValued |= multiValued;
+        }
+        // A run-end encoded column holds one value per run, a union one value of one of its children, and a struct one
+        // value of each child; any other parent, such as a list or map, may hold any number of child values in a row.
+        final ArrowType.ArrowTypeID typeId = field.getType().getTypeID();
+        final boolean childrenMultiValued = multiValued
+                || (typeId != ArrowType.ArrowTypeID.RunEndEncoded
+                        && typeId != ArrowType.ArrowTypeID.Union
+                        && typeId != ArrowType.ArrowTypeID.Struct);
+        for (final Field child : field.getChildren()) {
+            findDictionaryColumns(result, ci, child, childrenMultiValued);
+        }
     }
 
     /**
@@ -2160,7 +2187,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             // shared-backed registries ignore this call.
             if (subscription.dictionaryRegistry != null) {
                 final long viewportRowCount = clientView != null ? clientView.size() : 0;
-                subscription.dictionaryRegistry.resetOverflowedEntries(
+                subscription.dictionaryRegistry.maybeResetEntries(
                         dictId -> maxDictionarySizeBeforeWriting(dictId, bmw.getMessage(), viewportRowCount));
             }
             subscription.listener.onNext(bmw.getSubView(
@@ -2230,7 +2257,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                 // Full subscriptions share dictionaries that were made room for before the snapshot phase began, and
                 // their shared-backed registries ignore this call.
                 if (subscription.dictionaryRegistry != null) {
-                    subscription.dictionaryRegistry.resetOverflowedEntries(dictId -> maxDictionarySizeBeforeWriting(
+                    subscription.dictionaryRegistry.maybeResetEntries(dictId -> maxDictionarySizeBeforeWriting(
                             dictId, snapshotGenerator.getMessage(), Long.MAX_VALUE));
                 }
 

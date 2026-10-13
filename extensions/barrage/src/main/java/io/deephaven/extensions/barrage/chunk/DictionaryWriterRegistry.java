@@ -65,14 +65,13 @@ public interface DictionaryWriterRegistry {
     void resetDeltas();
 
     /**
-     * Checks each registered {@link DictionaryWriterState} for overflow: if its
-     * {@link DictionaryWriterState#totalSize() totalSize} exceeds {@code maxSizeForDictId} applied to its dictionary
-     * id, calls {@link DictionaryWriterState#reset()} so the next DictionaryBatch will be {@code isDelta=false} with a
-     * compacted dictionary. This applies to local (viewport/snapshot) registries only; a shared-backed registry ignores
-     * this call, as its {@link SharedWriterDictionary} is reset externally.
+     * Resets each registered {@link DictionaryWriterState} whose {@link DictionaryWriterState#totalSize() totalSize}
+     * exceeds the limit {@code maxSizeForDictId} gives for its dictionary id, so the next DictionaryBatch will be
+     * {@code isDelta=false} with a compacted dictionary. This applies to local (viewport/snapshot) registries only; a
+     * shared-backed registry ignores this call, as its {@link SharedWriterDictionary} is reset externally.
      *
      * @param maxSizeForDictId the most values the dictionary with a given id may hold before it is reset; typically no
      *        more than the live row count visible to the subscription
      */
-    void resetOverflowedEntries(@NotNull LongUnaryOperator maxSizeForDictId);
+    void maybeResetEntries(@NotNull LongUnaryOperator maxSizeForDictId);
 }

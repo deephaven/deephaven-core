@@ -371,6 +371,31 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
     }
 
     /**
+     * Like {@link #buildDictEncodedSchema(TableDefinition, String, int)}, but for a list column whose elements, rather
+     * than the column itself, are dictionary encoded.
+     */
+    private static Schema buildListElementDictEncodedSchema(
+            final TableDefinition def,
+            final String listColumnName,
+            final int indexBitWidth) {
+        final Schema natural = BarrageUtil.makeSchema(
+                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, def, Map.of(), false);
+        final List<Field> fields = natural.getFields().stream().map(f -> {
+            if (!listColumnName.equals(f.getName())) {
+                return f;
+            }
+            final Field element = f.getChildren().get(0);
+            final Field dictElement = new Field(element.getName(),
+                    new FieldType(element.isNullable(), element.getType(),
+                            new DictionaryEncoding(0L, false, new ArrowType.Int(indexBitWidth, true)),
+                            element.getMetadata()),
+                    element.getChildren());
+            return new Field(f.getName(), f.getFieldType(), List.of(dictElement));
+        }).collect(Collectors.toList());
+        return new Schema(fields, natural.getCustomMetadata());
+    }
+
+    /**
      * Builds a pojo {@link Schema} based on the natural schema of {@code def} except that the named column is doubly
      * encoded as {@code RunEndEncoded<Dictionary<...>>}: the parent is run-end encoded (Int32 run_ends) and its
      * {@code values} child carries an Arrow {@link DictionaryEncoding} (Int32 index, dict id 0).
@@ -909,6 +934,60 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
             nugget.flushClientEvents();
             updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
             nugget.validate("Int" + indexBitWidth + " churn step " + step);
+        }
+    }
+
+    /**
+     * Like {@link #testDictionaryEncodedInt8ValueChurn()}, but the Int8 dictionary encodes the elements of a list
+     * column, where a single row may add several values to it. The server must still compact the dictionary before it
+     * overflows rather than disconnect the subscribers.
+     */
+    @Test
+    public void testDictionaryEncodedInt8ListValueChurn() {
+        final int indexBitWidth = 8;
+        final int numRows = 1_000;
+        final int viewportSize = 200;
+        final int indexCapacity = 1 << (indexBitWidth - 1);
+        final int churnedRows = 10;
+
+        final String[][] initialValues = new String[numRows][];
+        Arrays.fill(initialValues, new String[] {"initial", "other"});
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(RowSetFactory.flat(numRows).toTracking(),
+                col("Syms", initialValues), TableTools.intCol("intCol", new int[numRows]));
+        sourceTable.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE,
+                buildListElementDictEncodedSchema(sourceTable.getDefinition(), "Syms", indexBitWidth));
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "list-churn-full-" + indexBitWidth);
+        nugget.newClient(RowSetFactory.flat(viewportSize), allCols, "list-churn-viewport-" + indexBitWidth);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        flushProducerTable();
+        nugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("initial snapshot");
+
+        // Each step writes two never-seen values to one of the first few rows, so at most 2 * churnedRows + 2 distinct
+        // values are ever live, while the number of values ever sent grows by two per step past the index width.
+        for (int step = 0; step < indexCapacity / 2 + churnedRows; step++) {
+            final long rowKey = step % churnedRows;
+            final String[] value = {"churnA" + step, "churnB" + step};
+            updateGraph.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(sourceTable, i(rowKey), col("Syms", new String[][] {value}),
+                        TableTools.intCol("intCol", 0));
+                final ModifiedColumnSet modified = sourceTable.getModifiedColumnSetForUpdates();
+                modified.clear();
+                modified.setAll("Syms");
+                sourceTable.notifyListeners(new TableUpdateImpl(
+                        RowSetFactory.empty(), RowSetFactory.empty(), i(rowKey), RowSetShiftData.EMPTY, modified));
+            });
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("Int" + indexBitWidth + " list churn step " + step);
         }
     }
 

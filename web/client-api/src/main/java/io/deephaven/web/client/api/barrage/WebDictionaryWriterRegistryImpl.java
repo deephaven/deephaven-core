@@ -46,5 +46,5 @@ public final class WebDictionaryWriterRegistryImpl implements DictionaryWriterRe
     public void resetDeltas() {}
 
     @Override
-    public void resetOverflowedEntries(@NotNull final LongUnaryOperator maxSizeForDictId) {}
+    public void maybeResetEntries(@NotNull final LongUnaryOperator maxSizeForDictId) {}
 }

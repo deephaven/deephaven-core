@@ -117,7 +117,7 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
     }
 
     @Override
-    public void resetOverflowedEntries(@NotNull final LongUnaryOperator maxSizeForDictId) {
+    public void maybeResetEntries(@NotNull final LongUnaryOperator maxSizeForDictId) {
         if (sharedDictionaries != null) {
             // the producer resets shared dictionaries itself, before a propagation phase's writes begin
             return;

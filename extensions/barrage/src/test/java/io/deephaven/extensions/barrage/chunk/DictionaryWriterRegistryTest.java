@@ -142,7 +142,7 @@ public class DictionaryWriterRegistryTest {
     }
 
     @Test
-    public void testResetOverflowedEntriesCompactsOverLimitStates() {
+    public void testMaybeResetEntriesCompactsOverLimitStates() {
         final DictionaryWriterRegistry manager = new DictionaryWriterRegistryImpl();
         final ChunkWriter<Chunk<Values>> writer = intWriter();
 
@@ -161,7 +161,7 @@ public class DictionaryWriterRegistryTest {
         assertThat(s2.totalSize()).isEqualTo(1);
 
         // a limit of 2 means s1 (3 entries > 2) overflows; s2 (1 entry) does not
-        manager.resetOverflowedEntries(dictId -> 2);
+        manager.maybeResetEntries(dictId -> 2);
 
         assertThat(s1.needsFullBatch()).isTrue();
         assertThat(s1.totalSize()).isZero();
@@ -170,7 +170,7 @@ public class DictionaryWriterRegistryTest {
     }
 
     @Test
-    public void testResetOverflowedEntriesAppliesLimitPerDictionaryId() {
+    public void testMaybeResetEntriesAppliesLimitPerDictionaryId() {
         final DictionaryWriterRegistry manager = new DictionaryWriterRegistryImpl();
         final ChunkWriter<Chunk<Values>> writer = intWriter();
 
@@ -182,14 +182,14 @@ public class DictionaryWriterRegistryTest {
         indexForObject(s2, "y");
 
         // only id 2 has a limit below its size
-        manager.resetOverflowedEntries(dictId -> dictId == 2L ? 1 : Long.MAX_VALUE);
+        manager.maybeResetEntries(dictId -> dictId == 2L ? 1 : Long.MAX_VALUE);
 
         assertThat(s1.totalSize()).isEqualTo(2);
         assertThat(s2.totalSize()).isZero();
     }
 
     @Test
-    public void testResetOverflowedEntriesIgnoresSharedBackedRegistry() {
+    public void testMaybeResetEntriesIgnoresSharedBackedRegistry() {
         final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries = new Long2ObjectOpenHashMap<>();
         final DictionaryWriterRegistry registry = new DictionaryWriterRegistryImpl(sharedDictionaries);
         final DictionaryWriterState state = registry.getOrCreate(1L, intWriter(), ChunkType.Object);
@@ -197,7 +197,7 @@ public class DictionaryWriterRegistryTest {
         indexForObject(state, "b");
 
         // the producer resets shared dictionaries itself; the registry must leave them alone
-        registry.resetOverflowedEntries(dictId -> 0);
+        registry.maybeResetEntries(dictId -> 0);
 
         assertThat(state.totalSize()).isEqualTo(2);
         assertThat(sharedDictionaries.get(1L).getTotalSize()).isEqualTo(2);
