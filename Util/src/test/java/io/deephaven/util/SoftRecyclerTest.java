@@ -36,22 +36,31 @@ public class SoftRecyclerTest {
 
         /** Grow the capacity to {@code count}, from a bin that starts empty. */
         void growTo(final int count) {
+            // the first burst turns its shortfall away, and the second grows the capacity by it
             burst(count);
-            endWindow();
             burst(count);
             assertEquals(count, recycler.getCapacity());
         }
 
         /** Borrow {@code count} items and return them all, as an update cycle does with its previous values. */
         List<long[]> burst(final int count) {
+            final List<long[]> items = borrow(count);
+            returnAll(items);
+            return items;
+        }
+
+        List<long[]> borrow(final int count) {
             final List<long[]> items = new ArrayList<>();
             for (int ii = 0; ii < count; ++ii) {
                 items.add(recycler.borrowItem());
             }
+            return items;
+        }
+
+        void returnAll(final List<long[]> items) {
             for (final long[] item : items) {
                 recycler.returnItem(item);
             }
-            return items;
         }
 
         /** Advance past the end of the window, and let the next operation see it. */
@@ -70,23 +79,19 @@ public class SoftRecyclerTest {
     }
 
     @Test
-    public void testGrowsToTheLargestBurst() {
+    public void testGrowsToTheBurstThatMissedAfterTurningItemsAway() {
         final Fixture fixture = new Fixture(10, 1000);
         // fill the bin, so that the first burst below is not short of every item it needs
         fixture.burst(10);
-        fixture.endWindow();
-        // every burst needs 25 items but the bin keeps only 10: each burst constructs 15 and turns 15 away
-        for (int ii = 0; ii < 5; ++ii) {
-            fixture.burst(25);
-        }
-        assertEquals(10, fixture.recycler.getCapacity());
-        fixture.endWindow();
+        // the burst needs 25 items but the bin keeps only 10: it constructs 15 and turns 15 away
         fixture.burst(25);
-        // the largest burst, not the window's total of 15 constructed per burst
+        assertEquals(10, fixture.recycler.getCapacity());
+        assertEquals(25, fixture.constructed.get());
+        // the next burst misses after the bin turned 15 away, so it grows by each miss, to the burst and no further
+        fixture.burst(25);
         assertEquals(25, fixture.recycler.getCapacity());
 
         // with room for a whole burst, nothing is constructed again
-        fixture.burst(25);
         final int constructed = fixture.constructed.get();
         for (int ii = 0; ii < 5; ++ii) {
             fixture.burst(25);
@@ -95,11 +100,23 @@ public class SoftRecyclerTest {
     }
 
     @Test
-    public void testGrowsToTheLargestBurstFromAnEmptyBin() {
+    public void testGrowsDuringTheBurstThatMisses() {
+        final Fixture fixture = new Fixture(10, 1000);
+        fixture.burst(10);
+        fixture.burst(25);
+        // the first ten borrows are served; the eleventh misses and grows the capacity at once
+        final List<long[]> items = fixture.borrow(11);
+        assertEquals(11, fixture.recycler.getCapacity());
+        items.addAll(fixture.borrow(14));
+        assertEquals(25, fixture.recycler.getCapacity());
+        fixture.returnAll(items);
+    }
+
+    @Test
+    public void testGrowsToTheBurstFromAnEmptyBin() {
         // from an empty bin, the first burst constructs every item it needs, which is more than the bin was short of
         final Fixture fixture = new Fixture(10, 1000);
         fixture.burst(25);
-        fixture.endWindow();
         fixture.burst(25);
         assertEquals(25, fixture.recycler.getCapacity());
     }
@@ -108,35 +125,68 @@ public class SoftRecyclerTest {
     public void testItemsABurstKeepsNeedNoRoom() {
         // each burst borrows 5 items it keeps, as storage that stays in use, and 20 it returns
         final Fixture fixture = new Fixture(10, 1000);
-        for (int window = 0; window < 3; ++window) {
-            for (int ii = 0; ii < 5; ++ii) {
-                for (int jj = 0; jj < 5; ++jj) {
-                    fixture.recycler.borrowItem();
-                }
-                fixture.burst(20);
-            }
-            fixture.endWindow();
+        for (int ii = 0; ii < 5; ++ii) {
+            fixture.borrow(5);
+            fixture.burst(20);
         }
-        fixture.recycler.borrowItem();
         assertEquals(20, fixture.recycler.getCapacity());
     }
 
     @Test
-    public void testGrowsWhenEachBurstIsSplitByTheEndOfAWindow() {
-        // every burst borrows in one window and returns in the next, as an update cycle as long as the window might,
-        // so each window sees only misses or only drops
+    public void testGrowsForDemandNoSingleBurstShows() {
+        // each cycle borrows 6, returns 1, and borrows 6 more before returning the rest: it holds 11 at its peak, but
+        // no run of borrows between two returns is longer than 6
+        final Fixture fixture = new Fixture(10, 1000);
+        fixture.burst(10);
+        for (int cycle = 0; cycle < 3; ++cycle) {
+            final List<long[]> items = fixture.borrow(6);
+            fixture.recycler.returnItem(items.remove(0));
+            items.addAll(fixture.borrow(6));
+            fixture.returnAll(items);
+            // a window end per cycle, which growth does not need, but a rule that judged windows would
+            fixture.endWindow();
+        }
+        assertEquals(11, fixture.recycler.getCapacity());
+        final int constructed = fixture.constructed.get();
+        final List<long[]> items = fixture.borrow(6);
+        fixture.recycler.returnItem(items.remove(0));
+        items.addAll(fixture.borrow(6));
+        fixture.returnAll(items);
+        assertEquals(constructed, fixture.constructed.get());
+    }
+
+    @Test
+    public void testGrowsWhileAFastClientInterleaves() {
+        // a slow client borrows 80 items over 8 steps and returns them at the end, while a fast client borrows and
+        // returns 10 every step, so no run of borrows between two returns is longer than 20
+        final Fixture fixture = new Fixture(10, 1000);
+        int constructed = 0;
+        for (int cycle = 0; cycle < 4; ++cycle) {
+            constructed = fixture.constructed.get();
+            final List<long[]> slow = new ArrayList<>();
+            for (int step = 0; step < 8; ++step) {
+                final List<long[]> fast = fixture.borrow(10);
+                slow.addAll(fixture.borrow(10));
+                fixture.returnAll(fast);
+            }
+            fixture.returnAll(slow);
+            // a window end per cycle, which growth does not need, but a rule that judged windows would
+            fixture.endWindow();
+        }
+        assertEquals(90, fixture.recycler.getCapacity());
+        assertEquals(constructed, fixture.constructed.get());
+    }
+
+    @Test
+    public void testGrowsAcrossTheEndOfAWindow() {
+        // every burst borrows in one window and returns in the next, as an update cycle as long as the window might
         final Fixture fixture = new Fixture(10, 1000);
         fixture.burst(10);
         fixture.endWindow();
-        for (int burst = 0; burst < 4; ++burst) {
-            final List<long[]> items = new ArrayList<>();
-            for (int ii = 0; ii < 25; ++ii) {
-                items.add(fixture.recycler.borrowItem());
-            }
+        for (int burst = 0; burst < 2; ++burst) {
+            final List<long[]> items = fixture.borrow(25);
             fixture.endWindow();
-            for (final long[] item : items) {
-                fixture.recycler.returnItem(item);
-            }
+            fixture.returnAll(items);
             fixture.endWindow();
         }
         assertEquals(25, fixture.recycler.getCapacity());
@@ -146,10 +196,8 @@ public class SoftRecyclerTest {
     public void testGrowthStopsAtTheMaximum() {
         final Fixture fixture = new Fixture(10, 16);
         fixture.burst(40);
-        fixture.endWindow();
         fixture.burst(40);
         assertEquals(16, fixture.recycler.getCapacity());
-        fixture.endWindow();
         fixture.burst(40);
         assertEquals(16, fixture.recycler.getCapacity());
     }
@@ -158,21 +206,28 @@ public class SoftRecyclerTest {
     public void testConstructionAloneDoesNotGrow() {
         // items borrowed and kept, as for storage that stays in use, are not a shortfall of the bin
         final Fixture fixture = new Fixture(10, 1000);
-        for (int ii = 0; ii < 50; ++ii) {
-            fixture.recycler.borrowItem();
-        }
+        fixture.borrow(50);
         fixture.endWindow();
         fixture.recycler.borrowItem();
         assertEquals(10, fixture.recycler.getCapacity());
     }
 
     @Test
+    public void testTurningItemsAwayAloneDoesNotGrow() {
+        // the bin is full and is never emptied, so the items it turned away were not missed
+        final Fixture fixture = new Fixture(10, 1000);
+        final List<long[]> items = fixture.borrow(30);
+        fixture.returnAll(items);
+        for (int ii = 0; ii < 5; ++ii) {
+            fixture.burst(5);
+        }
+        assertEquals(10, fixture.recycler.getCapacity());
+    }
+
+    @Test
     public void testShrinksTowardTheInitialCapacity() {
         final Fixture fixture = new Fixture(10, 1000);
-        fixture.burst(90);
-        fixture.endWindow();
-        fixture.burst(90);
-        assertEquals(90, fixture.recycler.getCapacity());
+        fixture.growTo(90);
 
         // now the bursts need only 10, so 80 items sit unused through each window
         fixture.burst(90);
@@ -216,20 +271,22 @@ public class SoftRecyclerTest {
     }
 
     @Test
-    public void testAdjustsOnlyAtTheEndOfAWindow() {
+    public void testShrinksOnlyAtTheEndOfAWindow() {
         final Fixture fixture = new Fixture(10, 1000);
-        fixture.burst(10);
+        fixture.growTo(90);
+        fixture.burst(90);
         fixture.endWindow();
+        fixture.burst(10);
         for (int ii = 0; ii < 5; ++ii) {
-            fixture.burst(25);
+            fixture.burst(10);
             // most of a window is not enough
             fixture.now += SECOND / 10;
         }
-        fixture.burst(25);
-        assertEquals(10, fixture.recycler.getCapacity());
+        fixture.burst(10);
+        assertEquals(90, fixture.recycler.getCapacity());
         fixture.now += SECOND / 2;
-        fixture.burst(25);
-        assertEquals(25, fixture.recycler.getCapacity());
+        fixture.burst(10);
+        assertEquals(50, fixture.recycler.getCapacity());
     }
 
     @Test

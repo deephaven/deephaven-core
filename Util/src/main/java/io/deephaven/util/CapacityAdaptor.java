@@ -13,16 +13,29 @@ import java.util.function.LongSupplier;
  * the difference. The pool holds whatever lock it needs: this class is not thread-safe.
  *
  * <p>
- * The capacity adapts between the capacity the adaptor was created with and a maximum. Items are commonly borrowed in
- * bursts and returned together, as when an update cycle borrows storage for previous values and returns it all when the
- * cycle completes. When a window of time and the one before it see the pool turn returned items away because it is
- * full, and also construct new items because it is empty, the capacity grows to hold the largest single burst, the most
- * items borrowed between two returns, but by no more than the most items turned away between two borrows, since items a
- * burst keeps need no room. When a window sees the pool never empty, the fewest items it held in that window were never
- * needed, and the capacity discards the shrink fraction of them, rounded up, but never goes below the capacity it was
- * created with. The items the window did need are always kept: with a capacity of 100 and a window that never drew the
- * pool below 40 items, a fraction of 0.9 discards 36 of those 40, leaving a capacity of 64, while a fraction of 0 keeps
- * the capacity once grown.
+ * The capacity adapts between the capacity the adaptor was created with and a maximum.
+ *
+ * <p>
+ * It grows by one at each miss that a larger pool would have served. The adaptor keeps a counter of turned-away items:
+ * each item the pool turns away for being full adds one, and each miss charged against it, below, subtracts one. The
+ * pool turns items away only when it is full, so a pool larger by the counter would hold exactly that many more items
+ * now, whatever order the borrows and returns came in. A miss that occurs while the counter is positive is therefore an
+ * item the pool could have reused and did not: a regretted turn-away. It grows the capacity by one and decrements the
+ * counter. On the other hand, a miss while the counter is zero, as when borrowers keep what they borrow, changes
+ * neither the counter nor the capacity. The counter never exceeds the room left to grow, since turned-away items beyond
+ * that could never be kept. Items are commonly borrowed in bursts and returned together, as when an update cycle
+ * borrows storage for previous values and returns it all when the cycle completes. One cycle that the pool is too small
+ * for turns the shortfall away; the next grows the pool by it, during its burst, and from then on reuses everything. No
+ * clock is needed, and the capacity never grows past what some burst actually used, since each unit of growth was a
+ * miss.
+ *
+ * <p>
+ * It shrinks on a window of time. When a window sees the pool never empty, the fewest items it held in that window were
+ * never needed, and the capacity discards the shrink fraction of them, rounded up, but never goes below the capacity it
+ * was created with. The items the window did need are always kept: with a capacity of 100 and a window that never drew
+ * the pool below 40 items, a fraction of 0.9 discards 36 of those 40, leaving a capacity of 64, while a fraction of 0
+ * keeps the capacity once grown. The window must be at least as long as the slowest cycle that borrows from the pool,
+ * since a window that ends partway through a burst sees items that burst was still about to borrow as unneeded.
  */
 public final class CapacityAdaptor {
     private final int minimumCapacity;
@@ -35,37 +48,23 @@ public final class CapacityAdaptor {
     /** The most items the pool may hold now. */
     private int capacity;
 
+    /**
+     * The items the pool turned away, less the misses already charged against them, and never more than the room to
+     * grow: how many more items a larger pool would hold right now.
+     */
+    private int turnedAway;
+
     private long windowStart;
     private int operations;
-    /** The items constructed because the pool was empty, in this window. */
-    private int windowMisses;
-    /** The items turned away because the pool was full, in this window. */
-    private int windowDrops;
-    /** The items borrowed since the last return: the size of the current burst. */
-    private int burstBorrows;
-    /** The largest {@link #burstBorrows} of this window. */
-    private int windowMaxBurst;
-    /** The items turned away since the last borrow. */
-    private int dropRun;
-    /** The largest {@link #dropRun} of this window. */
-    private int windowMaxDropRun;
     /** The fewest items the pool held in this window. */
     private int windowMinSize;
-    /**
-     * The previous window's {@link #windowMisses}, {@link #windowDrops}, {@link #windowMaxBurst}, and
-     * {@link #windowMaxDropRun}, judged with this window's so that a burst split by the end of a window still counts.
-     */
-    private int previousMisses;
-    private int previousDrops;
-    private int previousMaxBurst;
-    private int previousMaxDropRun;
 
     /**
      * @param capacity The capacity to start with, and the least to shrink to
      * @param maximumCapacity The most the capacity may grow to, at least {@code capacity}
      * @param nanoClock The clock the windows are measured on, in nanoseconds
      * @param operationsPerClockRead The borrows and returns between reads of the clock, a power of two
-     * @param windowNanos The nanoseconds of traffic each adjustment of the capacity is judged on
+     * @param windowNanos The nanoseconds of traffic each shrink of the capacity is judged on
      * @param shrinkFraction The fraction, from 0 to 1, of the items a window never needed that the capacity discards
      */
     public CapacityAdaptor(final int capacity, final int maximumCapacity, @NotNull final LongSupplier nanoClock,
@@ -115,9 +114,7 @@ public final class CapacityAdaptor {
      * @param held The items the pool holds
      */
     public void borrowing(final int held) {
-        adapt(held);
-        windowMaxBurst = Math.max(windowMaxBurst, ++burstBorrows);
-        dropRun = 0;
+        maybeShrink(held);
     }
 
     /**
@@ -134,7 +131,12 @@ public final class CapacityAdaptor {
      */
     public void missed() {
         windowMinSize = 0;
-        ++windowMisses;
+        if (turnedAway > 0) {
+            // A regretted turn-away: a pool this much larger would have held an item for this borrow, so grow to hold
+            // it next time.
+            ++capacity;
+            --turnedAway;
+        }
     }
 
     /**
@@ -143,25 +145,24 @@ public final class CapacityAdaptor {
      * @param held The items the pool holds
      */
     public void returning(final int held) {
-        burstBorrows = 0;
-        adapt(held);
+        maybeShrink(held);
     }
 
     /**
      * The pool was full, so it turned the returned item away.
      */
     public void dropped() {
-        ++windowDrops;
-        windowMaxDropRun = Math.max(windowMaxDropRun, ++dropRun);
+        if (turnedAway < maximumCapacity - capacity) {
+            ++turnedAway;
+        }
     }
 
     /**
-     * At the end of a window, grow to the largest burst if the pool both turned items away and constructed new ones, or
-     * else discard the shrink fraction of the items it never needed.
+     * At the end of a window, discard the shrink fraction of the items the pool never needed.
      *
      * @param held The items the pool holds, before it discards any beyond the capacity this leaves
      */
-    private void adapt(final int held) {
+    private void maybeShrink(final int held) {
         if ((++operations & clockReadMask) != 0) {
             return;
         }
@@ -169,36 +170,12 @@ public final class CapacityAdaptor {
         if (now - windowStart < windowNanos) {
             return;
         }
-        // A burst's misses and its drops may fall on either side of the end of a window, as when an update cycle
-        // borrows before the end of a window and returns after it, so this window is judged with the one before.
-        final int misses = windowMisses + previousMisses;
-        final int drops = windowDrops + previousDrops;
-        final int maxBurst = Math.max(windowMaxBurst, previousMaxBurst);
-        final int maxDropRun = Math.max(windowMaxDropRun, previousMaxDropRun);
-        if (drops > 0 && misses > 0) {
-            // Items were thrown away and then constructed again, so a larger pool would have kept them. A pool as large
-            // as the largest burst keeps every item a burst returns, however full it was when the burst began; the
-            // items turned away at once bound the room that was missing.
-            final long needed = Math.min(maxBurst, (long) capacity + maxDropRun);
-            if (needed > capacity) {
-                capacity = (int) Math.min(maximumCapacity, needed);
-            }
-            // the growth used this window's traffic, which the next window must not count again
-            windowMisses = windowDrops = windowMaxBurst = windowMaxDropRun = 0;
-        } else if (windowMinSize > 0) {
+        if (windowMinSize > 0) {
             // rounded up, so that any fraction above 0 reaches the minimum
             final int shrink = (int) Math.ceil(windowMinSize * shrinkFraction);
             capacity = Math.max(minimumCapacity, capacity - shrink);
         }
         windowStart = now;
-        previousMisses = windowMisses;
-        previousDrops = windowDrops;
-        previousMaxBurst = windowMaxBurst;
-        previousMaxDropRun = windowMaxDropRun;
-        windowMisses = 0;
-        windowDrops = 0;
-        windowMaxBurst = 0;
-        windowMaxDropRun = 0;
         // what the pool holds once it discards the items beyond the capacity
         windowMinSize = Math.min(held, capacity);
     }
