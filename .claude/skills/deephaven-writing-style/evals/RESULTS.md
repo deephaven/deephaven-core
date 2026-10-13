@@ -152,3 +152,19 @@ Chip asked why "filter and select operations" was not linked in `query-table-con
 - The fixture's closing link was corrected after these runs, from `../../conceptual/query-engine/parallelization.md` to `./query-engine/parallelization.md`, which is the path that resolves from `docs/python/conceptual/query-table-configuration.md`, and the eval prompt now names that source page. Nothing else in the fixture changed, so the 18/18 results were not re-run.
 - The eval 12 expectations were tightened after these runs, in two ways: link targets must be context-matching (the select reference for `select`, both join guides for `joins`), and the table is one linking unit in which each distinct operation is linked once (`Filter` and `Sort` both need a link; a repeat of the same operation in another cell does not), matching the skill's per-identifier, per-paragraph, per-list-item, per-table rule. All six runs already named the select page and both join guides and flagged both `Filter` and `Sort`, so the pass counts above stand.
 
+### Eval 13: full-page regression eval for the plain-word search (#8910, Copilot's eighth review)
+
+Copilot pointed out that eval 12 passes with or without the new search, so removing the search would leave it green. Eval 13 uses the full 255-line `query-table-configuration.md` as it stood at commit `7b648e4a2b` (Chip's review), where the miss actually happened, with a neutral prompt that does not mention plain-word names.
+
+3 runs per configuration, graded by the author by reading each report for the target sentence (not blind). The check is whether the report flags "filter and select operations" (line 237) as unlinked operation names.
+
+| Eval | Check tested | Changed skill | Baseline |
+| --- | --- | --- | --- |
+| 13 (2 expectations) | "filter and select operations" flagged as an unlinked linking finding | 3/3 | 0/3 |
+
+- This one discriminates. All three changed-skill reports list line 237 with link targets for `filter` and `select`.
+- Two baseline reports (runs 2 and 3) quote the sentence, but only to say that "stateless" is never defined; the third does not mention it. None flags the operation names as unlinked.
+- The link-target expectation was not graded separately: it follows from the first in the three passing reports, which all name the filter and select reference pages.
+- Eval 12 stays as the short control that checks the rule on a small excerpt and the ordinary-English negative case. Eval 13 is the one that fails without the plain-word search.
+- Three runs per configuration is still a small sample. The baseline missing the sentence in 3 of 3 here, and in the earlier single replay, is consistent, not proof.
+
