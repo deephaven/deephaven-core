@@ -50,7 +50,7 @@ The options dictate whether to take an initial snapshot, do incremental snapshot
 </ParamTable>
 
 > [!CAUTION]
-> The trigger table's stamp columns appear in the result table. If the source table has a column with the same name as a stamp column, a snapshot without `HISTORY` raises an error. With `HISTORY`, Deephaven doesn't check for the conflict. If the two columns have the same type, the result keeps the source table's values for that column. If their types differ, the snapshot fails with an error. To avoid the conflict, rename the stamp column in the trigger table using [`renameColumns`](../select/rename-columns.md).
+> The trigger table's stamp columns appear in the result table. If the source table has a column with the same name as a stamp column, a snapshot without `HISTORY` raises an error. With `HISTORY`, Deephaven doesn't reliably detect the conflict. The stamp column's values can be silently lost, or the snapshot can fail. To avoid the conflict, rename the stamp column in the trigger table using [`renameColumns`](../select/rename-columns.md).
 
 ## Returns
 
@@ -78,7 +78,7 @@ Where `INITIAL`, `INCREMENTAL`, and `HISTORY` are booleans and `stampColumns` is
 
 ## Examples
 
-In the following example, the `source` table updates once every second. The `trigger` table updates once every five seconds. Thus, the `result` table updates once every five seconds. To avoid a name conflict error, the `Timestamp` column in the `trigger` is [renamed](../select/rename-columns.md).
+In the following example, the `source` table adds a row every second and the `trigger` table adds a row every five seconds. Thus, the `result` table updates each time `trigger` adds a row, about every five seconds. To avoid a name conflict error, the `Timestamp` column in the `trigger` is [renamed](../select/rename-columns.md).
 
 ```groovy ticking-table order=null
 source = timeTable("PT00:00:01").updateView("X = i")

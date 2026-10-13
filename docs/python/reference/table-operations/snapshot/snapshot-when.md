@@ -55,7 +55,7 @@ Determines whether the resulting table should keep history. The default value is
 </ParamTable>
 
 > [!CAUTION]
-> The stamp columns from the trigger table appear in the result table. If the source table has a column with the same name as a stamp column, a snapshot without `history` raises an error. With `history=True`, Deephaven doesn't check for the conflict. If the two columns have the same type, the result keeps the source table's values for that column. If their types differ, the snapshot fails with an error. To avoid the conflict, rename the stamp column in the trigger table using [`rename_columns`](../select/rename-columns.md).
+> The stamp columns from the trigger table appear in the result table. If the source table has a column with the same name as a stamp column, a snapshot without `history` raises an error. With `history=True`, Deephaven doesn't reliably detect the conflict. The stamp column's values can be silently lost, or the snapshot can fail. To avoid the conflict, rename the stamp column in the trigger table using [`rename_columns`](../select/rename-columns.md).
 
 ## Returns
 
@@ -63,7 +63,7 @@ A new table that captures a snapshot of the source table whenever the trigger ta
 
 ## Examples
 
-In the following example, the `source` table updates once every second. The `trigger` table updates once every five seconds. Thus, the `result` table updates once every five seconds. The `Timestamp` column in the `trigger` is [renamed](../select/rename-columns.md) to avoid a name conflict error.
+In the following example, the `source` table adds a row every second and the `trigger` table adds a row every five seconds. Thus, the `result` table updates each time `trigger` adds a row, about every five seconds. The `Timestamp` column in the `trigger` is [renamed](../select/rename-columns.md) to avoid a name conflict error.
 
 ```python ticking-table order=null
 from deephaven import time_table
