@@ -124,6 +124,19 @@ public class DoPutDictionaryReleaseTest {
     }
 
     @Test
+    public void testFailedMessageReleasesDictionaries() throws IOException {
+        final InputStream unknownDictionaryMessage = flightData(dictionaryBatchMessage(99L, "date"));
+        runDoPutWithDictionary((doPut, observer) -> {
+            // gRPC closes the call when onNext throws, and calls none of the observer's terminal methods afterwards
+            try {
+                doPut.onNext(unknownDictionaryMessage);
+                fail("Expected a dictionary batch for an id the schema does not have to be rejected");
+            } catch (final RuntimeException expected) {
+            }
+        });
+    }
+
+    @Test
     public void testAbandonedConversionReleasesDictionaries() throws IOException {
         final byte[] schemaMessage = schemaMessage();
         final byte[] dictionaryMessage = dictionaryBatchMessage("apple", "banana", "cherry");
@@ -171,6 +184,10 @@ public class DoPutDictionaryReleaseTest {
     }
 
     private byte[] dictionaryBatchMessage(final String... values) throws IOException {
+        return dictionaryBatchMessage(0L, values);
+    }
+
+    private byte[] dictionaryBatchMessage(final long dictId, final String... values) throws IOException {
         try (final VarCharVector valuesVector = new VarCharVector("values", allocator)) {
             valuesVector.allocateNew();
             for (int ii = 0; ii < values.length; ++ii) {
@@ -179,7 +196,7 @@ public class DoPutDictionaryReleaseTest {
             valuesVector.setValueCount(values.length);
             try (final VectorSchemaRoot root = VectorSchemaRoot.of(valuesVector);
                     final ArrowDictionaryBatch dictionaryBatch =
-                            new ArrowDictionaryBatch(0L, new VectorUnloader(root).getRecordBatch(), false)) {
+                            new ArrowDictionaryBatch(dictId, new VectorUnloader(root).getRecordBatch(), false)) {
                 final ByteArrayOutputStream out = new ByteArrayOutputStream();
                 MessageSerializer.serialize(new WriteChannel(Channels.newChannel(out)), dictionaryBatch);
                 return out.toByteArray();

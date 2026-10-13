@@ -152,8 +152,11 @@ public class ArrowFlightUtil {
         private SessionState.ExportBuilder<Table> resultExportBuilder;
         private Flight.FlightDescriptor flightDescriptor;
         private Schema schema;
-        /** Set when the session expires; the stream is abandoned then, and later messages are ignored. */
-        private boolean sessionExpired;
+        /**
+         * Set when the stream is abandoned: its session expired, or a message failed. The decoded dictionaries have
+         * been released then, and later messages are ignored.
+         */
+        private boolean abandoned;
 
         public DoPutObserver(
                 final SessionState session,
@@ -175,9 +178,26 @@ public class ArrowFlightUtil {
         // another thread
         @Override
         public synchronized void onNext(final InputStream request) {
-            if (sessionExpired) {
+            if (abandoned) {
                 return;
             }
+            try {
+                processMessage(request);
+            } catch (final RuntimeException err) {
+                // gRPC closes the call when onNext throws, and calls neither onError nor onCompleted afterwards, so
+                // release the decoded dictionaries before the error propagates
+                abandon();
+                throw err;
+            }
+        }
+
+        /** Releases the decoded dictionaries and ignores any later message. Callers hold this observer's monitor. */
+        private void abandon() {
+            abandoned = true;
+            releaseDictionaries();
+        }
+
+        private void processMessage(final InputStream request) {
             final MessageInfo mi;
             try {
                 mi = BarrageProtoUtil.parseProtoMessage(request);
@@ -329,11 +349,10 @@ public class ArrowFlightUtil {
             // close() is intended to be invoked only though session expiration
             GrpcUtil.safelyError(observer, Code.UNAUTHENTICATED, "Session expired");
             // Once the call is closed, gRPC calls none of onError, onCancel or onCompleted, so release the decoded
-            // dictionaries here. Holding the monitor waits out a message being decoded, and the flag stops a later
-            // message from decoding more.
+            // dictionaries here. Holding the monitor waits out a message being decoded, and abandoning the stream stops
+            // a later message from decoding more.
             synchronized (this) {
-                sessionExpired = true;
-                releaseDictionaries();
+                abandon();
             }
         }
     }

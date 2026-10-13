@@ -402,16 +402,46 @@ def _decoded_pa_type(pa_type: pa.DataType) -> pa.DataType:
             return pa.list_(pa_type.value_field.with_type(value_type))
     return pa_type
 
+# Returns the Deephaven null value of pa_type (see io.deephaven.util.QueryConstants) when the column sources made for it
+# take nullness from that value rather than from Arrow's validity bitmap, or None otherwise.
+def _deephaven_null_value(pa_type: pa.DataType):
+    if pa.types.is_uint16(pa_type):  # char
+        return 0xFFFF
+    if pa.types.is_int8(pa_type):
+        return -128
+    if pa.types.is_int16(pa_type):
+        return -32768
+    if pa.types.is_int32(pa_type):
+        return -2147483648
+    if pa.types.is_int64(pa_type) or pa.types.is_timestamp(pa_type) \
+            or pa.types.is_date64(pa_type) or pa.types.is_time64(pa_type):
+        return -9223372036854775808
+    if pa.types.is_float32(pa_type):
+        return -3.4028234663852886e38
+    if pa.types.is_float64(pa_type):
+        return -1.7976931348623157e308
+    return None
+
 # Returns the plain form of a dictionary or run-end encoded array (a new array), or the array itself when it is not
 # encoded. Callers keep the result alive while column sources made from it are in use, as they refer to its storage.
 def _decoded_array(array: pa.Array) -> pa.Array:
+    decoded = _decode(array)
+    if decoded is not array and decoded.null_count != 0:
+        # Decoding marks a null with Arrow's validity bitmap over an arbitrary value, but the column sources of
+        # primitive and time types take nullness from the Deephaven null value, so write that value into those rows.
+        null_value = _deephaven_null_value(decoded.type)
+        if null_value is not None:
+            decoded = pc.fill_null(decoded, pa.scalar(null_value, type=decoded.type))
+    return decoded
+
+def _decode(array: pa.Array) -> pa.Array:
     if isinstance(array, pa.DictionaryArray):
-        return _decoded_array(array.dictionary_decode())
+        return _decode(array.dictionary_decode())
     if _is_run_end_encoded(array.type):
         # run_end_decode takes only plain run values, so decode encoded ones first. The run ends count positions in the
         # unsliced array, so the rebuilt array is sliced as the original was.
         values = array.values
-        decoded_values = _decoded_array(values)
+        decoded_values = _decode(values)
         if decoded_values is not values:
             array = pa.RunEndEncodedArray.from_arrays(array.run_ends, decoded_values).slice(array.offset, len(array))
         return pc.run_end_decode(array)

@@ -10,9 +10,9 @@ import pydeephaven as dh
 
 _NUM_ROWS = 100
 
-# Makes plain_table, and encoded_table: the same data, with a Barrage schema attribute that asks for a dictionary
-# encoded column, a run-end encoded column, a run-end encoded column over dictionary encoded values, and a list column
-# whose elements are dictionary encoded.
+# Makes plain_table, and encoded_table: the same data, with a Barrage schema attribute that asks for dictionary encoded
+# columns (strings, and ints with nulls), run-end encoded columns (ints, and doubles and timestamps with runs of nulls),
+# a run-end encoded column over dictionary encoded values, and a list column whose elements are dictionary encoded.
 _TABLES_SCRIPT = f"""
 import jpy
 from deephaven import empty_table
@@ -56,6 +56,10 @@ def _with_barrage_encodings(table):
             j_children = _JArrayList()
             j_children.add(_dictionary_encoded(jpy.cast(j_field.getChildren().get(0), _JField), 2))
             j_field = _JField(name, j_field.getFieldType(), j_children)
+        elif name == "Dbl" or name == "Ts":
+            j_field = _run_end_encoded(j_field, j_field)
+        elif name == "Num":
+            j_field = _dictionary_encoded(j_field, 3)
         j_fields.add(j_field)
     return table.with_attributes({{"BarrageSchema": _JSchema(j_fields, j_natural.getCustomMetadata())}})
 
@@ -64,11 +68,14 @@ plain_table = empty_table({_NUM_ROWS}).update([
     "Block = (int) (ii / 10)",
     "Both = ((int) (ii / 10)) % 2 == 0 ? `X` : null",
     "Tags = new String[] {{ Sym, ii % 2 == 0 ? `even` : `odd` }}",
+    "Dbl = ((int) (ii / 10)) % 2 == 0 ? NULL_DOUBLE : 1.5",
+    "Num = ii % 3 == 0 ? NULL_INT : (int) (ii % 2)",
+    "Ts = ((int) (ii / 10)) % 2 == 0 ? null : '2024-01-01T00:00:00Z'",
 ])
 encoded_table = _with_barrage_encodings(plain_table)
 """
 
-_COLUMNS = ["Sym", "Block", "Both", "Tags"]
+_COLUMNS = ["Sym", "Block", "Both", "Tags", "Dbl", "Num", "Ts"]
 
 
 class TickingEncodingsTestCase(unittest.TestCase):
