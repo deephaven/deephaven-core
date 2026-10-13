@@ -3,25 +3,32 @@
 //
 package io.deephaven.remotefilesource;
 
+import com.google.protobuf.ByteString;
 import io.deephaven.engine.util.remotefilesource.RemoteFileSourceClassLoader;
 import io.deephaven.plugin.type.ObjectCommunicationException;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceClientMessage;
+import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaResponse;
+import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerMessage;
 import io.deephaven.proto.backplane.grpc.SetRemoteSourcesRequest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests that a client's declared resources are scoped to the single script evaluation they were declared for.
+ * Tests that a client's declared resources are scoped to the single script evaluation they were declared for, and how
+ * the client's responses to resource requests are interpreted.
  */
 class RemoteFileSourceMessageStreamTest {
 
@@ -50,6 +57,25 @@ class RemoteFileSourceMessageStreamTest {
 
         @Override
         public void onClose() {}
+    }
+
+    /**
+     * A connection that keeps the last message the server sent it, so a test can answer a resource request.
+     */
+    private static final class RecordingConnection implements ObjectType.MessageStream {
+        private ByteBuffer lastSent;
+
+        @Override
+        public void onData(final ByteBuffer payload, final Object... references) {
+            lastSent = payload;
+        }
+
+        @Override
+        public void onClose() {}
+
+        String lastRequestId() throws Exception {
+            return RemoteFileSourceServerMessage.parseFrom(lastSent.duplicate()).getRequestId();
+        }
     }
 
     /**
@@ -310,6 +336,57 @@ class RemoteFileSourceMessageStreamTest {
      * A failed acknowledgment must reach the object service, which closes the stream in response. Swallowing it would
      * leave the declaration installed and claimable while the client waited out its timeout.
      */
+    /**
+     * Responds to the request the stream last sent, the way a client does.
+     */
+    private static void respond(final RemoteFileSourceMessageStream stream, final RecordingConnection connection,
+            final boolean found, final byte[] content) throws Exception {
+        final RemoteFileSourceClientMessage message = RemoteFileSourceClientMessage.newBuilder()
+                .setRequestId(connection.lastRequestId())
+                .setMetaResponse(RemoteFileSourceMetaResponse.newBuilder()
+                        .setFound(found)
+                        .setContent(ByteString.copyFrom(content)))
+                .build();
+        stream.onData(ByteBuffer.wrap(message.toByteArray()));
+    }
+
+    /**
+     * A client that does not have a requested resource fails the request outright, so the class loader reports it as
+     * missing rather than reading it as empty.
+     */
+    @Test
+    void aNotFoundResponseFailsTheRequest() throws Exception {
+        final RecordingConnection connection = new RecordingConnection();
+        final RemoteFileSourceMessageStream stream = new RemoteFileSourceMessageStream(connection);
+        try {
+            final CompletableFuture<byte[]> request = stream.requestResource(RESOURCE);
+            respond(stream, connection, false, new byte[0]);
+
+            assertThatThrownBy(request::get)
+                    .isInstanceOf(ExecutionException.class)
+                    .hasCauseInstanceOf(FileNotFoundException.class);
+        } finally {
+            stream.onClose();
+        }
+    }
+
+    /**
+     * An empty file is a legitimate resource, distinct from a missing one.
+     */
+    @Test
+    void anEmptyFoundResponseIsAnEmptyFile() throws Exception {
+        final RecordingConnection connection = new RecordingConnection();
+        final RemoteFileSourceMessageStream stream = new RemoteFileSourceMessageStream(connection);
+        try {
+            final CompletableFuture<byte[]> request = stream.requestResource(RESOURCE);
+            respond(stream, connection, true, new byte[0]);
+
+            assertThat(request.get()).isEmpty();
+        } finally {
+            stream.onClose();
+        }
+    }
+
     @Test
     void aFailedAcknowledgmentPropagates() throws Exception {
         final FailingConnection connection = new FailingConnection();

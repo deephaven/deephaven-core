@@ -289,17 +289,17 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
          *
          * <p>
          * This method calls {@link #connect()} to ensure the connection is established and resource bytes are fetched
-         * from the provider. The method then verifies that content has been successfully downloaded before creating the
-         * input stream.
+         * from the provider. Empty content is a legitimately empty file and is returned as an empty stream.
          *
          * @return an input stream that reads from the fetched resource bytes
-         * @throws IOException if the connection or content download fails or if the resource has no content
+         * @throws IOException if the connection or content download fails, including when the provider does not have
+         *         the resource
          */
         @Override
         public InputStream getInputStream() throws IOException {
             connect();
-            if (content == null || content.length == 0) {
-                throw new IOException("No content for resource: " + resourceName);
+            if (content == null) {
+                throw new IOException("Provider returned null for remote resource: " + resourceName);
             }
             return new ByteArrayInputStream(content);
         }

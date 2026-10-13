@@ -15,6 +15,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -65,7 +66,7 @@ public class TestGroovyClassCacheReset {
 
         // A dirty declaration requires a reset, which cannot clear a cache it cannot read
         RemoteFileSourceClassLoader.getInstance().declareRemoteSources(
-                resourceName -> CompletableFuture.completedFuture(null),
+                resourceName -> CompletableFuture.failedFuture(new FileNotFoundException(resourceName)),
                 List.of("test/notebook/Whatever.groovy"), true);
 
         try {

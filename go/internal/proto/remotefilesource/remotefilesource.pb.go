@@ -264,7 +264,7 @@ type RemoteFileSourceMetaResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The content of the resource, or empty if not found
+	// The content of the resource, which is empty for an empty file. Ignored when found is false.
 	Content []byte `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
 	// Indicates whether the resource was found
 	Found bool `protobuf:"varint,2,opt,name=found,proto3" json:"found,omitempty"`

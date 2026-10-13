@@ -18,6 +18,7 @@ import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerMessage;
 import io.deephaven.proto.backplane.grpc.SetRemoteSourcesRequest;
 import io.deephaven.proto.backplane.grpc.SetRemoteSourcesResponse;
 
+import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
@@ -63,9 +64,10 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      * completed when the client responds. Only services requests if this message stream is active.
      *
      * @param resourceName the name of the resource to request
-     * @return a CompletableFuture that completes with the resource bytes, or completes with null if the client could
-     *         not find the resource. The future completes exceptionally if this message stream is not active, if the
-     *         request could not be sent, or if the client reported an error.
+     * @return a CompletableFuture that completes with the resource bytes, which are empty for an empty file. The future
+     *         completes exceptionally with a {@link FileNotFoundException} if the client could not find the resource,
+     *         and exceptionally otherwise if this message stream is not active, if the request could not be sent, or if
+     *         the client reported an error.
      */
     @Override
     public CompletableFuture<byte[]> requestResource(String resourceName) {
@@ -159,8 +161,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
 
     /**
      * Handles a meta response from the client containing requested resource content. An error reported by the client
-     * completes the pending request exceptionally so the reason reaches the caller; a response that did not find the
-     * resource completes it with null.
+     * completes the pending request exceptionally so the reason reaches the caller, as does a response that did not
+     * find the resource. Empty content from a response that found the resource is an empty file, not a failure.
      *
      * @param requestId the request ID
      * @param response the meta response from the client
@@ -187,7 +189,7 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
         }
 
         if (!response.getFound()) {
-            future.complete(null);
+            future.completeExceptionally(new FileNotFoundException("Client could not find the requested resource"));
             return;
         }
 

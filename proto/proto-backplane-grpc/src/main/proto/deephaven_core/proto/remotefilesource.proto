@@ -47,7 +47,7 @@ message RemoteFileSourceMetaRequest {
 
 // Response to a resource request
 message RemoteFileSourceMetaResponse {
-  // The content of the resource, or empty if not found
+  // The content of the resource, which is empty for an empty file. Ignored when found is false.
   bytes content = 1;
 
   // Indicates whether the resource was found

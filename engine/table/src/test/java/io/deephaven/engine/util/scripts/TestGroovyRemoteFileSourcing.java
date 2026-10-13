@@ -18,7 +18,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +73,7 @@ public class TestGroovyRemoteFileSourcing {
             String source = remoteSources.get(resourceName);
             return source != null
                     ? CompletableFuture.completedFuture(source.getBytes())
-                    : CompletableFuture.completedFuture(null);
+                    : CompletableFuture.failedFuture(new FileNotFoundException(resourceName));
         };
     }
 
@@ -267,6 +270,40 @@ public class TestGroovyRemoteFileSourcing {
                 true,
                 "REMOTE_ONLY_V2",
                 444);
+    }
+
+    /**
+     * An empty remote file is a legitimate, empty source. Reading it yields no bytes rather than failing as if the
+     * resource were unreadable.
+     */
+    @Test
+    public void testEmptyRemoteFileReadsAsEmpty() throws IOException {
+        final RemoteFileSourceClassLoader loader = RemoteFileSourceClassLoader.getInstance();
+        remoteSources.put(PATH_REMOTE_ONLY, "");
+        loader.declareRemoteSources(provider, List.of(PATH_REMOTE_ONLY), true);
+        loader.beginEvaluation();
+
+        try (final InputStream in = loader.getResource(PATH_REMOTE_ONLY).openStream()) {
+            assertEquals(0, in.readAllBytes().length);
+        }
+    }
+
+    /**
+     * A declared resource the client then cannot find fails the read with an error naming the resource, rather than
+     * reading as empty or resolving a same-named classpath resource.
+     */
+    @Test
+    public void testDeclaredResourceNotFoundFailsTheRead() {
+        final RemoteFileSourceClassLoader loader = RemoteFileSourceClassLoader.getInstance();
+        loader.declareRemoteSources(provider, List.of(PATH_REMOTE_ONLY), true);
+        loader.beginEvaluation();
+
+        final URL url = loader.getResource(PATH_REMOTE_ONLY);
+        final IOException e = assertThrows(IOException.class, url::openStream);
+        assertTrue(e.getMessage(), e.getMessage().contains(PATH_REMOTE_ONLY));
+        final String errorChain = describeErrorChain(e);
+        assertTrue("Failure should report the resource as not found, was:" + errorChain,
+                errorChain.contains(FileNotFoundException.class.getName()));
     }
 
     /**

@@ -122,7 +122,7 @@ class RemoteFileSourceMetaResponse(google.protobuf.message.Message):
     FOUND_FIELD_NUMBER: builtins.int
     ERROR_FIELD_NUMBER: builtins.int
     content: builtins.bytes
-    """The content of the resource, or empty if not found"""
+    """The content of the resource, which is empty for an empty file. Ignored when found is false."""
     found: builtins.bool
     """Indicates whether the resource was found"""
     error: builtins.str

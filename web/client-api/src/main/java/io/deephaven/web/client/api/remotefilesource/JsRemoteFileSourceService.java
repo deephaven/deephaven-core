@@ -427,6 +427,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
          *        <li>Uint8Array - sent as-is to server</li>
          *        <li>null - indicates resource was not found</li>
          *        </ul>
+         *        An empty String or Uint8Array is an empty file, not a missing one.
          */
         @JsMethod
         public void respond(@JsNullable ResourceContentUnion content) {
