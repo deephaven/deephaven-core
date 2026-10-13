@@ -1,14 +1,14 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.engine.util;
+package io.deephaven.engine.util.remotefilesource;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
  * Fetches remote resources on behalf of the {@link RemoteFileSourceClassLoader}. Plugins implement this and declare the
  * resources they can serve via
- * {@link RemoteFileSourceClassLoader#declareExecutionContext(RemoteFileSourceProvider, java.util.List, boolean)}. The
+ * {@link RemoteFileSourceClassLoader#declareRemoteSources(RemoteFileSourceProvider, java.util.List, boolean)}. The
  * class loader decides which provider serves a given evaluation, from the declaration it claimed for that run.
  */
 public interface RemoteFileSourceProvider {

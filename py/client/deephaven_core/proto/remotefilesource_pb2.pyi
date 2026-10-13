@@ -29,7 +29,7 @@ class RemoteFileSourceServerMessage(google.protobuf.message.Message):
 
     REQUEST_ID_FIELD_NUMBER: builtins.int
     META_REQUEST_FIELD_NUMBER: builtins.int
-    SET_EXECUTION_CONTEXT_RESPONSE_FIELD_NUMBER: builtins.int
+    SET_REMOTE_SOURCES_RESPONSE_FIELD_NUMBER: builtins.int
     request_id: builtins.str
     """Unique identifier for this request, used to correlate the response"""
     @property
@@ -37,21 +37,21 @@ class RemoteFileSourceServerMessage(google.protobuf.message.Message):
         """Request source data/resource from the client"""
 
     @property
-    def set_execution_context_response(self) -> Global___SetExecutionContextResponse:
-        """Acknowledgment that execution context was set"""
+    def set_remote_sources_response(self) -> Global___SetRemoteSourcesResponse:
+        """Acknowledgment that the remote sources were declared"""
 
     def __init__(
         self,
         *,
         request_id: builtins.str = ...,
         meta_request: Global___RemoteFileSourceMetaRequest | None = ...,
-        set_execution_context_response: Global___SetExecutionContextResponse | None = ...,
+        set_remote_sources_response: Global___SetRemoteSourcesResponse | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["meta_request", b"meta_request", "request", b"request", "set_execution_context_response", b"set_execution_context_response"]
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["meta_request", b"meta_request", "request", b"request", "set_remote_sources_response", b"set_remote_sources_response"]
     def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["meta_request", b"meta_request", "request", b"request", "request_id", b"request_id", "set_execution_context_response", b"set_execution_context_response"]
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["meta_request", b"meta_request", "request", b"request", "request_id", b"request_id", "set_remote_sources_response", b"set_remote_sources_response"]
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_request: typing_extensions.TypeAlias = typing.Literal["meta_request", "set_execution_context_response"]
+    _WhichOneofReturnType_request: typing_extensions.TypeAlias = typing.Literal["meta_request", "set_remote_sources_response"]
     _WhichOneofArgType_request: typing_extensions.TypeAlias = typing.Literal["request", b"request"]
     def WhichOneof(self, oneof_group: _WhichOneofArgType_request) -> _WhichOneofReturnType_request | None: ...
 
@@ -65,7 +65,7 @@ class RemoteFileSourceClientMessage(google.protobuf.message.Message):
 
     REQUEST_ID_FIELD_NUMBER: builtins.int
     META_RESPONSE_FIELD_NUMBER: builtins.int
-    SET_EXECUTION_CONTEXT_FIELD_NUMBER: builtins.int
+    SET_REMOTE_SOURCES_FIELD_NUMBER: builtins.int
     request_id: builtins.str
     """The request_id from the ServerRequest this is responding to (if applicable)"""
     @property
@@ -73,21 +73,21 @@ class RemoteFileSourceClientMessage(google.protobuf.message.Message):
         """Response to a resource request"""
 
     @property
-    def set_execution_context(self) -> Global___SetExecutionContextRequest:
-        """Set the execution context for script execution"""
+    def set_remote_sources(self) -> Global___SetRemoteSourcesRequest:
+        """Declare which resources to source from this client for the next script execution"""
 
     def __init__(
         self,
         *,
         request_id: builtins.str = ...,
         meta_response: Global___RemoteFileSourceMetaResponse | None = ...,
-        set_execution_context: Global___SetExecutionContextRequest | None = ...,
+        set_remote_sources: Global___SetRemoteSourcesRequest | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["meta_response", b"meta_response", "request", b"request", "set_execution_context", b"set_execution_context"]
+    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["meta_response", b"meta_response", "request", b"request", "set_remote_sources", b"set_remote_sources"]
     def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["meta_response", b"meta_response", "request", b"request", "request_id", b"request_id", "set_execution_context", b"set_execution_context"]
+    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["meta_response", b"meta_response", "request", b"request", "request_id", b"request_id", "set_remote_sources", b"set_remote_sources"]
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_request: typing_extensions.TypeAlias = typing.Literal["meta_response", "set_execution_context"]
+    _WhichOneofReturnType_request: typing_extensions.TypeAlias = typing.Literal["meta_response", "set_remote_sources"]
     _WhichOneofArgType_request: typing_extensions.TypeAlias = typing.Literal["request", b"request"]
     def WhichOneof(self, oneof_group: _WhichOneofArgType_request) -> _WhichOneofReturnType_request | None: ...
 
@@ -140,8 +140,8 @@ class RemoteFileSourceMetaResponse(google.protobuf.message.Message):
 Global___RemoteFileSourceMetaResponse: typing_extensions.TypeAlias = RemoteFileSourceMetaResponse
 
 @typing.final
-class SetExecutionContextRequest(google.protobuf.message.Message):
-    """Request to set the execution context for script execution"""
+class SetRemoteSourcesRequest(google.protobuf.message.Message):
+    """Request to declare which resources to source from this client for the next script execution"""
 
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -164,11 +164,11 @@ class SetExecutionContextRequest(google.protobuf.message.Message):
     _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["is_dirty", b"is_dirty", "resource_paths", b"resource_paths"]
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-Global___SetExecutionContextRequest: typing_extensions.TypeAlias = SetExecutionContextRequest
+Global___SetRemoteSourcesRequest: typing_extensions.TypeAlias = SetRemoteSourcesRequest
 
 @typing.final
-class SetExecutionContextResponse(google.protobuf.message.Message):
-    """Response acknowledging execution context was set. Intentionally empty: receipt of
+class SetRemoteSourcesResponse(google.protobuf.message.Message):
+    """Response acknowledging the remote sources were declared. Intentionally empty: receipt of
     this message is itself the acknowledgment. Failures are reported as stream errors.
     """
 
@@ -178,7 +178,7 @@ class SetExecutionContextResponse(google.protobuf.message.Message):
         self,
     ) -> None: ...
 
-Global___SetExecutionContextResponse: typing_extensions.TypeAlias = SetExecutionContextResponse
+Global___SetRemoteSourcesResponse: typing_extensions.TypeAlias = SetRemoteSourcesResponse
 
 @typing.final
 class RemoteFileSourcePluginFetchRequest(google.protobuf.message.Message):

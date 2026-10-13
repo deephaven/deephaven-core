@@ -16,7 +16,7 @@ import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaRequest;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaResponse;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourcePluginFetchRequest;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerMessage;
-import io.deephaven.proto.backplane.grpc.SetExecutionContextRequest;
+import io.deephaven.proto.backplane.grpc.SetRemoteSourcesRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
@@ -72,13 +72,13 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     private static final String PLUGIN_FETCH_REQUEST_TYPE_URL =
             "type.googleapis.com/io.deephaven.proto.backplane.grpc.RemoteFileSourcePluginFetchRequest";
 
-    // Timeout for setExecutionContext requests (in milliseconds)
-    private static final int SET_EXECUTION_CONTEXT_TIMEOUT_MS = 30000; // 30 seconds
+    // Timeout for setRemoteSources requests (in milliseconds)
+    private static final int SET_REMOTE_SOURCES_TIMEOUT_MS = 30000; // 30 seconds
 
     private final JsWidget widget;
 
-    // Track pending setExecutionContext requests
-    private final Map<String, LazyPromise<Void>> pendingSetExecutionContextRequests = new HashMap<>();
+    // Track pending setRemoteSources requests
+    private final Map<String, LazyPromise<Void>> pendingSetRemoteSourcesRequests = new HashMap<>();
     private int requestIdCounter = 0;
 
     private boolean closed;
@@ -192,7 +192,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * <p>
      * A closed stream is permanent for this instance: {@link JsWidget} does not reconnect, and widgets are not
      * refetched when the connection is re-established (deephaven-core#3604). Left in place, this service would silently
-     * drop messages and leave {@link #setExecutionContext} calls sitting until their timeout.
+     * drop messages and leave {@link #setRemoteSources} calls sitting until their timeout.
      *
      * @param reason the failure reason to deliver to in-flight callers
      */
@@ -234,14 +234,14 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Fails every in-flight setExecutionContext request with the given reason.
+     * Fails every in-flight setRemoteSources request with the given reason.
      *
      * @param reason the failure reason to deliver to callers
      */
     private void failPendingRequests(final String reason) {
         // Take the in-flight promises before clearing, so the map is empty before the failures are delivered
-        final List<LazyPromise<Void>> pending = new ArrayList<>(pendingSetExecutionContextRequests.values());
-        pendingSetExecutionContextRequests.clear();
+        final List<LazyPromise<Void>> pending = new ArrayList<>(pendingSetRemoteSourcesRequests.values());
+        pendingSetRemoteSourcesRequests.clear();
         pending.forEach(promise -> promise.fail(reason));
     }
 
@@ -265,8 +265,8 @@ public class JsRemoteFileSourceService extends HasEventHandling {
         // Route the parsed message to the appropriate handler
         if (message.hasMetaRequest()) {
             handleMetaRequest(message);
-        } else if (message.hasSetExecutionContextResponse()) {
-            handleSetExecutionContextResponse(message);
+        } else if (message.hasSetRemoteSourcesResponse()) {
+            handleSetRemoteSourcesResponse(message);
         } else {
             throw new IllegalStateException("Received unknown message type from server");
         }
@@ -288,13 +288,13 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Handles a set execution context response from the server.
+     * Handles a set remote sources response from the server.
      *
      * @param message the server request message
      */
-    private void handleSetExecutionContextResponse(RemoteFileSourceServerMessage message) {
+    private void handleSetRemoteSourcesResponse(RemoteFileSourceServerMessage message) {
         String requestId = message.getRequestId();
-        LazyPromise<Void> promise = pendingSetExecutionContextRequests.get(requestId);
+        LazyPromise<Void> promise = pendingSetRemoteSourcesRequests.get(requestId);
         if (promise != null) {
             promise.succeed(null);
         }
@@ -302,50 +302,50 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
 
     /**
-     * Sets the execution context on the server to identify this message stream as active for script execution.
+     * Declares to the server which resources to source from this client for the next script execution.
      *
-     * @param isDirty whether the execution context is dirty (has pending changes)
+     * @param isDirty whether the remote sources have changed since the previous declaration
      * @param resourcePaths array of resource paths to resolve from remote source (e.g., ["com/example/Test.groovy",
      *        "org/mycompany/Utils.groovy"]), or null/empty for no specific resources
-     * @return a promise that resolves once the server has acknowledged the execution context
+     * @return a promise that resolves once the server has acknowledged the declaration
      */
     @JsMethod
-    public Promise<Void> setExecutionContext(boolean isDirty, @JsOptional @JsNullable String[] resourcePaths) {
+    public Promise<Void> setRemoteSources(boolean isDirty, @JsOptional @JsNullable String[] resourcePaths) {
         // Nothing can be sent on a closed stream, and waiting out the timeout only delays the same failure
         if (closed) {
             return Promise.reject("RemoteFileSourceService is closed");
         }
 
         // Generate a unique request ID
-        String requestId = "setExecutionContext-" + (requestIdCounter++);
+        String requestId = "setRemoteSources-" + (requestIdCounter++);
 
         // Create a lazy promise that will be resolved when we get the response
         LazyPromise<Void> promise = new LazyPromise<>();
-        pendingSetExecutionContextRequests.put(requestId, promise);
+        pendingSetRemoteSourcesRequests.put(requestId, promise);
         // Drop the entry on every completion path, not just when a response arrives. A request that times out on a
         // stream that stays open would otherwise be retained until the service closes.
-        promise.onSuccess(ignored -> pendingSetExecutionContextRequests.remove(requestId));
-        promise.onFailure(ignored -> pendingSetExecutionContextRequests.remove(requestId));
+        promise.onSuccess(ignored -> pendingSetRemoteSourcesRequests.remove(requestId));
+        promise.onFailure(ignored -> pendingSetRemoteSourcesRequests.remove(requestId));
 
         // Send the request
-        RemoteFileSourceClientMessage clientRequest = getSetExecutionContextRequest(isDirty, resourcePaths, requestId);
+        RemoteFileSourceClientMessage clientRequest = getSetRemoteSourcesRequest(isDirty, resourcePaths, requestId);
         sendClientRequest(clientRequest);
 
         // Return a promise with built-in timeout
-        return promise.asPromise(SET_EXECUTION_CONTEXT_TIMEOUT_MS);
+        return promise.asPromise(SET_REMOTE_SOURCES_TIMEOUT_MS);
     }
 
     /**
-     * Helper method to build a RemoteFileSourceClientMessage for setting execution context.
+     * Helper method to build a RemoteFileSourceClientMessage for setting remote sources.
      *
-     * @param isDirty whether the execution context is dirty (has pending changes)
+     * @param isDirty whether the remote sources have changed since the previous declaration
      * @param resourcePaths array of resource paths to resolve
      * @param requestId unique request ID
      * @return the constructed RemoteFileSourceClientMessage
      */
-    private static @NotNull RemoteFileSourceClientMessage getSetExecutionContextRequest(boolean isDirty,
+    private static @NotNull RemoteFileSourceClientMessage getSetRemoteSourcesRequest(boolean isDirty,
             String[] resourcePaths, String requestId) {
-        SetExecutionContextRequest.Builder setContextRequest = SetExecutionContextRequest.newBuilder()
+        SetRemoteSourcesRequest.Builder setContextRequest = SetRemoteSourcesRequest.newBuilder()
                 .setIsDirty(isDirty);
 
         if (resourcePaths != null) {
@@ -354,7 +354,7 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
         return RemoteFileSourceClientMessage.newBuilder()
                 .setRequestId(requestId)
-                .setSetExecutionContext(setContextRequest)
+                .setSetRemoteSources(setContextRequest)
                 .build();
     }
 

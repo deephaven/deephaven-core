@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.engine.util;
+package io.deephaven.engine.util.remotefilesource;
 
 import java.util.List;
 import java.util.Objects;
@@ -14,7 +14,7 @@ import java.util.Objects;
  * The paths and the dirty flag are captured here at declaration time rather than read back from the provider, so that a
  * client declaring again cannot change what an evaluation already underway is resolving.
  */
-public final class RemoteFileSourceExecutionContext {
+public final class RemoteFileSourceDeclaration {
     private final RemoteFileSourceProvider provider;
     private final List<String> resourcePaths;
     private final boolean dirty;
@@ -24,7 +24,7 @@ public final class RemoteFileSourceExecutionContext {
      * @param resourcePaths resource paths (e.g. "package/MyScript.groovy") to resolve from the provider
      * @param dirty whether the remote sources have changed since the previous declaration
      */
-    public RemoteFileSourceExecutionContext(final RemoteFileSourceProvider provider,
+    public RemoteFileSourceDeclaration(final RemoteFileSourceProvider provider,
             final List<String> resourcePaths, final boolean dirty) {
         this.provider = Objects.requireNonNull(provider, "provider");
         this.resourcePaths = List.copyOf(resourcePaths);
@@ -65,6 +65,6 @@ public final class RemoteFileSourceExecutionContext {
 
     @Override
     public String toString() {
-        return "RemoteFileSourceExecutionContext{resourcePaths=" + resourcePaths + ", dirty=" + dirty + '}';
+        return "RemoteFileSourceDeclaration{resourcePaths=" + resourcePaths + ", dirty=" + dirty + '}';
     }
 }

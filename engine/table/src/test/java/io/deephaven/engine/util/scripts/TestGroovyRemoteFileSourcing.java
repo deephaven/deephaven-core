@@ -9,8 +9,8 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.GroovyDeephavenSession;
-import io.deephaven.engine.util.RemoteFileSourceClassLoader;
-import io.deephaven.engine.util.RemoteFileSourceProvider;
+import io.deephaven.engine.util.remotefilesource.RemoteFileSourceClassLoader;
+import io.deephaven.engine.util.remotefilesource.RemoteFileSourceProvider;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import org.junit.After;
@@ -133,7 +133,7 @@ public class TestGroovyRemoteFileSourcing {
         remoteSources.putAll(remoteSourceMap);
 
         // Declare this run's remote sources the way a client does, before each evaluation
-        RemoteFileSourceClassLoader.getInstance().declareExecutionContext(
+        RemoteFileSourceClassLoader.getInstance().declareRemoteSources(
                 provider, List.copyOf(remoteSources.keySet()), isDirty);
 
         ScriptSession.Changes c = session.evaluateScript(script);
@@ -250,7 +250,7 @@ public class TestGroovyRemoteFileSourcing {
         // classloader is refreshed before the script is evaluated, so the import check at the top of evaluate()
         // sees the refreshed loader and rejects the script before it reaches the Groovy compiler.
         remoteSources.clear();
-        RemoteFileSourceClassLoader.getInstance().declareExecutionContext(provider, List.of(), true);
+        RemoteFileSourceClassLoader.getInstance().declareRemoteSources(provider, List.of(), true);
 
         final ScriptSession.Changes c2 = session.evaluateScript(SCRIPT_IMPORT_REMOTE_ONLY);
         assertNotNull("Script should fail when remote-only class is removed", c2.error);

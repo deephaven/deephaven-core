@@ -7,6 +7,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.remotefilesource.RemoteFileSourceClassLoader;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import org.junit.After;
 import org.junit.Before;
@@ -63,7 +64,7 @@ public class TestGroovyClassCacheReset {
                 cacheDirectory.setReadable(false) && cacheDirectory.listFiles() == null);
 
         // A dirty declaration requires a reset, which cannot clear a cache it cannot read
-        RemoteFileSourceClassLoader.getInstance().declareExecutionContext(
+        RemoteFileSourceClassLoader.getInstance().declareRemoteSources(
                 resourceName -> CompletableFuture.completedFuture(null),
                 List.of("test/notebook/Whatever.groovy"), true);
 

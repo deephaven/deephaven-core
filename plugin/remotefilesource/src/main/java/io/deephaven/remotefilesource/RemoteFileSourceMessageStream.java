@@ -5,8 +5,8 @@ package io.deephaven.remotefilesource;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.util.RemoteFileSourceClassLoader;
-import io.deephaven.engine.util.RemoteFileSourceProvider;
+import io.deephaven.engine.util.remotefilesource.RemoteFileSourceClassLoader;
+import io.deephaven.engine.util.remotefilesource.RemoteFileSourceProvider;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectCommunicationException;
@@ -15,8 +15,8 @@ import io.deephaven.proto.backplane.grpc.RemoteFileSourceClientMessage;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaRequest;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaResponse;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerMessage;
-import io.deephaven.proto.backplane.grpc.SetExecutionContextRequest;
-import io.deephaven.proto.backplane.grpc.SetExecutionContextResponse;
+import io.deephaven.proto.backplane.grpc.SetRemoteSourcesRequest;
+import io.deephaven.proto.backplane.grpc.SetRemoteSourcesResponse;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -121,16 +121,16 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
      * @param resourcePaths resource paths (e.g., "package/MyScript.groovy") to resolve from this connection
      * @param dirty whether remote sources have changed and the cache should be cleared
      */
-    private void declareExecutionContext(final List<String> resourcePaths, final boolean dirty) {
-        RemoteFileSourceClassLoader.getInstance().declareExecutionContext(this, resourcePaths, dirty);
-        log.info().append("Declared execution context with ")
+    private void declareRemoteSources(final List<String> resourcePaths, final boolean dirty) {
+        RemoteFileSourceClassLoader.getInstance().declareRemoteSources(this, resourcePaths, dirty);
+        log.info().append("Declared remote sources with ")
                 .append(resourcePaths.size()).append(" resource paths")
                 .append(", isDirty: ").append(dirty).endl();
     }
 
     /**
      * Handles incoming data from the client. Parses RemoteFileSourceClientMessage messages and processes meta responses
-     * or execution context updates from the client.
+     * or remote source declarations from the client.
      *
      * @param payload the message payload containing the protobuf data
      * @param references optional references (not used)
@@ -145,8 +145,8 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
 
             if (message.hasMetaResponse()) {
                 handleMetaResponse(message.getRequestId(), message.getMetaResponse());
-            } else if (message.hasSetExecutionContext()) {
-                handleSetExecutionContext(message.getRequestId(), message.getSetExecutionContext());
+            } else if (message.hasSetRemoteSources()) {
+                handleSetRemoteSources(message.getRequestId(), message.getSetRemoteSources());
             } else {
                 log.error().append("Received unknown message type from client").endl();
                 throw new ObjectCommunicationException("Received unknown message type from client");
@@ -195,32 +195,32 @@ public class RemoteFileSourceMessageStream implements ObjectType.MessageStream, 
     }
 
     /**
-     * Handles a request from the client to set the execution context.
+     * Handles a request from the client to declare its remote sources.
      *
      * @param requestId the request ID
-     * @param setExecutionContext the SetExecutionContextRequest containing resource paths and isDirty flag
+     * @param setRemoteSources the SetRemoteSourcesRequest containing resource paths and isDirty flag
      */
-    private void handleSetExecutionContext(String requestId, SetExecutionContextRequest setExecutionContext)
+    private void handleSetRemoteSources(String requestId, SetRemoteSourcesRequest setRemoteSources)
             throws ObjectCommunicationException {
-        boolean isDirty = setExecutionContext.getIsDirty();
-        List<String> resourcePaths = setExecutionContext.getResourcePathsList();
+        boolean isDirty = setRemoteSources.getIsDirty();
+        List<String> resourcePaths = setRemoteSources.getResourcePathsList();
 
-        declareExecutionContext(resourcePaths, isDirty);
+        declareRemoteSources(resourcePaths, isDirty);
 
-        sendExecutionContextAcknowledgment(requestId);
+        sendRemoteSourcesAcknowledgment(requestId);
     }
 
     /**
-     * Sends an acknowledgment to the client that the execution context was successfully set.
+     * Sends an acknowledgment to the client that its remote sources were declared.
      *
      * @param requestId the request ID to acknowledge
      */
-    private void sendExecutionContextAcknowledgment(String requestId) throws ObjectCommunicationException {
-        SetExecutionContextResponse response = SetExecutionContextResponse.newBuilder().build();
+    private void sendRemoteSourcesAcknowledgment(String requestId) throws ObjectCommunicationException {
+        SetRemoteSourcesResponse response = SetRemoteSourcesResponse.newBuilder().build();
 
         RemoteFileSourceServerMessage serverRequest = RemoteFileSourceServerMessage.newBuilder()
                 .setRequestId(requestId)
-                .setSetExecutionContextResponse(response)
+                .setSetRemoteSourcesResponse(response)
                 .build();
 
         // Let a send failure propagate out of onData: the declaration is already installed, and the object service

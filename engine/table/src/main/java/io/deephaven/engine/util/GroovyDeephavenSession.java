@@ -30,6 +30,7 @@ import io.deephaven.engine.table.impl.util.TableLoggers;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
+import io.deephaven.engine.util.remotefilesource.RemoteFileSourceClassLoader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.libs.GroovyStaticImports;

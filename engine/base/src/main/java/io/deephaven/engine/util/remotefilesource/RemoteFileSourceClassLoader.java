@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.engine.util;
+package io.deephaven.engine.util.remotefilesource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * <p>
  * Sourcing is scoped to a single script evaluation. A client declares the resources it will serve via
- * {@link #declareExecutionContext}, and {@link #beginEvaluation()} consumes that declaration for the run that is about
- * to start. A run that was not preceded by a declaration therefore sources nothing, even while another client is
+ * {@link #declareRemoteSources}, and {@link #beginEvaluation()} consumes that declaration for the run that is about to
+ * start. A run that was not preceded by a declaration therefore sources nothing, even while another client is
  * connected, and a declaration arriving mid-run cannot retarget the run already underway.
  *
  * <p>
@@ -40,12 +40,12 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     /**
      * The most recent declaration, awaiting the evaluation it was made for. Consumed by {@link #beginEvaluation()}.
      */
-    private final AtomicReference<RemoteFileSourceExecutionContext> pendingContext = new AtomicReference<>();
+    private final AtomicReference<RemoteFileSourceDeclaration> pendingDeclaration = new AtomicReference<>();
 
     /**
      * The declaration serving the evaluation currently underway, or null if that evaluation sources nothing remotely.
      */
-    private volatile RemoteFileSourceExecutionContext evaluationContext;
+    private volatile RemoteFileSourceDeclaration evaluationDeclaration;
 
     /**
      * The provider that served the previous evaluation, or null if it sourced nothing.
@@ -105,9 +105,9 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
      * @param resourcePaths resource paths (e.g., "package/MyScript.groovy") to resolve from the provider
      * @param dirty whether the remote sources have changed and caches must be cleared
      */
-    public void declareExecutionContext(final RemoteFileSourceProvider provider, final List<String> resourcePaths,
+    public void declareRemoteSources(final RemoteFileSourceProvider provider, final List<String> resourcePaths,
             final boolean dirty) {
-        pendingContext.set(new RemoteFileSourceExecutionContext(provider, resourcePaths, dirty));
+        pendingDeclaration.set(new RemoteFileSourceDeclaration(provider, resourcePaths, dirty));
     }
 
     /**
@@ -123,15 +123,15 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
      * @return true if compiled output from the previous evaluation must be discarded
      */
     public boolean beginEvaluation() {
-        final RemoteFileSourceExecutionContext claimed = pendingContext.getAndSet(null);
+        final RemoteFileSourceDeclaration claimed = pendingDeclaration.getAndSet(null);
         // A declaration with no paths serves nothing, so it is no different from not having declared
-        final RemoteFileSourceExecutionContext context =
+        final RemoteFileSourceDeclaration declaration =
                 claimed != null && claimed.hasConfiguredResources() ? claimed : null;
-        final RemoteFileSourceProvider provider = context != null ? context.getProvider() : null;
+        final RemoteFileSourceProvider provider = declaration != null ? declaration.getProvider() : null;
 
         final boolean sourcingChanged = (claimed != null && claimed.isDirty()) || provider != previousProvider;
         previousProvider = provider;
-        evaluationContext = context;
+        evaluationDeclaration = declaration;
 
         return sourcingChanged;
     }
@@ -148,9 +148,9 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
      * @param provider the provider whose unclaimed declaration should be dropped
      */
     public void providerClosed(final RemoteFileSourceProvider provider) {
-        final RemoteFileSourceExecutionContext pending = pendingContext.get();
+        final RemoteFileSourceDeclaration pending = pendingDeclaration.get();
         if (pending != null && pending.getProvider() == provider) {
-            pendingContext.compareAndSet(pending, null);
+            pendingDeclaration.compareAndSet(pending, null);
         }
     }
 
@@ -160,7 +160,7 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
      * @return true if this evaluation sources any resources remotely, false otherwise
      */
     public boolean hasConfiguredRemoteSources() {
-        return evaluationContext != null;
+        return evaluationDeclaration != null;
     }
 
     /**
@@ -178,9 +178,9 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
     public URL getResource(String name) {
         // Snapshot the declaration so that resolution and the later fetch through the returned URL agree, even if
         // the next evaluation begins in between
-        final RemoteFileSourceExecutionContext context = evaluationContext;
+        final RemoteFileSourceDeclaration declaration = evaluationDeclaration;
         final RemoteFileSourceProvider provider =
-                context != null && context.canSourceResource(name) ? context.getProvider() : null;
+                declaration != null && declaration.canSourceResource(name) ? declaration.getProvider() : null;
 
         if (provider != null) {
             try {

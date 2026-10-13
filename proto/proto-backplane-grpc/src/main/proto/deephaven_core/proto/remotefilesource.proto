@@ -20,8 +20,8 @@ message RemoteFileSourceServerMessage {
     // Request source data/resource from the client
     RemoteFileSourceMetaRequest meta_request = 2;
 
-    // Acknowledgment that execution context was set
-    SetExecutionContextResponse set_execution_context_response = 3;
+    // Acknowledgment that the remote sources were declared
+    SetRemoteSourcesResponse set_remote_sources_response = 3;
   }
 }
 
@@ -34,8 +34,8 @@ message RemoteFileSourceClientMessage {
     // Response to a resource request
     RemoteFileSourceMetaResponse meta_response = 2;
 
-    // Set the execution context for script execution
-    SetExecutionContextRequest set_execution_context = 3;
+    // Declare which resources to source from this client for the next script execution
+    SetRemoteSourcesRequest set_remote_sources = 3;
   }
 }
 
@@ -57,8 +57,8 @@ message RemoteFileSourceMetaResponse {
   string error = 3;
 }
 
-// Request to set the execution context for script execution
-message SetExecutionContextRequest {
+// Request to declare which resources to source from this client for the next script execution
+message SetRemoteSourcesRequest {
   // Resource paths that should be resolved from the remote source
   // (e.g., ["com/example/Test.groovy", "org/mycompany/Utils.groovy"])
   repeated string resource_paths = 1;
@@ -67,9 +67,9 @@ message SetExecutionContextRequest {
   bool is_dirty = 2;
 }
 
-// Response acknowledging execution context was set. Intentionally empty: receipt of
+// Response acknowledging the remote sources were declared. Intentionally empty: receipt of
 // this message is itself the acknowledgment. Failures are reported as stream errors.
-message SetExecutionContextResponse {
+message SetRemoteSourcesResponse {
 }
 
 // Fetch the remote file source plugin into the specified ticket (Flight command, not MessageStream)

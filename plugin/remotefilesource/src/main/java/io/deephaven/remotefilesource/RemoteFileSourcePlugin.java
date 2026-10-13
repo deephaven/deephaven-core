@@ -18,8 +18,8 @@ import io.deephaven.plugin.type.PluginMarker;
  * server.
  * <p>
  * A RemoteFileSourceMessageStream serves resources for a script evaluation only once its client has declared them; see
- * {@link io.deephaven.engine.util.RemoteFileSourceClassLoader} for how a declaration is claimed by the run it was made
- * for.
+ * {@link io.deephaven.engine.util.remotefilesource.RemoteFileSourceClassLoader} for how a declaration is claimed by the
+ * run it was made for.
  */
 @AutoService(ObjectType.class)
 public class RemoteFileSourcePlugin extends ObjectTypeBase {

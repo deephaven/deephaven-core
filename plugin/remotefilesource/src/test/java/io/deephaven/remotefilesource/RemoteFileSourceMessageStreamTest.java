@@ -3,11 +3,11 @@
 //
 package io.deephaven.remotefilesource;
 
-import io.deephaven.engine.util.RemoteFileSourceClassLoader;
+import io.deephaven.engine.util.remotefilesource.RemoteFileSourceClassLoader;
 import io.deephaven.plugin.type.ObjectCommunicationException;
 import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceClientMessage;
-import io.deephaven.proto.backplane.grpc.SetExecutionContextRequest;
+import io.deephaven.proto.backplane.grpc.SetRemoteSourcesRequest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,11 +78,11 @@ class RemoteFileSourceMessageStreamTest {
     /**
      * Declares resources the way a client does, by sending a message rather than by calling the class loader directly.
      */
-    private static void sendSetExecutionContext(final RemoteFileSourceMessageStream stream,
+    private static void sendSetRemoteSources(final RemoteFileSourceMessageStream stream,
             final List<String> resourcePaths, final boolean dirty) throws ObjectCommunicationException {
         final RemoteFileSourceClientMessage message = RemoteFileSourceClientMessage.newBuilder()
                 .setRequestId("test-request")
-                .setSetExecutionContext(SetExecutionContextRequest.newBuilder()
+                .setSetRemoteSources(SetRemoteSourcesRequest.newBuilder()
                         .setIsDirty(dirty)
                         .addAllResourcePaths(resourcePaths))
                 .build();
@@ -94,7 +94,7 @@ class RemoteFileSourceMessageStreamTest {
         final RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
         final RemoteFileSourceMessageStream stream = newStream();
         try {
-            sendSetExecutionContext(stream, List.of(RESOURCE), false);
+            sendSetRemoteSources(stream, List.of(RESOURCE), false);
             classLoader.beginEvaluation();
 
             assertThat(classLoader.hasConfiguredRemoteSources()).isTrue();
@@ -113,7 +113,7 @@ class RemoteFileSourceMessageStreamTest {
         final RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
         final RemoteFileSourceMessageStream stream = newStream();
         try {
-            sendSetExecutionContext(stream, List.of(RESOURCE), false);
+            sendSetRemoteSources(stream, List.of(RESOURCE), false);
 
             // The declaring client's own run consumes it
             classLoader.beginEvaluation();
@@ -137,11 +137,11 @@ class RemoteFileSourceMessageStreamTest {
         final RemoteFileSourceMessageStream running = newStream();
         final RemoteFileSourceMessageStream other = newStream();
         try {
-            sendSetExecutionContext(running, List.of(RESOURCE), false);
+            sendSetRemoteSources(running, List.of(RESOURCE), false);
             classLoader.beginEvaluation();
 
             // Another connection declares mid-run, with different sources
-            sendSetExecutionContext(other, List.of(OTHER_RESOURCE), false);
+            sendSetRemoteSources(other, List.of(OTHER_RESOURCE), false);
 
             // The running evaluation still resolves what it claimed, and not the newer declaration
             assertThat(classLoader.getResource(RESOURCE).getProtocol()).isEqualTo("remotefile");
@@ -166,10 +166,10 @@ class RemoteFileSourceMessageStreamTest {
         final RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
         final RemoteFileSourceMessageStream stream = newStream();
         try {
-            sendSetExecutionContext(stream, List.of(RESOURCE), false);
+            sendSetRemoteSources(stream, List.of(RESOURCE), false);
             classLoader.beginEvaluation();
 
-            sendSetExecutionContext(stream, List.of(RESOURCE), false);
+            sendSetRemoteSources(stream, List.of(RESOURCE), false);
             assertThat(classLoader.beginEvaluation()).isFalse();
         } finally {
             stream.onClose();
@@ -181,11 +181,11 @@ class RemoteFileSourceMessageStreamTest {
         final RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
         final RemoteFileSourceMessageStream stream = newStream();
         try {
-            sendSetExecutionContext(stream, List.of(RESOURCE), false);
+            sendSetRemoteSources(stream, List.of(RESOURCE), false);
             classLoader.beginEvaluation();
 
             // Same client, same paths; only the dirty flag differs
-            sendSetExecutionContext(stream, List.of(RESOURCE), true);
+            sendSetRemoteSources(stream, List.of(RESOURCE), true);
             assertThat(classLoader.beginEvaluation()).isTrue();
         } finally {
             stream.onClose();
@@ -202,11 +202,11 @@ class RemoteFileSourceMessageStreamTest {
         final RemoteFileSourceMessageStream first = newStream();
         final RemoteFileSourceMessageStream second = newStream();
         try {
-            sendSetExecutionContext(first, List.of(RESOURCE), false);
+            sendSetRemoteSources(first, List.of(RESOURCE), false);
             classLoader.beginEvaluation();
 
             // Same paths and still clean; only the serving client differs
-            sendSetExecutionContext(second, List.of(RESOURCE), false);
+            sendSetRemoteSources(second, List.of(RESOURCE), false);
             assertThat(classLoader.beginEvaluation()).isTrue();
         } finally {
             first.onClose();
@@ -223,7 +223,7 @@ class RemoteFileSourceMessageStreamTest {
         final RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
         final RemoteFileSourceMessageStream stream = newStream();
         try {
-            sendSetExecutionContext(stream, List.of(), false);
+            sendSetRemoteSources(stream, List.of(), false);
 
             assertThat(classLoader.beginEvaluation()).isFalse();
             assertThat(classLoader.hasConfiguredRemoteSources()).isFalse();
@@ -237,7 +237,7 @@ class RemoteFileSourceMessageStreamTest {
         final RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
         final RemoteFileSourceMessageStream stream = newStream();
         try {
-            sendSetExecutionContext(stream, List.of(RESOURCE, "com/example/Thing.class"), false);
+            sendSetRemoteSources(stream, List.of(RESOURCE, "com/example/Thing.class"), false);
             classLoader.beginEvaluation();
 
             assertThat(classLoader.getResource(RESOURCE).getProtocol()).isEqualTo("remotefile");
@@ -254,7 +254,7 @@ class RemoteFileSourceMessageStreamTest {
         final RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
         final RemoteFileSourceMessageStream stream = newStream();
 
-        sendSetExecutionContext(stream, List.of(RESOURCE), false);
+        sendSetRemoteSources(stream, List.of(RESOURCE), false);
         stream.onClose();
 
         classLoader.beginEvaluation();
@@ -271,8 +271,8 @@ class RemoteFileSourceMessageStreamTest {
         final RemoteFileSourceMessageStream closing = newStream();
         final RemoteFileSourceMessageStream surviving = newStream();
         try {
-            sendSetExecutionContext(closing, List.of(RESOURCE), false);
-            sendSetExecutionContext(surviving, List.of(OTHER_RESOURCE), false);
+            sendSetRemoteSources(closing, List.of(RESOURCE), false);
+            sendSetRemoteSources(surviving, List.of(OTHER_RESOURCE), false);
 
             closing.onClose();
 
@@ -294,7 +294,7 @@ class RemoteFileSourceMessageStreamTest {
         final RemoteFileSourceClassLoader classLoader = RemoteFileSourceClassLoader.getInstance();
         final RemoteFileSourceMessageStream stream = newStream();
 
-        sendSetExecutionContext(stream, List.of(RESOURCE), false);
+        sendSetRemoteSources(stream, List.of(RESOURCE), false);
         classLoader.beginEvaluation();
 
         stream.onClose();
@@ -317,7 +317,7 @@ class RemoteFileSourceMessageStreamTest {
         try {
             connection.sendsFail = true;
 
-            assertThatThrownBy(() -> sendSetExecutionContext(stream, List.of(RESOURCE), false))
+            assertThatThrownBy(() -> sendSetRemoteSources(stream, List.of(RESOURCE), false))
                     .isInstanceOf(ObjectCommunicationException.class);
         } finally {
             stream.onClose();
