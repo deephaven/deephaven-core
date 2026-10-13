@@ -17,6 +17,8 @@ The workflow uses two connections to the remote server:
 - The Deephaven Python client, [`pydeephaven`](/core/client-api/python/), runs in a separate Python process. You use it to run queries on the remote server and to publish tables to shared tickets.
 - The local Groovy server uses [`BarrageTableResolver`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html) to open a Barrage connection that retrieves tables from the remote server.
 
+![A Python process running pydeephaven sends queries and shared tickets to the remote Deephaven server, and the local Groovy server uses BarrageTableResolver to subscribe to or snapshot tables from the remote server](../assets/how-to/capture-tables-groovy.svg)
+
 > [!IMPORTANT]
 > [`BarrageTableResolver`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html) does not support authentication, so the remote server must accept [anonymous authentication](./authentication/auth-anon.md). This is the same limitation that applies to URIs, tracked in [deephaven-core#3421](https://github.com/deephaven/deephaven-core/issues/3421).
 
