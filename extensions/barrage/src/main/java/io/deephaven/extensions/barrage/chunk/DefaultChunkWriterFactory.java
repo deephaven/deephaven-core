@@ -68,6 +68,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static io.deephaven.extensions.barrage.chunk.FactoryHelper.factorForTimeUnit;
@@ -414,11 +415,33 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         final BarrageTypeInfo<Field> valuesTypeInfo =
                 new BarrageTypeInfo<>(typeInfo.type(), typeInfo.componentType(), valuesField);
         final ChunkWriter<Chunk<Values>> valuesWriter = newWriterPojo(valuesTypeInfo);
-        final ChunkType valuesChunkType = BarrageUtil.getDefaultType(valuesField).chunkType();
+        // The dictionary state must hold the chunk type the values writer consumes. Derive it from the requested
+        // Deephaven type rather than the Arrow field: callers reinterpret some types before building writers (e.g.
+        // Instant and ZonedDateTime to long), so the field's default type would not match the chunks we receive.
+        final ChunkType valuesChunkType = valuesTypeInfo.chunkType();
+        // TODO (https://github.com/deephaven/deephaven-core/issues/5241): Inconsistent handling of ZonedDateTime
+        // A ZonedDateTime source that cannot be reinterpreted to long delivers an ObjectChunk to a writer built for
+        // long (see timestampFromLong); key the dictionary by epoch nanos, which is what the values writer expects.
+        final UnaryOperator<Chunk<Values>> sourceTransform =
+                valuesChunkType == ChunkType.Long && field.getType().getTypeID() == ArrowType.ArrowTypeID.Timestamp
+                        ? DefaultChunkWriterFactory::zonedDateTimesToEpochNanos
+                        : null;
 
         return new DictionaryChunkWriter(
-                dictEncoding.getId(), indexWriter, valuesWriter, indexBitWidth, valuesChunkType,
+                dictEncoding.getId(), indexWriter, valuesWriter, indexBitWidth, valuesChunkType, sourceTransform,
                 field.isNullable());
+    }
+
+    private static Chunk<Values> zonedDateTimesToEpochNanos(final Chunk<Values> source) {
+        if (!(source instanceof ObjectChunk)) {
+            return source;
+        }
+        final ObjectChunk<ZonedDateTime, Values> zdtSource = source.asObjectChunk();
+        final WritableLongChunk<Values> result = WritableLongChunk.makeWritableChunk(zdtSource.size());
+        for (int ii = 0; ii < zdtSource.size(); ++ii) {
+            result.set(ii, DateTimeUtils.epochNanos(zdtSource.get(ii)));
+        }
+        return result;
     }
 
     @SuppressWarnings("unchecked")

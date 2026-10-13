@@ -483,7 +483,9 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
                 field.getChildren());
         final BarrageTypeInfo<Field> valuesTypeInfo =
                 new BarrageTypeInfo<>(typeInfo.type(), typeInfo.componentType(), valuesField);
-        final ChunkType valuesChunkType = BarrageUtil.getDefaultType(valuesField).chunkType();
+        // The values reader produces chunks of the requested Deephaven type, which may be a reinterpreted type (e.g.
+        // long for an Instant column), so expand indices into that chunk type rather than the field's default type.
+        final ChunkType valuesChunkType = valuesTypeInfo.chunkType();
         if (dictValuesReaders != null) {
             dictValuesReaders.computeIfAbsent(dictId,
                     id -> newReaderPojo(valuesTypeInfo, options, false, null, null));

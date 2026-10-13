@@ -1818,6 +1818,48 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
+    public void testDictionaryEncodedInstantSerialization() throws IOException {
+        final long[] epochNanos = {1_700_000_000_000_000_000L, 1_700_000_001_000_000_000L, 1_700_000_002_000_000_000L};
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            for (final int indexBitWidth : new int[] {8, 16, 32}) {
+                testDictionaryRoundTrip(indexBitWidth, Instant.class, opts, (utO) -> {
+                    final WritableLongChunk<Values> chunk = utO.asWritableLongChunk();
+                    for (int i = 0; i < chunk.size(); ++i) {
+                        chunk.set(i, i % 5 == 0 ? QueryConstants.NULL_LONG : epochNanos[i % epochNanos.length]);
+                    }
+                }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+            }
+        }
+    }
+
+    @Test
+    public void testDictionaryEncodedZonedDateTimeSerialization() throws IOException {
+        final long[] epochNanos = {1_700_000_000_000_000_000L, 1_700_000_001_000_000_000L, 1_700_000_002_000_000_000L};
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            testDictionaryRoundTrip(32, ZonedDateTime.class, opts, (utO) -> {
+                final WritableLongChunk<Values> chunk = utO.asWritableLongChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 5 == 0 ? QueryConstants.NULL_LONG : epochNanos[i % epochNanos.length]);
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    @Test
+    public void testDictionaryEncodedBooleanSerialization() throws IOException {
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            testDictionaryRoundTrip(32, Boolean.class, opts, (utO) -> {
+                final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 5 == 0
+                            ? BooleanUtils.NULL_BOOLEAN_AS_BYTE
+                            : BooleanUtils.booleanAsByte(i % 2 == 0));
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
     /** Two batches: second batch introduces a new dictionary value (delta append). */
     @Test
     public void testDictionaryEncodedMultiBatchDelta() throws IOException {
@@ -2441,13 +2483,18 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             final Consumer<WritableChunk<Values>> initData,
             final Validator validator) throws IOException {
         final int NUM_ROWS = 8;
-        final ChunkType chunkType = (type == Boolean.class || type == boolean.class)
+        // Like production callers, build the writer and reader for the reinterpreted wire type (e.g. Instant -> long)
+        // while the schema field still describes the logical type.
+        final Class<?> wireType = ReinterpretUtils.maybeConvertToPrimitiveDataType(type);
+        final ChunkType chunkType = (wireType == Boolean.class || wireType == boolean.class)
                 ? ChunkType.Byte
-                : ChunkType.fromElementType(type);
+                : ChunkType.fromElementType(wireType);
 
         final Field writerField = buildDictionaryField(type, indexBitWidth, 0L);
         final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) DefaultChunkWriterFactory.INSTANCE.newWriter(
-                BarrageTypeInfo.make(type, null, writerField));
+                BarrageTypeInfo.make(wireType, null, writerField));
+        // The writer state must hold the same chunk type that the values writer consumes.
+        Assert.eq(chunkType, "chunkType", dictWriter.getValuesChunkType(), "dictWriter.getValuesChunkType()");
 
         try (final WritableChunk<Values> srcData = chunkType.makeWritableChunk(NUM_ROWS)) {
             srcData.setSize(NUM_ROWS);
@@ -2455,7 +2502,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             // --- full batch ---
             {
-                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, chunkType);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, dictWriter.getValuesChunkType());
                 final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
                 final WritableChunk<Values> work = chunkType.makeWritableChunk(NUM_ROWS);
                 work.copyFromChunk(srcData, 0, 0, NUM_ROWS);
@@ -2477,7 +2524,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     final ChunkReader<WritableChunk<Values>> reader =
                             (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
                                     .newReader(
-                                            BarrageTypeInfo.make(type, null, writerField), options, registry, null);
+                                            BarrageTypeInfo.make(wireType, null, writerField), options, registry, null);
                     try (final WritableChunk<Values> rt = reader.readChunk(
                             fieldNodes.iterator(), Arrays.stream(buffers).iterator(),
                             new LittleEndianDataInputStream(
@@ -2492,7 +2539,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             // --- empty subset: reader must handle numRows=0 without consulting the registry ---
             {
-                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, chunkType);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, dictWriter.getValuesChunkType());
                 final WritableChunk<Values> work = chunkType.makeWritableChunk(NUM_ROWS);
                 work.copyFromChunk(srcData, 0, 0, NUM_ROWS);
                 try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0);
@@ -2510,7 +2557,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     final ChunkReader<WritableChunk<Values>> reader =
                             (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
                                     .newReader(
-                                            BarrageTypeInfo.make(type, null, writerField), options,
+                                            BarrageTypeInfo.make(wireType, null, writerField), options,
                                             new DictionaryReaderRegistry(), null);
                     try (final WritableChunk<Values> rt = reader.readChunk(
                             fieldNodes.iterator(), Arrays.stream(buffers).iterator(),
@@ -2524,7 +2571,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             // --- swiss-cheese subset ---
             {
-                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, chunkType);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, dictWriter.getValuesChunkType());
                 final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
                 final WritableChunk<Values> work = chunkType.makeWritableChunk(NUM_ROWS);
                 work.copyFromChunk(srcData, 0, 0, NUM_ROWS);
@@ -2561,7 +2608,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         final ChunkReader<WritableChunk<Values>> reader =
                                 (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
                                         .newReader(
-                                                BarrageTypeInfo.make(type, null, writerField), options, registry, null);
+                                                BarrageTypeInfo.make(wireType, null, writerField), options, registry,
+                                                null);
                         try (final WritableChunk<Values> rt = reader.readChunk(
                                 fieldNodes.iterator(), Arrays.stream(buffers).iterator(),
                                 new LittleEndianDataInputStream(

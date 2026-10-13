@@ -32,6 +32,7 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkReaderFactory;
@@ -3781,6 +3782,139 @@ public class BarrageChunkFactoryTest {
             assertNotNull("Expected dictionary id=0 in download stream", downloadedDict);
             assertTrue("Dict values vector must be non-empty",
                     downloadedDict.getVector().getValueCount() > 0);
+        }
+    }
+
+    /**
+     * Verifies Arrow Flight interop for dictionary-encoded Timestamp columns, which Deephaven reinterprets to
+     * {@code long} on the wire:
+     * <ol>
+     * <li>Upload a dictionary-encoded nanosecond Timestamp from stock Arrow via DoPut and confirm DH decodes it into an
+     * {@link Instant} (UTC) or {@link ZonedDateTime} (other time zone) column.</li>
+     * <li>Annotate the table with a BARRAGE_SCHEMA_ATTRIBUTE requesting dictionary encoding for the column, download
+     * it, and confirm stock Arrow decodes the dictionary back to the original timestamps.</li>
+     * </ol>
+     */
+    @Test
+    public void testDictionaryEncodedTimestampInterop() throws Exception {
+        runDictionaryEncodedTimestampInterop("UTC", Instant.class);
+        runDictionaryEncodedTimestampInterop("America/New_York", ZonedDateTime.class);
+    }
+
+    private void runDictionaryEncodedTimestampInterop(
+            final String timeZone,
+            final Class<?> expectedType) throws Exception {
+        final long t0 = 1_700_000_000_000_000_000L;
+        final Long[] logicalNanos = {t0, null, t0 + 1_000, t0, t0 + 2_000, null, t0 + 1_000, t0};
+        final int numRows = logicalNanos.length;
+        final ArrowType.Timestamp timestampType = new ArrowType.Timestamp(TimeUnit.NANOSECOND, timeZone);
+
+        // --- Step 1: Upload dictionary-encoded Timestamp via DoPut (DictionaryBatch + index RecordBatch) ---
+        final List<Long> distinct = new ArrayList<>();
+        for (final Long v : logicalNanos) {
+            if (v != null && !distinct.contains(v)) {
+                distinct.add(v);
+            }
+        }
+        final int rawTicket = nextTicket++;
+        try (final TimeStampNanoTZVector dictVec =
+                new TimeStampNanoTZVector("values", FieldType.nullable(timestampType), allocator);
+                final TimeStampNanoTZVector plainVec =
+                        new TimeStampNanoTZVector(COLUMN_NAME, FieldType.nullable(timestampType), allocator)) {
+            dictVec.allocateNew();
+            for (int i = 0; i < distinct.size(); ++i) {
+                dictVec.setSafe(i, distinct.get(i));
+            }
+            dictVec.setValueCount(distinct.size());
+
+            plainVec.allocateNew();
+            for (int i = 0; i < numRows; ++i) {
+                if (logicalNanos[i] == null) {
+                    plainVec.setNull(i);
+                } else {
+                    plainVec.setSafe(i, logicalNanos[i]);
+                }
+            }
+            plainVec.setValueCount(numRows);
+
+            final Dictionary dictionary =
+                    new Dictionary(dictVec, new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)));
+            final DictionaryProvider.MapDictionaryProvider provider =
+                    new DictionaryProvider.MapDictionaryProvider(dictionary);
+
+            try (final IntVector encodedVec = (IntVector) DictionaryEncoder.encode(plainVec, dictionary);
+                    final VectorSchemaRoot source = VectorSchemaRoot.of(encodedVec)) {
+                source.setRowCount(numRows);
+                final FlightDescriptor descriptor =
+                        FlightDescriptor.path("export", Integer.toString(rawTicket));
+                final FlightClient.ClientStreamListener putStream =
+                        flightClient.startPut(descriptor, source, provider, new AsyncPutListener());
+                putStream.putNext();
+                putStream.completed();
+                putStream.getResult();
+            }
+        }
+
+        // --- Step 2: Verify DH decoded the dictionary into a timestamp column ---
+        final CompletableFuture<Table> rawFuture = new CompletableFuture<>();
+        final SessionState.ExportObject<Table> rawExport = currentSession.getExport(rawTicket);
+        currentSession.nonExport()
+                .onErrorHandler(e -> rawFuture.cancel(true))
+                .require(rawExport)
+                .submit(() -> rawFuture.complete(rawExport.get()));
+        final Table uploadedTable = rawFuture.get();
+
+        assertEquals(numRows, uploadedTable.size());
+        assertEquals(expectedType, uploadedTable.getColumnSource(COLUMN_NAME).getType());
+        final ColumnSource<?> src = uploadedTable.getColumnSource(COLUMN_NAME);
+        for (int i = 0; i < numRows; ++i) {
+            final Object value = src.get(i);
+            final Long actualNanos = value == null ? null
+                    : value instanceof Instant
+                            ? DateTimeUtils.epochNanos((Instant) value)
+                            : DateTimeUtils.epochNanos((ZonedDateTime) value);
+            assertEquals("Value mismatch at row " + i, logicalNanos[i], actualNanos);
+        }
+
+        // --- Step 3: Create annotated export with BARRAGE_SCHEMA_ATTRIBUTE requesting dictionary encoding ---
+        final Schema dictSchema = new Schema(Collections.singletonList(new Field(
+                COLUMN_NAME,
+                new FieldType(true, timestampType,
+                        new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)), null),
+                Collections.emptyList())));
+
+        final int annotatedTicket = nextTicket++;
+        currentSession.newExport(annotatedTicket)
+                .require(rawExport)
+                .submit(() -> rawExport.get().withAttributes(
+                        Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, dictSchema)));
+
+        // --- Step 4: Download and confirm stock Arrow decodes the dictionary back to the original timestamps ---
+        try (final FlightStream stream = flightClient.getStream(flightTicketFor(annotatedTicket))) {
+            final Field downloadField = stream.getSchema().findField(COLUMN_NAME);
+            assertNotNull("Field not found in download schema: " + COLUMN_NAME, downloadField);
+            assertNotNull(
+                    "Expected DictionaryEncoding on downloaded field " + COLUMN_NAME,
+                    downloadField.getDictionary());
+
+            assertTrue("Expected at least one payload on download", stream.next());
+            assertEquals("Row count mismatch on download", numRows, stream.getRoot().getRowCount());
+
+            final Dictionary downloadedDict =
+                    stream.getDictionaryProvider().lookup(downloadField.getDictionary().getId());
+            assertNotNull("Expected dictionary in download stream", downloadedDict);
+            try (final ValueVector decoded =
+                    DictionaryEncoder.decode(stream.getRoot().getVector(COLUMN_NAME), downloadedDict)) {
+                final TimeStampVector decodedTs = (TimeStampVector) decoded;
+                for (int i = 0; i < numRows; ++i) {
+                    if (logicalNanos[i] == null) {
+                        assertTrue("Expected null at row " + i, decodedTs.isNull(i));
+                    } else {
+                        assertFalse("Unexpected null at row " + i, decodedTs.isNull(i));
+                        assertEquals("Value mismatch at row " + i, (long) logicalNanos[i], decodedTs.get(i));
+                    }
+                }
+            }
         }
     }
 
