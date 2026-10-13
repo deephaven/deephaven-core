@@ -2,7 +2,7 @@
 title: Barrier
 ---
 
-A **barrier** is a synchronization primitive for coordinating execution order between column calculations and filters. In Groovy, there is no dedicated barrier type — **any Java object** can serve as a barrier. Deephaven only uses the object's identity (and, for filters, its `equals`/`hashCode`) to match a declaring expression to the expressions that respect it — it never reads or otherwise uses any state the object happens to hold. Pick a unique marker you create once and share between the operations that need to coordinate; a plain `new Object()` works well precisely because it has nothing meaningful for code to accidentally rely on.
+A **barrier** is a synchronization primitive for coordinating execution order between column calculations and filters. In Groovy, there is no dedicated barrier type — **any Java object** can serve as a barrier. Deephaven uses the object only as a marker to match a declaring expression to the expressions that respect it, and does not otherwise use any state the object holds. See [Creating a barrier](#creating-a-barrier) for how matching differs between filters and selectables. Pick a unique marker you create once and share between the operations that need to coordinate; a plain `new Object()` works well precisely because it has nothing meaningful for code to accidentally rely on.
 
 ## Why use a barrier?
 

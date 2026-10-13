@@ -5,7 +5,7 @@ title: Query Parallelization
 Modern computers have multiple processors (called "cores") that can work simultaneously. **Parallelization** splits a calculation into parts and runs those parts on different cores at the same time. Deephaven parallelizes queries automatically, which makes them faster, although the actual speedup depends on the workload and scheduling overhead, not just the number of cores.
 
 > [!TIP]
-> **Most queries benefit from parallelization automatically.** You don't need to do anything special. This guide explains how parallelization works and covers the uncommon situations where you need to disable it.
+> **Most queries benefit from parallelization automatically.** You don't need to do anything special. This guide explains how parallelization works and covers the uncommon situations where you need to force a formula to run serially.
 
 ## How parallelization works
 
@@ -15,7 +15,7 @@ Deephaven distributes work across cores in three ways:
 2. **Concurrent row calculations**: When computing values for a single table, Deephaven divides the rows among cores so each core handles a portion.
 3. **Concurrent column calculations**: When you compute multiple columns in the same operation, Deephaven can calculate independent columns simultaneously.
 
-The examples on this page use small tables so you can read the output. Deephaven only splits one column's rows across cores once there are a few million rows to process, but separate tables and separate columns can run at the same time at any size.
+The examples on this page use small tables so you can read the output. Deephaven only splits one column's rows across cores once there are at least about four million rows to process, but separate tables and separate columns can run at the same time at any size.
 
 ### Concurrent table updates
 
@@ -51,7 +51,7 @@ largeTable = emptyTable(100).update(
 )
 ```
 
-With tens of millions of rows and four cores, Deephaven would divide each column's rows into four groups and compute them at the same time, so the work finishes sooner than on one core.
+Despite its name, `largeTable` has only 100 rows so you can read the output. That is far below the threshold, so Deephaven computes each column on one core. With tens of millions of rows and four cores, Deephaven divides each column's rows into four groups and computes them at the same time, so the work finishes sooner than on one core.
 
 ### Concurrent column calculations
 

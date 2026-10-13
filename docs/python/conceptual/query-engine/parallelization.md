@@ -81,7 +81,7 @@ The update graph never updates a table before the tables it depends on have fini
 
 **Operations that are not currently parallelized:** joins other than [`range_join`](../../reference/table-operations/join/range-join.md), [aggregations](../../how-to-guides/dedicated-aggregations.md), [`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md), [`head`](../../reference/table-operations/filter/head.md), [`tail`](../../reference/table-operations/filter/tail.md), [`merge`](../../reference/table-operations/merge/merge.md), and [`snapshot`](../../reference/table-operations/snapshot/snapshot.md). They still benefit from concurrent table updates.
 
-**Deferred evaluation:** [`view`](../../reference/table-operations/select/view.md), [`update_view`](../../reference/table-operations/select/update-view.md), and [`lazy_update`](../../reference/table-operations/select/lazy-update.md) don't compute anything when you call them. They store the formula and evaluate it whenever a cell is read, on whichever thread reads it. That evaluation can itself happen in parallel, for example when a downstream [`update`](../../reference/table-operations/select/update.md) that reads the column is split across cores, and a row can be evaluated more than once. This is also why `view` and `update_view` reject [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial). There is no single evaluation pass to serialize.
+**Deferred evaluation:** [`view`](../../reference/table-operations/select/view.md), [`update_view`](../../reference/table-operations/select/update-view.md), and [`lazy_update`](../../reference/table-operations/select/lazy-update.md) don't compute anything when you call them. They store the formula and evaluate it whenever a cell is read, on whichever thread reads it. That evaluation can itself happen in parallel, for example when a downstream [`update`](../../reference/table-operations/select/update.md) that reads the column is split across cores, and a row can be evaluated more than once. There is no single evaluation pass to serialize, so [`view`](../../reference/table-operations/select/view.md) and [`update_view`](../../reference/table-operations/select/update-view.md) reject [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial), and [`lazy_update`](../../reference/table-operations/select/lazy-update.md) takes only formula strings, so you cannot pass it a serial `Selectable`.
 
 **What you can control:** [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) and [barriers](#barriers) apply only to formulas and filters, which is where your code usually runs. [`where_in`](../../reference/table-operations/filter/where-in.md), [`where_not_in`](../../reference/table-operations/filter/where-not-in.md), [`sort`](../../reference/table-operations/sort/sort.md), and [`range_join`](../../reference/table-operations/join/range-join.md) run only Deephaven's own code, which is always safe to run in parallel, so they have no per-call control. A `transform` function, or the formula in [`rolling_formula_tick`](../../reference/table-operations/update-by-operations/rolling-formula-tick.md) and [`rolling_formula_time`](../../reference/table-operations/update-by-operations/rolling-formula-time.md), is your own code, and Deephaven runs it on several constituents or key groups at once with no per-call control, so make it thread-safe.
 
@@ -113,8 +113,11 @@ By default, Deephaven safely parallelizes operations that are **stateless**, mea
 **An operation is stateless if it**:
 
 - Doesn't modify global variables, or read ones that change while rows are processed.
+- Doesn't write to files or logs, or use other external resources, such as an unsynchronized client.
 - Doesn't depend on which row is processed first.
 - Produces the same output for the same input, regardless of when or how it runs.
+
+Code that shares state or uses an external resource can still run in parallel if every access is [thread-safe](./engine-locking.md), for example because it holds a lock, and its result does not depend on row order. Otherwise, use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) as described in [Serial execution](#serial-execution).
 
 **Examples of stateless operations**:
 
@@ -195,7 +198,7 @@ def get_and_increment_counter() -> int:
 t = empty_table(5_000_000).update("ID = get_and_increment_counter()")
 ```
 
-On a free-threaded Python build, Deephaven splits this column across cores, and several threads read and update `counter` at the same time. This doesn't throw an error. Instead, it silently produces wrong values. The exact values vary from run to run. You might see output like this:
+On a free-threaded Python build, Deephaven splits this column across cores, and several threads read and update `counter` at the same time. This doesn't throw an error. Instead, it silently produces wrong values. The exact values vary from run to run. The table below is written out by hand to show one possible result:
 
 | ID |
 | -- |
@@ -251,7 +254,7 @@ result = (
 
 When a [`Filter`](../../reference/query-language/types/Filter.md) is serial, Deephaven evaluates every input row in order, keeps the filter in its place among the other filters, and runs its side effects one at a time.
 
-Partitioned sources need extra care. A table read from a directory of Parquet files or from an Iceberg table has partitioning columns, whose values identify each partition. Deephaven normally applies a filter on those columns to whole partitions before it reads any data. It skips that shortcut when the filter is serial, or when any filter before it in the argument list is serial. See [Filters on partitioning columns](../../reference/table-operations/filter/where.md#filters-on-partitioning-columns).
+Partitioned sources need extra care. A table read from a directory of Parquet files or from an Iceberg table has partitioning columns, whose values identify each partition. Deephaven normally applies a filter on those columns to whole partitions before it reads any data. It skips that shortcut when the filter is serial, when any earlier filter in the argument list is serial, and in the other cases the linked section lists. See [Filters on partitioning columns](../../reference/table-operations/filter/where.md#filters-on-partitioning-columns).
 
 > [!WARNING]
 > When Deephaven cannot apply a filter on partitioning columns to whole partitions first, it includes every partition in the table and evaluates the filter against every row instead of once per partition. On a large partitioned source, that can be much slower. Mark a filter on partitioning columns serial only when its evaluation order matters.
@@ -394,7 +397,7 @@ Parallelization is enabled by default with reasonable settings. The properties b
 
 ## Key takeaways
 
-Deephaven automatically parallelizes queries across all available CPU cores. Most code works correctly without changes.
+By default, Deephaven runs independent tables and columns concurrently, and it splits the rows of a column or filter input across cores when the column or input is large enough. On a standard (GIL) Python build, it does not split Python-backed columns or filters. Most code works without changes.
 
 - Deephaven assumes all formulas can run in parallel by default.
 - Use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) when a formula has side effects, depends on row order, or calls functions that are not thread-safe.

@@ -10,40 +10,40 @@ This guide discusses how to control various [`QueryTable`](https://docs.deephave
 
 The `QueryTable` has the following user-configurable properties:
 
-| Category                                                            | Property                                                 | Default    |
-| ------------------------------------------------------------------- | -------------------------------------------------------- | ---------- |
-| [Memoization](#memoization)                                         | `QueryTable.memoizeResults`                              | true       |
-| [Redirection](#redirection)                                         | `QueryTable.redirectUpdate`                              | false      |
-| [Redirection](#redirection)                                         | `QueryTable.redirectSelect`                              | false      |
-| [Redirection](#redirection)                                         | `QueryTable.maximumStaticSelectMemoryOverhead`           | 1.1        |
-| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForWhere`                        | true       |
-| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForAggregation`                  | true       |
-| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForJoins`                        | true       |
-| [DataIndex](#dataindex)                                             | `QueryTable.dataIndexForWhereThreshold`                  | 0.25       |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDataIndex`               | false      |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false      |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownMergedTables`            | false      |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDictionary`              | false      |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownSortedColumn`            | false      |
-| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.dictionaryForWhereThreshold`                 | 0.25       |
-| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.disableParallelWhere`                        | false      |
-| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereRowsPerSegment`                 | `1 << 16`  |
-| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereSegments`                       | -1         |
-| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.forceParallelWhere` (test-focused)           | false      |
-| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.enableParallelSelectAndUpdate`               | true       |
-| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.minimumParallelSelectRows`                   | `1L << 22` |
-| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false      |
-| [Parallel sorting](#parallel-sorting)                               | `QueryTable.parallelSort`                                | true       |
-| [Parallel sorting](#parallel-sorting)                               | `QueryTable.minimumParallelSortRows`                     | `1L << 20` |
-| [Parallel sorting](#parallel-sorting)                               | `QueryTable.parallelSortSegmentSize`                     | `1L << 18` |
-| [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true       |
-| [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20` |
-| [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10         |
-| [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024       |
-| [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | 1024       |
-| [Stateless by default](#stateless-by-default)                       | `QueryTable.statelessFiltersByDefault`                   | true       |
-| [Stateless by default](#stateless-by-default)                       | `QueryTable.statelessSelectByDefault`                    | true       |
-| [Stateless by default](#stateless-by-default)                       | `QueryTable.serialSelectImplicitBarriers`                | false      |
+| Category                                                            | Property                                                 | Default                                         |
+| ------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------- |
+| [Memoization](#memoization)                                         | `QueryTable.memoizeResults`                              | true                                            |
+| [Redirection](#redirection)                                         | `QueryTable.redirectUpdate`                              | false                                           |
+| [Redirection](#redirection)                                         | `QueryTable.redirectSelect`                              | false                                           |
+| [Redirection](#redirection)                                         | `QueryTable.maximumStaticSelectMemoryOverhead`           | 1.1                                             |
+| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForWhere`                        | true                                            |
+| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForAggregation`                  | true                                            |
+| [DataIndex](#dataindex)                                             | `QueryTable.useDataIndexForJoins`                        | true                                            |
+| [DataIndex](#dataindex)                                             | `QueryTable.dataIndexForWhereThreshold`                  | 0.25                                            |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDataIndex`               | false                                           |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownParquetRowGroupMetadata` | false                                           |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownMergedTables`            | false                                           |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownDictionary`              | false                                           |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.disableWherePushdownSortedColumn`            | false                                           |
+| [Pushdown predicates with where](#pushdown-predicates-with-where)   | `QueryTable.dictionaryForWhereThreshold`                 | 0.25                                            |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.disableParallelWhere`                        | false                                           |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereRowsPerSegment`                 | `1 << 16`                                       |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.parallelWhereSegments`                       | -1                                              |
+| [Parallel processing with where](#parallel-processing-with-where)   | `QueryTable.forceParallelWhere` (test-focused)           | false                                           |
+| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.enableParallelSelectAndUpdate`               | true                                            |
+| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.minimumParallelSelectRows`                   | `1L << 22`                                      |
+| [Parallel processing with select](#parallel-processing-with-select) | `QueryTable.forceParallelSelectAndUpdate` (test-focused) | false                                           |
+| [Parallel sorting](#parallel-sorting)                               | `QueryTable.parallelSort`                                | true                                            |
+| [Parallel sorting](#parallel-sorting)                               | `QueryTable.minimumParallelSortRows`                     | `1L << 20`                                      |
+| [Parallel sorting](#parallel-sorting)                               | `QueryTable.parallelSortSegmentSize`                     | `1L << 18`                                      |
+| [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.enableParallelSnapshot`                      | true                                            |
+| [Parallel snapshotting](#parallel-snapshotting)                     | `QueryTable.minimumParallelSnapshotRows`                 | `1L << 20`                                      |
+| [Ungroup operations](#ungroup-operations)                           | `QueryTable.minimumUngroupBase`                          | 10                                              |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `array.recycler.capacity.*`                              | 1024                                            |
+| [SoftRecycler configuration](#softrecycler-configuration)           | `sparsearray.recycler.capacity.*`                        | [varies](#sparse-array-column-source-recyclers) |
+| [Stateless by default](#stateless-by-default)                       | `QueryTable.statelessFiltersByDefault`                   | true                                            |
+| [Stateless by default](#stateless-by-default)                       | `QueryTable.statelessSelectByDefault`                    | true                                            |
+| [Stateless by default](#stateless-by-default)                       | `QueryTable.serialSelectImplicitBarriers`                | false                                           |
 
 Each property is described below, roughly categorized by similarity.
 
@@ -59,15 +59,14 @@ It can be beneficial to disable memoization when benchmarking or testing, as mem
 
 ## Redirection
 
-Deephaven tables maintain a 63-bit keyspace that maps a logical row in row-key space to its data. Many of Deephaven's column sources use a multi-level data layout to avoid allocating more resources than necessary to fulfill operational requirements. See [selection method properties](/core/groovy/docs/reference/community-questions/selection-method-properties/) for more details.
-
+Deephaven tables maintain a 63-bit keyspace that maps a logical row in row-key space to its data. Many of Deephaven's column sources use a multi-level data layout to avoid allocating more resources than necessary to fulfill operational requirements.
 Redirection is a mapping between a parent column source and the resulting column source for a given operation. A sorted column, for example, is redirected from the original to present the rows in the targeted sort order. Redirection may also flatten from a sparse keyspace to a flat and dense keyspace.
 
-| Property Name                                  | Default Value | Description                                                                                                                                          |
-| ---------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `QueryTable.redirectUpdate`                    | false         | Forces non-flat refreshing [`update`](../reference/table-operations/select/update.md) operations to redirect despite the increased performance costs |
-| `QueryTable.redirectSelect`                    | false         | Forces non-flat refreshing [`select`](../reference/table-operations/select/select.md) operations to redirect despite the increased performance costs |
-| `QueryTable.maximumStaticSelectMemoryOverhead` | 1.1 (double)  | The maximum overhead as a fraction. For example, 1.1 is 10% overhead. A negative value always uses the sparse structure, and 0 never does.           |
+| Property Name                                  | Default Value | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `QueryTable.redirectUpdate`                    | false         | Forces non-flat refreshing [`update`](../reference/table-operations/select/update.md) operations to redirect despite the increased performance costs                                                                                                                                                                                                                                                                                                                                                                           |
+| `QueryTable.redirectSelect`                    | false         | Forces non-flat refreshing [`select`](../reference/table-operations/select/select.md) operations to redirect despite the increased performance costs                                                                                                                                                                                                                                                                                                                                                                           |
+| `QueryTable.maximumStaticSelectMemoryOverhead` | 1.1 (double)  | Applies to a static (non-refreshing) `select` on a non-flat table. The engine flattens the table first when its sparse row-key space would use more than this multiple of the memory blocks that a flat table needs. At `1.1`, the allowed overhead is 10%. A negative value never flattens. `0` always flattens. A value between `0` and `1` also always flattens, because a sparse row-key space never uses fewer blocks than a flat table. A static `update` that exceeds the limit uses redirection instead of flattening. |
 
 ## DataIndex
 
@@ -77,7 +76,7 @@ A Deephaven [DataIndex](../how-to-guides/data-indexes.md) is an index that can i
 | ------------------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `QueryTable.useDataIndexForWhere`          | true          | Enables data index usage in [`where`](../reference/table-operations/filter/where.md) operations                                                                                                                                                                                                                    |
 | `QueryTable.useDataIndexForAggregation`    | true          | Enables data index usage in [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md), [`select_distinct`](../reference/table-operations/select/select-distinct.md), [rollup tables](../reference/table-operations/create/rollup.md), and [tree tables](../reference/table-operations/create/tree.md) |
-| `QueryTable.useDataIndexForJoins`          | true          | Enables data index usage in [joins](../how-to-guides/joins-timeseries-range.md#which-method-should-you-use)                                                                                                                                                                                                        |
+| `QueryTable.useDataIndexForJoins`          | true          | Enables data index usage in [exact and relational joins](../how-to-guides/joins-exact-relational.md#which-method-should-you-use) and [time-series joins](../how-to-guides/joins-timeseries-range.md#which-method-should-you-use)                                                                                   |
 | `QueryTable.disableWherePushdownDataIndex` | false         | Disables data index usage within the [pushdown predicates](#pushdown-predicates-with-where) of [`where`](../reference/table-operations/filter/where.md)                                                                                                                                                            |
 | `QueryTable.dataIndexForWhereThreshold`    | 0.25 (double) | The maximum size of a data index table, as a fraction of the rows remaining to be filtered, for the index to be used by [`where`](../reference/table-operations/filter/where.md)                                                                                                                                   |
 
@@ -151,6 +150,8 @@ Parallelism for [`sort`](../reference/table-operations/sort/sort.md) is not enab
 | `QueryTable.parallelSortSegmentSize` | `1L << 18`    | The minimum number of rows in each segment of a parallel sort                  |
 
 ## Parallel snapshotting
+
+This section covers the snapshots that the engine takes of a table's rows and columns to answer Barrage subscription requests. It does not cover the `snapshot` table operation.
 
 [Barrage](./what-is-barrage.md) clients, including our JavaScript implementation used on the web, fulfill subscription requests by snapshotting the required rows and columns in addition to listening for relevant changes when the table is refreshing. Parallel snapshotting is a feature that parallelizes this process across columns. If those columns are slow to access, parallel snapshotting greatly reduces latency. However, parallel snapshotting may open many file handles to the same data source.
 

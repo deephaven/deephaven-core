@@ -100,8 +100,11 @@ By default, Deephaven safely parallelizes operations that are **stateless**, mea
 **An operation is stateless if it**:
 
 - Doesn't modify global variables, or read ones that change while rows are processed.
+- Doesn't write to files or logs, or use other external resources, such as an unsynchronized client.
 - Doesn't depend on which row is processed first.
 - Produces the same output for the same input, regardless of when or how it runs.
+
+Code that shares state or uses an external resource can still run in parallel if every access is [thread-safe](./engine-locking.md), for example because it holds a lock, and its result does not depend on row order. Otherwise, use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) as described in [Serial execution](#serial-execution).
 
 **Examples of stateless operations**:
 
@@ -173,7 +176,7 @@ getAndIncrement = { counter[0]++ }
 badResult = emptyTable(5_000_000).update("ID = getAndIncrement()")
 ```
 
-Without serialization, Deephaven splits this column across cores, and several threads read and update `counter` at the same time. This doesn't throw an error. Instead, it silently produces wrong values. The exact values vary from run to run. You might see output like this:
+Without serialization, Deephaven splits this column across cores, and several threads read and update `counter` at the same time. This doesn't throw an error. Instead, it silently produces wrong values. The exact values vary from run to run. The table below is written out by hand to show one possible result:
 
 | ID |
 | -- |
@@ -221,7 +224,7 @@ result = emptyTable(1000)
 
 When a [`Filter`](../../reference/query-language/types/Filter.md) is serial, Deephaven evaluates every input row in order, keeps the filter in its place among the other filters, and runs its side effects one at a time.
 
-Partitioned sources need extra care. A table read from a directory of Parquet files or from an Iceberg table has partitioning columns, whose values identify each partition. Deephaven normally applies a filter on those columns to whole partitions before it reads any data. It skips that shortcut when the filter is serial, or when any filter before it in the argument list is serial. See [Filters on partitioning columns](../../reference/table-operations/filter/where.md#filters-on-partitioning-columns).
+Partitioned sources need extra care. A table read from a directory of Parquet files or from an Iceberg table has partitioning columns, whose values identify each partition. Deephaven normally applies a filter on those columns to whole partitions before it reads any data. It skips that shortcut when the filter is serial, when any earlier filter in the argument list is serial, and in the other cases the linked section lists. See [Filters on partitioning columns](../../reference/table-operations/filter/where.md#filters-on-partitioning-columns).
 
 > [!WARNING]
 > When Deephaven cannot apply a filter on partitioning columns to whole partitions first, it includes every partition in the table and evaluates the filter against every row instead of once per partition. On a large partitioned source, that can be much slower. Mark a filter on partitioning columns serial only when its evaluation order matters.
@@ -351,7 +354,7 @@ Parallelization is enabled by default with reasonable settings. The properties b
 
 ## Key takeaways
 
-Deephaven automatically parallelizes queries across all available CPU cores. Most code works correctly without changes.
+By default, Deephaven runs independent tables and columns concurrently, and it splits the rows of a column or filter input across cores when the column or input is large enough. Most code works without changes.
 
 - Deephaven assumes all formulas can run in parallel by default.
 - Use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) when a formula has side effects, depends on row order, or calls functions that are not thread-safe.
