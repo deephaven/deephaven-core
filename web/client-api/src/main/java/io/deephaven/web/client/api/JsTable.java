@@ -1215,33 +1215,29 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         wrapped.onClosed.add(() -> lastGood[0].unretain(directive));
         onClosed.add(remover::remove);
 
-        // A rebase may replace this state before its fetch resolves, cancelling that export; the outcome is
-        // observed through whichever state the wrapped table ends up on, not through this promise.
-        totals.refetch().catch_(ignore -> null);
-        return new Promise<>((resolve, reject) -> whenRunning(wrapped,
-                () -> resolve.onInvoke(totalsTable),
-                message -> {
-                    wrapped.close();
-                    reject.onInvoke(message);
-                }));
+        // The first fetch's rejection is only a failure if the wrapped table still holds this state. If a rebase
+        // replaced it, that export was cancelled on purpose; the result is whichever state the table ends up on.
+        return totals.refetch().then(
+                ignore -> Promise.resolve(totalsTable),
+                error -> {
+                    if (wrapped.state() == totals) {
+                        wrapped.close();
+                        return Promise.reject(error);
+                    }
+                    return wrapped.whenRunning().then(ignore -> Promise.resolve(totalsTable));
+                });
     }
 
     /**
-     * Runs {@code success} once the table is on a running state, whichever state that turns out to be, or {@code fail}
-     * if the table fails or is closed first.
+     * Resolves once this table is on a running state, following it through any states that are replaced before they
+     * run, and rejects if the state it holds fails.
      */
-    private static void whenRunning(JsTable table, JsRunnable success, JsConsumer<String> fail) {
-        final ClientTableState current = table.state();
-        current.onRunning(ignored -> success.run(), fail, () -> {
-            if (table.isClosed()) {
-                fail.apply("Table closed before it was ready");
-            } else if (table.state() == current) {
-                fail.apply("Table state released before it was ready");
-            } else {
-                // superseded by a newer state; follow the table to it
-                whenRunning(table, success, fail);
-            }
-        });
+    private Promise<Void> whenRunning() {
+        return new Promise<>((resolve, reject) -> state().onRunning(
+                ignore -> resolve.onInvoke((Void) null),
+                reject::onInvoke,
+                // released before running: superseded by a newer state, so adopt the wait on that one
+                () -> resolve.onInvoke(whenRunning())));
     }
 
     private JsTotalsTableConfig getTotalsDirectiveFromOptionalConfig(Object config) {
