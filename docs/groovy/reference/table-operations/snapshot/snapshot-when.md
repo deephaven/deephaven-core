@@ -56,7 +56,7 @@ The options dictate whether to take an initial snapshot, do incremental snapshot
 
 A new table that captures a snapshot of the source table whenever the trigger table updates.
 
-## SnapshotWhenOptions
+## `SnapshotWhenOptions`
 
 The `snapshotWhen` method's `options` parameter takes a `SnapshotWhenOptions` object. These are constructed using `SnapshotWhenOptions.of(...)`. The syntax is given below.
 

@@ -2,7 +2,7 @@
 title: Work with time
 ---
 
-This guide shows how to work with dates, times, durations, periods, and time zones in Deephaven. These values appear as data in tables, as literals in query strings, and as values in Groovy scripts.
+This guide shows how to work with dates, times, durations, periods, and time zones in Deephaven. Deephaven is a real-time data platform that handles streaming data of various formats and sizes, with a unified interface for ingesting, manipulating, and analyzing it. Much of that data marks specific moments in time, so date-times are central to working in Deephaven. These values appear as data in tables, as literals in query strings, and as values in Groovy scripts.
 
 This guide covers the Java date-time types the engine supports natively, the query-language tools for working with them, filtering tables by time, and using date-times directly in Groovy scripts.
 
@@ -235,7 +235,7 @@ A `-` sign can come before the whole string, which negates every component, or b
 
 ### Put it all together
 
-This example combines time literals, overloaded arithmetic operators, and Java time methods to create timestamps, compute time differences, and extract dates and days of the week in the Tokyo and New York time zones. `ET` is Deephaven's built-in alias for `America/New_York`. For more about aliases, see [Time zones and aliases](#time-zones-and-aliases).
+To illustrate the power and ease of working with natively supported date-times, this example combines time literals, overloaded arithmetic operators, and Java time methods to create timestamps, compute time differences, and extract dates and days of the week in the Tokyo and New York time zones. `ET` is Deephaven's built-in alias for `America/New_York`. For more about aliases, see [Time zones and aliases](#time-zones-and-aliases).
 
 ```groovy test-set=9 order=t,tMeta
 // Create reference time and timestamp column using operator overloading and Java method multipliedBy()
@@ -263,7 +263,7 @@ t = t.update(
 tMeta = t.meta()
 ```
 
-The [built-in time functions](/core/javadoc/io/deephaven/time/DateTimeUtils.html) cover most date-time operations in query strings.
+Hopefully, it's apparent that working with date-times in Deephaven queries is a breeze. The [built-in time functions](/core/javadoc/io/deephaven/time/DateTimeUtils.html) cover most date-time operations in query strings.
 
 ## Filter by time
 
