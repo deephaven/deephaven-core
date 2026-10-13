@@ -42,7 +42,7 @@ public final class BarrageCompression {
             @NotNull final Set<String> accepted,
             @Nullable final AttributeMap<?> attributes,
             @NotNull final String logName) {
-        if (attributes == null || accepted.isEmpty()) {
+        if (attributes == null) {
             return Optional.empty();
         }
         final Object value = attributes.getAttribute(Table.BARRAGE_COMPRESSION_ATTRIBUTE);

@@ -1193,8 +1193,9 @@ class Table(JObjectWrapper):
         snapshots and subscriptions with the given compression types. When a client fetches the table, the server uses
         the first type in the list that the client accepts, and sends uncompressed data when none match.
 
-        This sets the table's "BarrageCompression" attribute, which is not copied to tables derived from this one. For
-        a rollup or tree table, call with_compression on the RollupTable or TreeTable rather than on its source.
+        This sets the table's "BarrageCompression" attribute, which tables derived from this one, for example by sorting
+        or filtering, do not inherit. For a rollup or tree table, call with_compression on the RollupTable or TreeTable
+        rather than on its source.
 
         Args:
             compression_types (Union[CompressionType, Sequence[CompressionType]]): the compression type, or types, to

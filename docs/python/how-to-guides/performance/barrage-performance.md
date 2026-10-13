@@ -165,7 +165,7 @@ t = empty_table(1_000_000).update(["X = ii", "Sym = `S` + (ii % 32)"])
 t_compressed = t.with_compression([CompressionType.ZSTD, CompressionType.GZIP])
 ```
 
-`with_compression` stores the list in the table's `BarrageCompression` attribute, which applies only to the table it is set on. Tables derived from it, for example by sorting or filtering, are sent uncompressed unless they allow compression themselves. For a rollup or tree table, call `with_compression` on the rollup or tree table rather than on its source.
+`with_compression` stores the list in the table's `BarrageCompression` attribute. Tables derived from it, for example by sorting or filtering, do not inherit the attribute, so they are sent uncompressed unless they allow compression themselves. For a rollup or tree table, call `with_compression` on the rollup or tree table rather than on its source.
 
 These are the compression types each client lists by default. A client that lists none always receives uncompressed data.
 

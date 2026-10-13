@@ -198,9 +198,10 @@ def barrage_session(
              If not None implies use a TLS connection and the use_tls argument should have been passed
              as True. Defaults to None
         extra_headers (Optional[dict[str, str]]): extra headers to set when configuring the gRPC channel. Defaults to None.
-        accept_compression (Optional[Union[str, Sequence[str]]]): the compression type, or types, ("gzip", "zstd",
-            "snappy") the session accepts, which lets the remote server compress tables that allow one of them. None
-            accepts all three; an empty sequence accepts none, so data is always sent uncompressed. Defaults to None.
+        accept_compression (Optional[Union[str, Sequence[str]]]): the compression type, or types, that the session
+            accepts: any of "gzip", "zstd" and "snappy". The remote server compresses only tables that allow one of
+            them. None accepts all three; an empty sequence accepts none, so data is always sent uncompressed. Defaults
+            to None.
 
     Returns:
         a Deephaven Barrage session

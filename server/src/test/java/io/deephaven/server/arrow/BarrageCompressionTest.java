@@ -68,8 +68,11 @@ public class BarrageCompressionTest {
     @Test
     public void tablesWithoutAValidListAreNotCompressed() {
         assertEquals(Optional.empty(), apply(Set.of("gzip", "zstd"), TableTools.emptyTable(10)));
-        assertEquals(Optional.empty(), apply(Set.of("gzip", "zstd"),
-                TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,lz4"))));
+        final Table malformed =
+                TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,lz4"));
+        assertEquals(Optional.empty(), apply(Set.of("gzip", "zstd"), malformed));
+        // parsed, and so logged, even for a client that accepts nothing
+        assertEquals(Optional.empty(), apply(Set.of(), malformed));
         assertEquals(Optional.empty(), apply(Set.of("gzip", "zstd"), null));
     }
 
