@@ -43,6 +43,16 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return None
 
 
+# The source files of the table operations that use query_scope_ctx. A frame's code filename is compared against
+# them, so take them from a code object in this package rather than from __file__, which names the .pyc file when the
+# package is installed without sources.
+_THIS_FILE = _j_py_script_session.__code__.co_filename
+_DH_FILES = frozenset(
+    _THIS_FILE.replace("_query_scope.py", name)
+    for name in ("table.py", "execution_context.py")
+)
+
+
 @contextlib.contextmanager
 def query_scope_ctx():
     """A context manager to set/unset query scope based on the scope of the most immediate caller code that invokes
@@ -51,24 +61,27 @@ def query_scope_ctx():
     This can be called *only* from table.py or execution_context.py.  Using this from any other file does not work!
     """
 
+    # Walk f_back by hand instead of calling inspect.getouterframes(). getouterframes() builds source info for every
+    # frame and calls inspect.getmodule() on each one. For a frame whose file maps to no module, such as <frozen runpy>
+    # under `python -m` or pytest, getmodule() rescans all of sys.modules. That made every table operation cost time
+    # that grew with len(sys.modules).
+
     # locate the innermost Deephaven frame (i.e. any of the table operation methods that use this context manager)
-    outer_frames = inspect.getouterframes(inspect.currentframe())[1:]
+    frame = inspect.currentframe()
+    while frame is not None and frame.f_code.co_filename not in _DH_FILES:
+        frame = frame.f_back
 
-    table_file = __file__.replace("_query_scope.py", "table.py")
-    exec_ctx_file = __file__.replace("_query_scope.py", "execution_context.py")
-
-    for i, (frame, filename, *_) in enumerate(outer_frames):
-        if filename and (filename == table_file or filename == exec_ctx_file):
-            break
-    if i >= len(outer_frames):
+    caller_frame = frame.f_back if frame is not None else None
+    if caller_frame is None:
         # we didn't match anything, just bail out without an error
         yield
+        return
 
     # combine the immediate caller's globals and locals into a single dict and use it as the query scope
-    caller_frame = outer_frames[i + 1].frame
-    function = outer_frames[i + 1].function
     j_py_script_session = _j_py_script_session()
-    if j_py_script_session and (len(outer_frames) > i + 2 or function != "<module>"):
+    if j_py_script_session and (
+        caller_frame.f_back is not None or caller_frame.f_code.co_name != "<module>"
+    ):
         scope_dict = caller_frame.f_globals.copy()
         scope_dict.update(caller_frame.f_locals)
         j_py_script_session.pushScope(scope_dict)

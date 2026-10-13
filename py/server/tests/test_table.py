@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 import unittest
+import unittest.mock
 from types import SimpleNamespace
 from typing import Any
 
@@ -1118,6 +1119,21 @@ class TableTestCase(BaseTestCase):
         lambda_fn = lambda x: t.update(formulas=["X = x", "Y = x * 10"])  # noqa E731
         rt = lambda_fn(10)
         self.verify_table_data(rt, [10, 10 * 10])
+
+    def test_scope_under_moduleless_frame(self):
+        # A frame whose file maps to no module, as under `python -m` or pytest. Finding the caller's scope must not
+        # call inspect.getmodule(), which rescans sys.modules for such a frame on every table operation.
+        def update_with_local() -> Table:
+            offset = 7
+            return empty_table(1).update(formulas=["X = i + offset"])
+
+        runner = compile("rt = update_with_local()", "<frozen runpy>", "exec")
+        ns = {"update_with_local": update_with_local}
+        with unittest.mock.patch(
+            "inspect.getmodule", side_effect=AssertionError("getmodule called")
+        ):
+            exec(runner, ns)
+        self.verify_table_data(ns["rt"], [7])
 
     @classmethod
     def update_in_class_method(cls, arg1, arg2) -> Table:
