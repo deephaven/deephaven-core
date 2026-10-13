@@ -359,7 +359,8 @@ public class ExportTableUpdateListenerTest {
 
     public class TestSessionState extends SessionState {
         public TestSessionState() {
-            super(scheduler, new SessionService.ObfuscatingErrorTransformer(), TestExecutionContext::createForUnitTests,
+            super(scheduler, scheduler, new SessionService.ObfuscatingErrorTransformer(),
+                    TestExecutionContext::createForUnitTests,
                     AUTH_CONTEXT);
             initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
                     DateTimeUtils.epochMillis(DateTimeUtils.epochNanosToInstant(Long.MAX_VALUE)), this));
