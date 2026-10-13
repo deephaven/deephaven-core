@@ -110,12 +110,15 @@ and update `deephaven.registry.imageId` by hand with the index digest.
 
 #### Hand-maintained content
 
-`bumpImage` rewrites `gradle.properties` from scratch, dropping any comments. After running it, restore (and update)
-the comments; for example:
+`bumpImage` rewrites `gradle.properties` from scratch, keeping only `io.deephaven.project.ProjectType`,
+`deephaven.registry.imageName`, and `deephaven.registry.imageId`. After running it, restore (and update) any other
+properties and comments it dropped; for example:
 
 * `cp-kafka`, `kafka`, `kafka-native`, `redpanda`, `rustfs`: the `# <version>` that `latest` currently refers to
 * `cpp-clients-multi-base`: the reminder to update `cpp-client/build-dependencies.sh`
-* `protoc-base`: the arm64 TODO (and the `deephaven.registry.platform` property)
+* `cpp-clients-multi-base`, `manylinux2014_x86_64`, `protoc-base`: the `deephaven.registry.platform=linux/amd64` property;
+  dropping it silently changes the platform the image is pulled and built for
+* `protoc-base`: the arm64 TODO
 * `selenium`: the reminder to keep the version in lockstep with `gradle/libs.versions.toml`
 
 Similarly, `pip freeze` does not reproduce the `platform.machine == 'x86_64'` environment marker on `connectorx` in the
@@ -132,11 +135,12 @@ relevant tasks locally before pushing.
 | `dotnet`, `dotnet-runtime-8`              |                                                                                                                                                                      | `:csharp-client:testCsharpClient`                                                                                                                     |
 | `go`                                      |                                                                                                                                                                      | `:go:testGoClient`                                                                                                                                    |
 | `node`                                    | `proto/raw-js-openapi` pins the exact node / npm versions in `package.json` and `package-lock.json` `engines`, with `engine-strict=true`; update them to match the image | `:proto:raw-js-openapi:webpackSources`, `:web-client-api:types:typedoc`, `:web-client-ui:ui`                                                          |
-| `python`                                  |                                                                                                                                                                      | `:py-server:buildWheel`, `:py-client:buildWheel`, `:py-embedded-server:buildWheel`, `:py-client:testPyClient`, `:Generators:generateAllPythonAssert` |
+| `python`                                  |                                                                                                                                                                      | `:py-server:buildWheel`, `:py-client:buildWheel`, `:py-embedded-server:buildWheel`, `:py-client:testPyClient` |
 | `protoc-base`                             | Generated code may change; regenerate the checked-in code with `:py-client:updateProtobuf` and `:go:updateProtobuf`                                                   | `:go:compareProtobuf`, `:py-client:compareProtobuf`, `:py-client:testPyClient`                                                                        |
 | `cpp-clients-multi-base`                  | Sync `cpp-client/build-dependencies.sh` with `/opt/deephaven/build-dependencies.sh` from the image                                                                   | `:cpp-client:testCppClient`                                                                                                                           |
 | `manylinux2014_x86_64`, `fedora`, `ubi-minimal` |                                                                                                                                                                | `:py-client-ticking:testPyClientTicking`                                                                                                              |
-| `server-base`, `slim-base`                | Regenerate the server requirements.txt files (see [docker-server](#docker-server))                                                                                  | `:Integrations:test-py-deephaven`, `:py-embedded-server:testEmbeddedServer`, `:py-client:testPyClient`, `:docker-server-slim:buildDocker-server-slim` |
+| `server-base`                             | Regenerate the server requirements.txt files (see [docker-server](#docker-server))                                                                                  | `:Integrations:test-py-deephaven`, `:py-embedded-server:testEmbeddedServer`, `:py-client:testPyClient`, `:docker-server:buildDocker-server-netty`, `:docker-runtime-base:buildDocker` |
+| `slim-base`                               |                                                                                                                                                                      | `:docker-server-slim:buildDocker-server-slim`                                                                                                         |
 | `selenium`                                | Keep in lockstep with `selenium` in `gradle/libs.versions.toml`                                                                                                      | `:web-client-api:gwtIntegrationTest`                                                                                                                  |
 | `rustfs`                                  | Update the `# <version>` comment                                                                                                                                     | `:extensions-s3:testOutOfBand`, `:extensions-parquet-table:testOutOfBand`, `:extensions-iceberg-s3:testOutOfBand`                                     |
 
