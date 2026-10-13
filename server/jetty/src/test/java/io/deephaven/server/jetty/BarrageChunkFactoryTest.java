@@ -181,6 +181,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class BarrageChunkFactoryTest {
@@ -3914,6 +3915,85 @@ public class BarrageChunkFactoryTest {
                         assertEquals("Value mismatch at row " + i, (long) logicalNanos[i], decodedTs.get(i));
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * Uploads a run-end encoded nanosecond Timestamp with a non-UTC time zone from stock Arrow via DoPut, and confirms
+     * DH decodes it into a {@link ZonedDateTime} column holding the original instants in the field's time zone. The
+     * time zone is on the REE {@code values} child rather than the column's top-level field.
+     */
+    @Test
+    public void testRunEndEncodedTimestampZoneInterop() throws Exception {
+        // a zone that is unlikely to be the system default, which is what a lost time zone falls back to
+        final ZoneId zone = ZoneId.of("Asia/Kathmandu");
+        final long t0 = 1_700_000_000_000_000_000L;
+        final Long[] runValues = {t0, null, t0 + 1_000, t0};
+        final int[] runEnds = {3, 5, 6, 8};
+        final int numRuns = runValues.length;
+        final int numRows = runEnds[numRuns - 1];
+
+        final Field runEndsField = new Field("run_ends",
+                new FieldType(false, new ArrowType.Int(32, true), null, null), Collections.emptyList());
+        final Field valuesField = new Field("values",
+                FieldType.nullable(new ArrowType.Timestamp(TimeUnit.NANOSECOND, zone.getId())),
+                Collections.emptyList());
+        final Field reeField = new Field(COLUMN_NAME,
+                new FieldType(true, ArrowType.RunEndEncoded.INSTANCE, null, null),
+                Arrays.asList(runEndsField, valuesField));
+        final Schema uploadSchema = new Schema(Collections.singletonList(reeField));
+
+        final int rawTicket = nextTicket++;
+        try (final VectorSchemaRoot source = VectorSchemaRoot.create(uploadSchema, allocator)) {
+            source.allocateNew();
+            final RunEndEncodedVector reeVec = (RunEndEncodedVector) source.getVector(0);
+            final IntVector runEndsVec = (IntVector) reeVec.getRunEndsVector();
+            final TimeStampNanoTZVector valuesVec = (TimeStampNanoTZVector) reeVec.getValuesVector();
+            for (int r = 0; r < numRuns; ++r) {
+                runEndsVec.setSafe(r, runEnds[r]);
+                if (runValues[r] == null) {
+                    valuesVec.setNull(r);
+                } else {
+                    valuesVec.setSafe(r, runValues[r]);
+                }
+            }
+            runEndsVec.setValueCount(numRuns);
+            valuesVec.setValueCount(numRuns);
+            reeVec.setValueCount(numRows);
+            source.setRowCount(numRows);
+
+            final FlightDescriptor descriptor = FlightDescriptor.path("export", Integer.toString(rawTicket));
+            final FlightClient.ClientStreamListener putStream =
+                    flightClient.startPut(descriptor, source, new AsyncPutListener());
+            putStream.putNext();
+            putStream.completed();
+            putStream.getResult();
+        }
+
+        final CompletableFuture<Table> rawFuture = new CompletableFuture<>();
+        final SessionState.ExportObject<Table> rawExport = currentSession.getExport(rawTicket);
+        currentSession.nonExport()
+                .onErrorHandler(e -> rawFuture.cancel(true))
+                .require(rawExport)
+                .submit(() -> rawFuture.complete(rawExport.get()));
+        final Table uploadedTable = rawFuture.get();
+
+        assertEquals(numRows, uploadedTable.size());
+        assertEquals(ZonedDateTime.class, uploadedTable.getColumnSource(COLUMN_NAME).getType());
+        final ColumnSource<?> src = uploadedTable.getColumnSource(COLUMN_NAME);
+        int run = 0;
+        for (int i = 0; i < numRows; ++i) {
+            if (i == runEnds[run]) {
+                ++run;
+            }
+            final ZonedDateTime value = (ZonedDateTime) src.get(i);
+            if (runValues[run] == null) {
+                assertNull("Expected null at row " + i, value);
+            } else {
+                assertNotNull("Unexpected null at row " + i, value);
+                assertEquals("Value mismatch at row " + i, (long) runValues[run], DateTimeUtils.epochNanos(value));
+                assertEquals("Zone mismatch at row " + i, zone, value.getZone());
             }
         }
     }
