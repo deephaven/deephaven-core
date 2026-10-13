@@ -5,21 +5,21 @@ title: Query Parallelization
 Modern computers have multiple processors (called "cores") that can work simultaneously. **Parallelization** splits a calculation into parts and runs those parts on different cores at the same time. Deephaven parallelizes queries automatically, which makes them faster, although the actual speedup depends on the workload and scheduling overhead, not just the number of cores.
 
 > [!TIP]
-> **Most queries benefit from parallelization automatically.** You don't need to do anything special. This guide explains how parallelization works and covers the uncommon situations where you need to disable it.
+> **Most queries benefit from parallelization automatically.** You don't need to do anything special. This guide explains how parallelization works and covers the uncommon situations where you need to force a formula to run serially.
 
 ## How parallelization works
 
 Deephaven distributes work across cores in three ways:
 
-1. **Concurrent table updates**: When multiple tables depend on the same live source, Deephaven's update graph can update them at the same time on different cores as new data arrives.
-2. **Concurrent row calculations**: When computing values for a single table, Deephaven divides the rows among cores so each core handles a portion.
+1. **Concurrent table updates**: When multiple tables depend on the same live source, Deephaven's [update graph](../../conceptual/dag.md) can update them at the same time on different cores as new data arrives. A live source is a table that changes as new rows arrive, and the update graph is the dependency graph that decides which tables recompute when data changes.
+2. **Concurrent row calculations**: When a column has at least about four million rows, Deephaven divides its rows among cores so each core handles a portion.
 3. **Concurrent column calculations**: When you compute multiple columns in the same operation, Deephaven can calculate independent columns simultaneously.
 
-The examples on this page use small tables so you can read the output. Deephaven only splits one column's rows across cores once there are a few million rows to process, but separate tables and separate columns can run at the same time at any size.
+The examples on this page use small tables so you can read the output. Deephaven only splits one column's rows across cores once there are at least about four million rows to process, but separate tables and separate columns can run at the same time at any size.
 
 ### Concurrent table updates
 
-When one table feeds into several downstream tables, Deephaven's update graph can update those downstream tables concurrently as new data arrives. In this example, `trades` feeds into three separate tables using [`where`](../../reference/table-operations/filter/where.md), [`agg_by`](../../reference/table-operations/group-and-aggregate/aggBy.md), and [`tail`](../../reference/table-operations/filter/tail.md):
+When one table feeds into several downstream tables, Deephaven's [update graph](../../conceptual/dag.md) can update those downstream tables concurrently as new data arrives. In this example, `trades` feeds into three separate tables using [`where`](../../reference/table-operations/filter/where.md), [`agg_by`](../../reference/table-operations/group-and-aggregate/aggBy.md), and [`tail`](../../reference/table-operations/filter/tail.md):
 
 ```python test-set=parallel ticking-table order=null
 from deephaven import time_table, agg
@@ -39,11 +39,11 @@ by_symbol = trades.agg_by([agg.sum_("TotalVolume = Volume")], "Symbol")
 recent = trades.tail(100)
 ```
 
-When new data arrives in `trades`, Deephaven's update graph makes `high_value`, `by_symbol`, and `recent` eligible to update concurrently.
+When new data arrives in `trades`, Deephaven's [update graph](../../conceptual/dag.md) makes `high_value`, `by_symbol`, and `recent` eligible to update concurrently.
 
 ### Concurrent row calculations
 
-Within a single table, Deephaven splits the data into chunks and processes the chunks in parallel:
+When computing values within a single table, Deephaven divides the rows among available cores:
 
 ```python test-set=parallel order=large_table
 from deephaven import empty_table
@@ -53,7 +53,7 @@ large_table = empty_table(100).update(
 )
 ```
 
-With tens of millions of rows and four cores, Deephaven would divide each column's rows into four groups and compute them at the same time, so the work finishes sooner than on one core.
+Despite its name, `large_table` has only 100 rows so you can read the output. That is far below the threshold, so Deephaven computes each column on one core. With tens of millions of rows and four cores, Deephaven divides each column's rows into four groups and computes them at the same time, so the work finishes sooner than on one core.
 
 ### Concurrent column calculations
 
@@ -67,7 +67,7 @@ source = empty_table(10).update(["A = i * 2", "B = i + 10"])
 
 Since `A` and `B` don't depend on each other, Deephaven can compute them on different cores simultaneously.
 
-## When it works
+## When parallelization is safe
 
 Parallelization produces correct results when each row can be computed independently. This means the formula for row 50 doesn't need to know anything about row 49 or row 51. It only uses values from its own row.
 
@@ -127,14 +127,16 @@ result = source.update(
 )
 ```
 
-All of these examples share the same property: each row's result depends only on values in that same row. It doesn't matter whether row 50 is computed before or after row 49, or whether they're computed on the same core or different cores. The results are identical either way.
+All of these examples share the same property: each row's result depends only on values in that same row. It doesn't matter whether Deephaven computes row 50 before or after row 49, on the same core or a different one. The results are identical either way.
 
-## When it breaks
+## When parallelization gives wrong results
 
-Parallelization can produce incorrect results when a row's calculation changes shared state or depends on the order in which rows are processed. Two common cases:
+Parallelization can produce incorrect results when a row's calculation changes shared state or depends on the order in which Deephaven processes rows. The hazard can arise at each of the three levels above: rows within one column, independent columns, and downstream tables can all run at the same time. Two common cases:
 
 - **Shared state**: The formula modifies a variable that other rows use, or reads one that other rows modify. When multiple cores access the same variable simultaneously, they can overwrite each other's changes.
-- **Row ordering**: The formula assumes rows are processed in a specific order (e.g., row 1 before row 2). With parallelization, row 2 might be processed before row 1, or both might be processed at the same time.
+- **Row ordering**: The formula assumes Deephaven processes rows in a specific order (e.g., row 1 before row 2). With parallelization, Deephaven might process row 2 before row 1, or process both at the same time.
+
+In Python, whether the counter example below goes wrong depends on your Python build. The standard Python build has a global interpreter lock (GIL) that lets only one thread run Python code at a time. A free-threaded Python build does not have the GIL, so several threads can run Python code at the same time. See [Python formulas and free-threading](../../conceptual/query-engine/parallelization.md#python-formulas-and-free-threading). On a standard build, this example does not produce wrong IDs.
 
 ### Example: a broken counter
 
@@ -152,11 +154,11 @@ def get_next_id() -> int:
     return counter
 
 
-# INCORRECT: parallel execution corrupts the counter
+# INCORRECT on a free-threaded Python build: parallel execution can corrupt the counter
 result = empty_table(5_000_000).update("ID = get_next_id()")
 ```
 
-The intent is for each row to get a unique ID: 1, 2, 3, and so on. On a free-threaded Python build with a table of millions of rows, Deephaven can split this column across cores, so several cores can call `get_next_id` at the same time. This doesn't throw an error. Instead, it silently produces wrong values like:
+The intent is for each row to get a unique ID: 1, 2, 3, and so on. On a free-threaded Python build with a table of at least about four million rows, Deephaven can split this column across cores, so several cores can call `get_next_id` at the same time. This doesn't throw an error. Instead, it can silently produce wrong values. The table below is written out by hand to show one possible result. Your values will differ:
 
 | ID |
 | -- |
@@ -168,11 +170,11 @@ The intent is for each row to get a unique ID: 1, 2, 3, and so on. On a free-thr
 | 5  |
 | 7  |
 
-Two cores might simultaneously read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers.
+On a free-threaded build, two cores might simultaneously read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers. On a standard Python build, Deephaven doesn't split a Python-backed column across cores, so this single column doesn't race. The [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method guarantees sequential, in-order evaluation on any build.
 
 ### The fix: force sequential processing with `with_serial`
 
-The [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method tells Deephaven to process this formula serially. The formula never runs concurrently with itself, and its rows are evaluated one at a time, in order:
+The [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method tells Deephaven to process this formula serially: Deephaven evaluates its rows one at a time, in order:
 
 ```python test-set=serial order=result
 from deephaven import empty_table
@@ -193,17 +195,23 @@ result = empty_table(100).update(col)
 ```
 
 > [!NOTE]
-> With only 100 rows, this example wouldn't show the race even without [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial). Use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) whenever one formula depends on shared state or row order, regardless of table size. Parallelization isn't the only way execution order can vary, and [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) is what guarantees this formula's rows are processed one at a time, in order.
+> With only 100 rows, this example wouldn't show the race condition (where the result depends on which core runs first) even without [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial). Use `with_serial` whenever one formula depends on shared state or row order, regardless of table size. Parallelization isn't the only way execution order can vary, and `with_serial` is what guarantees that Deephaven processes this formula's rows one at a time, in order.
 
-[`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) keeps one column from running concurrently with itself. If several columns use the same state, you also need [barriers](../../conceptual/query-engine/parallelization.md#barriers). If several tables use it, [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) and barriers can't coordinate them, so make the shared code itself thread-safe (for example, protect it with a lock). [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) works with [`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md). Filters have their own [`with_serial`](../../reference/query-language/types/Filter.md#with_serial) for [`where`](../../reference/table-operations/filter/where.md). [`view`](../../reference/table-operations/select/view.md) and [`update_view`](../../reference/table-operations/select/update-view.md) compute values when they're read, so they don't support it.
+[`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) covers some cases and not others:
+
+- **One column**: It keeps one column from running concurrently with itself.
+- **Several columns that share state**: Also use [barriers](../../conceptual/query-engine/parallelization.md#barriers).
+- **Several tables that share state**: Neither tool can coordinate them. Make the shared code itself thread-safe (safe for several threads to run at the same time), for example by protecting it with a lock.
+- **Operations**: It works with [`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md). Filters have their own [`with_serial`](../../reference/query-language/types/Filter.md#with_serial) for [`where`](../../reference/table-operations/filter/where.md). [`view`](../../reference/table-operations/select/view.md) and [`update_view`](../../reference/table-operations/select/update-view.md) compute values when they're read, so they don't support it.
 
 **Trade-off**: Sequential processing forgoes the speedup of running rows concurrently across cores, so it's slower than parallel processing. Only use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) when your formula requires it for correctness.
 
 ## Key takeaways
 
 - Deephaven assumes formulas are safe to run in parallel by default. This is fast but requires stateless code.
-- Shared state or row-order dependencies cause silent errors with parallelization.
-- Use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) when one formula updates shared state or needs its rows processed in order. When several columns share state, you also need barriers; when several tables do, the shared code must be thread-safe.
+- Shared state or row-order dependencies can cause silent errors with parallelization. In Python, a Python-backed formula races only on a free-threaded build.
+- Use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) when one formula updates shared state or needs Deephaven to process its rows in order.
+- When several columns share state, you also need [barriers](../../conceptual/query-engine/parallelization.md#barriers). When several tables share state, the shared code must be thread-safe.
 
 Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically, with no extra code required.
 
