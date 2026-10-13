@@ -92,6 +92,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install Graphviz
+        # tests/test_perfmon.py renders an SVG through graphviz-java. Without the dot binary it needs the GraalJS jars,
+        # which are on the Integrations test classpath but not in the deephaven-server wheel.
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends graphviz
+
       - name: Start Kafka and Postgres
         # The Kafka and database tests reach these services by the host names "redpanda" and "postgres".
         run: |
