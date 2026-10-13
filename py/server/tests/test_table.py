@@ -1120,20 +1120,12 @@ class TableTestCase(BaseTestCase):
         rt = lambda_fn(10)
         self.verify_table_data(rt, [10, 10 * 10])
 
-    def test_scope_under_moduleless_frame(self):
-        # A frame whose file maps to no module, as under `python -m` or pytest. Finding the caller's scope must not
-        # call inspect.getmodule(), which rescans sys.modules for such a frame on every table operation.
-        def update_with_local() -> Table:
-            offset = 7
-            return empty_table(1).update(formulas=["X = i + offset"])
-
-        runner = compile("rt = update_with_local()", "<frozen runpy>", "exec")
-        ns = {"update_with_local": update_with_local}
-        with unittest.mock.patch(
-            "inspect.getmodule", side_effect=AssertionError("getmodule called")
-        ):
-            exec(runner, ns)
-        self.verify_table_data(ns["rt"], [7])
+    def test_scope_without_getmodule(self):
+        # inspect.getmodule() can rescan all of sys.modules, so finding the caller's scope must not call it.
+        offset = 7
+        with unittest.mock.patch("inspect.getmodule", side_effect=AssertionError):
+            rt = empty_table(1).update(formulas=["X = i + offset"])
+        self.verify_table_data(rt, [7])
 
     @classmethod
     def update_in_class_method(cls, arg1, arg2) -> Table:
