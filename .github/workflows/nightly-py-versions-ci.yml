@@ -5,7 +5,7 @@ name: Nightly Python Versions CI
 # each version needs only Python, a JDK and that wheel. The rest installs from source.
 #
 # Floor: python_requires in py/server/setup.py. Ceiling: the newest Python that every dependency has a wheel for
-# (jpy has none for 3.15 yet).
+# (jpy has none for 3.15 yet). The free-threaded 3.14t build runs with the GIL kept off.
 
 on:
   schedule:
@@ -61,7 +61,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
+        # 3.14t is the free-threaded build. 3.13t is left out: grpcio and numba have no 3.13t wheels.
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14', '3.14t']
     runs-on: ubuntu-24.04
     env:
       DEEPHAVEN_TEST_EMBEDDED: 'true'
@@ -129,6 +130,11 @@ jobs:
           export DEEPHAVEN_DATA_DIR="$RUNNER_TEMP/dh-data"
           export DEEPHAVEN_CACHE_DIR="$RUNNER_TEMP/dh-cache"
           mkdir -p "$DEEPHAVEN_DATA_DIR" "$DEEPHAVEN_CACHE_DIR"
+          if [[ "${{ matrix.python-version }}" == *t ]]; then
+            # grpcio, which pydeephaven and test_barrage use, has not declared itself free-thread safe. Importing it
+            # turns the GIL back on for the rest of the run, unless PYTHON_GIL=0 keeps it off.
+            export PYTHON_GIL=0
+          fi
           python -m xmlrunner discover -s tests -t . -v -o "$GITHUB_WORKSPACE/build/test-results/py${{ matrix.python-version }}"
 
       - name: Upload Test Results
