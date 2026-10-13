@@ -301,7 +301,8 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
 
         if (typeId == ArrowType.ArrowTypeID.RunEndEncoded) {
             // noinspection unchecked
-            return (ChunkReader<T>) makeRunEndEncodedChunkReader(field, options, registry, dictValuesReaders);
+            return (ChunkReader<T>) makeRunEndEncodedChunkReader(typeInfo, field, options, registry,
+                    dictValuesReaders);
         }
 
         // TODO (DH-18679): struct support
@@ -408,12 +409,16 @@ public class DefaultChunkReaderFactory implements ChunkReader.Factory {
     }
 
     private RunEndEncodedChunkReader makeRunEndEncodedChunkReader(
+            @NotNull final BarrageTypeInfo<Field> typeInfo,
             @NotNull final Field field,
             @NotNull final BarrageOptions options,
             @Nullable final DictionaryReaderRegistry registry,
             @Nullable final Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReaders) {
         final BarrageTypeInfo<Field> runEndsTypeInfo = BarrageUtil.getDefaultType(field.getChildren().get(0));
-        final BarrageTypeInfo<Field> valuesTypeInfo = BarrageUtil.getDefaultType(field.getChildren().get(1));
+        // Like the writer, read the values child as the requested Deephaven type, which may be a reinterpreted type
+        // (e.g. long for an Instant column), and expand runs into that chunk type rather than the field's default type.
+        final BarrageTypeInfo<Field> valuesTypeInfo =
+                new BarrageTypeInfo<>(typeInfo.type(), typeInfo.componentType(), field.getChildren().get(1));
 
         // run_ends is a plain integer child; the values child may be dictionary-encoded (REE<Dictionary<...>>), so it
         // must receive the registry and values-reader collector.

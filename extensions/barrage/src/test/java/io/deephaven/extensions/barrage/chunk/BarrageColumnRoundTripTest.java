@@ -1931,6 +1931,103 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    /**
+     * A ZonedDateTime source that cannot be reinterpreted to long delivers an ObjectChunk to a run-end encoded writer
+     * built for long. The values must be converted to epoch nanos before runs are detected, so that values at the same
+     * instant in different zones extend one run, both when the run values are written plainly and when they are
+     * dictionary encoded.
+     */
+    @Test
+    public void testRunEndEncodedZonedDateTimeObjectSerialization() throws IOException {
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            testRunEndEncodedZonedDateTimeObjects(false, opts);
+            testRunEndEncodedZonedDateTimeObjects(true, opts);
+        }
+    }
+
+    private static void testRunEndEncodedZonedDateTimeObjects(
+            final boolean dictionaryEncoded,
+            final BarrageSubscriptionOptions opts) throws IOException {
+        final long t0 = 1_700_000_000_000_000_000L;
+        final long t1 = t0 + 1_000_000_000L;
+        final long t2 = t0 + 2_000_000_000L;
+        final ZonedDateTime[] values = {
+                DateTimeUtils.epochNanosToZonedDateTime(t0, ZoneId.of("America/New_York")),
+                DateTimeUtils.epochNanosToZonedDateTime(t0, ZoneId.of("UTC")),
+                DateTimeUtils.epochNanosToZonedDateTime(t1, ZoneId.of("Asia/Tokyo")),
+                null,
+                null,
+                DateTimeUtils.epochNanosToZonedDateTime(t0, ZoneId.of("Europe/London")),
+                DateTimeUtils.epochNanosToZonedDateTime(t2, ZoneId.of("UTC")),
+                DateTimeUtils.epochNanosToZonedDateTime(t1, ZoneId.of("America/New_York")),
+        };
+        final int numRows = values.length;
+        // the first two rows hold one instant, as do the two nulls
+        final int numRuns = 6;
+        final int numDistinctInstants = 3;
+
+        // Like production callers, build the writer and reader for the reinterpreted wire type (ZonedDateTime -> long)
+        // while the schema field still describes the logical type.
+        final Field writerField = buildRunEndEncodedField(ZonedDateTime.class,
+                dictionaryEncoded ? new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)) : null);
+        final ChunkWriter<Chunk<Values>> writer =
+                DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(long.class, null, writerField));
+        final DictionaryWriterRegistry writerRegistry = new DictionaryWriterRegistryImpl();
+        final DictionaryReaderRegistry readerRegistry = new DictionaryReaderRegistry();
+
+        final WritableObjectChunk<ZonedDateTime, Values> work = WritableObjectChunk.makeWritableChunk(numRows);
+        for (int i = 0; i < numRows; ++i) {
+            work.set(i, values[i]);
+        }
+        // the context owns work and closes it
+        try (final WritableLongChunk<Values> expected = WritableLongChunk.makeWritableChunk(numRows);
+                final ChunkWriter.Context ctx = writer.makeContext(work, 0);
+                final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+            for (int i = 0; i < numRows; ++i) {
+                expected.set(i, DateTimeUtils.epochNanos(values[i]));
+            }
+
+            final LongStream.Builder bufBld = LongStream.builder();
+            final List<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+            try (final ChunkWriter.DrainableColumn col = writer.getInputStream(ctx, null, opts, writerRegistry)) {
+                col.visitFieldNodes((n, nc) -> fieldNodes.add(new ChunkWriter.FieldNodeInfo(n, nc)));
+                col.visitBuffers(bufBld::add);
+                col.drainTo(baos);
+            }
+            final long[] buffers = bufBld.build().toArray();
+            // field nodes are the REE parent, then its run_ends and values children
+            Assert.eq(numRuns, "numRuns", fieldNodes.get(1).numElements, "run_ends length");
+
+            if (dictionaryEncoded) {
+                Assert.eq(1, "1", writerRegistry.entries().size(), "writerRegistry.entries().size()");
+                for (final DictionaryWriterRegistry.Entry entry : writerRegistry.entries()) {
+                    // With Deephaven nulls, the null sentinel is a real dictionary entry.
+                    final int expectedDictSize = numDistinctInstants + (opts.useDeephavenNulls() ? 1 : 0);
+                    Assert.eq(expectedDictSize, "expectedDictSize", entry.state.totalSize(), "totalSize()");
+                    try (final WritableChunk<Values> deltaChunk = entry.state.buildDeltaChunk()) {
+                        readerRegistry.update(entry.state.getDictId(), deltaChunk, false);
+                    }
+                    entry.state.resetDelta();
+                }
+            }
+
+            @SuppressWarnings("unchecked")
+            final ChunkReader<WritableChunk<Values>> reader =
+                    (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
+                            .newReader(BarrageTypeInfo.make(long.class, null, writerField), opts, readerRegistry,
+                                    null);
+            try (final WritableChunk<Values> rt = reader.readChunk(
+                    fieldNodes.iterator(), Arrays.stream(buffers).iterator(),
+                    new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size())),
+                    null, 0, numRows)) {
+                Assert.eq(numRows, "numRows", rt.size(), "rt.size()");
+                primitiveIdentityValidate(expected, rt, null, 0);
+            }
+        } finally {
+            readerRegistry.close();
+        }
+    }
+
     @Test
     public void testDictionaryEncodedBooleanSerialization() throws IOException {
         for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
@@ -2531,6 +2628,35 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
      * Builds a flatbuf Arrow {@link Field} whose value type matches {@code valueType} but carries a
      * {@link DictionaryEncoding} with the given index bit width and dictionary id.
      */
+    /**
+     * Builds a run-end encoded field with Int32 run ends, whose values child is the standard field for
+     * {@code valueType}, dictionary encoded when {@code valuesEncoding} is not null.
+     */
+    private static Field buildRunEndEncodedField(
+            final Class<?> valueType,
+            @Nullable final DictionaryEncoding valuesEncoding) {
+        final ByteString stdSchemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
+                TableDefinition.of(ColumnDefinition.of("col", Type.find(valueType))),
+                Collections.emptyMap(), false);
+        final Schema stdSchema = SchemaHelper.flatbufSchema(stdSchemaBytes.asReadOnlyByteBuffer());
+        final org.apache.arrow.vector.types.pojo.Field stdPojoField =
+                org.apache.arrow.vector.types.pojo.Field.convertField(stdSchema.fields(0));
+        final org.apache.arrow.vector.types.pojo.Field runEndsField =
+                new org.apache.arrow.vector.types.pojo.Field("run_ends",
+                        new FieldType(false, new ArrowType.Int(32, true), null, null), Collections.emptyList());
+        final org.apache.arrow.vector.types.pojo.Field valuesField =
+                new org.apache.arrow.vector.types.pojo.Field("values",
+                        new FieldType(stdPojoField.isNullable(), stdPojoField.getType(), valuesEncoding,
+                                stdPojoField.getMetadata()),
+                        stdPojoField.getChildren());
+        final org.apache.arrow.vector.types.pojo.Schema pojoSchema =
+                new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
+                        new org.apache.arrow.vector.types.pojo.Field("col",
+                                new FieldType(true, ArrowType.RunEndEncoded.INSTANCE, null, null),
+                                List.of(runEndsField, valuesField))));
+        return SchemaHelper.flatbufSchema(ByteBuffer.wrap(pojoSchema.serializeAsMessage())).fields(0);
+    }
+
     private static Field buildDictionaryField(
             final Class<?> valueType,
             final int indexBitWidth,

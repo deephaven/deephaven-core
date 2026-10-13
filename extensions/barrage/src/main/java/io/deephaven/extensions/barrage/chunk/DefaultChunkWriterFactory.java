@@ -48,6 +48,7 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.DataOutput;
 import java.io.IOException;
@@ -358,8 +359,11 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         final ChunkWriter<IntChunk<Values>> runEndsWriter = intFromInt(runEndsTypeInfo);
         final ChunkWriter<Chunk<Values>> valuesWriter = newWriterPojo(effectiveValuesTypeInfo);
 
+        // Runs are detected on the source before the values writer sees them, so convert the source first; a
+        // dictionary-encoded values child then receives run values that are already of its chunk type.
         return new RunEndEncodedChunkWriter(runEndsWriter, valuesWriter,
-                runEndsTypeInfo.chunkType(), effectiveValuesTypeInfo.chunkType(), field.isNullable());
+                runEndsTypeInfo.chunkType(), effectiveValuesTypeInfo.chunkType(),
+                sourceTransformFor(effectiveValuesTypeInfo), field.isNullable());
     }
 
     private UnionChunkWriter<?> makeUnionChunkWriter(
@@ -419,17 +423,26 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
         // Deephaven type rather than the Arrow field: callers reinterpret some types before building writers (e.g.
         // Instant and ZonedDateTime to long), so the field's default type would not match the chunks we receive.
         final ChunkType valuesChunkType = valuesTypeInfo.chunkType();
-        // TODO (https://github.com/deephaven/deephaven-core/issues/5241): Inconsistent handling of ZonedDateTime
-        // A ZonedDateTime source that cannot be reinterpreted to long delivers an ObjectChunk to a writer built for
-        // long (see timestampFromLong); key the dictionary by epoch nanos, which is what the values writer expects.
-        final UnaryOperator<Chunk<Values>> sourceTransform =
-                valuesChunkType == ChunkType.Long && field.getType().getTypeID() == ArrowType.ArrowTypeID.Timestamp
-                        ? DefaultChunkWriterFactory::zonedDateTimesToEpochNanos
-                        : null;
 
         return new DictionaryChunkWriter(
-                dictEncoding.getId(), indexWriter, valuesWriter, indexBitWidth, valuesChunkType, sourceTransform,
-                field.isNullable());
+                dictEncoding.getId(), indexWriter, valuesWriter, indexBitWidth, valuesChunkType,
+                sourceTransformFor(valuesTypeInfo), field.isNullable());
+    }
+
+    /**
+     * Returns the transform that an encoding writer, which reads source values itself before handing them to a values
+     * writer for {@code valuesTypeInfo}, must apply to its source chunks; {@code null} when sources always arrive as
+     * {@code valuesTypeInfo}'s chunk type.
+     */
+    @Nullable
+    private static UnaryOperator<Chunk<Values>> sourceTransformFor(final BarrageTypeInfo<Field> valuesTypeInfo) {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/5241): Inconsistent handling of ZonedDateTime
+        // A ZonedDateTime source that cannot be reinterpreted to long delivers an ObjectChunk to a writer built for
+        // long (see timestampFromLong); encode epoch nanos, which is what the values writer expects.
+        return valuesTypeInfo.chunkType() == ChunkType.Long
+                && valuesTypeInfo.arrowField().getType().getTypeID() == ArrowType.ArrowTypeID.Timestamp
+                        ? DefaultChunkWriterFactory::zonedDateTimesToEpochNanos
+                        : null;
     }
 
     private static Chunk<Values> zonedDateTimesToEpochNanos(final Chunk<Values> source) {
