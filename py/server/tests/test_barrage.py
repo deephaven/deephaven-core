@@ -3,6 +3,7 @@
 #
 import os
 import subprocess
+import sys
 import time
 import unittest
 
@@ -20,17 +21,34 @@ class BarrageTestCase(BaseTestCase):
         super().setUpClass()
         # the cacheDir env var is required to avoid a problem when the same cache dir is used by two server instances,
         # in which case the later server instance will wipe out the cache dir of the earlier server instance.
-        env = {
-            "START_OPTS": "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler -Ddeephaven.cacheDir=/cache/tmp"
-        }
-        env.update(dict(os.environ))
+        cache_dir = os.environ.get("DEEPHAVEN_CACHE_DIR", "/cache")
+        start_opts = f"-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler -Ddeephaven.cacheDir={cache_dir}/tmp"
+        if os.path.exists("/opt/deephaven/server/bin/start"):
+            cmd = ["/opt/deephaven/server/bin/start"]
+            env = {"START_OPTS": start_opts}
+            env.update(dict(os.environ))
+        else:
+            # Outside the server Docker image, start the server from the installed deephaven-server wheel. Its
+            # "server" command waits on stdin, so the stdin pipe below keeps it running until it is killed.
+            cmd = [
+                sys.executable,
+                "-c",
+                "from deephaven_server.cli import cli; cli()",
+                "server",
+                "--port",
+                "10000",
+                "--no-browser",
+                "--jvm-args",
+                start_opts,
+            ]
+            env = dict(os.environ)
         cls.server_proc = subprocess.Popen(
-            ["/opt/deephaven/server/bin/start"],
+            cmd,
             shell=False,
             env=env,
             stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
         cls.ensure_server_running()
 

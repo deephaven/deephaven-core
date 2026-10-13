@@ -1,0 +1,137 @@
+name: Nightly Python Versions CI
+
+# Runs the py/server test suite on every supported Python version. The Docker-based suite in Integrations runs only on
+# the Python baked into the server image. This one runs the same tests on the embedded server from the deephaven-server
+# wheel, so each version needs only Python, a JDK and the wheels.
+#
+# Floor: python_requires in py/server/setup.py. Ceiling: the newest Python that every dependency has a wheel for
+# (jpy has none for 3.15 yet).
+
+on:
+  schedule:
+    # 3AM EST == 7AM UTC, an hour after Nightly Check CI
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+  push:
+    branches: [ 'nightly/**', 'py-versions/**' ]
+
+jobs:
+  build:
+    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
+
+      - name: Setup JDKs
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: 'temurin'
+          java-version: |
+            21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Setup gradle properties
+        run: |
+          .github/scripts/gradle-properties.sh 21 >> gradle.properties
+          cat gradle.properties
+
+      - name: Build wheels and test classpath
+        run: ./gradlew --scan :py-server:assemble :py-embedded-server:assemble :Integrations:syncPyTestClasspath
+
+      - name: Upload wheels and test classpath
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: py-versions-build
+          path: |
+            py/server/build/wheel/*.whl
+            py/embedded-server/build/wheel/*.whl
+            Integrations/build/py-test-classpath/
+          retention-days: 1
+
+  test:
+    name: test (Python ${{ matrix.python-version }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
+    runs-on: ubuntu-24.04
+    env:
+      DEEPHAVEN_TEST_EMBEDDED: 'true'
+      DEEPHAVEN_PROPFILE: dh-defaults.prop
+      DEEPHAVEN_MAXMEM: 2G
+      # tests/test_time.py expects the JVM default time zone to be named "Etc/UTC", as it is in the Docker image.
+      TZ: Etc/UTC
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
+
+      - name: Download wheels and test classpath
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: py-versions-build
+
+      - name: Setup JDKs
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: 'temurin'
+          java-version: |
+            21
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Start Kafka and Postgres
+        # The Kafka and database tests reach these services by the host names "redpanda" and "postgres".
+        run: |
+          echo "127.0.0.1 redpanda postgres" | sudo tee -a /etc/hosts
+          docker compose -f Integrations/docker-compose.yml up -d --wait
+
+      - name: Install wheels and test dependencies
+        # pip picks older numpy, pandas, pyarrow and numba releases on the older Pythons, since the newest ones dropped
+        # them. So those runs test different dependency versions.
+        run: |
+          # py/client/setup.py reads its version from DEEPHAVEN_VERSION. Match the server wheel's version.
+          export DEEPHAVEN_VERSION="$(basename py/server/build/wheel/deephaven_core-*.whl | cut -d- -f2)"
+          python -m pip install --upgrade pip
+          python -m pip install \
+            py/server/build/wheel/*.whl \
+            py/embedded-server/build/wheel/*.whl \
+            ./py/client \
+            unittest-xml-reporting numba adbc-driver-manager adbc-driver-postgresql connectorx
+          python -m pip list
+
+      - name: Run tests
+        working-directory: py/server
+        run: |
+          export DEEPHAVEN_CLASSPATH="$GITHUB_WORKSPACE/Integrations/build/py-test-classpath/*:$GITHUB_WORKSPACE/Integrations/build/py-test-classpath"
+          export DEEPHAVEN_DATA_DIR="$RUNNER_TEMP/dh-data"
+          export DEEPHAVEN_CACHE_DIR="$RUNNER_TEMP/dh-cache"
+          mkdir -p "$DEEPHAVEN_DATA_DIR" "$DEEPHAVEN_CACHE_DIR"
+          python -m xmlrunner discover -s tests -t . -v -o "$GITHUB_WORKSPACE/build/test-results/py${{ matrix.python-version }}"
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: nightly-py-versions-py${{ matrix.python-version }}-ci-results
+          path: build/test-results/**
+
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: nightly-py-versions-py${{ matrix.python-version }}-ci-jvm-err
+          path: |
+            **/*_pid*.log
+            **/core.*
+          if-no-files-found: ignore
