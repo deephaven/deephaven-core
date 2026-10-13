@@ -92,7 +92,7 @@ An in-memory partitioned table.
 
 ## Examples
 
-In the following example, `consume_to_partitioned_table` reads the Kafka topic `orders` into a partitioned table. It uses the JSON format to parse the stream. Since we do not provide `partitions` or `offsets` values, the consumer will include all partitions and start from the first message received after the `consume_to_partitioned_table` call.
+In the following example, `consume_to_partitioned_table` reads the Kafka topic `orders` into a partitioned table. It uses the JSON format to parse the stream. Since the example does not provide `partitions` or `offsets` values, the consumer includes all partitions and starts from its current position without seeking.
 
 ```python docker-config=kafka order=null
 from deephaven import kafka_consumer as kc

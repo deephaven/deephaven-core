@@ -151,8 +151,8 @@ result = kc.consume(
 In the following example, `consume` reads the Kafka topic `share_price` with an additional dictionary set and keys
 ignored.
 
-- `deephaven.partition.column.name` is set to an empty string (`""`), so the result table doesn't include a column for the partition field.
-- `key_spec` is set to `IGNORE`, so the result table doesn't include a column for the Kafka field `key`.
+- `deephaven.partition.column.name` is set to an empty string (`""`), so the result table does not include a column for the partition field.
+- `key_spec` is set to `IGNORE`, so the result table does not include a column for the Kafka field `key`.
 
 ```python skip-test
 from deephaven import kafka_consumer as kc
