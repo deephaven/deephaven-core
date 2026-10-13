@@ -107,6 +107,20 @@ final class MethodPattern extends MemberPattern {
             // override declared there
             return false;
         }
+        try {
+            return signatureOverrides(candidate, method);
+        } catch (TypeNotPresentException | MalformedParameterizedTypeException | GenericSignatureFormatError e) {
+            // a class loads while a type named only in a generic signature is missing or malformed, but that signature
+            // cannot prove an override
+            return false;
+        }
+    }
+
+    /**
+     * Do {@code method}'s parameter and return types override {@code candidate}'s, once the candidate's generic
+     * signature is resolved along the inheritance path?
+     */
+    private static boolean signatureOverrides(final Method candidate, final Method method) {
         final Map<TypeVariable<?>, Class<?>> bindings;
         if (method.isBridge()) {
             // a bridge has the erased signature of the method it overrides, so compare it with the candidate's erasure

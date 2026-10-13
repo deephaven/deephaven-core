@@ -25,7 +25,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class TestMethodListInvocationValidator {
     @Test
@@ -457,6 +459,62 @@ public class TestMethodListInvocationValidator {
         assertPermitted(pattern, OtherPackageProtectedSub.class.getMethod("prot"));
         assertPermitted(pattern, OtherPackageProtectedSub.class.getDeclaredMethod("prot"));
         assertNotPermitted(pattern, OtherPackageProtectedSub.class.getMethod("unrelated"));
+    }
+
+    @Test
+    public void testMissingGenericSignatureTypes() throws Exception {
+        // a class loads and its erased methods are usable while a type named only in a generic signature is missing,
+        // but resolving that signature throws TypeNotPresentException
+        final Class<?> typeArgumentSub = loadWithheld(MissingTypeArgumentSub.class,
+                List.of(MissingTypeArgumentSub.class), MissingTypeArgument.class);
+        Assert.assertThrows(TypeNotPresentException.class, typeArgumentSub::getGenericSuperclass);
+        final Method consume = typeArgumentSub.getMethod("consume", List.class);
+        // the override cannot be proven through the inheritance path, so it does not match its supertype's pattern
+        assertNotPermitted(MissingTypeArgumentBase.class.getName() + " consume(..)", consume);
+        // while its own declaring class still matches without reading any generic signature
+        assertPermitted(MissingTypeArgumentSub.class.getName() + " consume(..)", consume);
+
+        // the candidate's own generic signature is unresolvable
+        final Class<?> returnTypeSub = loadWithheld(MissingReturnTypeSub.class,
+                List.of(MissingReturnTypeBase.class, MissingReturnTypeSub.class), MissingTypeArgument.class);
+        final Method produce = returnTypeSub.getMethod("produce");
+        Assert.assertThrows(TypeNotPresentException.class,
+                () -> returnTypeSub.getSuperclass().getMethod("produce").getGenericReturnType());
+        assertNotPermitted(MissingReturnTypeBase.class.getName() + " produce()", produce);
+        assertPermitted(MissingReturnTypeSub.class.getName() + " produce()", produce);
+    }
+
+    /**
+     * Load {@code type} from a class loader that defines each of {@code defined} itself, cannot load {@code withheld},
+     * and delegates every other class to the test's class loader.
+     */
+    private Class<?> loadWithheld(final Class<?> type, final List<Class<?>> defined, final Class<?> withheld)
+            throws ClassNotFoundException {
+        final Set<String> definedNames = defined.stream().map(Class::getName).collect(Collectors.toSet());
+        return new ClassLoader(getClass().getClassLoader()) {
+            @Override
+            protected Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
+                if (name.equals(withheld.getName())) {
+                    throw new ClassNotFoundException(name);
+                }
+                if (!definedNames.contains(name)) {
+                    return super.loadClass(name, resolve);
+                }
+                synchronized (getClassLoadingLock(name)) {
+                    final Class<?> loaded = findLoadedClass(name);
+                    if (loaded != null) {
+                        return loaded;
+                    }
+                    final String resource = name.replace('.', '/') + ".class";
+                    try (final java.io.InputStream in = getParent().getResourceAsStream(resource)) {
+                        final byte[] bytes = in.readAllBytes();
+                        return defineClass(name, bytes, 0, bytes.length);
+                    } catch (java.io.IOException e) {
+                        throw new ClassNotFoundException(name, e);
+                    }
+                }
+            }
+        }.loadClass(type.getName());
     }
 
     private Class<?> loadInChildLoader(final Class<?> type) throws ClassNotFoundException {
