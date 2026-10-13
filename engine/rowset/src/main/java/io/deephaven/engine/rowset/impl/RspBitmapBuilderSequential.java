@@ -112,18 +112,19 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
                 return;
             }
             flushPendingRange();
+        } else {
+            // Only the first key needs this check; every later one is order checked against a nonnegative key.
+            Assert.geqZero(rowKey, "rowKey");
         }
         pendingStart = pendingEnd = rowKey;
     }
 
     @Override
     public void appendRange(final long rangeFirstRowKey, final long rangeLastRowKey) {
-        if (RspArray.debug) {
-            if (rangeFirstRowKey > rangeLastRowKey) {
-                throw new IllegalArgumentException(
-                        "start (= " + rangeFirstRowKey + ") > end (= " + rangeLastRowKey + ")");
-            }
-        }
+        // Checked on every call: the order check below looks only at the start of the range. Together these also keep
+        // the end nonnegative.
+        Assert.geqZero(rangeFirstRowKey, "rangeFirstRowKey");
+        Assert.leq(rangeFirstRowKey, "rangeFirstRowKey", rangeLastRowKey, "rangeLastRowKey");
         if (pendingStart != -1) {
             if (check && rangeFirstRowKey <= pendingEnd) {
                 throw new IllegalArgumentException(outOfOrderKeyErrorMsg +
@@ -144,6 +145,12 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix) {
         if (ix.ixIsEmpty()) {
             return;
+        }
+        // A negative shift can move the first key below zero; a positive one can carry the last past Long.MAX_VALUE.
+        if (shiftAmount < 0) {
+            Assert.geqZero(ix.ixFirstKey() + shiftAmount, "ix.ixFirstKey() + shiftAmount");
+        } else {
+            Assert.geqZero(ix.ixLastKey() + shiftAmount, "ix.ixLastKey() + shiftAmount");
         }
         if (!(ix instanceof RspBitmap) || rb == null) {
             ix.ixForEachLongRange((final long start, final long end) -> {
@@ -170,6 +177,8 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         if (length == 0) {
             return;
         }
+        // The keys are ordered, so the first one is the least. Once rb exists they go into it unchecked.
+        Assert.geqZero(chunk.get(offset), "chunk.get(offset)");
 
         if (rb != null) {
             appendKeyChunkRb(chunk, offset, length);
