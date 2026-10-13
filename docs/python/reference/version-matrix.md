@@ -8,12 +8,13 @@ This page lists the Python versions, server Python dependencies, Java (JDK) vers
 
 A :white_check_mark: indicates that the Deephaven version supports the Python version, and a blank cell indicates that it does not.
 
-| Deephaven version |     Python 3.8     |     Python 3.9     |    Python 3.10     |    Python 3.11     |    Python 3.12     |    Python 3.13     |
-| ----------------- | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
-| 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| 41.x and later    |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Deephaven version |     Python 3.8     |     Python 3.9     |    Python 3.10     |    Python 3.11     |    Python 3.12     |    Python 3.13     |    Python 3.14     |
+| ----------------- | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
+| 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
+| 41.x and 42.x     |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
+| 43.x and later    |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
-Deephaven tests primarily with Python 3.12.
+Starting with 43.x, Deephaven runs the server's Python tests nightly on Linux x86_64 with each of Python 3.9 through 3.14. Deephaven tested earlier releases primarily with Python 3.12.
 
 Plugins in the [deephaven-plugins](https://github.com/deephaven/deephaven-plugins) repository support Python 3.9 through 3.13, and Deephaven tests them with each of those versions.
 
