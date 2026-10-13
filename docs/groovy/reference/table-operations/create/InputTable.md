@@ -34,7 +34,7 @@ The definition of the new table.
 </Param>
 <Param name="initialTable" type="Table">
 
-The initial Table to copy into the append-only or keyed Input Table.
+The initial `Table` to copy into the append-only or keyed Input Table.
 
 </Param>
 <Param name="keyColumnNames" type="String...">

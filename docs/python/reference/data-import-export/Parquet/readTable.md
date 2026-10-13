@@ -2,7 +2,7 @@
 title: read
 ---
 
-The `read` method will read a single Parquet file, metadata file, or directory with a recognized layout into a table.
+The `read` method reads a single Parquet file, metadata file, or directory with a recognized layout into a table.
 
 ## Syntax
 

@@ -13,9 +13,9 @@ The `InputColumn` class represents a column of data that can be used as input wh
 InputColumn(
     name: str,
     data_type: DType,
-    component_type: DType = None,
+    component_type: Optional[DType] = None,
     column_type: ColumnType = ColumnType.NORMAL,
-    input_data: Any = None,
+    input_data: Optional[Any] = None,
 ) -> InputColumn
 ```
 
@@ -28,13 +28,13 @@ The name of the new column.
 <Param name="data_type" type="DType">
 The column data type.
 </Param>
-<Param name="component_type" type="DType" optional>
+<Param name="component_type" type="Optional[DType]" optional>
 The column component type. The default is `None`.
 </Param>
 <Param name="column_type" type="ColumnType" optional>
 The column type: `ColumnType.NORMAL` or `ColumnType.PARTITIONING`. The default is `ColumnType.NORMAL`.
 </Param>
-<Param name="input_data" type="Any" optional>
+<Param name="input_data" type="Optional[Any]" optional>
 The column values, such as a list, tuple, NumPy ndarray, or pandas Series. The default is `None`, which creates an empty column.
 </Param>
 </ParamTable>
