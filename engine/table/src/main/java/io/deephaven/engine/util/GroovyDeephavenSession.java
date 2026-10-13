@@ -169,6 +169,12 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private DeephavenGroovyShell groovyShell;
 
+    /**
+     * Whether the shell and class cache must be reset before the next evaluation. Stays set until a reset succeeds, so
+     * a failed reset is retried rather than letting a later evaluation run against stale classes.
+     */
+    private boolean resetPending;
+
 
     public static GroovyDeephavenSession of(
             final UpdateGraph updateGraph,
@@ -381,8 +387,12 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         // Cached classes were compiled against the previous evaluation's sources, so they can only be reused while
         // those sources still apply
         if (sourcesChanged) {
+            resetPending = true;
+        }
+        if (resetPending) {
             log.debug().append("Remote sourcing changed for this evaluation. Clearing class cache.").endl();
             resetGroovyShell();
+            resetPending = false;
         }
     }
 

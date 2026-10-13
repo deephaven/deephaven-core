@@ -3,11 +3,13 @@
 //
 package io.deephaven.engine.util;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.remotefilesource.RemoteFileSourceClassLoader;
+import io.deephaven.engine.util.remotefilesource.RemoteFileSourceProvider;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import org.junit.After;
 import org.junit.Before;
@@ -20,13 +22,15 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests that an evaluation requiring a class cache reset fails when the cache cannot be cleared, rather than running
- * against bytecode compiled from sources that no longer apply.
+ * against bytecode compiled from sources that no longer apply, and that the reset is retried on the next evaluation.
  */
 public class TestGroovyClassCacheReset {
 
@@ -49,8 +53,6 @@ public class TestGroovyClassCacheReset {
     @After
     public void teardown() {
         if (session != null) {
-            // Restore access so the session can delete its own cache directory
-            session.classCacheDirectory.setReadable(true);
             session.cleanup();
         }
         LivenessScopeStack.pop(livenessScope);
@@ -59,21 +61,34 @@ public class TestGroovyClassCacheReset {
     }
 
     @Test
-    public void testUnclearableClassCacheFailsTheEvaluation() {
+    public void testUnclearableClassCacheFailsTheEvaluationAndIsRetried() throws IOException {
+        // A cache directory that no longer exists cannot be cleared, whatever the platform or user
         final File cacheDirectory = session.classCacheDirectory;
-        assumeTrue("Requires a filesystem that enforces read permissions",
-                cacheDirectory.setReadable(false) && cacheDirectory.listFiles() == null);
+        FileUtils.deleteRecursively(cacheDirectory);
+        assertFalse(cacheDirectory.exists());
 
-        // A dirty declaration requires a reset, which cannot clear a cache it cannot read
-        RemoteFileSourceClassLoader.getInstance().declareRemoteSources(
-                resourceName -> CompletableFuture.failedFuture(new FileNotFoundException(resourceName)),
-                List.of("test/notebook/Whatever.groovy"), true);
+        final RemoteFileSourceProvider provider =
+                resourceName -> CompletableFuture.failedFuture(new FileNotFoundException(resourceName));
+        final List<String> resourcePaths = List.of("test/notebook/Whatever.groovy");
 
-        try {
-            session.evaluateScript("x = 1");
-            fail("Expected the evaluation to fail while the class cache cannot be cleared");
-        } catch (IllegalStateException e) {
-            assertTrue(e.getMessage(), e.getMessage().contains("unable to list class cache directory"));
-        }
+        // A dirty declaration requires a reset, which cannot clear the missing cache. The failure is reported to the
+        // user like a script error, and the script does not run.
+        RemoteFileSourceClassLoader.getInstance().declareRemoteSources(provider, resourcePaths, true);
+        final ScriptSession.Changes failed = session.evaluateScript("x = 1");
+        assertNotNull("Expected the evaluation to fail while the class cache cannot be cleared", failed.error);
+        assertNull("The script should not run when preparation fails",
+                session.getQueryScope().readParamValue("x", null));
+
+        // Once the cache is clearable again, the next evaluation must still reset, even though the same client
+        // redeclaring unchanged sources would not on its own require one
+        assertTrue(cacheDirectory.mkdirs());
+        final File staleClass = new File(cacheDirectory, "Stale.class");
+        assertTrue(staleClass.createNewFile());
+
+        RemoteFileSourceClassLoader.getInstance().declareRemoteSources(provider, resourcePaths, false);
+        final ScriptSession.Changes retried = session.evaluateScript("x = 1");
+        retried.throwIfError();
+        assertFalse("The failed reset should be retried, clearing the stale class", staleClass.exists());
+        assertEquals(1, (int) session.getQueryScope().<Integer>readParamValue("x"));
     }
 }

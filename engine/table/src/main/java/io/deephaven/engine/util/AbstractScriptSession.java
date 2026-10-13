@@ -113,7 +113,9 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     /**
      * Hook for subclasses to replace {@link #executionContext} before it is opened for an evaluation. This runs before
      * {@link #evaluateScript(String, String)} derives and opens the context, so a replacement classloader or
-     * {@link QueryCompiler} takes effect for this evaluation rather than the next one.
+     * {@link QueryCompiler} takes effect for this evaluation rather than the next one. An exception thrown here fails
+     * the evaluation the same way a script error does: it is reported in {@link Changes#error}, and the script is not
+     * run.
      */
     protected void prepareForEvaluation() {}
 
@@ -162,10 +164,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         // Observe scope changes and propagate to the listener before running the script, in case it is long-running
         observeScopeChanges();
 
-        // Let subclasses replace executionContext before we derive and open it below, so that a fresh classloader /
-        // QueryCompiler applies to this evaluation instead of only taking effect on the next one.
-        prepareForEvaluation();
-
         RuntimeException evaluateErr = null;
         final Changes diff;
 
@@ -175,6 +173,11 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 final SafeCloseable ignored = LivenessScopeStack.open(queryScope, false)) {
 
             try {
+                // Let subclasses replace executionContext before we derive and open it below, so that a fresh
+                // classloader / QueryCompiler applies to this evaluation instead of only taking effect on the next one.
+                // Inside the try, so a failure is reported like a script error and the script does not run.
+                prepareForEvaluation();
+
                 // Actually evaluate the script; use the enclosing auth context, since AbstractScriptSession's
                 // ExecutionContext never has a non-null AuthContext
                 executionContext.withAuthContext(ExecutionContext.getContext().getAuthContext())
