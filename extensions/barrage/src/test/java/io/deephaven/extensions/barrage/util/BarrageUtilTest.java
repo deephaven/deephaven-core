@@ -500,6 +500,43 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     @Test
+    public void testDefaultConfigAutoREEThroughSchemaFromTable() {
+        // With the default configuration, an unannotated table with a repetitive column (runs of 4) gets REE on the
+        // wire through the public schema path; the all-distinct column stays plain.
+        final int N = 100;
+        final int[] y = new int[N];
+        final int[] x = new int[N];
+        for (int i = 0; i < N; i++) {
+            y[i] = i / 4; // runs of 4
+            x[i] = i;
+        }
+        final Table table = newTable(intCol("Y", y), intCol("X", x));
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertFieldIsREE(schema, "Y");
+        assertFieldIsNotREE(schema, "X");
+    }
+
+    @Test
+    public void testDefaultConfigAutoDictionaryThroughSchemaFromTable() {
+        // With the default configuration, an unannotated table with a low-cardinality String column that never
+        // repeats adjacently gets dictionary encoding (and not REE) through the public schema path.
+        final int N = 100;
+        final String[] symbols = new String[N];
+        final String[] pool = {"AAPL", "MSFT", "GOOG", "AMZN"};
+        for (int i = 0; i < N; i++) {
+            symbols[i] = pool[i % pool.length];
+        }
+        final Table table = newTable(stringCol("Symbol", symbols));
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertFieldIsDictionary(schema, "Symbol", 32);
+        assertFieldIsNotREE(schema, "Symbol");
+    }
+
+    @Test
     public void testSamplingSkippedForSmallTable() {
         // Tables with fewer than REE_MIN_SAMPLE_SIZE rows return early without sampling.
         final int N = BarrageUtil.REE_MIN_SAMPLE_SIZE - 1;
