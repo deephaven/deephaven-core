@@ -165,6 +165,21 @@
         "Control: does not report the already-linked identifiers in that sentence (`range_join`, `ungroup`, `head`, `tail`, `merge`, `snapshot`) as unlinked"
       ],
       "id": 11
+    },
+    {
+      "prompt": "Run a style review of the attached page excerpt, report only. It is a Python-docs Concept guide excerpt. Apply the Page structure link rule and the mechanical verification searches literally.",
+      "expected_output": "Chip Kent's 2026-10-13 review of PR #7457 asked why 'filter and select operations' was not linked. The excerpt has no backticks, so a backtick-only search finds nothing; the review must treat plain-word operation names (filter, select, sort, joins) as unlinked first mentions and give link targets. Note: on this short excerpt the pre-change skill also passes; the gap showed on the full 254-line query-table-configuration.md, where the pre-change skill missed the sentence and the changed skill flagged it.",
+      "files": [
+        "evals/files/plain-word-ops-excerpt.md"
+      ],
+      "expectations": [
+        "Flags \"filter and select operations\" in the first paragraph as unlinked plain-word operation names, even though nothing in the excerpt is backticked",
+        "Gives a link target for each flagged operation name (the where, select or update, sort, and join reference or guide pages)",
+        "Also flags the unlinked plain-word operation names in the bullet list and in the table (a first mention per list item and table cell)",
+        "Control: does not flag the markdown link in the last sentence as a defect",
+        "Does not report no linking problems, and does not restrict the link check to backticked identifiers"
+      ],
+      "id": 12
     }
   ]
 }
