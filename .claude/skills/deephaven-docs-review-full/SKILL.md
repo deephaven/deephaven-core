@@ -315,6 +315,11 @@ orphaned aside flagged harder because the doc is a Reference guide). If a cross-
 was pulled into scope by the accuracy step, report on both files.
 
 ```
+## Page coverage (only when reviewing a PR or a set of pages)
+The page-by-step table from "Reviewing a PR or a set of pages": one row per changed page, both
+languages, one column per step, a check or a stated reason in every cell. Place it above the
+editorial summary. Omit this section for a single page.
+
 ## Editorial summary
 2–4 sentences: overall assessment, the single biggest issue, and the developmental verdict
 (ready for technical review / needs revision / needs restructuring).

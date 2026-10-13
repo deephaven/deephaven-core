@@ -81,8 +81,8 @@
       "id": 4
     },
     {
-      "prompt": "A PR changes the files listed in .claude/skills/deephaven-docs-review-full/evals/files/pr-coverage/changed-files.txt (that file is the output of the PR page discovery command for the PR base). Do not review the pages. Following the skill's rule for reviewing a PR, write only the page list and the table that go at the top of the full-review report.",
-      "expected_output": "Copilot's third review of #8910 asked for coverage of the PR-wide rule. A reviewer applying the rule lists every changed doc page in both languages, drops snapshots and sidebar.json, keeps the lightly touched and configuration pages, and builds a page-by-step table with a check or a reason in every cell. The discovery command itself cannot be run on a fixture file, and running every step on every page is not tested here; only the discovery filter and the report table are.",
+      "prompt": "A PR changes the files listed in .claude/skills/deephaven-docs-review-full/evals/files/pr-coverage/changed-files.txt (that file is the unfiltered output of git diff --name-only <base>...HEAD -- docs for the PR base, before the skill's Markdown-only filter is applied). Do not review the pages. Following the skill's rule for reviewing a PR, write only the page list and the table that go at the top of the full-review report.",
+      "expected_output": "Copilot's third review of #8910 asked for coverage of the PR-wide rule. A reviewer applying the rule lists every changed doc page in both languages, drops snapshots and sidebar.json, keeps the lightly touched and configuration pages, and builds a page-by-step table with a check or a reason in every cell. The fixture is the unfiltered name-only diff of docs, so it holds snapshot and sidebar.json entries that the skill's Markdown-only pathspec would drop; the eval checks that they stay out of the page list. The discovery command itself cannot be run on a fixture file, and running every step on every page is not tested here; only the discovery filter and the report table are.",
       "files": [
         "evals/files/pr-coverage/changed-files.txt"
       ],

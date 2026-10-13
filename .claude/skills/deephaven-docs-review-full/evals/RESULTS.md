@@ -113,4 +113,5 @@ One run per configuration, graded by the author against the six expectations (no
 - The table does: the baseline produced a page-pair table with a "Reviewed in full: Yes" column, and no per-step columns, so a missing examples or re-verify pass would not be visible. The changed skill produced the six step columns.
 - "Partial" because the changed skill's cells read "pending" (with "n/a unless edits applied" for re-verify), which is a stated status but not a check or a reason.
 - One run per configuration is a signal, not a measurement.
+- The eval 5 prompt was reworded after these runs to say the fixture is the unfiltered name-only diff of `docs` (the skill's `'docs/*.md'` pathspec was added after the runs and would drop the snapshot and `sidebar.json` entries the fixture contains). The runs were made with the earlier wording, "the output of the PR page discovery command", and were not repeated.
 
