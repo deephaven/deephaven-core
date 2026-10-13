@@ -622,8 +622,8 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     @Test
-    public void testExplicitReeSchemaHonoredVerbatim() {
-        // A user-supplied BARRAGE_SCHEMA_ATTRIBUTE with REE columns must be passed through verbatim, whatever the
+    public void testExplicitReeEncodingHonored() {
+        // The REE encoding requested by a user-supplied BARRAGE_SCHEMA_ATTRIBUTE must be honored, whatever the
         // auto-detect switches say. The table is too small to sample and has no structural REE hint, so Symbol can
         // only come back REE because the attribute asked for it.
         //
