@@ -18,6 +18,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntArrayGenerator;
@@ -370,6 +371,91 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
     }
 
     @Test
+    public void testZeroKeyLeftOuterJoinStaticEmptyRight() {
+        final QueryTable left = TstUtils.testRefreshingTable(i(0, 1).toTracking(), intCol("LS", 1, 2));
+        final QueryTable right = TstUtils.testTable(intCol("RS"));
+
+        final EvalNugget[] en = new EvalNugget[] {
+                EvalNugget.from(() -> CrossJoinHelper.leftOuterJoin(left, right,
+                        MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, MatchPairFactory.getExpressions("RS"),
+                        numRightBitsToReserve)),
+        };
+        assertTrue(en[0].originalValue.isRefreshing());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(left, i(0));
+            addToTable(left, i(1, 5), intCol("LS", 3, 4));
+            left.notifyListeners(i(5), i(0), i(1));
+        });
+        TstUtils.validate(en);
+        assertTableEquals(TableTools.newTable(intCol("LS", 3, 4), intCol("RS", NULL_INT, NULL_INT)),
+                en[0].originalValue);
+    }
+
+    @Test
+    public void testZeroKeyLeftOuterJoinUngroupEmptyRight() {
+        final QueryTable left = TstUtils.testTable(intCol("LS", 1, 2));
+        final QueryTable right = TstUtils.testRefreshingTable(intCol("K"), intCol("RS"));
+        final QueryTable grouped = (QueryTable) right.groupBy("K").view("RS");
+
+        final Table joined = CrossJoinHelper.leftOuterJoin(left, grouped, MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                MatchPairFactory.getExpressions("RS"), numRightBitsToReserve);
+        // an empty right table gives each left row a null group, which ungroups to no rows
+        assertTableEquals(joined.select().ungroup("RS"), joined.ungroup("RS"));
+
+        final EvalNugget[] en = new EvalNugget[] {
+                EvalNugget.from(() -> joined.ungroup("RS")),
+        };
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(0, 1), intCol("K", 1, 1), intCol("RS", 10, 11));
+            right.notifyListeners(i(0, 1), i(), i());
+        });
+        TstUtils.validate(en);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(right, i(0, 1));
+            right.notifyListeners(i(), i(0, 1), i());
+        });
+        TstUtils.validate(en);
+    }
+
+    @Test
+    public void testFailureNamesOperation() {
+        for (final boolean leftOuterJoin : new boolean[] {false, true}) {
+            final QueryTable left = TstUtils.testRefreshingTable(i(0).toTracking(), intCol("K", 1));
+            final QueryTable right = TstUtils.testTable(i(0, 1).toTracking(), intCol("K", 1, 1), intCol("Y", 3, 4));
+            final MatchPair[] columnsToMatch = MatchPairFactory.getExpressions("K");
+            final MatchPair[] columnsToAdd = MatchPairFactory.getExpressions("Y");
+            final Table joined = leftOuterJoin
+                    ? CrossJoinHelper.leftOuterJoin(left, right, columnsToMatch, columnsToAdd, 10)
+                    : CrossJoinHelper.join(left, right, columnsToMatch, columnsToAdd, 10);
+            final MutableObject<String> failedEntry = new MutableObject<>();
+            joined.addUpdateListener(new InstrumentedTableUpdateListenerAdapter("capture", joined, false) {
+                @Override
+                public void onUpdate(final TableUpdate upstream) {}
+
+                @Override
+                public void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
+                    failedEntry.setValue(String.valueOf(sourceEntry));
+                }
+            });
+
+            // a left row key needing 57 bits leaves too few bits for the 10 reserved right bits
+            final long leftKey = 1L << 56;
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            allowingError(() -> updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(left, i(leftKey), intCol("K", 1));
+                left.notifyListeners(i(leftKey), i(), i());
+            }), errors -> !errors.isEmpty());
+
+            final String expectedDescription = "description='" + (leftOuterJoin ? "leftOuterJoin" : "join") + "(";
+            assertNotNull(failedEntry.getValue());
+            assertTrue(failedEntry.getValue(), failedEntry.getValue().contains(expectedDescription));
+        }
+    }
+
+    @Test
     public void testZeroKeyLeftOuterJoinSimple() {
         final QueryTable left = TstUtils.testRefreshingTable(intCol("LS", 1, 2, 3, 4, 5));
         final QueryTable right = TstUtils.testRefreshingTable(intCol("RS", 10, 20));
@@ -479,6 +565,65 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         // assertEquals(i(4, 12, 28, 36, 52), listener.update.added());
         // assertEquals(i(23), listener.update.removed());
         // listener.reset();
+    }
+
+    @Test
+    public void testZeroKeyRightChangesAcrossEmptyTransitions() {
+        final QueryTable lTable = testRefreshingTable(i(1, 5, 9).toTracking(), intCol("LVal", 1, 5, 9));
+        final QueryTable rTable = testRefreshingTable(i(0, 2).toTracking(), intCol("RVal", 10, 12));
+        final EvalNugget[] en = new EvalNugget[] {
+                EvalNugget.from(() -> doLeftOuterJoin(lTable, rTable)),
+        };
+        final QueryTable joined = (QueryTable) doLeftOuterJoin(lTable, rTable);
+        final SimpleListener listener = new SimpleListener(joined);
+        joined.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(2), intCol("RVal", -12));
+            rTable.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                    rTable.newModifiedColumnSet("RVal")));
+        });
+        TstUtils.validate(en);
+        assertEquals(1, listener.getCount());
+        assertEquals(i(), listener.update.added());
+        assertEquals(i(), listener.update.removed());
+        assertTrue(listener.update.shifted().empty());
+        assertEquals(lTable.size(), listener.update.modified().size());
+        assertTableEquals(doLeftOuterJoin(lTable, rTable), joined);
+
+        // the right table empties, leaving one null row per left row
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(rTable, i(0, 2));
+            rTable.notifyListeners(i(), i(0, 2), i());
+        });
+        TstUtils.validate(en);
+        assertTableEquals(doLeftOuterJoin(lTable, rTable), joined);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(lTable, i(12), intCol("LVal", 12));
+            lTable.notifyListeners(i(12), i(), i());
+        });
+        TstUtils.validate(en);
+        assertTableEquals(doLeftOuterJoin(lTable, rTable), joined);
+
+        // the right table refills, replacing every null row
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(4), intCol("RVal", 14));
+            rTable.notifyListeners(i(4), i(), i());
+        });
+        TstUtils.validate(en);
+        assertTableEquals(doLeftOuterJoin(lTable, rTable), joined);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(rTable, i(4), intCol("RVal", -14));
+            rTable.notifyListeners(new TableUpdateImpl(i(), i(), i(4), RowSetShiftData.EMPTY,
+                    rTable.newModifiedColumnSet("RVal")));
+            removeRows(lTable, i(5));
+            lTable.notifyListeners(i(), i(5), i());
+        });
+        TstUtils.validate(en);
+        assertTableEquals(doLeftOuterJoin(lTable, rTable), joined);
     }
 
     @Test

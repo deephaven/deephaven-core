@@ -1940,8 +1940,8 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            reserve_bits (Optional[int]): the number of bits to reserve for the right row; default is None,
-                meaning the configured value is used, which is 10 bits by default.
+            reserve_bits (Optional[int]): the number of bits to reserve for the right row, between 1 and 62
+                (inclusive); default is None, meaning the configured value is used, which is 10 bits by default.
 
         Returns:
             a new table
@@ -1953,9 +1953,8 @@ class Table(JObjectWrapper):
             on = ",".join(to_sequence(on))
             joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(self.j_object, _JTableOperations)
-            reserve_bits = (
-                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
-            )
+            if reserve_bits is None:
+                reserve_bits = _default_cross_join_reserve_bits()
             with auto_locking_ctx(self, table):
                 return Table(
                     j_table=table_op.join(
@@ -4081,8 +4080,8 @@ class PartitionedTableProxy(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            reserve_bits (Optional[int]): the number of bits to reserve for the join; default is None, meaning the
-                configured value is used, which is 10 by default
+            reserve_bits (Optional[int]): the number of bits to reserve for the join, between 1 and 62 (inclusive);
+                default is None, meaning the configured value is used, which is 10 by default
 
         Returns:
             a new PartitionedTableProxy
@@ -4094,9 +4093,8 @@ class PartitionedTableProxy(JObjectWrapper):
             on = ",".join(to_sequence(on))
             joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(table.j_object, _JTableOperations)
-            reserve_bits = (
-                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
-            )
+            if reserve_bits is None:
+                reserve_bits = _default_cross_join_reserve_bits()
 
             with auto_locking_ctx(self, table):
                 return PartitionedTableProxy(
