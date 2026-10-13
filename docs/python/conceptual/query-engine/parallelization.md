@@ -249,7 +249,9 @@ result = (
 )
 ```
 
-When a [`Filter`](../../reference/query-language/types/Filter.md) is serial, Deephaven evaluates every input row in order, never reorders the filter relative to other filters, and runs stateful side effects one at a time. On a table from a partitioned source, such as a directory of Parquet files or an Iceberg table, Deephaven normally applies a filter on partitioning columns, the columns whose values identify each partition, to whole partitions before it reads any data. Marking that filter serial, or any filter before it in the argument list, turns this off. See [Filters on partitioning columns](../../reference/table-operations/filter/where.md#filters-on-partitioning-columns).
+When a [`Filter`](../../reference/query-language/types/Filter.md) is serial, Deephaven evaluates every input row in order, keeps the filter in its place among the other filters, and runs its side effects one at a time.
+
+Partitioned sources need extra care. A table read from a directory of Parquet files or from an Iceberg table has partitioning columns, whose values identify each partition. Deephaven normally applies a filter on those columns to whole partitions before it reads any data. It skips that shortcut when the filter is serial, or when any filter before it in the argument list is serial. See [Filters on partitioning columns](../../reference/table-operations/filter/where.md#filters-on-partitioning-columns).
 
 > [!WARNING]
 > When Deephaven cannot apply a filter on partitioning columns to whole partitions first, it includes every partition in the table and evaluates the filter against every row instead of once per partition. On a large partitioned source, that can be much slower. Mark a filter on partitioning columns serial only when its evaluation order matters.
@@ -362,9 +364,9 @@ An implicit barrier is a barrier that Deephaven adds for you.
 
 When implicit barriers are turned on (see [Configuration](#configuration)):
 
-- Every column that is not stateless in a [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) waits for all earlier such columns in the same operation to finish.
-- With the default stateless-by-default setting, those are the columns you marked [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial).
-- Each of them behaves as if it declared a barrier that every later one respects. You get the ordering without creating barrier objects.
+- Every [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) column in a [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) waits for every earlier [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) column in the same operation to finish.
+- Each serial column acts as if it declared a barrier that every later serial column respects.
+- You get that ordering without creating any barrier objects.
 
 They are off by default:
 
