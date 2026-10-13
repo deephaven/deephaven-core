@@ -127,14 +127,14 @@ public class ArrowFlightUtil {
                         final StreamObserver<BarrageMessageWriter.MessageView> listener =
                                 new MessageViewAdapter(observer);
 
-                        // push the schema to the listener
-                        listener.onNext(streamGeneratorFactory.getSchemaView(
-                                fbb -> BarrageUtil.makeTableSchemaPayload(fbb, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS,
-                                        table)));
+                        // push the schema to the listener; the snapshot is written with this same schema
+                        final org.apache.arrow.vector.types.pojo.Schema schema =
+                                BarrageUtil.schemaFromTable(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table);
+                        listener.onNext(streamGeneratorFactory.getSchemaView(schema::getSchema));
 
                         // shared code between `DoGet` and `BarrageSnapshotRequest`
                         BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
-                                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, listener, metrics);
+                                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, schema, listener, metrics);
                     });
         }
     }

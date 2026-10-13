@@ -18,11 +18,17 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
+import io.deephaven.extensions.barrage.BarrageMessageWriter;
+import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
+import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.ColumnEncoding;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.proto.flight.util.SchemaHelper;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.IntVectorDirect;
+import io.grpc.stub.StreamObserver;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
@@ -32,12 +38,18 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.util.TableTools.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -311,6 +323,118 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(pipeline.get("Y"))
                 .as("a single-value column must not gain a dictionary facet from sampling")
                 .isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
+    }
+
+    @Test
+    public void testSamplingSkipsDictionaryForArrayVectorAndMapColumns() {
+        // Every column alternates between the same two values, so the sampled cardinality is far below the threshold.
+        // A string column takes a dictionary; array, vector and map columns must not, as they travel as Arrow lists or
+        // maps (and an array's equality is its identity, so its cardinality means nothing).
+        final int numRows = 1_000;
+        final String[] syms = new String[numRows];
+        final int[][] arrays = new int[numRows][];
+        final IntVector[] vectors = new IntVector[numRows];
+        @SuppressWarnings("unchecked")
+        final Map<String, Integer>[] maps = new Map[numRows];
+        final int[][] arrayValues = {{1, 2}, {3, 4}};
+        final IntVector[] vectorValues = {new IntVectorDirect(1, 2), new IntVectorDirect(3, 4)};
+        final List<Map<String, Integer>> mapValues = List.of(Map.of("a", 1), Map.of("b", 2));
+        for (int ii = 0; ii < numRows; ++ii) {
+            syms[ii] = ii % 2 == 0 ? "AAPL" : "MSFT";
+            arrays[ii] = arrayValues[ii % 2];
+            vectors[ii] = vectorValues[ii % 2];
+            maps[ii] = mapValues.get(ii % 2);
+        }
+        final Table table = newTable(stringCol("Sym", syms), col("Arr", arrays), col("Vec", vectors),
+                col("Map", maps));
+
+        final Map<String, ColumnEncoding> detected = new HashMap<>();
+        sampleColumnsForEncoding(table, detected, false, true);
+
+        assertThat(detected.get("Sym")).isEqualTo(ColumnEncoding.DICTIONARY_ENCODED_INT32);
+        assertThat(detected).as("array, vector and map columns must not be dictionary candidates")
+                .doesNotContainKeys("Arr", "Vec", "Map");
+    }
+
+    /**
+     * A snapshot is written with the schema its caller passes, never one it infers again: the caller sends that schema
+     * to the client first, and a second inference could choose different encodings for a ticking table. Writing a
+     * dictionary-encoded schema for a table that asks for no encoding shows which schema the writers used.
+     */
+    @Test
+    public void testSnapshotWritesTheSchemaItIsGiven() {
+        final String[] syms = new String[100];
+        for (int ii = 0; ii < syms.length; ++ii) {
+            syms[ii] = ii % 2 == 0 ? "AAPL" : "MSFT";
+        }
+        final QueryTable staticTable = (QueryTable) newTable(stringCol("Sym", syms));
+        final QueryTable refreshingTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(syms.length).toTracking(), stringCol("Sym", syms));
+
+        for (final QueryTable table : List.of(staticTable, refreshingTable)) {
+            final String which = table.isRefreshing() ? "refreshing" : "static";
+            final Schema plain = BarrageUtil.schemaFromTable(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table);
+            assertThat(countSnapshotDictionaryBatches(table, plain)).as(which + ", plain schema").isZero();
+            assertThat(countSnapshotDictionaryBatches(table, withDictionary(plain, "Sym")))
+                    .as(which + ", dictionary-encoded schema").isPositive();
+        }
+    }
+
+    /** Writes a snapshot of {@code table} with {@code schema} and counts the DictionaryBatch messages it sent. */
+    private static int countSnapshotDictionaryBatches(final QueryTable table, final Schema schema) {
+        final List<byte[]> messages = new ArrayList<>();
+        BarrageUtil.createAndSendSnapshot(new BarrageMessageWriterImpl.ArrowFactory(), table, null, null, false,
+                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, schema, new StreamObserver<>() {
+                    @Override
+                    public void onNext(final BarrageMessageWriter.MessageView view) {
+                        try {
+                            view.forEachStream(stream -> {
+                                try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                                    stream.drainTo(baos);
+                                    messages.add(baos.toByteArray());
+                                    stream.close();
+                                } catch (final IOException e) {
+                                    throw new UncheckedIOException(e);
+                                }
+                            });
+                        } catch (final IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        throw new IllegalStateException(t);
+                    }
+
+                    @Override
+                    public void onCompleted() {}
+                }, new BarragePerformanceLog.SnapshotMetricsHelper());
+
+        int numDictionaryBatches = 0;
+        for (final byte[] message : messages) {
+            // an encapsulated IPC message: a continuation marker, the metadata length, then the flatbuffer Message
+            final ByteBuffer bb = ByteBuffer.wrap(message).order(ByteOrder.LITTLE_ENDIAN);
+            final int metadataOffset = bb.getInt(0) == -1 ? 8 : 4;
+            final org.apache.arrow.flatbuf.Message header = org.apache.arrow.flatbuf.Message.getRootAsMessage(
+                    bb.position(metadataOffset).slice().order(ByteOrder.LITTLE_ENDIAN));
+            if (header.headerType() == org.apache.arrow.flatbuf.MessageHeader.DictionaryBatch) {
+                ++numDictionaryBatches;
+            }
+        }
+        return numDictionaryBatches;
+    }
+
+    /** Returns {@code schema} with the field {@code column} dictionary encoded (Int32 index, dictionary id 0). */
+    private static Schema withDictionary(final Schema schema, final String column) {
+        return new Schema(schema.getFields().stream()
+                .map(f -> !column.equals(f.getName()) ? f
+                        : new Field(f.getName(),
+                                new FieldType(f.isNullable(), f.getType(),
+                                        new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)),
+                                        f.getMetadata()),
+                                f.getChildren()))
+                .collect(Collectors.toList()), schema.getCustomMetadata());
     }
 
     @Test
