@@ -7,6 +7,7 @@
 import numpy as np
 import numpy.typing as npt
 import pyarrow as pa
+import pyarrow.compute as pc
 from pydeephaven_ticking._core cimport assign_shared_ptr
 from cython.operator cimport dereference as deref
 from pydeephaven_ticking._core cimport char16_t
@@ -387,15 +388,47 @@ cdef class ColumnSource:
         return result
 
 
+# pyarrow before 13 has no run-end encoded type, and so can never hand us such an array.
+_is_run_end_encoded = getattr(pa.types, "is_run_end_encoded", lambda pa_type: False)
+
+# Returns the type an encoded type stands for: a dictionary or run-end encoded column, or list elements encoded that
+# way, holds the same Deephaven values as its plain form.
+def _decoded_pa_type(pa_type: pa.DataType) -> pa.DataType:
+    if pa.types.is_dictionary(pa_type) or _is_run_end_encoded(pa_type):
+        return _decoded_pa_type(pa_type.value_type)
+    if pa.types.is_list(pa_type):
+        value_type = _decoded_pa_type(pa_type.value_type)
+        if value_type != pa_type.value_type:
+            return pa.list_(pa_type.value_field.with_type(value_type))
+    return pa_type
+
+# Returns the plain form of a dictionary or run-end encoded array (a new array), or the array itself when it is not
+# encoded. Callers keep the result alive while column sources made from it are in use, as they refer to its storage.
+def _decoded_array(array: pa.Array) -> pa.Array:
+    if isinstance(array, pa.DictionaryArray):
+        return _decoded_array(array.dictionary_decode())
+    if _is_run_end_encoded(array.type):
+        # run_end_decode takes only plain run values, so decode encoded ones first. The run ends count positions in the
+        # unsliced array, so the rebuilt array is sliced as the original was.
+        values = array.values
+        decoded_values = _decoded_array(values)
+        if decoded_values is not values:
+            array = pa.RunEndEncodedArray.from_arrays(array.run_ends, decoded_values).slice(array.offset, len(array))
+        return pc.run_end_decode(array)
+    return array
+
 # Converts an Arrow array to a C++ ColumnSource of the right type. The created column source does not own the
-# memory used, so it is only valid as long as the original Arrow array is valid.
+# memory used, so it is only valid as long as the original Arrow array is valid. The array must not itself be
+# dictionary or run-end encoded; decode it with _decoded_array first.
 cdef shared_ptr[CColumnSource] _convert_arrow_array_to_column_source(array: pa.Array) except *:
     if pa.types.is_list(array.type):
         # The incoming data is a list<T>. This can be viewed as flattened data structures
         # for values and lengths. We use recursion to get those values and lengths as
         # separate column sources, then use a special entry point to combine those two
-        # column sources into a ContainerColumnSource
-        values_cs = _convert_arrow_array_to_column_source(array.values)
+        # column sources into a ContainerColumnSource. The elements may be encoded; their
+        # decoded form is kept in a variable for the same reason as value_lengths below.
+        values = _decoded_array(array.values)
+        values_cs = _convert_arrow_array_to_column_source(values)
 
         # Important: the column source returned is a NumericBufferColumnSource which is only
         # valid as long as the underlying storage is valid. So we need to keep the storage
@@ -404,7 +437,7 @@ cdef shared_ptr[CColumnSource] _convert_arrow_array_to_column_source(array: pa.A
         lengths_cs = _convert_arrow_array_to_column_source(value_lengths)
 
         return CCythonSupport.SlicesToColumnSource(
-            deref(values_cs), len(array.values),
+            deref(values_cs), len(values),
             deref(lengths_cs), len(value_lengths))
 
     if isinstance(array, pa.lib.StringArray):
@@ -598,9 +631,13 @@ cdef class BarrageProcessor:
     def process_next_chunk(self, sources: [], const char [::1] raw_metadata) -> TickingUpdate | None:
         cdef vector[shared_ptr[CColumnSource]] column_sources
         cdef vector[size_t] sizes
+        # The column sources refer to the storage of these arrays, so they stay referenced until processed below; a
+        # dictionary or run-end encoded column's decoded form is a new array that nothing else holds.
+        decoded_columns = []
         for source in sources:
             # source is a ListArray of length 1
-            values = source.values
+            values = _decoded_array(source.values)
+            decoded_columns.append(values)
             cs = _convert_arrow_array_to_column_source(values)
             column_sources.push_back(cs)
             sizes.push_back(len(values))
@@ -672,6 +709,7 @@ cdef _dh_type_to_pa_type(dh_type: CElementType):
 
 # Converts a PyArrow type into the corresponding PyArrow type.
 cdef CElementType _pa_type_to_dh_type(pa_type: pa.DataType) except *:
+    pa_type = _decoded_pa_type(pa_type)
     for et_python in _equivalent_types:
         et = <_EquivalentTypes>et_python
         if et.pa_type == pa_type:
