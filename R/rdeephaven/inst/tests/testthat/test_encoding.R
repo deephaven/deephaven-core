@@ -107,4 +107,55 @@ test_that("run-end + dictionary encoded table is fetched and decoded correctly",
   client$close()
 })
 
-rm(target, ENCODING_SETUP_SCRIPT)
+# Python script that creates a table whose double, int and Instant columns are run-end encoded, with runs of nulls,
+# including a first run of nulls.
+# reenulls_table : 8 rows
+#   Dbl = [NA, NA, 3.14, 3.14, 3.14, NA, NA, NA]
+#   Int = [NA, NA, NA, 7, 7, 7, 7, 7]
+#   Ts  = [NA, NA, t, t, NA, NA, t, t] where t = 2024-01-01T00:00:00Z
+ENCODING_NULLS_SETUP_SCRIPT <- '
+import jpy
+from deephaven import empty_table
+
+_JBarrageUtil = jpy.get_type("io.deephaven.extensions.barrage.util.BarrageUtil")
+_JIntCls      = jpy.get_type("org.apache.arrow.vector.types.pojo.ArrowType$Int")
+_JREECls      = jpy.get_type("org.apache.arrow.vector.types.pojo.ArrowType$RunEndEncoded")
+_JField       = jpy.get_type("org.apache.arrow.vector.types.pojo.Field")
+_JFieldType   = jpy.get_type("org.apache.arrow.vector.types.pojo.FieldType")
+_JSchema      = jpy.get_type("org.apache.arrow.vector.types.pojo.Schema")
+_JArrayList   = jpy.get_type("java.util.ArrayList")
+
+def _as_ree_field(field):
+    children = _JArrayList()
+    children.add(_JField.notNullable("run_ends", _JIntCls(32, True)))
+    children.add(_JField("values", field.getFieldType(), field.getChildren()))
+    return _JField(field.getName(), _JFieldType(True, _JREECls.INSTANCE, None, field.getMetadata()), children)
+
+_reenulls_src = empty_table(8).update([
+    "Dbl = i < 2 || i >= 5 ? NULL_DOUBLE : 3.14",
+    "Int = i < 3 ? NULL_INT : 7",
+    "Ts = i % 4 < 2 ? null : parseInstant(`2024-01-01T00:00:00Z`)",
+])
+_natural_fields = _JBarrageUtil.schemaFromTable(_reenulls_src.j_table).getFields()
+_reenulls_fields = _JArrayList()
+for _i in range(_natural_fields.size()):
+    _reenulls_fields.add(_as_ree_field(jpy.cast(_natural_fields.get(_i), _JField)))
+reenulls_table = _reenulls_src.with_attributes({"BarrageSchema": _JSchema(_reenulls_fields)})
+'
+
+test_that("nulls in run-end-encoded numeric and time columns are fetched as NA", {
+  client <- Client$new(target = target)
+  client$run_script(ENCODING_NULLS_SETUP_SCRIPT)
+
+  th  <- client$open_table("reenulls_table")
+  df  <- as.data.frame(th)
+
+  expect_equal(nrow(df), 8)
+  expect_equal(df$Dbl, c(NA, NA, 3.14, 3.14, 3.14, NA, NA, NA))
+  expect_equal(df$Int, c(NA, NA, NA, 7L, 7L, 7L, 7L, 7L))
+  expect_equal(is.na(df$Ts), c(TRUE, TRUE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE))
+
+  client$close()
+})
+
+rm(target, ENCODING_SETUP_SCRIPT, ENCODING_NULLS_SETUP_SCRIPT)
