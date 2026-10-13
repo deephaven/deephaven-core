@@ -49,13 +49,6 @@ sourceSets {
 
 SourceSet test = extensions.findByType(JavaPluginExtension).sourceSets.maybeCreate('test')
 
-// Collects the Java classpath of the Python server tests into one directory, so they can run outside Docker on the
-// embedded server (see .github/workflows/nightly-py-versions-ci.yml). Point DEEPHAVEN_CLASSPATH at "<dir>/*:<dir>".
-tasks.register('syncPyTestClasspath', Sync) {
-    from test.runtimeClasspath
-    into layout.buildDirectory.dir('py-test-classpath')
-}
-
 def runInDocker = { String name, String sourcePath, List<String> command, Closure addConfig = {} ->
     Docker.registerDockerTask(project, name) {
         copyIn {

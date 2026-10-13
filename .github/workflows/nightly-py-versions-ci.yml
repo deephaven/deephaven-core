@@ -1,8 +1,8 @@
 name: Nightly Python Versions CI
 
 # Runs the py/server test suite on every supported Python version. The Docker-based suite in Integrations runs only on
-# the Python baked into the server image. This one runs the same tests on the embedded server from the deephaven-server
-# wheel, so each version needs only Python, a JDK and the wheels.
+# the Python baked into the server image. This one runs the same tests on the JVM from the deephaven-server wheel, so
+# each version needs only Python, a JDK and that wheel. The rest installs from source.
 #
 # Floor: python_requires in py/server/setup.py. Ceiling: the newest Python that every dependency has a wheel for
 # (jpy has none for 3.15 yet).
@@ -40,17 +40,19 @@ jobs:
           .github/scripts/gradle-properties.sh 21 >> gradle.properties
           cat gradle.properties
 
-      - name: Build wheels and test classpath
-        run: ./gradlew --scan :py-server:assemble :py-embedded-server:assemble :Integrations:syncPyTestClasspath
+      - name: Build the deephaven-server wheel and the test classes
+        # The tests load a few Java test classes: CalendarInit from engine-time, and MyObject and
+        # PythonTimeComponentsTest from Integrations.
+        run: ./gradlew --scan :py-embedded-server:assemble :Integrations:testClasses :engine-time:testClasses
 
-      - name: Upload wheels and test classpath
+      - name: Upload the deephaven-server wheel and the test classes
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: py-versions-build
           path: |
-            py/server/build/wheel/*.whl
             py/embedded-server/build/wheel/*.whl
-            Integrations/build/py-test-classpath/
+            Integrations/build/classes/java/test/
+            engine/time/build/classes/java/test/
           retention-days: 1
 
   test:
@@ -73,7 +75,7 @@ jobs:
         with:
           lfs: true
 
-      - name: Download wheels and test classpath
+      - name: Download the deephaven-server wheel and the test classes
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: py-versions-build
@@ -96,15 +98,16 @@ jobs:
           echo "127.0.0.1 redpanda postgres" | sudo tee -a /etc/hosts
           docker compose -f Integrations/docker-compose.yml up -d --wait
 
-      - name: Install wheels and test dependencies
+      - name: Install packages and test dependencies
         # pip picks older numpy, pandas, pyarrow and numba releases on the older Pythons, since the newest ones dropped
         # them. So those runs test different dependency versions.
         run: |
-          # py/client/setup.py reads its version from DEEPHAVEN_VERSION. Match the server wheel's version.
-          export DEEPHAVEN_VERSION="$(basename py/server/build/wheel/deephaven_core-*.whl | cut -d- -f2)"
+          # py/server/setup.py and py/client/setup.py read their version from DEEPHAVEN_VERSION. It must match the
+          # wheel's version, because deephaven-server pins deephaven-core to it.
+          export DEEPHAVEN_VERSION="$(basename py/embedded-server/build/wheel/deephaven_server-*.whl | cut -d- -f2)"
           python -m pip install --upgrade pip
           python -m pip install \
-            py/server/build/wheel/*.whl \
+            ./py/server \
             py/embedded-server/build/wheel/*.whl \
             ./py/client \
             unittest-xml-reporting numba adbc-driver-manager adbc-driver-postgresql connectorx
@@ -113,7 +116,9 @@ jobs:
       - name: Run tests
         working-directory: py/server
         run: |
-          export DEEPHAVEN_CLASSPATH="$GITHUB_WORKSPACE/Integrations/build/py-test-classpath/*:$GITHUB_WORKSPACE/Integrations/build/py-test-classpath"
+          # Beyond the server jars, the tests need the test config, time zones and calendars, and the test classes.
+          W="$GITHUB_WORKSPACE"
+          export DEEPHAVEN_CLASSPATH="$W/props/test-configs/src/main/resources:$W/Integrations/src/test/resources:$W/Integrations/build/classes/java/test:$W/engine/time/build/classes/java/test"
           export DEEPHAVEN_DATA_DIR="$RUNNER_TEMP/dh-data"
           export DEEPHAVEN_CACHE_DIR="$RUNNER_TEMP/dh-cache"
           mkdir -p "$DEEPHAVEN_DATA_DIR" "$DEEPHAVEN_CACHE_DIR"

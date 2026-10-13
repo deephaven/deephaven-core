@@ -57,7 +57,7 @@ def start_jvm_for_tests(jvm_props: Optional[dict[str, str]] = None):
         if os.environ.get("DEEPHAVEN_TEST_EMBEDDED", "").lower() in ("1", "true"):
             # Use the server jars bundled in the deephaven-server wheel, so the tests can run on any Python version
             # that has the wheels installed, without the server Docker image. DEEPHAVEN_CLASSPATH adds the test-only
-            # jars and resources, such as the test calendars.
+            # resources, such as the test calendars.
             from deephaven_server.start_jvm import start_jvm
 
             start_jvm(
