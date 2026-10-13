@@ -4,13 +4,18 @@
 package io.deephaven.extensions.barrage.util;
 
 import io.deephaven.base.FileUtils;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -30,6 +35,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -531,6 +537,42 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         sampleColumnsForEncoding(table, detected, false, true);
 
         assertThat(detected.get("Symbol")).isEqualTo(ColumnEncoding.DICTIONARY_ENCODED_INT32);
+    }
+
+    /**
+     * An inconsistent snapshot attempt in {@code inferEncodings} is retried. Simulate an attempt that read previous
+     * values, where the column had few distinct values, and its retry, which reads current values that are all
+     * distinct: the retry must not keep the dictionary encoding the rejected attempt chose.
+     */
+    @Test
+    public void testRejectedSnapshotAttemptLeavesNoEncodingChoices() {
+        final int N = 100;
+        final String[] pool = {"AAPL", "MSFT", "GOOG", "AMZN"};
+        final String[] lowCardinality = new String[N];
+        final String[] distinct = new String[N];
+        for (int i = 0; i < N; i++) {
+            lowCardinality[i] = pool[i % pool.length];
+            distinct[i] = "SYM" + i;
+        }
+        final QueryTable table = TstUtils.testRefreshingTable(RowSetFactory.flat(N).toTracking(),
+                stringCol("Symbol", lowCardinality));
+        final Map<String, ColumnEncoding> startingEncodings =
+                new HashMap<>(Map.of("Other", ColumnEncoding.RUN_END_ENCODED_INT32));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, RowSetFactory.flat(N), stringCol("Symbol", distinct));
+
+            final Map<String, ColumnEncoding> rejected =
+                    BarrageUtil.detectEncodingsFromData(table, startingEncodings, true, false, false, true);
+            assertThat(rejected.get("Symbol")).isEqualTo(ColumnEncoding.DICTIONARY_ENCODED_INT32);
+
+            final Map<String, ColumnEncoding> accepted =
+                    BarrageUtil.detectEncodingsFromData(table, startingEncodings, false, false, false, true);
+            assertThat(accepted).doesNotContainKey("Symbol");
+            assertThat(accepted.get("Other")).isEqualTo(ColumnEncoding.RUN_END_ENCODED_INT32);
+        });
+        assertThat(startingEncodings).containsOnlyKeys("Other");
     }
 
     @Test

@@ -1517,28 +1517,57 @@ public class BarrageUtil {
         final boolean reeSample = REE_AUTO_DETECT_ENABLED && REE_SAMPLING_ENABLED;
         final boolean dictSample = DICT_AUTO_DETECT_ENABLED && DICT_SAMPLING_ENABLED;
         if (detectStructuralDict || reeSample || dictSample) {
+            // The snapshot retries an attempt that proves inconsistent. Each attempt therefore starts from the
+            // structural choices made above, and only the attempt the snapshot accepts, which is the last, is kept.
+            final MutableObject<Map<String, ColumnEncoding>> acceptedEncodings = new MutableObject<>();
             ConstructSnapshot.callDataSnapshotFunction("BarrageUtil.inferEncodings",
                     ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(),
                             (NotificationStepSource) table),
                     (usePrev, beforeClockValue) -> {
-                        final RowSet rowSetToUse = usePrev ? table.getRowSet().prev() : table.getRowSet();
-                        try (final WritableRowSet sampleRowSet = buildEncodingSampleRowSet(rowSetToUse)) {
-                            if (sampleRowSet != null) {
-                                // Structural dictionary detection is a cheap, high-confidence hint; run it first so a
-                                // symbol-table-backed column is marked without needing the cardinality pass.
-                                if (detectStructuralDict) {
-                                    detectStructuralDictionaryEncoding(table, sampleRowSet, encodings);
-                                }
-                                if (reeSample || dictSample) {
-                                    sampleColumnsForEncoding(table, encodings, usePrev, sampleRowSet, reeSample,
-                                            dictSample);
-                                }
-                            }
-                        }
+                        acceptedEncodings.setValue(detectEncodingsFromData(table, encodings, usePrev,
+                                detectStructuralDict, reeSample, dictSample));
                         return true;
                     });
+            return acceptedEncodings.getValue();
         }
 
+        return encodings;
+    }
+
+    /**
+     * Runs the encoding detection that reads live data, for one attempt of the snapshot in {@link #inferEncodings}. The
+     * result starts from a copy of {@code startingEncodings}, which this does not change, so that an attempt the
+     * snapshot rejects leaves no choices behind for the next attempt to treat as settled.
+     *
+     * @param table the table to detect encodings for
+     * @param startingEncodings the encodings chosen before the snapshot, without reading data
+     * @param usePrev whether to read previous values
+     * @param detectStructuralDict whether to detect dictionary encoding from symbol-table-backed sources
+     * @param reeSample whether to sample for run-end encoding
+     * @param dictSample whether to sample for dictionary encoding
+     * @return {@code startingEncodings} plus the encodings detected from the data
+     */
+    static Map<String, ColumnEncoding> detectEncodingsFromData(
+            @NotNull final Table table,
+            @NotNull final Map<String, ColumnEncoding> startingEncodings,
+            final boolean usePrev,
+            final boolean detectStructuralDict,
+            final boolean reeSample,
+            final boolean dictSample) {
+        final Map<String, ColumnEncoding> encodings = new HashMap<>(startingEncodings);
+        final RowSet rowSetToUse = usePrev ? table.getRowSet().prev() : table.getRowSet();
+        try (final WritableRowSet sampleRowSet = buildEncodingSampleRowSet(rowSetToUse)) {
+            if (sampleRowSet != null) {
+                // Structural dictionary detection is a cheap, high-confidence hint; run it first so a
+                // symbol-table-backed column is marked without needing the cardinality pass.
+                if (detectStructuralDict) {
+                    detectStructuralDictionaryEncoding(table, sampleRowSet, encodings);
+                }
+                if (reeSample || dictSample) {
+                    sampleColumnsForEncoding(table, encodings, usePrev, sampleRowSet, reeSample, dictSample);
+                }
+            }
+        }
         return encodings;
     }
 
