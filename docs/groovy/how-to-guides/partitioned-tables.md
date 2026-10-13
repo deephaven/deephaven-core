@@ -1,6 +1,5 @@
 ---
 title: Create and use partitioned tables
-sidebar_label: Partition
 ---
 
 This guide will show you how to create and use partitioned tables. A partitioned table is a special type of Deephaven table with a column containing other tables (known as constituent tables or subtables), plus additional key column(s) that are used to index and access particular constituent tables. Essentially, a partitioned table can be visualized as a vertical stack of tables with the same schema, all housed within a single object.

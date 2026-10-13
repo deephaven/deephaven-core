@@ -23,8 +23,7 @@ import io.deephaven.engine.util.TickSuppressor;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.vector.IntVectorDirect;
-import junit.framework.ComparisonFailure;
-import junit.framework.TestCase;
+import org.junit.ComparisonFailure;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,6 +41,7 @@ import java.util.stream.LongStream;
 
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.intCol;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests that exercise optimized operations for blink tables.
@@ -104,7 +104,7 @@ public class BlinkTableOperationsTest {
         final Table expected = operator.apply(normal);
         final Table blinkExpected = operator.apply(blink);
         TstUtils.assertTableEquals(expected, blinkExpected);
-        TestCase.assertEquals(expectBlinkResult, ((BaseTable<?>) blinkExpected).isBlink());
+        assertEquals(expectBlinkResult, ((BaseTable<?>) blinkExpected).isBlink());
 
         final PrimitiveIterator.OfLong refreshSizes = LongStream.concat(
                 LongStream.of(100, 0, 1, 2, 50, 0, 1000, 1, 0),
@@ -211,9 +211,9 @@ public class BlinkTableOperationsTest {
         final IntVectorDirect value2 = new IntVectorDirect(4, 5, 6);
 
         final Object cur = result.getColumnSource("Value").get(result.getRowSet().firstRowKey());
-        TestCase.assertEquals(value1, cur);
+        assertEquals(value1, cur);
         final Object prev = result.getColumnSource("Value").get(result.getRowSet().firstRowKey());
-        TestCase.assertEquals(value1, prev);
+        assertEquals(value1, prev);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.startCycleForUnitTests(true);
@@ -224,9 +224,9 @@ public class BlinkTableOperationsTest {
         while (updateGraph.flushOneNotificationForUnitTests());
 
         final Object cur2 = result.getColumnSource("Value").get(result.getRowSet().firstRowKey());
-        TestCase.assertEquals(isFirst ? value1 : value2, cur2);
+        assertEquals(isFirst ? value1 : value2, cur2);
         final Object prev2 = result.getColumnSource("Value").getPrev(result.getRowSet().firstRowKey());
-        TestCase.assertEquals(value1, prev2);
+        assertEquals(value1, prev2);
 
         updateGraph.completeCycleForUnitTests();
     }

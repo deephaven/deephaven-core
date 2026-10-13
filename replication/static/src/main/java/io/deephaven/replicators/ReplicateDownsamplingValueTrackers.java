@@ -9,7 +9,7 @@ import java.io.IOException;
 
 /**
  * Generates primitive value trackers from the char variant, so that only char and Object need to be manually
- * maintained. When these are changed, please run `./gradlew replicateDownsampleValueTrackers` to regenerate the other
+ * maintained. When these are changed, please run `./gradlew replicateDownsamplingValueTrackers` to regenerate the other
  * types.
  */
 public class ReplicateDownsamplingValueTrackers extends ReplicatePrimitiveCode {

@@ -1,6 +1,5 @@
 ---
 title: Execute SQL queries in Deephaven
-sidebar_label: SQL queries in Deephaven
 ---
 
 [Structured Query Language (SQL)](https://en.wikipedia.org/wiki/SQL) is the most popular programming language for database management and access. Its popularity can be attributed to a number of factors, including its simplicity, readability, and interoperability. Deephaven supports executing SQL queries against in-memory Deephaven tables using the [`Sql`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/sql/Sql.html) and [`SqlAdapter`](https://docs.deephaven.io/core/javadoc/io/deephaven/sql/SqlAdapter.html) Java classes.

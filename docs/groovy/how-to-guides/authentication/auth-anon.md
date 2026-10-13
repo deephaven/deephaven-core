@@ -1,6 +1,5 @@
 ---
 title: Enable anonymous authentication
-sidebar_label: Anonymous
 ---
 
 This guide will show you how to disable authentication for Deephaven run from Docker. This is also known as anonymous authentication. **Anonymous authentication allows anyone to connect to a Deephaven instance if they can reach it**.

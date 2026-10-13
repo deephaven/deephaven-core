@@ -176,7 +176,7 @@ public class SyncTableFilter {
                     addedBatch.add(state.matchedRows.copy());
                 }
                 try (final WritableRowSet added = addedBatch.build()) {
-                    resultRowSet[tt].insert(added);
+                    resultRowSet[tt].subsume(added);
                 }
             }
         }
@@ -244,7 +244,7 @@ public class SyncTableFilter {
 
                     removed = removedBatch.build();
                     added = addedBatch.build();
-                } catch (final RuntimeException | Error e) {
+                } catch (final Throwable e) {
                     SafeCloseable.closeAll(removed, added);
                     throw e;
                 }
@@ -256,7 +256,7 @@ public class SyncTableFilter {
                     modified = recorders.get(tt).getModified().intersect(resultRowSet[tt]);
                     modified.remove(added);
                     try (final WritableRowSet addedAndRemoved = added.intersect(removed)) {
-                        modified.insert(addedAndRemoved);
+                        modified.subsume(addedAndRemoved);
                     }
                 } else {
                     // Rows that were both added and removed are the only modifications in this case.

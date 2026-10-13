@@ -78,7 +78,7 @@ class FilterKernelPythonSingularFunction implements FilterKernel<FilterKernel.Co
             final WritableBooleanChunk<Values> results) {
         final Class<?>[] paramTypes = ArgumentsSingular.buildParamTypes(inputChunks);
         context.resultChunk.setSize(0);
-        // Count the values that changed from true to false
+        // Count the values that remain true
         int count = 0;
         for (int i = 0; i < chunkSize; ++i) {
             boolean result = results.get(i);
@@ -89,7 +89,7 @@ class FilterKernelPythonSingularFunction implements FilterKernel<FilterKernel.Co
             final Object[] params = ArgumentsSingular.buildArguments(inputChunks, i);
             boolean newResult = function.call(boolean.class, CALL_METHOD, paramTypes, params);
             results.set(i, newResult);
-            count += result == newResult ? 0 : 1;
+            count += newResult ? 1 : 0;
         }
         return count;
     }

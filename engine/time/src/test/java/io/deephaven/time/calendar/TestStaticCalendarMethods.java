@@ -4,8 +4,9 @@
 package io.deephaven.time.calendar;
 
 import io.deephaven.base.clock.Clock;
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -16,12 +17,15 @@ import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.*;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
 /**
  * Tests for {@link StaticCalendarMethods}
  * <p>
  * See also {@code StaticCalendarMethodsGenerator}.
  */
-public class TestStaticCalendarMethods extends BaseArrayTestCase {
+public class TestStaticCalendarMethods {
     private final Map<Class<?>, Object[]> data = new HashMap<>();
 
     {
@@ -93,13 +97,13 @@ public class TestStaticCalendarMethods extends BaseArrayTestCase {
         }
     }
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
         CalendarInit.init();
     }
 
     // test to make sure these methods work inside the query strings
+    @Test
     public void testAll() {
         final Set<String> excludes = new HashSet<>();
         excludes.add("toString");

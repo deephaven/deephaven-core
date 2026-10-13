@@ -358,7 +358,10 @@ bool Server::KeepaliveHelper() {
     std::unique_lock guard(shared_state_->mutex_);
     std::chrono::system_clock::time_point now;
     while (true) {
-      (void) shared_state_->condVar_.wait_until(guard, shared_state_->nextHandshakeTime_);
+      // Check for cancellation before waiting. Shutdown() notifies only once, so if this thread is
+      // not waiting at that moment (it has not started yet, or is sending a handshake), waiting
+      // first would sleep until nextHandshakeTime_ -- half the server's session timeout -- while
+      // Shutdown() blocks joining this thread.
       if (shared_state_->cancelled_) {
         return false;
       }
@@ -368,6 +371,7 @@ bool Server::KeepaliveHelper() {
       if (now >= shared_state_->nextHandshakeTime_) {
         break;
       }
+      (void) shared_state_->condVar_.wait_until(guard, shared_state_->nextHandshakeTime_);
     }
     // Set a default nextHandshakeTime_. This will likely be overwritten by SendRpc, if it succeeds.
     shared_state_->nextHandshakeTime_ = now + kHandshakeResendInterval;

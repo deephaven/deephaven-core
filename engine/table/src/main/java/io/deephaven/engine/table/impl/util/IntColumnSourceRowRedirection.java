@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -26,6 +27,14 @@ public class IntColumnSourceRowRedirection<CST extends ColumnSource<Integer>> im
 
     public IntColumnSourceRowRedirection(@NotNull final CST columnSource) {
         this.columnSource = columnSource;
+    }
+
+    /**
+     * @return the column source that holds this redirection's inner row keys
+     */
+    @VisibleForTesting
+    public CST getColumnSource() {
+        return columnSource;
     }
 
     @Override

@@ -1,6 +1,5 @@
 ---
 title: Is docker compose required?
-sidebar_label: Is docker compose required?
 ---
 
 <em>Many examples in your installation guides show the use of `docker compose`. Is it required?</em>

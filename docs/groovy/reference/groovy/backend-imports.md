@@ -1,6 +1,5 @@
 ---
 title: Automatic Backend Imports
-sidebar_label: Backend Imports
 ---
 
 This guide outlines the backend packages and classes a new Deephaven instance automatically imports during startup.

@@ -1,6 +1,5 @@
 ---
 title: "Multithreading: Synchronization, locks, and snapshots"
-sidebar_label: Synchronization and locking
 ---
 
 Deephaven is often run on multiprocessor systems. Synchronized access to changing data from multiple threads is

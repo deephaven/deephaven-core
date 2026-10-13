@@ -57,6 +57,10 @@ class LongVectorChunkFilter extends VectorChunkFilter {
                 continue;
             }
             final LongVector vector = objectChunk.get(indexOfVector);
+            if (vector == null) {
+                // a null vector has no elements, so none can match
+                continue;
+            }
             try (final ValueIteratorOfLong vi = vector.iterator()) {
                 while (vi.hasNext()) {
                     final long element = vi.next();
@@ -84,6 +88,10 @@ class LongVectorChunkFilter extends VectorChunkFilter {
                 continue;
             }
             final LongVector vector = objectChunk.get(indexOfVector);
+            if (vector == null) {
+                // a null vector has no elements, so none can match
+                continue;
+            }
             try (final ValueIteratorOfLong vi = vector.iterator()) {
                 while (vi.hasNext()) {
                     final long element = vi.next();

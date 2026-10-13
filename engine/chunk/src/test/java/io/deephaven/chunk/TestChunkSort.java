@@ -4,14 +4,15 @@
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
-import junit.framework.TestCase;
 import org.junit.Test;
 
 import java.math.BigInteger;
 import java.math.BigDecimal;
 import java.util.*;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.util.QueryConstants.*;
+import static org.junit.Assert.*;
 
 /**
  * Verify expectations about chunk sorting for NULL / NaN and regular values. Performs exhaustive testing of all
@@ -107,16 +108,16 @@ public class TestChunkSort {
     // change, this code will need to be carefully audited.
     @Test
     public void testValueTypeAssertions() {
-        TestCase.assertEquals(NULL_CHAR, Character.MAX_VALUE);
-        TestCase.assertEquals(NULL_BYTE, Byte.MIN_VALUE);
-        TestCase.assertEquals(NULL_SHORT, Short.MIN_VALUE);
-        TestCase.assertEquals(NULL_INT, Integer.MIN_VALUE);
-        TestCase.assertEquals(NULL_LONG, Long.MIN_VALUE);
-        TestCase.assertEquals(NULL_FLOAT, -Float.MAX_VALUE);
-        TestCase.assertEquals(NULL_DOUBLE, -Double.MAX_VALUE);
+        assertEquals(NULL_CHAR, Character.MAX_VALUE);
+        assertEquals(NULL_BYTE, Byte.MIN_VALUE);
+        assertEquals(NULL_SHORT, Short.MIN_VALUE);
+        assertEquals(NULL_INT, Integer.MIN_VALUE);
+        assertEquals(NULL_LONG, Long.MIN_VALUE);
+        assertEquals(NULL_FLOAT, -Float.MAX_VALUE);
+        assertEquals(NULL_DOUBLE, -Double.MAX_VALUE);
 
-        TestCase.assertTrue(Float.NEGATIVE_INFINITY < NULL_FLOAT);
-        TestCase.assertTrue(Double.NEGATIVE_INFINITY < NULL_DOUBLE);
+        assertTrue(Float.NEGATIVE_INFINITY < NULL_FLOAT);
+        assertTrue(Double.NEGATIVE_INFINITY < NULL_DOUBLE);
     }
 
     @Test
@@ -187,9 +188,9 @@ public class TestChunkSort {
                     chunk.setSize(offset);
                     permutation.forEach(chunk::add);
                     chunk.sort(offset, setSize);
-                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    assertEquals(expected.size(), chunk.size() - offset);
                     for (int i = 0; i < expected.size(); i++) {
-                        TestCase.assertEquals(
+                        assertEquals(
                                 "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
                                 (char) expected.get(i), chunk.get(i + offset));
                     }
@@ -228,9 +229,9 @@ public class TestChunkSort {
                     chunk.setSize(offset);
                     permutation.forEach(chunk::add);
                     chunk.sort(offset, setSize);
-                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    assertEquals(expected.size(), chunk.size() - offset);
                     for (int i = 0; i < expected.size(); i++) {
-                        TestCase.assertEquals(
+                        assertEquals(
                                 "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
                                 (byte) expected.get(i), chunk.get(i + offset));
                     }
@@ -269,9 +270,9 @@ public class TestChunkSort {
                     chunk.setSize(offset);
                     permutation.forEach(chunk::add);
                     chunk.sort(offset, setSize);
-                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    assertEquals(expected.size(), chunk.size() - offset);
                     for (int i = 0; i < expected.size(); i++) {
-                        TestCase.assertEquals(
+                        assertEquals(
                                 "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
                                 (short) expected.get(i), chunk.get(i + offset));
                     }
@@ -310,9 +311,9 @@ public class TestChunkSort {
                     chunk.setSize(offset);
                     permutation.forEach(chunk::add);
                     chunk.sort(offset, setSize);
-                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    assertEquals(expected.size(), chunk.size() - offset);
                     for (int i = 0; i < expected.size(); i++) {
-                        TestCase.assertEquals(
+                        assertEquals(
                                 "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
                                 (int) expected.get(i), chunk.get(i + offset));
                     }
@@ -351,9 +352,9 @@ public class TestChunkSort {
                     chunk.setSize(offset);
                     permutation.forEach(chunk::add);
                     chunk.sort(offset, setSize);
-                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    assertEquals(expected.size(), chunk.size() - offset);
                     for (int i = 0; i < expected.size(); i++) {
-                        TestCase.assertEquals(
+                        assertEquals(
                                 "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
                                 (long) expected.get(i), chunk.get(i + offset));
                     }
@@ -449,12 +450,12 @@ public class TestChunkSort {
                     chunk.setSize(offset);
                     permutation.forEach(chunk::add);
                     chunk.sort(offset, setSize);
-                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    assertEquals(expected.size(), chunk.size() - offset);
                     for (int i = 0; i < expected.size(); i++) {
                         if (Float.isNaN(expected.get(i))) {
-                            TestCase.assertTrue(Float.isNaN(chunk.get(i + offset)));
+                            assertTrue(Float.isNaN(chunk.get(i + offset)));
                         } else if (expected.get(i) != chunk.get(i + offset)) {
-                            TestCase.fail("Expected " + expected.get(i) + " but got " + chunk.get(i + offset)
+                            fail("Expected " + expected.get(i) + " but got " + chunk.get(i + offset)
                                     + " at index " + i);
                         }
                     }
@@ -550,12 +551,12 @@ public class TestChunkSort {
                     chunk.setSize(offset);
                     permutation.forEach(chunk::add);
                     chunk.sort(offset, setSize);
-                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    assertEquals(expected.size(), chunk.size() - offset);
                     for (int i = 0; i < expected.size(); i++) {
                         if (Double.isNaN(expected.get(i))) {
-                            TestCase.assertTrue(Double.isNaN(chunk.get(i + offset)));
+                            assertTrue(Double.isNaN(chunk.get(i + offset)));
                         } else if (expected.get(i) != chunk.get(i + offset)) {
-                            TestCase.fail("Expected " + expected.get(i) + " but got " + chunk.get(i + offset)
+                            fail("Expected " + expected.get(i) + " but got " + chunk.get(i + offset)
                                     + " at index " + i);
                         }
                     }
@@ -595,9 +596,9 @@ public class TestChunkSort {
                     chunk.setSize(offset);
                     permutation.forEach(chunk::add);
                     chunk.sort(offset, setSize);
-                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    assertEquals(expected.size(), chunk.size() - offset);
                     for (int i = 0; i < expected.size(); i++) {
-                        TestCase.assertEquals(
+                        assertEquals(
                                 "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
                                 expected.get(i), chunk.get(i + offset));
                     }
@@ -638,9 +639,9 @@ public class TestChunkSort {
                     chunk.setSize(offset);
                     permutation.forEach(chunk::add);
                     chunk.sort(offset, setSize);
-                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    assertEquals(expected.size(), chunk.size() - offset);
                     for (int i = 0; i < expected.size(); i++) {
-                        TestCase.assertEquals(
+                        assertEquals(
                                 "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
                                 expected.get(i), chunk.get(i + offset));
                     }
@@ -681,9 +682,9 @@ public class TestChunkSort {
                     chunk.setSize(offset);
                     permutation.forEach(chunk::add);
                     chunk.sort(offset, setSize);
-                    TestCase.assertEquals(expected.size(), chunk.size() - offset);
+                    assertEquals(expected.size(), chunk.size() - offset);
                     for (int i = 0; i < expected.size(); i++) {
-                        TestCase.assertEquals(
+                        assertEquals(
                                 "Expected " + expected.get(i) + " but got " + chunk.get(i + offset) + " at index " + i,
                                 expected.get(i), chunk.get(i + offset));
                     }

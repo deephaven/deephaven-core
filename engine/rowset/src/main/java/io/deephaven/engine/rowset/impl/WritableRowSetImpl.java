@@ -123,6 +123,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insert(final long key) {
         preMutationHook();
+        Assert.geqZero(key, "key");
         assign(innerSet.ixInsert(key));
         postMutationHook();
     }
@@ -130,9 +131,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insertRange(final long startKey, final long endKey) {
         preMutationHook();
-        if (endKey >= startKey) {
-            assign(innerSet.ixInsertRange(startKey, endKey));
-        }
+        Assert.geqZero(startKey, "startKey");
+        Assert.leq(startKey, "startKey", endKey, "endKey");
+        assign(innerSet.ixInsertRange(startKey, endKey));
         postMutationHook();
     }
 
@@ -140,6 +141,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     public final void insert(final LongChunk<OrderedRowKeys> keys, final int offset, final int length) {
         Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
         preMutationHook();
+        // The keys are ordered, so the first one is the least.
+        if (length > 0) {
+            Assert.geqZero(keys.get(offset), "keys.get(offset)");
+        }
         assign(innerSet.ixInsert(keys, offset, length));
         postMutationHook();
     }
@@ -156,6 +161,48 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         }
         preMutationHook();
         assign(innerSet.ixInsert(getInnerSet(added)));
+        postMutationHook();
+    }
+
+    @Override
+    public final void subsume(final WritableRowSet other) {
+        if (other == this) {
+            // Subsuming yourself has no answer: the union with ourselves is the keys we already hold, and emptying
+            // the argument would take them away.
+            throw new IllegalArgumentException("Cannot subsume a RowSet into itself");
+        }
+        if (!(other instanceof WritableRowSetImpl)) {
+            throw new UnsupportedOperationException("Unexpected RowSet type " + other.getClass());
+        }
+        final WritableRowSetImpl otherImpl = (WritableRowSetImpl) other;
+        // Both sides are mutated, so both hooks fire before either is touched; a tracking set snapshots its previous
+        // value here, which is what makes the set it snapshots shared and so safe to read through below.
+        preMutationHook();
+        otherImpl.preMutationHook();
+        final OrderedLongSet mine = innerSet;
+        final OrderedLongSet theirs = otherImpl.innerSet;
+        if (mine == theirs) {
+            // The two sets share their keys, so the union is what we already hold.
+            otherImpl.assign(OrderedLongSet.EMPTY);
+        } else {
+            final boolean reversed = InsertCostEstimation.shouldInsertReversed(mine, theirs);
+            final OrderedLongSet receiver = reversed ? theirs : mine;
+            final OrderedLongSet argument = reversed ? mine : theirs;
+            final OrderedLongSet result = receiver.ixInsert(argument);
+            invalidateRowSequenceAsChunkImpl();
+            otherImpl.invalidateRowSequenceAsChunkImpl();
+            innerSet = result;
+            otherImpl.innerSet = OrderedLongSet.EMPTY;
+            // We came in holding a reference to each side and leave holding only the result. The result stands in
+            // for the receiver's reference, which is the receiver itself when it was edited in place; the argument's
+            // reference is always still ours to give back, even when the result is the argument's set, since an
+            // insert that answers with its argument takes a reference of its own to it first.
+            if (result != receiver) {
+                receiver.ixRelease();
+            }
+            argument.ixRelease();
+        }
+        otherImpl.postMutationHook();
         postMutationHook();
     }
 
@@ -257,6 +304,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insertWithShift(final long shiftAmount, final RowSet other) {
         preMutationHook();
+        checkShiftNonnegative(other, shiftAmount);
         if (other == this) {
             // Applying this to ourselves is not a no-op the way self-insertion is; it unions in a shifted copy of
             // our own keys. The ix* implementations build the result by mutating in place, so the operand being
@@ -385,6 +433,21 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final WritableRowSet shift(final long shiftAmount) {
         return new WritableRowSetImpl(innerSet.ixShiftOnNew(shiftAmount));
+    }
+
+    /**
+     * A negative shift can move the first key below zero, and a positive one can carry the last key past
+     * {@link Long#MAX_VALUE}, where it wraps negative.
+     */
+    private static void checkShiftNonnegative(final RowSet rowSet, final long shiftAmount) {
+        if (rowSet.isEmpty()) {
+            return;
+        }
+        if (shiftAmount < 0) {
+            Assert.geqZero(rowSet.firstRowKey() + shiftAmount, "firstRowKey() + shiftAmount");
+        } else {
+            Assert.geqZero(rowSet.lastRowKey() + shiftAmount, "lastRowKey() + shiftAmount");
+        }
     }
 
     @Override

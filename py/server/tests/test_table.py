@@ -531,6 +531,13 @@ class TableTestCase(BaseTestCase):
         with self.subTest("with no join keys"):
             result_table = left_table.join(right_table, joins="e", reserve_bits=2)
             self.assertTrue(result_table.size > left_table.size)
+        for reserve_bits in [0, 63]:
+            with self.subTest("out of range reserve_bits", reserve_bits=reserve_bits):
+                with self.assertRaises(DHError) as cm:
+                    left_table.join(
+                        right_table, on="a", joins="e", reserve_bits=reserve_bits
+                    )
+                self.assertIn("reserveBits must be between 1 and 62", str(cm.exception))
 
     def test_as_of_join(self):
         left_table = self.test_table.drop_columns(["d", "e"])
@@ -815,11 +822,10 @@ class TableTestCase(BaseTestCase):
         with update_graph.shared_lock(t):
             snapshot_hist = self.test_table.snapshot_when(t, history=True)
             self.assertFalse(snapshot_hist.is_failed)
-        self.wait_ticking_table_update(t, row_count=10, timeout=2)
-        # we have not waited for a whole cycle yet, wait for the shared lock to guarantee cycle is over
-        # to ensure snapshot_hist has had the opportunity to process the update we just saw
-        with update_graph.shared_lock(t):
-            self.assertTrue(snapshot_hist.is_failed)
+        # a history snapshot fails when its trigger table is not append-only, but the tail only
+        # begins removing rows after its parent has grown past 10 rows, which takes an unpredictable
+        # number of update cycles
+        self.wait_ticking_table_failure(snapshot_hist, timeout=30)
 
     def test_agg_all_by(self):
         test_table = empty_table(10)

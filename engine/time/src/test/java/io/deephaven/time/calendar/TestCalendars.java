@@ -3,22 +3,26 @@
 //
 package io.deephaven.time.calendar;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.time.DateTimeUtils;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.Objects;
 
-public class TestCalendars extends BaseArrayTestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
-    @Override
+public class TestCalendars {
+
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
         CalendarInit.init();
     }
 
+    @Test
     public void testDefault() {
         final BusinessCalendar calendar = Calendars.calendar();
         assertEquals(Configuration.getInstance().getProperty("Calendar.default"), Calendars.calendarName());
@@ -34,11 +38,13 @@ public class TestCalendars extends BaseArrayTestCase {
         Calendars.setCalendar(defaultCal);
     }
 
+    @Test
     public void testCalendarNames() {
         assertEquals(new String[] {"CAL1", "CAL2", "USBANK_EXAMPLE", "USNYSE_EXAMPLE", "UTC"},
                 Calendars.calendarNames());
     }
 
+    @Test
     public void testCalendar() {
         for (final String cn : Calendars.calendarNames()) {
             final BusinessCalendar calendar = Calendars.calendar(cn);
@@ -55,6 +61,7 @@ public class TestCalendars extends BaseArrayTestCase {
         assertNull(Calendars.calendar(null));
     }
 
+    @Test
     public void testAdd() throws URISyntaxException {
 
         final String path = Paths
@@ -85,11 +92,13 @@ public class TestCalendars extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testUTCDayLength() {
         final BusinessCalendar cal = Calendars.calendar("UTC");
         assertEquals(DateTimeUtils.DAY, cal.standardBusinessDay().businessNanos());
     }
 
+    @Test
     public void testNYSEDayLength() {
         final BusinessCalendar cal = Calendars.calendar("USNYSE_EXAMPLE");
         assertEquals(6 * DateTimeUtils.HOUR + 30 * DateTimeUtils.MINUTE, cal.standardBusinessDay().businessNanos());

@@ -186,6 +186,40 @@ public class RowSetTestCommon {
         return out;
     }
 
+    /**
+     * {@code a} minus {@code b} over two ascending, non-overlapping range lists, by a two-pointer walk over the ranges.
+     * An oracle independent of the rowset code, and one whose cost is in ranges rather than keys, so wide ranges are
+     * cheap.
+     */
+    public static List<long[]> minusRanges(final List<long[]> a, final List<long[]> b) {
+        final List<long[]> out = new ArrayList<>();
+        int j = 0;
+        for (final long[] ra : a) {
+            // Both lists ascend, so ranges of b that end before this range of a begins are spent for good.
+            while (j < b.size() && b.get(j)[1] < ra[0]) {
+                ++j;
+            }
+            long start = ra[0];
+            boolean consumed = false;
+            for (int k = j; k < b.size() && b.get(k)[0] <= ra[1]; ++k) {
+                final long[] rb = b.get(k);
+                if (start < rb[0]) {
+                    out.add(new long[] {start, rb[0] - 1});
+                }
+                if (rb[1] >= ra[1]) {
+                    consumed = true;
+                    break;
+                }
+                // rb[1] < ra[1] here, so this cannot wrap even when ra ends at Long.MAX_VALUE.
+                start = rb[1] + 1;
+            }
+            if (!consumed) {
+                out.add(new long[] {start, ra[1]});
+            }
+        }
+        return out;
+    }
+
     public static List<Long> keysOf(final RowSet rs) {
         final List<Long> out = new ArrayList<>();
         rs.forAllRowKeys(out::add);

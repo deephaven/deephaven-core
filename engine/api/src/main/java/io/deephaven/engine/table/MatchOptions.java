@@ -26,7 +26,8 @@ public abstract class MatchOptions {
     }
 
     /**
-     * In the case of string matching, whether the match should ignore case.
+     * In the case of string matching, whether the match should ignore case. This applies only to {@link String}
+     * columns; it has no effect on columns of any other type, {@code char} included.
      */
     @Default
     public boolean caseInsensitive() {

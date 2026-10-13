@@ -1,9 +1,8 @@
 ---
 title: Logic functions
-sidebar_label: Logic
 ---
 
-Boolean logic functions from [`io.deephaven.function.Logic`](/core/javadoc/io/deephaven/function/Logic.html).
+Boolean operations: and, or, not.
 
 | Type     | Name | Signature                                                                                                                                                      | Description                                   |
 | -------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
@@ -21,3 +20,4 @@ Boolean logic functions from [`io.deephaven.function.Logic`](/core/javadoc/io/de
 ## Related documentation
 
 - [Auto-imported functions](./index.md)
+- [Query language functions](../../../../how-to-guides/built-in-functions.md)

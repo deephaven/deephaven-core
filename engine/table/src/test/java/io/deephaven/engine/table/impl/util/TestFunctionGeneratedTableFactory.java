@@ -35,6 +35,7 @@ import io.deephaven.qst.type.Type;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.junit.Test;
 
 import java.util.Optional;
 import java.util.Random;
@@ -42,8 +43,10 @@ import java.util.Random;
 import static io.deephaven.engine.table.impl.util.TestKeyedArrayBackedInputTable.handleDelayedRefresh;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 
 public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
+    @Test
     public void testIterative() {
         Random random = new Random(0);
         ColumnInfo<?, ?>[] columnInfo;
@@ -73,6 +76,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testNoSources() {
         // If no sources are specified, function should still run once on initialization.
         final Table functionBacked =
@@ -86,6 +90,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
                 intCol("IntCol", 12345)), functionBacked);
     }
 
+    @Test
     public void testMultipleSources() throws Exception {
         final AppendOnlyArrayBackedInputTable source1 = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
                 ColumnDefinition.of("StringCol", Type.stringType())));
@@ -113,6 +118,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
                 intCol("IntCol", 12345)), functionBacked);
     }
 
+    @Test
     public void testSpecCopyDataIterative() {
         Random random = new Random(0);
         ColumnInfo<?, ?>[] columnInfo;
@@ -139,6 +145,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testSpecSwitchColumnSources() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
@@ -180,6 +187,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         return new ImmutableColumnHolder<>(name, int.class, null, false, chunk);
     }
 
+    @Test
     public void testSwitchRejectsMutableSources() {
         final Random random = new Random(0);
         final QueryTable queryTable = getTable(50, random,
@@ -202,6 +210,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testSpecDefinitionMismatchFails() {
         // A specified definition is authoritative; the generated table must be compatible with it.
         try {
@@ -215,6 +224,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testSpecDefinitionRejectsInvalidColumnNames() {
         // A supplied definition may carry user-provided column names; illegal names are rejected before any column
         // sources are created, including on the path where the supplier produces no initial table.
@@ -229,6 +239,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testSpecDefinitionPreservesColumnMetadata() {
         // The supplied definition is authoritative, so metadata it carries (such as a partitioning column type) must
         // survive into the result rather than being re-inferred from the column sources.
@@ -247,6 +258,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testDefinitionDefinesColumnOrder() {
         // The supplied definition orders the columns (B, A); the generator produces them in the opposite order (A, B).
         final TableDefinition definition = TableDefinition.of(
@@ -265,6 +277,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRetainingLast() throws Exception {
         final AppendOnlyArrayBackedInputTable source = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
                 ColumnDefinition.of("IntCol", Type.intType())));
@@ -292,10 +305,12 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertTableEquals(newTable(intCol("Sum", 2)), functionBacked);
     }
 
+    @Test
     public void testBlinkTableCopy() throws Exception {
         checkBlinkTable(true);
     }
 
+    @Test
     public void testBlinkTableSwitch() throws Exception {
         checkBlinkTable(false);
     }
@@ -331,6 +346,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertTableEquals(newTable(longCol("Size", 2L, 3L)), functionBacked);
     }
 
+    @Test
     public void testBlinkSwitchClearReleasesDelegates() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
@@ -370,6 +386,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertNull(column.getPrev(0));
     }
 
+    @Test
     public void testBlinkRetainingLastClears() throws Exception {
         final AppendOnlyArrayBackedInputTable source = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
                 ColumnDefinition.of("IntCol", Type.intType())));
@@ -402,6 +419,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertTableEquals(newTable(longCol("Size", 2L, 3L)), functionBacked);
     }
 
+    @Test
     public void testBlinkIntervalClearsBetweenRefreshes() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
@@ -433,6 +451,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         listener.close();
     }
 
+    @Test
     public void testBlinkDependencyClearsWithoutTick() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         final QueryTable source = testRefreshingTable(i(0).toTracking(), intCol("IntCol", 1));
@@ -484,6 +503,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         listener.close();
     }
 
+    @Test
     public void testCopyShrinkAndGrow() throws Exception {
         final AppendOnlyArrayBackedInputTable source = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
                 ColumnDefinition.of("IntCol", Type.intType())));
@@ -513,6 +533,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertTableEquals(newTable(stringCol("Key", "p", "q")), functionBacked);
     }
 
+    @Test
     public void testNoTriggerIsStatic() {
         final MutableInt invocations = new MutableInt(0);
         final Table result = FunctionGeneratedTableFactory.create(FunctionGeneratedTableSpec.builder()
@@ -534,6 +555,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertTableEquals(newTable(intCol("Value", 1)), result);
     }
 
+    @Test
     public void testBlinkRequiresTrigger() {
         try {
             FunctionGeneratedTableSpec.builder()
@@ -546,6 +568,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMissingDefinitionFails() {
         // A retaining-last supplier that produces nothing at startup, with no definition, must fail on construction.
         try {
@@ -558,6 +581,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMutuallyExclusiveSuppliers() {
         try {
             FunctionGeneratedTableSpec.builder()
@@ -570,6 +594,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMutuallyExclusiveTriggers() {
         try {
             FunctionGeneratedTableSpec.builder()
@@ -583,6 +608,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testSubMillisecondIntervalFails() {
         // A sub-millisecond interval would truncate to zero milliseconds later, so it must be rejected.
         try {
@@ -596,6 +622,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testOversizedIntervalFails() {
         // The factory schedules with an int millisecond interval, so longer durations are rejected up front.
         try {
@@ -609,6 +636,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testUnrepresentableIntervalFails() {
         // A Duration too large to express in milliseconds must still produce the documented validation failure rather
         // than an ArithmeticException from the millisecond conversion.
@@ -623,6 +651,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testIntervalRefresh() throws Exception {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
@@ -645,6 +674,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertTableEquals(newTable(intCol("V", 2, 3)), functionBacked);
     }
 
+    @Test
     public void testIntervalSourceDestroyed() {
         // Releasing the only reference to an interval-driven result destroys it and removes it as a periodic source.
         final LivenessScope scope = new LivenessScope();
@@ -657,6 +687,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertFalse(functionBacked.tryRetainReference());
     }
 
+    @Test
     public void testDependenciesMustBeRefreshing() {
         // A static dependency is rejected: the factory can only be driven by refreshing sources.
         try {
@@ -667,6 +698,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testSwitchNoInitialTable() throws Exception {
         final AppendOnlyArrayBackedInputTable source = AppendOnlyArrayBackedInputTable.make(TableDefinition.of(
                 ColumnDefinition.of("IntCol", Type.intType())));
@@ -691,6 +723,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertTableEquals(newTable(intCol("Sum", 1)), functionBacked);
     }
 
+    @Test
     public void testGeneratedTableWrongUpdateGraph() {
         // A generated refreshing table belonging to a different UpdateGraph than the factory's must be rejected.
         final UpdateGraph otherUpdateGraph = new ControlledUpdateGraph(TestExecutionContext.OPERATION_INITIALIZATION);
@@ -707,6 +740,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRefreshWrongUpdateGraphNotifies() {
         final UpdateGraph otherUpdateGraph = new ControlledUpdateGraph(TestExecutionContext.OPERATION_INITIALIZATION);
         final QueryTable foreign;
@@ -738,6 +772,7 @@ public class TestFunctionGeneratedTableFactory extends RefreshingTableTestCase {
         assertNotNull(errorListener.originalException);
     }
 
+    @Test
     public void testRefreshErrorNotifies() {
         final QueryTable source = testRefreshingTable(i(0).toTracking(), intCol("IntCol", 1));
         final MutableObject<Table> nextResult = new MutableObject<>(newTable(intCol("V", 1)));

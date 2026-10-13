@@ -113,7 +113,7 @@ public class RowSetUnionBatcherTest {
 
     @Test
     public void buildWithNothingAddedIsEmpty() {
-        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.MAX_BATCH_SIZE);
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.maxBatchSize);
                 final WritableRowSet built = batcher.build()) {
             assertThat(built.isEmpty()).isTrue();
         }
@@ -130,6 +130,73 @@ public class RowSetUnionBatcherTest {
             }
             try (final WritableRowSet built = batcher.build()) {
                 assertThat(built.size()).isEqualTo(64 * 50);
+            }
+        } finally {
+            SafeCloseable.closeAll(rowSets);
+        }
+    }
+
+    /** The entries a row set stores, which is what the batcher weighs a prepend against. */
+    private static long entryCount(final RowSet rowSet) {
+        return ((WritableRowSetImpl) rowSet).getInnerSet().ixEntryCount();
+    }
+
+    @Test
+    public void descendingInputOfGrowingRowSetsCollapsesToOneRowSet() {
+        // Each row set is wholly below the run and holds at least as many entries as the run does, so folding it in
+        // pays for moving the run with the entries it brings, and the batch never reaches a second slot.
+        final List<RowSet> rowSets = new ArrayList<>();
+        long below = 1_000_000;
+        for (int entries = 1; entries <= 128; entries *= 2) {
+            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+            below -= 2L * entries;
+            for (int jj = 0; jj < entries; ++jj) {
+                builder.appendKey(below + 2L * jj);
+            }
+            rowSets.add(builder.build());
+        }
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(4)) {
+            for (final RowSet rowSet : rowSets) {
+                batcher.add(rowSet.copy());
+                assertThat(batcher.pendingBatchSize()).isEqualTo(1);
+            }
+            try (final WritableRowSet built = batcher.build();
+                    final WritableRowSet expected = reference(rowSets)) {
+                assertThat(built).isEqualTo(expected);
+            }
+        } finally {
+            SafeCloseable.closeAll(rowSets);
+        }
+    }
+
+    @Test
+    public void aPrependIsTakenOnlyWhenTheRunCanPayForIt() {
+        // The guard is about relative size, not about prepends. A small row set below a large run would move the
+        // whole run to save one slot, so it starts a run of its own and reaches the batch merge; the next one, below
+        // a run its own size, folds in.
+        final RowSetBuilderSequential bulk = RowSetFactory.builderSequential();
+        for (int jj = 0; jj < 512; ++jj) {
+            bulk.appendKey(1_000_000L + 2L * jj);
+        }
+        final List<RowSet> rowSets =
+                List.of(bulk.build(), RowSetFactory.fromKeys(20, 21), RowSetFactory.fromKeys(16, 17));
+        try {
+            // The premise: the run really does store an entry per key, so moving it is what the guard weighs.
+            assertThat(entryCount(rowSets.get(0))).isEqualTo(512);
+            assertThat(entryCount(rowSets.get(1))).isEqualTo(1);
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(64)) {
+                batcher.add(rowSets.get(0).copy());
+                assertThat(batcher.pendingBatchSize()).isEqualTo(1);
+                // Below the run, but 512 entries would move to take 1: a slot of its own.
+                batcher.add(rowSets.get(1).copy());
+                assertThat(batcher.pendingBatchSize()).isEqualTo(2);
+                // Below that run, and no larger than it: folded in, so no new slot.
+                batcher.add(rowSets.get(2).copy());
+                assertThat(batcher.pendingBatchSize()).isEqualTo(2);
+                try (final WritableRowSet built = batcher.build();
+                        final WritableRowSet expected = reference(rowSets)) {
+                    assertThat(built).isEqualTo(expected);
+                }
             }
         } finally {
             SafeCloseable.closeAll(rowSets);
@@ -158,12 +225,12 @@ public class RowSetUnionBatcherTest {
         // A caller whose count is a table size can hand it straight over; what the count buys is merging once when it
         // is small, not an unbounded batch when it is not. Two ranges each, so the sets genuinely interleave and none
         // of them appends to the one before it.
-        final List<RowSet> rowSets = interleaved(RowSetUnionBatcher.MAX_BATCH_SIZE + 1, 2);
+        final List<RowSet> rowSets = interleaved(RowSetUnionBatcher.maxBatchSize + 1, 2);
         // A row count, which is what a caller with a table rather than a collection has to offer.
         try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(Long.MAX_VALUE)) {
             for (int ii = 0; ii < rowSets.size(); ++ii) {
                 batcher.add(rowSets.get(ii).copy());
-                assertThat(batcher.pendingBatchSize()).isLessThanOrEqualTo(RowSetUnionBatcher.MAX_BATCH_SIZE);
+                assertThat(batcher.pendingBatchSize()).isLessThanOrEqualTo(RowSetUnionBatcher.maxBatchSize);
             }
             // The row set after the maximum found the batch already collapsed rather than still gathering.
             assertThat(batcher.groupCount()).isEqualTo(1);
@@ -227,12 +294,12 @@ public class RowSetUnionBatcherTest {
 
     @Test
     public void aFullBatchLeavesTheGroupAvailableToAppendOnto() {
-        // Two to a batch. The first two arrive out of order, so neither appends to the other and they fill the batch;
-        // the third appends past the group they collapsed into, which only splices if the collapse left that group as
-        // the run.
+        // Two to a batch. The first two overlap, so neither falls clear of the other on either side and they fill the
+        // batch; the third appends past the group they collapsed into, which only splices if the collapse left that
+        // group as the run.
         try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(2)) {
             batcher.add(RowSetFactory.fromRange(100, 199));
-            batcher.add(RowSetFactory.fromRange(0, 99));
+            batcher.add(RowSetFactory.fromRange(0, 150));
             // The batch collapsed into one group covering [0, 199], which the next row set appends to.
             assertThat(batcher.groupCount()).isEqualTo(1);
             assertThat(batcher.pendingBatchSize()).isZero();
@@ -269,7 +336,7 @@ public class RowSetUnionBatcherTest {
         final List<RowSet> rowSets = interleaved(6, 4);
         try {
             final WritableRowSet built;
-            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.MAX_BATCH_SIZE)) {
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.maxBatchSize)) {
                 rowSets.forEach(rowSet -> batcher.add(rowSet.copy()));
                 // Nothing appends here, so every input is held as a copy-on-write reference to it.
                 assertThat(batcher.pendingBatchSize()).isEqualTo(6);
@@ -318,7 +385,7 @@ public class RowSetUnionBatcherTest {
 
     @Test
     public void buildLeavesTheBatcherReusable() {
-        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.MAX_BATCH_SIZE)) {
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(RowSetUnionBatcher.maxBatchSize)) {
             batcher.add(RowSetFactory.fromRange(0, 9));
             try (final WritableRowSet first = batcher.build();
                     final WritableRowSet expectedFirst = RowSetFactory.fromRange(0, 9)) {
@@ -382,5 +449,48 @@ public class RowSetUnionBatcherTest {
      */
     private static int refCount(final RowSet rowSet) {
         return ((WritableRowSetImpl) rowSet).getInnerSet().ixRefCount();
+    }
+
+    @Test
+    public void configuredCapIsTakenAsIs() {
+        final int saved = RowSetUnionBatcher.maxBatchSize;
+        try {
+            // Any configured cap is honoured, however large; a request under it is what sizes the batch.
+            RowSetUnionBatcher.maxBatchSize = Integer.MAX_VALUE;
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(100)) {
+                assertThat(batcher.batchSize()).isEqualTo(100);
+            }
+            // A batch the entries list could not hold, or an empty one, is refused rather than clamped.
+            assertThatThrownBy(() -> new RowSetUnionBatcher(Long.MAX_VALUE).close())
+                    .isInstanceOf(IllegalArgumentException.class);
+            for (final int cap : new int[] {0, -5}) {
+                RowSetUnionBatcher.maxBatchSize = cap;
+                assertThatThrownBy(() -> new RowSetUnionBatcher(100).close())
+                        .isInstanceOf(IllegalArgumentException.class);
+            }
+            // A request above the cap is held to it.
+            RowSetUnionBatcher.maxBatchSize = 300;
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(Long.MAX_VALUE)) {
+                assertThat(batcher.batchSize()).isEqualTo(300);
+            }
+            // With a cap of one every add merges, and the union is still right.
+            RowSetUnionBatcher.maxBatchSize = 1;
+            final List<RowSet> rowSets = interleaved(10, 2);
+            try (final WritableRowSet expected = RowSetFactory.union(rowSets);
+                    final RowSetUnionBatcher batcher = new RowSetUnionBatcher(rowSets.size())) {
+                for (final RowSet rowSet : rowSets) {
+                    batcher.add(rowSet.copy());
+                }
+                try (final WritableRowSet actual = batcher.build()) {
+                    assertThat(actual).isEqualTo(expected);
+                }
+            } finally {
+                for (final RowSet rowSet : rowSets) {
+                    rowSet.close();
+                }
+            }
+        } finally {
+            RowSetUnionBatcher.maxBatchSize = saved;
+        }
     }
 }

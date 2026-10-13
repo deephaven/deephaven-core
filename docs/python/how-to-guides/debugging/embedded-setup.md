@@ -1,7 +1,6 @@
 ---
 id: embedded-setup
 title: Debug an embedded Deephaven server with PyCharm
-sidebar_label: Embedded server
 ---
 
 The [Deephaven Python embedded server](../../getting-started/pip-install.md) (the `deephaven-server` package) starts the Deephaven engine directly inside your own Python process, rather than running it as a separate server you connect to. This guide shows you how to build the embedded server from source and debug it with [PyCharm](https://www.jetbrains.com/pycharm/).

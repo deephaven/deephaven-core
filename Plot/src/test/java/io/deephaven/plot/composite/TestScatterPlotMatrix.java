@@ -13,16 +13,18 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.FigureImpl;
 import io.deephaven.plot.datasets.xy.XYDataSeriesInternal;
 import io.deephaven.plot.filters.SelectableDataSetOneClick;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static org.junit.Assert.*;
 
 public class TestScatterPlotMatrix extends RefreshingTableTestCase {
     private final int length = 10;
 
+    @Test
     public void testScatterPlotMatrix() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.startCycleForUnitTests();
@@ -58,7 +60,6 @@ public class TestScatterPlotMatrix extends RefreshingTableTestCase {
         testScatterPlotMatrix(ScatterPlotMatrix.scatterPlotMatrix(floats));
         testScatterPlotMatrix(ScatterPlotMatrix.scatterPlotMatrix(names, floats));
 
-
         ColumnHolder[] columns = new ColumnHolder[ints[0].length];
         String[] columnNames = new String[columns.length];
         int i = 0;
@@ -69,7 +70,6 @@ public class TestScatterPlotMatrix extends RefreshingTableTestCase {
         }
         Table t = TableTools.newTable(columns);
         testScatterPlotMatrix(ScatterPlotMatrix.scatterPlotMatrix(t, columnNames));
-
 
         i = 0;
         for (double[] doubles1 : doubles) {
@@ -83,27 +83,27 @@ public class TestScatterPlotMatrix extends RefreshingTableTestCase {
         final ScatterPlotMatrix matrix = ScatterPlotMatrix.scatterPlotMatrix(oneClick, columnNames);
         final XYDataSeriesInternal series = (XYDataSeriesInternal) matrix.getFigure().chart(0).axes(0).series(0);
         for (int j = 0; j < series.size(); j++) {
-            assertEquals(Double.NaN, series.getX(i));
-            assertEquals(Double.NaN, series.getY(i));
+            assertEquals(Double.NaN, series.getX(i), 0.0);
+            assertEquals(Double.NaN, series.getY(i), 0.0);
         }
-
 
         try {
             ScatterPlotMatrix.scatterPlotMatrix(null, floats);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (RequirementFailure e) {
             assertTrue(e.getMessage().contains("null"));
         }
 
         try {
             ScatterPlotMatrix.scatterPlotMatrix(new String[5], new int[4][5]);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalStateException e) {
             assertTrue(e.getMessage().contains("dimension"));
         }
         updateGraph.completeCycleForUnitTests();
     }
 
+    @Test
     public void testPointSize() {
         final double[][] doubles = new double[length][length];
         final int[] pointSizesInt = new int[length * length];
@@ -149,7 +149,6 @@ public class TestScatterPlotMatrix extends RefreshingTableTestCase {
         matrix = matrix.pointSize(0, Integer.valueOf(4));
         testPointSize(new double[] {4.0, 5.0}, matrix);
 
-
         try {
             matrix.pointSize((length + 1) * length, 2.0);
         } catch (IllegalArgumentException e) {
@@ -186,8 +185,6 @@ public class TestScatterPlotMatrix extends RefreshingTableTestCase {
         matrix = matrix.pointSize(pointSizesNumber);
         testPointSize(new double[] {pointSizesNumber[0].doubleValue(), pointSizesNumber[1].doubleValue()}, matrix);
 
-
-
         matrix = matrix.pointSize(NULL_INT);
         testPointSize(matrix);
 
@@ -203,7 +200,7 @@ public class TestScatterPlotMatrix extends RefreshingTableTestCase {
         for (int i = 0; i < size.length; i++) {
             final XYDataSeriesInternal series = seriesArray[i];
             for (int j = 0; j < series.size(); j++) {
-                assertEquals(size[i], series.getPointSize(j));
+                assertEquals(size[i], series.getPointSize(j), 0.0);
             }
         }
     }
@@ -223,8 +220,8 @@ public class TestScatterPlotMatrix extends RefreshingTableTestCase {
     private void testScatterPlotMatrix(ScatterPlotMatrix matrix) {
         XYDataSeriesInternal series = (XYDataSeriesInternal) matrix.getFigure().chart(0).axes(0).series(0);
         for (int i = 0; i < length; i++) {
-            assertEquals(0.0, series.getX(i));
-            assertEquals(0.0, series.getY(i));
+            assertEquals(0.0, series.getX(i), 0.0);
+            assertEquals(0.0, series.getY(i), 0.0);
         }
         new FigureImpl(matrix).show();
     }

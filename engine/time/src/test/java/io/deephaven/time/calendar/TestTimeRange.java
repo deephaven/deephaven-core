@@ -3,45 +3,45 @@
 //
 package io.deephaven.time.calendar;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.time.*;
 import java.util.Objects;
 
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
-public class TestTimeRange extends BaseArrayTestCase {
+public class TestTimeRange {
 
+    @Test
     public void testTimeRangeInclusive() {
         final Instant open1 = DateTimeUtils.parseInstant("2017-03-11T10:00:00.000000000 NY");
         final Instant close1 = DateTimeUtils.parseInstant("2017-03-11T11:00:00.000000000 NY");
 
         try {
             new TimeRange<>(null, close1, true);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("null"));
         }
 
         try {
             new TimeRange<>(close1, null, true);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("null"));
         }
 
         try {
             new TimeRange<>(close1, open1, true);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("after"));
         }
 
         try {
             new TimeRange<>(open1, open1, true);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("same"));
         }
@@ -65,34 +65,35 @@ public class TestTimeRange extends BaseArrayTestCase {
                 .contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(close1) + DateTimeUtils.MINUTE)));
     }
 
+    @Test
     public void testTimeRangeExclusive() {
         final Instant open1 = DateTimeUtils.parseInstant("2017-03-11T10:00:00.000000000 NY");
         final Instant close1 = DateTimeUtils.parseInstant("2017-03-11T11:00:00.000000000 NY");
 
         try {
             new TimeRange<>(null, close1, false);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("null"));
         }
 
         try {
             new TimeRange<>(close1, null, false);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("null"));
         }
 
         try {
             new TimeRange<>(close1, open1, false);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("after"));
         }
 
         try {
             new TimeRange<>(open1, open1, false);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("same"));
         }
@@ -117,6 +118,7 @@ public class TestTimeRange extends BaseArrayTestCase {
                 .contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(close1) + DateTimeUtils.MINUTE)));
     }
 
+    @Test
     public void testToInstantInclusive() {
         final LocalTime start = LocalTime.of(1, 2, 3);
         final LocalTime end = LocalTime.of(7, 8, 9);
@@ -133,6 +135,7 @@ public class TestTimeRange extends BaseArrayTestCase {
         assertEquals(target, rst);
     }
 
+    @Test
     public void testToInstantExclusive() {
         final LocalTime start = LocalTime.of(1, 2, 3);
         final LocalTime end = LocalTime.of(7, 8, 9);
@@ -149,6 +152,7 @@ public class TestTimeRange extends BaseArrayTestCase {
         assertEquals(target, rst);
     }
 
+    @Test
     public void testEqualsHashInclusive() {
         final LocalTime start = LocalTime.of(1, 2, 3);
         final LocalTime end = LocalTime.of(7, 8, 9);
@@ -164,6 +168,7 @@ public class TestTimeRange extends BaseArrayTestCase {
         assertNotEquals(p1, p4);
     }
 
+    @Test
     public void testEqualsHashExclusive() {
         final LocalTime start = LocalTime.of(1, 2, 3);
         final LocalTime end = LocalTime.of(7, 8, 9);
@@ -179,6 +184,7 @@ public class TestTimeRange extends BaseArrayTestCase {
         assertNotEquals(p1, p4);
     }
 
+    @Test
     public void testToStringInclusive() {
         final LocalTime start = LocalTime.of(1, 2, 3);
         final LocalTime end = LocalTime.of(7, 8, 9);
@@ -186,6 +192,7 @@ public class TestTimeRange extends BaseArrayTestCase {
         assertEquals("TimeRange{start=01:02:03, end=07:08:09, inclusiveEnd=true}", p1.toString());
     }
 
+    @Test
     public void testToStringExclusive() {
         final LocalTime start = LocalTime.of(1, 2, 3);
         final LocalTime end = LocalTime.of(7, 8, 9);
@@ -193,6 +200,7 @@ public class TestTimeRange extends BaseArrayTestCase {
         assertEquals("TimeRange{start=01:02:03, end=07:08:09, inclusiveEnd=false}", p1.toString());
     }
 
+    @Test
     public void testNanos() {
         final Instant t1 = DateTimeUtils.epochMillisToInstant(0);
         final Instant t2 = DateTimeUtils.epochMillisToInstant(1);

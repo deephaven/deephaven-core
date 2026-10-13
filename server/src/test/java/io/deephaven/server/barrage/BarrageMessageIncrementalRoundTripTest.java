@@ -50,10 +50,10 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.IntVector;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import javax.inject.Singleton;
@@ -89,6 +89,7 @@ import static io.deephaven.engine.util.TableTools.col;
 @Category(OutOfBandTest.class)
 public class BarrageMessageIncrementalRoundTripTest extends BarrageMessageRoundTripTestBase {
 
+    @Test
     public void testAppendIncremental() {
         final int MAX_STEPS = 100;
         final Consumer<TestHelper> runOne = helper -> {
@@ -121,6 +122,7 @@ public class BarrageMessageIncrementalRoundTripTest extends BarrageMessageRoundT
         }
     }
 
+    @Test
     public void testPrependIncremental() {
         final int MAX_STEPS = 100;
         final Consumer<TestHelper> runOne = helper -> {
@@ -157,6 +159,7 @@ public class BarrageMessageIncrementalRoundTripTest extends BarrageMessageRoundT
         }
     }
 
+    @Test
     public void testRoundTripIncremental() {
         final Consumer<TestHelper> runOne = helper -> {
             helper.runTest(() -> {
@@ -177,6 +180,7 @@ public class BarrageMessageIncrementalRoundTripTest extends BarrageMessageRoundT
         }
     }
 
+    @Test
     public void testAppendIncrementalSharedProducer() {
         final int MAX_STEPS = 100;
         final Consumer<TestHelper> runOne = helper -> {
@@ -209,6 +213,7 @@ public class BarrageMessageIncrementalRoundTripTest extends BarrageMessageRoundT
         }
     }
 
+    @Test
     public void testPrependIncrementalSharedProducer() {
         final int MAX_STEPS = 100;
         final Consumer<TestHelper> runOne = helper -> {
@@ -245,6 +250,7 @@ public class BarrageMessageIncrementalRoundTripTest extends BarrageMessageRoundT
         }
     }
 
+    @Test
     public void testRoundTripIncrementalSharedProducer() {
         final Consumer<TestHelper> runOne = helper -> {
             helper.runTest(() -> {
@@ -265,6 +271,7 @@ public class BarrageMessageIncrementalRoundTripTest extends BarrageMessageRoundT
         }
     }
 
+    @Test
     public void testUsePrevOnSnapshot() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(10, 12).toTracking(), col("intCol", 10, 12));
         final RemoteNugget remoteNugget = new RemoteNugget(() -> queryTable);
@@ -314,6 +321,7 @@ public class BarrageMessageIncrementalRoundTripTest extends BarrageMessageRoundT
         remoteNugget.validate("post flush");
     }
 
+    @Test
     public void testRegressModificationsInPrevView() {
         final BitSet allColumns = new BitSet(1);
         allColumns.set(0);
@@ -371,6 +379,7 @@ public class BarrageMessageIncrementalRoundTripTest extends BarrageMessageRoundT
         remoteNugget.validate("new viewport with modification");
     }
 
+    @Test
     public void testCoalescingLargeUpdates() {
         final BitSet allColumns = new BitSet(1);
         allColumns.set(0);
@@ -442,6 +451,7 @@ public class BarrageMessageIncrementalRoundTripTest extends BarrageMessageRoundT
         remoteNugget.validate("large mod rows update");
     }
 
+    @Test
     public void testVectorConcurrentModification() {
         // this is a regression test for DH-19238; Barrage was not creating a static copy of ColumnWrapped vectors
         final BitSet allColumns = new BitSet(2);

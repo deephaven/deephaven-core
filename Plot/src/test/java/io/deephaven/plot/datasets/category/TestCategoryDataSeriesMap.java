@@ -8,13 +8,11 @@ import io.deephaven.plot.AxesImpl;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.datasets.data.*;
 import io.deephaven.engine.util.TableTools;
-import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNull;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.*;
+
 
 public class TestCategoryDataSeriesMap {
 
@@ -59,21 +57,21 @@ public class TestCategoryDataSeriesMap {
 
         try {
             new CategoryDataSeriesMap(a, 2, "Test", null, dy);
-            TestCase.fail("Expected an Exception");
+            fail("Expected an Exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
             new CategoryDataSeriesMap(a, 3, "Test", dx, null);
-            TestCase.fail("Expected an Exception");
+            fail("Expected an Exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
             new CategoryDataSeriesMap(a, 4, "Test", dxMismatched, dy);
-            TestCase.fail("Expected an Exception");
+            fail("Expected an Exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("match"));
         }
@@ -85,7 +83,7 @@ public class TestCategoryDataSeriesMap {
 
         try {
             new CategoryDataSeriesMap(a, 6, "Test", dyInvalid, dy);
-            TestCase.fail("Expected an Exception");
+            fail("Expected an Exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("repeated"));
         }

@@ -1,6 +1,5 @@
 ---
 title: Why do I have to drop the blink attribute and re-add it to create a partitioned blink table?
-sidebar_label: How do I create a partitioned blink table?
 ---
 
 <em>I can create a partitioned blink table, but why do I have to drop the blink attribute and re-add it to do so?</em>

@@ -14,15 +14,16 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
-import junit.framework.TestCase;
 
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestSyncTableFilter extends RefreshingTableTestCase {
@@ -32,6 +33,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         setExpectError(false);
     }
 
+    @Test
     public void testSimple() {
         final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3),
                 intCol("Sentinel", 101, 102, 103, 104, 105, 106), col("Key", "a", "a", "a", "a", "a", "a"));
@@ -81,6 +83,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertTableEquals(fb, ex2b);
     }
 
+    @Test
     public void testSimpleAddAgain() {
         final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3),
                 intCol("Sentinel", 101, 102, 103, 104, 105, 106), col("Key", "a", "a", "a", "a", "a", "a"));
@@ -163,6 +166,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertTableEquals(fb, ex4b);
     }
 
+    @Test
     public void testNullAppearance() {
         final QueryTable a = TstUtils.testRefreshingTable(
                 longCol("ID", 1, 1, QueryConstants.NULL_LONG, QueryConstants.NULL_LONG, 3, 3),
@@ -217,6 +221,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertTableEquals(fb, ex2b);
     }
 
+    @Test
     public void testSimpleKeyed() {
         final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3, 4, 4, 5, 5),
                 intCol("Sentinel", 101, 102, 103, 104, 105, 106, 107, 108, 109, 110),
@@ -284,7 +289,6 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertTableEquals(fa, ex3a);
         assertTableEquals(fb, ex3b);
 
-
         System.out.println("A before modfications.");
         showWithRowSet(a, 30);
 
@@ -298,6 +302,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertTableEquals(fa, ex4a);
     }
 
+    @Test
     public void testErrorPropagation() {
         final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3, 4, 4, 5, 5),
                 intCol("Sentinel", 101, 102, 103, 104, 105, 106, 107, 108, 109, 110),
@@ -326,10 +331,10 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
             a.notifyListeners(i(), i(1), i());
             ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }, throwables -> {
-            TestCase.assertEquals(1, getUpdateErrors().size());
+            assertEquals(1, getUpdateErrors().size());
             final Throwable throwable = throwables.get(0);
-            TestCase.assertEquals(IllegalStateException.class, throwable.getClass());
-            TestCase.assertEquals("Can not process removed rows in SyncTableFilter!", throwable.getMessage());
+            assertEquals(IllegalStateException.class, throwable.getClass());
+            assertEquals("Can not process removed rows in SyncTableFilter!", throwable.getMessage());
             return true;
         });
 
@@ -339,6 +344,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertEquals("Can not process removed rows in SyncTableFilter!", lb.originalException.getMessage());
     }
 
+    @Test
     public void testDependencies() {
         final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1), intCol("Sentinel", 101), col("Key", "a"));
         final QueryTable b = TstUtils.testRefreshingTable(longCol("Ego", 0, 1, 1), intCol("Sentinel", 201, 202, 203),
@@ -356,7 +362,6 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
 
         ((QueryTable) fa).setAttribute("NAME", "a");
         ((QueryTable) fb).setAttribute("NAME", "b");
-
 
         final Table fau = updateGraph.sharedLock().computeLocked(
                 () -> fa.update("SentinelDoubled=Sentinel*2"));
@@ -395,7 +400,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         showWithRowSet(sentSum);
         int[] actual = ColumnVectors.ofInt(sentSum, "SS").toArray();
         int[] expected = new int[] {606, 610};
-        assertEquals(expected, actual);
+        assertArrayEquals(expected, actual);
     }
 
     private static class ErrorListener extends ShiftObliviousInstrumentedListenerAdapter {

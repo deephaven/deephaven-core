@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.junit.After;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +28,7 @@ import java.util.Map;
 
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static org.junit.Assert.*;
 
 public class TestSelectPreserveGrouping extends QueryTableTestBase {
     private static final String ROOT = "TestSelectPreserveGrouping_Root";
@@ -57,6 +59,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
         } while (!success && tries < 10);
     }
 
+    @Test
     public void testPreserveGrouping() {
         final Table x = TstUtils.testTable(TstUtils.colIndexed("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6));
@@ -85,6 +88,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
         assertFalse(DataIndexer.hasDataIndex(xu, "Sentinel"));
     }
 
+    @Test
     public void testPreserveDeferredGrouping() throws IOException {
         final File testDirectory = Files.createTempDirectory("DeferredGroupingTest").toFile();
         final File dest = new File(testDirectory, "Table.parquet");

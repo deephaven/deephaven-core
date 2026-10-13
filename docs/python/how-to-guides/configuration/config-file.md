@@ -1,6 +1,5 @@
 ---
 title: Create a Deephaven configuration file
-sidebar_label: Deephaven configuration files
 ---
 
 The Deephaven configuration file is a [property file](https://en.wikipedia.org/wiki/.properties) that enables the user to configure different aspects of the Deephaven server.

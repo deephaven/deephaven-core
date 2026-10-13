@@ -3,10 +3,13 @@
 //
 package io.deephaven.generator.primitivetemplate;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class TestPrimitiveType extends TestCase {
+import static org.junit.Assert.*;
 
+public class TestPrimitiveType {
+
+    @Test
     public void testPrimitiveType() {
 
         final PrimitiveType pt = new PrimitiveType(

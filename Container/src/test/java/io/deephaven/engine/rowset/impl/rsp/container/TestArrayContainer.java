@@ -5,8 +5,6 @@ import org.junit.Test;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
 

@@ -1,6 +1,5 @@
 ---
 title: Use the Deephaven JSON viewer
-sidebar_label: JSON Viewer
 ---
 
 Deephaven's UI can be used to display JSON objects. This guide shows how to build Deephaven with the [NPM](https://www.npmjs.com/package/@deephaven/js-plugin-dashboard-object-viewer) and [PyPi](https://pypi.org/project/deephaven-plugin-json/) JSON viewer packages, and how to use them in the UI.

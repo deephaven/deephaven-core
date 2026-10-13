@@ -21,6 +21,7 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.util.QueryConstants;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,10 +32,11 @@ import java.util.Arrays;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.i;
-import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.*;
 
 public class TestTailInitializationFilter extends RefreshingTableTestCase {
 
+    @Test
     public void testSimple() {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendRange(0, 99);
@@ -82,6 +84,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         assertTableEquals(filtered, expected2);
     }
 
+    @Test
     public void testMostRecentRows() {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendRange(0, 99);
@@ -137,8 +140,12 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         final Table filtered0 = TailInitializationFilter.mostRecentRows(input.assertAddOnly(), 0);
         assertEquals(0, filtered0.size());
         assertTableEquals(filtered0, TableTools.newTable(input.getDefinition()));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> TailInitializationFilter.mostRecentRows(input.assertAddOnly(), -1));
     }
 
+    @Test
     public void testBadAdds() {
         final QueryTable input =
                 TstUtils.testRefreshingTable(ColumnHolder.getInstantColumnHolder("Timestamp", false, new long[0]));
@@ -150,6 +157,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         assertEquals("TailInitializationFilter requires an add-only table as input.", iae2.getMessage());
     }
 
+    @Test
     public void testNoReinterpret() {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendRange(0, 99);
@@ -170,6 +178,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         assertEquals(44, filtered.size());
     }
 
+    @Test
     public void testNullValues() throws IOException {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendRange(0, 99);
@@ -226,6 +235,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testOutOfOrder() throws IOException {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendRange(0, 99);
@@ -295,7 +305,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         }
     }
 
-
+    @Test
     public void testSimpleRegioned() throws IOException {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         builder.appendRange(0, 99);
@@ -309,7 +319,6 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         }
         final Instant threshold1 = DateTimeUtils.epochNanosToInstant(data[99] - DateTimeUtils.secondsToNanos(600));
         final Instant threshold2 = DateTimeUtils.epochNanosToInstant(data[199] - DateTimeUtils.secondsToNanos(600));
-
 
         final QueryTable toWrite = TstUtils.testRefreshingTable(builder.build().toTracking(),
                 ColumnHolder.getInstantColumnHolder("Timestamp", false, data));

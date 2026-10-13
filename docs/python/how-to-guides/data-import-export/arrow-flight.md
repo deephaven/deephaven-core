@@ -1,6 +1,5 @@
 ---
 title: Arrow Flight and Deephaven
-sidebar_label: Arrow Flight
 ---
 
 [Apache Arrow](https://arrow.apache.org/) is a high-performance language-independent columnar memory format for flat and nested data. Deephaven's Arrow Flight integration enables users to import and export data via native remote Flight clients over gRPC.

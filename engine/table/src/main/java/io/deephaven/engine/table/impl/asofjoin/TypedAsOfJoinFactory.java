@@ -33,7 +33,6 @@ public class TypedAsOfJoinFactory {
         builder.addStatement("final long indexKey = rowKeyChunk.get(chunkPosition)");
         builder.beginControlFlow("if (addLeftKey(tableLocation, indexKey) && hashSlots != null)");
         builder.addStatement("hashSlots.set(hashSlotOffset.getAndIncrement(), tableLocation)");
-        builder.addStatement("foundBuilder.addKey(indexKey)");
         builder.endControlFlow();
     }
 
@@ -84,6 +83,7 @@ public class TypedAsOfJoinFactory {
 
         builder.addStatement("final long cookie  = alternateCookieSource.getUnsafe(locationToMigrate)");
         builder.addStatement("migrateCookie(cookie, destinationTableLocation)");
+        builder.addStatement("migrateTombstoneCandidate(currentStateValue, destinationTableLocation)");
     }
 
     public static void rightIncrementalBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,

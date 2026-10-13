@@ -79,7 +79,6 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.vector.Vector;
 import io.deephaven.vector.*;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableFloat;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -120,6 +119,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -156,8 +156,6 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT32;
 import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.INT64;
 import static org.apache.parquet.schema.Types.optional;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 @Category(OutOfBandTest.class)
 public final class ParquetTableReadWriteTest {
@@ -2651,7 +2649,7 @@ public final class ParquetTableReadWriteTest {
         assertEquals(nullPos, dict.add(null));
         try {
             dict.add("Never before seen key which should take us over the allowed dictionary size");
-            TestCase.fail("Exception expected for exceeding dictionary size");
+            fail("Exception expected for exceeding dictionary size");
         } catch (DictionarySizeExceededException expected) {
         }
     }
@@ -3557,7 +3555,7 @@ public final class ParquetTableReadWriteTest {
         DataIndexer.getOrCreateDataIndex(badTable, "InputString");
         try {
             writer.writeTable(badTable, destFile);
-            TestCase.fail("Exception expected for invalid formula");
+            fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
@@ -3604,7 +3602,7 @@ public final class ParquetTableReadWriteTest {
         // Read from unsupported URI
         try {
             ParquetTools.readTable("https://" + absolutePath);
-            TestCase.fail("Exception expected for invalid scheme");
+            fail("Exception expected for invalid scheme");
         } catch (final RuntimeException e) {
             assertTrue(e instanceof UnsupportedOperationException);
         }
@@ -3677,7 +3675,7 @@ public final class ParquetTableReadWriteTest {
         try {
             writeTables(tablesToSave, destinations,
                     ParquetInstructions.EMPTY.withTableDefinition(firstTable.getDefinition()));
-            TestCase.fail("Exception expected for invalid formula");
+            fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
@@ -3708,7 +3706,7 @@ public final class ParquetTableReadWriteTest {
         try {
             writeTables(tablesToSave, new String[] {firstDestFile.getPath()},
                     ParquetInstructions.EMPTY.withTableDefinition(firstTable.getDefinition()));
-            TestCase.fail("Exception expected becuase of mismatch in number of tables and destinations");
+            fail("Exception expected becuase of mismatch in number of tables and destinations");
         } catch (final IllegalArgumentException expected) {
         }
 
@@ -3738,7 +3736,7 @@ public final class ParquetTableReadWriteTest {
             writeTables(new Table[] {firstTable, thirdTable},
                     new String[] {firstDestFile.getPath(), thirdDestFile.getPath()},
                     ParquetInstructions.EMPTY);
-            TestCase.fail("Exception expected becuase of mismatch in table definitions");
+            fail("Exception expected becuase of mismatch in table definitions");
         } catch (final IllegalArgumentException expected) {
         }
 
@@ -4100,7 +4098,7 @@ public final class ParquetTableReadWriteTest {
                 .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
             writer.writeTable(badTable, destFile);
-            TestCase.fail("Exception expected for invalid formula");
+            fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
@@ -4423,7 +4421,7 @@ public final class ParquetTableReadWriteTest {
         // Read back fromDisk. Since the underlying file has changed, we expect this to fail.
         try {
             fromDisk.where("A % 2 == 0");
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (RuntimeException ignored) {
             // expected
         }
@@ -4452,7 +4450,7 @@ public final class ParquetTableReadWriteTest {
                 fromDisk.view("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
             writer.writeTable(badTable, destFile);
-            TestCase.fail();
+            fail();
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
@@ -4767,6 +4765,31 @@ public final class ParquetTableReadWriteTest {
         checkSingleTable(groupedTableToSave, groupedTableDest);
 
         assertTableStatistics(groupedTableToSave, groupedTableDest);
+    }
+
+    /**
+     * Round-trips pre-Epoch {@link LocalDateTime} and {@link LocalDate} columns, both as a sweep that straddles the
+     * Epoch and as the exact values adjacent to it.
+     */
+    @Test
+    public void readWritePreEpochDateTimeTest() {
+        // pre-Epoch values with a non-zero sub-second component used to fail to read back, because the materializer
+        // divided towards zero and produced a negative nano-of-second.
+        final int NUM_ROWS = 1000;
+        final Table table = TableTools.emptyTable(NUM_ROWS).view(
+                // 1900 through 2039, so the sweep straddles the Epoch.
+                "someLocalDateTimeColumn = java.time.LocalDateTime.of(1900 + i%140, i%12+1, i%28+1, (i+4)%24, (i+5)%60, (i+6)%60, i*1_000_000 + i)",
+                "someDateColumn = java.time.LocalDate.ofEpochDay(i - 500)");
+        writeReadTableTest(table, new File(rootFile, "readWritePreEpochDateTimeTest.parquet"));
+
+        // The exact values on either side of the Epoch, where the flooring correction changes the second.
+        final Table boundaries = TableTools.newTable(TableTools.col("Ldt",
+                LocalDateTime.parse("1900-06-15T12:30:00.123456789"),
+                LocalDateTime.parse("1969-12-31T23:59:59.999999999"),
+                LocalDateTime.parse("1969-12-31T23:59:59"),
+                LocalDateTime.parse("1970-01-01T00:00:00"),
+                LocalDateTime.parse("1970-01-01T00:00:00.000000001")));
+        writeReadTableTest(boundaries, new File(rootFile, "readWritePreEpochBoundariesTest.parquet"));
     }
 
     @Test

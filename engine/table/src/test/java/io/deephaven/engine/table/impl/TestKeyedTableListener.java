@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.testing.JMockRule.Expectations;
+import io.deephaven.base.testing.JMockRule;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
@@ -10,10 +12,16 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.tuple.ArrayTuple;
+import org.junit.Rule;
+import org.junit.Test;
 
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 
 public class TestKeyedTableListener extends RefreshingTableTestCase {
+
+    @Rule
+    public final JMockRule jmock = new JMockRule();
 
     private QueryTable table;
     private KeyedTableListener keyedTableListener;
@@ -35,7 +43,7 @@ public class TestKeyedTableListener extends RefreshingTableTestCase {
         this.noRemoved = RowSetFactory.empty();
         this.noModified = RowSetFactory.empty();
 
-        this.mockListener = mock(KeyedTableListener.KeyUpdateListener.class);
+        this.mockListener = jmock.mock(KeyedTableListener.KeyUpdateListener.class);
         this.table = TstUtils.testRefreshingTable(TstUtils.i(0, 1, 2).toTracking(),
                 col("Key1", "A", "B", "C"),
                 intCol("Key2", 1, 2, 3),
@@ -49,6 +57,7 @@ public class TestKeyedTableListener extends RefreshingTableTestCase {
                 .doLocked(() -> this.keyedTableListener.addUpdateListener());
     }
 
+    @Test
     public void testGetRow() {
         Object[] data;
 
@@ -66,8 +75,9 @@ public class TestKeyedTableListener extends RefreshingTableTestCase {
         assertNull(data);
     }
 
+    @Test
     public void testNoChanges() {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 never(mockListener).update(with(any(KeyedTableListener.class)), with(any(ArrayTuple.class)),
                         with(any(long.class)), with(any(KeyedTableListener.KeyEvent.class)));
@@ -86,9 +96,10 @@ public class TestKeyedTableListener extends RefreshingTableTestCase {
         keyedTableListener.unsubscribe(cKey, mockListener);
     }
 
+    @Test
     public void testAdd() {
         final ArrayTuple newKey = new ArrayTuple("D", 4);
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(newKey), with(3L),
                         with(KeyedTableListener.KeyEvent.ADDED));
@@ -110,8 +121,9 @@ public class TestKeyedTableListener extends RefreshingTableTestCase {
         keyedTableListener.unsubscribe(newKey, mockListener);
     }
 
+    @Test
     public void testRemoved() {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey), with(2L),
                         with(KeyedTableListener.KeyEvent.REMOVED));
@@ -133,8 +145,9 @@ public class TestKeyedTableListener extends RefreshingTableTestCase {
         keyedTableListener.unsubscribe(cKey, mockListener);
     }
 
+    @Test
     public void testModify() {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey), with(2L),
                         with(KeyedTableListener.KeyEvent.MODIFIED));
@@ -161,10 +174,11 @@ public class TestKeyedTableListener extends RefreshingTableTestCase {
         keyedTableListener.unsubscribe(cKey, mockListener);
     }
 
+    @Test
     public void testModifyChangedKey() {
         final ArrayTuple newKey = new ArrayTuple("C", 4);
 
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey), with(2L),
                         with(KeyedTableListener.KeyEvent.REMOVED));
@@ -199,10 +213,11 @@ public class TestKeyedTableListener extends RefreshingTableTestCase {
     }
 
     // Move an existing key up, while adding one to fill its place
+    @Test
     public void testModifyKeyMoved() {
         final ArrayTuple newKey = new ArrayTuple("D", 4);
 
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(bKey), with(1L),
                         with(KeyedTableListener.KeyEvent.REMOVED));
@@ -246,8 +261,9 @@ public class TestKeyedTableListener extends RefreshingTableTestCase {
     }
 
     // Swap the places of B and C keys
+    @Test
     public void testModifySwap() {
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(bKey), with(1L),
                         with(KeyedTableListener.KeyEvent.REMOVED));
@@ -282,10 +298,11 @@ public class TestKeyedTableListener extends RefreshingTableTestCase {
     }
 
     // Test the combination of an add / remove and modify
+    @Test
     public void testAddRemoveModify() {
         final ArrayTuple newKey = new ArrayTuple("D", 4);
 
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(aKey), with(0L),
                         with(KeyedTableListener.KeyEvent.MODIFIED));
@@ -340,10 +357,11 @@ public class TestKeyedTableListener extends RefreshingTableTestCase {
         keyedTableListener.unsubscribe(newKey, mockListener);
     }
 
+    @Test
     public void testRemoveAdd() {
         final ArrayTuple newKey = new ArrayTuple("D", 4);
 
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 oneOf(mockListener).update(with(any(KeyedTableListener.class)), with(cKey), with(2L),
                         with(KeyedTableListener.KeyEvent.REMOVED));

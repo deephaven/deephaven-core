@@ -56,6 +56,11 @@ project.tasks.withType(Test).configureEach { Test t ->
             maxHeapSize = '3g'
         }
 
+        // As of 43.0 in September 2026 the longest healthy task, :engine-table:testOutOfBand, runs
+        // roughly 35 minutes of wall clock on a CI runner. A fork that hangs holds the task open
+        // until the CI job's own limit, which is hours later and yields no test report.
+        t.timeout = java.time.Duration.ofMinutes(90)
+
         if (findProperty('shortTests') == 'true') {
             systemProperty 'TstUtils.shortTests', 'true'
         }

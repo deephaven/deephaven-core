@@ -10,7 +10,6 @@ import io.deephaven.gui.color.Paint;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTimeUtils;
-import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,8 +19,9 @@ import java.time.ZonedDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.util.QueryConstants.*;
-import static junit.framework.TestCase.*;
+import static org.junit.Assert.*;
 
 public class TestColumnHandlerFactory {
 
@@ -88,14 +88,14 @@ public class TestColumnHandlerFactory {
     public void testNumericColumnHandlerHandle() {
         try {
             ColumnHandlerFactory.newNumericHandler(tableHandle, null, null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
             ColumnHandlerFactory.newNumericHandler((TableHandle) null, "ints", null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
@@ -150,7 +150,7 @@ public class TestColumnHandlerFactory {
 
         try {
             handler.getDouble(0);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("conversion"));
         }
@@ -159,7 +159,7 @@ public class TestColumnHandlerFactory {
 
         try {
             ColumnHandlerFactory.newNumericHandler(tableHandle, "Strings", null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("Unsupported"));
         }
@@ -169,14 +169,14 @@ public class TestColumnHandlerFactory {
     public void testNumericColumnHandlerTable() {
         try {
             ColumnHandlerFactory.newNumericHandler(table, null, null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
             ColumnHandlerFactory.newNumericHandler((Table) null, "ints", null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
@@ -236,7 +236,7 @@ public class TestColumnHandlerFactory {
 
         try {
             handler.getDouble(0);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("conversion"));
         }
@@ -245,7 +245,7 @@ public class TestColumnHandlerFactory {
 
         try {
             ColumnHandlerFactory.newNumericHandler(table, "Strings", null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("Unsupported"));
         }
@@ -255,21 +255,21 @@ public class TestColumnHandlerFactory {
     public void testComparableHandlerHandle() {
         try {
             ColumnHandlerFactory.newComparableHandler(tableHandle, null, null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
             ColumnHandlerFactory.newComparableHandler((TableHandle) null, "ints", null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
             ColumnHandlerFactory.newComparableHandler(tableHandle, "ints", null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("Unsupported"));
         }
@@ -287,7 +287,7 @@ public class TestColumnHandlerFactory {
 
         try {
             handler.getDouble(0);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("conversion"));
         }
@@ -297,21 +297,21 @@ public class TestColumnHandlerFactory {
     public void testComparableHandlerTable() {
         try {
             ColumnHandlerFactory.newComparableHandler(table, null, null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
             ColumnHandlerFactory.newComparableHandler((Table) null, "ints", null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
             ColumnHandlerFactory.newComparableHandler(table, "ints", null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("Unsupported"));
         }
@@ -328,7 +328,7 @@ public class TestColumnHandlerFactory {
 
         try {
             handler.getDouble(0);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("conversion"));
         }
@@ -338,14 +338,14 @@ public class TestColumnHandlerFactory {
     public void testObjectHandlerHandle() {
         try {
             ColumnHandlerFactory.newObjectHandler(tableHandle, null, null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
             ColumnHandlerFactory.newObjectHandler((TableHandle) null, "ints", null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
@@ -363,7 +363,7 @@ public class TestColumnHandlerFactory {
 
         try {
             handler.getDouble(0);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("conversion"));
         }
@@ -373,14 +373,14 @@ public class TestColumnHandlerFactory {
     public void testObjectHandlerTable() {
         try {
             ColumnHandlerFactory.newObjectHandler(table, null, null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
             ColumnHandlerFactory.newObjectHandler((Table) null, "ints", null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
@@ -397,7 +397,7 @@ public class TestColumnHandlerFactory {
 
         try {
             handler.getDouble(0);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("conversion"));
         }

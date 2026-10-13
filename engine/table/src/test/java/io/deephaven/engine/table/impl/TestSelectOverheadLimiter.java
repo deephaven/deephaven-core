@@ -22,12 +22,15 @@ import io.deephaven.util.SafeCloseable;
 
 import java.util.Random;
 
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
+    @Test
     public void testSelectOverheadLimiter() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
                 RowSetFactory.fromRange(0, 100).toTracking());
@@ -76,6 +79,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         assertTableEquals(sentinelTable, densified);
     }
 
+    @Test
     public void testShift() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
                 RowSetFactory.fromRange(0, 100).toTracking());
@@ -111,6 +115,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         });
     }
 
+    @Test
     public void testPartitionBy() {
         SelectOverheadLimiter.conversions.set(0);
         int seed;
@@ -185,6 +190,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testScope() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
                 RowSetFactory.fromRange(0, 100).toTracking());

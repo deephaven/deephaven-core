@@ -1,5 +1,5 @@
 ---
-title: Javascript API Concepts
+title: JavaScript API concepts
 ---
 
 Ticking tables are the core feature of Deephaven, and the Deephaven JS API provides the means to create or discover

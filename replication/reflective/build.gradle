@@ -27,7 +27,6 @@ dependencies {
 }
 
 task replicateAll {
-    dependsOn Tasks.registerMainExecTask(project, 'replicateHashTable', 'io.deephaven.replicators.ReplicateHashTable')
     dependsOn Tasks.registerMainExecTask(project, 'replicateTypedHashers', 'io.deephaven.replicators.ReplicateTypedHashers')
 
     dependsOn Tasks.registerMainExecTask(project, 'generateArrowColumnSources', 'io.deephaven.replicators.GenerateArrowColumnSources')

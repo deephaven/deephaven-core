@@ -86,7 +86,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
         final Map<String, ColumnSource<?>> resultColumnSources = new LinkedHashMap<>();
         for (Map.Entry<String, ColumnSource<?>> entry : parent.getColumnSourceMap().entrySet()) {
-            resultColumnSources.put(entry.getKey(), new ReversedColumnSource<>(entry.getValue(), this));
+            resultColumnSources.put(entry.getKey(), ReversedColumnSource.create(entry.getValue(), this));
         }
 
         final TrackingWritableRowSet resultRowSet = transform(rowSetToReverse).toTracking();

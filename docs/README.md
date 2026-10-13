@@ -54,6 +54,23 @@ Documents are created and stored in the folder for each language as `.md` markdo
 
 Once a file is created, it must be added to the appropriate `./sidebar.json` to have it appear in the sidebar.
 
+Sidebar rules:
+
+- Labels use sentence case.
+- Every group holds at least two items, unless it's listed as an intentional one-page group.
+- Every listed file exists.
+- Pages don't set `sidebar_label` in their front matter. The site ignores it; the sidebar label comes from `sidebar.json`, and the page's `title` can be a longer name.
+
+`./docs/validate` checks these rules, locally and in Docs CI. It runs `docs/tools/sidebar-check/check_sidebar.py` before the salmon validator.
+
+Exceptions live in `docs/tools/sidebar-check/allowlist.json`:
+
+- `capitalized_phrases`: multi-word Deephaven terms that are proper nouns, such as Execution Context and Input Table. They keep their capitals everywhere, and the check flags them when they're lowercase.
+- `proper_nouns`: single-word names, such as Kafka and Parquet, that may stay capitalized mid-label. The check doesn't flag their lowercase forms, because some (Core, Express, Flight) are also ordinary words and others appear lowercase in package names.
+- `single_page_groups` and `case_exempt_subtrees`: intentional one-page groups, and parts of the sidebar that keep Title Case.
+
+The check fails on allowlist entries that no longer match any label, so remove an entry when you remove what it covers.
+
 Image assets are stored in `<language>/assets` and can be linked using the relative path from your document.
 
 An editor on the docs team should approve all changes before being merged.

@@ -3,14 +3,17 @@
 //
 package io.deephaven.modelfarm;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.BiPredicate;
 
-public class ConditonalModelsTest extends BaseArrayTestCase {
+import static org.junit.Assert.*;
+
+public class ConditonalModelsTest {
     private TModel m1;
     private TModel m2;
     private Model<EquityFitDataOptionPrices>[] models;
@@ -36,9 +39,8 @@ public class ConditonalModelsTest extends BaseArrayTestCase {
         }
     }
 
-    @Override
+    @Before
     public void setUp() throws Exception {
-        super.setUp();
 
         m1 = new TModel();
         m2 = new TModel();
@@ -53,6 +55,7 @@ public class ConditonalModelsTest extends BaseArrayTestCase {
         cm = new ConditionalModels<>(models, predicates, stateMap, EquityFitDataOptionPrices::getUnderlyingId);
     }
 
+    @Test
     public void testLock() {
         final EquityFitDataOptionPrices d = new EquityFitDataOptionPrices();
         d.setUnderlyingId(123);
@@ -66,6 +69,7 @@ public class ConditonalModelsTest extends BaseArrayTestCase {
         assertNotSame(l2, l3);
     }
 
+    @Test
     public void testIterator() {
         final EquityFitDataOptionPrices d1 = new EquityFitDataOptionPrices();
         d1.setUnderlyingId(1);

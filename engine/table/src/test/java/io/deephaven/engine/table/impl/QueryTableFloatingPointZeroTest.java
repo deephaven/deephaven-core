@@ -17,7 +17,6 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -28,13 +27,13 @@ import org.junit.experimental.categories.Category;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.deephaven.engine.testutil.TstUtils.assertEquals;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.floatCol;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.newTable;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableFloatingPointZeroTest {
@@ -686,17 +685,17 @@ public class QueryTableFloatingPointZeroTest {
     }
 
     private static long oneKey(Table table) {
-        TestCase.assertEquals(1, table.size());
+        assertEquals(1, table.size());
         return table.getRowSet().firstRowKey();
     }
 
     private static void floatToBitsEquals(Table table, String column, long key, float expectedExact) {
         final float result = table.getColumnSource(column, float.class).getFloat(key);
-        TestCase.assertEquals(Float.floatToIntBits(expectedExact), Float.floatToIntBits(result));
+        assertEquals(Float.floatToIntBits(expectedExact), Float.floatToIntBits(result));
     }
 
     private static void doubleToBitsEquals(Table table, String column, long key, double expectedExact) {
         final double result = table.getColumnSource(column, double.class).getDouble(key);
-        TestCase.assertEquals(Double.doubleToLongBits(expectedExact), Double.doubleToLongBits(result));
+        assertEquals(Double.doubleToLongBits(expectedExact), Double.doubleToLongBits(result));
     }
 }

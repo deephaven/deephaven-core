@@ -1,6 +1,5 @@
 ---
 title: Capture Python client tables with Barrage
-sidebar_label: Capture Python client tables
 ---
 
 > [!NOTE]

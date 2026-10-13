@@ -29,9 +29,9 @@ import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesLong;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesShort;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.mutable.MutableLong;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.*;
@@ -46,14 +46,16 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.engine.testutil.rowset.RowSetTstUtils.rowSetFromString;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
+import static org.junit.Assert.*;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 @Category(OutOfBandTest.class)
-public class WritableRowSetImplTest extends TestCase {
+public class WritableRowSetImplTest {
 
     private static final boolean debugDetail = false;
     private final long[][] KEYS = new long[][] {
@@ -100,6 +102,7 @@ public class WritableRowSetImplTest extends TestCase {
         return new WritableRowSetImpl(orderedLongSet);
     }
 
+    @Test
     public void testSimple() {
         assertEquals(1, RowSetFactory.fromRange(2, 2).size());
         final RowSet.Iterator it = RowSetFactory.fromRange(2, 2).iterator();
@@ -107,6 +110,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertFalse(it.hasNext());
     }
 
+    @Test
     public void testSimpleRangeIterator() {
         final RowSet rowSet = RowSetFactory.fromRange(3, 100);
         final RowSet.RangeIterator rit = rowSet.rangeIterator();
@@ -117,6 +121,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertFalse(rit.hasNext());
     }
 
+    @Test
     public void testSerialize() throws IOException, ClassNotFoundException {
         WritableRowSet rowSet = RowSetFactory.fromRange(0, 100);
         RowSet copy = (RowSet) doSerDeser(rowSet);
@@ -167,7 +172,6 @@ public class WritableRowSetImplTest extends TestCase {
         copy = (RowSet) doSerDeser(rowSet);
         assertEquals(rowSet, copy);
 
-
         rowSet.insert(8_000_002_0011L);
         copy = (RowSet) doSerDeser(rowSet);
         assertEquals(rowSet, copy);
@@ -194,6 +198,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(rowSet, copy);
     }
 
+    @Test
     public void testSerializeRandom() throws IOException, ClassNotFoundException {
         final Random random = new Random(42);
         for (int ii = 0; ii < 100; ++ii) {
@@ -219,6 +224,7 @@ public class WritableRowSetImplTest extends TestCase {
         return ((WritableRowSetImpl) rowSet).refCount();
     }
 
+    @Test
     public void testSerializeRandomSize() throws IOException, ClassNotFoundException {
         final Random random = new Random(42);
 
@@ -232,6 +238,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testRange() {
         final WritableRowSet index = RowSetFactory.empty();
         assertEquals(1, getRefCount(index));
@@ -249,6 +256,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(range2.size(), 2);
     }
 
+    @Test
     public void testsubindexByKey() {
         final RowSet rowSet = getRowSet(1, 2, 3);
         final RowSet front = rowSet.subSetByKeyRange(1, 2);
@@ -275,6 +283,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(1, getRefCount(rowSet2));
     }
 
+    @Test
     public void testSubSetByKeyRegression0() {
         final RowSet ix1 = getRowSet(1073741813L, 1073741814L);
         final RowSet ix2 = ix1.subSetByKeyRange(1073741814L, 1073741825L);
@@ -282,6 +291,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(1073741814L, ix2.get(0));
     }
 
+    @Test
     public void testFind() {
         for (long[] keys : KEYS) {
             testFind(keys);
@@ -325,6 +335,7 @@ public class WritableRowSetImplTest extends TestCase {
 
     }
 
+    @Test
     public void testInvert() {
         final RowSet rowSet = getRowSet(1, 4, 7, 9, 10);
         final RowSet inverted = rowSet.invert(getRowSet(4, 7, 10));
@@ -333,7 +344,6 @@ public class WritableRowSetImplTest extends TestCase {
 
         final int maxSize = 20000;
         final int iterations = 400;
-
 
         for (int iteration = 0; iteration < iterations; ++iteration) {
             final long seed = 42 + iteration;
@@ -346,20 +356,21 @@ public class WritableRowSetImplTest extends TestCase {
                     generateSubset(fullKeys, fullRowSet, Integer.MAX_VALUE, generator);
             final RowSet subsetRowSet = pp.first;
             final LongList expected = pp.second;
-            TestCase.assertEquals(subsetRowSet.size(), expected.size());
+            assertEquals(subsetRowSet.size(), expected.size());
 
             final RowSet invertedRowSet = fullRowSet.invert(subsetRowSet);
-            TestCase.assertEquals(subsetRowSet.size(), invertedRowSet.size());
-            TestCase.assertEquals(expected.size(), invertedRowSet.size());
+            assertEquals(subsetRowSet.size(), invertedRowSet.size());
+            assertEquals(expected.size(), invertedRowSet.size());
 
             for (int ii = 0; ii < invertedRowSet.intSize(); ++ii) {
                 final long expectedPosition = expected.getLong(ii);
                 final long actualPosition = invertedRowSet.get(ii);
-                TestCase.assertEquals(expectedPosition, actualPosition);
+                assertEquals(expectedPosition, actualPosition);
             }
         }
     }
 
+    @Test
     public void testInvertWithMax() {
         final RowSet rowSet = getRowSet(1, 4, 7, 9, 10);
         final RowSet inverted = rowSet.invert(getRowSet(4, 7, 10), 3);
@@ -382,12 +393,12 @@ public class WritableRowSetImplTest extends TestCase {
 
             final RowSet invertedRowSet = fullRowSet.invert(subsetRowSet, maxPosition);
 
-            TestCase.assertEquals("iteration=" + iteration, expected.size(), invertedRowSet.size());
+            assertEquals("iteration=" + iteration, expected.size(), invertedRowSet.size());
 
             for (int ii = 0; ii < invertedRowSet.intSize(); ++ii) {
                 final long expectedPosition = expected.getLong(ii);
                 final long actualPosition = invertedRowSet.get(ii);
-                TestCase.assertEquals(expectedPosition, actualPosition);
+                assertEquals(expectedPosition, actualPosition);
             }
         }
     }
@@ -550,12 +561,14 @@ public class WritableRowSetImplTest extends TestCase {
         return new Pair<>(subsetRowSet, expected);
     }
 
+    @Test
     public void testIteration() {
         for (long[] key : KEYS) {
             testIteration(key);
         }
     }
 
+    @Test
     public void testInsertion() {
         for (long[] keys : KEYS) {
             testInsertionAlreadyThere(keys);
@@ -622,6 +635,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testRangeByPos() {
         for (long[] keys : KEYS) {
             testRangeByPos(keys);
@@ -646,6 +660,7 @@ public class WritableRowSetImplTest extends TestCase {
 
     }
 
+    @Test
     public void testRangeByKey() {
         for (int i = 0; i < KEYS.length; ++i) {
             final long[] keys = KEYS[i];
@@ -654,6 +669,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testMinusSimple() {
         final long[] keys = {1, 2, 3};
 
@@ -669,7 +685,6 @@ public class WritableRowSetImplTest extends TestCase {
 
         result = rowSet.minus(subRowSet);
         compareIndexAndKeyValues(result, new long[] {1, 3});
-
 
         final long[] allKeys = new long[105339];
         for (int ii = 0; ii < 105339; ++ii) {
@@ -688,6 +703,7 @@ public class WritableRowSetImplTest extends TestCase {
         compareIndexAndKeyValues(result, doMinusSimple(allKeys, subKeys));
     }
 
+    @Test
     public void testUnionIntoFullLeaf() {
         final RowSetBuilderRandom rowSetBuilder1 = RowSetFactory.builderRandom();
         for (int ii = 0; ii < 4; ++ii) {
@@ -734,6 +750,7 @@ public class WritableRowSetImplTest extends TestCase {
         idx.validate();
     }
 
+    @Test
     public void testFunnyOverLap() {
         // doTestFunnyOverlap("0-12159,12162-12163,12166-12167,12172-12175,12178-12179,12182-12325,12368-33805,33918-33977,33980-34109,34168-34169,34192-34193,34309-34312,34314,34317-34323,34356-34491,34494-34495,34502-34503,34506-34509,34512-34515,34520-34521,34524-34525,34528-34529,34540-34541,34544-34545,34548-34549,34552-34553,34574-34589,34602-34675,34678-34679,34688-34689,34694-34695,34700-34705,34716-34717,34722-34723,34732-34733,34738-34739,34774,34785,34791-34794,34796-34799,34801-34803,34807-34808,34813,34816,34828-34829,34856-34857,34869,34875-34884,34892-34899,34902-34925,34930-34932,34934-34938,34958-34959,34966-34973,35038-35065,35068-35075,35212-35363,35496-35511,35542-44097,44104-54271,54291,54304,54308-54310,54373-54749,54751-54756,54758-55040,55112,55114-55115,55117,55120-55213,55321-55322,55325-55326,55627,55630-55631,55634-55635,55638,55640-55643,55646-55647,55650-55651,55654-55655,55658-55659,55661-55690,55692-55698,55702-55710,55712-55713,55716-55717,55719-55960,56059-56134,56185-56186,56255-56257,56259,56341-56628,56695-56866,56878-56880,56882-57082,57105-65108,64977-66622,66625-66658,66661-66662,66665-66668,66671-66834,66837-66840");
         doTestFunnyOverlap(
@@ -810,6 +827,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testMinusRandom() {
         final int maxSize = 128 * 1024;
         final boolean[] fullSet = new boolean[maxSize];
@@ -850,6 +868,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testMinusRandomRanges() {
         final int maxSize = 128 * 1024;
         final boolean[] fullSet = new boolean[maxSize];
@@ -896,6 +915,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testMinusIndexOps() {
         final int maxSize = 64 * 1024;
         final int numRanges = 10;
@@ -1081,6 +1101,7 @@ public class WritableRowSetImplTest extends TestCase {
         });
     }
 
+    @Test
     public void testRandomInsertMinus() {
         final int printInterval = 100;
         final int maxRange = 20;
@@ -1139,6 +1160,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testChunkInsertAndRemove() {
         // noinspection unchecked
         final Supplier<OrderedLongSet>[] suppliers = new Supplier[] {
@@ -1288,6 +1310,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testSplitRangeIterator() {
         // insert merging two adjacent nodes
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
@@ -1325,6 +1348,7 @@ public class WritableRowSetImplTest extends TestCase {
         rowSet3.validate();
     }
 
+    @Test
     public void testSequentialSplitRange() {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         for (int ii = 0; ii < 64; ++ii) {
@@ -1353,6 +1377,7 @@ public class WritableRowSetImplTest extends TestCase {
         checkRowSet3.validate();
     }
 
+    @Test
     public void testAddIndex2() {
         final String[] indexStrings = {
                 "347608-350624",
@@ -1397,6 +1422,7 @@ public class WritableRowSetImplTest extends TestCase {
         unionIndexStrings(indexStrings);
     }
 
+    @Test
     public void testAddIndex3() {
         final RowSetBuilderRandom result = RowSetFactory.builderRandom();
         for (int ii = 0; ii < 64; ++ii) {
@@ -1411,6 +1437,7 @@ public class WritableRowSetImplTest extends TestCase {
         checkRowSet.validate();
     }
 
+    @Test
     public void testAddIndex() {
         final RowSetBuilderRandom result = RowSetFactory.builderRandom();
         for (int ii = 0; ii < 64; ++ii) {
@@ -1497,12 +1524,14 @@ public class WritableRowSetImplTest extends TestCase {
             "2633899-2636916",
     };
 
+    @Test
     public void testAddIndex4() {
         System.out.println(indexStrings4.length);
 
         unionIndexStrings(indexStrings4);
     }
 
+    @Test
     public void testAddIndex5() {
         final String[] indexStrings = {
                 "20890721338586-20890721340299",
@@ -1579,7 +1608,6 @@ public class WritableRowSetImplTest extends TestCase {
                     }
                 }
 
-
                 newStrings[ii] = StringUtils.join(newRanges, ",");
 
                 try {
@@ -1634,6 +1662,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(1, getRefCount(checkRowSet));
     }
 
+    @Test
     public void testRandomBuilder() {
         final Random random = new Random(0);
 
@@ -1683,7 +1712,7 @@ public class WritableRowSetImplTest extends TestCase {
             ii = 0;
             for (final RowSet.Iterator it = prioRowSet.iterator(); it.hasNext();) {
                 final long next = it.nextLong();
-                TestCase.assertEquals(values.getLong(ii++), next);
+                assertEquals(values.getLong(ii++), next);
             }
 
             if (values.size() < 2) {
@@ -1711,6 +1740,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testOverlappingRanges() {
         final RangePriorityQueueBuilder priorityQueueBuilder = new RangePriorityQueueBuilder(16);
         priorityQueueBuilder.addRange(10, 100);
@@ -1804,7 +1834,6 @@ public class WritableRowSetImplTest extends TestCase {
         }
         return end - start;
     }
-
 
     // This test would be way too brittle to include, even if I wasn't reading the deserialized stuff from a file.
     // The following function will write something useful to read in.
@@ -1913,6 +1942,7 @@ public class WritableRowSetImplTest extends TestCase {
     //// saveModified2.validate();
     // }
 
+    @Test
     public void testRandomBuilderEmptyAdds() {
         // Make a perfect merge between two leaves, collapsing to a single range.
         final RowSetBuilderRandom b = RowSetFactory.builderRandom();
@@ -1943,6 +1973,7 @@ public class WritableRowSetImplTest extends TestCase {
         return comp;
     }
 
+    @Test
     public void testIteratorBinarySearch() {
         final RowSetBuilderRandom b = RowSetFactory.builderRandom();
         b.addRange(2, 3);
@@ -2043,6 +2074,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertFalse(newIt.hasNext());
     }
 
+    @Test
     public void testIteratorBinarySearchForSingleRangeIndex() {
         final RowSet sr = RowSetFactory.fromRange(5, 9);
         final RowSet.SearchIterator it = sr.searchIterator();
@@ -2066,6 +2098,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(9, it.currentValue());
     }
 
+    @Test
     public void testRangeIteratorAdvance() {
         final RowSetBuilderRandom bl = RowSetFactory.builderRandom();
         bl.addRange(2, 3);
@@ -2118,6 +2151,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertFalse(it3.hasNext());
     }
 
+    @Test
     public void testRangeIteratorAdvanceEmptyIndex() {
         final RowSet ix = RowSetFactory.empty();
         final RowSet.RangeIterator rit = ix.rangeIterator();
@@ -2125,6 +2159,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertFalse(rit.hasNext());
     }
 
+    @Test
     public void testRangeIteratorAdvanceBack() {
         final WritableRowSet ix = RowSetFactory.empty();
         final long s = 300;
@@ -2146,6 +2181,7 @@ public class WritableRowSetImplTest extends TestCase {
         return b.build();
     }
 
+    @Test
     public void testSimpleOpsRefCounts() {
         final RowSet ix0 = singleRangeIndex(10, 1000);
         assertEquals(1, getRefCount(ix0));
@@ -2173,6 +2209,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(1, getRefCount(ix0));
     }
 
+    @Test
     public void testSimpleIteratorForEach() {
         final RowSet ix = getUnionIndexStrings(indexStrings4);
 
@@ -2225,6 +2262,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertFalse(hasNextForRanges.test(rit));
     }
 
+    @Test
     public void testGetAverageRunLengthEstimate() {
         final RowSet e = RowSetFactory.empty();
         assertEquals(1, e.getAverageRunLengthEstimate());
@@ -2244,6 +2282,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(2, r2.getAverageRunLengthEstimate());
     }
 
+    @Test
     public void testGetRowSequenceByKeyRange() {
         final RowSetBuilderSequential b = RowSetFactory.builderSequential();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
@@ -2278,6 +2317,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testGetRowSequenceByPosition() {
         final RowSetBuilderSequential b = RowSetFactory.builderSequential();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
@@ -2314,6 +2354,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testFillChunk() {
         final RowSetBuilderSequential b = RowSetFactory.builderSequential();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
@@ -2327,6 +2368,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(vs.length, kixchunk.size());
     }
 
+    @Test
     public void testBuilderAddKeys() {
         final RowSetBuilderRandom b = RowSetFactory.builderRandom();
         b.addKey(27);
@@ -2353,6 +2395,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(ix.find(27) >= 0);
     }
 
+    @Test
     public void testBuilderAppendKeys() {
         final RowSetBuilderSequential b = RowSetFactory.builderSequential();
         b.appendKey(1);
@@ -2379,6 +2422,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(ix.find(1) >= 0);
     }
 
+    @Test
     public void testBuilderAddRanges() {
         final RowSetBuilderRandom b = RowSetFactory.builderRandom();
         final long[] vs =
@@ -2416,6 +2460,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(ix2.subsetOf(ix));
     }
 
+    @Test
     public void testBuilderAppendRanges() {
         final RowSetBuilderSequential b = RowSetFactory.builderSequential();
         final long[] vs =
@@ -2453,6 +2498,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(ix2.subsetOf(ix));
     }
 
+    @Test
     public void testArrayOfSmallIndices() {
         final int sz = 10;
         final WritableRowSet[] ixs = new WritableRowSet[sz];
@@ -2469,6 +2515,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(sz - 1, r.lastRowKey());
     }
 
+    @Test
     public void testSubindexByPosRegreesion0() {
         final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(0, 95 * ((long) BLOCK_SIZE));
@@ -2491,6 +2538,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(ix.subsetOf(ix4));
     }
 
+    @Test
     public void testContainsRange() {
         final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(1, 3);
@@ -2527,6 +2575,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testOverlapsRange() {
         final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(3, 5);
@@ -2576,6 +2625,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertFalse(ix.overlapsRange(ix.lastRowKey() + 1, ix.lastRowKey() + 10000 * BLOCK_SIZE));
     }
 
+    @Test
     public void testOneRangeIndexMinus() {
         final RowSet ix = RowSetFactory.fromRange(1000, 5000);
         final RowSet r = ix.minus(RowSetFactory.fromRange(1001, 4999));
@@ -2594,10 +2644,12 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(1, getRefCount(ix2));
     }
 
+    @Test
     public void testReleaseReleasedRegression0case0Rsp() {
         releaseReleasedRegression0case0(RowSetTstUtils.makeEmptyRsp());
     }
 
+    @Test
     public void testReleaseReleasedRegression0case0SR() {
         releaseReleasedRegression0case0(RowSetTstUtils.makeEmptySr());
     }
@@ -2613,10 +2665,12 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(1, getRefCount(ix2));
     }
 
+    @Test
     public void testReleaseReleasedRegression0case1Rsp() {
         releaseReleasedRegression0case1(RowSetTstUtils.makeEmptyRsp());
     }
 
+    @Test
     public void testReleaseReleasedRegression0case1SR() {
         releaseReleasedRegression0case1(RowSetTstUtils.makeEmptySr());
     }
@@ -2632,14 +2686,17 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(1, getRefCount(ix2));
     }
 
+    @Test
     public void testReleaseReleasedRegression0case2Rsp() {
         releaseReleasedRegression0case2(RowSetTstUtils.makeEmptyRsp());
     }
 
+    @Test
     public void testReleaseReleasedRegression0case2SR() {
         releaseReleasedRegression0case2(RowSetTstUtils.makeEmptySr());
     }
 
+    @Test
     public void testSearchIteratorRegression0() {
         final WritableRowSet ix0 = RowSetFactory.empty();
         // force a bitmap container.
@@ -2658,6 +2715,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertFalse(it.hasNext());
     }
 
+    @Test
     public void testAsKeyRangesChunk() {
         final WritableRowSet rowSet = RowSetFactory.empty();
         rowSet.insertRange(130972, 131071);
@@ -2671,6 +2729,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(262144, ranges.get(3));
     }
 
+    @Test
     public void testReverseIteratorAdvanceRegression0() {
         RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         final int key = 1073741822;
@@ -2682,6 +2741,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(valid);
     }
 
+    @Test
     public void testReverseIteratorAdvanceRegression1() {
         RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         int key = 1073741822;
@@ -2694,6 +2754,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(key, iter.currentValue());
     }
 
+    @Test
     public void testReverseIteratorAdvanceRegression2() {
         long key = 1073741824;
         RowSetBuilderRandom builder = RowSetFactory.builderRandom();
@@ -2705,6 +2766,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertFalse(iter.advance(key - 1));
     }
 
+    @Test
     public void testReverseIteratorAdvanceRegression3() {
         long key = 1073741824;
         RowSetBuilderRandom builder = RowSetFactory.builderRandom();
@@ -2717,6 +2779,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(rowSet.reverseIterator().advance(key + 1));
     }
 
+    @Test
     public void testReverseIteratorAdvanceRegression4() {
         long key = 1073741822;
         RowSetBuilderSequential builder = RowSetFactory.builderSequential();
@@ -2727,6 +2790,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(key, iter.currentValue());
     }
 
+    @Test
     public void testReverseIteratorAdvanceRegression5() {
         long key = 1073741823;
         RowSetBuilderSequential builder = RowSetFactory.builderSequential();
@@ -2740,6 +2804,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(key - 1, iter.currentValue());
     }
 
+    @Test
     public void testReverseIteratorAdvanceRegression6() {
         RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         final int key = BLOCK_SIZE;
@@ -2752,6 +2817,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(key - 1, reverseIter.currentValue());
     }
 
+    @Test
     public void testIteratorAdvanceRegression1() {
         final RowSet ix = RowSetFactory.fromKeys(3, 5, 7, 9, 11, 21);
         final RowSet.RangeIterator rit = ix.rangeIterator();
@@ -2761,6 +2827,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertFalse(rit.hasNext());
     }
 
+    @Test
     public void testSubsetOf() {
         final WritableRowSet ix1 = RowSetTstUtils.makeEmptySr();
         ix1.insertRange(0, 1);
@@ -2786,6 +2853,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testMinusRegression0() {
         final RowSet ix1 = new WritableRowSetImpl(RspBitmap.makeSingleRange(1073741843L, 1073741860L));
         final RowSet ix2 = new WritableRowSetImpl(SortedRanges.makeSingleElement(1073741843L));
@@ -2794,6 +2862,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(ix3.containsRange(ix1.firstRowKey() + 1, ix1.lastRowKey()));
     }
 
+    @Test
     public void testSubsetOfRegression0() {
         SortedRanges sr0 = new SortedRangesShort(64, 10);
         final WritableRowSet ix0 = new WritableRowSetImpl(sr0);
@@ -2819,6 +2888,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(ix1.subsetOf(ix0));
     }
 
+    @Test
     public void testIntersectRegression0() {
         WritableRowSet ix0 = RowSetTstUtils.makeEmptySr();
         WritableRowSet ix1 = RowSetTstUtils.makeEmptyRsp();
@@ -2838,6 +2908,7 @@ public class WritableRowSetImplTest extends TestCase {
         ix2.validate();
     }
 
+    @Test
     public void testConversionRemovalRefCount0() {
         WritableRowSet ix0 = RowSetTstUtils.makeEmptySr();
         final int n = 4;
@@ -2858,6 +2929,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(initialRefCount, getRefCount(ix2));
     }
 
+    @Test
     public void testSubsetOfMixed() {
         final WritableRowSet ix0 = RowSetTstUtils.makeEmptySr();
         final long bkSz = BLOCK_SIZE;
@@ -2896,6 +2968,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testRemoveRegression0() {
         final String ix0Str = "201609,201631-201632,201671,201674,201705,201715-201716,201719,201724,201749,201782," +
                 "201789,201842,201865,201888,201892,201908,201918,201927,201935,201954,201961,201971,202012,202014," +
@@ -2934,6 +3007,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(ix0Rsp.subsetOf(ix0));
     }
 
+    @Test
     public void testMinusRegression1() {
         final WritableRowSet ix0 = RowSetTstUtils.makeEmptySr();
         rvs2ix(ix0, new long[] {
@@ -2951,6 +3025,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(ix4.subsetOf(ix3));
     }
 
+    @Test
     public void testMinusRegression2() {
         final String ix0Str = "88,103,121,258,275,366,370,409,411,584,587,602,683,714-715,744,750,791,836,981,1024," +
                 "1052,1054,1089,1151,1220,1243,1267,1296,1403,1429,1533,1556,1589,1661,1784,1790,1914,2150,2167,2171," +
@@ -2975,6 +3050,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(rspResult.subsetOf(result));
     }
 
+    @Test
     public void testRemoveRegression1() {
         WritableRowSet ix0 = RowSetTstUtils.makeEmptyRsp();
         ix0 = rowSetFromString("0-65536,131071-393215", ix0);
@@ -2987,6 +3063,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(expected.subsetOf(ix0));
     }
 
+    @Test
     public void testRemoveRegression2() {
         WritableRowSet ix0 = RowSetTstUtils.makeEmptyRsp();
         ix0.insert(0);
@@ -3003,6 +3080,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(expected.subsetOf(ix0));
     }
 
+    @Test
     public void testSequentialBuilderCompactness() {
         if (!ImmutableContainer.ENABLED) {
             return;
@@ -3029,6 +3107,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(0.0, rsp.containerOverhead());
     }
 
+    @Test
     public void testRetainMixed() {
         final WritableRowSet ix1 = new WritableRowSetImpl(new RspBitmap(3, 4));
         SortedRanges sr = new SortedRangesLong();
@@ -3038,6 +3117,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(ix1.isEmpty());
     }
 
+    @Test
     public void testRetainRefCountRegress() {
         final RowSet ix1 = new WritableRowSetImpl(new RspBitmap(20, 24));
         SortedRanges sr = new SortedRangesLong();
@@ -3052,7 +3132,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(RowSetFactory.fromKeys(18, 20), clone);
     }
 
-
+    @Test
     public void testRetainRangeRefCountRegress() {
         SortedRanges sr = new SortedRangesLong();
         sr = sr.add(18);
@@ -3066,6 +3146,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(RowSetFactory.fromKeys(18, 20), clone);
     }
 
+    @Test
     public void testRetainSrPrefix() {
         SortedRanges sr0 = new SortedRangesLong();
         sr0 = sr0.add(20);
@@ -3080,6 +3161,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(ix0.isEmpty());
     }
 
+    @Test
     public void testInsertWithShift() {
         final long start0 = 2 * BLOCK_SIZE + BLOCK_SIZE / 2;
         final long end0 = 3 * BLOCK_SIZE + BLOCK_SIZE / 2;
@@ -3111,6 +3193,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testSearchIteratorBinarySearchFirstCallNotFoundNoNext() {
         final RowSet[] ixs = new RowSet[] {
                 new WritableRowSetImpl(SingleRange.make(11, 11)),
@@ -3139,6 +3222,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testRemoveSrFromRspFullBlockRegression() {
         final long offset = 3 * BLOCK_SIZE + 52546; // 249154
         SortedRanges sr = new SortedRangesInt(8, offset);
@@ -3154,6 +3238,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(card - sr.getCardinality(), result.ixCardinality());
     }
 
+    @Test
     public void testInsertWithSrTypeChange() {
         final int cap = SortedRanges.INT_SPARSE_MAX_CAPACITY;
         SortedRanges sr0 = new SortedRangesInt(cap, 0);
@@ -3171,6 +3256,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(cap + sr1.getCardinality(), result.ixCardinality());
     }
 
+    @Test
     public void testRemoveTime() {
         final Random r = new Random();
         final RowSetBuilderSequential outer = RowSetFactory.builderSequential();
@@ -3196,6 +3282,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testSequentialBuilderMakesSortedRanges() {
         final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
         builder.appendRange(10, 20);
@@ -3204,6 +3291,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertTrue(tix instanceof SortedRanges);
     }
 
+    @Test
     public void testSequentialBuilderMakesSparseSortedRangesLong() {
         for (int j = 0; j < 2; ++j) {
             final int max = SortedRanges.LONG_SPARSE_MAX_CAPACITY + ((j == 0) ? 0 : 1);
@@ -3216,6 +3304,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testSequentialBuilderMakesSparseSortedRangesInt() {
         for (int j = 0; j < 2; ++j) {
             final int max = SortedRanges.INT_SPARSE_MAX_CAPACITY + ((j == 0) ? 0 : 1);
@@ -3229,6 +3318,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testSequentialBuilderMakesDenseSortedRangesInt() {
         for (int j = 0; j < 2; ++j) {
             final int max = SortedRanges.INT_DENSE_MAX_CAPACITY + ((j == 0) ? 0 : 1);
@@ -3242,6 +3332,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testRemoveSrFromRspFullBlockRegression2() {
         // try to prime the work data to be only a single thing
         final RspBitmap rb1 = new RspBitmap(0, 1 << 17 - 1);
@@ -3263,6 +3354,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(card - sr.getCardinality(), result.ixCardinality());
     }
 
+    @Test
     public void testSubSetForPositions() {
         final RowSetBuilderSequential b = RowSetFactory.builderSequential();
         final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
@@ -3381,6 +3473,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
     }
 
+    @Test
     public void testSequentialBuilderMergeSpans() {
         final RowSetBuilderSequential builder1 = RowSetFactory.builderSequential();
         final long blockSize = BLOCK_SIZE;
@@ -3407,6 +3500,7 @@ public class WritableRowSetImplTest extends TestCase {
         assertEquals(ix1.size() + ix2.size(), ix4.size());
     }
 
+    @Test
     public void testSubSetForPositionsDoesNotLeakInnerSetRefCount() {
         RspBitmap rb = RspBitmap.makeEmpty();
         rb = rb.add(10);
@@ -3424,6 +3518,7 @@ public class WritableRowSetImplTest extends TestCase {
         rowSet.close();
     }
 
+    @Test
     public void testSelfAliasedMutators() {
         final WritableRowSet rowSet = RowSetFactory.fromKeys(1, 5, 9);
         rowSet.insert(rowSet);

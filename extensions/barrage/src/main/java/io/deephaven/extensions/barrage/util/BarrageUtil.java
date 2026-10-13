@@ -1905,7 +1905,9 @@ public class BarrageUtil {
                 final WritableRowSet targetViewport = RowSetFactory.empty()) {
             // compute the target viewport
             if (viewport == null) {
-                targetViewport.insertRange(0, table.size() - 1);
+                if (!table.isEmpty()) {
+                    targetViewport.insertRange(0, table.size() - 1);
+                }
             } else if (!reverseViewport) {
                 targetViewport.insert(viewport);
             } else {

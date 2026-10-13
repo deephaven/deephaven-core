@@ -1,6 +1,5 @@
 ---
 title: "Create interactive, real-time browser dashboards with deephaven.ui"
-sidebar_label: "deephaven.ui"
 ---
 
 <div className="comment-title">

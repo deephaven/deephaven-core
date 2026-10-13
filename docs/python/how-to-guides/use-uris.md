@@ -1,6 +1,5 @@
 ---
 title: Use URIs to share tables
-sidebar_label: URI
 ---
 
 This guide shows you how to use Deephaven's [URIs](https://docs.deephaven.io/core/pydoc/code/deephaven.uri.html#module-deephaven.uri) to share tables across server instances and networks.

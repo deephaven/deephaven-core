@@ -13,6 +13,7 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':engine-function')
 
+    testImplementation project(':base-test-utils')
     testImplementation libs.junit4
 
     testRuntimeOnly project(':log-to-slf4j')

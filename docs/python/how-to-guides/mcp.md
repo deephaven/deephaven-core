@@ -1,6 +1,5 @@
 ---
 title: Deephaven MCP
-sidebar_label: MCP
 ---
 
 Deephaven MCP connects Deephaven to your AI development workflow using the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/docs/getting-started/intro) — an open-source standard for connecting AI applications to external services like databases, filesystems, and Deephaven. AI models can query tables, generate code, and execute scripts directly against your Deephaven sessions.

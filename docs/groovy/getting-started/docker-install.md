@@ -1,6 +1,5 @@
 ---
 title: Install and run with Docker
-sidebar_label: Docker
 ---
 
 ## Run Deephaven from Docker

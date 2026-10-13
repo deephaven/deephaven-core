@@ -3,13 +3,16 @@
 //
 package io.deephaven.plot.datasets.xy;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.errors.PlotIllegalArgumentException;
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class TestXYDataSeriesFunctionImpl extends BaseArrayTestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
+public class TestXYDataSeriesFunctionImpl {
+
+    @Test
     public void testXYDataSeriesFunction() {
         final XYDataSeriesFunctionImpl f1 = new BaseFigureImpl().newChart().newAxes().plot("Test", x -> x);
         final XYDataSeriesFunctionImpl f2 = new BaseFigureImpl().newChart().newAxes().plot("Test", Math::log);
@@ -37,7 +40,6 @@ public class TestXYDataSeriesFunctionImpl extends BaseArrayTestCase {
         f2.funcRange(0, 99);
         f3.funcRange(0, 99);
 
-
         assertEquals(f1.size(), 101);
         assertEquals(f2.size(), 101);
         assertEquals(f3.size(), 101);
@@ -50,22 +52,21 @@ public class TestXYDataSeriesFunctionImpl extends BaseArrayTestCase {
 
         try {
             f1.funcRange(100, 99, -10);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("xmin"));
         }
 
         try {
             f1.funcRange(0, 99, -10);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("0"));
         }
 
-
         try {
             f1.funcNPoints(-6);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("0"));
         }
@@ -74,20 +75,19 @@ public class TestXYDataSeriesFunctionImpl extends BaseArrayTestCase {
         assertEquals(1.0, f1.getX(1));
         assertEquals(1.0, f1.getY(1));
 
-
         try {
             new XYDataSeriesFunctionImpl(new BaseFigureImpl().newChart().newAxes(), 1, "Test", null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
     }
 
+    @Test
     public void testCopy() {
         final XYDataSeriesFunctionImpl f1 = new BaseFigureImpl().newChart().newAxes().plot("Test", x -> x);
         testFunction(f1, f1.copy(new BaseFigureImpl().newChart().newAxes()));
-
 
         final XYDataSeriesFunctionImpl f2 = new BaseFigureImpl().newChart().newAxes().plot("Test2", Math::log);
         f2.pointsVisible(false);

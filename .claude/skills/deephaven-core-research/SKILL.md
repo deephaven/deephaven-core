@@ -1,6 +1,7 @@
 ---
 name: deephaven-core-research
-description: Research the deephaven-core (Community) codebase to understand implementations, architecture, and feature behavior. Use when the user asks about how a feature works, where code lives, why something was implemented a certain way, or needs to trace data/control flow through the deephaven-core repo specifically.
+description: >
+  Research the deephaven-core (Community) codebase to understand implementations, architecture, and feature behavior. **Use this skill when:** someone asks how a feature works, where code lives, why something was implemented a certain way, how to trace data flow, wants to understand the UpdateGraph/table update model, asks about module architecture, needs to find the entry point for a feature, wants to understand gRPC service handlers, asks about engine internals, or needs SME-level understanding of any deephaven-core component. Also use when debugging behavior, preparing to modify code, or writing documentation that requires deep code understanding. **Do NOT use for:** deephaven-ent/Enterprise code (use deephaven-enterprise-research), doc style review (use deephaven-writing-style), or doc accuracy checking (use deephaven-core-accuracy-check).
 allowed-tools: Read, Grep, Glob, Bash(git log *), Bash(git blame *), Bash(git show *)
 ---
 
@@ -196,13 +197,22 @@ Report comprehensively:
 | Table API/interfaces | `engine/api/src/main/java/io/deephaven/engine/table/` |
 | Live updates | `engine/updategraph/src/main/java/io/deephaven/engine/updategraph/` |
 | Row/column data | `engine/chunk/`, `engine/rowset/`, `engine/vector/` |
+| Liveness/ref counting | `engine/updategraph/src/main/java/io/deephaven/engine/liveness/` |
+| Query syntax tree | `qst/` (immutable, declarative query representation) |
+| Fluent table API | `table-api/` (provider-agnostic `TableOperations`) |
+| SQL front-end | `engine/sql/`, `sql/` |
 | Server/gRPC | `server/src/main/java/io/deephaven/server/` |
 | gRPC definitions | `proto/proto-backplane-grpc/` |
+| Server plugins | `plugin/` (object types, figures, hierarchical tables) |
 | Web UI | `web/client-ui/`, `web/client-api/` |
 | Python integration | `py/server/`, `Integrations/` |
-| Data connectors | `extensions/` (parquet, kafka, iceberg, arrow, etc.) |
+| C++ client | `cpp-client/` (see `cpp-client/DESIGN.md`) |
+| R client | `R/` (see `R/DESIGN.md`) |
+| Data connectors | `extensions/` (parquet, kafka, iceberg, s3, csv, jdbc, json, arrow, etc.) |
 | Authentication | `authentication/`, `authorization/` |
 | Configuration | `Configuration/`, `props/` |
+| Engine dev guidance | `.github/instructions/query-engine.instructions.md` |
+| gRPC dev guidance | `.github/instructions/grpc-services.instructions.md` |
 
 ## Module layouts
 
@@ -237,6 +247,27 @@ Report comprehensively:
 - **Entry points**: `engine/rowset/src/main/java/io/deephaven/engine/rowset/`
 - **Key classes**: `RowSet`, `WritableRowSet`, `RowSetFactory`, `RowSequence`
 
+### io.deephaven.engine.liveness (in engine/updategraph/) — Reference counting and cleanup
+- **Entry points**: `engine/updategraph/src/main/java/io/deephaven/engine/liveness/`
+- **Key classes**: `LivenessNode`, `LivenessReferent`, `LivenessScope`, plus `ReferenceCounted` (`Util/src/main/java/io/deephaven/util/referencecounting/`)
+- **Purpose**: Keeps upstream dependencies alive, ensures timely cleanup
+
+### table-api/ — Provider-agnostic fluent API
+- **Entry points**: `table-api/src/main/java/io/deephaven/api/`
+- **Key classes**: `TableOperations`, `Filter`, `Selectable`, `SortColumn`
+- **Purpose**: Defines fluent table operations independent of implementation
+
+### qst/ — Query syntax tree (immutable, declarative query representation)
+- **Entry points**: `qst/src/main/java/io/deephaven/qst/`
+- **Key classes**: `TableSpec`, `TableCreator`
+- **Purpose**: A `TableSpec` can be replayed against a fluent `TableCreator` backend; this
+  decouples query construction from execution. (A proper serialization format for `TableSpec`
+  is future work — see `ParentsVisitor`.)
+
+### engine/sql/ and sql/ — SQL front-end
+- **Entry points**: `engine/sql/src/main/java/io/deephaven/engine/sql/`, `sql/src/main/java/io/deephaven/sql/`
+- **Purpose**: SQL query parsing and execution over the table engine
+
 ## Server modules
 
 ### server/ — gRPC server implementation
@@ -247,6 +278,14 @@ Report comprehensively:
 ### proto/proto-backplane-grpc/ — gRPC protocol definitions
 - **Entry points**: `proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/`
 - `.proto` files define all client-server communication
+
+### plugin/ — Server-side plugin system
+- **Entry points**: `plugin/src/main/java/io/deephaven/plugin/` (core `Plugin`/`Registration` and the
+  `type.ObjectType` API); the figure, hierarchical-table, and partitioned-table plugins are separate
+  submodules: `plugin/figure/`, `plugin/hierarchicaltable/`, `plugin/partitionedtable/`
+- **Key classes**: `Plugin`, `ObjectType` (core); `FigureWidgetTypePlugin` (`plugin/figure/`);
+  `HierarchicalTableTypePlugin` (`plugin/hierarchicaltable/`)
+- **Uses Dagger**: See `plugin/dagger/` for DI wiring
 
 ## Extensions
 
@@ -268,6 +307,21 @@ Report comprehensively:
 ### extensions/arrow/ — Arrow integration
 - **Entry points**: `extensions/arrow/src/main/java/io/deephaven/extensions/arrow/`
 
+### extensions/flight-sql/ — Flight SQL support
+- **Entry points**: `extensions/flight-sql/src/main/java/io/deephaven/server/flightsql/`
+
+### extensions/s3/ — S3 connector
+- **Entry points**: `extensions/s3/src/main/java/io/deephaven/extensions/s3/`
+
+### extensions/csv/ — CSV support
+- **Entry points**: `extensions/csv/src/main/java/io/deephaven/csv/`
+
+### extensions/json/ — JSON support
+- **Entry points**: `extensions/json/src/main/java/io/deephaven/json/`
+
+### extensions/jdbc/ — JDBC connector
+- **Entry points**: `extensions/jdbc/src/main/java/io/deephaven/jdbc/`
+
 ## Web and clients
 
 ### web/client-api/ — GWT JavaScript API
@@ -287,6 +341,16 @@ Report comprehensively:
 ### py/server/ — Python server integration (deephaven package)
 - **Entry points**: `py/server/deephaven/`
 - **Key modules**: `table.py`, `dtypes.py`, `time.py`, `plot/`
+
+### cpp-client/ — C++ client
+- **Entry points**: `cpp-client/deephaven/dhcore/` (data model, ticking state machine), `cpp-client/deephaven/dhclient/` (user API)
+- **Key docs**: `cpp-client/DESIGN.md` (architecture, per-file summaries), `cpp-client/BUILDING.md`
+- **Note**: Also substrate for R client (`R/rdeephaven` via Rcpp) and `py/client-ticking` (via Cython)
+
+### R/ — R client (rdeephaven)
+- **Entry points**: `R/rdeephaven/`
+- **Key docs**: `R/DESIGN.md`, `R/rdeephaven/BUILDING.md`
+- **Architecture**: R6 classes → Rcpp module → C++ client
 
 ## Infrastructure
 

@@ -1,6 +1,5 @@
 ---
 title: Install and run Deephaven with pip
-sidebar_label: pip
 ---
 
 [pip](https://pypi.org/project/pip/) is the most popular package manager for Python. Like with other Python packages, you can use it to install Deephaven.

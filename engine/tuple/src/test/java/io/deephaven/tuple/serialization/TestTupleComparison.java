@@ -5,7 +5,6 @@ package io.deephaven.tuple.serialization;
 
 import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.tuple.generated.*;
-import junit.framework.TestCase;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -13,6 +12,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import static io.deephaven.util.QueryConstants.*;
+import static org.junit.Assert.*;
 
 public class TestTupleComparison {
 
@@ -23,22 +23,22 @@ public class TestTupleComparison {
         final IntByteTuple normalTuple = new IntByteTuple(0, (byte) 1);
 
         // Less than / greater than tests
-        TestCase.assertTrue(nullTuple.compareTo(normalTuple) < 0);
-        TestCase.assertTrue(normalTuple.compareTo(nullTuple) > 0);
+        assertTrue(nullTuple.compareTo(normalTuple) < 0);
+        assertTrue(normalTuple.compareTo(nullTuple) > 0);
 
         // Reference equality tests
-        TestCase.assertTrue(nullTuple.equals(nullTuple));
-        TestCase.assertEquals(0, nullTuple.compareTo(nullTuple));
+        assertTrue(nullTuple.equals(nullTuple));
+        assertEquals(0, nullTuple.compareTo(nullTuple));
 
-        TestCase.assertTrue(normalTuple.equals(normalTuple));
-        TestCase.assertEquals(0, normalTuple.compareTo(normalTuple));
+        assertTrue(normalTuple.equals(normalTuple));
+        assertEquals(0, normalTuple.compareTo(normalTuple));
 
         // Equivalence tests
-        TestCase.assertTrue(nullTuple.equals(new IntByteTuple(0, NULL_BYTE)));
-        TestCase.assertEquals(0, nullTuple.compareTo(new IntByteTuple(0, NULL_BYTE)));
+        assertTrue(nullTuple.equals(new IntByteTuple(0, NULL_BYTE)));
+        assertEquals(0, nullTuple.compareTo(new IntByteTuple(0, NULL_BYTE)));
 
-        TestCase.assertTrue(normalTuple.equals(new IntByteTuple(0, (byte) 1)));
-        TestCase.assertEquals(0, normalTuple.compareTo(new IntByteTuple(0, (byte) 1)));
+        assertTrue(normalTuple.equals(new IntByteTuple(0, (byte) 1)));
+        assertEquals(0, normalTuple.compareTo(new IntByteTuple(0, (byte) 1)));
     }
 
     @Test
@@ -48,22 +48,22 @@ public class TestTupleComparison {
         final IntCharTuple normalTuple = new IntCharTuple(0, 'A');
 
         // Less than / greater than tests
-        TestCase.assertTrue(nullTuple.compareTo(normalTuple) < 0);
-        TestCase.assertTrue(normalTuple.compareTo(nullTuple) > 0);
+        assertTrue(nullTuple.compareTo(normalTuple) < 0);
+        assertTrue(normalTuple.compareTo(nullTuple) > 0);
 
         // Reference equality tests
-        TestCase.assertTrue(nullTuple.equals(nullTuple));
-        TestCase.assertEquals(0, nullTuple.compareTo(nullTuple));
+        assertTrue(nullTuple.equals(nullTuple));
+        assertEquals(0, nullTuple.compareTo(nullTuple));
 
-        TestCase.assertTrue(normalTuple.equals(normalTuple));
-        TestCase.assertEquals(0, normalTuple.compareTo(normalTuple));
+        assertTrue(normalTuple.equals(normalTuple));
+        assertEquals(0, normalTuple.compareTo(normalTuple));
 
         // Equivalence tests
-        TestCase.assertTrue(nullTuple.equals(new IntCharTuple(0, NULL_CHAR)));
-        TestCase.assertEquals(0, nullTuple.compareTo(new IntCharTuple(0, NULL_CHAR)));
+        assertTrue(nullTuple.equals(new IntCharTuple(0, NULL_CHAR)));
+        assertEquals(0, nullTuple.compareTo(new IntCharTuple(0, NULL_CHAR)));
 
-        TestCase.assertTrue(normalTuple.equals(new IntCharTuple(0, 'A')));
-        TestCase.assertEquals(0, normalTuple.compareTo(new IntCharTuple(0, 'A')));
+        assertTrue(normalTuple.equals(new IntCharTuple(0, 'A')));
+        assertEquals(0, normalTuple.compareTo(new IntCharTuple(0, 'A')));
     }
 
     @Test
@@ -73,22 +73,22 @@ public class TestTupleComparison {
         final IntShortTuple normalTuple = new IntShortTuple(0, (short) 1);
 
         // Less than / greater than tests
-        TestCase.assertTrue(nullTuple.compareTo(normalTuple) < 0);
-        TestCase.assertTrue(normalTuple.compareTo(nullTuple) > 0);
+        assertTrue(nullTuple.compareTo(normalTuple) < 0);
+        assertTrue(normalTuple.compareTo(nullTuple) > 0);
 
         // Reference equality tests
-        TestCase.assertTrue(nullTuple.equals(nullTuple));
-        TestCase.assertEquals(0, nullTuple.compareTo(nullTuple));
+        assertTrue(nullTuple.equals(nullTuple));
+        assertEquals(0, nullTuple.compareTo(nullTuple));
 
-        TestCase.assertTrue(normalTuple.equals(normalTuple));
-        TestCase.assertEquals(0, normalTuple.compareTo(normalTuple));
+        assertTrue(normalTuple.equals(normalTuple));
+        assertEquals(0, normalTuple.compareTo(normalTuple));
 
         // Equivalence tests
-        TestCase.assertTrue(nullTuple.equals(new IntShortTuple(0, NULL_SHORT)));
-        TestCase.assertEquals(0, nullTuple.compareTo(new IntShortTuple(0, NULL_SHORT)));
+        assertTrue(nullTuple.equals(new IntShortTuple(0, NULL_SHORT)));
+        assertEquals(0, nullTuple.compareTo(new IntShortTuple(0, NULL_SHORT)));
 
-        TestCase.assertTrue(normalTuple.equals(new IntShortTuple(0, (short) 1)));
-        TestCase.assertEquals(0, normalTuple.compareTo(new IntShortTuple(0, (short) 1)));
+        assertTrue(normalTuple.equals(new IntShortTuple(0, (short) 1)));
+        assertEquals(0, normalTuple.compareTo(new IntShortTuple(0, (short) 1)));
     }
 
     @Test
@@ -98,22 +98,22 @@ public class TestTupleComparison {
         final IntIntTuple normalTuple = new IntIntTuple(0, 1);
 
         // Less than / greater than tests
-        TestCase.assertTrue(nullTuple.compareTo(normalTuple) < 0);
-        TestCase.assertTrue(normalTuple.compareTo(nullTuple) > 0);
+        assertTrue(nullTuple.compareTo(normalTuple) < 0);
+        assertTrue(normalTuple.compareTo(nullTuple) > 0);
 
         // Reference equality tests
-        TestCase.assertTrue(nullTuple.equals(nullTuple));
-        TestCase.assertEquals(0, nullTuple.compareTo(nullTuple));
+        assertTrue(nullTuple.equals(nullTuple));
+        assertEquals(0, nullTuple.compareTo(nullTuple));
 
-        TestCase.assertTrue(normalTuple.equals(normalTuple));
-        TestCase.assertEquals(0, normalTuple.compareTo(normalTuple));
+        assertTrue(normalTuple.equals(normalTuple));
+        assertEquals(0, normalTuple.compareTo(normalTuple));
 
         // Equivalence tests
-        TestCase.assertTrue(nullTuple.equals(new IntIntTuple(0, NULL_INT)));
-        TestCase.assertEquals(0, nullTuple.compareTo(new IntIntTuple(0, NULL_INT)));
+        assertTrue(nullTuple.equals(new IntIntTuple(0, NULL_INT)));
+        assertEquals(0, nullTuple.compareTo(new IntIntTuple(0, NULL_INT)));
 
-        TestCase.assertTrue(normalTuple.equals(new IntIntTuple(0, 1)));
-        TestCase.assertEquals(0, normalTuple.compareTo(new IntIntTuple(0, 1)));
+        assertTrue(normalTuple.equals(new IntIntTuple(0, 1)));
+        assertEquals(0, normalTuple.compareTo(new IntIntTuple(0, 1)));
     }
 
     @Test
@@ -123,22 +123,22 @@ public class TestTupleComparison {
         final IntLongTuple normalTuple = new IntLongTuple(0, 1);
 
         // Less than / greater than tests
-        TestCase.assertTrue(nullTuple.compareTo(normalTuple) < 0);
-        TestCase.assertTrue(normalTuple.compareTo(nullTuple) > 0);
+        assertTrue(nullTuple.compareTo(normalTuple) < 0);
+        assertTrue(normalTuple.compareTo(nullTuple) > 0);
 
         // Reference equality tests
-        TestCase.assertTrue(nullTuple.equals(nullTuple));
-        TestCase.assertEquals(0, nullTuple.compareTo(nullTuple));
+        assertTrue(nullTuple.equals(nullTuple));
+        assertEquals(0, nullTuple.compareTo(nullTuple));
 
-        TestCase.assertTrue(normalTuple.equals(normalTuple));
-        TestCase.assertEquals(0, normalTuple.compareTo(normalTuple));
+        assertTrue(normalTuple.equals(normalTuple));
+        assertEquals(0, normalTuple.compareTo(normalTuple));
 
         // Equivalence tests
-        TestCase.assertTrue(nullTuple.equals(new IntLongTuple(0, NULL_LONG)));
-        TestCase.assertEquals(0, nullTuple.compareTo(new IntLongTuple(0, NULL_LONG)));
+        assertTrue(nullTuple.equals(new IntLongTuple(0, NULL_LONG)));
+        assertEquals(0, nullTuple.compareTo(new IntLongTuple(0, NULL_LONG)));
 
-        TestCase.assertTrue(normalTuple.equals(new IntLongTuple(0, 1)));
-        TestCase.assertEquals(0, normalTuple.compareTo(new IntLongTuple(0, 1)));
+        assertTrue(normalTuple.equals(new IntLongTuple(0, 1)));
+        assertEquals(0, normalTuple.compareTo(new IntLongTuple(0, 1)));
     }
 
     @Test
@@ -153,67 +153,67 @@ public class TestTupleComparison {
         final IntFloatTuple nanTuple = new IntFloatTuple(0, Float.NaN);
 
         // Less than / greater than tests
-        TestCase.assertTrue(nullTuple.compareTo(negInfTuple) < 0);
-        TestCase.assertTrue(negInfTuple.compareTo(negZeroTuple) < 0);
-        TestCase.assertTrue(negZeroTuple.compareTo(posZeroTuple) == 0); // special case
-        TestCase.assertTrue(posZeroTuple.compareTo(normalTuple) < 0);
-        TestCase.assertTrue(normalTuple.compareTo(posInfTuple) < 0);
-        TestCase.assertTrue(posInfTuple.compareTo(nanTuple) < 0);
+        assertTrue(nullTuple.compareTo(negInfTuple) < 0);
+        assertTrue(negInfTuple.compareTo(negZeroTuple) < 0);
+        assertTrue(negZeroTuple.compareTo(posZeroTuple) == 0); // special case
+        assertTrue(posZeroTuple.compareTo(normalTuple) < 0);
+        assertTrue(normalTuple.compareTo(posInfTuple) < 0);
+        assertTrue(posInfTuple.compareTo(nanTuple) < 0);
 
-        TestCase.assertTrue(nanTuple.compareTo(posInfTuple) > 0);
-        TestCase.assertTrue(posInfTuple.compareTo(normalTuple) > 0);
-        TestCase.assertTrue(normalTuple.compareTo(posZeroTuple) > 0);
-        TestCase.assertTrue(posZeroTuple.compareTo(negZeroTuple) == 0); // special case
-        TestCase.assertTrue(negZeroTuple.compareTo(negInfTuple) > 0);
-        TestCase.assertTrue(negInfTuple.compareTo(nullTuple) > 0);
+        assertTrue(nanTuple.compareTo(posInfTuple) > 0);
+        assertTrue(posInfTuple.compareTo(normalTuple) > 0);
+        assertTrue(normalTuple.compareTo(posZeroTuple) > 0);
+        assertTrue(posZeroTuple.compareTo(negZeroTuple) == 0); // special case
+        assertTrue(negZeroTuple.compareTo(negInfTuple) > 0);
+        assertTrue(negInfTuple.compareTo(nullTuple) > 0);
 
         // Reference equality tests
-        TestCase.assertTrue(nullTuple.equals(nullTuple));
-        TestCase.assertEquals(0, nullTuple.compareTo(nullTuple));
+        assertTrue(nullTuple.equals(nullTuple));
+        assertEquals(0, nullTuple.compareTo(nullTuple));
 
-        TestCase.assertTrue(negInfTuple.equals(negInfTuple));
-        TestCase.assertEquals(0, negInfTuple.compareTo(negInfTuple));
+        assertTrue(negInfTuple.equals(negInfTuple));
+        assertEquals(0, negInfTuple.compareTo(negInfTuple));
 
-        TestCase.assertTrue(negZeroTuple.equals(negZeroTuple));
-        TestCase.assertEquals(0, negZeroTuple.compareTo(negZeroTuple));
+        assertTrue(negZeroTuple.equals(negZeroTuple));
+        assertEquals(0, negZeroTuple.compareTo(negZeroTuple));
 
-        TestCase.assertTrue(posZeroTuple.equals(posZeroTuple));
-        TestCase.assertEquals(0, posZeroTuple.compareTo(posZeroTuple));
+        assertTrue(posZeroTuple.equals(posZeroTuple));
+        assertEquals(0, posZeroTuple.compareTo(posZeroTuple));
 
-        TestCase.assertTrue(normalTuple.equals(normalTuple));
-        TestCase.assertEquals(0, normalTuple.compareTo(normalTuple));
+        assertTrue(normalTuple.equals(normalTuple));
+        assertEquals(0, normalTuple.compareTo(normalTuple));
 
-        TestCase.assertTrue(posInfTuple.equals(posInfTuple));
-        TestCase.assertEquals(0, posInfTuple.compareTo(posInfTuple));
+        assertTrue(posInfTuple.equals(posInfTuple));
+        assertEquals(0, posInfTuple.compareTo(posInfTuple));
 
-        TestCase.assertTrue(nanTuple.equals(nanTuple));
-        TestCase.assertEquals(0, nanTuple.compareTo(nanTuple));
+        assertTrue(nanTuple.equals(nanTuple));
+        assertEquals(0, nanTuple.compareTo(nanTuple));
 
         // Equivalence tests
-        TestCase.assertTrue(nullTuple.equals(new IntFloatTuple(0, NULL_FLOAT)));
-        TestCase.assertEquals(0, nullTuple.compareTo(new IntFloatTuple(0, NULL_FLOAT)));
+        assertTrue(nullTuple.equals(new IntFloatTuple(0, NULL_FLOAT)));
+        assertEquals(0, nullTuple.compareTo(new IntFloatTuple(0, NULL_FLOAT)));
 
-        TestCase.assertTrue(negInfTuple.equals(new IntFloatTuple(0, Float.NEGATIVE_INFINITY)));
-        TestCase.assertEquals(0, negInfTuple.compareTo(new IntFloatTuple(0, Float.NEGATIVE_INFINITY)));
+        assertTrue(negInfTuple.equals(new IntFloatTuple(0, Float.NEGATIVE_INFINITY)));
+        assertEquals(0, negInfTuple.compareTo(new IntFloatTuple(0, Float.NEGATIVE_INFINITY)));
 
-        TestCase.assertTrue(negZeroTuple.equals(new IntFloatTuple(0, -0.0F)));
-        TestCase.assertEquals(0, negZeroTuple.compareTo(new IntFloatTuple(0, -0.0F)));
-        TestCase.assertTrue(negZeroTuple.equals(new IntFloatTuple(0, 0.0F))); // special case
-        TestCase.assertEquals(0, negZeroTuple.compareTo(new IntFloatTuple(0, 0.0F))); // special case
+        assertTrue(negZeroTuple.equals(new IntFloatTuple(0, -0.0F)));
+        assertEquals(0, negZeroTuple.compareTo(new IntFloatTuple(0, -0.0F)));
+        assertTrue(negZeroTuple.equals(new IntFloatTuple(0, 0.0F))); // special case
+        assertEquals(0, negZeroTuple.compareTo(new IntFloatTuple(0, 0.0F))); // special case
 
-        TestCase.assertTrue(posZeroTuple.equals(new IntFloatTuple(0, 0.0F)));
-        TestCase.assertEquals(0, posZeroTuple.compareTo(new IntFloatTuple(0, 0.0F)));
-        TestCase.assertTrue(posZeroTuple.equals(new IntFloatTuple(0, -0.0F))); // special case
-        TestCase.assertEquals(0, posZeroTuple.compareTo(new IntFloatTuple(0, -0.0F))); // special case
+        assertTrue(posZeroTuple.equals(new IntFloatTuple(0, 0.0F)));
+        assertEquals(0, posZeroTuple.compareTo(new IntFloatTuple(0, 0.0F)));
+        assertTrue(posZeroTuple.equals(new IntFloatTuple(0, -0.0F))); // special case
+        assertEquals(0, posZeroTuple.compareTo(new IntFloatTuple(0, -0.0F))); // special case
 
-        TestCase.assertTrue(normalTuple.equals(new IntFloatTuple(0, 1.0F)));
-        TestCase.assertEquals(0, normalTuple.compareTo(new IntFloatTuple(0, 1.0F)));
+        assertTrue(normalTuple.equals(new IntFloatTuple(0, 1.0F)));
+        assertEquals(0, normalTuple.compareTo(new IntFloatTuple(0, 1.0F)));
 
-        TestCase.assertTrue(posInfTuple.equals(new IntFloatTuple(0, Float.POSITIVE_INFINITY)));
-        TestCase.assertEquals(0, posInfTuple.compareTo(new IntFloatTuple(0, Float.POSITIVE_INFINITY)));
+        assertTrue(posInfTuple.equals(new IntFloatTuple(0, Float.POSITIVE_INFINITY)));
+        assertEquals(0, posInfTuple.compareTo(new IntFloatTuple(0, Float.POSITIVE_INFINITY)));
 
-        TestCase.assertTrue(nanTuple.equals(new IntFloatTuple(0, Float.NaN)));
-        TestCase.assertEquals(0, nanTuple.compareTo(new IntFloatTuple(0, Float.NaN)));
+        assertTrue(nanTuple.equals(new IntFloatTuple(0, Float.NaN)));
+        assertEquals(0, nanTuple.compareTo(new IntFloatTuple(0, Float.NaN)));
     }
 
     @Test
@@ -228,67 +228,67 @@ public class TestTupleComparison {
         final IntDoubleTuple nanTuple = new IntDoubleTuple(0, Double.NaN);
 
         // Less than / greater than tests
-        TestCase.assertTrue(nullTuple.compareTo(negInfTuple) < 0);
-        TestCase.assertTrue(negInfTuple.compareTo(negZeroTuple) < 0);
-        TestCase.assertTrue(negZeroTuple.compareTo(posZeroTuple) == 0); // special case
-        TestCase.assertTrue(posZeroTuple.compareTo(normalTuple) < 0);
-        TestCase.assertTrue(normalTuple.compareTo(posInfTuple) < 0);
-        TestCase.assertTrue(posInfTuple.compareTo(nanTuple) < 0);
+        assertTrue(nullTuple.compareTo(negInfTuple) < 0);
+        assertTrue(negInfTuple.compareTo(negZeroTuple) < 0);
+        assertTrue(negZeroTuple.compareTo(posZeroTuple) == 0); // special case
+        assertTrue(posZeroTuple.compareTo(normalTuple) < 0);
+        assertTrue(normalTuple.compareTo(posInfTuple) < 0);
+        assertTrue(posInfTuple.compareTo(nanTuple) < 0);
 
-        TestCase.assertTrue(nanTuple.compareTo(posInfTuple) > 0);
-        TestCase.assertTrue(posInfTuple.compareTo(normalTuple) > 0);
-        TestCase.assertTrue(normalTuple.compareTo(posZeroTuple) > 0);
-        TestCase.assertTrue(posZeroTuple.compareTo(negZeroTuple) == 0); // special case
-        TestCase.assertTrue(negZeroTuple.compareTo(negInfTuple) > 0);
-        TestCase.assertTrue(negInfTuple.compareTo(nullTuple) > 0);
+        assertTrue(nanTuple.compareTo(posInfTuple) > 0);
+        assertTrue(posInfTuple.compareTo(normalTuple) > 0);
+        assertTrue(normalTuple.compareTo(posZeroTuple) > 0);
+        assertTrue(posZeroTuple.compareTo(negZeroTuple) == 0); // special case
+        assertTrue(negZeroTuple.compareTo(negInfTuple) > 0);
+        assertTrue(negInfTuple.compareTo(nullTuple) > 0);
 
         // Reference equality tests
-        TestCase.assertTrue(nullTuple.equals(nullTuple));
-        TestCase.assertEquals(0, nullTuple.compareTo(nullTuple));
+        assertTrue(nullTuple.equals(nullTuple));
+        assertEquals(0, nullTuple.compareTo(nullTuple));
 
-        TestCase.assertTrue(negInfTuple.equals(negInfTuple));
-        TestCase.assertEquals(0, negInfTuple.compareTo(negInfTuple));
+        assertTrue(negInfTuple.equals(negInfTuple));
+        assertEquals(0, negInfTuple.compareTo(negInfTuple));
 
-        TestCase.assertTrue(negZeroTuple.equals(negZeroTuple));
-        TestCase.assertEquals(0, negZeroTuple.compareTo(negZeroTuple));
+        assertTrue(negZeroTuple.equals(negZeroTuple));
+        assertEquals(0, negZeroTuple.compareTo(negZeroTuple));
 
-        TestCase.assertTrue(posZeroTuple.equals(posZeroTuple));
-        TestCase.assertEquals(0, posZeroTuple.compareTo(posZeroTuple));
+        assertTrue(posZeroTuple.equals(posZeroTuple));
+        assertEquals(0, posZeroTuple.compareTo(posZeroTuple));
 
-        TestCase.assertTrue(normalTuple.equals(normalTuple));
-        TestCase.assertEquals(0, normalTuple.compareTo(normalTuple));
+        assertTrue(normalTuple.equals(normalTuple));
+        assertEquals(0, normalTuple.compareTo(normalTuple));
 
-        TestCase.assertTrue(posInfTuple.equals(posInfTuple));
-        TestCase.assertEquals(0, posInfTuple.compareTo(posInfTuple));
+        assertTrue(posInfTuple.equals(posInfTuple));
+        assertEquals(0, posInfTuple.compareTo(posInfTuple));
 
-        TestCase.assertTrue(nanTuple.equals(nanTuple));
-        TestCase.assertEquals(0, nanTuple.compareTo(nanTuple));
+        assertTrue(nanTuple.equals(nanTuple));
+        assertEquals(0, nanTuple.compareTo(nanTuple));
 
         // Equivalence tests
-        TestCase.assertTrue(nullTuple.equals(new IntDoubleTuple(0, NULL_DOUBLE)));
-        TestCase.assertEquals(0, nullTuple.compareTo(new IntDoubleTuple(0, NULL_DOUBLE)));
+        assertTrue(nullTuple.equals(new IntDoubleTuple(0, NULL_DOUBLE)));
+        assertEquals(0, nullTuple.compareTo(new IntDoubleTuple(0, NULL_DOUBLE)));
 
-        TestCase.assertTrue(negInfTuple.equals(new IntDoubleTuple(0, Double.NEGATIVE_INFINITY)));
-        TestCase.assertEquals(0, negInfTuple.compareTo(new IntDoubleTuple(0, Double.NEGATIVE_INFINITY)));
+        assertTrue(negInfTuple.equals(new IntDoubleTuple(0, Double.NEGATIVE_INFINITY)));
+        assertEquals(0, negInfTuple.compareTo(new IntDoubleTuple(0, Double.NEGATIVE_INFINITY)));
 
-        TestCase.assertTrue(negZeroTuple.equals(new IntDoubleTuple(0, -0.0)));
-        TestCase.assertEquals(0, negZeroTuple.compareTo(new IntDoubleTuple(0, -0.0)));
-        TestCase.assertTrue(negZeroTuple.equals(new IntDoubleTuple(0, 0.0))); // special case
-        TestCase.assertEquals(0, negZeroTuple.compareTo(new IntDoubleTuple(0, 0.0))); // special case
+        assertTrue(negZeroTuple.equals(new IntDoubleTuple(0, -0.0)));
+        assertEquals(0, negZeroTuple.compareTo(new IntDoubleTuple(0, -0.0)));
+        assertTrue(negZeroTuple.equals(new IntDoubleTuple(0, 0.0))); // special case
+        assertEquals(0, negZeroTuple.compareTo(new IntDoubleTuple(0, 0.0))); // special case
 
-        TestCase.assertTrue(posZeroTuple.equals(new IntDoubleTuple(0, 0.0)));
-        TestCase.assertEquals(0, posZeroTuple.compareTo(new IntDoubleTuple(0, 0.0)));
-        TestCase.assertTrue(posZeroTuple.equals(new IntDoubleTuple(0, -0.0))); // special case
-        TestCase.assertEquals(0, posZeroTuple.compareTo(new IntDoubleTuple(0, -0.0))); // special case
+        assertTrue(posZeroTuple.equals(new IntDoubleTuple(0, 0.0)));
+        assertEquals(0, posZeroTuple.compareTo(new IntDoubleTuple(0, 0.0)));
+        assertTrue(posZeroTuple.equals(new IntDoubleTuple(0, -0.0))); // special case
+        assertEquals(0, posZeroTuple.compareTo(new IntDoubleTuple(0, -0.0))); // special case
 
-        TestCase.assertTrue(normalTuple.equals(new IntDoubleTuple(0, 1.0)));
-        TestCase.assertEquals(0, normalTuple.compareTo(new IntDoubleTuple(0, 1.0)));
+        assertTrue(normalTuple.equals(new IntDoubleTuple(0, 1.0)));
+        assertEquals(0, normalTuple.compareTo(new IntDoubleTuple(0, 1.0)));
 
-        TestCase.assertTrue(posInfTuple.equals(new IntDoubleTuple(0, Double.POSITIVE_INFINITY)));
-        TestCase.assertEquals(0, posInfTuple.compareTo(new IntDoubleTuple(0, Double.POSITIVE_INFINITY)));
+        assertTrue(posInfTuple.equals(new IntDoubleTuple(0, Double.POSITIVE_INFINITY)));
+        assertEquals(0, posInfTuple.compareTo(new IntDoubleTuple(0, Double.POSITIVE_INFINITY)));
 
-        TestCase.assertTrue(nanTuple.equals(new IntDoubleTuple(0, Double.NaN)));
-        TestCase.assertEquals(0, nanTuple.compareTo(new IntDoubleTuple(0, Double.NaN)));
+        assertTrue(nanTuple.equals(new IntDoubleTuple(0, Double.NaN)));
+        assertEquals(0, nanTuple.compareTo(new IntDoubleTuple(0, Double.NaN)));
     }
 
     @Test
@@ -298,22 +298,22 @@ public class TestTupleComparison {
         final IntObjectTuple normalTuple = new IntObjectTuple(0, "A");
 
         // Less than / greater than tests
-        TestCase.assertTrue(nullTuple.compareTo(normalTuple) < 0);
-        TestCase.assertTrue(normalTuple.compareTo(nullTuple) > 0);
+        assertTrue(nullTuple.compareTo(normalTuple) < 0);
+        assertTrue(normalTuple.compareTo(nullTuple) > 0);
 
         // Reference equality tests
-        TestCase.assertTrue(nullTuple.equals(nullTuple));
-        TestCase.assertEquals(0, nullTuple.compareTo(nullTuple));
+        assertTrue(nullTuple.equals(nullTuple));
+        assertEquals(0, nullTuple.compareTo(nullTuple));
 
-        TestCase.assertTrue(normalTuple.equals(normalTuple));
-        TestCase.assertEquals(0, normalTuple.compareTo(normalTuple));
+        assertTrue(normalTuple.equals(normalTuple));
+        assertEquals(0, normalTuple.compareTo(normalTuple));
 
         // Equivalence tests
-        TestCase.assertTrue(nullTuple.equals(new IntObjectTuple(0, null)));
-        TestCase.assertEquals(0, nullTuple.compareTo(new IntObjectTuple(0, null)));
+        assertTrue(nullTuple.equals(new IntObjectTuple(0, null)));
+        assertEquals(0, nullTuple.compareTo(new IntObjectTuple(0, null)));
 
-        TestCase.assertTrue(normalTuple.equals(new IntObjectTuple(0, "A")));
-        TestCase.assertEquals(0, normalTuple.compareTo(new IntObjectTuple(0, "A")));
+        assertTrue(normalTuple.equals(new IntObjectTuple(0, "A")));
+        assertEquals(0, normalTuple.compareTo(new IntObjectTuple(0, "A")));
     }
 
     @Test
@@ -323,22 +323,22 @@ public class TestTupleComparison {
         final ArrayTuple normalTuple = new ArrayTuple(0, 'A');
 
         // Less than / greater than tests
-        TestCase.assertTrue(nullTuple.compareTo(normalTuple) < 0);
-        TestCase.assertTrue(normalTuple.compareTo(nullTuple) > 0);
+        assertTrue(nullTuple.compareTo(normalTuple) < 0);
+        assertTrue(normalTuple.compareTo(nullTuple) > 0);
 
         // Reference equality tests
-        TestCase.assertTrue(nullTuple.equals(nullTuple));
-        TestCase.assertEquals(0, nullTuple.compareTo(nullTuple));
+        assertTrue(nullTuple.equals(nullTuple));
+        assertEquals(0, nullTuple.compareTo(nullTuple));
 
-        TestCase.assertTrue(normalTuple.equals(normalTuple));
-        TestCase.assertEquals(0, normalTuple.compareTo(normalTuple));
+        assertTrue(normalTuple.equals(normalTuple));
+        assertEquals(0, normalTuple.compareTo(normalTuple));
 
         // Equivalence tests
-        TestCase.assertTrue(nullTuple.equals(new ArrayTuple(0, null)));
-        TestCase.assertEquals(0, nullTuple.compareTo(new ArrayTuple(0, null)));
+        assertTrue(nullTuple.equals(new ArrayTuple(0, null)));
+        assertEquals(0, nullTuple.compareTo(new ArrayTuple(0, null)));
 
-        TestCase.assertTrue(normalTuple.equals(new ArrayTuple(0, 'A')));
-        TestCase.assertEquals(0, normalTuple.compareTo(new ArrayTuple(0, 'A')));
+        assertTrue(normalTuple.equals(new ArrayTuple(0, 'A')));
+        assertEquals(0, normalTuple.compareTo(new ArrayTuple(0, 'A')));
     }
 
     @Test
@@ -352,55 +352,55 @@ public class TestTupleComparison {
         final ArrayTuple nanTuple = new ArrayTuple(0, Float.NaN);
 
         // Less than / greater than tests
-        TestCase.assertTrue(nullTuple.compareTo(negInfTuple) < 0);
-        TestCase.assertTrue(negInfTuple.compareTo(zeroTuple) < 0);
-        TestCase.assertTrue(zeroTuple.compareTo(normalTuple) < 0);
-        TestCase.assertTrue(normalTuple.compareTo(posInfTuple) < 0);
-        TestCase.assertTrue(posInfTuple.compareTo(nanTuple) < 0);
+        assertTrue(nullTuple.compareTo(negInfTuple) < 0);
+        assertTrue(negInfTuple.compareTo(zeroTuple) < 0);
+        assertTrue(zeroTuple.compareTo(normalTuple) < 0);
+        assertTrue(normalTuple.compareTo(posInfTuple) < 0);
+        assertTrue(posInfTuple.compareTo(nanTuple) < 0);
 
-        TestCase.assertTrue(nanTuple.compareTo(posInfTuple) > 0);
-        TestCase.assertTrue(posInfTuple.compareTo(normalTuple) > 0);
-        TestCase.assertTrue(normalTuple.compareTo(zeroTuple) > 0);
-        TestCase.assertTrue(zeroTuple.compareTo(negInfTuple) > 0);
-        TestCase.assertTrue(negInfTuple.compareTo(nullTuple) > 0);
+        assertTrue(nanTuple.compareTo(posInfTuple) > 0);
+        assertTrue(posInfTuple.compareTo(normalTuple) > 0);
+        assertTrue(normalTuple.compareTo(zeroTuple) > 0);
+        assertTrue(zeroTuple.compareTo(negInfTuple) > 0);
+        assertTrue(negInfTuple.compareTo(nullTuple) > 0);
 
         // Reference equality tests
-        TestCase.assertTrue(nullTuple.equals(nullTuple));
-        TestCase.assertEquals(0, nullTuple.compareTo(nullTuple));
+        assertTrue(nullTuple.equals(nullTuple));
+        assertEquals(0, nullTuple.compareTo(nullTuple));
 
-        TestCase.assertTrue(negInfTuple.equals(negInfTuple));
-        TestCase.assertEquals(0, negInfTuple.compareTo(negInfTuple));
+        assertTrue(negInfTuple.equals(negInfTuple));
+        assertEquals(0, negInfTuple.compareTo(negInfTuple));
 
-        TestCase.assertTrue(zeroTuple.equals(zeroTuple));
-        TestCase.assertEquals(0, zeroTuple.compareTo(zeroTuple));
+        assertTrue(zeroTuple.equals(zeroTuple));
+        assertEquals(0, zeroTuple.compareTo(zeroTuple));
 
-        TestCase.assertTrue(normalTuple.equals(normalTuple));
-        TestCase.assertEquals(0, normalTuple.compareTo(normalTuple));
+        assertTrue(normalTuple.equals(normalTuple));
+        assertEquals(0, normalTuple.compareTo(normalTuple));
 
-        TestCase.assertTrue(posInfTuple.equals(posInfTuple));
-        TestCase.assertEquals(0, posInfTuple.compareTo(posInfTuple));
+        assertTrue(posInfTuple.equals(posInfTuple));
+        assertEquals(0, posInfTuple.compareTo(posInfTuple));
 
-        TestCase.assertTrue(nanTuple.equals(nanTuple));
-        TestCase.assertEquals(0, nanTuple.compareTo(nanTuple));
+        assertTrue(nanTuple.equals(nanTuple));
+        assertEquals(0, nanTuple.compareTo(nanTuple));
 
         // Equivalence tests
-        TestCase.assertTrue(nullTuple.equals(new ArrayTuple(0, null)));
-        TestCase.assertEquals(0, nullTuple.compareTo(new ArrayTuple(0, null)));
+        assertTrue(nullTuple.equals(new ArrayTuple(0, null)));
+        assertEquals(0, nullTuple.compareTo(new ArrayTuple(0, null)));
 
-        TestCase.assertTrue(negInfTuple.equals(new ArrayTuple(0, Float.NEGATIVE_INFINITY)));
-        TestCase.assertEquals(0, negInfTuple.compareTo(new ArrayTuple(0, Float.NEGATIVE_INFINITY)));
+        assertTrue(negInfTuple.equals(new ArrayTuple(0, Float.NEGATIVE_INFINITY)));
+        assertEquals(0, negInfTuple.compareTo(new ArrayTuple(0, Float.NEGATIVE_INFINITY)));
 
-        TestCase.assertTrue(zeroTuple.equals(new ArrayTuple(0, 0.0f))); // special case
-        TestCase.assertEquals(0, zeroTuple.compareTo(new ArrayTuple(0, 0.0f))); // special case
+        assertTrue(zeroTuple.equals(new ArrayTuple(0, 0.0f))); // special case
+        assertEquals(0, zeroTuple.compareTo(new ArrayTuple(0, 0.0f))); // special case
 
-        TestCase.assertTrue(normalTuple.equals(new ArrayTuple(0, 1.0f)));
-        TestCase.assertEquals(0, normalTuple.compareTo(new ArrayTuple(0, 1.0f)));
+        assertTrue(normalTuple.equals(new ArrayTuple(0, 1.0f)));
+        assertEquals(0, normalTuple.compareTo(new ArrayTuple(0, 1.0f)));
 
-        TestCase.assertTrue(posInfTuple.equals(new ArrayTuple(0, Float.POSITIVE_INFINITY)));
-        TestCase.assertEquals(0, posInfTuple.compareTo(new ArrayTuple(0, Float.POSITIVE_INFINITY)));
+        assertTrue(posInfTuple.equals(new ArrayTuple(0, Float.POSITIVE_INFINITY)));
+        assertEquals(0, posInfTuple.compareTo(new ArrayTuple(0, Float.POSITIVE_INFINITY)));
 
-        TestCase.assertTrue(nanTuple.equals(new ArrayTuple(0, Float.NaN)));
-        TestCase.assertEquals(0, nanTuple.compareTo(new ArrayTuple(0, Float.NaN)));
+        assertTrue(nanTuple.equals(new ArrayTuple(0, Float.NaN)));
+        assertEquals(0, nanTuple.compareTo(new ArrayTuple(0, Float.NaN)));
     }
 
     @Test
@@ -414,55 +414,55 @@ public class TestTupleComparison {
         final ArrayTuple nanTuple = new ArrayTuple(0, Double.NaN);
 
         // Less than / greater than tests
-        TestCase.assertTrue(nullTuple.compareTo(negInfTuple) < 0);
-        TestCase.assertTrue(negInfTuple.compareTo(zeroTuple) < 0);
-        TestCase.assertTrue(zeroTuple.compareTo(normalTuple) < 0);
-        TestCase.assertTrue(normalTuple.compareTo(posInfTuple) < 0);
-        TestCase.assertTrue(posInfTuple.compareTo(nanTuple) < 0);
+        assertTrue(nullTuple.compareTo(negInfTuple) < 0);
+        assertTrue(negInfTuple.compareTo(zeroTuple) < 0);
+        assertTrue(zeroTuple.compareTo(normalTuple) < 0);
+        assertTrue(normalTuple.compareTo(posInfTuple) < 0);
+        assertTrue(posInfTuple.compareTo(nanTuple) < 0);
 
-        TestCase.assertTrue(nanTuple.compareTo(posInfTuple) > 0);
-        TestCase.assertTrue(posInfTuple.compareTo(normalTuple) > 0);
-        TestCase.assertTrue(normalTuple.compareTo(zeroTuple) > 0);
-        TestCase.assertTrue(zeroTuple.compareTo(negInfTuple) > 0);
-        TestCase.assertTrue(negInfTuple.compareTo(nullTuple) > 0);
+        assertTrue(nanTuple.compareTo(posInfTuple) > 0);
+        assertTrue(posInfTuple.compareTo(normalTuple) > 0);
+        assertTrue(normalTuple.compareTo(zeroTuple) > 0);
+        assertTrue(zeroTuple.compareTo(negInfTuple) > 0);
+        assertTrue(negInfTuple.compareTo(nullTuple) > 0);
 
         // Reference equality tests
-        TestCase.assertTrue(nullTuple.equals(nullTuple));
-        TestCase.assertEquals(0, nullTuple.compareTo(nullTuple));
+        assertTrue(nullTuple.equals(nullTuple));
+        assertEquals(0, nullTuple.compareTo(nullTuple));
 
-        TestCase.assertTrue(negInfTuple.equals(negInfTuple));
-        TestCase.assertEquals(0, negInfTuple.compareTo(negInfTuple));
+        assertTrue(negInfTuple.equals(negInfTuple));
+        assertEquals(0, negInfTuple.compareTo(negInfTuple));
 
-        TestCase.assertTrue(zeroTuple.equals(zeroTuple));
-        TestCase.assertEquals(0, zeroTuple.compareTo(zeroTuple));
+        assertTrue(zeroTuple.equals(zeroTuple));
+        assertEquals(0, zeroTuple.compareTo(zeroTuple));
 
-        TestCase.assertTrue(normalTuple.equals(normalTuple));
-        TestCase.assertEquals(0, normalTuple.compareTo(normalTuple));
+        assertTrue(normalTuple.equals(normalTuple));
+        assertEquals(0, normalTuple.compareTo(normalTuple));
 
-        TestCase.assertTrue(posInfTuple.equals(posInfTuple));
-        TestCase.assertEquals(0, posInfTuple.compareTo(posInfTuple));
+        assertTrue(posInfTuple.equals(posInfTuple));
+        assertEquals(0, posInfTuple.compareTo(posInfTuple));
 
-        TestCase.assertTrue(nanTuple.equals(nanTuple));
-        TestCase.assertEquals(0, nanTuple.compareTo(nanTuple));
+        assertTrue(nanTuple.equals(nanTuple));
+        assertEquals(0, nanTuple.compareTo(nanTuple));
 
         // Equivalence tests
-        TestCase.assertTrue(nullTuple.equals(new ArrayTuple(0, null)));
-        TestCase.assertEquals(0, nullTuple.compareTo(new ArrayTuple(0, null)));
+        assertTrue(nullTuple.equals(new ArrayTuple(0, null)));
+        assertEquals(0, nullTuple.compareTo(new ArrayTuple(0, null)));
 
-        TestCase.assertTrue(negInfTuple.equals(new ArrayTuple(0, Double.NEGATIVE_INFINITY)));
-        TestCase.assertEquals(0, negInfTuple.compareTo(new ArrayTuple(0, Double.NEGATIVE_INFINITY)));
+        assertTrue(negInfTuple.equals(new ArrayTuple(0, Double.NEGATIVE_INFINITY)));
+        assertEquals(0, negInfTuple.compareTo(new ArrayTuple(0, Double.NEGATIVE_INFINITY)));
 
-        TestCase.assertTrue(zeroTuple.equals(new ArrayTuple(0, 0.0)));
-        TestCase.assertEquals(0, zeroTuple.compareTo(new ArrayTuple(0, 0.0)));
+        assertTrue(zeroTuple.equals(new ArrayTuple(0, 0.0)));
+        assertEquals(0, zeroTuple.compareTo(new ArrayTuple(0, 0.0)));
 
-        TestCase.assertTrue(normalTuple.equals(new ArrayTuple(0, 1.0)));
-        TestCase.assertEquals(0, normalTuple.compareTo(new ArrayTuple(0, 1.0)));
+        assertTrue(normalTuple.equals(new ArrayTuple(0, 1.0)));
+        assertEquals(0, normalTuple.compareTo(new ArrayTuple(0, 1.0)));
 
-        TestCase.assertTrue(posInfTuple.equals(new ArrayTuple(0, Double.POSITIVE_INFINITY)));
-        TestCase.assertEquals(0, posInfTuple.compareTo(new ArrayTuple(0, Double.POSITIVE_INFINITY)));
+        assertTrue(posInfTuple.equals(new ArrayTuple(0, Double.POSITIVE_INFINITY)));
+        assertEquals(0, posInfTuple.compareTo(new ArrayTuple(0, Double.POSITIVE_INFINITY)));
 
-        TestCase.assertTrue(nanTuple.equals(new ArrayTuple(0, Double.NaN)));
-        TestCase.assertEquals(0, nanTuple.compareTo(new ArrayTuple(0, Double.NaN)));
+        assertTrue(nanTuple.equals(new ArrayTuple(0, Double.NaN)));
+        assertEquals(0, nanTuple.compareTo(new ArrayTuple(0, Double.NaN)));
     }
 
     /**
@@ -475,25 +475,25 @@ public class TestTupleComparison {
         final ArrayTuple negZeroTuple = new ArrayTuple(0, -0.0f);
         final ArrayTuple posZeroTuple = new ArrayTuple(0, 0.0f);
 
-        TestCase.assertTrue(negZeroTuple.compareTo(posZeroTuple) == 0); // special case
-        TestCase.assertTrue(posZeroTuple.compareTo(negZeroTuple) == 0); // special case
+        assertTrue(negZeroTuple.compareTo(posZeroTuple) == 0); // special case
+        assertTrue(posZeroTuple.compareTo(negZeroTuple) == 0); // special case
 
-        TestCase.assertTrue(negZeroTuple.equals(negZeroTuple));
-        TestCase.assertEquals(0, negZeroTuple.compareTo(negZeroTuple));
+        assertTrue(negZeroTuple.equals(negZeroTuple));
+        assertEquals(0, negZeroTuple.compareTo(negZeroTuple));
 
-        TestCase.assertTrue(posZeroTuple.equals(posZeroTuple));
-        TestCase.assertEquals(0, posZeroTuple.compareTo(posZeroTuple));
+        assertTrue(posZeroTuple.equals(posZeroTuple));
+        assertEquals(0, posZeroTuple.compareTo(posZeroTuple));
 
         // Equivalence tests
-        TestCase.assertTrue(negZeroTuple.equals(new ArrayTuple(0, -0.0f)));
-        TestCase.assertEquals(0, negZeroTuple.compareTo(new ArrayTuple(0, -0.0f)));
-        TestCase.assertTrue(negZeroTuple.equals(new ArrayTuple(0, 0.0f))); // special case
-        TestCase.assertEquals(0, negZeroTuple.compareTo(new ArrayTuple(0, 0.0f))); // special case
+        assertTrue(negZeroTuple.equals(new ArrayTuple(0, -0.0f)));
+        assertEquals(0, negZeroTuple.compareTo(new ArrayTuple(0, -0.0f)));
+        assertTrue(negZeroTuple.equals(new ArrayTuple(0, 0.0f))); // special case
+        assertEquals(0, negZeroTuple.compareTo(new ArrayTuple(0, 0.0f))); // special case
 
-        TestCase.assertTrue(posZeroTuple.equals(new ArrayTuple(0, 0.0f)));
-        TestCase.assertEquals(0, posZeroTuple.compareTo(new ArrayTuple(0, 0.0f)));
-        TestCase.assertTrue(posZeroTuple.equals(new ArrayTuple(0, -0.0f))); // special case
-        TestCase.assertEquals(0, posZeroTuple.compareTo(new ArrayTuple(0, -0.0f))); // special case
+        assertTrue(posZeroTuple.equals(new ArrayTuple(0, 0.0f)));
+        assertEquals(0, posZeroTuple.compareTo(new ArrayTuple(0, 0.0f)));
+        assertTrue(posZeroTuple.equals(new ArrayTuple(0, -0.0f))); // special case
+        assertEquals(0, posZeroTuple.compareTo(new ArrayTuple(0, -0.0f))); // special case
     }
 
     /**
@@ -506,25 +506,25 @@ public class TestTupleComparison {
         final ArrayTuple negZeroTuple = new ArrayTuple(0, -0.0);
         final ArrayTuple posZeroTuple = new ArrayTuple(0, 0.0);
 
-        TestCase.assertTrue(negZeroTuple.compareTo(posZeroTuple) == 0); // special case
-        TestCase.assertTrue(posZeroTuple.compareTo(negZeroTuple) == 0); // special case
+        assertTrue(negZeroTuple.compareTo(posZeroTuple) == 0); // special case
+        assertTrue(posZeroTuple.compareTo(negZeroTuple) == 0); // special case
 
-        TestCase.assertTrue(negZeroTuple.equals(negZeroTuple));
-        TestCase.assertEquals(0, negZeroTuple.compareTo(negZeroTuple));
+        assertTrue(negZeroTuple.equals(negZeroTuple));
+        assertEquals(0, negZeroTuple.compareTo(negZeroTuple));
 
-        TestCase.assertTrue(posZeroTuple.equals(posZeroTuple));
-        TestCase.assertEquals(0, posZeroTuple.compareTo(posZeroTuple));
+        assertTrue(posZeroTuple.equals(posZeroTuple));
+        assertEquals(0, posZeroTuple.compareTo(posZeroTuple));
 
         // Equivalence tests
-        TestCase.assertTrue(negZeroTuple.equals(new ArrayTuple(0, -0.0)));
-        TestCase.assertEquals(0, negZeroTuple.compareTo(new ArrayTuple(0, -0.0)));
-        TestCase.assertTrue(negZeroTuple.equals(new ArrayTuple(0, 0.0))); // special case
-        TestCase.assertEquals(0, negZeroTuple.compareTo(new ArrayTuple(0, 0.0))); // special case
+        assertTrue(negZeroTuple.equals(new ArrayTuple(0, -0.0)));
+        assertEquals(0, negZeroTuple.compareTo(new ArrayTuple(0, -0.0)));
+        assertTrue(negZeroTuple.equals(new ArrayTuple(0, 0.0))); // special case
+        assertEquals(0, negZeroTuple.compareTo(new ArrayTuple(0, 0.0))); // special case
 
-        TestCase.assertTrue(posZeroTuple.equals(new ArrayTuple(0, 0.0)));
-        TestCase.assertEquals(0, posZeroTuple.compareTo(new ArrayTuple(0, 0.0)));
-        TestCase.assertTrue(posZeroTuple.equals(new ArrayTuple(0, -0.0))); // special case
-        TestCase.assertEquals(0, posZeroTuple.compareTo(new ArrayTuple(0, -0.0))); // special case
+        assertTrue(posZeroTuple.equals(new ArrayTuple(0, 0.0)));
+        assertEquals(0, posZeroTuple.compareTo(new ArrayTuple(0, 0.0)));
+        assertTrue(posZeroTuple.equals(new ArrayTuple(0, -0.0))); // special case
+        assertEquals(0, posZeroTuple.compareTo(new ArrayTuple(0, -0.0))); // special case
     }
 
     private static Object[] randomizedCopy(final Object[] array, final long seed) {
@@ -561,7 +561,7 @@ public class TestTupleComparison {
         for (final long seed : new long[] {0L, 0xDEADBEEFL, 0xBADDCAFEL, 0xFEEDFACEL, 0xCAFEBABEL}) {
             final Object[] toSort = randomizedCopy(expected, seed);
             Arrays.sort(toSort);
-            TestCase.assertEquals("Failed with seed " + seed,
+            assertEquals("Failed with seed " + seed,
                     Arrays.asList(expected),
                     Arrays.asList(toSort));
         }
@@ -584,7 +584,7 @@ public class TestTupleComparison {
         for (final long seed : new long[] {0L, 0xDEADBEEFL, 0xBADDCAFEL, 0xFEEDFACEL, 0xCAFEBABEL}) {
             final Object[] toSort = randomizedCopy(expected, seed);
             Arrays.sort(toSort);
-            TestCase.assertEquals("Failed with seed " + seed,
+            assertEquals("Failed with seed " + seed,
                     Arrays.asList(expected),
                     Arrays.asList(toSort));
         }

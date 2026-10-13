@@ -7,12 +7,11 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.join.stamp;
 
-import io.deephaven.util.compare.FloatComparisons;
-
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.compare.FloatComparisons;
 
 
 public class FloatStampKernel implements StampKernel {
@@ -43,10 +42,11 @@ public class FloatStampKernel implements StampKernel {
 
         for (int li = 0; li < leftSize;) {
             final float leftValue = leftStamps.get(li);
-            if (lt(leftValue, rightLowValue)) {
+            final int lowComparison = doComparison(leftValue, rightLowValue);
+            if (lowComparison < 0) {
                 leftRedirections.set(li++, RowSequence.NULL_ROW_KEY);
                 continue;
-            } else if (eq(leftValue, rightLowValue)) {
+            } else if (lowComparison == 0) {
                 leftRedirections.set(li++, rightKeyIndices.get(rightLowIdx));
                 continue;
             }
@@ -56,10 +56,11 @@ public class FloatStampKernel implements StampKernel {
             while (rightLowIdx < rightHighIdx) {
                 final int rightMidIdx = ((rightHighIdx - rightLowIdx) / 2) + rightLowIdx;
                 final float rightMidValue = rightStamps.get(rightMidIdx);
-                if (leq(rightMidValue, leftValue)) {
+                final int midComparison = doComparison(rightMidValue, leftValue);
+                if (midComparison <= 0) {
                     rightLowIdx = rightMidIdx;
                     rightLowValue = rightMidValue;
-                    if (rightLowIdx == rightHighIdx - 1 || eq(rightLowValue, leftValue)) {
+                    if (rightLowIdx == rightHighIdx - 1 || midComparison == 0) {
                         break;
                     }
                 } else {
@@ -89,15 +90,5 @@ public class FloatStampKernel implements StampKernel {
 
     private static boolean lt(float lhs, float rhs) {
         return doComparison(lhs, rhs) < 0;
-    }
-
-    private static boolean leq(float lhs, float rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
-
-    private static boolean eq(float lhs, float rhs) {
-        // region equality function
-        return FloatComparisons.eq(lhs, rhs);
-        // endregion equality function
     }
 }

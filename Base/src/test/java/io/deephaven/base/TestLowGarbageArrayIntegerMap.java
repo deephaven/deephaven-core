@@ -4,17 +4,20 @@
 package io.deephaven.base;
 
 import io.deephaven.base.verify.RequirementFailure;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.HashMap;
+
+import static org.junit.Assert.*;
 
 // --------------------------------------------------------------------
 /**
  * Tests for {@link LowGarbageArrayIntegerMap}
  */
-public class TestLowGarbageArrayIntegerMap extends TestCase {
+public class TestLowGarbageArrayIntegerMap {
 
     // ----------------------------------------------------------------
+    @Test
     public void testLowGarbageArrayIntegerMap() {
         HashMap integerToStringMap = new LowGarbageArrayIntegerMap<String>();
 

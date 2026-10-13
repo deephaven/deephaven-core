@@ -3,10 +3,12 @@
 //
 package io.deephaven.plot.util.functions;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import groovy.lang.Closure;
+import org.junit.Test;
 
-public class TestHasClosure extends BaseArrayTestCase {
+import static org.junit.Assert.*;
+
+public class TestHasClosure {
 
     private final String value = "S";
 
@@ -27,6 +29,7 @@ public class TestHasClosure extends BaseArrayTestCase {
         }
     };
 
+    @Test
     public void testSerializableClosure() {
         HasClosure<String> hasClosure = new ClosureFunction<>(closure);
 

@@ -29,13 +29,13 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * This is a benchmark base that was constructed based on the implementation / interaction details between
- * {@link io.deephaven.util.datastructures.hash.HashMapBase},
+ * {@link io.deephaven.engine.table.impl.util.hash.NullableLongLongMap},
  * {@link io.deephaven.engine.table.impl.util.RowRedirection},
  * {@link io.deephaven.engine.table.impl.sources.UnionRedirection}, and sort.
  *
  * <p>
  * Classes that extend this may want to experiment with the system property "UnionRedirection.allocationUnit" and
- * implementation of {@link io.deephaven.util.datastructures.hash.HashMapBase}.
+ * implementation of {@link io.deephaven.engine.table.impl.util.hash.NullableLongLongMap}.
  *
  * <p>
  * See <a href="https://github.com/deephaven/deephaven-core/issues/2784">#2784</a>

@@ -12,11 +12,11 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.DoubleVectorDirect;
 import io.deephaven.vector.DoubleVectorTest;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static org.junit.Assert.*;
 
 /**
  * {@link DoubleVectorTest} implementation for {@link io.deephaven.engine.table.vectors.DoubleVectorColumnWrapper}.
@@ -91,16 +91,16 @@ public class DoubleVectorColumnWrapperTest extends DoubleVectorTest {
 
     private static void checkPairs(final DoubleVector a0, final DoubleVector a1, final DoubleVector a3,
             final DoubleVector b0, final DoubleVector b1, final DoubleVector b3) {
-        TestCase.assertEquals(0, a0.compareTo(b0));
-        TestCase.assertTrue(a0.compareTo(b1) < 0);
-        TestCase.assertTrue(a0.compareTo(b3) < 0);
+        assertEquals(0, a0.compareTo(b0));
+        assertTrue(a0.compareTo(b1) < 0);
+        assertTrue(a0.compareTo(b3) < 0);
 
-        TestCase.assertTrue(a1.compareTo(b0) > 0);
-        TestCase.assertEquals(0, a1.compareTo(b1));
-        TestCase.assertTrue(a1.compareTo(b3) < 0);
+        assertTrue(a1.compareTo(b0) > 0);
+        assertEquals(0, a1.compareTo(b1));
+        assertTrue(a1.compareTo(b3) < 0);
 
-        TestCase.assertTrue(a3.compareTo(b0) > 0);
-        TestCase.assertTrue(a3.compareTo(b1) > 0);
-        TestCase.assertEquals(0, a3.compareTo(b3));
+        assertTrue(a3.compareTo(b0) > 0);
+        assertTrue(a3.compareTo(b1) > 0);
+        assertEquals(0, a3.compareTo(b3));
     }
 }

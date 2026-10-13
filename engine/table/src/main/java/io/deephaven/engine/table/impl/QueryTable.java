@@ -21,8 +21,10 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
@@ -1166,6 +1168,19 @@ public class QueryTable extends BaseTable<QueryTable> {
             notifyWhereListener();
         }
 
+        @Override
+        public synchronized void requestFailure(
+                @NotNull final Throwable error,
+                @Nullable final TableListener.Entry sourceEntry) {
+            if (whereListener == null) {
+                // No listener yet, so there is no result to fail; see notifyWhereListener for why dropping is safe.
+                return;
+            }
+            // The listener fails this table exactly once, inside its own notification, where the failure cannot
+            // collide with an update it might otherwise deliver for this step.
+            whereListener.notifyOnUpstreamError(error, sourceEntry);
+        }
+
         /**
          * Note that refilterRequested is only accessible so that {@link WhereListener} can get to it and is not part of
          * the public API.
@@ -1254,7 +1269,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             previouslyMatched.remove(upstream.added());
                             previouslyMatched.remove(upstream.modified());
                         }
-                        newMapping.insert(previouslyMatched);
+                        newMapping.subsume(previouslyMatched);
                     }
                     completeRefilterUpdate(listener, upstream, update, adds);
                 }, exception -> errorRefilterUpdate(listener, exception, upstream));
@@ -1294,7 +1309,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     // add back what we previously matched, except for modifications and removals
                     try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
                         previouslyMatched.remove(rowsToFilter);
-                        newMapping.insert(previouslyMatched);
+                        newMapping.subsume(previouslyMatched);
                     }
                     completeRefilterUpdate(listener, upstream, update, adds);
                 }, exception -> errorRefilterUpdate(listener, exception, upstream));
@@ -1321,7 +1336,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                 if (upstream != null) {
                     upstream.shifted().unapply(postShiftRemovals);
                 }
-                update.removed.writableCast().insert(postShiftRemovals);
+                update.removed.writableCast().subsume(postShiftRemovals);
             }
 
             if (upstream == null || upstream.modified().isEmpty()) {
@@ -1357,14 +1372,12 @@ public class QueryTable extends BaseTable<QueryTable> {
         /**
          * Notify the {@link WhereListener} that a refilter has been requested, if there is one yet.
          * <p>
-         * The where listener is installed only after the initial filter completes. A request can precede it in two ways
-         * only, and neither attempt can commit, so the request is safe to drop: an attempt begun while the clock was
-         * idle fails the clock check once the cycle starts, and a previous-values attempt during which the filter's
-         * inputs tick is rejected by the filter's {@link NotificationAwareDependency#stateChangedOnStep} report. A
-         * current-values attempt cannot receive one, because it begins only after the filter is
-         * {@link NotificationQueue.Dependency#satisfied} for the step. The retry that follows sees the change directly.
-         * Callers hold this table's monitor, which is what makes the listener written by {@link #setWhereListener}
-         * visible here.
+         * The where listener is installed only after the initial filter completes, so a filter that requests before
+         * then is dropped. A {@link NotificationAwareDependency} cannot request before then, because it does not begin
+         * following its inputs until this operation's snapshot attempt commits, which is after the listener is
+         * installed. A filter that follows something else, such as a clock, can, and dropping such a request is the
+         * behavior it has always had. Callers hold this table's monitor, which is what makes the listener written by
+         * {@link #setWhereListener} visible here.
          */
         private void notifyWhereListener() {
             if (whereListener != null) {
@@ -1672,7 +1685,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                     // the result reaches through its WhereListener, so no parent reference is needed here. Note that
                     // a reference to rightTable would in any case be the wrong table to retain, since the set table
                     // actually used may be a data index table or a selectDistinct of it.
-                    return whereInternal(new DynamicWhereFilter(rightTable, inclusion, columnsToMatch));
+                    // The filter listens to its set table before the where begins; an enclosed scope releases the
+                    // filter, and that listener, when the where fails.
+                    return LivenessScopeStack.computeEnclosed(
+                            () -> whereInternal(new DynamicWhereFilter(rightTable, inclusion, columnsToMatch)),
+                            rightTable.isRefreshing(),
+                            Table::isRefreshing);
                 });
     }
 
@@ -1827,15 +1845,15 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
 
                             try {
-                                analyzer.applyUpdate(
-                                        fakeUpdate, emptyRowSet, updateHelper, jobScheduler, liveResultCapture,
-                                        () -> waitForResult.complete(null),
-                                        waitForResult::completeExceptionally);
-                            } catch (Exception e) {
-                                waitForResult.completeExceptionally(e);
-                            }
+                                try {
+                                    analyzer.applyUpdate(
+                                            fakeUpdate, emptyRowSet, updateHelper, jobScheduler, liveResultCapture,
+                                            () -> waitForResult.complete(null),
+                                            waitForResult::completeExceptionally);
+                                } catch (Exception e) {
+                                    waitForResult.completeExceptionally(e);
+                                }
 
-                            try {
                                 waitForResult.get();
                             } catch (InterruptedException e) {
                                 throw new CancellationException("interrupted while computing select or update");
@@ -1844,6 +1862,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         "an exception occurred while performing the initial select or update",
                                         e.getCause());
                             } finally {
+                                // On an operation initializer this waits for every job the analyzer submitted, so none
+                                // still uses updateHelper or emptyRowSet when they close, even if applyUpdate threw.
                                 final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
                                 if (baseEntry != null) {
                                     QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(baseEntry);
@@ -2404,9 +2424,12 @@ public class QueryTable extends BaseTable<QueryTable> {
             return QueryPerformanceRecorder.withNugget(
                     "raj(" + "rightTable, " + matchString(columnsToMatch) + ", " + joinRule + ", "
                             + matchString(columnsToAdd) + ")",
-                    () -> ajInternal(rightTableCoalesced.reverse(), columnsToMatch, columnsToAdd,
-                            SortingOrder.Descending,
-                            joinRule));
+                    // an enclosed scope releases the reversed right table, and its listener, when the join fails
+                    () -> LivenessScopeStack.computeEnclosed(
+                            () -> ajInternal(rightTableCoalesced.reverse(), columnsToMatch, columnsToAdd,
+                                    SortingOrder.Descending, joinRule),
+                            rightTableCoalesced.isRefreshing(),
+                            Table::isRefreshing));
         }
     }
 
@@ -2425,15 +2448,37 @@ public class QueryTable extends BaseTable<QueryTable> {
                 revisedAdded.add(new MatchPair(matchPair.rightColumn, matchPair.rightColumn));
             }
         }
+        // Naming a match column under its own name in columnsToAdd is an explicit request for that output, so the
+        // automatically added entry belongs to it and an alias cannot take it over. Collected up front so that the
+        // result does not depend on the order the two appear in.
+        final Set<String> explicitOriginals = new HashSet<>();
+        for (MatchPair matchPair : columnsToAdd) {
+            if (matchPair.leftColumn.equals(matchPair.rightColumn)) {
+                explicitOriginals.add(matchPair.rightColumn);
+            }
+        }
         for (MatchPair matchPair : columnsToAdd) {
             if (!addedColumns.contains(matchPair.rightColumn)) {
                 revisedAdded.add(matchPair);
             } else if (!matchPair.leftColumn.equals(matchPair.rightColumn)) {
-                for (int ii = 0; ii < revisedAdded.size(); ii++) {
-                    final MatchPair pair = revisedAdded.get(ii);
-                    if (pair.rightColumn.equals(matchPair.rightColumn)) {
-                        revisedAdded.set(ii, matchPair);
+                // A match column is added to the result under its own name. The first alias renames that
+                // automatically added entry unless the caller also asked for the column under its own name; each
+                // further alias of the same right column is an additional output column.
+                int automaticIndex = -1;
+                if (!explicitOriginals.contains(matchPair.rightColumn)) {
+                    for (int ii = 0; ii < revisedAdded.size(); ii++) {
+                        final MatchPair pair = revisedAdded.get(ii);
+                        if (pair.rightColumn.equals(matchPair.rightColumn)
+                                && pair.leftColumn.equals(pair.rightColumn)) {
+                            automaticIndex = ii;
+                            break;
+                        }
                     }
+                }
+                if (automaticIndex >= 0) {
+                    revisedAdded.set(automaticIndex, matchPair);
+                } else {
+                    revisedAdded.add(matchPair);
                 }
             }
         }
@@ -3169,7 +3214,6 @@ public class QueryTable extends BaseTable<QueryTable> {
      *
      * @return an identical table; but with a new set of attributes
      */
-    @Override
     public QueryTable copy() {
         return copy(StandardOptions.COPY_ALL);
     }
@@ -3178,6 +3222,14 @@ public class QueryTable extends BaseTable<QueryTable> {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return copy(definition, shouldCopy);
+        }
+    }
+
+    @Override
+    protected QueryTable copy(@NotNull final Map<String, Object> attributes) {
+        final UpdateGraph updateGraph = getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return copyInternal(definition, attributes);
         }
     }
 
@@ -3197,6 +3249,20 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     public QueryTable copy(TableDefinition definition, Predicate<String> shouldCopy) {
+        final Map<String, Object> attributes;
+        if (shouldCopy == StandardOptions.COPY_ALL) {
+            attributes = getAttributes();
+        } else if (shouldCopy == StandardOptions.COPY_NONE) {
+            attributes = null;
+        } else {
+            attributes = getAttributes(shouldCopy);
+        }
+        return copyInternal(definition, attributes);
+    }
+
+    private QueryTable copyInternal(
+            @NotNull final TableDefinition definition,
+            @Nullable final Map<String, Object> attributes) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
@@ -3205,11 +3271,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final OperationSnapshotControl snapshotControl =
                         createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                 initializeWithSnapshot("copy", snapshotControl, (usePrev, beforeClockValue) -> {
-                    final QueryTable resultTable = new CopiedTable(definition, this);
+                    final QueryTable resultTable = new CopiedTable(definition, this, attributes);
                     propagateFlatness(resultTable, usePrev);
-                    if (shouldCopy != StandardOptions.COPY_NONE) {
-                        copyAttributes(resultTable, shouldCopy);
-                    }
                     if (snapshotControl != null) {
                         final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
                         snapshotControl.setListenerAndResult(listener, resultTable);
@@ -3229,8 +3292,11 @@ public class QueryTable extends BaseTable<QueryTable> {
     static class CopiedTable extends QueryTable {
         private final QueryTable parent;
 
-        private CopiedTable(TableDefinition definition, QueryTable parent) {
-            super(definition, parent.rowSet, parent.columns, null, null);
+        private CopiedTable(
+                TableDefinition definition,
+                QueryTable parent,
+                @Nullable Map<String, Object> attributes) {
+            super(definition, parent.rowSet, parent.columns, null, attributes);
             this.parent = parent;
         }
 
@@ -3370,6 +3436,23 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static void checkInitiateBinaryOperation(@NotNull final Table first, @NotNull final Table second) {
         if (first.isRefreshing() || second.isRefreshing()) {
             first.getUpdateGraph(second).checkInitiateSerialTableOperation();
+        }
+    }
+
+    /**
+     * Refuse a join of a failed input, as a failed table refuses a listener, even when the other input would make the
+     * result static.
+     *
+     * @param leftTable the left input of the join
+     * @param rightTable the right input of the join
+     * @throws TableAlreadyFailedException if either input has failed
+     */
+    public static void checkJoinInputsNotFailed(@NotNull final Table leftTable, @NotNull final Table rightTable) {
+        if (leftTable.isFailed()) {
+            throw new TableAlreadyFailedException("Can not join failed left table " + leftTable.getDescription());
+        }
+        if (rightTable.isFailed()) {
+            throw new TableAlreadyFailedException("Can not join failed right table " + rightTable.getDescription());
         }
     }
 

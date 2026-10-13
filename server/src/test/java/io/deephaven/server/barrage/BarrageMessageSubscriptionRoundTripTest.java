@@ -50,10 +50,10 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.IntVector;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import javax.inject.Singleton;
@@ -66,6 +66,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
@@ -81,6 +82,7 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
+import static org.junit.Assert.*;
 
 /**
  * Barrage round-trip coverage for subscription and viewport changes: column subscriptions, forward and reverse
@@ -89,6 +91,7 @@ import static io.deephaven.engine.util.TableTools.col;
 @Category(OutOfBandTest.class)
 public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRoundTripTestBase {
 
+    @Test
     public void testColumnSubChange() {
         for (final int size : new int[] {10, 100, 1000}) {
             for (final int numProducerCoalesce : new int[] {1, 4}) {
@@ -133,6 +136,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         }
     }
 
+    @Test
     public void testViewportChange() {
         for (final int size : new int[] {10, 100}) {
             for (final int numProducerCoalesce : new int[] {1, 4}) {
@@ -181,6 +185,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         }
     }
 
+    @Test
     public void testViewportDirectionChange() {
         for (final int size : new int[] {10, 100}) {
             for (final int numProducerCoalesce : new int[] {1, 4}) {
@@ -229,6 +234,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         }
     }
 
+    @Test
     public void testOverlappedColumnSubsChange() {
         for (final int size : new int[] {10, 100, 1000}) {
             for (final int numProducerCoalesce : new int[] {1, 4}) {
@@ -272,6 +278,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         }
     }
 
+    @Test
     public void testViewportSubscribeMidCycle() {
         // This is a regression test for IDS-6392. It catches a race between when a subscription becomes active and
         // when the viewport becomes active post-snapshot.
@@ -326,6 +333,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         }
     }
 
+    @Test
     public void testOverlappingViewportChange() {
         for (final int size : new int[] {10, 100, 1000}) {
             for (final int numProducerCoalesce : new int[] {1, 4}) {
@@ -374,6 +382,92 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
         }
     }
 
+    /**
+     * A subscription removed while its table is quiet is still completed. The producer run that removes it has nothing
+     * else to send, and used to return before ending the subscriber's stream, leaving a client that half-closed its
+     * subscription waiting for an end that never came.
+     */
+    @Test
+    public void testRemovedSubscriptionIsCompletedWhileTheTableIsQuiet() {
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(10).toTracking(), TableTools.intCol("intCol", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient client = nugget.newClient(null, allCols, "removed-while-quiet");
+        // send the whole initial snapshot and apply it, so that nothing is left to propagate
+        flushProducerTable();
+        nugget.flushClientEvents();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        assertFalse(client.dummyObserver.completed);
+
+        nugget.barrageMessageProducer.removeSubscription(client.dummyObserver);
+        flushProducerTable();
+
+        assertTrue("the removed subscription's stream was not completed", client.dummyObserver.completed);
+    }
+
+    /**
+     * A subscription removed before the producer first runs for it is still completed. It was never activated, so the
+     * producer used to drop it with its pending changes without ending the subscriber's stream.
+     */
+    @Test
+    public void testSubscriptionRemovedBeforeItsFirstRunIsCompleted() {
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(10).toTracking(), TableTools.intCol("intCol", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient client = nugget.newClient(null, allCols, "removed-before-first-run");
+        nugget.barrageMessageProducer.removeSubscription(client.dummyObserver);
+        assertFalse(client.dummyObserver.completed);
+
+        flushProducerTable();
+
+        assertTrue("the removed subscription's stream was not completed", client.dummyObserver.completed);
+    }
+
+    /**
+     * A viewport subscription removed before the producer first runs for it releases the viewport it was given, which
+     * it owned and which nothing else will close.
+     */
+    @Test
+    public void testViewportRemovedBeforeItsFirstRunIsReleased() {
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(
+                RowSetFactory.flat(10).toTracking(), TableTools.intCol("intCol", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        // subscribed directly, rather than through a RemoteClient, which hands the producer a copy of its viewport
+        final AtomicBoolean completed = new AtomicBoolean();
+        final StreamObserver<BarrageMessageWriter.MessageView> observer = new StreamObserver<>() {
+            @Override
+            public void onNext(final BarrageMessageWriter.MessageView messageView) {}
+
+            @Override
+            public void onError(final Throwable t) {}
+
+            @Override
+            public void onCompleted() {
+                completed.set(true);
+            }
+        };
+        final WritableRowSet viewport = RowSetFactory.fromRange(0, 4);
+        nugget.barrageMessageProducer.addSubscription(
+                observer, BarrageSubscriptionOptions.builder().build(), allCols, viewport, false);
+        nugget.barrageMessageProducer.removeSubscription(observer);
+
+        flushProducerTable();
+
+        assertTrue("the removed subscription's stream was not completed", completed.get());
+        // a closed row set fails on use
+        org.junit.Assert.assertThrows(NullPointerException.class, viewport::size);
+    }
+
+    @Test
     public void testSimultaneousSubscriptionChanges() {
         for (final int size : new int[] {10, 100, 1000}) {
             final int numProducerCoalesce = 8;
@@ -415,6 +509,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
      * is computed as a data-position-space distance but then used as a row-index count, so modOffsets.get(endRange) can
      * return a data position past the chunk boundary, triggering "Subset is out of bounds for context of size N".
      */
+    @Test
     public void testModColumnChunkBoundaryWithGappedViewport() {
         final BitSet allColumns = new BitSet(1);
         allColumns.set(0);
@@ -504,6 +599,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
      * The source is then ticked so that the deltas following the growth are validated against the contents the
      * replicated table was left holding.
      */
+    @Test
     public void testGrowingFullSubscriptionAppendOnly() {
         // The server ships at most MIN_SNAPSHOT_CELL_COUNT cells per growth round, so a single-column table needs more
         // rows than that for the subscription to be grown across multiple messages.
@@ -565,6 +661,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
      * before the server acknowledges the subscription would silently never hear about them. Attaching one must fail
      * instead.
      */
+    @Test
     public void testListenToIncompleteFullSubscription() {
         final int size = (int) (BarrageUtil.MIN_SNAPSHOT_CELL_COUNT * 3);
         final int[] values = new int[size];
@@ -591,7 +688,7 @@ public class BarrageMessageSubscriptionRoundTripTest extends BarrageMessageRound
 
         try {
             client.barrageTable.addUpdateListener(new FailureListener("Listener on incomplete table"));
-            TestCase.fail("expected an IllegalStateException listening to an incomplete table");
+            fail("expected an IllegalStateException listening to an incomplete table");
         } catch (final IllegalStateException expected) {
             assertTrue(expected.getMessage(), expected.getMessage().contains("incomplete table"));
         }

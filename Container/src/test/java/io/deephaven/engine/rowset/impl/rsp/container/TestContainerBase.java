@@ -4,8 +4,7 @@ import org.junit.Test;
 
 import java.util.function.Supplier;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public abstract class TestContainerBase {
 

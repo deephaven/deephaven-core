@@ -54,4 +54,6 @@ print(result.attributes())
 
 - [`time_table`](./timeTable.md)
 - [`input_table`](./input-table.md)
+- [`with_keys`](./withKeys.md)
+- [`with_unique_keys`](./withUniqueKeys.md)
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.with_attributes)

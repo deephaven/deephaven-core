@@ -1,6 +1,5 @@
 ---
 title: Create and use input tables
-sidebar_label: Input tables
 ---
 
 > [!TIP]

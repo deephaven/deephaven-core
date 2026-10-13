@@ -13,7 +13,6 @@ import io.deephaven.engine.table.impl.locations.local.LocationTableBuilderDefini
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.table.impl.locations.local.FileKeyValuePartitionLayout;
 import io.deephaven.parquet.table.layout.LocationTableBuilderCsv;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,6 +25,8 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link FileKeyValuePartitionLayout}.
@@ -62,13 +63,13 @@ public class TestFileKeyValuePartitionLayout {
         final List<FileTableLocationKey> results =
                 recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
 
-        TestCase.assertEquals(2, results.size());
+        assertEquals(2, results.size());
 
-        TestCase.assertEquals(file1.getAbsoluteFile(), results.get(0).getFile());
-        TestCase.assertEquals(file2.getAbsoluteFile(), results.get(1).getFile());
+        assertEquals(file1.getAbsoluteFile(), results.get(0).getFile());
+        assertEquals(file2.getAbsoluteFile(), results.get(1).getFile());
 
-        TestCase.assertTrue(results.get(0).getPartitionKeys().isEmpty());
-        TestCase.assertTrue(results.get(1).getPartitionKeys().isEmpty());
+        assertTrue(results.get(0).getPartitionKeys().isEmpty());
+        assertTrue(results.get(1).getPartitionKeys().isEmpty());
     }
 
     @Test
@@ -86,16 +87,16 @@ public class TestFileKeyValuePartitionLayout {
         final List<FileTableLocationKey> results =
                 recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
 
-        TestCase.assertEquals(2, results.size());
+        assertEquals(2, results.size());
 
-        TestCase.assertEquals(file2.getAbsoluteFile(), results.get(0).getFile());
-        TestCase.assertEquals(file1.getAbsoluteFile(), results.get(1).getFile());
+        assertEquals(file2.getAbsoluteFile(), results.get(0).getFile());
+        assertEquals(file1.getAbsoluteFile(), results.get(1).getFile());
 
-        TestCase.assertEquals(1, results.get(0).getPartitionKeys().size());
-        TestCase.assertEquals(1, results.get(1).getPartitionKeys().size());
+        assertEquals(1, results.get(0).getPartitionKeys().size());
+        assertEquals(1, results.get(1).getPartitionKeys().size());
 
-        TestCase.assertEquals("France", results.get(0).getPartitionValue("Country"));
-        TestCase.assertEquals("US", results.get(1).getPartitionValue("Country"));
+        assertEquals("France", results.get(0).getPartitionValue("Country"));
+        assertEquals("US", results.get(1).getPartitionValue("Country"));
     }
 
     @Test
@@ -119,27 +120,27 @@ public class TestFileKeyValuePartitionLayout {
         final List<FileTableLocationKey> results =
                 recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
 
-        TestCase.assertEquals(3, results.size());
+        assertEquals(3, results.size());
 
-        TestCase.assertEquals(file2.getAbsoluteFile(), results.get(0).getFile());
-        TestCase.assertEquals(file3.getAbsoluteFile(), results.get(1).getFile());
-        TestCase.assertEquals(file1.getAbsoluteFile(), results.get(2).getFile());
+        assertEquals(file2.getAbsoluteFile(), results.get(0).getFile());
+        assertEquals(file3.getAbsoluteFile(), results.get(1).getFile());
+        assertEquals(file1.getAbsoluteFile(), results.get(2).getFile());
 
-        TestCase.assertEquals(3, results.get(0).getPartitionKeys().size());
-        TestCase.assertEquals(3, results.get(1).getPartitionKeys().size());
-        TestCase.assertEquals(3, results.get(2).getPartitionKeys().size());
+        assertEquals(3, results.get(0).getPartitionKeys().size());
+        assertEquals(3, results.get(1).getPartitionKeys().size());
+        assertEquals(3, results.get(2).getPartitionKeys().size());
 
-        TestCase.assertEquals("France", results.get(0).getPartitionValue("Country"));
-        TestCase.assertEquals("France", results.get(1).getPartitionValue("Country"));
-        TestCase.assertEquals("US", results.get(2).getPartitionValue("Country"));
+        assertEquals("France", results.get(0).getPartitionValue("Country"));
+        assertEquals("France", results.get(1).getPartitionValue("Country"));
+        assertEquals("US", results.get(2).getPartitionValue("Country"));
 
-        TestCase.assertEquals("Grand Est", results.get(0).getPartitionValue("State"));
-        TestCase.assertEquals("Grand Est", results.get(1).getPartitionValue("State"));
-        TestCase.assertEquals("New York", results.get(2).getPartitionValue("State"));
+        assertEquals("Grand Est", results.get(0).getPartitionValue("State"));
+        assertEquals("Grand Est", results.get(1).getPartitionValue("State"));
+        assertEquals("New York", results.get(2).getPartitionValue("State"));
 
-        TestCase.assertEquals("Reims", results.get(0).getPartitionValue("City"));
-        TestCase.assertEquals("Strasbourg", results.get(1).getPartitionValue("City"));
-        TestCase.assertEquals("New York", results.get(2).getPartitionValue("City"));
+        assertEquals("Reims", results.get(0).getPartitionValue("City"));
+        assertEquals("Strasbourg", results.get(1).getPartitionValue("City"));
+        assertEquals("New York", results.get(2).getPartitionValue("City"));
     }
 
     @Test
@@ -176,29 +177,29 @@ public class TestFileKeyValuePartitionLayout {
                     recorder1.getRecordedKeys().stream().sorted().collect(Collectors.toList());
             final List<FileTableLocationKey> results2 =
                     recorder2.getRecordedKeys().stream().sorted().collect(Collectors.toList());
-            TestCase.assertEquals(results1, results2);
+            assertEquals(results1, results2);
 
-            TestCase.assertEquals(3, results1.size());
+            assertEquals(3, results1.size());
 
-            TestCase.assertEquals(file2.getAbsoluteFile(), results1.get(0).getFile());
-            TestCase.assertEquals(file3.getAbsoluteFile(), results1.get(1).getFile());
-            TestCase.assertEquals(file1.getAbsoluteFile(), results1.get(2).getFile());
+            assertEquals(file2.getAbsoluteFile(), results1.get(0).getFile());
+            assertEquals(file3.getAbsoluteFile(), results1.get(1).getFile());
+            assertEquals(file1.getAbsoluteFile(), results1.get(2).getFile());
 
-            TestCase.assertEquals(3, results1.get(0).getPartitionKeys().size());
-            TestCase.assertEquals(3, results1.get(1).getPartitionKeys().size());
-            TestCase.assertEquals(3, results1.get(2).getPartitionKeys().size());
+            assertEquals(3, results1.get(0).getPartitionKeys().size());
+            assertEquals(3, results1.get(1).getPartitionKeys().size());
+            assertEquals(3, results1.get(2).getPartitionKeys().size());
 
-            TestCase.assertEquals(Integer.valueOf(1), results1.get(0).getPartitionValue("A"));
-            TestCase.assertEquals(Integer.valueOf(1), results1.get(1).getPartitionValue("A"));
-            TestCase.assertEquals(Integer.valueOf(2), results1.get(2).getPartitionValue("A"));
+            assertEquals(Integer.valueOf(1), results1.get(0).getPartitionValue("A"));
+            assertEquals(Integer.valueOf(1), results1.get(1).getPartitionValue("A"));
+            assertEquals(Integer.valueOf(2), results1.get(2).getPartitionValue("A"));
 
-            TestCase.assertEquals(7.0, results1.get(0).getPartitionValue("B1"));
-            TestCase.assertEquals(100.0, results1.get(1).getPartitionValue("B1"));
-            TestCase.assertEquals(3.14, results1.get(2).getPartitionValue("B1"));
+            assertEquals(7.0, results1.get(0).getPartitionValue("B1"), 0.0);
+            assertEquals(100.0, results1.get(1).getPartitionValue("B1"), 0.0);
+            assertEquals(3.14, results1.get(2).getPartitionValue("B1"), 0.0);
 
-            TestCase.assertEquals(Boolean.FALSE, results1.get(0).getPartitionValue("C"));
-            TestCase.assertEquals(Boolean.FALSE, results1.get(1).getPartitionValue("C"));
-            TestCase.assertEquals(Boolean.TRUE, results1.get(2).getPartitionValue("C"));
+            assertEquals(Boolean.FALSE, results1.get(0).getPartitionValue("C"));
+            assertEquals(Boolean.FALSE, results1.get(1).getPartitionValue("C"));
+            assertEquals(Boolean.TRUE, results1.get(2).getPartitionValue("C"));
         }
     }
 
@@ -223,7 +224,7 @@ public class TestFileKeyValuePartitionLayout {
         final List<FileTableLocationKey> results =
                 recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
 
-        TestCase.assertTrue(results.isEmpty());
+        assertTrue(results.isEmpty());
     }
 
     @Test
@@ -251,11 +252,11 @@ public class TestFileKeyValuePartitionLayout {
         final List<FileTableLocationKey> results =
                 recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
 
-        TestCase.assertEquals(3, results.size());
+        assertEquals(3, results.size());
 
-        TestCase.assertEquals(file2.getAbsoluteFile(), results.get(0).getFile());
-        TestCase.assertEquals(file3.getAbsoluteFile(), results.get(1).getFile());
-        TestCase.assertEquals(file1.getAbsoluteFile(), results.get(2).getFile());
+        assertEquals(file2.getAbsoluteFile(), results.get(0).getFile());
+        assertEquals(file3.getAbsoluteFile(), results.get(1).getFile());
+        assertEquals(file1.getAbsoluteFile(), results.get(2).getFile());
     }
 
     @Test
@@ -278,7 +279,7 @@ public class TestFileKeyValuePartitionLayout {
                     () -> new LocationTableBuilderCsv(dataDirectory),
                     (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3).findKeys(ftlk -> {
                     });
-            TestCase.fail("Expected exception");
+            fail("Expected exception");
         } catch (TableDataException expected) {
         }
     }

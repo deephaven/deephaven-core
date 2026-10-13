@@ -57,6 +57,10 @@ class ByteVectorChunkFilter extends VectorChunkFilter {
                 continue;
             }
             final ByteVector vector = objectChunk.get(indexOfVector);
+            if (vector == null) {
+                // a null vector has no elements, so none can match
+                continue;
+            }
             try (final ValueIteratorOfByte vi = vector.iterator()) {
                 while (vi.hasNext()) {
                     final byte element = vi.next();
@@ -84,6 +88,10 @@ class ByteVectorChunkFilter extends VectorChunkFilter {
                 continue;
             }
             final ByteVector vector = objectChunk.get(indexOfVector);
+            if (vector == null) {
+                // a null vector has no elements, so none can match
+                continue;
+            }
             try (final ValueIteratorOfByte vi = vector.iterator()) {
                 while (vi.hasNext()) {
                     final byte element = vi.next();

@@ -1,6 +1,5 @@
 ---
 title: Use URIs to share tables
-sidebar_label: URI
 ---
 
 This guide shows you how to use Deephaven's [URIs](https://deephaven.io/core/javadoc/io/deephaven/uri/package-summary.html) to share tables across server instances and networks.

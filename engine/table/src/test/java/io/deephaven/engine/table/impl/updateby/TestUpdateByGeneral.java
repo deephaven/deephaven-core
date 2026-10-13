@@ -31,7 +31,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.ExceptionDetails;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Assert;
@@ -49,7 +48,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.MINUTE;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateErrorReporter {
@@ -266,6 +265,22 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
     }
 
     @Test
+    public void testStaticRedirectedEmpty() {
+        // A zero memory overhead forces redirection for any sparse static source, including an empty one.
+        final UpdateByControl control = UpdateByControl.builder()
+                .useRedirection(true)
+                .maxStaticSparseMemoryOverhead(0.0)
+                .build();
+
+        final QueryTable empty = testTable(i().toTracking(), intCol("Int"));
+        assertEquals(0, empty.updateBy(control, List.of(CumSum("Int"))).size());
+
+        final QueryTable sparse = testTable(i(2, 4, 8, 16).toTracking(), intCol("Int", 1, 2, 3, 4));
+        assertTableEquals(sparse.updateBy(List.of(CumSum("Int"))),
+                sparse.updateBy(control, List.of(CumSum("Int"))));
+    }
+
+    @Test
     public void testInMemoryColumn() {
         final CreateResult result = createTestTable(1000, true, false, false, 0xFEEDFACE,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
@@ -324,7 +339,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
             @Override
             public void run() {
                 System.err.println("Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
-                TestCase.fail(t.getMessage());
+                fail(t.getMessage());
             }
         });
     }

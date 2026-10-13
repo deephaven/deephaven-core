@@ -55,6 +55,22 @@ public interface IncrementalNaturalJoinStateManager {
     }
 
     /**
+     * Whether turning a slot's single right row into a duplicate set changes what its left rows must observe. The join
+     * types that reject duplicates must record the slot so the error is raised while processing the modified slots; the
+     * others only when the newly selected right row differs from the one the left rows already hold.
+     *
+     * @param duplicates the duplicate set, after the new key has been added
+     * @param existingRightRowKey the slot's right row key before the duplicate set was created
+     * @param joinType the join type
+     * @return whether the slot must be recorded as changed in the modified slot tracker
+     */
+    default boolean duplicateCreationChangesState(final WritableRowSet duplicates, final long existingRightRowKey,
+            final NaturalJoinType joinType) {
+        return joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH
+                || getRightRowKeyFromDuplicates(duplicates, joinType) != existingRightRowKey;
+    }
+
+    /**
      * Add a key to the RHS duplicates, return the appropriate row key from this set *AFTER* the addition.
      */
     default long addRightRowKeyToDuplicates(final WritableRowSet duplicates, final long keyToRemove,

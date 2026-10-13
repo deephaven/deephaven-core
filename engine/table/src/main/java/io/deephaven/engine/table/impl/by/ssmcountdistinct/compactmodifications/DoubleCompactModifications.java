@@ -65,7 +65,8 @@ public class DoubleCompactModifications {
         while (rRead < removedEnd && aRead < addedEnd) {
             final double removedValue = removedValues.get(rRead);
             final double addedValue = addedValues.get(aRead);
-            if (DoubleComparisons.eq(removedValue, addedValue)) {
+            final int comparison = DoubleComparisons.compare(removedValue, addedValue);
+            if (comparison == 0) {
                 final int removedRun = countRun(removedValues, rRead, removedEnd);
                 final int addedRun = countRun(addedValues, aRead, addedEnd);
                 rRead += removedRun;
@@ -81,7 +82,7 @@ public class DoubleCompactModifications {
                         aWrite++;
                     }
                 }
-            } else if (DoubleComparisons.lt(removedValue, addedValue)) {
+            } else if (comparison < 0) {
                 final int removedRun = countRun(removedValues, rRead, removedEnd);
                 rRead += removedRun;
                 if (!ignore(removedValue, countNull, countNaN)) {
@@ -131,10 +132,20 @@ public class DoubleCompactModifications {
     private static int countRun(WritableDoubleChunk<? extends Values> values, int pos, int end) {
         final double value = values.get(pos);
         int run = 1;
-        while (pos + run < end && DoubleComparisons.eq(values.get(pos + run), value)) {
+        while (pos + run < end && eq(values.get(pos + run), value)) {
             run++;
         }
         return run;
+    }
+
+    /**
+     * Test two values for equality consistent with the order in which the runs are sorted; each class of equal values
+     * forms one run.
+     */
+    private static boolean eq(double lhs, double rhs) {
+        // region equality function
+        return DoubleComparisons.eq(lhs, rhs);
+        // endregion equality function
     }
 
     private static boolean ignore(double value, boolean countNull, boolean countNaN) {

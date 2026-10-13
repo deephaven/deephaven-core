@@ -41,7 +41,7 @@ import java.util.stream.LongStream;
  * Each time the set table ticks, the entire where filter is recalculated.
  */
 public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
-        implements NotificationAwareDependency, HasParentPerformanceIds, NoPredicatePushdown {
+        implements NotificationAwareDependency, HasParentPerformanceIds {
 
     private static final int CHUNK_SIZE = 1 << 16;
 
@@ -64,8 +64,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private int @Nullable [] tupleToIndexMap;
     private int @Nullable [] indexToTupleMap;
 
-    private RecomputeListener listener;
-    private QueryTable resultTable;
+    private volatile RecomputeListener listener;
 
     /**
      * Construct a DynamicWhereFilter with key values from given set table. The set table may be static or refreshing.
@@ -107,6 +106,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         if (sourceKeySource != null) {
             throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
         }
+        // The set may have failed, in which case no result built here could ever follow it. Refuse before any
+        // snapshot begins, so that the caller is told plainly rather than through a rejected snapshot attempt.
+        sharedSet.throwIfFailed();
         getUpdateGraph(this, sourceTable);
         final String[] keyColumnNames = MatchPair.getLeftColumns(sourceToSetColumnNamePairs);
         sourceKeyColumns = Arrays.stream(sourceToSetColumnNamePairs)
@@ -142,7 +144,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         ) {
             // Convert the tuples in liveValues to be lookup keys in the sourceDataIndex.
             staticSetLookupKeys = new ArrayList<>(sharedSet.kernel().size());
-            final int indexKeySize = sourceDataIndex.keyColumns().length;
+            final int indexKeySize = sourceDataIndex.keyColumnNames().size();
             if (indexKeySize > 1) {
                 final Function<Object, Object> keyMappingFunction = indexKeySize == keyColumnNames.length
                         ? tupleToFullKeyMappingFunction()
@@ -189,7 +191,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
                 .filter(subset -> !subset.isEmpty() && subset.size() < columnSources.size())
                 .map(indexer::getDataIndex)
                 .filter(Objects::nonNull)
-                .max(Comparator.comparingLong(dataIndex -> dataIndex.table().size()))
+                .max(Comparator
+                        .comparingLong(dataIndex -> dataIndex.table(DataIndexOptions.USING_PARTIAL_TABLE).size()))
                 .orElse(null),
                 inputTable.isRefreshing(), (final DataIndex result) -> result != null && result.isRefreshing());
     }
@@ -203,7 +206,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private void computeTupleIndexMaps() {
         assert sourceDataIndex != null;
 
-        if (sourceDataIndex.keyColumns().length == 1 && sourceKeyColumns.length == 1) {
+        if (sourceDataIndex.keyColumnNames().size() == 1 && sourceKeyColumns.length == 1) {
             // Trivial mapping, no need to compute anything.
             return;
         }
@@ -260,7 +263,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private Function<Object, Object> tupleToPartialKeyMappingFunction() {
         assert sourceDataIndex != null;
 
-        final int partialKeySize = sourceDataIndex.keyColumns().length;
+        final int partialKeySize = sourceDataIndex.keyColumnNames().size();
 
         // This function is not needed when the partial key is a single column and should not be called.
         Assert.gt(partialKeySize, "partialKeySize", 1);
@@ -307,8 +310,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             // Use previous size when filtering with previous values, so the heuristic is consistent with the data
             // we are about to read.
             final long indexTableSize = usePrev
-                    ? sourceDataIndex.table().getRowSet().sizePrev()
-                    : sourceDataIndex.table().getRowSet().size();
+                    ? sourceDataIndex.table(DataIndexOptions.USING_PARTIAL_TABLE).getRowSet().sizePrev()
+                    : sourceDataIndex.table(DataIndexOptions.USING_PARTIAL_TABLE).getRowSet().size();
             final long threshold = (long) (indexTableSize / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
             if (selection.size() <= threshold) {
                 return filterLinear(selection, inclusion, usePrev);
@@ -413,8 +416,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
 
         // noinspection DataFlowIssue
-        final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
-        final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
+        final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup(DataIndexOptions.USING_PARTIAL_TABLE);
+        final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn(DataIndexOptions.USING_PARTIAL_TABLE);
 
         final long kernelGeneration = sharedSet.beginRead();
         final Iterator<Object> values;
@@ -468,8 +471,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         // First, compute a possibly-matching subset of selection based on the partial index.
 
         // noinspection DataFlowIssue
-        final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup();
-        final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn();
+        final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup(DataIndexOptions.USING_PARTIAL_TABLE);
+        final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn(DataIndexOptions.USING_PARTIAL_TABLE);
 
         final long kernelGeneration = sharedSet.beginRead();
         final Iterator<Object> values;
@@ -553,6 +556,19 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         return (int) Math.min(selection.size(), CHUNK_SIZE);
     }
 
+    /**
+     * This filter performs its own data-index-driven evaluation (see {@link #beginOperation(Table)} and
+     * {@link #filter(RowSet, RowSet, Table, boolean)}) and its set-table subscription is bound to this instance, so an
+     * external pushdown would duplicate that work and could bypass the {@code filter()} call the subscription relies
+     * on.
+     *
+     * @return false
+     */
+    @Override
+    public boolean canPushdown() {
+        return false;
+    }
+
     @Override
     public boolean isSimpleFilter() {
         /* This doesn't execute any user code, so it should be safe to execute it against untrusted data. */
@@ -567,11 +583,21 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     @Override
     public void setRecomputeListener(RecomputeListener listener) {
         this.listener = listener;
-        this.resultTable = listener.getTable();
         if (isRefreshing()) {
             listener.setIsRefreshing(true);
-            // Only now can this filter act on a set change, so only now is it worth being told about one.
-            sharedSet.addFilter(this);
+        }
+    }
+
+    @Override
+    public boolean subscribe(final long requiredLastStateChangeStep) {
+        // A static set never changes, so there is nothing to follow and nothing to refuse.
+        return !isRefreshing() || sharedSet.addFilter(this, requiredLastStateChangeStep);
+    }
+
+    @Override
+    public void unsubscribe() {
+        if (isRefreshing()) {
+            sharedSet.removeFilter(this);
         }
     }
 
@@ -591,10 +617,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
      */
     void onSetChanged(final boolean added, final boolean removed) {
         final RecomputeListener localListener = listener;
-        final QueryTable localResult = resultTable;
-        if (localListener == null || localResult == null) {
+        if (localListener == null) {
             return;
         }
+        final QueryTable localResult = localListener.getTable();
         // Skip a result already known to be dead, to avoid queueing a notification that would only be dropped. This
         // is an early out, not the guard: a result released after this check is caught in WhereListener.process.
         if (!localResult.tryRetainReference()) {
@@ -621,11 +647,25 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     }
 
     /**
-     * Called by {@link SharedSetKernel} when maintaining the shared keys fails, to fail this filter's result.
+     * Called by {@link SharedSetKernel} when maintaining the shared keys fails, to fail this filter's result. The
+     * listener fails it exactly once, which failing it here could not: several filters can share one result, and the
+     * result may already be notifying for this step.
      */
     void onSetError(final Throwable originalException, final TableListener.Entry sourceEntry) {
-        if (listener != null && resultTable != null) {
-            resultTable.notifyListenersOnError(originalException, sourceEntry);
+        final RecomputeListener localListener = listener;
+        if (localListener == null) {
+            return;
+        }
+        final QueryTable localResult = localListener.getTable();
+        // The same early out as onSetChanged: a result already released has nothing left to fail, and failing it would
+        // only report the set's error a second time, against a table that was never handed out.
+        if (!localResult.tryRetainReference()) {
+            return;
+        }
+        try {
+            localListener.requestFailure(originalException, sourceEntry);
+        } finally {
+            localResult.dropReference();
         }
     }
 
@@ -640,13 +680,14 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     }
 
     @Override
-    public boolean stateChangedOnStep(final long step) {
-        return sharedSet.stateChangedOnStep(step);
+    public long lastStateChangeStep() {
+        return sharedSet.lastStateChangeStep();
     }
 
     @Override
     public boolean satisfied(final long step) {
-        final boolean indexSatisfied = sourceDataIndex == null || sourceDataIndex.table().satisfied(step);
+        final boolean indexSatisfied =
+                sourceDataIndex == null || sourceDataIndex.table(DataIndexOptions.USING_PARTIAL_TABLE).satisfied(step);
         return indexSatisfied && sharedSet.satisfied(step);
     }
 

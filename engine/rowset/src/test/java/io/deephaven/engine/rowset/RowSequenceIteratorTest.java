@@ -11,7 +11,8 @@ import org.junit.Test;
 
 import java.util.Random;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.*;
+
 
 public class RowSequenceIteratorTest {
 

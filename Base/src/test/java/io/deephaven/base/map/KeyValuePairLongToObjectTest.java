@@ -6,19 +6,21 @@ package io.deephaven.base.map;
 import io.deephaven.base.array.FastArray;
 import io.deephaven.base.array.FastArrayTest;
 import io.deephaven.base.array.TrialClassA;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.io.*;
 import java.util.Random;
 
-public class KeyValuePairLongToObjectTest extends TestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
+public class KeyValuePairLongToObjectTest {
 
     private static KeyValuePairLongToObject<TrialClassA> makeRandomKvp(Random myRandom) {
         long key = myRandom.nextLong();
         TrialClassA value = FastArrayTest.makeRandomTestObject(myRandom);
         return new KeyValuePairLongToObject<TrialClassA>(key, value);
     }
-
 
     private static class Reader implements FastArray.ReadExternalFunction<KeyValuePairLongToObject<TrialClassA>> {
 
@@ -55,7 +57,6 @@ public class KeyValuePairLongToObjectTest extends TestCase {
                 } else {
                     throw new IllegalStateException("did not recognize your nullByteC: " + nullByteC);
                 }
-
 
             } else {
                 throw new IllegalStateException("did not recognize your nullByteA: " + nullByteA);
@@ -98,6 +99,7 @@ public class KeyValuePairLongToObjectTest extends TestCase {
     static final Writer writer = new Writer();
     static final Reader reader = new Reader();
 
+    @Test
     public void testSimple() {
         long key = 123L;
         double double1 = 324234.897;
@@ -115,6 +117,7 @@ public class KeyValuePairLongToObjectTest extends TestCase {
         assertEquals(long1, kvp.getValue().getLong1());
     }
 
+    @Test
     public void testCloneAndEquals() {
         Random myRandom = new Random(89324L);
         KeyValuePairLongToObject<TrialClassA> kvp1 = makeRandomKvp(myRandom);
@@ -138,6 +141,7 @@ public class KeyValuePairLongToObjectTest extends TestCase {
         assertTrue(kvp2.equals(kvp1));
     }
 
+    @Test
     public void testCopyValuesDeep() {
         Random myRandom = new Random(89324L);
         KeyValuePairLongToObject<TrialClassA> kvp1 = makeRandomKvp(myRandom);
@@ -170,7 +174,6 @@ public class KeyValuePairLongToObjectTest extends TestCase {
             fail("reading to a null kvpInput");
         }
 
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bos);
         writer.writeExternal(oos, kvpInput);
@@ -189,12 +192,14 @@ public class KeyValuePairLongToObjectTest extends TestCase {
         }
     }
 
+    @Test
     public void testExternalizationNullInputsNullReceiver() throws Exception {
         KeyValuePairLongToObject<TrialClassA> kvpInput = new KeyValuePairLongToObject<TrialClassA>();
         KeyValuePairLongToObject<TrialClassA> kvpReceiver = new KeyValuePairLongToObject<TrialClassA>();
         checkExternalization(kvpInput, kvpReceiver);
     }
 
+    @Test
     public void testExternalizationNullInputsValidReceiver() throws Exception {
         Random myRandom = new Random(89324L);
         KeyValuePairLongToObject<TrialClassA> kvpInput = new KeyValuePairLongToObject<TrialClassA>();
@@ -202,6 +207,7 @@ public class KeyValuePairLongToObjectTest extends TestCase {
         checkExternalization(kvpInput, kvpReceiver);
     }
 
+    @Test
     public void testExternalizationValidInputsNullReceiver() throws Exception {
         Random myRandom = new Random(89324L);
         KeyValuePairLongToObject<TrialClassA> kvpReceiver = new KeyValuePairLongToObject<TrialClassA>();
@@ -209,6 +215,7 @@ public class KeyValuePairLongToObjectTest extends TestCase {
         checkExternalization(kvpInput, kvpReceiver);
     }
 
+    @Test
     public void testExternalizationValidInputsValidReceiver() throws Exception {
         Random myRandom = new Random(89324L);
         KeyValuePairLongToObject<TrialClassA> kvpInput = makeRandomKvp(myRandom);
