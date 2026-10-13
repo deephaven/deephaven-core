@@ -62,9 +62,8 @@ Deephaven does not test the following platforms extensively but expects them to 
 - macOS x86_64.
 - Docker on any host that supports it, running a Deephaven-published image.
 
-:::note
-Deephaven publishes its images for both Linux x86_64 and Linux Arm64, so Docker uses a native image on Apple silicon Macs. Running an image built for a different CPU architecture than the host requires emulation, which can noticeably reduce performance. For example, a Linux x86_64 image on an Apple silicon Mac runs under emulation.
-:::
+> [!NOTE]
+> Deephaven publishes its images for both Linux x86_64 and Linux Arm64, so Docker uses a native image on Apple silicon Macs. Running an image built for a different CPU architecture than the host requires emulation, which can noticeably reduce performance. For example, a Linux x86_64 image on an Apple silicon Mac runs under emulation.
 
 ## Client libraries
 
