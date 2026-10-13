@@ -182,6 +182,7 @@ def geo_locate(city_name) -> Location:
     geo_resp = requests.get(
         "https://maps.googleapis.com/maps/api/geocode/json",
         params={"address": city_name, "key": API_KEY},
+        timeout=10,
     )
     geo_json = geo_resp.json()
     status = geo_json.get("status", str(geo_resp.status_code))
@@ -247,6 +248,7 @@ def discover_weather(loc):
     point_json = requests.get(
         "https://api.weather.gov/points/" + str(loc.lat) + "%2C" + str(loc.lon),
         headers=NOAA_HEADERS,
+        timeout=10,
     ).json()
 
     # Next, use that point to locate the Grid location, which tells us the station URLs
@@ -254,7 +256,9 @@ def discover_weather(loc):
     observation_url = point_json["properties"]["observationStations"]
 
     # Finally, locate the station to use for observations and build a URL we can just call
-    station_json = requests.get(observation_url, headers=NOAA_HEADERS).json()
+    station_json = requests.get(
+        observation_url, headers=NOAA_HEADERS, timeout=10
+    ).json()
 
     # Sift through the set of features and locate the closest one as the crow flies
     # and use that as the observation station.
@@ -277,7 +281,9 @@ def discover_weather(loc):
 
 
 def update_observation(lc):
-    obs_json = requests.get(lc.observation_station, headers=NOAA_HEADERS).json()
+    obs_json = requests.get(
+        lc.observation_station, headers=NOAA_HEADERS, timeout=10
+    ).json()
 
     obs_time = datetime.fromisoformat(obs_json["properties"]["timestamp"])
 

@@ -66,6 +66,9 @@ A [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.B
 
 ## Examples
 
+> [!NOTE]
+> The first three examples use the default anonymous authentication, so the server must accept [anonymous authentication](../../../how-to-guides/authentication/auth-anon.md). A default Deephaven server uses [pre-shared key authentication](../../../how-to-guides/authentication/auth-psk.md) instead; for that, pass `auth_type` and `auth_token` as the last example does.
+
 The following example creates a [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) on a Deephaven server running on `localhost` at port `10000`.
 
 ```python skip-test

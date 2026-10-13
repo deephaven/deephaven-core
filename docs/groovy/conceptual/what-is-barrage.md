@@ -41,7 +41,8 @@ import io.deephaven.qst.table.TableSpec
 import io.deephaven.server.uri.BarrageTableResolver
 
 remoteTarget = "dh+plain://remote-server:10000"
-ticketSpec = TableSpec.ticket(ticketBytes)
+// Replace with the hex bytes of a shared ticket published on the remote server
+ticketSpec = TableSpec.ticket("<shared ticket hex>".decodeHex())
 
 // Subscription: receives ongoing updates
 streamingTable = BarrageTableResolver.get().subscribe(remoteTarget, ticketSpec).get()
