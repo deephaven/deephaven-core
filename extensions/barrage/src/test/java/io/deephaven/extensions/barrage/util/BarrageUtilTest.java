@@ -622,9 +622,10 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     @Test
-    public void testExplicitReeSchemaHonoredWhenGlobalDisabled() {
-        // Even when REE_AUTO_DETECT_ENABLED is false, a user-supplied BARRAGE_SCHEMA_ATTRIBUTE with
-        // REE columns must be passed through verbatim.
+    public void testExplicitReeSchemaHonoredVerbatim() {
+        // A user-supplied BARRAGE_SCHEMA_ATTRIBUTE with REE columns must be passed through verbatim, whatever the
+        // auto-detect switches say. The table is too small to sample and has no structural REE hint, so Symbol can
+        // only come back REE because the attribute asked for it.
         //
         // Build the REE schema the exhaustive way per barrage-schema.md: extract the base schema,
         // reuse the original field's FieldType so deephaven:type metadata is preserved, then
