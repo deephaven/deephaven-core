@@ -55,7 +55,7 @@ Determines whether the resulting table should keep history. The default value is
 </ParamTable>
 
 > [!CAUTION]
-> The stamp columns from the trigger table appear in the result table. If the source table has a column with the same name as a stamp column, a snapshot without `history` raises an error. With `history=True`, Deephaven doesn't reliably detect the conflict. The stamp column's values can be silently lost, or the snapshot can fail. To avoid the conflict, rename the stamp column in the trigger table using [`rename_columns`](../select/rename-columns.md).
+> The stamp columns from the trigger table appear in the result table. If the source table has a column with the same name as a stamp column, a snapshot without `history` raises an error. With `history=True`, Deephaven does not reliably detect the conflict. The stamp column's values can be silently lost, or the snapshot can fail. To avoid the conflict, rename the stamp column in the trigger table using [`rename_columns`](../select/rename-columns.md).
 
 ## Returns
 

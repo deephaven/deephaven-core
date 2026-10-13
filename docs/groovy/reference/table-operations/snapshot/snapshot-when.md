@@ -50,7 +50,7 @@ The options dictate whether to take an initial snapshot, do incremental snapshot
 </ParamTable>
 
 > [!CAUTION]
-> The trigger table's stamp columns appear in the result table. If the source table has a column with the same name as a stamp column, a snapshot without `HISTORY` raises an error. With `HISTORY`, Deephaven doesn't reliably detect the conflict. The stamp column's values can be silently lost, or the snapshot can fail. To avoid the conflict, rename the stamp column in the trigger table using [`renameColumns`](../select/rename-columns.md).
+> The trigger table's stamp columns appear in the result table. If the source table has a column with the same name as a stamp column, a snapshot without `HISTORY` raises an error. With `HISTORY`, Deephaven does not reliably detect the conflict. The stamp column's values can be silently lost, or the snapshot can fail. To avoid the conflict, rename the stamp column in the trigger table using [`renameColumns`](../select/rename-columns.md).
 
 ## Returns
 
