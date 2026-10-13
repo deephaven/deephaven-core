@@ -137,3 +137,16 @@ Chip's fourth review of the parallelization concept guide flagged a six-item lis
 - The coined phrase separated the configurations: 2 of 3 new runs flagged "don't split their own work" and proposed "are not parallelized"; no baseline run did (two baseline runs flagged other phrases, "per-call control" and "Deferred evaluation", and kept "don't split their own work" in their own rewrites). The first version of the rule, without the search step, went 0 for 2 in pre-rerun trials, so the search step is what moves it.
 - "aggregations": all 3 new runs linked it (and "joins") to a how-to page; 1 of 3 baseline runs did.
 - The control (not re-flagging linked identifiers) passed in every run.
+
+### Chip Kent's 2026-10-13 review of #7457 (plain-word operation names)
+
+Chip asked why "filter and select operations" was not linked in `query-table-configuration.md` and whether the new skills had been applied to it. Replaying the skills blind on the pages as he reviewed them (commit `7b648e4a2b`) showed that the previous sweep had only run the accuracy skill on that page, and that the style skill's first-mention link searches only looked for backticked identifiers, so plain-word operation names were never found. The skill now searches for them.
+
+| Eval | Check tested | New | Baseline |
+| --- | --- | --- | --- |
+| 12 (5 expectations, 15-line excerpt) | Plain-word operation names flagged as unlinked, with targets | 5/5 | 5/5 |
+
+- Eval 12 does **not** discriminate. On a 15-line excerpt with no backticks, the baseline skill also flags the plain-word names and gives link targets, because a short page is read closely.
+- The gap showed on the full 254-line pre-review `query-table-configuration.md`, run once per configuration (not graded blind, not repeated): the baseline run did not flag "filter and select operations" (it flagged the sentence's link text and its "stateless" versus "parallel" wording instead). The changed skill flagged that sentence and about 17 other plain-word operation and concept names, each with a link target.
+- One run per configuration is a signal, not a measurement. A discriminating eval would need the full page as the fixture and 3 blind-graded runs per configuration.
+

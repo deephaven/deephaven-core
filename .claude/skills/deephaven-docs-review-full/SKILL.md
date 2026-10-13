@@ -93,7 +93,7 @@ page, and the fix-not-rewrite limit above does not apply:
   round too, without starting another round. Then do one adversarial read, assuming problems
   remain, before handing the page to a human or a bot reviewer.
 
-**Reviewing a PR or a set of pages: cover every page with every dimension.** Before telling anyone a PR is ready, list every doc page the PR changes (`gh pr view <n> --json files`, excluding snapshots and `sidebar.json`) in both languages. Run the accuracy, structure, and style steps on each page, including configuration pages, reference pages, and pages the PR only touches lightly: a page that received only an accuracy pass is the one a human reviewer finds walls of text and unlinked operation names on. Put a page-by-dimension table at the top of the report with a check or a reason for each cell, so a missing pass is visible instead of assumed.
+**Reviewing a PR or a set of pages: cover every page with every dimension.** Before telling anyone a PR is ready, list every doc page the PR changes (`git diff --name-only <base>...HEAD -- docs`, excluding snapshots and `sidebar.json`) in both languages. Run the accuracy, structure, and style steps on each page, including configuration pages, reference pages, and pages the PR only touches lightly: a page that received only an accuracy pass is the one a human reviewer finds walls of text and unlinked operation names on. Put a page-by-dimension table at the top of the report with a check or a reason for each cell, so a missing pass is visible instead of assumed.
 
 ## 0. Identify the doc's category
 
