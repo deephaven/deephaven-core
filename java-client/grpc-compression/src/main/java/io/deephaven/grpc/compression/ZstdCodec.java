@@ -3,7 +3,7 @@
 //
 package io.deephaven.grpc.compression;
 
-import com.github.luben.zstd.ZstdInputStream;
+import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
 import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
 import io.grpc.Codec;
 
@@ -44,8 +44,8 @@ public final class ZstdCodec implements Codec {
 
     @Override
     public InputStream decompress(final InputStream is) throws IOException {
-        // keep the finalizer: this stream holds native memory from construction, and gRPC can drop a delivered
-        // message without closing it when the call is cancelled
-        return new ZstdInputStream(is);
+        // gRPC closes each message stream after parsing it, including when the call is cancelled, so it needs no
+        // finalizer
+        return new ZstdInputStreamNoFinalizer(is);
     }
 }
