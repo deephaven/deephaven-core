@@ -242,6 +242,7 @@ public class ArrowFlightUtil {
         }
 
         private void onCancel() {
+            releaseDictionaries();
             if (resultTable != null) {
                 resultTable.dropReference();
                 resultTable = null;
@@ -260,6 +261,7 @@ public class ArrowFlightUtil {
         @Override
         public void onError(final Throwable t) {
             // ok; we're done then
+            releaseDictionaries();
             if (resultTable != null) {
                 resultTable.dropReference();
                 resultTable = null;
@@ -277,6 +279,8 @@ public class ArrowFlightUtil {
 
         @Override
         public void onCompleted() {
+            // the client sends no more batches, so no more dictionary-encoded columns are decoded
+            releaseDictionaries();
             if (resultExportBuilder == null) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Result flight descriptor never provided");

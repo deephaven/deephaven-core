@@ -135,6 +135,9 @@ def to_table(pa_table: pa.Table, cols: Optional[Sequence[str]] = None) -> Table:
         raise DHError(
             e, message="failed to create a Deephaven table from a pyarrow table."
         ) from e
+    finally:
+        # onCompleted() releases the decoded dictionaries, but not when the conversion fails before it
+        j_barrage_table_builder.releaseDictionaries()
 
 
 def to_arrow(table: Table, cols: Optional[Sequence[str]] = None) -> pa.Table:
