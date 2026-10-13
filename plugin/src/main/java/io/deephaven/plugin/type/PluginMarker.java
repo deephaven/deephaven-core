@@ -6,12 +6,13 @@ package io.deephaven.plugin.type;
 /**
  * A generic marker object for plugin exports that can be used by multiple plugin types.
  * <p>
- * IMPORTANT: The pluginName field is required because ObjectTypeLookup.findObjectType() returns the FIRST plugin where
- * isType() returns true. Without plugin-specific identification in isType(), multiple plugins using PluginMarker would
- * conflict, and whichever is registered first would intercept all PluginMarker instances.
+ * The pluginName field is required because ObjectTypeLookup.findObjectType() returns the first plugin where isType()
+ * returns true. Without plugin-specific identification in isType(), multiple plugins using PluginMarker would conflict,
+ * and whichever is registered first would intercept all PluginMarker instances.
  * <p>
  * Markers are matched by pluginName rather than by identity. Code that exports markers is expected to reuse a single
- * instance per plugin name rather than creating one per request.
+ * instance per plugin name rather than creating one per request. See
+ * {@code io.deephaven.remotefilesource.RemoteFileSourcePlugin} for an example.
  */
 public class PluginMarker {
     private final String pluginName;
