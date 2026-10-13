@@ -154,14 +154,14 @@ public class BarrageUtil {
 
     /** Global switch: when false, auto-inference never selects REE; user-supplied schema REE is always honored. */
     static final boolean REE_AUTO_DETECT_ENABLED =
-            Configuration.getInstance().getBooleanWithDefault("BarrageUtil.ree.autoDetectEnabled", false);
+            Configuration.getInstance().getBooleanWithDefault("BarrageUtil.ree.autoDetectEnabled", true);
 
     /**
      * Global switch: when false, auto-inference never selects dictionary encoding; user-supplied schema dictionary
      * encoding is always honored. Only String and other Object columns are eligible for dictionary auto-detection.
      */
     static final boolean DICT_AUTO_DETECT_ENABLED =
-            Configuration.getInstance().getBooleanWithDefault("BarrageUtil.dictionary.autoDetectEnabled", false);
+            Configuration.getInstance().getBooleanWithDefault("BarrageUtil.dictionary.autoDetectEnabled", true);
 
     /**
      * Whether to sample columns at schema-inference time to detect low-cardinality patterns for dictionary
