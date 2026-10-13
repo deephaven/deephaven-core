@@ -14,12 +14,12 @@ The groups come from key columns, which you pass in the `by` argument. When you 
 
 The following table compares the operations that group or aggregate data. The sections after it link to each method.
 
-| Operation                                                                                         | Result rows                 | Result columns                                                               |
-| ------------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------- |
-| [Group](../how-to-guides/grouping-data.md) (`group_by`)                                           | One per group               | The key columns, plus a vector of each group's values for every other column |
-| [Single aggregation](../how-to-guides/dedicated-aggregations.md) (`sum_by`, `avg_by`, and others) | One per group               | The key columns, plus the same statistic for every other column              |
-| [Multi-aggregation](../how-to-guides/combined-aggregations.md) (`agg_by`)                         | One per group               | The key columns, plus any mix of aggregations you choose                     |
-| [Rolling aggregation](../how-to-guides/rolling-aggregations.md) (`update_by`)                     | The same rows as the source | The source columns, plus new or replaced columns                             |
+| Operation                                                                                         | Result rows                 | Result columns                                                                                                         |
+| ------------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| [Group](../how-to-guides/grouping-data.md) (`group_by`)                                           | One per group               | The key columns, plus a vector of each group's values for every other column                                           |
+| [Single aggregation](../how-to-guides/dedicated-aggregations.md) (`sum_by`, `avg_by`, and others) | One per group               | The key columns, plus the statistic's results (one column per non-key column, or a single count column for `count_by`) |
+| [Multi-aggregation](../how-to-guides/combined-aggregations.md) (`agg_by`)                         | One per group               | The key columns, plus any mix of aggregations you choose                                                               |
+| [Rolling aggregation](../how-to-guides/rolling-aggregations.md) (`update_by`)                     | The same rows as the source | The source columns, plus new or replaced columns                                                                       |
 
 ### Group
 
@@ -27,7 +27,7 @@ The following table compares the operations that group or aggregate data. The se
 
 ### Single aggregation
 
-A single aggregation applies one statistic to every non-key column. Examples include [`sum_by`](../reference/table-operations/group-and-aggregate/sumBy.md), [`avg_by`](../reference/table-operations/group-and-aggregate/avgBy.md), [`max_by`](../reference/table-operations/group-and-aggregate/maxBy.md), and [`first_by`](../reference/table-operations/group-and-aggregate/firstBy.md). [`count_by`](../reference/table-operations/group-and-aggregate/countBy.md) is a single aggregation too, but it takes the name of a new column that holds the count, not the name of an input column. Numeric statistics such as `sum_by` raise an error if a non-key column is not numeric.
+A single aggregation calculates one statistic for each group, and most apply it to every non-key column. Examples include [`sum_by`](../reference/table-operations/group-and-aggregate/sumBy.md), [`avg_by`](../reference/table-operations/group-and-aggregate/avgBy.md), [`max_by`](../reference/table-operations/group-and-aggregate/maxBy.md), and [`first_by`](../reference/table-operations/group-and-aggregate/firstBy.md). [`count_by`](../reference/table-operations/group-and-aggregate/countBy.md) is a single aggregation too, but it returns one new column that holds the count, and you give it that column's name. Numeric statistics such as `sum_by` raise an error if a non-key column is not numeric.
 
 ### Multi-aggregation
 
@@ -35,7 +35,7 @@ A single aggregation applies one statistic to every non-key column. Examples inc
 
 ### Rolling aggregation
 
-[`update_by`](../reference/table-operations/update-by-operations/updateBy.md) keeps every row of the source table and adds columns calculated by one or more update-by operations. The calculations can be cumulative (such as [`cum_sum`](../reference/table-operations/update-by-operations/cum-sum.md)), exponentially weighted (such as [`ema_tick`](../reference/table-operations/update-by-operations/ema-tick.md)), or computed over a window of rows or time (such as [`rolling_avg_tick`](../reference/table-operations/update-by-operations/rolling-avg-tick.md)). With key columns, each group is calculated independently, but the rows stay in their original positions.
+[`update_by`](../reference/table-operations/update-by-operations/updateBy.md) keeps every row of the source table and adds columns calculated by one or more update-by operations. The calculations can be cumulative (such as [`cum_sum`](../reference/table-operations/update-by-operations/cum-sum.md)), exponentially weighted (such as [`ema_tick`](../reference/table-operations/update-by-operations/ema-tick.md)), computed over a window of rows or time (such as [`rolling_avg_tick`](../reference/table-operations/update-by-operations/rolling-avg-tick.md)), or based on the previous row (such as [`forward_fill`](../reference/table-operations/update-by-operations/forward-fill.md) or [`delta`](../reference/table-operations/update-by-operations/delta.md)). With key columns, each group is calculated independently, but the rows stay in their original positions.
 
 ### Operations that return other table types
 
@@ -53,6 +53,7 @@ The following figure presents a flowchart to help choose the right operation for
 The same questions in text form, in order:
 
 1. If you need a value on every source row, use `update_by`:
+   - To fill null values with the last non-null value, or to calculate the change from the previous row, use `forward_fill` or `delta`.
    - For a cumulative calculation, use a `cum_*` operation.
    - To weight recent values more heavily, use `ema_tick` or `ema_time`.
    - Otherwise, use a `rolling_*_time` operation for a window sized by time, or a `rolling_*_tick` operation for a window sized by row count.
