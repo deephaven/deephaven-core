@@ -9,7 +9,7 @@ The `time_table` method creates a time table that adds new rows at a specified i
 ```python syntax
 time_table(
   period: Union[dtypes.Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta],
-  start_time: Union[None, str, datetime.datetime, np.datetime64] = None,
+  start_time: Optional[InstantLike] = None,
   blink_table: bool = False,
   ) -> Table
 ```
@@ -29,9 +29,9 @@ The time interval between new row additions. Can be given as:
 - A [pandas.Timedelta](https://pandas.pydata.org/docs/reference/api/pandas.Timedelta.html) object.
 
 </Param>
-<Param name="start_time" type="Union[None, str, datetime.datetime, np.datetime64]" optional>
+<Param name="start_time" type="Optional[InstantLike]" optional>
 
-The value of the [date-time](../../query-language/types/date-time.md) in the first row of the table. String inputs must be given in syntax matching `YYYY-MM-DDThh:mm:ss.dddddddd TZ`. See the [details on the `start_time` parameter](#details-on-the-start_time-parameter) for information on default behavior.
+The value of the [date-time](../../query-language/types/date-time.md) in the first row of the table. Can be an `Instant`, `int` (nanoseconds since the Epoch), `str`, `datetime.datetime`, `numpy.datetime64`, or `pandas.Timestamp`. String inputs must be given in syntax matching `YYYY-MM-DDThh:mm:ss.dddddddd TZ`. See the [details on the `start_time` parameter](#details-on-the-start_time-parameter) for information on default behavior.
 
 > [!WARNING]
 > Setting `start_time` sufficiently far in the past, coupled with a short `period`, can cause the time table to instantly populate with a very large number of rows.

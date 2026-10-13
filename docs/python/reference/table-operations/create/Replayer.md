@@ -15,12 +15,12 @@ TableReplayer(start_time: InstantLike, end_time: InstantLike) -> TableReplayer
 <ParamTable>
 <Param name="start_time" type="InstantLike">
 
-Historical data start time. Can be an `Instant`, `int`, `str`, `datetime.datetime`, `numpy.datetime64`, or `pandas.Timestamp`.
+Historical data start time. Can be an `Instant`, `int` (nanoseconds since the Epoch), `str`, `datetime.datetime`, `numpy.datetime64`, or `pandas.Timestamp`.
 
 </Param>
 <Param name="end_time" type="InstantLike">
 
-Historical data end time. Can be an `Instant`, `int`, `str`, `datetime.datetime`, `numpy.datetime64`, or `pandas.Timestamp`.
+Historical data end time. Can be an `Instant`, `int` (nanoseconds since the Epoch), `str`, `datetime.datetime`, `numpy.datetime64`, or `pandas.Timestamp`.
 
 </Param>
 </ParamTable>
