@@ -175,7 +175,7 @@
       "expectations": [
         "Flags \"filter and select operations\" in the first paragraph as unlinked plain-word operation names, even though nothing in the excerpt is backticked",
         "Gives the context-matching link target for each flagged operation name: a filter page for filter, the select reference or the select, view, and update guide for select (not the update page alone), the sort page for sort, and for the category noun joins both join guides (exact and relational, and time-series and range) named and linked, not one arbitrary join page",
-        "Also flags the unlinked plain-word operation names in the bullet list (a first mention per list item) and in the table (the first mention in the table, not every cell)",
+        "Also flags the unlinked plain-word operation names in the bullet list (a first mention per list item) and in the table (each distinct operation once: Filter and Sort, without repeating a link for the same operation in another cell)",
         "Control: does not flag the markdown link in the last sentence as a defect",
         "Control: does not flag the ordinary-English uses of group, select, and view in the sentence about settings (they are not Deephaven operations) as unlinked operation names",
         "Does not report no linking problems, and does not restrict the link check to backticked identifiers"
