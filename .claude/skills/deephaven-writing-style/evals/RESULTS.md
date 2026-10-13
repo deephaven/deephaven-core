@@ -144,9 +144,9 @@ Chip asked why "filter and select operations" was not linked in `query-table-con
 
 | Eval | Check tested | New | Baseline |
 | --- | --- | --- | --- |
-| 12 (5 expectations, 15-line excerpt) | Plain-word operation names flagged as unlinked, with targets | 5/5 | 5/5 |
+| 12 (6 expectations, 19-line excerpt) | Plain-word operation names flagged as unlinked, with targets; ordinary-English control | 18/18 | 18/18 |
 
-- Eval 12 does **not** discriminate. On a 15-line excerpt with no backticks, the baseline skill also flags the plain-word names and gives link targets, because a short page is read closely.
+- Eval 12 does **not** discriminate. 3 runs per configuration, graded by the author against the expectations (not blind): on a 19-line excerpt with no backticks, all three baseline runs also flag the plain-word names with link targets, because a short page is read closely. All six runs left the ordinary-English "group", "select", and "view" sentence out of the unlinked-operation findings, so the control passes in both configurations too. The first version of the fixture (17 lines, no control) was also 5/5 for both configurations in one run each.
 - The gap showed on the full 254-line pre-review `query-table-configuration.md`, run once per configuration (not graded blind, not repeated): the baseline run did not flag "filter and select operations" (it flagged the sentence's link text and its "stateless" versus "parallel" wording instead). The changed skill flagged that sentence and about 17 other plain-word operation and concept names, each with a link target.
 - One run per configuration is a signal, not a measurement. A discriminating eval would need the full page as the fixture and 3 blind-graded runs per configuration.
 

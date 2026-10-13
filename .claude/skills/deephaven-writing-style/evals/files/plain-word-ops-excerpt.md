@@ -14,4 +14,6 @@ Starting in Deephaven Core 41, the engine assumes that filter and select operati
 | Filter    | The input exceeds the segment threshold    |
 | Sort      | The row count exceeds the sort threshold   |
 
+Group your settings by purpose, select the ones you need, and view the defaults first.
+
 For more on how to pick between them, see the [query engine guide](../../conceptual/query-engine/parallelization.md).

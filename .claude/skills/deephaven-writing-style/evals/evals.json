@@ -177,6 +177,7 @@
         "Gives a link target for each flagged operation name (the where, select or update, sort, and join reference or guide pages)",
         "Also flags the unlinked plain-word operation names in the bullet list and in the table (a first mention per list item and table cell)",
         "Control: does not flag the markdown link in the last sentence as a defect",
+        "Control: does not flag the ordinary-English uses of group, select, and view in the sentence about settings (they are not Deephaven operations) as unlinked operation names",
         "Does not report no linking problems, and does not restrict the link check to backticked identifiers"
       ],
       "id": 12
