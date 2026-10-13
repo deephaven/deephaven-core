@@ -781,6 +781,11 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
     }
 
+    /**
+     * Memoizes row sets that every layer of a single update needs. Layers that do not depend on one another run
+     * concurrently on the job scheduler and share one helper, so the lazily computed values are guarded by this
+     * helper's monitor.
+     */
     public static class UpdateHelper implements SafeCloseable {
         private RowSet existingRows;
         private TableUpdate upstreamInResultSpace;
@@ -801,7 +806,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
          *
          * @return the flattened update
          */
-        TableUpdate resultKeySpaceUpdate() {
+        synchronized TableUpdate resultKeySpaceUpdate() {
             if (upstreamInResultSpace == null) {
                 upstreamInResultSpace = new TableUpdateImpl(
                         RowSetFactory.flat(upstream.added().size()), RowSetFactory.empty(), RowSetFactory.empty(),
@@ -829,7 +834,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             }
         }
 
-        RowSet getPreShifted(boolean withModifies) {
+        synchronized RowSet getPreShifted(boolean withModifies) {
             if (!withModifies && upstream.modified().isEmpty()) {
                 return getPreShifted(true);
             }
@@ -837,7 +842,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             return withModifies ? shiftedWithModifies.first : shiftedWithoutModifies.first;
         }
 
-        RowSet getPostShifted(boolean withModifies) {
+        synchronized RowSet getPostShifted(boolean withModifies) {
             if (!withModifies && upstream.modified().isEmpty()) {
                 return getPostShifted(true);
             }
@@ -846,7 +851,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         @Override
-        public void close() {
+        public synchronized void close() {
             if (existingRows != null) {
                 existingRows.close();
                 existingRows = null;

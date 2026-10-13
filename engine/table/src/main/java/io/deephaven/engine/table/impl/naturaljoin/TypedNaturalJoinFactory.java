@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.naturaljoin;
 
 import com.palantir.javapoet.CodeBlock;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.api.NaturalJoinType;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
@@ -56,7 +57,8 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("final $T<$T> rowKeyChunk = rowSequence.asRowKeyChunk()", LongChunk.class,
                 OrderedRowKeys.class);
         builder.addStatement(
-                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(probedRowKeyToErrorRowKey.applyAsLong(rowKeyChunk.get(chunkPosition))))");
+                "throw new $T(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(probedRowKeyToErrorRowKey.applyAsLong(rowKeyChunk.get(chunkPosition))))",
+                DuplicateRightKeyException.class);
         builder.endControlFlow();
         builder.addStatement("leftRedirections.set(redirectionOffset++, rightRowKey)");
     }
@@ -136,7 +138,8 @@ public class TypedNaturalJoinFactory {
                 NaturalJoinType.class, NaturalJoinType.class);
         builder.addStatement("final long leftRowKeyForState = leftRowSet.getUnsafe(tableLocation).firstRowKey()");
         builder.addStatement(
-                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(leftRowKeyForState))");
+                "throw new $T(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(leftRowKeyForState))",
+                DuplicateRightKeyException.class);
 
         builder.nextControlFlow("else if (addOnly && joinType == $T.FIRST_MATCH)", NaturalJoinType.class);
         builder.addStatement("// nop, we already have the first match");
@@ -236,7 +239,8 @@ public class TypedNaturalJoinFactory {
                 NaturalJoinType.class, NaturalJoinType.class);
         builder.addStatement("final long leftRowKeyForState = leftRowSet.getUnsafe(tableLocation).firstRowKey()");
         builder.addStatement(
-                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(leftRowKeyForState))");
+                "throw new $T(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(leftRowKeyForState))",
+                DuplicateRightKeyException.class);
 
         builder.nextControlFlow("else if (addOnly && joinType == $T.FIRST_MATCH)", NaturalJoinType.class);
         builder.addStatement("final long newKey = Math.min(rightRowKeyForState, inputKey)");
@@ -594,7 +598,8 @@ public class TypedNaturalJoinFactory {
         builder.beginControlFlow(
                 "if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH)");
         builder.addStatement(
-                "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)))");
+                "throw new $T(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)))",
+                DuplicateRightKeyException.class);
         builder.endControlFlow();
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState)");
         builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)",

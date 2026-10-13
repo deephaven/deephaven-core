@@ -1,6 +1,5 @@
 ---
 title: PartitionedTable's metadata methods
-sidebar_label: Metadata methods
 ---
 
 The `PartitionedTable` class has a handful of methods that return metadata about the `PartitionedTable`.

@@ -29,6 +29,14 @@ class StringChunkMatchFilterFactory {
 
     private final static CIStringKey CASE_INSENSITIVE_KEY_INSTANCE = new CIStringKey();
 
+    /**
+     * Case-insensitive equality that, like the case-sensitive match filters, holds {@code null} equal to {@code null}
+     * and to nothing else.
+     */
+    private static boolean equalsIgnoreCase(final String a, final String b) {
+        return CASE_INSENSITIVE_KEY_INSTANCE.equalKey(a, b);
+    }
+
     private StringChunkMatchFilterFactory() {} // static use only
 
     /**
@@ -73,7 +81,7 @@ class StringChunkMatchFilterFactory {
 
         @Override
         public boolean matches(String value) {
-            return this.value.equalsIgnoreCase(value);
+            return equalsIgnoreCase(this.value, value);
         }
     }
 
@@ -86,7 +94,7 @@ class StringChunkMatchFilterFactory {
 
         @Override
         public boolean matches(String value) {
-            return !this.value.equalsIgnoreCase(value);
+            return !equalsIgnoreCase(this.value, value);
         }
     }
 
@@ -101,7 +109,7 @@ class StringChunkMatchFilterFactory {
 
         @Override
         public boolean matches(String value) {
-            return value1.equalsIgnoreCase(value) || value2.equalsIgnoreCase(value);
+            return equalsIgnoreCase(value1, value) || equalsIgnoreCase(value2, value);
         }
     }
 
@@ -116,7 +124,7 @@ class StringChunkMatchFilterFactory {
 
         @Override
         public boolean matches(String value) {
-            return !value1.equalsIgnoreCase(value) && !value2.equalsIgnoreCase(value);
+            return !equalsIgnoreCase(value1, value) && !equalsIgnoreCase(value2, value);
         }
     }
 
@@ -133,7 +141,8 @@ class StringChunkMatchFilterFactory {
 
         @Override
         public boolean matches(String value) {
-            return value1.equalsIgnoreCase(value) || value2.equalsIgnoreCase(value) || value3.equalsIgnoreCase(value);
+            return equalsIgnoreCase(value1, value) || equalsIgnoreCase(value2, value)
+                    || equalsIgnoreCase(value3, value);
         }
     }
 
@@ -150,40 +159,56 @@ class StringChunkMatchFilterFactory {
 
         @Override
         public boolean matches(String value) {
-            return !value1.equalsIgnoreCase(value) && !value2.equalsIgnoreCase(value)
-                    && !value3.equalsIgnoreCase(value);
+            return !equalsIgnoreCase(value1, value) && !equalsIgnoreCase(value2, value)
+                    && !equalsIgnoreCase(value3, value);
         }
     }
 
     private static class MultiValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final KeyedObjectHashSet<String, String> values;
+        private final boolean containsNull;
 
         private MultiValueStringChunkFilter(Object... values) {
             this.values = new KeyedObjectHashSet<>(CASE_INSENSITIVE_KEY_INSTANCE);
+            boolean containsNull = false;
             for (Object value : values) {
-                this.values.add((String) value);
+                if (value == null) {
+                    // KeyedObjectHashSet does not hold null
+                    containsNull = true;
+                } else {
+                    this.values.add((String) value);
+                }
             }
+            this.containsNull = containsNull;
         }
 
         @Override
         public boolean matches(String value) {
-            return this.values.containsKey(value);
+            return value == null ? containsNull : this.values.containsKey(value);
         }
     }
 
     private static class InverseMultiValueStringChunkFilter extends ObjectChunkFilter<String> {
         private final KeyedObjectHashSet<String, String> values;
+        private final boolean containsNull;
 
         private InverseMultiValueStringChunkFilter(Object... values) {
             this.values = new KeyedObjectHashSet<>(CASE_INSENSITIVE_KEY_INSTANCE);
+            boolean containsNull = false;
             for (Object value : values) {
-                this.values.add((String) value);
+                if (value == null) {
+                    // KeyedObjectHashSet does not hold null
+                    containsNull = true;
+                } else {
+                    this.values.add((String) value);
+                }
             }
+            this.containsNull = containsNull;
         }
 
         @Override
         public boolean matches(String value) {
-            return !this.values.containsKey(value);
+            return value == null ? !containsNull : !this.values.containsKey(value);
         }
     }
 }

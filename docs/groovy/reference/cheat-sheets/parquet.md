@@ -1,6 +1,5 @@
 ---
 title: Parquet Cheat Sheet
-sidebar_label: Parquet
 ---
 
 - [`readTable`](../data-import-export/Parquet/readTable.md)

@@ -1,6 +1,5 @@
 ---
 title: BuildCatalogOptions
-sidebar_label: BuildCatalogOptions
 ---
 
 The `BuildCatalogOptions` class specifies options to use when constructing an [`IcebergCatalogAdapter`](./iceberg-catalog-adapter.md).

@@ -1,6 +1,5 @@
 ---
 title: Use Numba in Deephaven queries
-sidebar_label: Numba
 ---
 
 This guide will show you how to use [Numba](https://numba.pydata.org/) in your Python queries in Deephaven.

@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
+import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -124,8 +125,8 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationQueu
         final String[] setColumnNames = MatchPair.getRightColumns(sourceToSetColumnNamePairs);
         final DataIndex setIndex = DataIndexer.getDataIndex(setTable, setColumnNames);
         if (setIndex != null) {
-            // We have a distinct index table, let's use it.
-            setTableToUse = (QueryTable) setIndex.table();
+            // We have a distinct index table, let's use it. Only its keys are read, so the partial table will do.
+            setTableToUse = (QueryTable) setIndex.table(DataIndexOptions.USING_PARTIAL_TABLE);
         } else if (setRefreshing) {
             setTableToUse = (QueryTable) setTable.selectDistinct(setColumnNames);
         } else {

@@ -1,6 +1,5 @@
 ---
 title: Listen to ticking tables
-sidebar_label: Table listeners
 ---
 
 Deephaven makes it easy to create dynamic queries that update in real time. When a table updates, a message describing the changes is sent to all listeners of the table. This mechanism is what makes ticking queries work. It can also be used to create new, dynamic functionality.

@@ -1,6 +1,5 @@
 ---
 title: An overview of query strings
-sidebar_label: Overview
 ---
 
 This page provides a succinct overview of query strings in Deephaven. Query strings are how you interact with Deephaven's query engine. They are used in almost every query written, so a conceptual understanding of the Deephaven Query Language (DQL) and query strings is essential for writing correct, performant, and effective queries. The guides are organized to help you learn everything you need to know about query strings and the DQL. This page provides a high-level overview of each item in the sidebar. For a more in-depth explanation of each topic, refer to the corresponding page.

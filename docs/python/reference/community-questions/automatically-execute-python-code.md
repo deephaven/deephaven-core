@@ -1,6 +1,5 @@
 ---
 title: How do I automatically execute Python code based on a Deephaven table column value?
-sidebar_label: How do I automatically execute Python code based on a Deephaven table column value?
 ---
 
 <em>Can I automatically execute Python code when incoming data in a ticking table meets certain criteria?</em>

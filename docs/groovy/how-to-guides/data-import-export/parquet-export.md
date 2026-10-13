@@ -1,6 +1,5 @@
 ---
 title: Export Deephaven Tables to Parquet Files
-sidebar_label: Export to Parquet
 ---
 
 The [Deephaven Parquet module](/core/javadoc/io/deephaven/parquet/table/package-summary.html) provides tools to integrate Deephaven with the Parquet file format. This module makes it easy to write Deephaven tables to Parquet files and directories. This document covers writing Deephaven tables to single Parquet files, flat partitioned Parquet directories, and key-value partitioned Parquet directories.
@@ -13,7 +12,7 @@ By default, Deephaven tables are written to Parquet files using `SNAPPY` compres
 
 First, create some tables that will be used for the examples in this guide.
 
-```groovy test-set=1 order=grades,mathGrades,scienceGrades,historyGrades docker-config=minio
+```groovy test-set=1 order=grades,mathGrades,scienceGrades,historyGrades docker-config=rustfs
 mathGrades = newTable(
     stringCol("Name", "Ashley", "Jeff", "Rita", "Zach"),
     stringCol("Class", "Math", "Math", "Math", "Math"),
@@ -85,7 +84,7 @@ ParquetTools.writeTable(
         .setSpecialInstructions(
             S3Instructions.builder()
                 .regionName("us-east-1")
-                .endpointOverride("http://minio.example.com:9000")
+                .endpointOverride("http://rustfs.example.com:9000")
                 .credentials(credentials)
                 .build()
         )
@@ -162,7 +161,7 @@ ParquetTools.writeKeyValuePartitionedTable(
         .setSpecialInstructions(
             S3Instructions.builder()
                 .regionName("us-east-1")
-                .endpointOverride("http://minio.example.com:9000")
+                .endpointOverride("http://rustfs.example.com:9000")
                 .credentials(credentials)
                 .build()
         )
@@ -236,7 +235,7 @@ ParquetTools.writeTables(
         .setSpecialInstructions(
             S3Instructions.builder()
                 .regionName("us-east-1")
-                .endpointOverride("http://minio.example.com:9000")
+                .endpointOverride("http://rustfs.example.com:9000")
                 .credentials(credentials)
                 .build()
         )

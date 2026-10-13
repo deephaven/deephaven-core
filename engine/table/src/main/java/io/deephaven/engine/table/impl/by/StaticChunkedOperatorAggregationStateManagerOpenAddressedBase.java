@@ -58,7 +58,10 @@ public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedB
 
     @Override
     public void onNextChunk(int size) {
-        outputPositionToHashSlot.ensureCapacity(nextOutputPosition.get() + size, false);
+        // limited to the positions there are; ChunkedOperatorAggregationHelper.allocateOutputPosition checks for
+        // running out
+        outputPositionToHashSlot.ensureCapacity(Math.min((long) nextOutputPosition.get() + size, Integer.MAX_VALUE),
+                false);
     }
 
     @Override

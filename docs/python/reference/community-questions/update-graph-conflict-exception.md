@@ -1,6 +1,5 @@
 ---
 title: What is an UpdateGraphConflictException and how do I fix it?
-sidebar_label: Why am I getting an UpdateGraphConflictException?
 ---
 
 _My code is throwing an `UpdateGraphConflictException`, but I don't know what that means or why it's happening. Why does this happen and how can I fix it?_

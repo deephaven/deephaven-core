@@ -1,6 +1,5 @@
 ---
 title: Create a ring table
-sidebar_label: Ring tables
 ---
 
 This guide will show you how to create a [ring table](../conceptual/table-types.md#specialization-4-ring) from a [blink table](../conceptual/table-types.md#specialization-3-blink) or an [append-only table](../conceptual/table-types.md#specialization-1-append-only).

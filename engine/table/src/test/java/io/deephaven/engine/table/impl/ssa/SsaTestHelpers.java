@@ -12,13 +12,16 @@ import io.deephaven.engine.table.impl.QueryTable;
 import org.jetbrains.annotations.NotNull;
 
 public class SsaTestHelpers {
+    /**
+     * Negative values become {@code NULL_CHAR}, which sorts before every other char; so the table stays sorted.
+     */
     @NotNull
     public static SortedIntGenerator getGeneratorForChar() {
-        return new SortedIntGenerator((int) Character.MIN_VALUE, (int) Character.MAX_VALUE - 1);
+        return new SortedIntGenerator((int) Character.MIN_VALUE - 1024, (int) Character.MAX_VALUE - 1);
     }
 
     public static Table prepareTestTableForChar(QueryTable table) {
-        return table.updateView("Value=(char)Value");
+        return table.updateView("Value=Value < 0 ? NULL_CHAR : (char)Value");
     }
 
     @NotNull

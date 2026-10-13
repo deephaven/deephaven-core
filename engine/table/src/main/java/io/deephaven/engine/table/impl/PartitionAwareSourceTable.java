@@ -8,6 +8,7 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LiveSupplier;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.filter.ExtractAllFilters;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
@@ -72,7 +73,25 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             @Nullable final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final Map<String, ColumnDefinition<?>> partitioningColumnDefinitions,
             @Nullable final WhereFilter... partitioningColumnFilters) {
-        super(tableDefinition, description, componentFactory, locationProvider, updateSourceRegistrar);
+        this(tableDefinition, description, componentFactory, locationProvider, updateSourceRegistrar, null,
+                partitioningColumnDefinitions, partitioningColumnFilters);
+    }
+
+    /**
+     * @param attributes The attributes map to use, or else {@code null} to allocate a new one
+     * @param partitioningColumnFilters Filters to apply to the partitioning columns before coalescing. The new table
+     *        takes ownership of these: a {@link WhereFilter} may accumulate per-operation state, so callers must pass
+     *        filters that no other table will use, {@link #copyFilters(WhereFilter[]) copying} them if necessary.
+     */
+    PartitionAwareSourceTable(@NotNull final TableDefinition tableDefinition,
+            @NotNull final String description,
+            @NotNull final SourceTableComponentFactory componentFactory,
+            @NotNull final TableLocationProvider locationProvider,
+            @Nullable final UpdateSourceRegistrar updateSourceRegistrar,
+            @Nullable final Map<String, Object> attributes,
+            @NotNull final Map<String, ColumnDefinition<?>> partitioningColumnDefinitions,
+            @Nullable final WhereFilter... partitioningColumnFilters) {
+        super(tableDefinition, description, componentFactory, locationProvider, updateSourceRegistrar, attributes);
         this.partitioningColumnDefinitions = partitioningColumnDefinitions;
         this.partitioningColumnFilters = partitioningColumnFilters;
     }
@@ -82,10 +101,11 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             @NotNull final SourceTableComponentFactory componentFactory,
             @NotNull final TableLocationProvider locationProvider,
             @Nullable final UpdateSourceRegistrar updateSourceRegistrar,
+            @Nullable final Map<String, Object> attributes,
             @NotNull final Map<String, ColumnDefinition<?>> partitioningColumnDefinitions,
             @Nullable final WhereFilter... partitioningColumnFilters) {
         return new PartitionAwareSourceTable(tableDefinition, description, componentFactory, locationProvider,
-                updateSourceRegistrar, partitioningColumnDefinitions, partitioningColumnFilters);
+                updateSourceRegistrar, attributes, partitioningColumnDefinitions, partitioningColumnFilters);
     }
 
     private PartitionAwareSourceTable getFilteredTable(
@@ -96,12 +116,11 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 additionalPartitioningColumnFilters.stream())
                 .map(WhereFilter::copy)
                 .toArray(WhereFilter[]::new);
-        final PartitionAwareSourceTable filtered = newInstance(definition,
+        return newInstance(definition,
                 getDescription() + ".where(" + additionalPartitioningColumnFilters + ')',
-                componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
-                resultPartitioningColumnFilters);
-        copyAttributes(filtered, CopyAttributeOperation.Filter);
-        return filtered;
+                componentFactory, locationProvider, updateSourceRegistrar,
+                getAttributesToCopy(ak -> shouldCopyAttribute(ak, CopyAttributeOperation.Filter)),
+                partitioningColumnDefinitions, resultPartitioningColumnFilters);
     }
 
     /**
@@ -200,13 +219,10 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     }
 
     @Override
-    protected PartitionAwareSourceTable copy() {
-        final PartitionAwareSourceTable result =
-                newInstance(definition, getDescription(), componentFactory, locationProvider,
-                        updateSourceRegistrar, partitioningColumnDefinitions,
-                        copyFilters(partitioningColumnFilters));
-        LiveAttributeMap.copyAttributes(this, result, ak -> true);
-        return result;
+    protected PartitionAwareSourceTable copy(@NotNull final Map<String, Object> attributes) {
+        return newInstance(definition, getDescription(), componentFactory, locationProvider,
+                updateSourceRegistrar, attributes, partitioningColumnDefinitions,
+                copyFilters(partitioningColumnFilters));
     }
 
     @Override
@@ -216,7 +232,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             // Nothing changed except ordering, *or* some columns were dropped but the partitioning column was retained.
             return newInstance(newDefinition,
                     getDescription() + "-retainColumns",
-                    componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
+                    componentFactory, locationProvider, updateSourceRegistrar, null, partitioningColumnDefinitions,
                     copyFilters(partitioningColumnFilters));
         }
         // Some partitioning columns are gone - defer dropping them.
@@ -230,7 +246,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         newColumnDefinitions.addAll(droppedPartitioningColumnDefinitions);
         final PartitionAwareSourceTable redefined = newInstance(TableDefinition.of(newColumnDefinitions),
                 getDescription() + "-retainColumns",
-                componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
+                componentFactory, locationProvider, updateSourceRegistrar, null, partitioningColumnDefinitions,
                 copyFilters(partitioningColumnFilters));
         return new DeferredViewTable(newDefinition, getDescription() + "-retainColumns",
                 new PartitionAwareTableReference(redefined),
@@ -412,13 +428,15 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     /**
      * Whether {@code whereFilter} may be applied to the location keys before coalescing, rather than to the rows after.
      * Location discovery applies such filters once per discovered key, with no listener, so a refreshing filter cannot
-     * be one: it is deferred like any other row filter.
+     * be one: it is deferred like any other row filter. Nor can a filter that uses virtual row variables, which would
+     * be evaluated against positions in the location table rather than in the coalesced table.
      *
      * @param whereFilter The filter to test, already {@link WhereFilter#init(TableDefinition) initialized}
      * @return Whether {@code whereFilter} may be applied before coalescing
      */
     private boolean isPrioritizablePartitioningFilter(@NotNull final WhereFilter whereFilter) {
-        return !(whereFilter instanceof ReindexingFilter)
+        return ExtractAllFilters.stream(whereFilter)
+                .noneMatch(f -> f instanceof ReindexingFilter || f.hasVirtualRowVariables())
                 && !whereFilter.isRefreshing()
                 && isValidAgainstColumnPartitionTable(whereFilter.getColumns(), whereFilter.getColumnArrays());
     }

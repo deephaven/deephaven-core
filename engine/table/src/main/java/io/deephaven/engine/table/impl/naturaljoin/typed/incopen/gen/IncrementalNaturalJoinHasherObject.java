@@ -16,6 +16,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ObjectChunkHasher;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -77,7 +78,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -124,7 +127,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -199,7 +204,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                             break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (firstDeletedLocation >= 0) {
@@ -265,7 +272,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -302,7 +311,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                             final long rightRowKey;
                             if (rightRowKeyForState <= FIRST_DUPLICATE) {
                                 if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                                    throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
+                                    throw new DuplicateRightKeyException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                                 }
                                 final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
                                 final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
@@ -316,7 +325,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                             break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (firstDeletedLocation >= 0) {
@@ -347,7 +358,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     final long rightRowKey;
                     if (rightRowKeyForState <= FIRST_DUPLICATE) {
                         if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                            throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
+                            throw new DuplicateRightKeyException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                         }
                         final long duplicateLocation = duplicateLocationFromRowKey(rightRowKeyForState);
                         final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
@@ -361,7 +372,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
                 }
             }
         }
@@ -418,7 +431,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
                 if (!searchAlternate) {
@@ -465,7 +480,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                                 break;
                             }
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (!alternateFound) {
@@ -509,7 +526,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
                 if (!searchAlternate) {
@@ -539,7 +558,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                                 break;
                             }
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (!alternateFound) {
@@ -595,7 +616,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
                 if (!searchAlternate) {
@@ -635,7 +658,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                                 break;
                             }
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (!alternateFound) {
@@ -681,7 +706,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
                 if (!searchAlternate) {
@@ -712,7 +739,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                                 break;
                             }
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (!alternateFound) {
@@ -748,7 +777,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
                 if (!searchAlternate) {
@@ -769,7 +800,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                                 break;
                             }
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     if (!alternateFound) {
@@ -831,13 +864,16 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
     @Override
     protected int rehashInternalPartial(int entriesToRehash,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        int rehashedEntries = 0;
-        while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
-            if (migrateOneLocation(--rehashPointer, false, modifiedSlotTracker)) {
-                rehashedEntries++;
-            }
+        final long slotsToExamine = (long) entriesToRehash * IncrementalNaturalJoinStateManagerTypedBase.REHASH_SLOTS_PER_ENTRY;
+        long examinedSlots = 0;
+        while (rehashPointer > 0 && examinedSlots < slotsToExamine) {
+            migrateOneLocation(--rehashPointer, false, modifiedSlotTracker);
+            ++examinedSlots;
         }
-        return rehashedEntries;
+        if (rehashPointer == 0) {
+            return entriesToRehash;
+        }
+        return (int) (examinedSlots / IncrementalNaturalJoinStateManagerTypedBase.REHASH_SLOTS_PER_ENTRY);
     }
 
     @Override
@@ -891,7 +927,9 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
                     break;
                 }
                 destinationTableLocation = nextTableLocation(destinationTableLocation);
-                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
+                if (destinationTableLocation == firstDestinationTableLocation) {
+                    throw Assert.statementNeverExecuted("destinationTableLocation wraps around to firstDestinationTableLocation");
+                }
             }
         }
     }

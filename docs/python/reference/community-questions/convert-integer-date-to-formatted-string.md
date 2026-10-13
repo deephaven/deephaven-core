@@ -1,6 +1,5 @@
 ---
 title: How can I convert an integer date to a formatted date string?
-sidebar_label: How can I convert an integer date to a formatted string?
 ---
 
 _I have a column containing dates as integers (like 20250401). How can I convert these to formatted date strings (YYYY-MM-DD) in Deephaven?_

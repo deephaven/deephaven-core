@@ -8,6 +8,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
+import io.deephaven.util.compare.ObjectComparisons;
 
 public interface CompactKernel {
     /**
@@ -83,7 +85,21 @@ public interface CompactKernel {
             boolean countNull,
             boolean countNaN);
 
-    static CompactKernel makeCompact(ChunkType chunkType) {
+    /**
+     * Make a CompactKernel for values of the given type. Sorted operations pass the decision for their data type, so
+     * the kernel's {@code compactAndCount} equality is consistent with the ordering of the values; hash-based
+     * operations, whose key equality must be consistent with {@code hashCode}, pass {@code true}.
+     *
+     * @param chunkType the chunk type of the values
+     * @param equalsConsistent true when values of the data type compare equal exactly when they are equal (see
+     *        {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}), which selects the
+     *        EqualsConsistentObject kernel whose {@code compactAndCount} tests Object equality with {@code equals};
+     *        when false, Object equality is tested with {@link ObjectComparisons#compareEquals(Object, Object)}. Other
+     *        chunk types ignore it. An operation reads the registry once and passes the same decision to every kernel
+     *        it creates, so its kernels come from one family.
+     * @return the CompactKernel
+     */
+    static CompactKernel makeCompact(ChunkType chunkType, boolean equalsConsistent) {
         switch (chunkType) {
             case Boolean:
                 return BooleanCompactKernel.INSTANCE;
@@ -102,7 +118,9 @@ public interface CompactKernel {
             case Double:
                 return DoubleCompactKernel.INSTANCE;
             case Object:
-                return ObjectCompactKernel.INSTANCE;
+                return equalsConsistent
+                        ? EqualsConsistentObjectCompactKernel.INSTANCE
+                        : ObjectCompactKernel.INSTANCE;
             default:
                 throw new UnsupportedOperationException();
         }

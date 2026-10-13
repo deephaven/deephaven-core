@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.NaturalJoinType;
+import io.deephaven.engine.exceptions.ExactJoinMissingKeyException;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -60,6 +62,7 @@ class NaturalJoinHelper {
 
     private static QueryTable naturalJoinInternal(QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, NaturalJoinType joinType, JoinControl control) {
+        QueryTable.checkJoinInputsNotFailed(leftTable, rightTable);
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         // A join that errors on duplicates needs a state per right row, so the right row count sizes the hash table
@@ -146,8 +149,7 @@ class NaturalJoinHelper {
                 leftRecorder.setMergedListener(mergedJoinListener);
                 rightRecorder.setMergedListener(mergedJoinListener);
 
-                leftTable.addUpdateListener(leftRecorder);
-                rightTable.addUpdateListener(rightRecorder);
+                mergedJoinListener.addRecordersToParents();
 
                 result.addParentReference(mergedJoinListener);
 
@@ -299,7 +301,7 @@ class NaturalJoinHelper {
         if (rightTable.size() > 1) {
             if ((joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH)) {
                 if (!leftTable.isEmpty()) {
-                    throw new IllegalStateException(
+                    throw new DuplicateRightKeyException(
                             "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
                 }
                 // we don't care where it goes
@@ -316,7 +318,7 @@ class NaturalJoinHelper {
             rowRedirection = getSingleValueRowRedirection(rightRefreshing, rightTable.getRowSet().firstRowKey());
         } else {
             if (joinType == NaturalJoinType.EXACTLY_ONE_MATCH && !leftTable.isEmpty()) {
-                throw new RuntimeException(
+                throw new ExactJoinMissingKeyException(
                         "exactJoin with zero key columns must have exactly one row in the right hand side table!");
             }
             rowRedirection = getSingleValueRowRedirection(rightRefreshing, RowSequence.NULL_ROW_KEY);
@@ -374,8 +376,7 @@ class NaturalJoinHelper {
 
                 leftRecorder.setMergedListener(mergedListener);
                 rightRecorder.setMergedListener(mergedListener);
-                leftTable.addUpdateListener(leftRecorder);
-                rightTable.addUpdateListener(rightRecorder);
+                mergedListener.addRecordersToParents();
                 result.addParentReference(mergedListener);
 
             } else {
@@ -492,9 +493,9 @@ class NaturalJoinHelper {
     }
 
     /**
-     * Check the right table's size against the join type when there are left rows to match. The exceptions match the
-     * keyed paths: a duplicate right key is an {@link IllegalStateException}, a missing exact match a
-     * {@link RuntimeException}.
+     * Check the right table's size against the join type when there are left rows to match. As in the keyed paths,
+     * several right rows raise a {@link DuplicateRightKeyException} and an empty right table under an exact join raises
+     * an {@link ExactJoinMissingKeyException}.
      */
     private static void checkRightTableSizeZeroKeys(
             final Table leftTable,
@@ -505,12 +506,12 @@ class NaturalJoinHelper {
         }
         if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
             if (rightTable.size() > 1) {
-                throw new IllegalStateException(
+                throw new DuplicateRightKeyException(
                         "naturalJoin with zero key columns may not have more than one row in the right hand side table!");
             }
         }
         if (joinType == NaturalJoinType.EXACTLY_ONE_MATCH && rightTable.isEmpty()) {
-            throw new RuntimeException(
+            throw new ExactJoinMissingKeyException(
                     "exactJoin with zero key columns must have exactly one row in the right hand side table!");
         }
     }
@@ -580,6 +581,7 @@ class NaturalJoinHelper {
             try (final RowSet prevRowSet = leftTable.getRowSet().copyPrev()) {
                 rowRedirection.applyShift(prevRowSet, upstream.shifted());
             }
+            rowRedirection.releaseVacatedStorage(upstream.removed(), upstream.shifted(), leftTable.getRowSet());
 
             final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
             leftTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
@@ -862,7 +864,7 @@ class NaturalJoinHelper {
             if (rowKey == StaticNaturalJoinStateManager.DUPLICATE_RIGHT_VALUE) {
                 if (joinType == NaturalJoinType.ERROR_ON_DUPLICATE
                         || joinType == NaturalJoinType.EXACTLY_ONE_MATCH) {
-                    throw new IllegalStateException(
+                    throw new DuplicateRightKeyException(
                             "Natural Join found duplicate right key for " + jsm.keyString(updatedSlot));
                 }
                 // Get the correct row key from the duplicates on the RHS
@@ -1117,6 +1119,8 @@ class NaturalJoinHelper {
                         final Context bc =
                                 buildSize == 0 ? null : jsm.makeBuildContext(leftSources, buildSize)) {
                     rowRedirection.removeAll(leftRemoved);
+                    rowRedirection.releaseVacatedStorage(leftRemoved, leftShifted,
+                            leftRecorder.getParent().getRowSet());
                     jsm.removeLeft(pc, leftRemoved, leftSources, modifiedSlotTracker);
 
                     // The rows whose key value changed were removed from their hash slots by removeLeftModifications

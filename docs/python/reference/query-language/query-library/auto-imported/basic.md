@@ -1,9 +1,8 @@
 ---
 title: Basic functions
-sidebar_label: Basic
 ---
 
-Array manipulation, counting, null handling, and utility functions from [`io.deephaven.function.Basic`](/core/javadoc/io/deephaven/function/Basic.html).
+Array manipulation, counting, null handling, and utility functions.
 
 | Type     | Name             | Signature                                                                                                                                                                                                                                  | Description                                                                                          |
 | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
@@ -340,3 +339,4 @@ Array manipulation, counting, null handling, and utility functions from [`io.dee
 ## Related documentation
 
 - [Auto-imported functions](./index.md)
+- [Query language functions](../../../../how-to-guides/built-in-functions.md)

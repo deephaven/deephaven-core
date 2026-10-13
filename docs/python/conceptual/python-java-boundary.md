@@ -1,6 +1,5 @@
 ---
 title: The Python-Java boundary and how it affects query efficiency
-sidebar_label: Python-Java boundary
 ---
 
 This guide discusses the relationship between Python and Java in Deephaven Python queries and how it affects query efficiency.

@@ -1,6 +1,5 @@
 ---
 title: When does Deephaven load data into memory for Parquet reads?
-sidebar_label: When does Deephaven load data into memory for Parquet reads?
 ---
 
 <em>I know that when Deephaven loads a Parquet file into a table, it doesn't merge the entire file into memory. Is this still true if we merge the loaded data with, say, Kafka streaming data? What effect does performing an aggregation like `last_by` on the merged table have on memory use?</em>

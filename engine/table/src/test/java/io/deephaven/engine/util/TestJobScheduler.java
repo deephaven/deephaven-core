@@ -4,8 +4,10 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
@@ -18,7 +20,12 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -422,9 +429,10 @@ public final class TestJobScheduler {
         final boolean[] completed = new boolean[50];
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        updateGraph.resetForUnitTests(false, true, 0, 4, 0, 0);
         runExpectingUpdateGraphTermination(updateGraph, () -> {
             final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
+            Assert.gt(scheduler.threadCount(), "scheduler.threadCount()", 1);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -436,6 +444,11 @@ public final class TestJobScheduler {
 
                         // throw before "doing work" to make verification easy
                         if (idx == 10) {
+                            // Each task invoker closes its context once it runs out of tasks. Hold the Error until
+                            // every other invoker has done so; the cycle is torn down as soon as this thread dies,
+                            // and an invoker notification that has not started by then never runs, so the iteration
+                            // would never complete.
+                            observer.awaitOpenContexts(1, Duration.ofSeconds(10));
                             throw new TestError("Test error");
                         }
 
@@ -449,7 +462,9 @@ public final class TestJobScheduler {
         observer.assertDidNotCallComplete();
         assertTestErrorDelivered(observer);
         observer.assertNoOpenContexts();
-        Assert.eqFalse(completed[10], "completed[10]");
+        for (int ii = 0; ii < completed.length; ++ii) {
+            Assert.eq(completed[ii], "completed[ii]", ii != 10, "ii != 10");
+        }
 
         // The terminated cycle left its exclusive lock held; reset so that teardown gets a usable update graph back.
         updateGraph.resetForUnitTests(false);
@@ -573,6 +588,191 @@ public final class TestJobScheduler {
     }
 
     /**
+     * A scheduler that refuses every submission, as a shut-down pool does, must still end the iteration through
+     * {@code onError}, and must close the context built for the task it could not submit.
+     */
+    @Test
+    public void testParallelSubmitRejected() {
+        final Observer observer = new Observer(null, null, null);
+        final RejectingJobScheduler scheduler = new RejectingJobScheduler(0);
+
+        scheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                null,
+                observer,
+                0,
+                50,
+                (context, idx, nec) -> fail("No task should run"),
+                observer::onComplete,
+                observer::cleanup,
+                observer::onError);
+
+        observer.assertDidNotCallComplete();
+        assertSame(scheduler.rejection, observer.error());
+        observer.assertNoOpenContexts();
+    }
+
+    /**
+     * A submission rejected after others were accepted must fail the iteration once the accepted tasks finish, without
+     * running any further tasks.
+     */
+    @Test
+    public void testParallelSubmitRejectedAfterAccepting() {
+        final Observer observer = new Observer(null, null, null);
+        final RejectingJobScheduler scheduler = new RejectingJobScheduler(2);
+        final AtomicInteger tasksRun = new AtomicInteger();
+
+        scheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                null,
+                observer,
+                0,
+                50,
+                (context, idx, nec) -> tasksRun.incrementAndGet(),
+                observer::onComplete,
+                observer::cleanup,
+                observer::onError);
+
+        Assert.eqNull(observer.error(), "observer.error()");
+        scheduler.runAccepted();
+
+        observer.assertDidNotCallComplete();
+        assertSame(scheduler.rejection, observer.error());
+        observer.assertNoOpenContexts();
+        assertEquals(0, tasksRun.get());
+    }
+
+    @Test
+    public void testSerialSubmitRejected() {
+        final Observer observer = new Observer(null, null, null);
+        final RejectingJobScheduler scheduler = new RejectingJobScheduler(0);
+
+        scheduler.iterateSerial(
+                ExecutionContext.getContext(),
+                null,
+                observer,
+                0,
+                50,
+                (context, idx, nec, resume) -> fail("No task should run"),
+                observer::onComplete,
+                observer::cleanup,
+                observer::onError);
+
+        observer.assertDidNotCallComplete();
+        assertSame(scheduler.rejection, observer.error());
+        observer.assertNoOpenContexts();
+    }
+
+    /**
+     * When more than one task fails, the first failure is delivered, and the later ones must not be lost.
+     */
+    @Test
+    public void testParallelErrorsAreAllReported() {
+        final Observer observer = new Observer(null, null, null);
+        final RejectingJobScheduler scheduler = new RejectingJobScheduler(2);
+        final List<Consumer<Exception>> taskErrorConsumers = new ArrayList<>();
+
+        scheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                null,
+                observer,
+                0,
+                2,
+                // Leave each task outstanding, so that both fail.
+                (context, idx, nec, resume) -> taskErrorConsumers.add(nec),
+                observer::onComplete,
+                observer::cleanup,
+                observer::onError);
+        scheduler.runAccepted();
+        assertEquals("sanity: both tasks started", 2, taskErrorConsumers.size());
+
+        final Exception first = new IllegalStateException("first");
+        final Exception second = new IllegalStateException("second");
+        taskErrorConsumers.get(0).accept(first);
+        Assert.eqNull(observer.error(), "observer.error()");
+        taskErrorConsumers.get(1).accept(second);
+
+        observer.assertDidNotCallComplete();
+        assertSame(first, observer.error());
+        assertArrayEquals(new Throwable[] {second}, first.getSuppressed());
+        observer.assertNoOpenContexts();
+    }
+
+    /**
+     * A scheduler that runs a task inline lets an Error thrown by the task escape its {@code submit}. The task has
+     * already delivered the failure and released its resources, so that is not a rejected submission.
+     */
+    @Test
+    public void testImmediateParallelThrownError() {
+        final Observer observer = new Observer(null, null, null);
+
+        final TestError thrown = assertThrows(TestError.class, () -> new ImmediateJobScheduler().iterateParallel(
+                ExecutionContext.getContext(),
+                null,
+                observer,
+                0,
+                50,
+                (context, idx, nec) -> {
+                    if (idx == 10) {
+                        throw new TestError("Test error");
+                    }
+                },
+                observer::onComplete,
+                observer::cleanup,
+                observer::onError));
+
+        assertEquals("Test error", thrown.getMessage());
+        observer.assertDidNotCallComplete();
+        assertTestErrorDelivered(observer);
+        observer.assertNoOpenContexts();
+    }
+
+    /**
+     * Accepts the first {@code acceptCount} submissions, holding them until {@link #runAccepted()}, and rejects the
+     * rest.
+     */
+    private static final class RejectingJobScheduler implements JobScheduler {
+
+        private final RejectedExecutionException rejection = new RejectedExecutionException("Test rejection");
+        private final Queue<Runnable> accepted = new ArrayDeque<>();
+        private int remainingAccepts;
+
+        private RejectingJobScheduler(final int acceptCount) {
+            remainingAccepts = acceptCount;
+        }
+
+        @Override
+        public void submit(
+                final ExecutionContext executionContext,
+                final Runnable runnable,
+                final LogOutputAppendable description,
+                final Consumer<Exception> onError) {
+            if (remainingAccepts == 0) {
+                throw rejection;
+            }
+            --remainingAccepts;
+            accepted.add(runnable);
+        }
+
+        private void runAccepted() {
+            Runnable runnable;
+            while ((runnable = accepted.poll()) != null) {
+                runnable.run();
+            }
+        }
+
+        @Override
+        public BasePerformanceEntry getAccumulatedPerformance() {
+            return null;
+        }
+
+        @Override
+        public int threadCount() {
+            return 4;
+        }
+    }
+
+    /**
      * An Error thrown by a job is delivered to the iteration's error handler and then rethrown, which takes down the
      * notification processor running it; the update graph reports that when the cycle completes. That termination is
      * the intended policy for an Error -- what these tests are about is that the failure was delivered first.
@@ -598,6 +798,16 @@ public final class TestJobScheduler {
         // The wrapper carries no stack trace of its own; the one that matters belongs to the Error, and filling in
         // another is the largest allocation on a path that exists because the heap may be exhausted.
         assertEquals(0, delivered.getStackTrace().length);
+    }
+
+    /**
+     * The wrapper delivered when an Error cannot be wrapped is shared, and is thrown to callers whose own cleanup may
+     * try to suppress a failure on it, so it takes none.
+     */
+    @Test
+    public void testUnreportableJobErrorTakesNoSuppressed() {
+        JobScheduler.UNREPORTABLE_JOB_ERROR.addSuppressed(new IllegalStateException("a caller's close failure"));
+        assertEquals(0, JobScheduler.UNREPORTABLE_JOB_ERROR.getSuppressed().length);
     }
 
     /**
@@ -920,28 +1130,46 @@ public final class TestJobScheduler {
     }
 
     private static class ContextFactory implements Supplier<JobScheduler.JobThreadContext> {
-        private final AtomicInteger openCount;
+        private int openCount;
 
-        public ContextFactory() {
-            openCount = new AtomicInteger(0);
+        public synchronized void assertNoOpenContexts() {
+            Assert.eqZero(openCount, "openCount");
         }
 
-        public void assertNoOpenContexts() {
-            Assert.eqZero(openCount.get(), "openCount.get()");
+        /**
+         * Wait until no more than {@code maxOpen} contexts are open. This is called from within a job, which cannot
+         * throw a checked exception, so a timeout or interrupt is reported as an assertion failure.
+         */
+        public synchronized void awaitOpenContexts(final int maxOpen, final Duration timeout) {
+            final long deadlineNanos = System.nanoTime() + timeout.toNanos();
+            while (openCount > maxOpen) {
+                final long remainingNanos = deadlineNanos - System.nanoTime();
+                Assert.gtZero(remainingNanos, "remainingNanos");
+                try {
+                    TimeUnit.NANOSECONDS.timedWait(this, remainingNanos);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError("Interrupted while waiting for contexts to close", e);
+                }
+            }
         }
 
         @Override
-        public JobScheduler.JobThreadContext get() {
-            final JobThreadContextImpl ctx = new JobThreadContextImpl();
-            openCount.incrementAndGet();
-            return ctx;
+        public synchronized JobScheduler.JobThreadContext get() {
+            ++openCount;
+            return new JobThreadContextImpl();
+        }
+
+        private synchronized void onContextClosed() {
+            --openCount;
+            notifyAll();
         }
 
         class JobThreadContextImpl implements JobScheduler.JobThreadContext {
 
             @Override
             public void close() {
-                openCount.decrementAndGet();
+                onContextClosed();
             }
         }
     }

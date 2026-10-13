@@ -3415,6 +3415,32 @@ public class TestDateTimeUtils {
 
         assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(dt3));
         assertEquals(NULL_INT, DateTimeUtils.nanosOfMilli((ZonedDateTime) null));
+
+        // Pre-Epoch, where epoch nanos are negative. The result is an offset into the millisecond, so it must stay
+        // non-negative rather than following the sign of the epoch offset.
+        final Instant pre2 = DateTimeUtils.parseInstant("1900-06-15T12:30:00.123456789 UTC");
+        assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(pre2));
+        assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(pre2.atZone(TZ_JP)));
+
+        // One nanosecond before the Epoch, the largest possible offset into the millisecond.
+        final Instant preEpochNano = DateTimeUtils.epochNanosToInstant(-1L);
+        assertEquals(999999, DateTimeUtils.nanosOfMilli(preEpochNano));
+        assertEquals(999999, DateTimeUtils.nanosOfMilli(preEpochNano.atZone(TZ_JP)));
+
+        // The Epoch itself, and one nanosecond after it.
+        assertEquals(0, DateTimeUtils.nanosOfMilli(DateTimeUtils.epochNanosToInstant(0L)));
+        assertEquals(1, DateTimeUtils.nanosOfMilli(DateTimeUtils.epochNanosToInstant(1L)));
+
+        // Outside the range representable as epoch nanoseconds in a long (roughly 1678 through 2262). The nano-of-
+        // second is well defined for these, so they must not be routed through an epoch-nanos conversion, which
+        // wraps silently below the range and throws above it.
+        final Instant early = LocalDateTime.parse("1600-06-15T12:30:00.123456789").toInstant(ZoneOffset.UTC);
+        assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(early));
+        assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(early.atZone(TZ_JP)));
+
+        final Instant late = LocalDateTime.parse("2300-06-15T12:30:00.123456789").toInstant(ZoneOffset.UTC);
+        assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(late));
+        assertEquals(123456789 % DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(late.atZone(TZ_JP)));
     }
 
     @Test
@@ -3671,6 +3697,24 @@ public class TestDateTimeUtils {
 
         assertEquals(457, DateTimeUtils.microsOfMilli(dt3));
         assertEquals(NULL_INT, DateTimeUtils.microsOfMilli((ZonedDateTime) null));
+
+        // Pre-Epoch, where epoch nanos are negative. The same sub-millisecond remainder must round the same way.
+        final Instant pre2 = DateTimeUtils.parseInstant("1900-06-15T12:30:00.123456789 UTC");
+        assertEquals(457, DateTimeUtils.microsOfMilli(pre2));
+        assertEquals(457, DateTimeUtils.microsOfMilli(pre2.atZone(TZ_JP)));
+
+        // The Epoch itself, and one nanosecond after it.
+        assertEquals(0, DateTimeUtils.microsOfMilli(DateTimeUtils.epochNanosToInstant(0L)));
+        assertEquals(0, DateTimeUtils.microsOfMilli(DateTimeUtils.epochNanosToInstant(1L)));
+
+        // Outside the range representable as epoch nanoseconds in a long, as in testNanosOfMilli().
+        final Instant early = LocalDateTime.parse("1600-06-15T12:30:00.123456789").toInstant(ZoneOffset.UTC);
+        assertEquals(457, DateTimeUtils.microsOfMilli(early));
+        assertEquals(457, DateTimeUtils.microsOfMilli(early.atZone(TZ_JP)));
+
+        final Instant late = LocalDateTime.parse("2300-06-15T12:30:00.123456789").toInstant(ZoneOffset.UTC);
+        assertEquals(457, DateTimeUtils.microsOfMilli(late));
+        assertEquals(457, DateTimeUtils.microsOfMilli(late.atZone(TZ_JP)));
     }
 
     @Test

@@ -33,7 +33,8 @@ public abstract class QueryPerformanceRecorderState {
 
     static final QueryPerformanceRecorder DUMMY_RECORDER = new DummyQueryPerformanceRecorder();
     static final AtomicLong QUERIES_PROCESSED = new AtomicLong(0);
-    static final ThreadLocal<QueryPerformanceRecorder> THE_LOCAL = ThreadLocal.withInitial(() -> DUMMY_RECORDER);
+    private static final ThreadLocal<QueryPerformanceRecorder> THE_LOCAL =
+            ThreadLocal.withInitial(() -> DUMMY_RECORDER);
 
     private static final String[] PACKAGE_FILTERS;
     private static final ThreadLocal<String> CACHED_CALLSITE = new ThreadLocal<>();
@@ -74,6 +75,13 @@ public abstract class QueryPerformanceRecorderState {
 
     public static QueryPerformanceRecorder getInstance() {
         return THE_LOCAL.get();
+    }
+
+    /**
+     * Install {@code recorder} as the current thread's recorder.
+     */
+    static void setInstance(@NotNull final QueryPerformanceRecorder recorder) {
+        THE_LOCAL.set(recorder);
     }
 
     static void resetInstance() {

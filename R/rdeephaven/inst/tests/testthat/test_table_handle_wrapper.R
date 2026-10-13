@@ -186,6 +186,32 @@ test_that("as.data.frame returns the correct data frame", {
   data$client$close()
 })
 
+test_that("conversions of an empty table keep its columns", {
+  data <- setup()
+
+  empty_th <- data$th1$where("int_col < 0")
+  expect_equal(empty_th$nrow(), 0)
+
+  rbr <- as_record_batch_reader(empty_th)
+  expect_equal(rbr$schema$names, names(data$df1))
+  expect_equal(rbr$read_table()$num_rows, 0)
+
+  arrow_tbl <- as_arrow_table(empty_th)
+  expect_equal(arrow_tbl$num_rows, 0)
+  expect_equal(
+    lapply(arrow_tbl$schema$fields, function(field) field$type$ToString()),
+    lapply(as_arrow_table(data$th1)$schema$fields, function(field) field$type$ToString())
+  )
+
+  expect_equal(as_tibble(empty_th), as_tibble(data$df1)[0, ])
+
+  data_frame <- as.data.frame(empty_th)
+  expect_equal(nrow(data_frame), 0)
+  expect_equal(lapply(data_frame, class), lapply(data$df1, class))
+
+  data$client$close()
+})
+
 ##### TESTING BAD INPUTS #####
 
 test_that("bind_to_variable fails nicely on bad inputs", {

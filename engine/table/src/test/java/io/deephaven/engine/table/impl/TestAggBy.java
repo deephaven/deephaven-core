@@ -1587,6 +1587,133 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertTableEquals(newTable(stringCol("Key", "G"), intCol("Unique", unique), longCol("Count", count)), result);
     }
 
+    /**
+     * BigDecimal values that compare equal without being equals; the sorted aggregations hold one entry for each class
+     * of compare-equal values, which keeps the first value that entered the class.
+     */
+    private static final BigDecimal ONE_SCALE_ONE = new BigDecimal("1.0");
+    private static final BigDecimal ONE_SCALE_TWO = new BigDecimal("1.00");
+
+    private static void removeRowsInCycle(final QueryTable source, final RowSet rows) {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(source, rows);
+            source.notifyListeners(i(), rows, i());
+        });
+    }
+
+    private static Object singleValue(final Table table, final String column) {
+        assertEquals(1, table.size());
+        return table.getColumnSource(column).get(table.getRowSet().firstRowKey());
+    }
+
+    private static List<Object> vectorValues(final Object vector) {
+        return Arrays.asList(((ObjectVector<?>) vector).toArray());
+    }
+
+    @Test
+    public void testSortedAggregationsRemoveCompareEqualValues() {
+        final QueryTable source = testRefreshingTable(i(0, 1, 2).toTracking(),
+                col("V", ONE_SCALE_ONE, ONE_SCALE_TWO, ONE_SCALE_TWO));
+        final Table result = source.aggBy(List.of(AggMax("Max=V"), AggMin("Min=V"), AggMed("Med=V"),
+                AggCountDistinct("Count=V"), AggDistinct("Distinct=V"), AggUnique("Unique=V")));
+        assertEquals(1L, singleValue(result, "Count"));
+        assertEquals(List.of(ONE_SCALE_ONE), vectorValues(singleValue(result, "Distinct")));
+
+        removeRowsInCycle(source, i(1, 2));
+        assertEquals(ONE_SCALE_ONE, singleValue(result, "Max"));
+        assertEquals(ONE_SCALE_ONE, singleValue(result, "Min"));
+        assertEquals(ONE_SCALE_ONE, singleValue(result, "Med"));
+        assertEquals(1L, singleValue(result, "Count"));
+        assertEquals(List.of(ONE_SCALE_ONE), vectorValues(singleValue(result, "Distinct")));
+        assertEquals(ONE_SCALE_ONE, singleValue(result, "Unique"));
+    }
+
+    @Test
+    public void testSortedAggregationsModifyCompareEqualValues() {
+        final QueryTable source = testRefreshingTable(i(0, 1).toTracking(), col("V", ONE_SCALE_ONE, ONE_SCALE_ONE));
+        final Table result = source.aggBy(List.of(AggMax("Max=V"), AggMed("Med=V"), AggCountDistinct("Count=V"),
+                AggDistinct("Distinct=V"), AggUnique("Unique=V")));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(1), col("V", ONE_SCALE_TWO));
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(1), RowSetShiftData.EMPTY,
+                    source.newModifiedColumnSet("V")));
+        });
+        assertEquals(1L, singleValue(result, "Count"));
+        assertEquals(List.of(ONE_SCALE_ONE), vectorValues(singleValue(result, "Distinct")));
+
+        removeRowsInCycle(source, i(0));
+        assertEquals(1L, singleValue(result, "Count"));
+        assertEquals(1, vectorValues(singleValue(result, "Distinct")).size());
+        assertEquals(0, ONE_SCALE_ONE.compareTo((BigDecimal) singleValue(result, "Max")));
+        assertEquals(0, ONE_SCALE_ONE.compareTo((BigDecimal) singleValue(result, "Med")));
+        assertEquals(0, ONE_SCALE_ONE.compareTo((BigDecimal) singleValue(result, "Unique")));
+
+        removeRowsInCycle(source, i(1));
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void testSortedAggregationsBooleanValues() {
+        final QueryTable source = testRefreshingTable(i(0, 1, 2).toTracking(), col("V", true, false, true));
+        final Table result = source.aggBy(List.of(AggMax("Max=V"), AggMin("Min=V"), AggMed("Med=V"),
+                AggCountDistinct("Count=V"), AggDistinct("Distinct=V"), AggUnique("Unique=V")));
+        assertEquals(true, singleValue(result, "Max"));
+        assertEquals(false, singleValue(result, "Min"));
+        assertEquals(true, singleValue(result, "Med"));
+        assertEquals(2L, singleValue(result, "Count"));
+        assertEquals(List.of(false, true), vectorValues(singleValue(result, "Distinct")));
+
+        removeRowsInCycle(source, i(1));
+        assertEquals(true, singleValue(result, "Max"));
+        assertEquals(true, singleValue(result, "Min"));
+        assertEquals(true, singleValue(result, "Med"));
+        assertEquals(1L, singleValue(result, "Count"));
+        assertEquals(List.of(true), vectorValues(singleValue(result, "Distinct")));
+        assertEquals(true, singleValue(result, "Unique"));
+    }
+
+    @Test
+    public void testStaticDistinctCompareEqualValuesIndependentOfOrder() {
+        for (final Table source : List.of(
+                newTable(col("V", ONE_SCALE_ONE, ONE_SCALE_TWO, ONE_SCALE_ONE)),
+                newTable(col("V", ONE_SCALE_ONE, ONE_SCALE_ONE, ONE_SCALE_TWO)))) {
+            final Table result = source.aggBy(List.of(AggCountDistinct("Count=V"), AggDistinct("Distinct=V"),
+                    AggUnique("Unique=V"), AggMax("Max=V"), AggMed("Med=V")));
+            assertEquals(1L, singleValue(result, "Count"));
+            assertEquals(List.of(ONE_SCALE_ONE), vectorValues(singleValue(result, "Distinct")));
+            assertEquals(ONE_SCALE_ONE, singleValue(result, "Unique"));
+            assertEquals(0, ONE_SCALE_ONE.compareTo((BigDecimal) singleValue(result, "Max")));
+            assertEquals(0, ONE_SCALE_ONE.compareTo((BigDecimal) singleValue(result, "Med")));
+        }
+    }
+
+    @Test
+    public void testRollupDistinctRemoveCompareEqualValues() {
+        final QueryTable source = testRefreshingTable(i(0, 1, 2, 3).toTracking(), stringCol("K", "A", "A", "B", "B"),
+                col("V", ONE_SCALE_ONE, ONE_SCALE_TWO, ONE_SCALE_TWO, ONE_SCALE_ONE));
+        final RollupTable rollup = source.rollup(List.of(AggCountDistinct("Count=V"), AggDistinct("Distinct=V"),
+                AggUnique("Unique=V")), false, "K");
+        final Table root = rollup.getRoot();
+        assertEquals(1L, singleValue(root, "Count"));
+        assertEquals(1, vectorValues(singleValue(root, "Distinct")).size());
+
+        removeRowsInCycle(source, i(1, 2));
+        assertEquals(1L, singleValue(root, "Count"));
+        assertEquals(1, vectorValues(singleValue(root, "Distinct")).size());
+        assertEquals(0, ONE_SCALE_ONE.compareTo((BigDecimal) singleValue(root, "Unique")));
+
+        removeRowsInCycle(source, i(0));
+        assertEquals(1L, singleValue(root, "Count"));
+        assertEquals(1, vectorValues(singleValue(root, "Distinct")).size());
+        assertEquals(0, ONE_SCALE_ONE.compareTo((BigDecimal) singleValue(root, "Unique")));
+
+        removeRowsInCycle(source, i(3));
+        assertEquals(0, root.size());
+    }
+
     // @Test
     @Ignore
     @Test

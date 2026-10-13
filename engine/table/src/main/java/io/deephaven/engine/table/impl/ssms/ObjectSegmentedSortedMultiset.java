@@ -12,7 +12,6 @@ import java.lang.reflect.Array;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 
 import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -37,7 +36,7 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 
-public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, ObjectVector<Object> {
+public final class ObjectSegmentedSortedMultiset extends AbstractObjectSegmentedSortedMultiset {
     private final int leafSize;
     private int leafCount;
     private int size;
@@ -77,7 +76,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     private final Class componentType;
 
     /**
-     * Create a ObjectSegmentedSortedArray with the given leafSize.
+     * Create an ObjectSegmentedSortedMultiset with the given leafSize.
      *
      * @param leafSize the maximumSize for any leaf
      * @param componentType the type of the underlying Object
@@ -141,7 +140,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             return true;
         }
         if (isSingleton()) {
-            if (ObjectComparisons.eq(value, singletonValue)) {
+            if (eq(value, singletonValue)) {
                 singletonCount += count;
                 totalSize += count;
                 validate();
@@ -151,21 +150,21 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         final boolean added;
-        final Object max = getMaxObject();
-        if (ObjectComparisons.gt(value, max)) {
+        final int maxComparison = ObjectComparisons.compare(value, getMaxObject());
+        if (maxComparison > 0) {
             maybeAccumulateAddition(value);
             appendMaximum(value, count);
             added = true;
-        } else if (ObjectComparisons.eq(value, max)) {
+        } else if (maxComparison == 0) {
             addMaxCount(count);
             added = false;
         } else {
-            final Object min = getMinObject();
-            if (ObjectComparisons.lt(value, min)) {
+            final int minComparison = ObjectComparisons.compare(value, getMinObject());
+            if (minComparison < 0) {
                 maybeAccumulateAddition(value);
                 prependMinimum(value, count);
                 added = true;
-            } else if (ObjectComparisons.eq(value, min)) {
+            } else if (minComparison == 0) {
                 addMinCount(count);
                 added = false;
             } else {
@@ -184,7 +183,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     private boolean insertInterior(Object value, long count) {
         if (leafCount == 1) {
             final int ip = upperBound(directoryValues, 0, size, value);
-            if (ObjectComparisons.eq(directoryValues[ip], value)) {
+            if (eq(directoryValues[ip], value)) {
                 directoryCount[ip] += count;
                 totalSize += count;
                 return false;
@@ -212,7 +211,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         final long[] leafCount = leafCounts[leaf];
         final int leafSz = leafSizes[leaf];
         final int ip = upperBound(leafValue, 0, leafSz, value);
-        if (ip < leafSz && ObjectComparisons.eq(leafValue[ip], value)) {
+        if (ip < leafSz && eq(leafValue[ip], value)) {
             leafCount[ip] += count;
             totalSize += count;
             return false;
@@ -292,7 +291,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             } else {
                 rlpos = upperBound(leafValues, rlpos, leafSize, nextValue);
                 if (rlpos < leafSize) {
-                    if (ObjectComparisons.eq(leafValues[rlpos], nextValue)) {
+                    if (eq(leafValues[rlpos], nextValue)) {
                         totalSize += counts.get(ripos);
                         leafCounts[rlpos] += counts.get(ripos);
                         ripos++;
@@ -649,7 +648,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if (isSingleton()) {
-            if (length == 1 && ObjectComparisons.eq(valuesToInsert.get(offset), singletonValue)) {
+            if (length == 1 && eq(valuesToInsert.get(offset), singletonValue)) {
                 // the only value being inserted is the one we already hold; just bump its count
                 singletonCount += counts.get(offset);
                 totalSize += counts.get(offset);
@@ -1107,6 +1106,16 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         return lo;
     }
 
+    /**
+     * Test two values for equality consistent with the ordering of this set; the set holds one entry for each class of
+     * equal values.
+     */
+    private static boolean eq(Object lhs, Object rhs) {
+        // region equality function
+        return ObjectComparisons.compareEquals(lhs, rhs);
+        // endregion equality function
+    }
+
     // endregion
 
     // region Removal
@@ -1149,13 +1158,13 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         Assert.gtZero(count, "count");
         validate();
         if (isSingleton()) {
-            Assert.assertion(ObjectComparisons.eq(value, singletonValue),
-                    "ObjectComparisons.eq(value, singletonValue)");
+            Assert.assertion(eq(value, singletonValue),
+                    "eq(value, singletonValue)");
             Assert.leq(count, "count", singletonCount, "singletonCount");
             singletonCount -= count;
             totalSize -= count;
             if (singletonCount == 0) {
-                maybeAccumulateRemoval(value);
+                maybeAccumulateRemoval(singletonValue);
                 clear();
                 validate();
                 return true;
@@ -1165,8 +1174,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
         if (leafCount == 1) {
             final int pos = upperBound(directoryValues, 0, size, value);
-            Assert.assertion(pos < size && ObjectComparisons.eq(directoryValues[pos], value),
-                    "pos < size && ObjectComparisons.eq(directoryValues[pos], value)");
+            Assert.assertion(pos < size && eq(directoryValues[pos], value),
+                    "pos < size && eq(directoryValues[pos], value)");
             Assert.leq(count, "count", directoryCount[pos], "directoryCount[pos]");
             directoryCount[pos] -= count;
             totalSize -= count;
@@ -1174,7 +1183,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 validate();
                 return false;
             }
-            maybeAccumulateRemoval(value);
+            maybeAccumulateRemoval(directoryValues[pos]);
             System.arraycopy(directoryValues, pos + 1, directoryValues, pos, size - pos - 1);
             System.arraycopy(directoryCount, pos + 1, directoryCount, pos, size - pos - 1);
             size--;
@@ -1190,8 +1199,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         final long[] leafCount = leafCounts[leaf];
         final int leafSz = leafSizes[leaf];
         final int pos = upperBound(leafValue, 0, leafSz, value);
-        Assert.assertion(pos < leafSz && ObjectComparisons.eq(leafValue[pos], value),
-                "pos < leafSz && ObjectComparisons.eq(leafValue[pos], value)");
+        Assert.assertion(pos < leafSz && eq(leafValue[pos], value),
+                "pos < leafSz && eq(leafValue[pos], value)");
         Assert.leq(count, "count", leafCount[pos], "leafCount[pos]");
         leafCount[pos] -= count;
         totalSize -= count;
@@ -1199,7 +1208,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             validate();
             return false;
         }
-        maybeAccumulateRemoval(value);
+        maybeAccumulateRemoval(leafValue[pos]);
         System.arraycopy(leafValue, pos + 1, leafValue, pos, leafSz - pos - 1);
         System.arraycopy(leafCount, pos + 1, leafCount, pos, leafSz - pos - 1);
         leafSizes[leaf] = leafSz - 1;
@@ -1255,8 +1264,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             // by contract we only remove values that are present, so a singleton can only be asked to remove its one
             // value
             Assert.eq(length, "length", 1);
-            Assert.assertion(ObjectComparisons.eq(valuesToRemove.get(offset), singletonValue),
-                    "ObjectComparisons.eq(valuesToRemove.get(offset), singletonValue)");
+            Assert.assertion(eq(valuesToRemove.get(offset), singletonValue),
+                    "eq(valuesToRemove.get(offset), singletonValue)");
             singletonCount -= counts.get(offset);
             totalSize -= counts.get(offset);
             Assert.geqZero(singletonCount, "singletonCount");
@@ -1503,11 +1512,12 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             if (rlpos == sz.get()) {
                 break;
             }
+            Assert.assertion(eq(leafValues[rlpos], removeValue), "eq(leafValues[rlpos], removeValue)");
             leafCounts[rlpos] -= counts.get(ripos);
             totalSize -= counts.get(ripos);
             Assert.geqZero(leafCounts[rlpos], "leafCounts[rlpos]");
             if (leafCounts[rlpos] == 0) {
-                maybeAccumulateRemoval(removeValue);
+                maybeAccumulateRemoval(leafValues[rlpos]);
                 // we need to do some compaction at the end of this iteration
                 if (cl == -1) {
                     removeContext.compactionLocations[cl = 0] = rlpos;
@@ -2027,7 +2037,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         if (isSingleton()) {
             // we hold a single value; it can only leave us, never grow our cardinality. Transfer count copies of it to
             // the back of the destination (merging if it already holds that value as its maximum) and shed them.
-            if (destination.size > 0 && ObjectComparisons.eq(singletonValue, destination.getMaxObject())) {
+            if (destination.size > 0 && eq(singletonValue, destination.getMaxObject())) {
                 destination.addMaxCount(count);
             } else {
                 destination.appendMaximum(singletonValue, count);
@@ -2043,7 +2053,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             return;
         }
 
-        if (destination.size > 0 && ObjectComparisons.eq(getMinObject(), destination.getMaxObject())) {
+        if (destination.size > 0 && eq(getMinObject(), destination.getMaxObject())) {
             final long minCount = getMinCount();
             final long toAdd;
             if (minCount > count) {
@@ -2486,7 +2496,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         if (isSingleton()) {
             // we hold a single value; it can only leave us, never grow our cardinality. Transfer count copies of it to
             // the front of the destination (merging if it already holds that value as its minimum) and shed them.
-            if (destination.size > 0 && ObjectComparisons.eq(singletonValue, destination.getMinObject())) {
+            if (destination.size > 0 && eq(singletonValue, destination.getMinObject())) {
                 destination.addMinCount(count);
             } else {
                 destination.prependMinimum(singletonValue, count);
@@ -2502,7 +2512,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             return;
         }
 
-        if (destination.size > 0 && ObjectComparisons.eq(getMaxObject(), destination.getMinObject())) {
+        if (destination.size > 0 && eq(getMaxObject(), destination.getMinObject())) {
             final long maxCount = getMaxCount();
             final long toAdd;
             if (maxCount > count) {

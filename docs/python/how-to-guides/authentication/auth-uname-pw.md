@@ -1,6 +1,5 @@
 ---
 title: Configure username/password authentication
-sidebar_label: Username/password
 ---
 
 This guide will show you how to configure username/password authentication for Deephaven.

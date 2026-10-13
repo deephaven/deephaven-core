@@ -39,7 +39,8 @@ public class InstantSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
 
     @Override
     public ObjectVector<Instant> get(long rowKey) {
-        return new ValueWrapper(underlying.getCurrentSsm(rowKey));
+        final LongSegmentedSortedMultiset ssm = underlying.getUnderlyingSource().get(rowKey);
+        return ssm == null ? null : new ValueWrapper(ssm);
     }
 
     @Override

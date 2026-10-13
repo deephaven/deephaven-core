@@ -1,6 +1,5 @@
 ---
 title: Query table configuration
-sidebar_label: Query table configuration
 ---
 
 This guide discusses how to control various `QueryTable` features that affect your Deephaven tables' latency and throughput.

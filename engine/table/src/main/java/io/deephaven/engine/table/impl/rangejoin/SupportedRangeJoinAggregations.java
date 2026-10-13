@@ -43,6 +43,7 @@ public class SupportedRangeJoinAggregations implements Aggregation.Visitor {
     private boolean hasUnsupportedAggs;
 
     private boolean isSupported(@NotNull final Aggregation aggregation) {
+        hasUnsupportedAggs = false;
         aggregation.walk(this);
         return !hasUnsupportedAggs;
     }

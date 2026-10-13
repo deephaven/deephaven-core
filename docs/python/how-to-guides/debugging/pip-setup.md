@@ -1,7 +1,6 @@
 ---
 id: pip-setup
 title: Debug pip-installed Deephaven with PyCharm
-sidebar_label: Pip
 ---
 
 This guide shows you how to set up a debugger for [pip-installed Deephaven](../../getting-started/pip-install.md).

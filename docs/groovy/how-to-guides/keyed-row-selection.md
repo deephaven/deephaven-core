@@ -1,6 +1,5 @@
 ---
 title: Keyed row selection
-sidebar_label: Keyed row selection
 ---
 
 This guide shows you how to control what happens when a user selects a row in the Deephaven UI: whether the selection follows just that one row, or every row that shares its identity.

@@ -12,6 +12,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.*;
@@ -491,6 +492,16 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return dataIndexColumns;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * An index is trusted when this location's own file declares it and the index file exists; nothing else about the
+     * index is checked against the file it indexes, and {@link #pushdownDataIndex} treats every row the index does not
+     * place under a matching key as not matching. Every index a file declares must therefore have been written for that
+     * file: a writer that replaces the file, or an index it declares, without the other makes filters silently drop
+     * rows. An index file that no current file declares, such as one left behind when a file is rewritten without
+     * indexes, is ignored. Deephaven's own writers commit a file and the indexes it declares together.
+     */
     @Override
     public boolean hasDataIndex(@NotNull final String... columns) {
         initialize();
@@ -547,12 +558,23 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return null;
         }
         final RowSet locationRowSet = getRowSet();
-        final Table adjustedTable = locationRowSet.isFlat() ? table
-                : table.updateView(List.of(new FunctionalColumn<>(
-                        INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
-                        INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
-                        (final RowSet indexRowSet) -> locationRowSet.subSetForPositions(indexRowSet))));
-        return StandaloneDataIndex.from(adjustedTable, columns, INDEX_ROW_SET_COLUMN_NAME);
+        if (locationRowSet.isFlat()) {
+            // Index row positions are row keys, so the index table needs no adjustment.
+            locationRowSet.close();
+            return StandaloneDataIndex.from(table, columns, INDEX_ROW_SET_COLUMN_NAME);
+        }
+        // The adjusted table maps positions to row keys lazily, so it keeps the location's row set for its lifetime.
+        // If the index cannot be built, nothing owns the row set, so close it here.
+        try {
+            final Table adjustedTable = table.updateView(List.of(new FunctionalColumn<>(
+                    INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
+                    INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
+                    (final RowSet indexRowSet) -> locationRowSet.subSetForPositions(indexRowSet))));
+            return StandaloneDataIndex.from(adjustedTable, columns, INDEX_ROW_SET_COLUMN_NAME);
+        } catch (final RuntimeException | Error e) {
+            SafeCloseable.closeAllDuringFailure(e, locationRowSet);
+            throw e;
+        }
     }
 
     private static class IndexFileMetadata {
@@ -674,8 +696,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
                             List.of(GROUPING_BEGIN_POS_COLUMN_NAME, GROUPING_END_POS_COLUMN_NAME),
                             INDEX_ROW_SET_COLUMN_NAME,
                             RowSet.class,
-                            (final long rowKey, final ColumnSource<?>[] sources) -> RowSetFactory
-                                    .fromRange(sources[0].getLong(rowKey), sources[1].getLong(rowKey) - 1))));
+                            (final long rowKey, final ColumnSource<?>[] sources) -> {
+                                final long beginPos = sources[0].getLong(rowKey);
+                                final long endPos = sources[1].getLong(rowKey);
+                                // The end position is exclusive, so an empty group's begin and end are equal.
+                                return endPos <= beginPos
+                                        ? RowSetFactory.empty()
+                                        : RowSetFactory.fromRange(beginPos, endPos - 1);
+                            })));
         } else {
             throw new TableDataException(String.format(
                     "Index table %s for table %s was not in the expected format. Expected columns [%s] but encountered [%s]",
@@ -1259,7 +1287,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 // row group.
                 final long subRegionFirstKey = getSubRegionFirstKey(rgIdx);
                 final int CHUNK_SIZE = 4096;
-                try (final RowSet shiftedRowSet = rs.asRowSet().shift(-subRegionFirstKey);
+                try (final RowSet rowSet = rs.asRowSet();
+                        final RowSet shiftedRowSet = rowSet.shift(-subRegionFirstKey);
                         final RowSequence.Iterator it = shiftedRowSet.getRowSequenceIterator();
                         final ChunkSource.GetContext getContext = valueStore.makeGetContext(CHUNK_SIZE);
                         final WritableLongChunk<OrderedRowKeys> results =
@@ -1291,7 +1320,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * Apply the filter to the data index table and return the result.
+     * Apply the filter to the data index table and return the result. When the index is applied, the result has no
+     * maybe matches: rows the index does not place under a matching key are treated as not matching, so the index must
+     * be complete and current for the rows it covers (see {@link #hasDataIndex}). When the selection is too small for
+     * the index, or filtering the index fails for a reason other than cancellation, the result is a copy of
+     * {@code result}.
      */
     @NotNull
     public static PushdownResult pushdownDataIndex(
@@ -1330,10 +1363,14 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     });
                 }
             } catch (final Exception e) {
-                // TODO: Exception occurs here if we have a data type mismatch between the index and the filter.
-                // When https://deephaven.atlassian.net/browse/DH-19443 is implemented, we should be able
-                // to remove the catch block and let any exception propagate. For now, just swallow the exception
-                // and return a copy of the original input, skipping pushdown filtering.
+                // A cancelled query must stop, not carry on filtering without the index.
+                if (CancellationException.isCancellation(e)) {
+                    throw e;
+                }
+                // Filtering the index fails when the read instructions changed the indexed column's type, since the
+                // index is read with the types it was written with (DH-19443). Leave every row to the filter itself.
+                log.warn().append("Skipping data index pushdown for filter ").append(String.valueOf(filter))
+                        .append(": ").append(String.valueOf(e)).endl();
                 return result.copy();
             }
         }

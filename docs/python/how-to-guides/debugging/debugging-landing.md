@@ -1,6 +1,5 @@
 ---
 id: debugging-landing
-sidebar_label: Debugging Python code
 title: Debug Python code in Deephaven
 ---
 

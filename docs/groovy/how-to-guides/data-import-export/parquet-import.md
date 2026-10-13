@@ -1,6 +1,5 @@
 ---
 title: Read Parquet files into Deephaven tables
-sidebar_label: Read Parquet files
 ---
 
 Deephaven integrates seamlessly with Parquet via the [Parquet Groovy module](/core/javadoc/io/deephaven/parquet/table/ParquetTools.html), making it easy to read Parquet files directly into Deephaven tables. This document covers reading data into tables from single Parquet files, flat Parquet directories, and partitioned key-value Parquet directories. This document also covers reading Parquet files from [S3](https://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html) into Deephaven tables, a common use case.
@@ -30,7 +29,7 @@ Deephaven provides some tooling around reading from S3 with the [`io.deephaven.e
 Use [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md) to read a single Parquet file from S3, where the `source` argument is provided as the endpoint to the Parquet file on the S3 instance. Supply an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class to the `ParquetInstructions.Builder` to specify the details of the connection to the S3 instance. Learn more
 about this class in the [Parquet instructions document](./parquet-instructions.md#s3instructions-methods).
 
-```groovy test-set=2 docker-config=minio
+```groovy test-set=2 docker-config=rustfs
 import io.deephaven.parquet.table.ParquetTools
 import io.deephaven.parquet.table.ParquetInstructions
 import io.deephaven.extensions.s3.S3Instructions
@@ -45,7 +44,7 @@ grades = ParquetTools.readTable(
     ParquetInstructions.builder().setSpecialInstructions(
         S3Instructions.builder()
             .regionName("us-east-1")
-            .endpointOverride("http://minio.example.com:9000")
+            .endpointOverride("http://rustfs.example.com:9000")
             .credentials(credentials)
             .build()
     ).build()
@@ -95,7 +94,7 @@ gradesMetadata = ParquetTools.readTable(
 
 Use [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md) to read a key-value partitioned Parquet directory from S3. Supply the `setSpecialInstructions` method with an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class, and supply the `setFileLayout` method with [`ParquetFileLayout.KV_PARTITIONED`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#KV_PARTITIONED) for maximum performance.
 
-```groovy test-set=4 order=gradesInferred,gradesProvided docker-config=minio
+```groovy test-set=4 order=gradesInferred,gradesProvided docker-config=rustfs
 import io.deephaven.parquet.table.ParquetTools
 import io.deephaven.parquet.table.ParquetInstructions
 import io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout
@@ -110,7 +109,7 @@ gradesInferred = ParquetTools.readTable(
     ParquetInstructions.builder().setSpecialInstructions(
         S3Instructions.builder()
             .regionName("us-east-1")
-            .endpointOverride("http://minio.example.com:9000")
+            .endpointOverride("http://rustfs.example.com:9000")
             .credentials(credentials)
             .build()
     ).build()
@@ -124,7 +123,7 @@ gradesProvided = ParquetTools.readTable(
         .setSpecialInstructions(
             S3Instructions.builder()
                 .regionName("us-east-1")
-                .endpointOverride("http://minio.example.com:9000")
+                .endpointOverride("http://rustfs.example.com:9000")
                 .credentials(credentials)
                 .build()
         )
@@ -134,7 +133,7 @@ gradesProvided = ParquetTools.readTable(
 
 S3-hosted key-value partitioned Parquet datasets may also have `_common_metadata` and `_metadata` files. Utilize them by setting the `setFileLayout` argument to [`ParquetFileLayout.valueOf("METADATA_PARTITIONED")`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html).
 
-```groovy test-set=4 docker-config=minio
+```groovy test-set=4 docker-config=rustfs
 credentials = Credentials.basic("example_username", "example_password")
 
 // use metadata files for maximum performance
@@ -145,7 +144,7 @@ gradesMetadata = ParquetTools.readTable(
         .setSpecialInstructions(
             S3Instructions.builder()
                 .regionName("us-east-1")
-                .endpointOverride("http://minio.example.com:9000")
+                .endpointOverride("http://rustfs.example.com:9000")
                 .credentials(credentials)
                 .build()
         )
@@ -180,7 +179,7 @@ gradesProvided = ParquetTools.readTable(
 
 Use [`ParquetTools.readTable`](../../reference/data-import-export/Parquet/readTable.md) to read a flat partitioned Parquet directory from S3. Supply the `special_instructions` argument with an instance of the [`S3Instructions`](/core/javadoc/io/deephaven/extensions/s3/S3Instructions.html) class, and set the `file_layout` argument to [`ParquetFileLayout.FLAT_PARTITIONED`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#FLAT_PARTITIONED) for maximum performance.
 
-```groovy test-set=6 order=gradesInferred,gradesProvided docker-config=minio
+```groovy test-set=6 order=gradesInferred,gradesProvided docker-config=rustfs
 import io.deephaven.parquet.table.ParquetTools
 import io.deephaven.parquet.table.ParquetInstructions
 import io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout
@@ -195,7 +194,7 @@ gradesInferred = ParquetTools.readTable(
     ParquetInstructions.builder().setSpecialInstructions(
         S3Instructions.builder()
             .regionName("us-east-1")
-            .endpointOverride("http://minio.example.com:9000")
+            .endpointOverride("http://rustfs.example.com:9000")
             .credentials(credentials)
             .build()
     ).build()
@@ -209,7 +208,7 @@ gradesProvided = ParquetTools.readTable(
         .setSpecialInstructions(
             S3Instructions.builder()
                 .regionName("us-east-1")
-                .endpointOverride("http://minio.example.com:9000")
+                .endpointOverride("http://rustfs.example.com:9000")
                 .credentials(credentials)
                 .build()
         )
@@ -219,7 +218,7 @@ gradesProvided = ParquetTools.readTable(
 
 If the S3-hosted flat partitioned Parquet dataset has `_common_metadata` and `_metadata` files, utilize them by supplying the `setFileLayout` method with [`ParquetFileLayout.METADATA_PARTITIONED`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.ParquetFileLayout.html#METADATA_PARTITIONED).
 
-```groovy test-set=6 docker-config=minio
+```groovy test-set=6 docker-config=rustfs
 credentials = Credentials.basic("example_username", "example_password")
 
 // use metadata files for maximum performance
@@ -230,7 +229,7 @@ gradesMetadata = ParquetTools.readTable(
         .setSpecialInstructions(
             S3Instructions.builder()
                 .regionName("us-east-1")
-                .endpointOverride("http://minio.example.com:9000")
+                .endpointOverride("http://rustfs.example.com:9000")
                 .credentials(credentials)
                 .build()
         )

@@ -1,6 +1,5 @@
 ---
 title: Capture table history with snapshots
-sidebar_label: Snapshot
 ---
 
 This guide will show you how to capture the history of ticking tables.

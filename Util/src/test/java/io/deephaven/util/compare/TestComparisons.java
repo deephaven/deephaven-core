@@ -587,4 +587,18 @@ public class TestComparisons {
         assertTrue(DoubleComparisons.gt(y, x));
         assertTrue(DoubleComparisons.geq(y, x));
     }
+
+    @Test
+    public void testObjectCompareEquals() {
+        final java.math.BigDecimal one = new java.math.BigDecimal("1.0");
+        final java.math.BigDecimal oneScaled = new java.math.BigDecimal("1.00");
+        assertTrue(ObjectComparisons.compareEquals(one, oneScaled));
+        assertFalse(ObjectComparisons.eq(one, oneScaled));
+        assertFalse(ObjectComparisons.compareEquals(one, new java.math.BigDecimal("1.01")));
+        assertTrue(ObjectComparisons.compareEquals(null, null));
+        assertFalse(ObjectComparisons.compareEquals(null, one));
+        assertFalse(ObjectComparisons.compareEquals(one, null));
+        assertTrue(ObjectComparisons.compareEquals("a", new String("a")));
+        assertFalse(ObjectComparisons.compareEquals("a", "b"));
+    }
 }

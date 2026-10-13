@@ -113,10 +113,7 @@ public class Formula extends io.deephaven.engine.table.impl.select.Formula {
 
     @Override
     public long getPrevLong(final long k) {
-        final long findResult;
-        try (final RowSet prev = __rowSet.copyPrev()) {
-            findResult = prev.find(k);
-        }
+        final long findResult = __rowSet.findPrev(k);
         final int i = __intSize(findResult);
         final long ii = findResult;
         final long __temp0 = II.getPrevLong(k);
@@ -163,8 +160,8 @@ public class Formula extends io.deephaven.engine.table.impl.select.Formula {
             final WritableChunk<? super Values> __destination,
             final RowSequence __rowSequence, LongChunk<? extends Values> __chunk__col__II, IntChunk<? extends Values> __chunk__col__I) {
         final WritableLongChunk<? super Values> __typedDestination = __destination.asWritableLongChunk();
-        try (final RowSet prev = __usePrev ? __rowSet.copyPrev() : null;
-                final RowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asRowSet())) {
+        try (final RowSet __rowSequenceRowSet = __rowSequence.asRowSet();
+                final RowSet inverted = (__usePrev ? __rowSet.prev() : __rowSet).invert(__rowSequenceRowSet)) {
             __context.__iChunk.setSize(0);
             inverted.forAllRowKeys(l -> __context.__iChunk.add(__intSize(l)));
             inverted.fillRowKeyChunk(__context.__iiChunk);

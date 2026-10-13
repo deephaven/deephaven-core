@@ -548,7 +548,8 @@ public:
         arrow::TableBatchReader table_batch_reader(*arrow_table);
         arrow::Result<arrow::RecordBatchVector> record_batches = table_batch_reader.ToRecordBatches();
 
-        std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(std::move(*record_batches)).ValueOrDie();
+        // An empty table yields no record batches, so the schema cannot be inferred from them.
+        std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(std::move(*record_batches), arrow_table->schema()).ValueOrDie();
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
         deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(arrow::ExportRecordBatchReader(record_batch_reader, stream_ptr)));
 
