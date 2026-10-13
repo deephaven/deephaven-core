@@ -113,6 +113,17 @@ public class DoPutDictionaryReleaseTest {
     }
 
     @Test
+    public void testSessionExpirationReleasesDictionaries() throws IOException {
+        final InputStream lateDictionaryMessage = flightData(dictionaryBatchMessage("date"));
+        runDoPutWithDictionary((doPut, observer) -> {
+            // expiration closes the call, after which gRPC calls none of the observer's terminal methods
+            session.onExpired();
+            // a message already on its way must not decode dictionaries that nothing would release
+            doPut.onNext(lateDictionaryMessage);
+        });
+    }
+
+    @Test
     public void testAbandonedConversionReleasesDictionaries() throws IOException {
         final byte[] schemaMessage = schemaMessage();
         final byte[] dictionaryMessage = dictionaryBatchMessage("apple", "banana", "cherry");

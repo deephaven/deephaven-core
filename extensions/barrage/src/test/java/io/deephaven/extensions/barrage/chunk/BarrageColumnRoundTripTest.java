@@ -2625,10 +2625,6 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     // ---- Dictionary-encoded helpers ----
 
     /**
-     * Builds a flatbuf Arrow {@link Field} whose value type matches {@code valueType} but carries a
-     * {@link DictionaryEncoding} with the given index bit width and dictionary id.
-     */
-    /**
      * Builds a run-end encoded field with Int32 run ends, whose values child is the standard field for
      * {@code valueType}, dictionary encoded when {@code valuesEncoding} is not null.
      */
@@ -2657,6 +2653,10 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         return SchemaHelper.flatbufSchema(ByteBuffer.wrap(pojoSchema.serializeAsMessage())).fields(0);
     }
 
+    /**
+     * Builds a flatbuf Arrow {@link Field} whose value type matches {@code valueType} but carries a
+     * {@link DictionaryEncoding} with the given index bit width and dictionary id.
+     */
     private static Field buildDictionaryField(
             final Class<?> valueType,
             final int indexBitWidth,

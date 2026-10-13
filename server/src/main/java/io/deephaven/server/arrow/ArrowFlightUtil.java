@@ -152,6 +152,8 @@ public class ArrowFlightUtil {
         private SessionState.ExportBuilder<Table> resultExportBuilder;
         private Flight.FlightDescriptor flightDescriptor;
         private Schema schema;
+        /** Set when the session expires; the stream is abandoned then, and later messages are ignored. */
+        private boolean sessionExpired;
 
         public DoPutObserver(
                 final SessionState session,
@@ -169,9 +171,13 @@ public class ArrowFlightUtil {
             }
         }
 
-        // this is the entry point for client-streams
+        // this is the entry point for client-streams; synchronized against close(), which session expiration calls from
+        // another thread
         @Override
-        public void onNext(final InputStream request) {
+        public synchronized void onNext(final InputStream request) {
+            if (sessionExpired) {
+                return;
+            }
             final MessageInfo mi;
             try {
                 mi = BarrageProtoUtil.parseProtoMessage(request);
@@ -322,6 +328,13 @@ public class ArrowFlightUtil {
         public void close() {
             // close() is intended to be invoked only though session expiration
             GrpcUtil.safelyError(observer, Code.UNAUTHENTICATED, "Session expired");
+            // Once the call is closed, gRPC calls none of onError, onCancel or onCompleted, so release the decoded
+            // dictionaries here. Holding the monitor waits out a message being decoded, and the flag stops a later
+            // message from decoding more.
+            synchronized (this) {
+                sessionExpired = true;
+                releaseDictionaries();
+            }
         }
     }
 
