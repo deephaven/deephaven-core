@@ -300,40 +300,57 @@ public class InstantPushdownHandlerTest {
 
     /**
      * DH-23756: a MILLIS or MICROS statistic before the epoch-nanosecond range -- the common {@code 0001-01-01}
-     * sentinel -- saturates to {@code MIN_LONG}, not to {@code NULL_LONG}. Such a value is not null, so a row group of
-     * nothing else must survive every filter that keeps non-null rows, and an is-null filter may exclude it. Saturating
-     * to the sentinel had it the other way round: the row group looked like nothing but nulls, and an is-not-null
-     * filter silently dropped all of its rows.
+     * sentinel -- has no epoch nanoseconds of its own. Deephaven would order it above {@code NULL_LONG} and below
+     * {@code MIN_LONG}, two adjacent {@code long}s, so a minimum saturates to the one and a maximum to the other. A row
+     * group holding such values must then be kept by every filter they satisfy, even one naming null or the earliest
+     * instant ({@code MIN_LONG}), and still be excluded by one wholly after them.
+     * <p>
+     * Saturating both extremes to {@code NULL_LONG} made the row group look like nothing but nulls, so an is-not-null
+     * filter silently dropped every row; saturating both to {@code MIN_LONG} would do the same to a filter on the
+     * earliest instant.
      */
     @Test
-    public void statisticsBeforeTheNanosRangeAreNotNull() {
+    public void statisticsBeforeTheNanosRangeStraddleNullAndTheEarliestInstant() {
         final long year1Millis = Instant.parse("0001-01-01T00:00:00Z").toEpochMilli();
         final long year1000Millis = Instant.parse("1000-01-01T00:00:00Z").toEpochMilli();
         final long startOf2020Millis = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
+        final Instant earliest = DateTimeUtils.epochNanosToInstant(QueryConstants.MIN_LONG);
+
         final MatchFilter isNull = new MatchFilter(MatchOptions.REGULAR, "t", new Object[] {null});
         final MatchFilter isNotNull = new MatchFilter(MatchOptions.INVERTED, "t", new Object[] {null});
-        // `t > null`: every non-null value.
+        final MatchFilter isNotEarliest = new MatchFilter(MatchOptions.INVERTED, "t", earliest);
+        // `t > null`, `t < earliest` and `t > earliest`, built as RangeFilter builds them.
         final InstantRangeFilter aboveNull =
                 new InstantRangeFilter("t", QueryConstants.NULL_LONG, Long.MAX_VALUE, false, true);
+        final InstantRangeFilter beforeEarliest =
+                new InstantRangeFilter("t", QueryConstants.MIN_LONG, Long.MIN_VALUE, true, false);
+        final InstantRangeFilter afterEarliest =
+                new InstantRangeFilter("t", QueryConstants.MIN_LONG, Long.MAX_VALUE, false, true);
 
         for (final LogicalTypeAnnotation.TimeUnit unit : new LogicalTypeAnnotation.TimeUnit[] {
                 LogicalTypeAnnotation.TimeUnit.MILLIS, LogicalTypeAnnotation.TimeUnit.MICROS}) {
             final long perMilli = unit == LogicalTypeAnnotation.TimeUnit.MILLIS ? 1L : 1_000L;
 
-            // Both extremes before the range, equal or not: both saturate to the same value.
+            // Both extremes before the range, equal or not, and only the minimum before it.
             final Statistics<?> onlyYear1 = instantStats(unit, year1Millis * perMilli, year1Millis * perMilli);
             final Statistics<?> allBefore = instantStats(unit, year1Millis * perMilli, year1000Millis * perMilli);
-            for (final Statistics<?> stats : List.of(onlyYear1, allBefore)) {
-                assertTrue(unit + " is not null", evaluate(isNotNull, stats));
-                assertTrue(unit + " above null", evaluate(aboveNull, stats));
-                assertFalse(unit + " is null", evaluate(isNull, stats));
+            final Statistics<?> fromYear1 = instantStats(unit, year1Millis * perMilli, startOf2020Millis * perMilli);
+
+            for (final Statistics<?> stats : List.of(onlyYear1, allBefore, fromYear1)) {
+                final String label = unit + " " + stats.genericGetMin() + ".." + stats.genericGetMax() + ": ";
+                // Every value before the range satisfies these, so none may exclude the row group.
+                assertTrue(label + "is not null", evaluate(isNotNull, stats));
+                assertTrue(label + "above null", evaluate(aboveNull, stats));
+                assertTrue(label + "is not earliest", evaluate(isNotEarliest, stats));
+                assertTrue(label + "before earliest", evaluate(beforeEarliest, stats));
+                // No such value is null, but the saturated minimum is NULL_LONG, so an is-null filter cannot tell.
+                assertTrue(label + "is null", evaluate(isNull, stats));
             }
 
-            // Only the minimum before the range.
-            final Statistics<?> fromYear1 = instantStats(unit, year1Millis * perMilli, startOf2020Millis * perMilli);
-            assertTrue(unit + " mixed, is not null", evaluate(isNotNull, fromYear1));
-            assertTrue(unit + " mixed, above null", evaluate(aboveNull, fromYear1));
-            assertFalse(unit + " mixed, is null", evaluate(isNull, fromYear1));
+            // No value before the range is after the earliest instant, so a row group of nothing else is excluded.
+            for (final Statistics<?> stats : List.of(onlyYear1, allBefore)) {
+                assertFalse(unit + " after earliest", evaluate(afterEarliest, stats));
+            }
         }
     }
 

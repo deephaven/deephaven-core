@@ -478,11 +478,19 @@ final class MinMaxFromStatistics {
      * <p>
      * MILLIS and MICROS statistics beyond the range of epoch nanoseconds (roughly the years 1677 to 2262) saturate
      * instead of failing, so the other extreme goes on pruning. A saturated extreme is not a value the row group holds,
-     * but it compares with every filter bound or value other than itself just as the true value would. A value after
-     * the range saturates to {@link Long#MAX_VALUE}. Deephaven orders null below every value, so a value before the
-     * range belongs above {@code NULL_LONG} and below every other {@code long}; it saturates to
-     * {@link QueryConstants#MIN_LONG}. Saturating it to {@link Long#MIN_VALUE}, which is {@code NULL_LONG}, would make
-     * a row group of such values look like nothing but nulls, and an is-not-null filter would exclude it.
+     * so it is chosen such that wherever it compares differently from the true value, the row group is kept rather than
+     * excluded.
+     * <ul>
+     * <li>After the range, either extreme becomes {@link Long#MAX_VALUE}. It compares just as the true value would with
+     * everything but itself, and no filter can name it: {@link DateTimeUtils#epochNanos} rejects the {@link Instant} it
+     * stands for.</li>
+     * <li>Before the range, no single value will do. Deephaven orders null below every value, so the true value lies
+     * above {@code NULL_LONG} and below {@link QueryConstants#MIN_LONG}, two adjacent {@code long}s. A minimum becomes
+     * {@code NULL_LONG} ({@link Long#MIN_VALUE}) and a maximum {@code MIN_LONG}, straddling it, so a row group of such
+     * values never looks like nothing but nulls, like a single value, or like it holds nothing before {@code MIN_LONG}.
+     * The price is that an is-null filter cannot exclude a row group whose minimum is before the range; it reads it
+     * instead, and the reader rejects the value.</li>
+     * </ul>
      */
     static boolean getMinMaxForInstantNanos(
             @NotNull final Statistics<?> statistics,
@@ -494,21 +502,29 @@ final class MinMaxFromStatistics {
         }
         final long minLong = ((LongStatistics) statistics).getMin();
         final long maxLong = ((LongStatistics) statistics).getMax();
+        final long maxConvertible;
+        final long nanosPerUnit;
         switch (unit) {
             case MILLIS:
-                minSetter.accept(saturatingToNanos(minLong, MAX_CONVERTIBLE_MILLIS, DateTimeUtils.MILLI));
-                maxSetter.accept(saturatingToNanos(maxLong, MAX_CONVERTIBLE_MILLIS, DateTimeUtils.MILLI));
-                return true;
+                maxConvertible = MAX_CONVERTIBLE_MILLIS;
+                nanosPerUnit = DateTimeUtils.MILLI;
+                break;
             case MICROS:
-                minSetter.accept(saturatingToNanos(minLong, MAX_CONVERTIBLE_MICROS, DateTimeUtils.MICRO));
-                maxSetter.accept(saturatingToNanos(maxLong, MAX_CONVERTIBLE_MICROS, DateTimeUtils.MICRO));
-                return true;
+                maxConvertible = MAX_CONVERTIBLE_MICROS;
+                nanosPerUnit = DateTimeUtils.MICRO;
+                break;
             case NANOS:
                 minSetter.accept(minLong);
                 maxSetter.accept(maxLong);
                 return true;
+            default:
+                return false;
         }
-        return false;
+        // A statistic too early for epoch nanoseconds (before 1677) has no long of its own: as a minimum it becomes
+        // NULL_LONG and as a maximum MIN_LONG, the two longs either side of where Deephaven would order it. See above.
+        minSetter.accept(saturatingToNanos(minLong, maxConvertible, nanosPerUnit, Long.MIN_VALUE));
+        maxSetter.accept(saturatingToNanos(maxLong, maxConvertible, nanosPerUnit, QueryConstants.MIN_LONG));
+        return true;
     }
 
     /**
@@ -533,16 +549,17 @@ final class MinMaxFromStatistics {
     }
 
     /**
-     * {@code value * nanosPerUnit}, saturated to {@link QueryConstants#MIN_LONG} or {@link Long#MAX_VALUE} beyond
-     * {@code maxConvertible}, the same limit the reader's materializers enforce. See {@link #getMinMaxForInstantNanos}
-     * for why the bottom is not {@link Long#MIN_VALUE}.
+     * {@code value * nanosPerUnit}; or, beyond {@code maxConvertible} -- the same limit the reader's materializers
+     * enforce -- {@link Long#MAX_VALUE} above and {@code belowRange} below. See {@link #getMinMaxForInstantNanos} for
+     * what {@code belowRange} must be for each extreme.
      */
-    private static long saturatingToNanos(final long value, final long maxConvertible, final long nanosPerUnit) {
+    private static long saturatingToNanos(
+            final long value, final long maxConvertible, final long nanosPerUnit, final long belowRange) {
         if (value > maxConvertible) {
             return Long.MAX_VALUE;
         }
         if (value < -maxConvertible) {
-            return QueryConstants.MIN_LONG;
+            return belowRange;
         }
         return value * nanosPerUnit;
     }
