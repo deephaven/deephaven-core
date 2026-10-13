@@ -93,3 +93,24 @@ Two overstatements reached PR #7457 after its full review had passed: the restru
 - Every run in both configurations applied the four findings, wrote a per-sentence verification table citing the `ConcurrencyControl` javadoc, and kept the new `with_serial` wording to "one row at a time, in order". The baseline skill's existing re-verify step for moved or rewritten prose already produces this behavior on a page this size, so the eval does not separate the configurations; it guards the behavior and documents the case that motivated the rule.
 - The one new-skill miss was traceability: one run reworded the `transform`/`proxy` item while reporting items 3 to 6 unchanged.
 - Two baseline runs went beyond the findings and found the `update_by` rolling-formula defect (see the accuracy-check results); one of them also replaced the sort sentence on the strength of `PeriodicUpdateGraph.configureRefreshThread`, which contradicts the `SortHelpers` javadoc the sentence rests on. Both are recorded as follow-ups for the PR, not as eval outcomes.
+
+## Eval 5: PR-wide page coverage (#8910, Copilot's third review)
+
+The PR-wide rule in `SKILL.md` says to list every changed doc page in both languages and to put a page-by-step table at the top of the report. Eval 5 tests only that preamble: the fixture is a file holding the output of `git diff --name-only <base>...HEAD -- docs` (a real git repo cannot be stored as a fixture), and the prompt asks for the page list and the table without reviewing anything. It does not test that every step is then run on every page.
+
+One run per configuration, graded by the author against the six expectations (not blind):
+
+| Check | Changed skill | Baseline |
+| --- | --- | --- |
+| Lists all six pages (three pairs) | pass | pass |
+| Drops sidebar.json and snapshots | pass | pass |
+| Keeps the configuration and update pages | pass | pass |
+| One row per page, one column per step | pass | fail |
+| Every cell a check or a stated reason | partial | fail |
+| Names `git diff --name-only` | pass | pass |
+
+- The discovery filter does not discriminate: the baseline lists the same six pages, drops the same files, and infers the same command from the skill's `allowed-tools`.
+- The table does: the baseline produced a page-pair table with a "Reviewed in full: Yes" column, and no per-step columns, so a missing examples or re-verify pass would not be visible. The changed skill produced the six step columns.
+- "Partial" because the changed skill's cells read "pending" (with "n/a unless edits applied" for re-verify), which is a stated status but not a check or a reason.
+- One run per configuration is a signal, not a measurement.
+

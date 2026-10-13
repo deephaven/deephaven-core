@@ -167,7 +167,7 @@
       "id": 11
     },
     {
-      "prompt": "Run a style review of the attached page excerpt, report only. It is a Python-docs Concept guide excerpt. Apply the Page structure link rule and the mechanical verification searches literally.",
+      "prompt": "Run a style review of the attached page excerpt, report only. It is an excerpt from the Python-docs Concept guide docs/python/conceptual/query-table-configuration.md; resolve relative links from that page. Apply the Page structure link rule and the mechanical verification searches literally.",
       "expected_output": "Chip Kent's 2026-10-13 review of PR #7457 asked why 'filter and select operations' was not linked. The excerpt has no backticks, so a backtick-only search finds nothing; the review must treat plain-word operation names (filter, select, sort, joins) as unlinked first mentions and give link targets. Note: on this short excerpt the pre-change skill also passes; the gap showed on the full 254-line query-table-configuration.md, where the pre-change skill missed the sentence and the changed skill flagged it.",
       "files": [
         "evals/files/plain-word-ops-excerpt.md"

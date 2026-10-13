@@ -1,0 +1,12 @@
+docs/groovy/conceptual/query-engine/parallelization.md
+docs/groovy/conceptual/query-table-configuration.md
+docs/groovy/reference/table-operations/select/update.md
+docs/groovy/sidebar.json
+docs/groovy/snapshots/0a5a3a473404de1ed2f93bbdbd4f55ba.json
+docs/groovy/snapshots/14f217f9e015a95c44a32d0518b03284.json
+docs/python/conceptual/query-engine/parallelization.md
+docs/python/conceptual/query-table-configuration.md
+docs/python/reference/table-operations/select/update.md
+docs/python/sidebar.json
+docs/python/snapshots/0a5a3a473404de1ed2f93bbdbd4f55ba.json
+docs/python/snapshots/182a6410e61d9c04608996d8eb01dff2.json

@@ -79,6 +79,22 @@
         "Does not edit any file other than the copy, and every change the report lists traces to a finding or to a problem the report states"
       ],
       "id": 4
+    },
+    {
+      "prompt": "A PR changes the files listed in .claude/skills/deephaven-docs-review-full/evals/files/pr-coverage/changed-files.txt (that file is the output of the PR page discovery command for the PR base). Do not review the pages. Following the skill's rule for reviewing a PR, write only the page list and the table that go at the top of the full-review report.",
+      "expected_output": "Copilot's third review of #8910 asked for coverage of the PR-wide rule. A reviewer applying the rule lists every changed doc page in both languages, drops snapshots and sidebar.json, keeps the lightly touched and configuration pages, and builds a page-by-step table with a check or a reason in every cell. The discovery command itself cannot be run on a fixture file, and running every step on every page is not tested here; only the discovery filter and the report table are.",
+      "files": [
+        "evals/files/pr-coverage/changed-files.txt"
+      ],
+      "expectations": [
+        "Lists all six doc pages, Python and Groovy for each of the parallelization concept guide, the query-table-configuration page, and the update reference page",
+        "Does not list sidebar.json or any snapshots/*.json file as a page to review",
+        "Keeps the configuration page and the update reference page in the list (does not narrow the review to the headline concept guide)",
+        "Gives the table one row per page and one column per step: developmental pass, accuracy, structure, re-verify, examples, and style",
+        "Every cell holds a check or a stated reason, not a blank or an assumption that the step was done",
+        "Names git diff --name-only (or an equivalent allowed diff command) as the discovery command, not gh pr view"
+      ],
+      "id": 5
     }
   ]
 }
