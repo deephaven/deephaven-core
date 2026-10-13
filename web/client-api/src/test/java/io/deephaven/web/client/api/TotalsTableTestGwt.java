@@ -31,7 +31,14 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                             +
                             ".with_attributes({'TotalsTable':'false,false,Count;J=Min:Avg,K=Skip,;'})")
             .script("hasCountColumn",
-                    "empty_table(5).update_view([\"Count = (double)i\", \"Value = (double) i * 2\"])");
+                    "empty_table(5).update_view([\"Count = (double)i\", \"Value = (double) i * 2\"])")
+            // Like hasTotals, but with a lazily computed column that is slow to read, so that aggregating the
+            // unfiltered table takes measurably longer than aggregating a filtered subset of it
+            .script("import time")
+            .script("def slow(x) -> float:\n    time.sleep(0.4)\n    return float(x)")
+            .script("slowTotals",
+                    "empty_table(5).update_view([\"I = (double)i\", \"J = (double) i * i\", \"K = (double) i % 2\", \"S = slow(i)\"])"
+                            + ".with_attributes({'TotalsTable':'false,false,Sum;J=Min:Avg,K=Skip,;'})");
 
     // This will need to be updated to reflect values from JsTotalsTableConfig.knownAggTypes
     // These are the values calculated for each Agg for column I of the "hasTotals" table
@@ -171,6 +178,64 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     return totalTables[1].getViewportData().then(viewportData -> {
                         assertTotals(viewportData, totalTables[1], 5, 6, 0, "b2");
                         return Promise.resolve(table);
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * Requests the totals table while the source is unfiltered, then applies a filter before that request resolves, as
+     * a UI restoring saved filters does. The totals table must end up reflecting the filter.
+     */
+    public void testFilterAppliedWhileTotalsFetchPending() {
+        connect(tables)
+                .then(table("hasTotals"))
+                .then(table -> {
+                    delayTestFinish(6000);
+                    Promise<JsTotalsTable> totalsPromise = table.getTotalsTable(null);
+                    // the totals request is in flight against the unfiltered table; now change the source
+                    table.applyFilter(new FilterCondition[] {
+                            table.findColumn("K").filter().eq(FilterValue.ofNumber(0.0))
+                    });
+                    table.setViewport(0, 100, null);
+                    return totalsPromise.then(totals -> {
+                        totals.setViewport(0, 100, null, null, null);
+                        // an update with the unfiltered totals may arrive first; wait for one that matches the filter
+                        return this.<JsTable, ViewportData>waitForEventWhere(totals.getWrappedTable(),
+                                JsTable.EVENT_UPDATED,
+                                e -> e.getDetail().getRows().length == 1 && e.getDetail().getRows().getAt(0)
+                                        .get(totals.findColumn("I")).<LongWrapper>cast().getWrapped() == 3,
+                                2501)
+                                .then(ignored -> Promise.resolve(totals));
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * As {@link #testFilterAppliedWhileTotalsFetchPending()}, but the initial totals request is slow enough that the
+     * filter and the rebase it triggers both complete first. The totals promise must still resolve, and the totals must
+     * reflect the filter.
+     */
+    public void testRebaseCompletesBeforeInitialTotalsFetch() {
+        connect(tables)
+                .then(table("slowTotals"))
+                .then(table -> {
+                    delayTestFinish(10000);
+                    // aggregating all five rows reads the slow column five times
+                    Promise<JsTotalsTable> totalsPromise = table.getTotalsTable(null);
+                    // the filtered aggregate reads it only three times, so the rebase finishes first
+                    table.applyFilter(new FilterCondition[] {
+                            table.findColumn("K").filter().eq(FilterValue.ofNumber(0.0))
+                    });
+                    return totalsPromise.then(totals -> {
+                        totals.setViewport(0, 100, null, null, null);
+                        return this.<JsTable, ViewportData>waitForEventWhere(totals.getWrappedTable(),
+                                JsTable.EVENT_UPDATED,
+                                e -> e.getDetail().getRows().length == 1 && e.getDetail().getRows().getAt(0)
+                                        .get(totals.findColumn("I")).asDouble() == 6.0,
+                                5000)
+                                .then(ignored -> Promise.resolve(totals));
                     });
                 })
                 .then(this::finish).catch_(this::report);
