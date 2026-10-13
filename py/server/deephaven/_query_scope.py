@@ -61,10 +61,9 @@ def query_scope_ctx():
     This can be called *only* from table.py or execution_context.py.  Using this from any other file does not work!
     """
 
-    # Walk f_back by hand instead of calling inspect.getouterframes(). getouterframes() builds source info for every
-    # frame and calls inspect.getmodule() on each one. For a frame whose file maps to no module, such as <frozen runpy>
-    # under `python -m` or pytest, getmodule() rescans all of sys.modules. That made every table operation cost time
-    # that grew with len(sys.modules).
+    # Read f_back directly. Do not use inspect.stack() or inspect.getouterframes(). They call inspect.getmodule() on
+    # each frame, and for a frame whose file maps to no module, such as console code ('<string>') or '<frozen runpy>',
+    # getmodule() rescans all of sys.modules. Every table operation would then slow down as more modules load.
 
     # locate the innermost Deephaven frame (i.e. any of the table operation methods that use this context manager)
     frame = inspect.currentframe()
