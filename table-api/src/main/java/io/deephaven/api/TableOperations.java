@@ -480,7 +480,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * specified, join reserves 10 bits to represent a right row. When there are too few bits to represent all of the
      * right rows for a given aggregation group the table will shift a bit from the left side to the right side. The
      * default of 10 bits was carefully chosen because it results in an efficient implementation to process live
-     * updates.
+     * updates. A join whose result can never change, such as a join of two static tables, ignores {@code reserveBits}
+     * and uses just enough bits for its right rows.
      *
      * <p>
      * An io.deephaven.engine.exceptions.OutOfKeySpaceException is thrown when the total number of bits needed to
