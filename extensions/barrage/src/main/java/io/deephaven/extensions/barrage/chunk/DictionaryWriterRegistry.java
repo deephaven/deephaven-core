@@ -9,6 +9,7 @@ import io.deephaven.chunk.attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
+import java.util.function.LongUnaryOperator;
 
 /**
  * Manages the set of {@link DictionaryWriterState} instances for a single barrage stream (snapshot or subscription
@@ -65,12 +66,13 @@ public interface DictionaryWriterRegistry {
 
     /**
      * Checks each registered {@link DictionaryWriterState} for overflow: if its
-     * {@link DictionaryWriterState#totalSize() totalSize} exceeds {@code liveRowCount}, calls
-     * {@link DictionaryWriterState#reset()} so the next DictionaryBatch will be {@code isDelta=false} with a compacted
-     * dictionary. Only call this for local (viewport/snapshot) registries; for shared-backed registries the
-     * {@link SharedWriterDictionary} is reset externally.
+     * {@link DictionaryWriterState#totalSize() totalSize} exceeds {@code maxSizeForDictId} applied to its dictionary
+     * id, calls {@link DictionaryWriterState#reset()} so the next DictionaryBatch will be {@code isDelta=false} with a
+     * compacted dictionary. This applies to local (viewport/snapshot) registries only; a shared-backed registry ignores
+     * this call, as its {@link SharedWriterDictionary} is reset externally.
      *
-     * @param liveRowCount the current number of live rows visible to this subscription
+     * @param maxSizeForDictId the most values the dictionary with a given id may hold before it is reset; typically no
+     *        more than the live row count visible to the subscription
      */
-    void resetOverflowedEntries(long liveRowCount);
+    void resetOverflowedEntries(@NotNull LongUnaryOperator maxSizeForDictId);
 }

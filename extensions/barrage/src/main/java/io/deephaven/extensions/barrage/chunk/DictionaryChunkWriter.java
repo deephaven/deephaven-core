@@ -84,6 +84,24 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
         return dictId;
     }
 
+    /**
+     * Returns the number of distinct values that a dictionary with an index of {@code indexBitWidth} bits can address,
+     * or {@link Long#MAX_VALUE} when the index is wide enough that the dictionary is not limited by it.
+     *
+     * @param indexBitWidth the bit width of the dictionary's signed index type (8, 16, 32 or 64)
+     * @return the maximum number of distinct values in the dictionary
+     */
+    public static long maxDictionarySize(final int indexBitWidth) {
+        switch (indexBitWidth) {
+            case 8:
+                return Byte.MAX_VALUE + 1;
+            case 16:
+                return Short.MAX_VALUE + 1;
+            default:
+                return Long.MAX_VALUE;
+        }
+    }
+
     public ChunkWriter<Chunk<Values>> getValuesWriter() {
         return valuesWriter;
     }

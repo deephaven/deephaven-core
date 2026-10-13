@@ -344,6 +344,16 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
      * attributes.
      */
     private static Schema buildDictEncodedSchema(final TableDefinition def, final String dictColumnName) {
+        return buildDictEncodedSchema(def, dictColumnName, 32);
+    }
+
+    /**
+     * Like {@link #buildDictEncodedSchema(TableDefinition, String)}, but with an index of {@code indexBitWidth} bits.
+     */
+    private static Schema buildDictEncodedSchema(
+            final TableDefinition def,
+            final String dictColumnName,
+            final int indexBitWidth) {
         // Build the natural schema using an empty attributes map so getAttributes() is never called on the live table.
         final Schema natural = BarrageUtil.makeSchema(
                 BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, def, Map.of(), false);
@@ -353,7 +363,7 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
             }
             return new Field(f.getName(),
                     new FieldType(f.isNullable(), f.getType(),
-                            new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)),
+                            new DictionaryEncoding(0L, false, new ArrowType.Int(indexBitWidth, true)),
                             f.getMetadata()),
                     f.getChildren());
         }).collect(Collectors.toList());
@@ -843,6 +853,62 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
             nugget.flushClientEvents();
             updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
             nugget.validate("step " + step);
+        }
+    }
+
+    /**
+     * Verifies that an Int8 dictionary does not overflow from value churn alone. The table has more rows than the index
+     * can address but never more distinct live values, while every cycle replaces one value with one never seen before;
+     * the cumulative dictionary therefore passes the index width, and the server must compact it before it overflows
+     * rather than disconnect the subscribers. The viewport is also wider than the index, so its private dictionary is
+     * not compacted by the live-row-count rule either.
+     */
+    @Test
+    public void testDictionaryEncodedInt8ValueChurn() {
+        final int indexBitWidth = 8;
+        final int numRows = 1_000;
+        final int viewportSize = 200;
+        final int indexCapacity = 1 << (indexBitWidth - 1);
+        final int churnedRows = 10;
+
+        final String[] initialValues = new String[numRows];
+        Arrays.fill(initialValues, "initial");
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(RowSetFactory.flat(numRows).toTracking(),
+                TableTools.stringCol("Sym", initialValues), TableTools.intCol("intCol", new int[numRows]));
+        sourceTable.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE,
+                buildDictEncodedSchema(sourceTable.getDefinition(), "Sym", indexBitWidth));
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "churn-full-" + indexBitWidth);
+        nugget.newClient(RowSetFactory.flat(viewportSize), allCols, "churn-viewport-" + indexBitWidth);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        flushProducerTable();
+        nugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("initial snapshot");
+
+        // Each step writes a never-seen value to one of the first few rows, so at most churnedRows + 1 distinct values
+        // are ever live, while the number of values ever sent grows by one per step until it exceeds the index width.
+        for (int step = 0; step < indexCapacity + churnedRows; step++) {
+            final long rowKey = step % churnedRows;
+            final String value = "churn" + step;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(sourceTable, i(rowKey), TableTools.stringCol("Sym", value),
+                        TableTools.intCol("intCol", 0));
+                final ModifiedColumnSet modified = sourceTable.getModifiedColumnSetForUpdates();
+                modified.clear();
+                modified.setAll("Sym");
+                sourceTable.notifyListeners(new TableUpdateImpl(
+                        RowSetFactory.empty(), RowSetFactory.empty(), i(rowKey), RowSetShiftData.EMPTY, modified));
+            });
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("Int" + indexBitWidth + " churn step " + step);
         }
     }
 
