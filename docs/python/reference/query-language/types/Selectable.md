@@ -42,7 +42,7 @@ result = empty_table(10).update(col)
 ```
 
 > [!IMPORTANT]
-> In Python, `Selectable` objects can only be used with [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md). The [`view`](../../table-operations/select/view.md), [`update_view`](../../table-operations/select/update-view.md), and [`lazy_update`](../../table-operations/select/lazy-update.md) methods take formula strings only, so `with_serial` and barriers cannot be attached to their formulas.
+> `Selectable` objects can only be used with [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md). The [`view`](../../table-operations/select/view.md), [`update_view`](../../table-operations/select/update-view.md), and [`lazy_update`](../../table-operations/select/lazy-update.md) methods do not accept `Selectable` objects because they compute values on-demand and cannot guarantee processing order.
 
 ### `with_declared_barriers` and `with_respected_barriers`
 

@@ -43,7 +43,7 @@ A new table that includes all the original columns from the source table and the
 
 ## Examples
 
-In the following example, the new column `Y` allocates memory and is immediately populated with values. `A`, `B`, and `C` are the source table's own columns, which `newTable` holds in memory, and `X = B` creates a new column that points to the same in-memory data as `B`, so none of these allocate memory.
+In the following example, the new column `Y` allocates memory and is immediately populated with values. `A`, `X`, `B`, and `C` refer to columns in the source table, which are already in memory, so they do not allocate memory.
 
 ```groovy order=source,result
 source = newTable(

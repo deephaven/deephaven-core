@@ -2,7 +2,7 @@
 title: Filter
 ---
 
-A [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) represents a filter condition used in [`where`](../../table-operations/filter/where.md) operations. Use `Filter` objects when you need to compose conditions programmatically (combining filters with boolean logic) or to control how Deephaven evaluates them — specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
+A [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) represents a filter condition used in [`where`](../../table-operations/filter/where.md) operations. Use `Filter` objects when you need to control how Deephaven evaluates filter conditions — specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
 
 ## Creating a Filter
 
@@ -107,7 +107,7 @@ You need a `Filter` object in three situations:
 
 **Stateful filters**: If your filter modifies shared state (e.g., counting how many rows pass), use [`withSerial`](./ConcurrencyControl.md#withserial) to force sequential evaluation. Without it, multiple threads evaluating rows simultaneously could corrupt the shared state.
 
-**Complex boolean logic**: Use `Filter.and`, `Filter.or`, and `Filter.not` to combine filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
+**Complex boolean logic**: Use `Filter.and` and `Filter.or` to combine filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
 
 **Barriers between filters** are rarely needed — most filters are stateless. If you do have filters with shared state where one must complete before another, see [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
 
