@@ -104,7 +104,7 @@ Most Python builds use a global interpreter lock, or GIL, which lets only one th
 - On a standard build with the GIL enabled, Deephaven never splits the calculation of one Python-backed column or filter across cores.
 - On a [free-threaded Python build](https://docs.python.org/3/howto/free-threading-python.html), Deephaven splits the calculation of Python-backed columns and filters across cores like any other column or filter.
 
-Shared state is not safe on either build. On a GIL-enabled build, two different Python-backed columns in the same [`update`](../../reference/table-operations/select/update.md) can still run at the same time on different threads. Deephaven can also evaluate a column out of row order even when it does not split that column across cores. If your formula or filter has side effects that depend on row order, use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) no matter which Python build you run.
+Shared state is not safe on either build. On a GIL-enabled build, two different Python-backed columns in the same [`update`](../../reference/table-operations/select/update.md) can still run concurrently on different threads, so their Python calls interleave even though the GIL lets only one of them execute Python code at any instant. Deephaven can also evaluate a column out of row order even when it does not split that column across cores. If your formula or filter has side effects that depend on row order, use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) no matter which Python build you run.
 
 ## When parallelization is safe by default
 
