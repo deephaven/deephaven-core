@@ -43,9 +43,9 @@ def _j_py_script_session() -> _JPythonScriptSession:
         return None
 
 
-# The source files of the table operations that use query_scope_ctx. A frame's code filename is compared against
-# them, so take them from a code object in this package rather than from __file__, which names the .pyc file when the
-# package is installed without sources.
+# The files whose functions call query_scope_ctx. They are matched against each frame's co_filename, so they are
+# built from this module's co_filename too. __file__ would not match in an install without sources, where it names
+# the .pyc file.
 _THIS_FILE = _j_py_script_session.__code__.co_filename
 _DH_FILES = frozenset(
     _THIS_FILE.replace("_query_scope.py", name)
