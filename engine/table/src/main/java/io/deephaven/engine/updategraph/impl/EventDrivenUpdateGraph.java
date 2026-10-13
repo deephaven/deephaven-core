@@ -62,6 +62,7 @@ public class EventDrivenUpdateGraph extends BaseUpdateGraph {
         final long lockStartTimeNanos = System.nanoTime();
         exclusiveLock().doLocked(() -> {
             reportLockWaitNanos(System.nanoTime() - lockStartTimeNanos);
+            reportCycleStartToRecyclers(lockStartTimeNanos);
             isUpdateThread.set(true);
             try (final SafeCloseable ignored = ExecutionContext.newBuilder().setUpdateGraph(this).build().open()) {
                 refreshAllTables();

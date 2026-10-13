@@ -15,12 +15,9 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class SoftRecyclerTest {
-    private static final long SECOND = 1_000_000_000L;
-
-    /** A recycler of arrays whose clock is advanced by hand and read on every operation. */
+    /** A recycler of arrays whose windows are ended by hand. */
     private static final class Fixture {
         final AtomicInteger constructed = new AtomicInteger();
-        long now = 0;
         final SoftRecycler<long[]> recycler;
 
         Fixture(final int capacity, final int maximumCapacity) {
@@ -31,7 +28,7 @@ public class SoftRecyclerTest {
             recycler = new SoftRecycler<>(capacity, maximumCapacity, () -> {
                 constructed.incrementAndGet();
                 return new long[1];
-            }, null, () -> now, 1, SECOND, shrinkFraction);
+            }, null, shrinkFraction, false);
         }
 
         /** Grow the capacity to {@code count}, from a bin that starts empty. */
@@ -63,9 +60,8 @@ public class SoftRecyclerTest {
             }
         }
 
-        /** Advance past the end of the window, and let the next operation see it. */
         void endWindow() {
-            now += SECOND;
+            recycler.endWindow();
         }
     }
 
@@ -276,17 +272,35 @@ public class SoftRecyclerTest {
         fixture.growTo(90);
         fixture.burst(90);
         fixture.endWindow();
-        fixture.burst(10);
-        for (int ii = 0; ii < 5; ++ii) {
+        // however many bursts need only 10, nothing shrinks until the window ends
+        for (int ii = 0; ii < 6; ++ii) {
             fixture.burst(10);
-            // most of a window is not enough
-            fixture.now += SECOND / 10;
         }
-        fixture.burst(10);
         assertEquals(90, fixture.recycler.getCapacity());
-        fixture.now += SECOND / 2;
-        fixture.burst(10);
+        fixture.endWindow();
         assertEquals(50, fixture.recycler.getCapacity());
+    }
+
+    @Test
+    public void testEndWindowsShrinksEveryRegisteredRecycler() {
+        final AtomicInteger constructed = new AtomicInteger();
+        final SoftRecycler<long[]> recycler = new SoftRecycler<>(10, 1000, () -> {
+            constructed.incrementAndGet();
+            return new long[1];
+        }, null);
+        final List<long[]> items = new ArrayList<>();
+        for (int burst = 0; burst < 2; ++burst) {
+            for (int ii = 0; ii < 40; ++ii) {
+                items.add(recycler.borrowItem());
+            }
+            items.forEach(recycler::returnItem);
+            items.clear();
+        }
+        assertEquals(40, recycler.getCapacity());
+        // a window in which nothing is borrowed needed none of the 40 items; the default fraction discards half
+        SoftRecycler.endWindows();
+        SoftRecycler.endWindows();
+        assertEquals(20, recycler.getCapacity());
     }
 
     @Test
@@ -301,10 +315,8 @@ public class SoftRecyclerTest {
         assertThrows(IllegalArgumentException.class, () -> new SoftRecycler<>(10, 9, () -> new long[1], null));
         assertThrows(IllegalArgumentException.class, () -> new SoftRecycler<>(-1, 9, () -> new long[1], null));
         assertThrows(IllegalArgumentException.class,
-                () -> new SoftRecycler<>(1, 1, () -> new long[1], null, () -> 0, 1, 0, 0.5));
+                () -> new SoftRecycler<>(1, 1, () -> new long[1], null, 1.5, false));
         assertThrows(IllegalArgumentException.class,
-                () -> new SoftRecycler<>(1, 1, () -> new long[1], null, () -> 0, 1, SECOND, 1.5));
-        assertThrows(IllegalArgumentException.class,
-                () -> new SoftRecycler<>(1, 1, () -> new long[1], null, () -> 0, 1, SECOND, Double.NaN));
+                () -> new SoftRecycler<>(1, 1, () -> new long[1], null, Double.NaN, false));
     }
 }

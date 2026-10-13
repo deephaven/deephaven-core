@@ -3,10 +3,6 @@
 //
 package io.deephaven.util;
 
-import org.jetbrains.annotations.NotNull;
-
-import java.util.function.LongSupplier;
-
 /**
  * Sizes a bounded pool of reusable items from the traffic it sees. The pool reports each borrow and return, and reads
  * the {@link #capacity() capacity} it may hold; when the capacity falls below what the pool holds, the pool discards
@@ -30,19 +26,18 @@ import java.util.function.LongSupplier;
  * miss.
  *
  * <p>
- * It shrinks on a window of time. When a window sees the pool never empty, the fewest items it held in that window were
- * never needed, and the capacity discards the shrink fraction of them, rounded up, but never goes below the capacity it
- * was created with. The items the window did need are always kept: with a capacity of 100 and a window that never drew
- * the pool below 40 items, a fraction of 0.9 discards 36 of those 40, leaving a capacity of 64, while a fraction of 0
- * keeps the capacity once grown. The window must be at least as long as the slowest cycle that borrows from the pool,
- * since a window that ends partway through a burst sees items that burst was still about to borrow as unneeded.
+ * It shrinks at the end of each window, which the pool's owner signals through {@link #endWindow(int)}. When a window
+ * sees the pool never empty, the fewest items it held in that window were never needed, and the capacity discards the
+ * shrink fraction of them, rounded up, but never goes below the capacity it was created with. The items the window did
+ * need are always kept: with a capacity of 100 and a window that never drew the pool below 40 items, a fraction of 0.9
+ * discards 36 of those 40, leaving a capacity of 64, while a fraction of 0 keeps the capacity once grown. A window
+ * should span at least one whole cycle of each client that borrows from the pool, since a window that ends partway
+ * through a burst sees items that burst was still about to borrow as unneeded. The adaptor reads no clock: the borrows
+ * and returns it counts only update counters.
  */
 public final class CapacityAdaptor {
     private final int minimumCapacity;
     private final int maximumCapacity;
-    private final LongSupplier nanoClock;
-    private final int clockReadMask;
-    private final long windowNanos;
     private final double shrinkFraction;
 
     /** The most items the pool may hold now. */
@@ -54,31 +49,18 @@ public final class CapacityAdaptor {
      */
     private int turnedAway;
 
-    private long windowStart;
-    private int operations;
     /** The fewest items the pool held in this window. */
     private int windowMinSize;
 
     /**
      * @param capacity The capacity to start with, and the least to shrink to
      * @param maximumCapacity The most the capacity may grow to, at least {@code capacity}
-     * @param nanoClock The clock the windows are measured on, in nanoseconds
-     * @param operationsPerClockRead The borrows and returns between reads of the clock, a power of two
-     * @param windowNanos The nanoseconds of traffic each shrink of the capacity is judged on
      * @param shrinkFraction The fraction, from 0 to 1, of the items a window never needed that the capacity discards
      */
-    public CapacityAdaptor(final int capacity, final int maximumCapacity, @NotNull final LongSupplier nanoClock,
-            final int operationsPerClockRead, final long windowNanos, final double shrinkFraction) {
+    public CapacityAdaptor(final int capacity, final int maximumCapacity, final double shrinkFraction) {
         if (capacity < 0 || maximumCapacity < capacity) {
             throw new IllegalArgumentException(
                     "capacity " + capacity + " must be non-negative and at most maximumCapacity " + maximumCapacity);
-        }
-        if (Integer.bitCount(operationsPerClockRead) != 1) {
-            throw new IllegalArgumentException(
-                    "operationsPerClockRead " + operationsPerClockRead + " must be a power of two");
-        }
-        if (windowNanos <= 0) {
-            throw new IllegalArgumentException("windowNanos " + windowNanos + " must be positive");
         }
         if (!(shrinkFraction >= 0 && shrinkFraction <= 1)) {
             throw new IllegalArgumentException("shrinkFraction " + shrinkFraction + " must be from 0 to 1");
@@ -86,11 +68,7 @@ public final class CapacityAdaptor {
         this.minimumCapacity = capacity;
         this.maximumCapacity = maximumCapacity;
         this.capacity = capacity;
-        this.nanoClock = nanoClock;
-        this.clockReadMask = operationsPerClockRead - 1;
-        this.windowNanos = windowNanos;
         this.shrinkFraction = shrinkFraction;
-        this.windowStart = nanoClock.getAsLong();
         this.windowMinSize = 0;
     }
 
@@ -106,15 +84,6 @@ public final class CapacityAdaptor {
      */
     public int maximumCapacity() {
         return maximumCapacity;
-    }
-
-    /**
-     * The pool is about to borrow an item.
-     *
-     * @param held The items the pool holds
-     */
-    public void borrowing(final int held) {
-        maybeShrink(held);
     }
 
     /**
@@ -140,15 +109,6 @@ public final class CapacityAdaptor {
     }
 
     /**
-     * The pool is about to take back an item.
-     *
-     * @param held The items the pool holds
-     */
-    public void returning(final int held) {
-        maybeShrink(held);
-    }
-
-    /**
      * The pool was full, so it turned the returned item away.
      */
     public void dropped() {
@@ -158,24 +118,16 @@ public final class CapacityAdaptor {
     }
 
     /**
-     * At the end of a window, discard the shrink fraction of the items the pool never needed.
+     * End the window: discard the shrink fraction of the items the pool never needed in it, and start the next.
      *
      * @param held The items the pool holds, before it discards any beyond the capacity this leaves
      */
-    private void maybeShrink(final int held) {
-        if ((++operations & clockReadMask) != 0) {
-            return;
-        }
-        final long now = nanoClock.getAsLong();
-        if (now - windowStart < windowNanos) {
-            return;
-        }
+    public void endWindow(final int held) {
         if (windowMinSize > 0) {
             // rounded up, so that any fraction above 0 reaches the minimum
             final int shrink = (int) Math.ceil(windowMinSize * shrinkFraction);
             capacity = Math.max(minimumCapacity, capacity - shrink);
         }
-        windowStart = now;
         // what the pool holds once it discards the items beyond the capacity
         windowMinSize = Math.min(held, capacity);
     }

@@ -9,10 +9,10 @@ import org.jetbrains.annotations.VisibleForTesting;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -25,11 +25,12 @@ import java.util.function.Supplier;
  * <p>
  * The recycle bin holds at most its current capacity, which a {@link CapacityAdaptor} adapts to its traffic between the
  * capacity it was created with and a maximum. The maximum is {@value #MAXIMUM_CAPACITY_PROPERTY} unless a constructor
- * gives one; it defaults to no limit, since the garbage collector reclaims the items under memory pressure. The window
- * is {@value #WINDOW_MILLIS_PROPERTY} milliseconds, 1000 by default, and the shrink fraction is
- * {@value #SHRINK_FRACTION_PROPERTY}, 0.5 by default. When the capacity shrinks, the bin discards items from the back,
- * which needs no other entry re-indexed: those are the items returned most recently, but any item left in the bin
- * serves a later borrow as well.
+ * gives one; it defaults to no limit, since the garbage collector reclaims the items under memory pressure. The shrink
+ * fraction is {@value #SHRINK_FRACTION_PROPERTY}, 0.5 by default. The windows the capacity shrinks on end for every
+ * recycler at once, through {@link #endWindows()}, which {@link SoftRecyclerWindows} calls from the cycles of the
+ * DEFAULT update graph; no recycler reads a clock, and a process whose DEFAULT graph does not cycle never shrinks one.
+ * When the capacity shrinks, the bin discards items from the back, which needs no other entry re-indexed: those are the
+ * items returned most recently, but any item left in the bin serves a later borrow as well.
  *
  * <p>
  * Note that the caller has no special obligation to return a borrowed item nor to return borrowed items in any
@@ -40,7 +41,7 @@ public class SoftRecycler<T> {
     /** The property that bounds how far every recycler's capacity may grow. */
     public static final String MAXIMUM_CAPACITY_PROPERTY = "SoftRecycler.maximumCapacity";
 
-    /** The property for the milliseconds of traffic each adjustment of the capacity is judged on. */
+    /** The property for the fewest milliseconds of traffic each shrink of the capacity is judged on. */
     public static final String WINDOW_MILLIS_PROPERTY = "SoftRecycler.windowMillis";
     /**
      * The property for the fraction, from 0 to 1, of the items a window never needed that the capacity discards; the
@@ -51,12 +52,11 @@ public class SoftRecycler<T> {
 
     private static final int DEFAULT_MAXIMUM_CAPACITY =
             Configuration.getInstance().getIntegerWithDefault(MAXIMUM_CAPACITY_PROPERTY, Integer.MAX_VALUE);
-    private static final long DEFAULT_WINDOW_NANOS =
-            1_000_000L * Configuration.getInstance().getLongWithDefault(WINDOW_MILLIS_PROPERTY, 1000);
     private static final double DEFAULT_SHRINK_FRACTION =
             Configuration.getInstance().getDoubleWithDefault(SHRINK_FRACTION_PROPERTY, 0.5);
-    /** The clock is read once per this many borrows and returns, a power of two. */
-    private static final int OPERATIONS_PER_CLOCK_READ = 4096;
+
+    /** Every recycler, so that {@link #endWindows()} can reach them; a recycler no longer used is collected. */
+    private static final List<WeakReference<SoftRecycler<?>>> RECYCLERS = new ArrayList<>();
 
     private final Supplier<T> constructItem;
     private final Consumer<T> sanitizeItem;
@@ -84,27 +84,64 @@ public class SoftRecycler<T> {
      *        needed.
      */
     public SoftRecycler(int capacity, int maximumCapacity, Supplier<T> constructItem, Consumer<T> sanitizeItem) {
-        this(capacity, maximumCapacity, constructItem, sanitizeItem, System::nanoTime, OPERATIONS_PER_CLOCK_READ,
-                DEFAULT_WINDOW_NANOS, DEFAULT_SHRINK_FRACTION);
+        this(capacity, maximumCapacity, constructItem, sanitizeItem, DEFAULT_SHRINK_FRACTION, true);
     }
 
+    /**
+     * @param register whether {@link #endWindows()} ends this recycler's windows; a test that ends them itself, through
+     *        {@link #endWindow()}, need not
+     */
     @VisibleForTesting
     SoftRecycler(final int capacity, final int maximumCapacity, @NotNull final Supplier<T> constructItem,
-            final Consumer<T> sanitizeItem, @NotNull final LongSupplier nanoClock, final int operationsPerClockRead,
-            final long windowNanos, final double shrinkFraction) {
+            final Consumer<T> sanitizeItem, final double shrinkFraction, final boolean register) {
         this.constructItem = constructItem;
         this.sanitizeItem = sanitizeItem;
         this.recycleBin = new ArrayList<>();
         this.retirementQueue = new ReferenceQueue<>();
-        this.adaptor = new CapacityAdaptor(capacity, maximumCapacity, nanoClock, operationsPerClockRead, windowNanos,
-                shrinkFraction);
+        this.adaptor = new CapacityAdaptor(capacity, maximumCapacity, shrinkFraction);
+        if (register) {
+            synchronized (RECYCLERS) {
+                RECYCLERS.add(new WeakReference<>(this));
+            }
+        }
+    }
+
+    /**
+     * End the window of every recycler, shrinking each by the items its window never needed. Called at most once per
+     * window, which should span at least one whole cycle of each client of a recycler; see {@link SoftRecyclerWindows}.
+     */
+    public static void endWindows() {
+        final List<SoftRecycler<?>> live = new ArrayList<>();
+        synchronized (RECYCLERS) {
+            RECYCLERS.removeIf(ref -> {
+                final SoftRecycler<?> recycler = ref.get();
+                if (recycler == null) {
+                    return true;
+                }
+                live.add(recycler);
+                return false;
+            });
+        }
+        // each recycler is locked on its own, so that no borrow or return waits on more than one
+        for (final SoftRecycler<?> recycler : live) {
+            recycler.endWindow();
+        }
+    }
+
+    /**
+     * End this recycler's window, shrinking it by the items the window never needed.
+     */
+    @VisibleForTesting
+    synchronized void endWindow() {
+        // get the expired SoftReferences out of the queue so we have an accurate count
+        cleanup();
+        adaptor.endWindow(recycleBin.size());
+        trimToCapacity();
     }
 
     // I'm a little sad that these are synchronized
     public T borrowItem() {
         synchronized (this) {
-            adaptor.borrowing(recycleBin.size());
-            trimToCapacity();
             // Working backwards, try to find an item that is still live
             while (!recycleBin.isEmpty()) {
                 // Peel off the last SoftReference. If it still has a value, return that value to the caller. Otherwise,
@@ -128,8 +165,6 @@ public class SoftRecycler<T> {
             sanitizeItem.accept(item);
         }
         synchronized (this) {
-            adaptor.returning(recycleBin.size());
-            trimToCapacity();
             // Get the expired SoftReferences out of the queue so we have an accurate count.
             cleanup();
             final int size = recycleBin.size();
