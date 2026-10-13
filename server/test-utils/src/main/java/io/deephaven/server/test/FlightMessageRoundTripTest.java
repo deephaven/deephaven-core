@@ -55,6 +55,7 @@ import io.deephaven.server.session.*;
 import io.deephaven.server.table.TableModule;
 import io.deephaven.server.table.validation.ExpressionValidatorModule;
 import io.deephaven.server.test.TestAuthModule.FakeBearer;
+import io.deephaven.server.uri.BarrageTableResolver;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -1872,6 +1873,56 @@ public abstract class FlightMessageRoundTripTest {
         for (final String compression : CompressionCodecs.SUPPORTED) {
             putWithRequestCompression(table, compression);
         }
+    }
+
+    /**
+     * Resolves a {@code dh+plain} URI for {@code table} with a {@link BarrageTableResolver}, the path one server takes
+     * to fetch a remote table from another, checks the data, and returns the response encodings in call order.
+     */
+    private List<String> resolveRemoteTable(final Table table) throws Exception {
+        final String tableName = "remoteCompressionTestTable";
+        ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
+
+        final ResponseEncodingRecorder recorder = new ResponseEncodingRecorder();
+        // the resolver's sessions do not close their channels, so keep them to shut down
+        final List<ManagedChannel> channels = Collections.synchronizedList(new ArrayList<>());
+        final ClientChannelFactory channelFactory = config -> {
+            final ManagedChannel channel = ChannelHelper.channelBuilder(config).intercept(recorder).build();
+            channels.add(channel);
+            return channel;
+        };
+        final BarrageTableResolver resolver =
+                new BarrageTableResolver(new SessionFactoryCreator(clientScheduler, allocator, channelFactory));
+        try {
+            final Table resolved = resolver.resolve(
+                    java.net.URI.create("dh+plain://localhost:" + localPort + "/scope/" + tableName));
+            io.deephaven.engine.testutil.TstUtils.assertTableEquals(table, resolved);
+        } finally {
+            closeSessions(resolver);
+            for (final ManagedChannel channel : channels) {
+                channel.shutdownNow();
+                channel.awaitTermination(10, TimeUnit.SECONDS);
+            }
+        }
+        return new ArrayList<>(recorder.encodings);
+    }
+
+    /**
+     * Closes the sessions {@code resolver} opened. It caches them with no way to close them (deephaven-core#1482), so
+     * this reads its private map.
+     */
+    private static void closeSessions(final BarrageTableResolver resolver) throws Exception {
+        final java.lang.reflect.Field sessionsField = BarrageTableResolver.class.getDeclaredField("sessions");
+        sessionsField.setAccessible(true);
+        for (final Object session : ((Map<?, ?>) sessionsField.get(resolver)).values()) {
+            ((BarrageSession) session).close();
+        }
+    }
+
+    @Test
+    public void testRemoteTablesUseTheJavaClientDefaultCompression() throws Exception {
+        // without -DBarrageTableResolver.acceptCompression, the resolver's sessions list every compression type
+        assertEquals(List.of("DoExchange=zstd"), resolveRemoteTable(compressionTestTable("zstd,gzip")));
     }
 
     // endregion gRPC message compression
