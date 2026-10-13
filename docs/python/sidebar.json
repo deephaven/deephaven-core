@@ -836,7 +836,7 @@
                     "path": "how-to-guides/capture-tables.md"
                   },
                   {
-                    "label": "Stream data with input tables",
+                    "label": "Stream data with Input Tables",
                     "path": "how-to-guides/client-input-tables.md"
                   }
                 ]
@@ -898,13 +898,8 @@
             ]
           },
           {
-            "label": "Development tools",
-            "items": [
-              {
-                "label": "MCP",
-                "path": "how-to-guides/mcp.md"
-              }
-            ]
+            "label": "MCP",
+            "path": "how-to-guides/mcp.md"
           },
           {
             "label": "Best practices and troubleshooting",

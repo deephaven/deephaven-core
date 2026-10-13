@@ -796,13 +796,8 @@
             ]
           },
           {
-            "label": "Development tools",
-            "items": [
-              {
-                "label": "MCP",
-                "path": "how-to-guides/mcp.md"
-              }
-            ]
+            "label": "MCP",
+            "path": "how-to-guides/mcp.md"
           },
           {
             "label": "Best practices and troubleshooting",
