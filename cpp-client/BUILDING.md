@@ -57,6 +57,8 @@ connect to a server when you want to run them.
    over the packaged one:
    ```
    curl -LO https://github.com/Kitware/CMake/releases/download/v3.31.12/cmake-3.31.12-linux-$(uname -m).sh
+   curl -LO https://github.com/Kitware/CMake/releases/download/v3.31.12/cmake-3.31.12-SHA-256.txt
+   sha256sum --check --ignore-missing cmake-3.31.12-SHA-256.txt   # must print "OK"
    sudo sh cmake-3.31.12-linux-$(uname -m).sh --skip-license --prefix=/usr/local
    hash -r           # make this shell forget where it last found cmake
    cmake --version   # should now report 3.31.12
