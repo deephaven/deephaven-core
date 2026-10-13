@@ -36,6 +36,7 @@ import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.qst.type.Type;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -62,6 +63,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1843,6 +1845,89 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     chunk.set(i, i % 5 == 0 ? QueryConstants.NULL_LONG : epochNanos[i % epochNanos.length]);
                 }
             }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    /**
+     * A ZonedDateTime source that cannot be reinterpreted to long delivers an ObjectChunk to a dictionary writer built
+     * for long. The dictionary must be keyed by epoch nanos, so values at the same instant in different zones share one
+     * entry, and the values decode as the instants the source held.
+     */
+    @Test
+    public void testDictionaryEncodedZonedDateTimeObjectSerialization() throws IOException {
+        final long t0 = 1_700_000_000_000_000_000L;
+        final long t1 = t0 + 1_000_000_000L;
+        final long t2 = t0 + 2_000_000_000L;
+        final ZonedDateTime[] values = {
+                DateTimeUtils.epochNanosToZonedDateTime(t0, ZoneId.of("America/New_York")),
+                DateTimeUtils.epochNanosToZonedDateTime(t0, ZoneId.of("UTC")),
+                null,
+                DateTimeUtils.epochNanosToZonedDateTime(t1, ZoneId.of("Asia/Tokyo")),
+                DateTimeUtils.epochNanosToZonedDateTime(t0, ZoneId.of("Europe/London")),
+                DateTimeUtils.epochNanosToZonedDateTime(t2, ZoneId.of("UTC")),
+                null,
+                DateTimeUtils.epochNanosToZonedDateTime(t1, ZoneId.of("America/New_York")),
+        };
+        final int numRows = values.length;
+        final int numDistinctInstants = 3;
+
+        // Like production callers, build the writer and reader for the reinterpreted wire type (ZonedDateTime -> long)
+        // while the schema field still describes the logical type.
+        final Field writerField = buildDictionaryField(ZonedDateTime.class, 32, 0L);
+        final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) DefaultChunkWriterFactory.INSTANCE.newWriter(
+                BarrageTypeInfo.make(long.class, null, writerField));
+        Assert.eq(ChunkType.Long, "ChunkType.Long", dictWriter.getValuesChunkType(), "dictWriter.getValuesChunkType()");
+
+        try (final WritableLongChunk<Values> expected = WritableLongChunk.makeWritableChunk(numRows)) {
+            for (int i = 0; i < numRows; ++i) {
+                expected.set(i, DateTimeUtils.epochNanos(values[i]));
+            }
+
+            for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, dictWriter.getValuesChunkType());
+                final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
+                final WritableObjectChunk<ZonedDateTime, Values> work = WritableObjectChunk.makeWritableChunk(numRows);
+                for (int i = 0; i < numRows; ++i) {
+                    work.set(i, values[i]);
+                }
+                // the context owns work and closes it
+                try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0);
+                        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                    final LongStream.Builder bufBld = LongStream.builder();
+                    final List<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                    try (final ChunkWriter.DrainableColumn col = dictWriter.getInputStream(ctx, null, opts, state)) {
+                        col.visitFieldNodes((n, nc) -> fieldNodes.add(new ChunkWriter.FieldNodeInfo(n, nc)));
+                        col.visitBuffers(bufBld::add);
+                        col.drainTo(baos);
+                    }
+                    final long[] buffers = bufBld.build().toArray();
+
+                    // With Deephaven nulls, the null sentinel is a real dictionary entry.
+                    final int expectedDictSize = numDistinctInstants + (opts.useDeephavenNulls() ? 1 : 0);
+                    Assert.eq(expectedDictSize, "expectedDictSize", state.totalSize(), "state.totalSize()");
+
+                    try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
+                        registry.update(0L, deltaChunk, false);
+                    }
+                    state.resetDelta();
+
+                    @SuppressWarnings("unchecked")
+                    final ChunkReader<WritableChunk<Values>> reader =
+                            (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
+                                    .newReader(BarrageTypeInfo.make(long.class, null, writerField), opts, registry,
+                                            null);
+                    try (final WritableChunk<Values> rt = reader.readChunk(
+                            fieldNodes.iterator(), Arrays.stream(buffers).iterator(),
+                            new LittleEndianDataInputStream(
+                                    new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size())),
+                            null, 0, numRows)) {
+                        Assert.eq(numRows, "numRows", rt.size(), "rt.size()");
+                        primitiveIdentityValidate(expected, rt, null, 0);
+                    }
+                } finally {
+                    registry.close();
+                }
+            }
         }
     }
 
