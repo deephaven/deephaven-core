@@ -9,7 +9,7 @@ import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import jsinterop.annotations.JsProperty;
 
 /**
- * A business period within a {@code dh.calendar.BusinessCalendar}.
+ * A business period within a {@link JsBusinessCalendar dh.calendar.BusinessCalendar}.
  * <p>
  * A business period describes the open and close times for a single contiguous range of time on a business day.
  */
