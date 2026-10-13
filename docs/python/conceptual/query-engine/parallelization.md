@@ -231,7 +231,7 @@ col = Selectable.parse("ID = get_and_increment_counter()").with_serial()
 result = empty_table(5_000_000).update(col)
 ```
 
-When a [`Selectable`](../../reference/query-language/types/Selectable.md) is serial, Deephaven evaluates every row in order, starting with row 0, and never runs the column concurrently with itself. That protects state that only this column uses. If another column uses the same state, add a [barrier](#barriers) as well. [Barriers](#barriers) only order columns and filters within one operation, so if another table's formulas use the same state, make the shared code itself thread-safe, for example by protecting it with a lock.
+When a [`Selectable`](../../reference/query-language/types/Selectable.md) is serial, Deephaven evaluates every row in order, from the lowest row key to the highest, and never runs the column concurrently with itself. That protects state that only this column uses. If another column uses the same state, add a [barrier](#barriers) as well. [Barriers](#barriers) only order columns and filters within one operation, so if another table's formulas use the same state, make the shared code itself thread-safe, for example by protecting it with a lock.
 
 #### Serial filters
 
