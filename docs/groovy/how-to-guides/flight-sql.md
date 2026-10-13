@@ -56,6 +56,8 @@ These clients run in their own process, separate from the Deephaven server, so t
 > [!NOTE]
 > Production servers typically require TLS and additional authentication configuration, so adjust the connection settings in these examples to match your server.
 
+The Java examples use Apache Arrow. Run their JVM with `--add-opens=java.base/java.nio=ALL-UNNAMED`, which Arrow needs on Java 16 and later.
+
 Choose a client:
 
 - [ADBC](#adbc) is the recommended choice for new code in Python, Java, and other languages.

@@ -34,7 +34,7 @@ Barrage supports two primary modes of retrieving data:
 
 - **Subscription**: Opens a persistent connection that streams updates as the source table changes. The client receives an initial snapshot followed by incremental updates. Use this for ticking tables you want to monitor in real time.
 
-- **Snapshot**: Retrieves a one-time, static copy of the table. The connection closes after the data is delivered. Use this for static tables or when you need a point-in-time capture.
+- **Snapshot**: Retrieves a one-time, static copy of the table. The table doesn't update after the data is delivered, but the Barrage session stays open for more requests until you close it. Use this for static tables or when you need a point-in-time capture.
 
 ```python skip-test
 from deephaven.barrage import barrage_session
@@ -86,7 +86,7 @@ A shorter interval reduces latency but increases network traffic. A longer inter
 
 ![Barrage architecture](../assets/conceptual/remote_and_local_server.png)
 
-1. **Remote server** hosts a table referenced by a ticket — the ticket is just a reference, not the data itself. Tickets can be scope tickets (variables in the global scope), export tickets, or shared tickets for cross-session access.
+1. **Remote server** hosts a table referenced by a ticket — the ticket is just a reference, not the data itself. Tickets can be scope tickets (variables in the global scope) or shared tickets for cross-session access. An export ticket belongs to the client session that created it, so the local server's Barrage session can't use it.
 2. **Barrage protocol** transports the actual data using Arrow Flight with incremental update metadata.
 3. **Local server** subscribes via `BarrageSession` and receives a full local copy of the data that stays synchronized with the source. This local table can participate in downstream queries (joins, filters, aggregations) that execute on the local server.
 

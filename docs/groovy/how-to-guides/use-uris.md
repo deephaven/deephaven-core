@@ -220,7 +220,7 @@ You can also share tables across networks, public or private. Just like the prev
 >
 > - When sharing tables across a network with `dh+plain`, you do **not** need to specify the port if Deephaven is running on the default port `10000`. A `dh` URI without a port uses `443`.
 > - You **must** specify the port in the URI when:
->   - The remote Deephaven instance runs on a non-default port (not 10000).
+>   - The remote Deephaven instance runs on a port other than the scheme's default (`10000` for `dh+plain`, `443` for `dh`).
 >   - You're connecting to a custom port forwarding configuration.
 >
 > Example format with port: `dh+plain://hostname:9876/scope/table_name`

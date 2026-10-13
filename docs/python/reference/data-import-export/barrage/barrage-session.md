@@ -2,7 +2,7 @@
 title: barrage_session
 ---
 
-The `barrage_session` method creates a new [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession), a Deephaven gRPC session to a remote server. Each call opens a new gRPC channel.
+The `barrage_session` function creates a new [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession), a Deephaven gRPC session to a remote server. Each call opens a new gRPC channel.
 
 <!--TODO: Add information about client mutual TLS authentication when it's added. -->
 

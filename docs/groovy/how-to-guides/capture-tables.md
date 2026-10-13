@@ -79,16 +79,14 @@ table_ref = client_session.open_table("table_on_server")
 
 Once you have a reference to a table on the server, you can publish it with a shared ticket. In the Python client, create a shared ticket with the [`SharedTicket`](/core/client-api/python/code/pydeephaven.ticket.html#pydeephaven.ticket.SharedTicket) class. Then publish the table to the ticket with [`publish_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.publish_table).
 
-The Groovy server needs the ticket's bytes, so this example gives the ticket a known name instead of generating a random one with [`SharedTicket.random_ticket`](/core/client-api/python/code/pydeephaven.ticket.html#pydeephaven.ticket.SharedTicket.random_ticket). The name must meet two requirements:
-
-- Its bytes start with `h`, which marks a shared ticket. [`SharedTicket`](/core/client-api/python/code/pydeephaven.ticket.html#pydeephaven.ticket.SharedTicket) raises an error for any other prefix.
-- It isn't already in use on the remote server.
+Generate the ticket with [`SharedTicket.random_ticket`](/core/client-api/python/code/pydeephaven.ticket.html#pydeephaven.ticket.SharedTicket.random_ticket). Any session that knows a shared ticket's bytes can read the table, so a random ticket is harder to guess than a fixed name. The Groovy server needs the ticket's bytes, so print them as a hex string:
 
 ```python skip-test
 from pydeephaven.ticket import SharedTicket
 
-ticket = SharedTicket(b"hcapture_example")
+ticket = SharedTicket.random_ticket()
 client_session.publish_table(ticket, table_ref)
+print(ticket.bytes.hex())
 ```
 
 The ticket stays valid only while `client_session` is open and the published table is alive. Keep the Python client running, and keep a reference to `table_ref` without closing it.
@@ -113,7 +111,7 @@ Use **snapshot** when:
 To capture it:
 
 1. Write the remote server's address as a target URI. Use the `dh+plain` scheme for a server without TLS, or `dh` for a server with TLS.
-2. Build a [`TableSpec`](/core/javadoc/io/deephaven/qst/table/TableSpec.html) from the ticket bytes you published in the Python client (`hcapture_example`).
+2. Build a [`TableSpec`](/core/javadoc/io/deephaven/qst/table/TableSpec.html) from the ticket bytes you published in the Python client. Paste the hex string that the Python client printed, and decode it with Groovy's `decodeHex`.
 3. Call [`BarrageTableResolver.get`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html#get()) to obtain the server's resolver.
 4. Pass the target URI and the [`TableSpec`](/core/javadoc/io/deephaven/qst/table/TableSpec.html) to the resolver's [`subscribe`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html#subscribe(java.lang.String,io.deephaven.qst.table.TableSpec)) or [`snapshot`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html#snapshot(java.lang.String,io.deephaven.qst.table.TableSpec)) method. Both return a [`Future`](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Future.html).
 5. Call [`Future.get`](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Future.html#get--) on the result to wait for the table.
@@ -125,7 +123,8 @@ import io.deephaven.qst.table.TableSpec
 import io.deephaven.server.uri.BarrageTableResolver
 
 remoteTarget = "dh+plain://localhost:9999"
-ticketSpec = TableSpec.ticket("hcapture_example".getBytes("UTF-8"))
+// Replace with the hex string that the Python client printed
+ticketSpec = TableSpec.ticket("<ticket hex>".decodeHex())
 
 localTStreaming = BarrageTableResolver.get().subscribe(remoteTarget, ticketSpec).get()
 ```
@@ -180,15 +179,16 @@ The Python client is what publishes tickets to the remote server, so do the filt
 ```python skip-test
 # Filter on the remote server before publishing
 filtered_ref = client_session.open_table("large_table").where("Region = `EAST`")
-filtered_ticket = SharedTicket(b"hcapture_example_filtered")
+filtered_ticket = SharedTicket.random_ticket()
 client_session.publish_table(filtered_ticket, filtered_ref)
+print(filtered_ticket.bytes.hex())
 ```
 
 Then subscribe to the new ticket from the local Groovy server:
 
 ```groovy skip-test
 // The subscriber now receives only the filtered data
-filteredSpec = TableSpec.ticket("hcapture_example_filtered".getBytes("UTF-8"))
+filteredSpec = TableSpec.ticket("<filtered ticket hex>".decodeHex())
 localTFiltered = BarrageTableResolver.get().subscribe(remoteTarget, filteredSpec).get()
 ```
 

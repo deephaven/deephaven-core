@@ -97,7 +97,7 @@ The ticket stays valid only while `table_ref` is alive and `client_session` is o
 
 ## Capture the table with a Barrage session
 
-To capture the table on the local server, use the [`barrage_session`](../reference/data-import-export/barrage/barrage-session.md) function to create a Barrage session. It takes the same connection arguments as [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session): `host`, `port`, `auth_type`, and `auth_token`, plus `use_tls` and `tls_root_certs` for a server that uses TLS.
+To capture the table on the local server, use the [`barrage_session`](../reference/data-import-export/barrage/barrage-session.md) function to create a Barrage session. It takes the same connection arguments as [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session): `host`, `port`, `auth_type`, and `auth_token`, plus `use_tls` and `tls_root_certs` for a server that uses TLS. It also takes `extra_headers`, a dictionary of extra headers to set on the gRPC channel.
 
 Unlike [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session), [`barrage_session`](../reference/data-import-export/barrage/barrage-session.md) doesn't read `DH_HOST` or `DH_PORT`. `host` is required, and `port` defaults to `10000`, so pass both explicitly. For the anonymous server on port `9999`, use `barrage_session(host="localhost", port=9999)`. The following example matches the pre-shared key connection above:
 

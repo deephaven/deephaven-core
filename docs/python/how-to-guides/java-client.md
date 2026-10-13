@@ -28,14 +28,12 @@ With Deephaven running, open the Deephaven IDE and run the weather server script
 1. Import the libraries the script needs.
 
 ```python skip-test
-import time
 import os
 
 from dataclasses import dataclass
 from datetime import datetime
 from math import cos, asin, sqrt, pi
-from threading import Lock
-from threading import Thread
+from threading import Event, Lock, Thread
 
 from deephaven import DynamicTableWriter, dtypes as dht
 from deephaven import agg
@@ -235,6 +233,11 @@ def geo_locate(city_name) -> Location:
     return Location(city=local_city, state=local_state, lat=loc["lat"], lon=loc["lng"])
 
 
+# NOAA's API requires a User-Agent that identifies your application.
+# Replace this value with your own app name and contact email.
+NOAA_HEADERS = {"User-Agent": "(my-weather-app, contact@example.com)"}
+
+
 # We have to poke NOAA's APIs so that we can find
 # 1) the "Point" 2) the Observation station and 3) the Forecast station.
 # Once we collect this data, we can construct an appropriate API call
@@ -242,7 +245,8 @@ def geo_locate(city_name) -> Location:
 def discover_weather(loc):
     # First, convert the Lat/lon into a point
     point_json = requests.get(
-        "https://api.weather.gov/points/" + str(loc.lat) + "%2C" + str(loc.lon)
+        "https://api.weather.gov/points/" + str(loc.lat) + "%2C" + str(loc.lon),
+        headers=NOAA_HEADERS,
     ).json()
 
     # Next, use that point to locate the Grid location, which tells us the station URLs
@@ -250,7 +254,7 @@ def discover_weather(loc):
     observation_url = point_json["properties"]["observationStations"]
 
     # Finally, locate the station to use for observations and build a URL we can just call
-    station_json = requests.get(observation_url).json()
+    station_json = requests.get(observation_url, headers=NOAA_HEADERS).json()
 
     # Sift through the set of features and locate the closest one as the crow flies
     # and use that as the observation station.
@@ -273,7 +277,7 @@ def discover_weather(loc):
 
 
 def update_observation(lc):
-    obs_json = requests.get(lc.observation_station).json()
+    obs_json = requests.get(lc.observation_station, headers=NOAA_HEADERS).json()
 
     obs_time = datetime.fromisoformat(obs_json["properties"]["timestamp"])
 
@@ -308,8 +312,8 @@ def begin_watch(city_name):
         update_observation(loc)
 
 
-def periodic_fetch_real_data():
-    while True:
+def periodic_fetch_real_data(stop):
+    while not stop.is_set():
         # Copy the set under the lock, because begin_watch can add to it at any time
         with CITY_LOCK:
             cities = list(tracked_cities)
@@ -319,10 +323,16 @@ def periodic_fetch_real_data():
                 update_observation(lc)
             except Exception as e:
                 print("Failed to update " + str(lc) + ": " + str(e))
-        time.sleep(60)
+        stop.wait(60)
 
 
-monitor_thread = Thread(target=periodic_fetch_real_data)
+# If an earlier run of this script started a monitor thread, stop it first
+if "monitor_thread" in globals():
+    stop_monitor.set()
+    monitor_thread.join()
+
+stop_monitor = Event()
+monitor_thread = Thread(target=periodic_fetch_real_data, args=(stop_monitor,))
 monitor_thread.start()
 ```
 
@@ -334,7 +344,7 @@ The main functions in the collapsed code above are:
 - `discover_weather` finds the NOAA weather API endpoints for the position.
 - `update_observation` fetches the current weather observation for the position and writes it to the table.
 - `begin_watch` adds a city to the set of monitored cities. The Java client calls this function.
-- `periodic_fetch_real_data` runs on a background thread and fetches the current weather for all monitored cities every minute. If the fetch for a city fails, it prints the error and moves on to the next city.
+- `periodic_fetch_real_data` runs on a background thread and fetches the current weather for all monitored cities every minute. If the fetch for a city fails, it prints the error and moves on to the next city. When you rerun the script, it stops the earlier thread before it starts a new one. To stop fetching, run `stop_monitor.set()`.
 
 At this point, the weather server is ready to provide data to the Java client. The script monitors no cities until something calls `begin_watch`. The Java client calls `begin_watch`. You can also call it in the IDE, for example with `begin_watch("Springfield, ME")`.
 
@@ -367,7 +377,7 @@ The snippets in the following sections use these variables from the application:
 - `flightScheduler` is a [`ScheduledExecutorService`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html), such as one created with `Executors.newScheduledThreadPool(4)`. It runs the client's background work, including refreshing the session token.
 - `place` is the location the user typed.
 - `log` is the application's logger, a Deephaven [`Logger`](/core/javadoc/io/deephaven/io/logger/Logger.html). Substitute your application's own logger.
-- `managedChannel` and `barrageSession` are fields of type `ManagedChannel` and `BarrageSession`, which the snippets below assign.
+- `managedChannel`, `bufferAllocator`, and `barrageSession` are fields of type `ManagedChannel`, `BufferAllocator`, and `BarrageSession`, which the snippets below assign.
 
 They also use these imports:
 
@@ -394,6 +404,7 @@ import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 ```
 
@@ -417,7 +428,7 @@ Once you have a channel to the server, create a [`BarrageSession`](/core/javadoc
 By default, a Deephaven server requires a PSK. Pass it with `authenticationTypeAndValue`, prefixed by the name of the PSK authentication handler.
 
 ```java
-final BufferAllocator bufferAllocator = new RootAllocator();
+bufferAllocator = new RootAllocator();
 final BarrageSessionFactory barrageSessionFactory =
         DaggerDeephavenBarrageRoot.create().factoryBuilder()
                 .managedChannel(managedChannel)
@@ -523,6 +534,20 @@ This code sends the server a Python call to `begin_watch` that passes the escape
 > This example embeds a user string into a command. `escapeString` stands for a helper that you write to escape quotes and other special characters within the string. Without it, a user can inject arbitrary code into the command that the server runs.
 
 To send data from the client without running code on the server, use [input tables](/core/groovy/docs/how-to-guides/java-client-input-tables/).
+
+### Close the connection
+
+When the application finishes, close the session and release the objects it used. Closing the `BarrageSession` doesn't shut down the channel, so shut down the channel and the scheduler separately, and then close the allocator:
+
+```java
+// Ask the server to close the session, wait for it to acknowledge, then close the client side
+barrageSession.session().closeFuture().get(5, TimeUnit.SECONDS);
+barrageSession.close();
+
+managedChannel.shutdownNow();
+flightScheduler.shutdownNow();
+bufferAllocator.close();
+```
 
 ## Related documentation
 
