@@ -111,6 +111,11 @@ final class InstantPushdownHandler {
                 return StatisticsEvaluator.ALWAYS_MAYBE;
             }
             instantNanos[i] = DateTimeUtils.epochNanos((Instant) value);
+            if (value != null && !ParquetPushdownUtils.epochNanosToInstant(instantNanos[i]).equals(value)) {
+                // epochNanos wraps an Instant far before 1677 instead of rejecting it, so the result is some other
+                // instant -- possibly one a saturated statistic stands at -- and the statistics cannot place the value.
+                return StatisticsEvaluator.ALWAYS_MAYBE;
+            }
         }
         if (invertMatch) {
             return statistics -> {

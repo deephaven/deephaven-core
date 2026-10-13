@@ -237,10 +237,6 @@ public class InstantPushdownHandlerTest {
         }
     }
 
-    /**
-     * Resolves the filter to an evaluator and applies it to one row group's statistics, as
-     * {@code StatisticsEvaluator.makeForFilter} does per location.
-     */
     private static Statistics<?> instantStats(
             final LogicalTypeAnnotation.TimeUnit unit, final long minInc, final long maxInc) {
         final PrimitiveType col = Types.required(INT64)
@@ -355,6 +351,28 @@ public class InstantPushdownHandlerTest {
     }
 
     /**
+     * {@link DateTimeUtils#epochNanos(Instant)} wraps an {@link Instant} far before 1677 around instead of rejecting
+     * it, and this one lands on {@code Long.MAX_VALUE} -- where a NANOS statistic may stand, and where one beyond 2262
+     * saturates. Taken as it converts, an inverted match on it would exclude a row group of nothing else, though every
+     * row differs from it; the handler declines the value instead.
+     */
+    @Test
+    public void matchValueThatWrapsAroundIsDeclined() {
+        final Instant ancient = Instant.ofEpochSecond(-2_197_108_676_271_213L, 511);
+        assertEquals(Long.MAX_VALUE, DateTimeUtils.epochNanos(ancient));
+        final long sentinelMillis = Instant.parse("9999-12-31T00:00:00Z").toEpochMilli();
+
+        for (final Statistics<?> stats : List.of(
+                instantStatsNanos(Long.MAX_VALUE, Long.MAX_VALUE),
+                instantStats(LogicalTypeAnnotation.TimeUnit.MILLIS, sentinelMillis, sentinelMillis),
+                instantStats(LogicalTypeAnnotation.TimeUnit.MICROS, sentinelMillis * 1_000L,
+                        sentinelMillis * 1_000L))) {
+            assertTrue(evaluate(new MatchFilter(MatchOptions.INVERTED, "t", ancient), stats));
+            assertTrue(evaluate(new MatchFilter(MatchOptions.REGULAR, "t", ancient), stats));
+        }
+    }
+
+    /**
      * DH-23756, PD-008: NANOS statistics at the top of the {@code long} range are legal epoch nanoseconds, but the
      * evaluator used to round-trip them through {@link Instant}, and {@link DateTimeUtils#epochNanos(Instant)} cannot
      * convert the top ~0.855 s back. They are now used as they are.
@@ -374,6 +392,10 @@ public class InstantPushdownHandlerTest {
         }
     }
 
+    /**
+     * Resolves the filter to an evaluator and applies it to one row group's statistics, as
+     * {@code StatisticsEvaluator.makeForFilter} does per location.
+     */
     private static boolean evaluate(final InstantRangeFilter filter, final Statistics<?> stats) {
         return InstantPushdownHandler.maybeCreateEvaluator(filter).maybeOverlaps(stats);
     }

@@ -482,8 +482,9 @@ final class MinMaxFromStatistics {
      * excluded.
      * <ul>
      * <li>After the range, either extreme becomes {@link Long#MAX_VALUE}. It compares just as the true value would with
-     * everything but itself, and no filter can name it: {@link DateTimeUtils#epochNanos} rejects the {@link Instant} it
-     * stands for.</li>
+     * everything but itself, and no match value can name it: {@link DateTimeUtils#epochNanos} rejects the
+     * {@link Instant} it stands for, and {@link InstantPushdownHandler} declines a value that {@code epochNanos} wraps
+     * around to it from far before 1677.</li>
      * <li>Before the range, no single value will do. Deephaven orders null below every value, so the true value lies
      * above {@code NULL_LONG} and below {@link QueryConstants#MIN_LONG}, two adjacent {@code long}s. A minimum becomes
      * {@code NULL_LONG} ({@link Long#MIN_VALUE}) and a maximum {@code MIN_LONG}, straddling it, so a row group of such
