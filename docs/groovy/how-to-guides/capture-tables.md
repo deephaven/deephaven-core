@@ -26,7 +26,7 @@ You need an installation of [`pydeephaven`](/core/client-api/python/) in the Pyt
 pip install pydeephaven
 ```
 
-To learn about the Deephaven Python client, check out the [Python client quickstart](/core/docs/getting-started/pyclient-quickstart/).
+To learn about the Deephaven Python client, check out the [Python client Quickstart](/core/docs/getting-started/pyclient-quickstart/).
 
 ## Connect the Python client to the remote Deephaven server
 
@@ -38,7 +38,7 @@ If you omit any of these, the [`Session`](/core/client-api/python/code/pydeephav
 - Port: the `DH_PORT` environment variable, or `10000` if that variable isn't set.
 - Authentication: anonymous authentication.
 
-Suppose that the "remote" Deephaven server is running locally on port `9999` with [anonymous authentication](./authentication/auth-anon.md). Run the following in the Python client:
+The local server already uses the default port, `10000`, so suppose that the "remote" Deephaven server is running locally on port `9999` with [anonymous authentication](./authentication/auth-anon.md). Run the following in the Python client:
 
 ```python skip-test
 from pydeephaven import Session
@@ -95,13 +95,13 @@ The ticket stays valid only while `client_session` is open and the published tab
 
 On the local Groovy server, use [`BarrageTableResolver`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html) to capture the table published to the ticket. You can capture it in two ways.
 
-Use [`BarrageTableResolver.subscribe`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html#subscribe(java.lang.String,io.deephaven.qst.table.TableSpec)) when:
+Use **subscribe** when:
 
 - You need real-time updates as the source table changes.
 - You're building a live dashboard or monitoring system.
 - The source table is ticking (updating periodically).
 
-Use [`BarrageTableResolver.snapshot`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html#snapshot(java.lang.String,io.deephaven.qst.table.TableSpec)) when:
+Use **snapshot** when:
 
 - You need a one-time, static copy of the data.
 - The source table is static and won't change.
@@ -161,11 +161,8 @@ For tables with frequent updates or many subscribers, these costs can add up. Mo
 Network interruptions can break Barrage subscriptions. Consider these patterns for production applications:
 
 - **Failed subscription**: Subscribe to the ticket again. The new subscription reuses the local server's existing Barrage connection to the remote server.
-
 - **Failed connection**: [`BarrageTableResolver`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html) can't replace a Barrage connection that has failed, for example because the remote server restarted. Restart the local server to open a new connection.
-
 - **Ticket lifetime**: If the published table or `client_session` has gone away, re-publish before resubscribing. See [Publish the table to a shared ticket](#publish-the-table-to-a-shared-ticket).
-
 - **Authentication expiry**: The remote server can accept other authentication methods alongside anonymous authentication. If the Python client connects with one of them, make sure its tokens or credentials stay valid for as long as the published table needs to stay available.
 
 ### Memory considerations for large tables
@@ -173,12 +170,10 @@ Network interruptions can break Barrage subscriptions. Consider these patterns f
 When subscribing to large ticking tables:
 
 - **Initial snapshot size**: A subscription starts with a snapshot of the whole table. For very large tables, this can consume significant memory. By default, the server breaks large snapshots into chunks. See [snapshot size control](./performance/barrage-performance.md#control-subscription-snapshot-size).
-
 - **Incremental updates**: After the initial snapshot, the remote server sends only changed rows. These updates are typically much smaller than the full table.
-
 - **Server-side filtering**: If you only need a subset of the data, consider filtering the table on the remote server before subscribing. This reduces both network and memory usage.
 
-In the Python client, filter the table and publish the result to a new ticket:
+The Python client is what publishes tickets to the remote server, so do the filtering there. Filter the table and publish the result to a new ticket:
 
 ```python skip-test
 # Filter on the remote server before publishing
@@ -197,7 +192,7 @@ localTFiltered = BarrageTableResolver.get().subscribe(remoteTarget, filteredSpec
 
 ## Related documentation
 
-- [Python client quickstart](/core/docs/getting-started/pyclient-quickstart/)
+- [Python client Quickstart](/core/docs/getting-started/pyclient-quickstart/)
 - [What is Barrage?](../conceptual/what-is-barrage.md)
 - [Share tables with URIs](./use-uris.md)
 - [Anonymous authentication](./authentication/auth-anon.md)

@@ -51,6 +51,8 @@ Some clients, such as the Flight SQL JDBC Driver, don't keep the session without
 
 Each example in this section connects to an insecure (without TLS) Deephaven Flight SQL server on localhost with port 10000, runs the SQL query `SELECT 42 as Foo`, and prints the results.
 
+These clients run in their own process, separate from the Deephaven server, so they work the same whether the server runs Python or Groovy. That's why this page includes Python client examples.
+
 > [!NOTE]
 > Production servers typically require TLS and additional authentication configuration, so adjust the connection settings in these examples to match your server.
 

@@ -22,7 +22,7 @@ You need an installation of [`pydeephaven`](/core/client-api/python/) on the loc
 pip install pydeephaven
 ```
 
-See the guide on [installing Python packages](./install-and-use-python-packages.md) for more information. To learn about the Deephaven Python client, check out the [Python client quickstart](../getting-started/pyclient-quickstart.md).
+See the guide on [installing Python packages](./install-and-use-python-packages.md) for more information. To learn about the Deephaven Python client, check out the [Python client Quickstart](../getting-started/pyclient-quickstart.md).
 
 ## Connect the Python client to the remote Deephaven server
 
@@ -34,7 +34,7 @@ If you omit any of these, the [`Session`](/core/client-api/python/code/pydeephav
 - Port: the `DH_PORT` environment variable, or `10000` if that variable isn't set.
 - Authentication: anonymous authentication.
 
-Suppose that the "remote" Deephaven server is running locally on port `9999` with [anonymous authentication](./authentication/auth-anon.md). Connect to it as follows:
+The local server already uses the default port, `10000`, so suppose that the "remote" Deephaven server is running locally on port `9999` with [anonymous authentication](./authentication/auth-anon.md). Connect to it as follows:
 
 ```python skip-test
 from pydeephaven import Session
@@ -173,9 +173,7 @@ If you need to keep the session open for other subscriptions but want to release
 Network interruptions can break Barrage subscriptions. Consider these patterns for production applications:
 
 - **Reconnection**: If the Barrage session disconnects, create a new session with [`barrage_session`](../reference/data-import-export/barrage/barrage-session.md) and resubscribe.
-
 - **Ticket lifetime**: If the published table or `client_session` has gone away, re-publish before resubscribing. See [Publish the table to a shared ticket](#publish-the-table-to-a-shared-ticket).
-
 - **Authentication expiry**: If your sessions use authenticated connections, make sure their tokens or credentials stay valid for as long as your subscriptions run.
 
 ### Memory considerations for large tables
@@ -183,9 +181,7 @@ Network interruptions can break Barrage subscriptions. Consider these patterns f
 When subscribing to large ticking tables:
 
 - **Initial snapshot size**: A subscription starts with a snapshot of the whole table. For very large tables, this can consume significant memory. By default, the server breaks large snapshots into chunks. See [snapshot size control](./performance/barrage-performance.md#control-subscription-snapshot-size).
-
 - **Incremental updates**: After the initial snapshot, the remote server sends only changed rows. These updates are typically much smaller than the full table.
-
 - **Server-side filtering**: If you only need a subset of the data, consider filtering the table on the remote server before subscribing. This reduces both network and memory usage.
 
 ```python skip-test
@@ -200,7 +196,7 @@ local_t_filtered = my_barrage_session.subscribe(filtered_ticket.bytes)
 
 ## Related documentation
 
-- [Python client quickstart](../getting-started/pyclient-quickstart.md)
+- [Python client Quickstart](../getting-started/pyclient-quickstart.md)
 - [What is Barrage?](../conceptual/what-is-barrage.md)
 - [Share tables with URIs](./use-uris.md)
 - [Anonymous authentication](./authentication/auth-anon.md)
