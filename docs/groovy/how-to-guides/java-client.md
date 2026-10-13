@@ -547,12 +547,15 @@ When the application finishes, close the session and release the objects it used
 
 ```java
 // Ask the server to close the session, wait for it to acknowledge, then close the client side
-barrageSession.session().closeFuture().get(5, TimeUnit.SECONDS);
-barrageSession.close();
-
-managedChannel.shutdownNow();
-flightScheduler.shutdownNow();
-bufferAllocator.close();
+try {
+    barrageSession.session().closeFuture().get(5, TimeUnit.SECONDS);
+} finally {
+    // Release the client-side resources even if the server doesn't acknowledge in time
+    barrageSession.close();
+    managedChannel.shutdownNow();
+    flightScheduler.shutdownNow();
+    bufferAllocator.close();
+}
 ```
 
 ## Related documentation
