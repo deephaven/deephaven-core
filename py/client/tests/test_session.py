@@ -2,12 +2,13 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 import gc
+import queue
 import subprocess
 import sys
 import threading
 import unittest
 import weakref
-from time import sleep, time
+from time import monotonic, sleep, time
 from unittest import mock
 
 import pandas as pd
@@ -15,9 +16,22 @@ import pyarrow as pa
 from pyarrow import csv
 
 from pydeephaven import DHError, Session
+from pydeephaven.session import _SessionJob
 from pydeephaven.table import Table
 from pydeephaven.ticket import ScopeTicket, SharedTicket
 from tests.testbase import BaseTestCase
+
+
+class _WaitSignalingQueue(queue.SimpleQueue):
+    """A SimpleQueue that signals when a worker starts to wait on it."""
+
+    def __init__(self):
+        super().__init__()
+        self.waiting = threading.Event()
+
+    def get(self, block=True, timeout=None):
+        self.waiting.set()
+        return super().get(block, timeout)
 
 
 class SessionTestCase(BaseTestCase):
@@ -251,8 +265,6 @@ t1 = empty_table(0) if t.is_blink else None
             self.assertEqual(len(refreshes), 1, "refreshed after close")
 
     def test_failing_job_does_not_stop_worker(self):
-        from pydeephaven.session import _SessionJob
-
         ran_after_failure = threading.Event()
 
         class FailingJob(_SessionJob):
@@ -285,16 +297,48 @@ t1 = empty_table(0) if t.is_blink else None
             self.assertFalse(old_worker.is_alive())
             self.assertTrue(new_worker.is_alive())
 
-    def test_dropped_session_is_collected(self):
+    def test_due_refresh_runs_before_queued_releases(self):
         session = Session()
+        try:
+            released = []
+            first_started = threading.Event()
+            finish_first = threading.Event()
+            releases_before_refresh = []
+            refreshed = threading.Event()
+
+            def paused_release(ticket):
+                released.append(ticket)
+                if len(released) == 1:
+                    first_started.set()
+                    finish_first.wait(10)
+
+            def recording_refresh():
+                releases_before_refresh.append(len(released))
+                refreshed.set()
+                return True
+
+            session.release = paused_release
+            session._refresh_token = recording_refresh
+            for _ in range(5):
+                session._queue_release(session.make_export_ticket())
+            self.assertTrue(first_started.wait(10))
+            session._next_refresh = monotonic()  # comes due behind a queue of releases
+            finish_first.set()
+            self.assertTrue(refreshed.wait(10))
+            self.assertEqual(releases_before_refresh[0], 1)
+        finally:
+            session.close()
+
+    def test_dropped_session_is_collected(self):
+        with mock.patch("queue.SimpleQueue", _WaitSignalingQueue):
+            session = Session()
         worker = session._worker_thread
+        waiting = session._worker_queue.waiting
         session_ref = weakref.ref(session)
         del session
-        # The worker holds the session for a moment on each pass, so retry until it lets go.
-        deadline = time() + 5
-        while session_ref() is not None and time() < deadline:
-            gc.collect()
-            sleep(0.05)
+        # The worker drops its reference to the session before it waits for a job.
+        self.assertTrue(waiting.wait(30), "the worker never waited for a job")
+        gc.collect()
         self.assertIsNone(session_ref(), "the worker thread kept the session alive")
         worker.join(5)
         self.assertFalse(worker.is_alive())

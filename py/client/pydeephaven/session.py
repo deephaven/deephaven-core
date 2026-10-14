@@ -113,6 +113,10 @@ def _run_session_worker(
                 )
         timeout = session._seconds_until_refresh()
         del session  # hold the session only weakly while waiting
+        if timeout == 0:
+            # Refresh before taking the next job. Behind a long queue of releases, the session would expire.
+            job = _REFRESH_TOKEN
+            continue
         try:
             job = jobs.get(timeout=timeout)
         except queue.Empty:
