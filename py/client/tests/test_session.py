@@ -401,6 +401,14 @@ t1 = empty_table(0) if t.is_blink else None
             gc.enable()
         self.assertIsNone(session_ref(), "the collection did not free the session")
 
+    def test_failed_construction_leaves_no_finalizer_error(self):
+        errors = []
+        with mock.patch.object(sys, "unraisablehook", errors.append):
+            with self.assertRaises(UnicodeEncodeError):
+                Session(auth_type="Basic", auth_token="caf\u00e9")  # not ASCII
+            gc.collect()
+        self.assertEqual(errors, [], "Session.__del__ failed on a partly built session")
+
     def test_unclosed_session_does_not_block_interpreter_exit(self):
         # A session left open in a reference cycle is collected during interpreter shutdown.
         script = (

@@ -246,6 +246,9 @@ class Session:
             threading.RLock()
         )  # for thread-safety when accessing/changing session global state
         self._services_lock = threading.Lock()  # for lazy initialization of services
+        # Before anything that can raise: close() uses it, and __del__ calls close() on a partly built session.
+        self._release_queue: queue.SimpleQueue[_SessionJob] = queue.SimpleQueue()
+        self._release_thread: Optional[threading.Thread] = None
         self._last_export_ticket_number: int = 0
 
         if not host:
@@ -299,8 +302,6 @@ class Session:
         self._never_timeout = never_timeout
         # The time.monotonic() time of the next token refresh, or None for no refresh.
         self._next_refresh: Optional[float] = None
-        self._release_queue: queue.SimpleQueue[_SessionJob] = queue.SimpleQueue()
-        self._release_thread: Optional[threading.Thread] = None
         self._refresh_thread: Optional[threading.Thread] = None
         self._session_type = session_type
         self._flight_client: Optional[paflight.FlightClient] = None
