@@ -174,13 +174,13 @@ These are the compression types each client lists by default. A client that list
 
 Remote tables between servers are a separate case. A Deephaven server that fetches a table from another server, for example by resolving a [`dh://` URI](../use-uris.md), connects through the Java client that runs inside the server, so it lists the same compression types as the Java client.
 
-Choose the list based on what the server's CPU can afford. The following figures are one sample measurement of a one-million-row table of mixed trade data. Absolute speeds depend on the hardware and the data, so use them to compare the compression types rather than to predict throughput:
+Choose the list based on what the server's CPU can afford. The following figures come from [`BarrageCompressionBenchmark`](https://github.com/deephaven/deephaven-core/blob/main/extensions/barrage/benchmark/src/main/java/io/deephaven/benchmark/barrage/BarrageCompressionBenchmark.java), a JMH benchmark in the Deephaven Core repository, run on a one-million-row table of mixed trade data. They were measured on one thread of an Apple M1 Max with JDK 21, and the speeds are megabytes of uncompressed data per second. Absolute speeds depend on the hardware and the data, so use them to compare the compression types rather than to predict throughput:
 
 | Compression type | Size after compression | Compression speed | Decompression speed |
 | ---------------- | ---------------------- | ----------------- | ------------------- |
-| `zstd`           | 30% of the original    | about 400 MB/s    | about 850 MB/s      |
-| `gzip`           | 27% of the original    | about 19 MB/s     | about 400 MB/s      |
-| `snappy`         | 58% of the original    | about 835 MB/s    | about 1450 MB/s     |
+| `zstd`           | 31% of the original    | about 380 MB/s    | about 970 MB/s      |
+| `gzip`           | 28% of the original    | about 17 MB/s     | about 390 MB/s      |
+| `snappy`         | 59% of the original    | about 800 MB/s    | about 1470 MB/s     |
 
 `zstd` suits most tables. `gzip` compresses slightly smaller but is about 20 times slower to compress, so list it last, and only when clients that cannot decode `zstd`, such as `pydeephaven`, should also receive compressed data. `snappy` is the fastest but saves the least, and it saves nothing on data that is already close to random.
 
