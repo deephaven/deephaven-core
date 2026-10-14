@@ -168,7 +168,7 @@ result = emptyTable(100).update([col])
 ## Key takeaways
 
 - Deephaven assumes formulas are safe to run in parallel by default. This is fast but requires stateless code.
-- Shared state or row-order dependencies cause silent errors with parallelization.
+- Shared state or row-order dependencies can cause silent errors with parallelization.
 - Use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) when one formula updates shared state or needs its rows processed in order. When several columns share state, you also need Barriers; when several tables do, the shared code must be thread-safe.
 
 Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically, with no extra code required.
