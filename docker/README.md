@@ -138,18 +138,23 @@ relevant tasks locally before pushing.
 | `python`                                  |                                                                                                                                                                      | `:py-server:buildWheel`, `:py-client:buildWheel`, `:py-embedded-server:buildWheel`, `:py-client:testPyClient` |
 | `protoc-base`                             | Generated code may change; regenerate the checked-in code with `:py-client:updateProtobuf` and `:go:updateProtobuf`                                                   | `:go:compareProtobuf`, `:py-client:compareProtobuf`, `:py-client:testPyClient`                                                                        |
 | `cpp-clients-multi-base`                  | Sync `cpp-client/build-dependencies.sh` with `/opt/deephaven/build-dependencies.sh` from the image                                                                   | `:cpp-client:testCppClient`                                                                                                                           |
-| `manylinux2014_x86_64`, `fedora`, `ubi-minimal` |                                                                                                                                                                | `:py-client-ticking:testPyClientTicking`                                                                                                              |
+| `manylinux2014_x86_64`                    |                                                                                                                                                                      | `:py-client-ticking:syncWheels` (builds the wheels for every python version), `:py-client-ticking:testCPythonClientTicking-3.12-fedora` |
+| `fedora`                                  |                                                                                                                                                                      | `:py-client-ticking:testCPythonClientTicking-<version>-fedora`, for `<version>` in 3.9 - 3.13                                                         |
+| `ubi-minimal`                             |                                                                                                                                                                      | `:py-client-ticking:testCPythonClientTicking-3.9-ubi-minimal`, `:py-client-ticking:testCPythonClientTicking-3.11-ubi-minimal`                       |
 | `server-base`                             | Regenerate the server requirements.txt files (see [docker-server](#docker-server))                                                                                  | `:Integrations:test-py-deephaven`, `:py-embedded-server:testEmbeddedServer`, `:py-client:testPyClient`, `:docker-server:buildDocker-server-netty`, `:docker-runtime-base:buildDocker` |
 | `slim-base`                               |                                                                                                                                                                      | `:docker-server-slim:buildDocker-server-slim`                                                                                                         |
 | `selenium`                                | Keep in lockstep with `selenium` in `gradle/libs.versions.toml`                                                                                                      | `:web-client-api:gwtIntegrationTest`                                                                                                                  |
 | `rustfs`                                  | Update the `# <version>` comment                                                                                                                                     | `:extensions-s3:testOutOfBand`, `:extensions-parquet-table:testOutOfBand`, `:extensions-iceberg-s3:testOutOfBand`                                     |
 
-`:py-client-ticking:testPyClientTicking` includes `testCPythonClientTicking-3.13-ubi-minimal`, which fails independently
-of any image bump: the pinned ubi8 image has no `python3.13` package. `check` only runs the fedora 3.12 variant.
+Prefer the targeted `testCPythonClientTicking-*` tasks above over `:py-client-ticking:testPyClientTicking`, which also runs
+`testCPythonClientTicking-3.13-ubi-minimal`; that task fails independently of any image bump (the pinned ubi8 image has no
+`python3.13` package). `check` only runs the fedora 3.12 variant.
 
-Docker-based tasks are split into `*MakeImage` and `*Run` steps. When only a base image has changed, the `*Run` step may
-be considered up-to-date even though `*MakeImage` rebuilt the image; pass `--rerun` to the `*Run` task (for example,
-`./gradlew :py-server:buildWheelRun --rerun`) to make sure the new image is actually exercised.
+Docker tasks that copy files out of a container (for example `buildWheel`, `generateProtobuf`, `typedoc`, `ui`, and the
+client test tasks) are split into `*MakeImage` and `*Run` steps; image-build tasks (such as `buildDocker-*`) are not.
+When only a base image has changed, the `*Run` step may be considered up-to-date even though `*MakeImage` rebuilt the
+image; pass `--rerun` to the `*Run` task (for example, `./gradlew :py-server:buildWheelRun --rerun`) to make sure the
+new image is actually exercised.
 
 ### Caveats
 
