@@ -62,6 +62,7 @@ Capitalize:
 - ColumnSource
 - ScriptSession
 - Barrage
+- Barrier (the concurrency-control concept and class; the generic phrase "ordering barrier" in prose stays lowercase)
 
 ## Code formatting
 
