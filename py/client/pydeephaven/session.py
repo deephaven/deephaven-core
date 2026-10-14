@@ -88,9 +88,9 @@ def _run_release_worker(
     session_ref: weakref.ReferenceType[Session],
     jobs: queue.SimpleQueue[_SessionJob],
 ) -> None:
-    """Runs the queued jobs of a session until _STOP, or until the session is gone or closed. While it waits for a job
-    it holds the session only weakly, so a dropped session can be collected. A failing job is logged and does not end
-    the thread."""
+    """Runs a session's queued jobs. It ends when the session is closed or reconnects, or when the session is gone.
+    While it waits for a job it holds the session only weakly, so a dropped session can be collected. A failing job is
+    logged and does not end the thread."""
     while True:
         job = jobs.get()
         if job is _STOP:
@@ -110,8 +110,9 @@ def _run_release_worker(
 def _run_token_refresher(
     session_ref: weakref.ReferenceType[Session], stop: threading.Event
 ) -> None:
-    """Refreshes a session's auth token whenever a refresh is due, until stop is set, the session is gone or closed, or
-    the refreshes give up. While it waits it holds the session only weakly, so a dropped session can be collected."""
+    """Refreshes a session's auth token whenever a refresh is due. It ends when the session is closed or reconnects,
+    when the session is gone, or when refreshes keep failing and give up. While it waits it holds the session only
+    weakly, so a dropped session can be collected."""
     refresh_due = False  # the first refresh is scheduled, not due
     while True:
         session = session_ref()
