@@ -286,10 +286,12 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     public void close() {}
 
     /**
+     * @param fillContext The fill context whose channel context to use for any read, or {@code null}; read only when
+     *        locating {@code row} requires it, so that a read served from a cached page makes no channel context
      * @param row A row key, after applying {@link #mask()}
      * @return The number of the page containing {@code row}
      */
-    abstract int pageNumContaining(@NotNull SeekableChannelContext channelContext, long row);
+    abstract int pageNumContaining(@Nullable FillContext fillContext, long row);
 
     /**
      * @return The first row of page {@code pageNum}, after applying {@link #mask()}
@@ -468,6 +470,13 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         if (rowSequence.isEmpty()) {
             return;
         }
+        final long firstKey = rowSequence.firstRowKey();
+        final ChunkPage<ATTR> cachedPage = getCachedPage(pageNumContaining(context, firstKey & mask));
+        if (cachedPage != null && rowSequence.lastRowKey() <= cachedPage.maxRow(firstKey)) {
+            // All on one cached page, so fill from it as a store without sparse reads would.
+            cachedPage.fillChunk(context, destination, rowSequence);
+            return;
+        }
         destination.setSize(0);
         try (final RowSequence.Iterator rowSequenceIterator = rowSequence.getRowSequenceIterator()) {
             fillChunkAppend(context, destination, rowSequenceIterator);
@@ -497,10 +506,10 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             return;
         }
         long firstKey = rowSequenceIterator.peekNextKey();
-        final ChannelContextWrapper contextWrapper = channelContextWrapper(context);
-        try (final ContextHolder holder = SeekableChannelContext.ensureContext(
-                columnChunkReader.getChannelsProvider(), contextWrapper.getChannelContext())) {
-            final SeekableChannelContext channelContext = holder.get();
+        // Made on the first uncached page: a fill served from cached pages needs no channel context.
+        ChannelContextWrapper contextWrapper = null;
+        ContextHolder holder = null;
+        try {
             final long storeMaxKey = maxRow(firstKey);
             boolean firstPage = true;
             do {
@@ -510,16 +519,21 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 final ChunkPage<ATTR> page;
                 RowSequence pageRows = null;
                 try {
-                    final int pageNum = pageNumContaining(channelContext, firstKey & mask);
+                    final int pageNum = pageNumContaining(context, firstKey & mask);
                     final ChunkPage<ATTR> cachedPage = getCachedPage(pageNum);
                     if (cachedPage != null) {
                         // A materialized page can serve any request.
                         page = cachedPage;
                     } else {
+                        if (contextWrapper == null) {
+                            contextWrapper = channelContextWrapper(context);
+                            holder = SeekableChannelContext.ensureContext(
+                                    columnChunkReader.getChannelsProvider(), contextWrapper.getChannelContext());
+                        }
                         final long pageFirstKey = (firstKey & ~mask) | pageFirstRow(pageNum);
                         pageRows = rowSequenceIterator.getNextRowSequenceThrough(
                                 pageFirstKey + pageRowCount(pageNum) - 1);
-                        page = readPage(contextWrapper, channelContext, destination, pageRows, pageNum, pageFirstKey,
+                        page = readPage(contextWrapper, holder.get(), destination, pageRows, pageNum, pageFirstKey,
                                 isFirstPage, rowSequenceIterator.hasMore(), maxDensity);
                     }
                 } catch (final IOException | RuntimeException e) {
@@ -536,6 +550,10 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                     page.fillChunkAppend(context, destination, pageRows);
                 }
             } while (rowSequenceIterator.hasMore() && (firstKey = rowSequenceIterator.peekNextKey()) <= storeMaxKey);
+        } finally {
+            if (holder != null) {
+                holder.close();
+            }
         }
     }
 
@@ -869,8 +887,11 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         @Nullable
         private Object pendingValues;
 
-        private final SizedLongChunk<OrderedRowKeyRanges> requestRanges = new SizedLongChunk<>();
-        private final SizedLongChunk<OrderedRowKeyRanges> decodeRanges = new SizedLongChunk<>();
+        /** Made on first use: a context may never read sparsely. */
+        @Nullable
+        private SizedLongChunk<OrderedRowKeyRanges> requestRanges;
+        @Nullable
+        private SizedLongChunk<OrderedRowKeyRanges> decodeRanges;
 
         private ChannelContextWrapper(
                 final int chunkCapacity,
@@ -903,6 +924,9 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
          */
         @NotNull
         WritableLongChunk<OrderedRowKeyRanges> requestRanges(final int capacity) {
+            if (requestRanges == null) {
+                requestRanges = new SizedLongChunk<>();
+            }
             return requestRanges.ensureCapacity(capacity);
         }
 
@@ -911,6 +935,9 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
          */
         @NotNull
         WritableLongChunk<OrderedRowKeyRanges> decodeRanges(final int capacity) {
+            if (decodeRanges == null) {
+                decodeRanges = new SizedLongChunk<>();
+            }
             return decodeRanges.ensureCapacity(capacity);
         }
 
@@ -984,8 +1011,12 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 channelContext.close();
                 sparseCursor = null;
                 sparseStore = null;
-                requestRanges.close();
-                decodeRanges.close();
+                if (requestRanges != null) {
+                    requestRanges.close();
+                }
+                if (decodeRanges != null) {
+                    decodeRanges.close();
+                }
             }
         }
     }

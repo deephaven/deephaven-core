@@ -162,14 +162,19 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
 
     @NotNull
     private ChunkPage<ATTR> getPageContainingImpl(@Nullable final FillContext fillContext, final long rowKey) {
-        // Use the latest channel context while reading page headers, or create (and close) a new one
+        final int pageNum = pageNumContaining(fillContext, rowKey & mask());
+        final ChunkPage<ATTR> cachedPage = getCachedPage(pageNum);
+        if (cachedPage != null) {
+            return cachedPage;
+        }
+        // Use the latest channel context while reading the page, or create (and close) a new one
         try (final ContextHolder holder = ensureContext(fillContext)) {
-            return getPage(holder.get(), pageNumContaining(holder.get(), rowKey & mask()));
+            return getPage(holder.get(), pageNum);
         }
     }
 
     @Override
-    int pageNumContaining(@NotNull final SeekableChannelContext channelContext, final long row) {
+    int pageNumContaining(@Nullable final FillContext fillContext, final long row) {
         Require.inRange(row - pageRowOffsets[0], "row", numRows(), "numRows");
         int localNumPages = numPages;
         int pageNum = Arrays.binarySearch(pageRowOffsets, 1, localNumPages + 1, row);
@@ -177,7 +182,11 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
             pageNum = -2 - pageNum;
         }
         if (pageNum >= localNumPages) {
-            final int minPageNum = fillToRow(channelContext, localNumPages, row);
+            final int minPageNum;
+            // Use the latest channel context while reading page headers, or create (and close) a new one
+            try (final ContextHolder holder = ensureContext(fillContext)) {
+                minPageNum = fillToRow(holder.get(), localNumPages, row);
+            }
             localNumPages = numPages;
             pageNum = Arrays.binarySearch(pageRowOffsets, minPageNum + 1, localNumPages + 1, row);
             if (pageNum < 0) {

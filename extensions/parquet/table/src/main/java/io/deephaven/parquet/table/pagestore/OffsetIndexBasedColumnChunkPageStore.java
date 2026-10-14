@@ -208,8 +208,9 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
         // a null FillContext for single-element "get" methods.
         try (final FillContext allocatedFillContext = fillContext != null ? null : makeFillContext(1, null)) {
             final FillContext fillContextToUse = fillContext != null ? fillContext : allocatedFillContext;
-            final SeekableChannelContext channelContext = innerFillContext(fillContextToUse);
-            return getPage(channelContext, pageNumContaining(channelContext, rowKey & mask()));
+            final int pageNum = pageNumContaining(fillContextToUse, rowKey & mask());
+            final ChunkPage<ATTR> cachedPage = getCachedPage(pageNum);
+            return cachedPage != null ? cachedPage : getPage(innerFillContext(fillContextToUse), pageNum);
         } catch (final RuntimeException e) {
             throw new UncheckedDeephavenException("Failed to read parquet page data for row: " + rowKey + ", column: " +
                     columnChunkReader.columnName() + ", uri: " + columnChunkReader.getURI(), e);
@@ -217,8 +218,10 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
     }
 
     @Override
-    int pageNumContaining(@NotNull final SeekableChannelContext channelContext, final long row) {
-        ensureInitialized(channelContext);
+    int pageNumContaining(@Nullable final FillContext fillContext, final long row) {
+        if (!isInitialized) {
+            ensureInitialized(innerFillContext(fillContext));
+        }
         Require.inRange(row, "row", numRows(), "numRows");
 
         if (fixedPageSize == PAGE_SIZE_NOT_FIXED) {

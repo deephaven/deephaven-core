@@ -341,6 +341,55 @@ public class SparsePageReadTest {
         }
     }
 
+    /**
+     * A fill served from a cached page allocates as it would without sparse reads: it makes no channel context or
+     * sparse read state, which only an uncached page needs.
+     */
+    @Test
+    public void testCachedPageFillsAllocateAsWithoutSparseReads() {
+        final String path = writeTestTable();
+        try (final SafeCloseable ignored = PageCache.pinTouchedPages();
+                final RowSet row = RowSetFactory.fromKeys(5)) {
+            final ColumnSource<?> sparse = ParquetTools.readTable(path).getColumnSource("L");
+            final ColumnSource<?> withoutSparse = dense(() -> ParquetTools.readTable(path).coalesce())
+                    .getColumnSource("L");
+            // Cache the pages whole.
+            dense(() -> allocatedByFills(sparse, row));
+            dense(() -> allocatedByFills(withoutSparse, row));
+            final int fills = 20_000;
+            long sparseBytes = 0;
+            long withoutSparseBytes = 0;
+            // Warm, then measure.
+            for (int pass = 0; pass < 2; ++pass) {
+                sparseBytes = allocatedByContextFills(sparse, row, fills);
+                withoutSparseBytes = dense(() -> allocatedByContextFills(withoutSparse, row, fills));
+            }
+            final String perFill = "per fill: " + (double) sparseBytes / fills + " bytes with sparse reads, "
+                    + (double) withoutSparseBytes / fills + " without";
+            assertTrue(perFill, sparseBytes <= withoutSparseBytes + 8L * fills);
+            // About the context alone; a channel context and its wrapper would add over 150.
+            assertTrue(perFill, withoutSparseBytes <= 64L * fills);
+        }
+    }
+
+    /**
+     * @return The bytes allocated by {@code fills} fills of {@code rows}, each with a fresh context
+     */
+    private static long allocatedByContextFills(final ColumnSource<?> source, final RowSet rows, final int fills) {
+        final com.sun.management.ThreadMXBean threads =
+                (com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean();
+        final long threadId = Thread.currentThread().getId();
+        try (final WritableChunk<Values> chunk = source.getChunkType().makeWritableChunk(rows.intSize())) {
+            final long before = threads.getThreadAllocatedBytes(threadId);
+            for (int ii = 0; ii < fills; ++ii) {
+                try (final ChunkSource.FillContext context = source.makeFillContext(rows.intSize())) {
+                    source.fillChunk(context, chunk, rows);
+                }
+            }
+            return threads.getThreadAllocatedBytes(threadId) - before;
+        }
+    }
+
     private static long allocatedByFills(final ColumnSource<?> source, final RowSet rows) {
         // Several fills per page, each with enough rows to be stored as a bitmap, appending to the rows pending for it.
         final int chunkSize = 8192;
