@@ -23,7 +23,7 @@ from pydeephaven._utils import to_list
 from pydeephaven.agg import Aggregation
 from pydeephaven.dherror import DHError
 from pydeephaven.filters import Filter
-from pydeephaven.ticket import ServerObject, Ticket
+from pydeephaven.ticket import ExportTicket, ServerObject, Ticket
 from pydeephaven.updateby import UpdateByOperation
 
 if TYPE_CHECKING:
@@ -67,11 +67,18 @@ class Table(TableInterface["Table"], ServerObject):
         self._closed: bool = False
 
     def __del__(self) -> None:
+        # The garbage collector runs this, possibly in the middle of a gRPC call on this thread while gRPC holds its
+        # channel lock. A Release RPC here would wait on that lock forever, so the session releases the ticket on its
+        # own thread instead. For the same reason this checks is_connected, not is_alive, which can make an RPC.
+        # Only export tickets are released: they are the session's own exports. Tables over other tickets, such as the
+        # ScopeTicket in Session.open_table or a SharedTicket from Session.fetch_table, do not own them.
         try:
-            # only table objects that are explicitly exported have schema info and only the tickets associated with
-            # such tables should be released.
-            if not self.is_closed and self.schema and self.session.is_alive:
-                self.session.release(self.ticket)
+            if (
+                not self._closed
+                and isinstance(self.ticket, ExportTicket)
+                and self.session.is_connected
+            ):
+                self.session._release_later(self.ticket)
                 self._closed = True
         except Exception:
             # TODO(deephaven-core#1858): Better error handling for pyclient around release #1858

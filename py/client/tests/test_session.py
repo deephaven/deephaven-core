@@ -1,7 +1,10 @@
 #
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
+import gc
+import threading
 import unittest
+import weakref
 from time import sleep, time
 
 import pandas as pd
@@ -174,11 +177,102 @@ t1 = empty_table(0) if t.is_blink else None
             with self.assertRaises(PermissionError):
                 append_input_t.delete(dh_table)
 
-    def test_auto_close(self):
+    def test_close_stops_session_threads(self):
         session = Session()
-        # this should trigger __del__
-        session = None
-        self.assertIsNone(session)
+        keep_alive_timer = session._keep_alive_timer
+        release_thread = session._release_thread
+        self.assertTrue(keep_alive_timer.is_alive())
+        self.assertTrue(release_thread.is_alive())
+        session.close()
+        keep_alive_timer.join(5)
+        release_thread.join(5)
+        self.assertFalse(keep_alive_timer.is_alive())
+        self.assertFalse(release_thread.is_alive())
+
+    def test_garbage_collected_table_is_released(self):
+        for name, columns in (("with columns", ["X = i"]), ("without columns", [])):
+            with self.subTest(name):
+                t = self.session.empty_table(10)
+                if columns:
+                    t = t.update(columns)
+                shared_ticket = SharedTicket.random_ticket()
+                self.session.publish_table(shared_ticket, t)
+                with Session() as sub_session:
+                    self.assertEqual(sub_session.fetch_table(shared_ticket).size, 10)
+                    del t
+                    gc.collect()
+                    # The session's release thread releases the ticket shortly after.
+                    deadline = time() + 10
+                    while True:
+                        try:
+                            sub_session.fetch_table(shared_ticket)
+                        except DHError:
+                            break
+                        if time() > deadline:
+                            self.fail("the table was not released")
+                        sleep(0.1)
+
+    def test_garbage_collection_during_rpc_does_not_deadlock(self):
+        """A Table finalized in the middle of a gRPC call on the same thread must not make an RPC itself. gRPC holds
+        its channel lock there, so that RPC would wait on the lock forever. This forces a collection at that point:
+        gRPC starts its channel spin thread while it holds the lock.
+        """
+        import grpc._channel as grpc_channel
+
+        original_spin = getattr(grpc_channel, "_run_channel_spin_thread", None)
+        if original_spin is None:
+            self.skipTest(
+                "grpc._channel._run_channel_spin_thread is gone; update this test"
+            )
+
+        collected_under_lock = threading.Event()
+
+        def spin_thread_with_gc(state):
+            gc.collect()
+            collected_under_lock.set()
+            return original_spin(state)
+
+        table_refs = []
+        worker_errors = []
+
+        def run():
+            try:
+                # A separate session, so a deadlocked thread does not block tearDown.
+                session = Session()
+                t = session.empty_table(5).update(["X = i"])
+                t.cycle = t  # a reference cycle, so only the garbage collector frees it
+                table_refs.append(weakref.ref(t))
+                del t
+                grpc_channel._run_channel_spin_thread = spin_thread_with_gc
+                # The spin thread starts on a call made while no other call is in flight, so retry until one does.
+                for _ in range(50):
+                    session.empty_table(1)
+                    if collected_under_lock.is_set():
+                        break
+                    sleep(0.05)
+                grpc_channel._run_channel_spin_thread = original_spin
+                session.close()
+            except BaseException as e:
+                worker_errors.append(e)
+
+        gc.disable()  # only the collection under the lock may free the table
+        try:
+            thread = threading.Thread(target=run, daemon=True)
+            thread.start()
+            thread.join(60)
+        finally:
+            # Restored here, not in the worker: a deadlocked worker never gets to its own cleanup.
+            grpc_channel._run_channel_spin_thread = original_spin
+            gc.enable()
+        self.assertFalse(
+            thread.is_alive(), "deadlocked: a finalizer made an RPC inside a gRPC call"
+        )
+        if worker_errors:
+            raise worker_errors[0]
+        self.assertTrue(
+            collected_under_lock.is_set(), "gRPC never started its spin thread"
+        )
+        self.assertIsNone(table_refs[0](), "the collection did not free the table")
 
     def test_blink_input_table(self):
         pa_types = [

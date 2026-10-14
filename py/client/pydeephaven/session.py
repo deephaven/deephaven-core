@@ -9,7 +9,9 @@ from __future__ import annotations
 import base64
 import logging
 import os
+import queue
 import threading
+import weakref
 from collections.abc import Iterable
 from random import random
 from typing import Any, NewType, Optional, Union, cast
@@ -49,6 +51,28 @@ from pydeephaven.ticket import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _release_tickets(
+    session_ref: weakref.ReferenceType[Session],
+    tickets: queue.SimpleQueue[Optional[Ticket]],
+) -> None:
+    """Releases the tickets of garbage-collected Tables, which they queue with Session._release_later. Runs on the
+    session's release thread until it gets None, or the session is gone or closed."""
+    while True:
+        ticket = tickets.get()
+        if ticket is None:
+            return
+        session = session_ref()
+        if session is None or not session.is_connected:
+            return
+        try:
+            session.release(ticket)
+        except Exception as e:
+            logger.warning(
+                f"{session._logpfx}: failed to release a garbage-collected table: {e}"
+            )
+        del session
 
 
 class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
@@ -218,6 +242,8 @@ class Session:
         self._plugin_obj_service: Optional[PluginObjService] = None
         self._never_timeout = never_timeout
         self._keep_alive_timer: Optional[threading.Timer] = None
+        self._release_queue: queue.SimpleQueue[Optional[Ticket]] = queue.SimpleQueue()
+        self._release_thread: Optional[threading.Thread] = None
         self._session_type = session_type
         self._flight_client: Optional[paflight.FlightClient] = None
         self._auth_handler = None
@@ -468,6 +494,16 @@ class Session:
 
             self.is_connected = True
 
+            # A new queue per connection: tickets queued on an earlier connection are no longer valid.
+            self._release_queue = queue.SimpleQueue()
+            self._release_thread = threading.Thread(
+                target=_release_tickets,
+                args=(weakref.ref(self), self._release_queue),
+                name=f"pydh.Session {id(self)} release",
+                daemon=True,
+            )
+            self._release_thread.start()
+
             if self._never_timeout:
                 self._keep_alive()
 
@@ -535,8 +571,14 @@ class Session:
             DHError
         """
         with self._r_lock:
+            if self._keep_alive_timer:
+                self._keep_alive_timer.cancel()
+                self._keep_alive_timer = None
             if not self.is_connected:
                 return
+            # Stop the release thread. Closing the session releases all of its exports on the server, including the
+            # tickets still queued.
+            self._release_queue.put(None)
             self.session_service.close()
             if self.grpc_channel:
                 self.grpc_channel.close()
@@ -552,6 +594,11 @@ class Session:
             ticket (Ticket): the ticket to release
         """
         self.session_service.release(ticket)
+
+    def _release_later(self, ticket: Ticket) -> None:
+        """Queues a ticket for the release thread. Unlike release, it makes no RPC, so a finalizer can call it:
+        queue.SimpleQueue.put is reentrant."""
+        self._release_queue.put(ticket)
 
     # convenience/factory methods
     def run_script(self, script: str, systemic: Optional[bool] = None) -> None:
