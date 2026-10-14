@@ -2,7 +2,7 @@
 title: Query Parallelization
 ---
 
-Modern computers have multiple processors (called "cores") that can work simultaneously. **Parallelization** splits a calculation into parts and runs those parts on different cores at the same time. Deephaven parallelizes queries automatically, which makes them faster, although the actual speedup depends on the workload and scheduling overhead, not just the number of cores.
+Modern computers have multiple processor cores ("cores" for short) that can work simultaneously. **Parallelization** splits a calculation into parts and runs those parts on different cores at the same time. Deephaven parallelizes queries automatically, which makes them faster, although the actual speedup depends on the workload and scheduling overhead, not just the number of cores.
 
 > [!TIP]
 > **Most queries benefit from parallelization automatically.** You don't need to do anything special. This guide explains how parallelization works and covers the uncommon situations where you need to force a formula to run serially.
