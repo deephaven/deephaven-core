@@ -152,12 +152,13 @@ To use Deephaven table operations in unit tests, you need to open an [`Execution
 
 ### Example test setup
 
-Add `deephaven-engine-test-utils` and JUnit Jupiter as test dependencies to use `TestExecutionContext` (the logging sink from the base setup above is already available on the test classpath):
+Add `deephaven-engine-test-utils` (for `TestExecutionContext`) and JUnit Jupiter as test dependencies. Gradle 9 also requires you to declare the JUnit Platform launcher. The logging sink from the base setup above is already available on the test classpath:
 
 ```groovy skip-test
 dependencies {
     testImplementation "io.deephaven:deephaven-engine-test-utils:$dhcVersion"
     testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 test {
