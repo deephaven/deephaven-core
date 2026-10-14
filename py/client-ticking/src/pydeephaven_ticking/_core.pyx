@@ -436,6 +436,13 @@ def _decoded_array(array: pa.Array) -> pa.Array:
 
 def _decode(array: pa.Array) -> pa.Array:
     if isinstance(array, pa.DictionaryArray):
+        # With Deephaven nulls, the index of a null row is its type's null value, which is negative, rather than an
+        # index under a cleared validity bit; make those rows null so that decoding does not look them up.
+        indices = array.indices
+        negative = pc.less(indices, 0)
+        if pc.any(negative).as_py():
+            indices = pc.if_else(negative, pa.scalar(None, type=indices.type), indices)
+            array = pa.DictionaryArray.from_arrays(indices, array.dictionary)
         return _decode(array.dictionary_decode())
     if _is_run_end_encoded(array.type):
         # run_end_decode takes only plain run values, so decode encoded ones first. The run ends count positions in the
