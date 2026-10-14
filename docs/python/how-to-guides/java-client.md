@@ -329,7 +329,9 @@ def periodic_fetch_real_data(stop):
         for lc in cities:
             # Skip a city whose fetch fails this time, so one bad response doesn't stop the thread
             try:
-                update_observation(lc)
+                # DynamicTableWriter isn't thread safe, so write only while holding the lock
+                with CITY_LOCK:
+                    update_observation(lc)
             except Exception as e:
                 print("Failed to update " + str(lc) + ": " + str(e))
         stop.wait(60)
@@ -491,7 +493,7 @@ try (final SafeCloseable ignoredContext = executionContext.open();
 }
 ```
 
-At this point, `statsTable` is a local copy of the server's `last_city_by_state` table, and it updates as the server's data changes. This application displays the table directly. Other applications can filter, join, or aggregate it like any other Deephaven table.
+Inside the `try` block, `statsTable` is a local copy of the server's `last_city_by_state` table, and it updates as the server's data changes. Use it only inside the block: when the block exits, the liveness scope closes and releases the table. This application displays the table directly. Other applications can filter, join, or aggregate it like any other Deephaven table.
 
 The steps above are adapted from the [`SubscribeTable`](https://github.com/deephaven/deephaven-core/blob/main/java-client/barrage-examples/src/main/java/io/deephaven/client/examples/SubscribeTable.java) example.
 
