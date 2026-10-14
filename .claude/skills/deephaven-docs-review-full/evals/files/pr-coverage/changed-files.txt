@@ -1,12 +1,14 @@
-docs/groovy/conceptual/query-engine/parallelization.md
-docs/groovy/conceptual/query-table-configuration.md
-docs/groovy/reference/table-operations/select/update.md
-docs/groovy/sidebar.json
-docs/groovy/snapshots/0a5a3a473404de1ed2f93bbdbd4f55ba.json
-docs/groovy/snapshots/14f217f9e015a95c44a32d0518b03284.json
-docs/python/conceptual/query-engine/parallelization.md
-docs/python/conceptual/query-table-configuration.md
-docs/python/reference/table-operations/select/update.md
-docs/python/sidebar.json
-docs/python/snapshots/0a5a3a473404de1ed2f93bbdbd4f55ba.json
-docs/python/snapshots/182a6410e61d9c04608996d8eb01dff2.json
+M	docs/groovy/conceptual/query-engine/parallelization.md
+M	docs/groovy/conceptual/query-table-configuration.md
+M	docs/groovy/reference/table-operations/select/update.md
+D	docs/groovy/how-to-guides/obsolete-parallel-notes.md
+M	docs/groovy/sidebar.json
+A	docs/groovy/snapshots/0a5a3a473404de1ed2f93bbdbd4f55ba.json
+A	docs/groovy/snapshots/14f217f9e015a95c44a32d0518b03284.json
+M	docs/python/conceptual/query-engine/parallelization.md
+M	docs/python/conceptual/query-table-configuration.md
+M	docs/python/reference/table-operations/select/update.md
+R095	docs/python/how-to-guides/use-parallel-select.md	docs/python/how-to-guides/parallel-select.md
+M	docs/python/sidebar.json
+A	docs/python/snapshots/0a5a3a473404de1ed2f93bbdbd4f55ba.json
+A	docs/python/snapshots/182a6410e61d9c04608996d8eb01dff2.json
