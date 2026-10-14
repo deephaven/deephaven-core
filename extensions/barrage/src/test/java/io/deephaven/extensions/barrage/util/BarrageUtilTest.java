@@ -373,7 +373,9 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
 
         for (final QueryTable table : List.of(staticTable, refreshingTable)) {
             final String which = table.isRefreshing() ? "refreshing" : "static";
-            final Schema plain = BarrageUtil.schemaFromTable(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table);
+            // makeSchema, unlike schemaFromTable, never infers encodings, so this schema asks for none
+            final Schema plain = BarrageUtil.makeSchema(
+                    BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), Map.of(), table.isFlat());
             assertThat(countSnapshotDictionaryBatches(table, plain)).as(which + ", plain schema").isZero();
             assertThat(countSnapshotDictionaryBatches(table, withDictionary(plain, "Sym")))
                     .as(which + ", dictionary-encoded schema").isPositive();
