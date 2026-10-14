@@ -55,7 +55,9 @@ export DEEPHAVEN_VERSION
 rm -rf "${BUILD}" "${RESULTS}"
 mkdir -p "${BUILD}" "${RESULTS}" "${BUILD}/data" "${BUILD}/cache" "${BUILD}/config"
 uv venv --quiet --python "${PY_VERSION}" "${VENV}"
-uv pip install --quiet --python "${VENV}/bin/python" \
+# --reinstall-package rebuilds the local packages on every run, so no uv version can reuse a cached build of older
+# source.
+uv pip install --quiet --python "${VENV}/bin/python" --reinstall-package deephaven-core --reinstall-package pydeephaven \
     "${ROOT}/py/server" "${ROOT}/py/client" unittest-xml-reporting
 # Soft dependencies. tests/test_flightsql.py uses flightsql-dbapi and adbc-driver-flightsql, and the server script in
 # tests/test_console.py uses numba, as the server Docker image has it. A missing one must not stop the other tests.

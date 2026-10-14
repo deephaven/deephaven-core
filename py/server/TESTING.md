@@ -41,7 +41,7 @@ The two suites both use port 10000, so run them one at a time.
 3. It sets `DEEPHAVEN_TEST_EMBEDDED=true`, so `test_helper` starts the JVM from the `deephaven-server` wheel instead of a Docker classpath. `DEEPHAVEN_CLASSPATH` adds the test config, the test calendars and three Java test classes.
 4. It sets `TZ=Etc/UTC`, because `tests/test_time.py` expects that time zone name.
 5. For a free-threaded version, it sets `PYTHON_GIL=0`. Without it, importing `grpcio` through `pydeephaven` turns the GIL back on for the rest of the run.
-6. It runs the tests from a copy of `tests/`, because some tests write files into the working directory, and leftovers from an earlier run make them fail.
+6. It runs the tests from a fresh copy of `tests/`, because some tests write files into the working directory. When you rerun locally in the same checkout, leftovers from the earlier run make them fail. CI does not need this, since each matrix entry runs on a fresh runner.
 
 ## What the client script does
 
