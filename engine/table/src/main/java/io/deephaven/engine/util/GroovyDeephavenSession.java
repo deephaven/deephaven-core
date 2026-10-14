@@ -56,16 +56,13 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -354,18 +351,17 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     /**
-     * Replaces the GroovyShell and its class loader, and clears cached .class files. This ensures that classes will be
+     * Replaces the GroovyShell and its class loader, and clears the class cache. This ensures that classes will be
      * recompiled from source on the next execution.
      *
      * <p>
      * A failure leaves the reset pending, so it is retried before the next evaluation; see
      * {@link #prepareForEvaluation()}.
      *
-     * @throws IllegalStateException if the cached classes cannot be cleared, including when the cache directory has
-     *         been removed
+     * @throws IllegalStateException if the class cache cannot be cleared
      */
     private void resetGroovyShell() {
-        deleteCachedClassFiles(classCacheDirectory);
+        clearClassCache(classCacheDirectory);
 
         // Create fresh classloader - reusing the existing configurations
         final GroovyClassLoader scriptClassLoader = new GroovyClassLoader(STATIC_LOADER, scriptConfig);
@@ -793,27 +789,18 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
      * @throws IllegalStateException if the directory cannot be listed or a cached class file cannot be deleted
      */
     /**
-     * Deletes the cached .class files under the given directory, leaving the directories themselves in place. Groovy
-     * compiles into this directory and the QueryCompiler reads it as a classpath entry, so it must keep existing.
+     * Empties the class cache by deleting the directory and recreating it, so that the directory Groovy compiles into
+     * and the QueryCompiler reads as a classpath entry is present and empty. A directory that has gone missing is
+     * simply recreated.
      *
-     * @throws IllegalStateException if the directory cannot be walked or a cached class cannot be deleted
+     * @throws IllegalStateException if the directory cannot be deleted or recreated
      */
-    private static void deleteCachedClassFiles(@NotNull final File directory) {
-        log.debug().append("Deleting cached classes from class cache directory: ")
-                .append(directory.getAbsolutePath()).endl();
+    private static void clearClassCache(@NotNull final File directory) {
+        log.debug().append("Clearing class cache directory: ").append(directory.getAbsolutePath()).endl();
         try {
-            Files.walkFileTree(directory.toPath(), new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-                        throws IOException {
-                    if (file.getFileName().toString().endsWith(".class")) {
-                        // A file already gone is as good as deleted
-                        Files.deleteIfExists(file);
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (IOException e) {
+            FileUtils.deleteRecursively(directory);
+            Files.createDirectories(directory.toPath());
+        } catch (IOException | UncheckedIOException e) {
             throw new IllegalStateException("Cannot reset Groovy shell: unable to clear class cache directory: "
                     + directory.getAbsolutePath(), e);
         }

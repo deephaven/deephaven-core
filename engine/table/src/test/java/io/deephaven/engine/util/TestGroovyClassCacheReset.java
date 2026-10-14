@@ -24,13 +24,11 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests that an evaluation requiring a class cache reset fails when the cache cannot be cleared, rather than running
- * against bytecode compiled from sources that no longer apply, and that the reset is retried on the next evaluation.
+ * Tests that an evaluation whose remote sources changed starts from an empty class cache, rather than running against
+ * bytecode compiled from sources that no longer apply.
  */
 public class TestGroovyClassCacheReset {
 
@@ -61,34 +59,43 @@ public class TestGroovyClassCacheReset {
     }
 
     @Test
-    public void testUnclearableClassCacheFailsTheEvaluationAndIsRetried() throws IOException {
-        // A cache directory that no longer exists cannot be cleared, whatever the platform or user
+    public void testDirtyDeclarationClearsTheClassCache() throws IOException {
+        final File cacheDirectory = session.classCacheDirectory;
+        final File staleClass = new File(cacheDirectory, "Stale.class");
+        final File staleNestedClass = new File(cacheDirectory, "pkg/Nested.class");
+        assertTrue(staleNestedClass.getParentFile().mkdirs());
+        assertTrue(staleClass.createNewFile());
+        assertTrue(staleNestedClass.createNewFile());
+
+        declareDirty();
+        session.evaluateScript("x = 1").throwIfError();
+
+        assertFalse("Cached classes compiled from earlier sources should be cleared", staleClass.exists());
+        assertFalse("Cached classes in nested packages should be cleared", staleNestedClass.exists());
+        assertTrue("The cache directory must remain for Groovy and the QueryCompiler", cacheDirectory.isDirectory());
+        assertEquals(1, (int) session.getQueryScope().<Integer>readParamValue("x"));
+    }
+
+    @Test
+    public void testMissingClassCacheIsRecreated() {
         final File cacheDirectory = session.classCacheDirectory;
         FileUtils.deleteRecursively(cacheDirectory);
         assertFalse(cacheDirectory.exists());
 
+        declareDirty();
+        session.evaluateScript("x = 1").throwIfError();
+
+        assertTrue("The cache directory should exist again after the evaluation", cacheDirectory.isDirectory());
+        assertEquals(1, (int) session.getQueryScope().<Integer>readParamValue("x"));
+    }
+
+    /**
+     * Declares remote sources as changed, which requires the next evaluation to reset the class cache.
+     */
+    private static void declareDirty() {
         final RemoteFileSourceProvider provider =
                 resourceName -> CompletableFuture.failedFuture(new FileNotFoundException(resourceName));
-        final List<String> resourcePaths = List.of("test/notebook/Whatever.groovy");
-
-        // A dirty declaration requires a reset, which cannot clear the missing cache. The failure is reported to the
-        // user like a script error, and the script does not run.
-        RemoteFileSourceClassLoader.getInstance().declareRemoteSources(provider, resourcePaths, true);
-        final ScriptSession.Changes failed = session.evaluateScript("x = 1");
-        assertNotNull("Expected the evaluation to fail while the class cache cannot be cleared", failed.error);
-        assertNull("The script should not run when preparation fails",
-                session.getQueryScope().readParamValue("x", null));
-
-        // Once the cache is clearable again, the next evaluation must still reset, even though the same client
-        // redeclaring unchanged sources would not on its own require one
-        assertTrue(cacheDirectory.mkdirs());
-        final File staleClass = new File(cacheDirectory, "Stale.class");
-        assertTrue(staleClass.createNewFile());
-
-        RemoteFileSourceClassLoader.getInstance().declareRemoteSources(provider, resourcePaths, false);
-        final ScriptSession.Changes retried = session.evaluateScript("x = 1");
-        retried.throwIfError();
-        assertFalse("The failed reset should be retried, clearing the stale class", staleClass.exists());
-        assertEquals(1, (int) session.getQueryScope().<Integer>readParamValue("x"));
+        RemoteFileSourceClassLoader.getInstance().declareRemoteSources(
+                provider, List.of("test/notebook/Whatever.groovy"), true);
     }
 }

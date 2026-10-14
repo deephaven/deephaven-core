@@ -32,19 +32,18 @@ import java.util.concurrent.TimeUnit;
  * </ol>
  *
  * <p>
- * All declaration state is guarded by a single private lock. Resource bytes are fetched outside it, so a slow or stuck
- * provider never blocks declarations, evaluations or other lookups. The lock is deliberately not this loader's own
- * monitor, which {@link ClassLoader#loadClass(String, boolean)} holds while loading classes.
+ * All declaration state is guarded by this loader's monitor. Resource bytes are fetched outside it, so a slow or stuck
+ * provider never blocks declarations, evaluations or other lookups. The loader is registered as parallel capable, so
+ * class loading locks per class name rather than on this monitor.
  */
 public class RemoteFileSourceClassLoader extends ClassLoader {
+    static {
+        registerAsParallelCapable();
+    }
+
     private static final long RESOURCE_TIMEOUT_SECONDS = 5;
 
     private static volatile RemoteFileSourceClassLoader instance;
-
-    /**
-     * Guards {@link #pendingDeclaration} and {@link #evaluationDeclaration}.
-     */
-    private final Object declarationLock = new Object();
 
     /**
      * The most recent declaration, awaiting the evaluation it was made for. Consumed by {@link #beginEvaluation()}.
@@ -109,12 +108,10 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
      * @param resourcePaths resource paths (e.g., "package/MyScript.groovy") to resolve from the provider
      * @param dirty whether the remote sources have changed and caches must be cleared
      */
-    public void declareRemoteSources(final RemoteFileSourceProvider provider, final List<String> resourcePaths,
+    public synchronized void declareRemoteSources(final RemoteFileSourceProvider provider,
+            final List<String> resourcePaths,
             final boolean dirty) {
-        final RemoteFileSourceDeclaration declaration = new RemoteFileSourceDeclaration(provider, resourcePaths, dirty);
-        synchronized (declarationLock) {
-            pendingDeclaration = declaration;
-        }
+        pendingDeclaration = new RemoteFileSourceDeclaration(provider, resourcePaths, dirty);
     }
 
     /**
@@ -129,22 +126,20 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
      *
      * @return true if compiled output from the previous evaluation must be discarded
      */
-    public boolean beginEvaluation() {
-        synchronized (declarationLock) {
-            final RemoteFileSourceDeclaration claimed = pendingDeclaration;
-            pendingDeclaration = null;
-            // A declaration with no paths serves nothing, so it is no different from not having declared
-            final RemoteFileSourceDeclaration declaration =
-                    claimed != null && claimed.hasConfiguredResources() ? claimed : null;
-            final RemoteFileSourceProvider provider = declaration != null ? declaration.getProvider() : null;
-            final RemoteFileSourceProvider previousProvider =
-                    evaluationDeclaration != null ? evaluationDeclaration.getProvider() : null;
+    public synchronized boolean beginEvaluation() {
+        final RemoteFileSourceDeclaration claimed = pendingDeclaration;
+        pendingDeclaration = null;
+        // A declaration with no paths serves nothing, so it is no different from not having declared
+        final RemoteFileSourceDeclaration declaration =
+                claimed != null && claimed.hasConfiguredResources() ? claimed : null;
+        final RemoteFileSourceProvider provider = declaration != null ? declaration.getProvider() : null;
+        final RemoteFileSourceProvider previousProvider =
+                evaluationDeclaration != null ? evaluationDeclaration.getProvider() : null;
 
-            final boolean sourcingChanged = (claimed != null && claimed.isDirty()) || provider != previousProvider;
-            evaluationDeclaration = declaration;
+        final boolean sourcingChanged = (claimed != null && claimed.isDirty()) || provider != previousProvider;
+        evaluationDeclaration = declaration;
 
-            return sourcingChanged;
-        }
+        return sourcingChanged;
     }
 
     /**
@@ -158,11 +153,9 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
      *
      * @param provider the provider whose unclaimed declaration should be dropped
      */
-    public void providerClosed(final RemoteFileSourceProvider provider) {
-        synchronized (declarationLock) {
-            if (pendingDeclaration != null && pendingDeclaration.getProvider() == provider) {
-                pendingDeclaration = null;
-            }
+    public synchronized void providerClosed(final RemoteFileSourceProvider provider) {
+        if (pendingDeclaration != null && pendingDeclaration.getProvider() == provider) {
+            pendingDeclaration = null;
         }
     }
 
@@ -171,10 +164,8 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
      *
      * @return true if this evaluation sources any resources remotely, false otherwise
      */
-    public boolean hasConfiguredRemoteSources() {
-        synchronized (declarationLock) {
-            return evaluationDeclaration != null;
-        }
+    public synchronized boolean hasConfiguredRemoteSources() {
+        return evaluationDeclaration != null;
     }
 
     /**
@@ -193,7 +184,7 @@ public class RemoteFileSourceClassLoader extends ClassLoader {
         // Snapshot the declaration so that resolution and the later fetch through the returned URL agree, even if
         // the next evaluation begins in between. The fetch itself happens outside the lock.
         final RemoteFileSourceDeclaration declaration;
-        synchronized (declarationLock) {
+        synchronized (this) {
             declaration = evaluationDeclaration;
         }
         final RemoteFileSourceProvider provider =
