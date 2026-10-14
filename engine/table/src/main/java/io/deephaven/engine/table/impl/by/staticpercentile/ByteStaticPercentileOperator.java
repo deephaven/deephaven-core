@@ -50,9 +50,11 @@ public class ByteStaticPercentileOperator extends StaticPercentileOperator {
      * @param percentile the percentile to compute
      * @param averageEvenlyDivided see {@link io.deephaven.api.agg.spec.AggSpecPercentile#averageEvenlyDivided()}
      * @param name the name of the result column
+     * @param expectedSize the number of values a destination's first array is sized for
      */
-    ByteStaticPercentileOperator(final double percentile, final boolean averageEvenlyDivided, final String name) {
-        super(percentile, name);
+    ByteStaticPercentileOperator(final double percentile, final boolean averageEvenlyDivided, final String name,
+            final long expectedSize) {
+        super(percentile, name, expectedSize);
         // region resultConstructor
         result = new ByteArraySource();
         // endregion resultConstructor
