@@ -10,7 +10,9 @@ import base64
 import logging
 import os
 import queue
+import sys
 import threading
+import time
 import weakref
 from collections.abc import Iterable
 from random import random
@@ -53,14 +55,29 @@ from pydeephaven.ticket import (
 logger = logging.getLogger(__name__)
 
 
-def _release_tickets(
+def _run_session_worker(
     session_ref: weakref.ReferenceType[Session],
-    tickets: queue.SimpleQueue[Optional[Ticket]],
+    work: queue.SimpleQueue[Optional[Ticket]],
 ) -> None:
-    """Releases the tickets of garbage-collected Tables, which they queue with Session._release_later. Runs on the
-    session's release thread until it gets None, or the session is gone or closed."""
+    """Runs a session's background work on one thread. It releases the tickets that garbage-collected Tables queue
+    with Session._release_later, and refreshes the auth token of a session that never times out. Between jobs it holds
+    the session only weakly, so a dropped session can be collected. It exits on None, or when the session is gone or
+    closed."""
     while True:
-        ticket = tickets.get()
+        session = session_ref()
+        if session is None or not session.is_connected:
+            return
+        timeout = session._seconds_until_refresh()
+        del session
+        try:
+            ticket = work.get(timeout=timeout)
+        except queue.Empty:
+            session = session_ref()
+            if session is None:
+                return
+            session._keep_alive()
+            del session
+            continue
         if ticket is None:
             return
         session = session_ref()
@@ -78,7 +95,6 @@ def _release_tickets(
 class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
     def __init__(self, session: Session):
         super().__init__()
-        self._session = session
         self._middleware = _DhClientAuthMiddleware(session)
 
     def start_call(self, info: Any) -> _DhClientAuthMiddleware:
@@ -88,7 +104,9 @@ class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
 class _DhClientAuthMiddleware(ClientMiddleware):
     def __init__(self, session: Session):
         super().__init__()
-        self._session = session
+        # Weak: the Flight client holds this in C++, out of the garbage collector's sight, so a strong reference
+        # would keep a dropped session alive.
+        self._session_ref = weakref.ref(session)
 
     def call_completed(self, exception: Optional[Exception]) -> None:
         super().call_completed(exception)
@@ -100,8 +118,9 @@ class _DhClientAuthMiddleware(ClientMiddleware):
             if headers and header_key in headers:
                 header_value = headers[header_key]
                 auth_header_value = bytes(header_value[0], encoding="ascii")
-                if auth_header_value:
-                    self._session._auth_header_value = auth_header_value
+                session = self._session_ref()
+                if auth_header_value and session is not None:
+                    session._auth_header_value = auth_header_value
         except Exception:
             logger.exception(
                 f"_DhClientAuthMiddleware.received_headers got headers={headers}"
@@ -241,9 +260,10 @@ class Session:
         self._input_table_service: Optional[InputTableService] = None
         self._plugin_obj_service: Optional[PluginObjService] = None
         self._never_timeout = never_timeout
-        self._keep_alive_timer: Optional[threading.Timer] = None
-        self._release_queue: queue.SimpleQueue[Optional[Ticket]] = queue.SimpleQueue()
-        self._release_thread: Optional[threading.Thread] = None
+        # The time.monotonic() time of the next token refresh, or None for no refresh.
+        self._next_refresh: Optional[float] = None
+        self._worker_queue: queue.SimpleQueue[Optional[Ticket]] = queue.SimpleQueue()
+        self._worker_thread: Optional[threading.Thread] = None
         self._session_type = session_type
         self._flight_client: Optional[paflight.FlightClient] = None
         self._auth_handler = None
@@ -262,6 +282,10 @@ class Session:
         self.close()
 
     def __del__(self) -> None:
+        # No RPC during interpreter shutdown: gRPC's threads have stopped, so the call would never finish. The server
+        # expires the session on its own.
+        if sys.is_finalizing():
+            return
         self.close()
 
     def update_metadata(
@@ -494,51 +518,48 @@ class Session:
 
             self.is_connected = True
 
+            if self._never_timeout:
+                self._next_refresh = time.monotonic() + 0.5 * self._timeout_seconds
+
             # A new queue per connection: tickets from an earlier connection are invalid.
-            self._release_queue = queue.SimpleQueue()
-            self._release_thread = threading.Thread(
-                target=_release_tickets,
-                args=(weakref.ref(self), self._release_queue),
-                name=f"pydh.Session {id(self)} release",
+            self._worker_queue = queue.SimpleQueue()
+            self._worker_thread = threading.Thread(
+                target=_run_session_worker,
+                args=(weakref.ref(self), self._worker_queue),
+                name=f"pydh.Session {id(self)} worker",
                 daemon=True,
             )
-            self._release_thread.start()
+            self._worker_thread.start()
 
-            if self._never_timeout:
-                self._keep_alive()
+    def _seconds_until_refresh(self) -> Optional[float]:
+        """The seconds until the next token refresh, or None for no refresh."""
+        if self._next_refresh is None:
+            return None
+        return max(0.0, self._next_refresh - time.monotonic())
 
     def _keep_alive(self) -> None:
+        """Refreshes the auth token and schedules the next refresh. Runs on the session's worker thread."""
         _trace("_keep_alive")
         if not self.is_connected:
             return
-        ok = True
-        if self._keep_alive_timer:
-            ok = self._refresh_token()
-            if ok:
-                self._refresh_failures = 0
-            else:
-                self._refresh_failures += 1
-        if self._refresh_failures == 0:
-            timer_wakeup = 0.5 * self._timeout_seconds
-        elif self._refresh_failures >= len(self._refresh_backoff):
-            msg = f"Failed to refresh token {self._refresh_failures} times, will stop retrying."
-            logger.critical(msg)
-            raise DHError(msg)
+        if self._refresh_token():
+            self._refresh_failures = 0
+            wakeup = 0.5 * self._timeout_seconds
         else:
-            timer_wakeup = self._refresh_backoff[self._refresh_failures]
-        _trace(f"_keep_alive timer_wakeup={timer_wakeup}")
-        # Recheck under the lock close() holds: close() may have run during the refresh.
-        with self._r_lock:
-            if not self.is_connected:
+            self._refresh_failures += 1
+            if self._refresh_failures >= len(self._refresh_backoff):
+                logger.critical(
+                    f"Failed to refresh token {self._refresh_failures} times, will stop retrying."
+                )
+                self._next_refresh = None
                 return
-            self._keep_alive_timer = threading.Timer(timer_wakeup, self._keep_alive)
-            self._keep_alive_timer.daemon = True
-            self._keep_alive_timer.start()
-        if not ok:
+            wakeup = self._refresh_backoff[self._refresh_failures]
             logger.warning(
                 f"{self._logpfx}: failed to refresh auth token (retry #{self._refresh_failures - 1})."
-                + f" Will retry in {timer_wakeup} seconds."
+                + f" Will retry in {wakeup} seconds."
             )
+        _trace(f"_keep_alive wakeup={wakeup}")
+        self._next_refresh = time.monotonic() + wakeup
 
     def _refresh_token(self) -> bool:
         _trace("_refresh_token")
@@ -575,11 +596,8 @@ class Session:
             DHError
         """
         with self._r_lock:
-            if self._keep_alive_timer:
-                self._keep_alive_timer.cancel()
-                self._keep_alive_timer = None
-            # Stop the release thread even if already disconnected. The server releases any tickets still queued.
-            self._release_queue.put(None)
+            # Stop the worker thread even if already disconnected. The server releases any tickets still queued.
+            self._worker_queue.put(None)
             if not self.is_connected:
                 return
             try:
@@ -602,9 +620,9 @@ class Session:
         self.session_service.release(ticket)
 
     def _release_later(self, ticket: Ticket) -> None:
-        """Queues a ticket for the release thread. Unlike release, it makes no RPC, so a finalizer can call it:
-        queue.SimpleQueue.put is reentrant."""
-        self._release_queue.put(ticket)
+        """Queues a ticket for the worker thread to release. Unlike release, it makes no RPC, so a finalizer can call
+        it: queue.SimpleQueue.put is reentrant."""
+        self._worker_queue.put(ticket)
 
     # convenience/factory methods
     def run_script(self, script: str, systemic: Optional[bool] = None) -> None:

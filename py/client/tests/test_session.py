@@ -2,10 +2,13 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 import gc
+import subprocess
+import sys
 import threading
 import unittest
 import weakref
 from time import sleep, time
+from unittest import mock
 
 import pandas as pd
 import pyarrow as pa
@@ -177,43 +180,63 @@ t1 = empty_table(0) if t.is_blink else None
             with self.assertRaises(PermissionError):
                 append_input_t.delete(dh_table)
 
-    def test_close_stops_session_threads(self):
+    def test_close_stops_worker_thread(self):
         session = Session()
-        keep_alive_timer = session._keep_alive_timer
-        release_thread = session._release_thread
-        self.assertTrue(keep_alive_timer.is_alive())
-        self.assertTrue(release_thread.is_alive())
+        worker = session._worker_thread
+        self.assertTrue(worker.is_alive())
         session.close()
-        keep_alive_timer.join(5)
-        release_thread.join(5)
-        self.assertFalse(keep_alive_timer.is_alive())
-        self.assertFalse(release_thread.is_alive())
+        worker.join(5)
+        self.assertFalse(worker.is_alive())
 
-    def test_close_during_keep_alive_refresh(self):
-        session = Session()
+    def test_token_is_refreshed(self):
+        refreshes = []
+        original_refresh = Session._refresh_token
+
+        def counting_refresh(session):
+            refreshes.append(time())
+            return original_refresh(session)
+
+        with mock.patch.multiple(
+            Session,
+            _seconds_until_refresh=lambda self: 0.05,
+            _refresh_token=counting_refresh,
+        ):
+            with Session() as session:
+                deadline = time() + 10
+                while len(refreshes) < 3:
+                    if time() > deadline:
+                        self.fail(f"only {len(refreshes)} token refreshes")
+                    sleep(0.05)
+                self.assertEqual(session.empty_table(3).size, 3)
+
+    def test_close_during_token_refresh(self):
+        refreshes = []
         refresh_started = threading.Event()
         finish_refresh = threading.Event()
 
-        def slow_refresh():
+        def slow_refresh(session):
+            refreshes.append(time())
             refresh_started.set()
             finish_refresh.wait(10)
             return True
 
-        session._refresh_token = slow_refresh
-        keep_alive = threading.Thread(target=session._keep_alive, daemon=True)
-        keep_alive.start()
-        self.assertTrue(refresh_started.wait(10))
-        session.close()
-        finish_refresh.set()
-        keep_alive.join(10)
-        self.assertFalse(keep_alive.is_alive())
-        self.assertIsNone(
-            session._keep_alive_timer, "the refresh restarted the timer after close"
-        )
+        with mock.patch.multiple(
+            Session,
+            _seconds_until_refresh=lambda self: 0.05,
+            _refresh_token=slow_refresh,
+        ):
+            session = Session()
+            worker = session._worker_thread
+            self.assertTrue(refresh_started.wait(10))
+            session.close()
+            finish_refresh.set()
+            worker.join(10)
+            self.assertFalse(worker.is_alive())
+            self.assertEqual(len(refreshes), 1, "refreshed after close")
 
     def test_close_disconnects_when_close_session_fails(self):
         session = Session()
-        release_thread = session._release_thread
+        worker = session._worker_thread
 
         def failing_close():
             raise DHError("simulated CloseSession failure")
@@ -222,16 +245,40 @@ t1 = empty_table(0) if t.is_blink else None
         with self.assertRaises(DHError):
             session.close()
         self.assertFalse(session.is_connected)
-        release_thread.join(5)
-        self.assertFalse(release_thread.is_alive())
+        worker.join(5)
+        self.assertFalse(worker.is_alive())
 
-    def test_close_stops_release_thread_of_disconnected_session(self):
+    def test_close_stops_worker_thread_of_disconnected_session(self):
         session = Session()
-        release_thread = session._release_thread
+        worker = session._worker_thread
         session.is_connected = False  # as a failed token refresh leaves it
         session.close()
-        release_thread.join(5)
-        self.assertFalse(release_thread.is_alive())
+        worker.join(5)
+        self.assertFalse(worker.is_alive())
+
+    def test_dropped_session_is_collected(self):
+        session = Session()
+        worker = session._worker_thread
+        session_ref = weakref.ref(session)
+        del session
+        gc.collect()
+        self.assertIsNone(session_ref(), "the worker thread kept the session alive")
+        worker.join(5)
+        self.assertFalse(worker.is_alive())
+
+    def test_unclosed_session_does_not_block_interpreter_exit(self):
+        # A session left open in a reference cycle is collected during interpreter shutdown.
+        script = (
+            "from pydeephaven import Session\n"
+            "session = Session()\n"
+            "session.cycle = session\n"
+            "session.empty_table(1)\n"
+        )
+        try:
+            result = subprocess.run([sys.executable, "-c", script], timeout=60)
+        except subprocess.TimeoutExpired:
+            self.fail("the interpreter did not exit")
+        self.assertEqual(result.returncode, 0)
 
     def test_garbage_collected_table_is_released(self):
         for name, columns in (("with columns", ["X = i"]), ("without columns", [])):
