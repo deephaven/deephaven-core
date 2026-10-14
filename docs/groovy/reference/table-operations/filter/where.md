@@ -2,10 +2,10 @@
 title: where
 ---
 
-The `where` method filters rows of data from the source table.
+The [`where`](#syntax) method filters rows of data from the source table.
 
 > [!NOTE]
-> The engine does not guarantee it evaluates filters in argument order. Within a run of consecutive stateless filters (the default), when the data source supports pushdown for a filter, the engine estimates its cost and can run a cheaper filter before one that appears earlier in the argument list. Within that run, filters without pushdown support run after the pushdown-capable ones, and filters with equal estimated cost keep their relative argument order. A stateful filter, such as one marked serial, is a boundary that this reordering never crosses. It stays in its argument position relative to its neighbors, though the stateless filters after it can still be reordered among themselves. It is still _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded, and match filters are highly optimized, so they should usually come before conditional filters. If your query depends on filters running in a specific order, use [`withSerial`](../../query-language/types/Filter.md#withserial) or Barriers to guarantee it.
+> The engine does not guarantee that it evaluates filters in argument order. See [Filter evaluation order](#filter-evaluation-order) for the order it uses and how to guarantee a specific one.
 
 ## Syntax
 
@@ -23,7 +23,7 @@ Formulas for filtering as a list of [Strings](../../query-language/types/strings
 </Param>
 <Param name="filter" type="Filter">
 
-A [`Filter`](../../query-language/types/Filter.md) object, such as a serial filter or one that declares or respects Barriers.
+A [`Filter`](../../query-language/types/Filter.md) object, such as a serial filter or one that declares or respects [Barriers](../../query-language/types/Barrier.md).
 
 </Param>
 </ParamTable>
@@ -102,11 +102,33 @@ result_filtered = source.where("(boolean)my_filter(IntegerColumn)")
 result_not_filtered = source.where("!((boolean)my_filter(IntegerColumn))")
 ```
 
+## Filter evaluation order
+
+When [`where`](#syntax) receives several filters, Deephaven evaluates them one after another, and each filter evaluates only the rows that passed the filters before it. Deephaven parallelizes within a single filter by splitting that filter's rows across threads. It does not run different filters at the same time.
+
+The order of the filters depends on whether each one is stateless or stateful:
+
+- A **stateless** filter is one that Deephaven assumes is safe to evaluate in parallel. Every string-formula filter is stateless by default, as [Stateless by default](../../../conceptual/query-table-configuration.md#stateless-by-default) describes.
+- A **stateful** filter is one that Deephaven does not assume is safe to evaluate in parallel. A filter marked serial with [`withSerial`](../../query-language/types/Filter.md#withserial) is stateful, and every string-formula filter is stateful when stateless by default is turned off.
+
+Deephaven applies these rules:
+
+1. A stateful filter keeps its position in the argument list. Reordering never crosses it.
+2. Within a run of consecutive stateless filters, a filter that respects a [Barrier](../../query-language/types/Barrier.md) runs after the filter that declares it. Next, filters whose data source supports [predicate pushdown](../../../how-to-guides/predicate-pushdown.md) run in order of estimated cost, cheaper first, ahead of filters without that support. Filters that tie keep their relative argument order.
+
+To guarantee a specific order, use [`withSerial`](../../query-language/types/Filter.md#withserial) or [Barriers](../../query-language/types/Barrier.md).
+
+It remains good practice to write filters on partitioning columns first, because they exclude large data volumes early. Write [match filters](../../../how-to-guides/filters.md#match-filters) before conditional filters, because match filters are highly optimized.
+
 ## Serial execution
 
-By default, Deephaven parallelizes filter evaluation across multiple CPU cores when the input is large enough. For filters with side effects or order dependencies, use [`withSerial`](../../query-language/types/Filter.md#withserial) to force sequential processing.
+By default, Deephaven parallelizes the evaluation of a single filter by splitting its rows across CPU cores. Mark a filter serial with [`withSerial`](../../query-language/types/Filter.md#withserial) when it has side effects or depends on row order. Deephaven then evaluates that filter's rows one at a time in row-set order, which is ascending row key.
 
-This filter tracks how many rows it evaluates. Once more than about 131,072 rows reach this filter, it becomes eligible for parallel evaluation. It is not guaranteed to run in parallel, since that also depends on available worker threads. That is current behavior, not a guarantee. Only [`withSerial`](../../query-language/types/Filter.md#withserial) promises that the filter's rows are evaluated in row-set order, so use it to protect a filter like this regardless of input size. The example below uses 100 rows for clarity:
+Parallel evaluation applies only to large inputs. A filter becomes eligible when more than about 131,072 rows reach it, which counts the rows that survive earlier filters, not the size of the source table. [Parallel processing with `where`](../../../conceptual/query-table-configuration.md#parallel-processing-with-where) describes the threshold and how refreshing tables count rows.
+
+Parallel eligibility is not an order guarantee. Only [`withSerial`](../../query-language/types/Filter.md#withserial) promises row-set order.
+
+The following example counts the rows a filter evaluates, which is a side effect, so the filter is marked serial. The example uses 100 rows for clarity.
 
 ```groovy order=source,result
 import io.deephaven.api.filter.Filter
@@ -130,17 +152,17 @@ See [Parallelization](../../../conceptual/query-engine/parallelization.md) for m
 
 ## Filters on partitioning columns
 
-When a table comes from a partitioned source, such as a directory of Parquet files or an Iceberg table, a filter that uses only partitioning columns can be applied to the partitions before any data is read. Deephaven evaluates the filter once per partition instead of once per row, and runs it ahead of the other filters, so whole partitions are skipped.
+A partitioned source, such as a directory of Parquet files or an Iceberg table, has partitioning columns whose values identify each partition. Deephaven can apply a filter that uses only partitioning columns to whole partitions before it reads any data. It evaluates the filter once per partition instead of once per row, and runs it ahead of the other filters, so whole partitions are skipped.
 
-Deephaven applies a filter this way even when filters are configured to be stateful by default, because that is nearly always what users want. For example, `Date = today()` is stateful when filters are stateful by default, but Deephaven still evaluates it early, partition by partition.
+Deephaven applies such a filter this way even when stateless by default is turned off, because that is nearly always what users want. For example, with stateless by default turned off, `Date = today()` is stateful, but Deephaven still evaluates it early, partition by partition.
 
-A filter on partitioning columns is not applied this way if:
+Deephaven does not apply a filter on partitioning columns this way in these cases:
 
-- It is marked serial with [`withSerial`](../../query-language/types/Filter.md#withserial), or any filter before it in the argument list is. From the first serial filter on, Deephaven evaluates that filter and every later one on the table's rows instead of on whole partitions. Later stateless filters can still be reordered among themselves by cost.
-- It respects a Barrier declared by a filter that is not applied this way.
-- It uses row variables such as `i` or `ii`, or its results can change over time (a refreshing filter).
+- The filter is marked serial with [`withSerial`](../../query-language/types/Filter.md#withserial), or any filter before it in the argument list is. From the first serial filter on, Deephaven evaluates that filter and every later one on the table's rows instead of on whole partitions.
+- The filter respects a [Barrier](../../query-language/types/Barrier.md) declared by a filter that is not applied this way.
+- The filter uses row variables such as `i` or `ii`, or its results can change over time (a refreshing filter).
 
-Mark a filter on partitioning columns serial only when the order in which it is evaluated matters.
+In these cases Deephaven includes every partition in the table and evaluates the filter against every row. On a large partitioned source, that can be much slower. Mark a filter on partitioning columns serial only when the order in which it is evaluated matters.
 
 ## Related documentation
 

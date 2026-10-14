@@ -2,19 +2,21 @@
 title: update
 ---
 
-The `update` method creates a new table containing a new, in-memory column for each argument.
+The [`update`](./update.md) method creates a new table containing a new, in-memory column for each argument.
 
-When using `update`, the new columns are evaluated and stored in memory. Existing columns are referenced without additional memory allocation.
+When using [`update`](./update.md), the new columns are evaluated and stored in memory. Existing columns are referenced without additional memory allocation.
 
 > [!NOTE]
-> `update`, [`update_view`](./update-view.md), and [`lazy_update`](./lazy-update.md) accept the same formula strings and produce a table with the same columns. `update` is recommended when:
+> [`update`](./update.md) accepts [formula strings](../../../how-to-guides/formulas.md) and [`Selectable`](../../query-language/types/Selectable.md) objects. [`update_view`](./update-view.md) and [`lazy_update`](./lazy-update.md) accept only [formula strings](../../../how-to-guides/formulas.md). All three methods return a table with all the source columns plus the new columns. [`update`](./update.md) stores the new columns in memory, while [`update_view`](./update-view.md) stores formulas and recalculates cells on access.
+>
+> [`update`](./update.md) fits best when:
 >
 > 1. all the source columns are desired in the result,
 > 2. the formula is expensive to evaluate,
 > 3. cells are accessed many times, and/or
 > 4. a large amount of memory is available.
 >
-> When memory usage or computation needs to be reduced, consider using [`select`](./select.md), [`view`](./view.md), [`update_view`](./update-view.md), or [`lazy_update`](./lazy-update.md). These methods have different memory and computation expenses.
+> [`select`](./select.md), [`view`](./view.md), [`update_view`](./update-view.md), and [`lazy_update`](./lazy-update.md) differ from [`update`](./update.md) in memory and computation costs.
 
 ## Syntax
 
@@ -38,7 +40,7 @@ A new table that includes all the original columns from the source table and the
 
 ## Examples
 
-In the following example, the new column `Y` allocates memory and is immediately populated with values. `A`, `B`, and `C` are the source table's own columns, which `new_table` holds in memory, and `X = B` creates a new column that points to the same in-memory data as `B`, so none of these allocate memory.
+In the following example, [`update`](./update.md) adds two columns. The new column `Y` allocates memory and is immediately populated with values. The new column `X = B` points to the same in-memory data as `B`, so it allocates none. `A`, `B`, and `C` are the source table's own columns, which `new_table` holds in memory, so referencing them allocates none either.
 
 ```python order=source,result
 from deephaven import new_table
@@ -57,7 +59,9 @@ result = source.update(formulas=["A", "X = B", "Y = sqrt(C)"])
 
 ## Serial execution
 
-By default, Deephaven parallelizes `update` calculations across multiple CPU cores when the input is large enough. If your formula has side effects or depends on row order, use [`with_serial`](../../query-language/types/Selectable.md#with_serial) to force sequential processing.
+By default, Deephaven parallelizes [`update`](./update.md) calculations across multiple CPU cores when the input is large enough. A formula that has side effects or depends on row order can use [`with_serial`](../../query-language/types/Selectable.md#with_serial) to force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) in row-set order.
+
+The following example marks the `ID` column as serial with [`with_serial`](../../query-language/types/Selectable.md#with_serial). Each row calls `get_next_id` in row-set order, so the counter increments one row at a time and `ID` holds the values 1 through 10 in row order.
 
 ```python order=result
 from deephaven.table import Selectable
@@ -80,10 +84,16 @@ For more information, see [Parallelization](../../../conceptual/query-engine/par
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
-- [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
 - [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
+- [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
+- [Formulas](../../../how-to-guides/formulas.md)
+- [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
 - [Parallelization](../../../conceptual/query-engine/parallelization.md)
 - [Selectable](../../query-language/types/Selectable.md)
+- [with_serial](../../query-language/types/Selectable.md#with_serial)
+- [select](./select.md)
+- [view](./view.md)
+- [update_view](./update-view.md)
+- [lazy_update](./lazy-update.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#update(java.lang.String...))
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.update)

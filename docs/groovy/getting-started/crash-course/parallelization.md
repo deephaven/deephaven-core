@@ -161,16 +161,45 @@ result = emptyTable(100).update([col])
 > [!NOTE]
 > With only 100 rows, this example wouldn't show the race even without [`withSerial`](../../reference/query-language/types/Selectable.md#withserial). Use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) whenever one formula depends on shared state or row order, regardless of table size. Parallelization isn't the only way execution order can vary, and [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) is what guarantees this formula's rows are processed one at a time, in order.
 
-[`withSerial`](../../reference/query-language/types/Selectable.md#withserial) keeps one column from running concurrently with itself. If several columns use the same state, you also need [Barriers](../../conceptual/query-engine/parallelization.md#barriers). If several tables use it, [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) and Barriers can't coordinate them, so make the shared code itself thread-safe (for example, protect it with a lock). [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) works with [`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md). Filters have their own [`withSerial`](../../reference/query-language/types/Filter.md#withserial) for [`where`](../../reference/table-operations/filter/where.md). [`view`](../../reference/table-operations/select/view.md) and [`updateView`](../../reference/table-operations/select/update-view.md) compute values when they're read, so they don't support it.
+[`withSerial`](../../reference/query-language/types/Selectable.md#withserial) works with [`update`](../../reference/table-operations/select/update.md) and [`select`](../../reference/table-operations/select/select.md). Filters have their own [`withSerial`](../../reference/query-language/types/Filter.md#withserial) for [`where`](../../reference/table-operations/filter/where.md). [`view`](../../reference/table-operations/select/view.md) and [`updateView`](../../reference/table-operations/select/update-view.md) compute values when they're read, so they don't support it.
 
 **Trade-off**: Sequential processing forgoes the speedup of running rows concurrently across cores, so it's slower than parallel processing. Only use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) when your formula requires it for correctness.
+
+### Example: two columns sharing a counter
+
+[`withSerial`](../../reference/query-language/types/Selectable.md#withserial) keeps one column from running concurrently with itself, but it doesn't order two columns relative to each other. If columns `A` and `B` both draw from the same counter, their values can interleave. A [Barrier](../../reference/query-language/types/Barrier.md) fixes that: the column that declares the [Barrier](../../reference/query-language/types/Barrier.md) finishes all its rows before any column that respects it starts. Here `A` takes the IDs 0 to 9 and `B` continues with 10 to 19:
+
+```groovy order=t
+import io.deephaven.api.Selectable
+import java.util.concurrent.atomic.AtomicInteger
+
+counter = new AtomicInteger(0)
+
+barrier = new Object()
+
+// Column A: serial (keep rows in order) + declares barrier (must finish first)
+colA = Selectable.parse("A = counter.getAndIncrement()")
+    .withSerial()
+    .withDeclaredBarriers(barrier)
+
+// Column B: serial (keep rows in order) + respects barrier (waits for A)
+colB = Selectable.parse("B = counter.getAndIncrement()")
+    .withSerial()
+    .withRespectedBarriers(barrier)
+
+t = emptyTable(10).update([colA, colB])
+```
+
+In the output, `A` holds 0 through 9 and `B` holds 10 through 19, so the two ranges land as clean blocks. Without the [Barrier](../../reference/query-language/types/Barrier.md), nothing decides which column claims the lower values, so the two ranges could interleave.
+
+[Barrier](../../reference/query-language/types/Barrier.md) only orders columns within one operation. If several tables use the same state, [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) and [Barriers](../../conceptual/query-engine/parallelization.md#barriers) can't coordinate them, so make the shared code itself thread-safe (for example, protect it with a lock).
 
 ## Key takeaways
 
 - Deephaven assumes formulas are safe to run in parallel by default. This is fast but requires stateless code.
 - Shared state or row-order dependencies can cause silent errors with parallelization.
-- Use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) when one formula updates shared state or needs its rows processed in order. When several columns share state, you also need Barriers; when several tables do, the shared code must be thread-safe.
+- Use [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) when one formula updates shared state or needs its rows processed in order. When several columns share state, you also need [Barriers](../../conceptual/query-engine/parallelization.md#barriers); when several tables do, the shared code must be thread-safe.
 
 Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically, with no extra code required.
 
-For more detail, including Barriers and other concurrency-control tools, see [query parallelization](../../conceptual/query-engine/parallelization.md).
+For more detail, including [Barriers](../../conceptual/query-engine/parallelization.md#barriers) and other concurrency-control tools, see [query parallelization](../../conceptual/query-engine/parallelization.md).
