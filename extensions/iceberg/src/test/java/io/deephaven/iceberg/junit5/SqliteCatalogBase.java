@@ -2716,8 +2716,9 @@ public abstract class SqliteCatalogBase {
         final TableIdentifier tableIdentifier = TableIdentifier.parse("MyNamespace.MyTable");
         final Table source = TableTools.newTable(
                 stringCol("S", "b", "a", "b", "a"),
-                intCol("I", 4, 1, 3, 2));
+                intCol("I", 1, 4, 3, 2));
         final IcebergTableAdapter tableAdapter = catalogAdapter.createTable(tableIdentifier, source.getDefinition());
+        // Sorted by (S, I), I reads 2, 4, 1, 3: sorted within each run of S, but not on its own
         tableAdapter.icebergTable().replaceSortOrder().asc("S").asc("I").commit();
         tableAdapter.tableWriter(writerOptionsBuilder()
                 .tableDefinition(source.getDefinition())
@@ -2731,9 +2732,11 @@ public abstract class SqliteCatalogBase {
                 .table(IcebergReadInstructions.builder().addIgnoreSortedColumns(ignored).build())
                 .coalesce();
 
+        // Only the leading sort column is sorted on its own, so only it is claimed
         final Table trustAll = readIgnoring.apply(new String[0]);
         assertThat(SortedColumnsAttribute.getOrderForColumn(trustAll, "S")).contains(SortingOrder.Ascending);
-        assertThat(SortedColumnsAttribute.getOrderForColumn(trustAll, "I")).contains(SortingOrder.Ascending);
+        assertThat(SortedColumnsAttribute.getOrderForColumn(trustAll, "I")).isEmpty();
+        assertTableEquals(trustAll.select().where("I >= 3"), trustAll.where("I >= 3"));
 
         // Ignoring the second sort column keeps the first
         final Table ignoreI = readIgnoring.apply(new String[] {"I"});
@@ -2749,7 +2752,7 @@ public abstract class SqliteCatalogBase {
         // A name that is not a sorted column has no effect
         final Table ignoreOther = readIgnoring.apply(new String[] {"NotAColumn"});
         assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreOther, "S")).contains(SortingOrder.Ascending);
-        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreOther, "I")).contains(SortingOrder.Ascending);
+        assertThat(SortedColumnsAttribute.getOrderForColumn(ignoreOther, "I")).isEmpty();
     }
 
     @Test
