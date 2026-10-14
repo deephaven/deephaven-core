@@ -59,6 +59,14 @@ public class SoftRecyclerWindowsTest {
     }
 
     @Test
+    public void testAStartOutOfOrderCountsAsNoInterval() {
+        windows.cycleStarted("graph", 0);
+        windows.cycleStarted("graph", 10 * SECOND);
+        windows.cycleStarted("graph", 9 * SECOND);
+        assertEquals(MINIMUM, windows.windowNanos(10 * SECOND));
+    }
+
+    @Test
     public void testAnIdleGraphIsIgnored() {
         cycles("slow", 0, 20 * SECOND, 40 * SECOND);
         assertEquals(30 * SECOND, windows.windowNanos(40 * SECOND));

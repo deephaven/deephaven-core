@@ -116,7 +116,7 @@ public final class SoftRecyclerWindows {
             graphs.put(graphName, new GraphCycles(startNanos));
             return;
         }
-        cycles.intervalNanos = Math.min(maximumWindowNanos, startNanos - cycles.lastStartNanos);
+        cycles.intervalNanos = Math.max(0, Math.min(maximumWindowNanos, startNanos - cycles.lastStartNanos));
         cycles.lastStartNanos = startNanos;
     }
 
