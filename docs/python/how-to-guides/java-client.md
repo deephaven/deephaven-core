@@ -35,6 +35,7 @@ cities = input_table(col_defs={"City": dht.string}, key_cols="City")
 # Every second, record a simulated reading for each watched city
 readings = (
     time_table("PT1s")
+    .tail(1)
     .join(cities)
     .update(
         [
@@ -56,7 +57,7 @@ def begin_watch(city):
 The script defines the following:
 
 - `cities` is a keyed [input table](./input-tables.md) that holds the cities to watch. `City` is its key column, so adding a city that's already in the table replaces that city's row instead of adding a second one.
-- `readings` is the ticking table of weather readings. [`time_table`](../reference/table-operations/create/timeTable.md) adds a row with a `Timestamp` every second, [`join`](../reference/table-operations/join/join.md) pairs each timestamp with every watched city, and [`update`](../reference/table-operations/select/update.md) computes simulated `Temp` and `Humidity` values from the timestamp and the city name.
+- `readings` is the ticking table of weather readings. [`time_table`](../reference/table-operations/create/timeTable.md) adds a row with a `Timestamp` every second, [`tail(1)`](../reference/table-operations/filter/tail.md) keeps only the newest of those rows, [`join`](../reference/table-operations/join/join.md) pairs that timestamp with every watched city, and [`update`](../reference/table-operations/select/update.md) computes simulated `Temp` and `Humidity` values from the timestamp and the city name.
 - `latest_by_city` uses [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md) to keep the latest reading for each city. The Java client subscribes to this table.
 - `begin_watch` adds a city to `cities`. The Java client calls this function.
 
@@ -217,9 +218,12 @@ final InstrumentedTableUpdateListenerAdapter listener = new InstrumentedTableUpd
     }
 };
 latestTable.addUpdateListener(listener);
+
+// ... keep the try block open for as long as you need updates, then:
+latestTable.removeUpdateListener(listener);
 ```
 
-The `false` argument tells [`InstrumentedTableUpdateListenerAdapter`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html) not to keep its own reference to the listener, so the code keeps one in the `listener` variable, which stays in scope while the `try` block is open. Without that reference, the JVM can garbage collect the listener, and the listener stops receiving updates.
+The `false` argument tells [`InstrumentedTableUpdateListenerAdapter`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html) not to keep its own reference to the listener, so the code must keep the listener reachable itself. Being in scope isn't enough, because the JVM can collect a local variable that the code no longer uses. The final `removeUpdateListener` call uses `listener` at the end, which keeps it reachable until then, as the `SubscribeTable` example does. Without it, the JVM can garbage collect the listener, and the listener stops receiving updates.
 
 ### Run code on the server
 
