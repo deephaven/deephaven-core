@@ -107,12 +107,10 @@ def _run_release_worker(
         del session  # hold the session only weakly while waiting
 
 
-def _run_token_refresher(
-    session_ref: weakref.ReferenceType[Session], stop: threading.Event
-) -> None:
-    """Refreshes a session's auth token whenever a refresh is due. It ends when the session is closed or reconnects,
-    when the session is gone, or when refreshes keep failing and give up. While it waits it holds the session only
-    weakly, so a dropped session can be collected."""
+def _run_token_refresher(session_ref: weakref.ReferenceType[Session]) -> None:
+    """Refreshes a session's auth token whenever a refresh is due. It sleeps until then and is never woken early, so
+    after the session is closed or gone, it ends when it next wakes. It also ends when refreshes keep failing and give
+    up. While it sleeps it holds the session only weakly, so a dropped session can be collected."""
     refresh_due = False  # the first refresh is scheduled, not due
     while True:
         session = session_ref()
@@ -125,8 +123,9 @@ def _run_token_refresher(
                 logger.exception(f"{session._logpfx}: token refresh failed")
         timeout = session._seconds_until_refresh()
         del session  # hold the session only weakly while waiting
-        if timeout is None or stop.wait(timeout):
+        if timeout is None:
             return
+        time.sleep(timeout)
         refresh_due = True
 
 
@@ -302,7 +301,6 @@ class Session:
         self._next_refresh: Optional[float] = None
         self._release_queue: queue.SimpleQueue[_SessionJob] = queue.SimpleQueue()
         self._release_thread: Optional[threading.Thread] = None
-        self._refresh_stop = threading.Event()
         self._refresh_thread: Optional[threading.Thread] = None
         self._session_type = session_type
         self._flight_client: Optional[paflight.FlightClient] = None
@@ -561,9 +559,10 @@ class Session:
             if self._never_timeout:
                 self._next_refresh = time.monotonic() + 0.5 * self._timeout_seconds
 
-            # New threads per connection: tickets from an earlier connection are invalid. Stop the earlier threads,
-            # which still run if the session was marked disconnected without close().
-            self._stop_threads()
+            # New threads per connection: tickets from an earlier connection are invalid. Stop the earlier release
+            # thread, which still runs if the session was marked disconnected without close(). The earlier refresh
+            # thread ends when it next wakes.
+            self._release_queue.put(_STOP)
             self._release_queue = queue.SimpleQueue()
             self._release_thread = threading.Thread(
                 target=_run_release_worker,
@@ -572,21 +571,15 @@ class Session:
                 daemon=True,
             )
             self._release_thread.start()
-            self._refresh_stop = threading.Event()
             self._refresh_thread = None
             if self._never_timeout:
                 self._refresh_thread = threading.Thread(
                     target=_run_token_refresher,
-                    args=(weakref.ref(self), self._refresh_stop),
+                    args=(weakref.ref(self),),
                     name=f"pydh.Session {id(self)} token refresh",
                     daemon=True,
                 )
                 self._refresh_thread.start()
-
-    def _stop_threads(self) -> None:
-        """Stops the release and token refresh threads. Neither is joined: either may be in an RPC."""
-        self._release_queue.put(_STOP)
-        self._refresh_stop.set()
 
     def _seconds_until_refresh(self) -> Optional[float]:
         """The seconds until the next token refresh, or None for no refresh."""
@@ -653,8 +646,8 @@ class Session:
             DHError
         """
         with self._r_lock:
-            # Stop the threads even if already disconnected. The server releases any tickets still queued.
-            self._stop_threads()
+            # Stop the release thread even if already disconnected. The server releases any tickets still queued.
+            self._release_queue.put(_STOP)
             if not self.is_connected:
                 return
             try:

@@ -24,6 +24,11 @@ from tests.testbase import BaseTestCase
 _Event = threading.Event
 
 
+def _short_refresh_sleep():
+    """Wakes the token refresh thread every 0.05 seconds, so it ends soon after its session is closed."""
+    return mock.patch.object(Session, "_seconds_until_refresh", lambda self: 0.05)
+
+
 class _WaitSignalingQueue(queue.SimpleQueue):
     """A SimpleQueue that signals when a thread starts to wait on it."""
 
@@ -34,18 +39,6 @@ class _WaitSignalingQueue(queue.SimpleQueue):
     def get(self, block=True, timeout=None):
         self.waiting.set()
         return super().get(block, timeout)
-
-
-class _WaitSignalingEvent(threading.Event):
-    """A threading.Event that signals when a thread starts to wait on it."""
-
-    def __init__(self):
-        super().__init__()
-        self.waiting = _Event()
-
-    def wait(self, timeout=None):
-        self.waiting.set()
-        return super().wait(timeout)
 
 
 class SessionTestCase(BaseTestCase):
@@ -214,7 +207,7 @@ t1 = empty_table(0) if t.is_blink else None
             raise DHError("simulated CloseSession failure")
 
         for case in ("normal", "CloseSession fails", "already disconnected"):
-            with self.subTest(case):
+            with self.subTest(case), _short_refresh_sleep():
                 session = Session()
                 threads = [session._release_thread, session._refresh_thread]
                 self.assertTrue(all(t.is_alive() for t in threads))
@@ -301,17 +294,16 @@ t1 = empty_table(0) if t.is_blink else None
         finally:
             session.close()
 
-    def test_reconnect_leaves_one_set_of_threads(self):
+    def test_reconnect_leaves_one_release_thread(self):
         session = Session()
-        old_threads = [session._release_thread, session._refresh_thread]
+        old_thread = session._release_thread
         session.is_connected = False  # as a failed is_alive check leaves it
         with session:  # reconnects
-            new_threads = [session._release_thread, session._refresh_thread]
-            for old, new in zip(old_threads, new_threads):
-                self.assertIsNot(new, old)
-                old.join(5)
-                self.assertFalse(old.is_alive())
-                self.assertTrue(new.is_alive())
+            new_thread = session._release_thread
+            self.assertIsNot(new_thread, old_thread)
+            old_thread.join(5)
+            self.assertFalse(old_thread.is_alive())
+            self.assertTrue(new_thread.is_alive())
 
     def test_paused_release_does_not_block_token_refresh(self):
         refreshed = threading.Event()
@@ -346,23 +338,58 @@ t1 = empty_table(0) if t.is_blink else None
                 session.close()
 
     def test_dropped_session_is_collected(self):
-        with (
-            mock.patch("queue.SimpleQueue", _WaitSignalingQueue),
-            mock.patch("threading.Event", _WaitSignalingEvent),
-        ):
-            session = Session()
-        threads = [session._release_thread, session._refresh_thread]
-        waits = [session._release_queue.waiting, session._refresh_stop.waiting]
-        session_ref = weakref.ref(session)
-        del session
-        # Each thread drops its reference to the session before it waits.
-        for waiting in waits:
-            self.assertTrue(waiting.wait(30), "a thread never started to wait")
-        gc.collect()
+        refresher_sleeping = _Event()
+
+        def signaling_sleep(seconds):
+            if threading.current_thread().name.endswith("token refresh"):
+                refresher_sleeping.set()
+            sleep(seconds)
+
+        with mock.patch("time.sleep", signaling_sleep):
+            with mock.patch("queue.SimpleQueue", _WaitSignalingQueue):
+                session = Session()
+            releaser = session._release_thread
+            release_waiting = session._release_queue.waiting
+            session_ref = weakref.ref(session)
+            del session
+            # Each thread drops its reference to the session before it waits.
+            self.assertTrue(release_waiting.wait(30), "the release thread never waited")
+            self.assertTrue(
+                refresher_sleeping.wait(30), "the refresh thread never slept"
+            )
+            gc.collect()
         self.assertIsNone(session_ref(), "a session thread kept the session alive")
-        for t in threads:
-            t.join(5)
-            self.assertFalse(t.is_alive())
+        releaser.join(5)
+        self.assertFalse(releaser.is_alive())
+
+    def test_session_collected_on_refresh_thread_does_not_hang(self):
+        dropped = _Event()
+        collected = _Event()
+
+        def collecting_sleep(seconds):
+            if (
+                threading.current_thread().name.endswith("token refresh")
+                and not collected.is_set()
+            ):
+                dropped.wait(10)
+                gc.collect()  # runs Session.__del__ on the refresh thread
+                collected.set()
+            sleep(seconds)
+
+        gc.disable()  # only the collection on the refresh thread may free the session
+        try:
+            with mock.patch("time.sleep", collecting_sleep):
+                session = Session()
+                session.cycle = session  # only the garbage collector frees a cycle
+                session_ref = weakref.ref(session)
+                del session
+                dropped.set()
+                self.assertTrue(
+                    collected.wait(30), "the finalizer hung on the refresh thread"
+                )
+        finally:
+            gc.enable()
+        self.assertIsNone(session_ref(), "the collection did not free the session")
 
     def test_unclosed_session_does_not_block_interpreter_exit(self):
         # A session left open in a reference cycle is collected during interpreter shutdown.
