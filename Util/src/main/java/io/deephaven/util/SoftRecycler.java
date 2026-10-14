@@ -25,7 +25,7 @@ import java.util.function.Supplier;
  *
  * <p>
  * The recycle bin holds at most its current capacity, which a {@link CapacityAdaptor} adapts to its traffic between the
- * capacity it was created with and a maximum, which the constructor gives; it is unlimited if not given, since the
+ * capacity it was created with and the maximum it was created with, which may be {@link Integer#MAX_VALUE}, since the
  * garbage collector reclaims the items under memory pressure. The shrink fraction is
  * {@value #SHRINK_FRACTION_PROPERTY}, 0.5 by default. The windows the capacity shrinks on end for every recycler at
  * once, through {@link #endWindows()}, which {@link SoftRecyclerWindows} calls from the cycles of the DEFAULT update
@@ -63,17 +63,6 @@ public class SoftRecycler<T> {
     private final List<SoftReferenceWithIndex<T>> recycleBin;
     private final ReferenceQueue<T> retirementQueue;
     private final CapacityAdaptor adaptor;
-
-    /**
-     * @param capacity The capacity the recycler starts with, and the least it shrinks to; it grows with its traffic
-     *        without limit
-     * @param constructItem A callback that creates a new item
-     * @param sanitizeItem Optional. A callback that sanitizes the item before reuse. Pass null if no sanitization is
-     *        needed.
-     */
-    public SoftRecycler(int capacity, Supplier<T> constructItem, Consumer<T> sanitizeItem) {
-        this(capacity, Integer.MAX_VALUE, constructItem, sanitizeItem);
-    }
 
     /**
      * @param capacity The capacity the recycler starts with, and the least it shrinks to; it grows with its traffic up
@@ -168,14 +157,6 @@ public class SoftRecycler<T> {
     @VisibleForTesting
     synchronized int getCapacity() {
         return adaptor.capacity();
-    }
-
-    /**
-     * @return the most items the recycle bin may grow to hold
-     */
-    @VisibleForTesting
-    int getMaximumCapacity() {
-        return adaptor.maximumCapacity();
     }
 
     /**

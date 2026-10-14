@@ -304,13 +304,6 @@ public class SoftRecyclerTest {
     }
 
     @Test
-    public void testDefaultMaximumIsUnlimited() {
-        final SoftRecycler<long[]> recycler = new SoftRecycler<>(10, () -> new long[1], null);
-        assertEquals(10, recycler.getCapacity());
-        assertEquals(Integer.MAX_VALUE, recycler.getMaximumCapacity());
-    }
-
-    @Test
     public void testRejectsInvalidParameters() {
         assertThrows(IllegalArgumentException.class, () -> new SoftRecycler<>(10, 9, () -> new long[1], null));
         assertThrows(IllegalArgumentException.class, () -> new SoftRecycler<>(-1, 9, () -> new long[1], null));

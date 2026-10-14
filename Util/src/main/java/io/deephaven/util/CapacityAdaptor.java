@@ -80,13 +80,6 @@ public final class CapacityAdaptor {
     }
 
     /**
-     * @return the most items the capacity may grow to
-     */
-    public int maximumCapacity() {
-        return maximumCapacity;
-    }
-
-    /**
      * The pool lent out an item it held.
      *
      * @param held The items the pool holds now
