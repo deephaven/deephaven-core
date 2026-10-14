@@ -5,7 +5,7 @@ title: where
 The `where` method filters rows of data from the source table.
 
 > [!NOTE]
-> The engine does not guarantee it evaluates filters in argument order. Within a run of consecutive stateless filters (the default), when the data source supports pushdown for a filter, the engine estimates its cost and can run a cheaper filter before one that appears earlier in the argument list. Within that run, filters without pushdown support run after the pushdown-capable ones, and filters with equal estimated cost keep their relative argument order. A stateful filter, such as one marked serial, is a boundary that this reordering never crosses. It stays in its argument position relative to its neighbors, though the stateless filters after it can still be reordered among themselves. It is still _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded, and match filters are highly optimized, so they should usually come before conditional filters. If your query depends on filters running in a specific order, use [`with_serial`](../../query-language/types/Filter.md#with_serial) or barriers to guarantee it.
+> The engine does not guarantee it evaluates filters in argument order. Within a run of consecutive stateless filters (the default), when the data source supports pushdown for a filter, the engine estimates its cost and can run a cheaper filter before one that appears earlier in the argument list. Within that run, filters without pushdown support run after the pushdown-capable ones, and filters with equal estimated cost keep their relative argument order. A stateful filter, such as one marked serial, is a boundary that this reordering never crosses. It stays in its argument position relative to its neighbors, though the stateless filters after it can still be reordered among themselves. It is still _best practice_ to place filters related to partitioning and grouping columns first, as significant data volumes can then be excluded, and match filters are highly optimized, so they should usually come before conditional filters. If your query depends on filters running in a specific order, use [`with_serial`](../../query-language/types/Filter.md#with_serial) or Barriers to guarantee it.
 
 ## Syntax
 
@@ -18,7 +18,7 @@ table.where(filters: Optional[Union[str, Filter, Sequence[str], Sequence[Filter]
 <ParamTable>
 <Param name="filters" type="Optional[Union[str, Filter, Sequence[str], Sequence[Filter]]]" Optional>
 
-Formulas for filtering as a list of [Strings](../../query-language/types/strings.md), or [`Filter`](../../query-language/types/Filter.md) objects, such as a serial filter or one that declares or respects barriers.
+Formulas for filtering as a list of [Strings](../../query-language/types/strings.md), or [`Filter`](../../query-language/types/Filter.md) objects, such as a serial filter or one that declares or respects Barriers.
 
 </Param>
 </ParamTable>
@@ -168,7 +168,7 @@ Deephaven applies a filter this way even when filters are configured to be state
 A filter on partitioning columns is not applied this way if:
 
 - It is marked serial with [`with_serial`](../../query-language/types/Filter.md#with_serial), or any filter before it in the argument list is. From the first serial filter on, Deephaven evaluates that filter and every later one on the table's rows instead of on whole partitions. Later stateless filters can still be reordered among themselves by cost.
-- It respects a barrier declared by a filter that is not applied this way.
+- It respects a Barrier declared by a filter that is not applied this way.
 - It uses row variables such as `i` or `ii`, or its results can change over time (a refreshing filter).
 
 Mark a filter on partitioning columns serial only when the order in which it is evaluated matters.

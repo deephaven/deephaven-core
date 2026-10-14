@@ -2,7 +2,7 @@
 title: Filter
 ---
 
-A [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) represents a filter condition used in [`where`](../../table-operations/filter/where.md) operations. Use `Filter` objects when you need to compose conditions programmatically (combining filters with boolean logic) or to control how Deephaven evaluates them — specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
+A [`Filter`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) represents a filter condition used in [`where`](../../table-operations/filter/where.md) operations. Use `Filter` objects when you need to compose conditions programmatically (combining filters with boolean logic) or to control how Deephaven evaluates them — specifically, to force sequential (serial) execution or to coordinate execution order with Barriers.
 
 ## Creating a Filter
 
@@ -81,14 +81,14 @@ result = source.where(my_filter)
 
 ### `with_declared_barriers` and `with_respected_barriers`
 
-These two methods work together to enforce execution order between filters. One filter **declares** the barrier (goes first), and another filter **respects** the barrier (waits).
+These two methods work together to enforce execution order between filters. One filter **declares** the Barrier (goes first), and another filter **respects** the Barrier (waits).
 
 A [`Barrier`](./Barrier.md) is a synchronization object you create and share between filters:
 
 - `with_declared_barriers(barriers)` — This filter **goes first**. This filter evaluates all of its rows before any respecting filter evaluates its own.
-- `with_respected_barriers(barriers)` — This filter **waits**. This filter does not evaluate its rows until the filter that declares the barrier finishes.
+- `with_respected_barriers(barriers)` — This filter **waits**. This filter does not evaluate its rows until the filter that declares the Barrier finishes.
 
-For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md); for broader context on when barriers matter, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
+For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md); for broader context on when Barriers matter, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
 ## When to use Filter objects
 

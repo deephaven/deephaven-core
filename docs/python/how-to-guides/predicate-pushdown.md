@@ -10,7 +10,7 @@ By default, the filtering engine processes user-supplied filters one after anoth
 
 Storage systems often divide tables into multiple regions. For instance, multiple files frequently compose a Parquet dataset, and multiple row groups further divide each individual file. Storage engines can apply specific optimization techniques to individual files and even to distinct data regions within those files.
 
-Predicate pushdown enhances row elimination by leveraging these underlying data structures. For example, match and range filters may use storage file metadata (such as min/max statistics) to eliminate entire row groups or files. Consequently, the engine avoids loading unnecessary data from storage — a massive advantage for large datasets in formats like Parquet and Iceberg. Although the engine generally processes filters sequentially, the pushdown mechanism may reorder them to maximize efficiency based on the capabilities of the data sources. Therefore, you cannot guarantee the final execution order of pushed-down filters. To enforce a specific order, use [barriers and serial execution](../conceptual/query-engine/parallelization.md#controlling-execution-order).
+Predicate pushdown enhances row elimination by leveraging these underlying data structures. For example, match and range filters may use storage file metadata (such as min/max statistics) to eliminate entire row groups or files. Consequently, the engine avoids loading unnecessary data from storage — a massive advantage for large datasets in formats like Parquet and Iceberg. Although the engine generally processes filters sequentially, the pushdown mechanism may reorder them to maximize efficiency based on the capabilities of the data sources. Therefore, you cannot guarantee the final execution order of pushed-down filters. To enforce a specific order, use [Barriers and serial execution](../conceptual/query-engine/parallelization.md#controlling-execution-order).
 
 ## Filter priority
 
@@ -27,7 +27,7 @@ Filters are prioritized for pushdown in the following order (from highest to low
 - Filtering regions with [dictionary encoding](#dictionary-encoding).
 
 > [!IMPORTANT]
-> Where multiple filters have the same pushdown priority, the user-supplied order will generally be maintained. Stateful filters and filter barriers are always respected during pushdown operations.
+> Where multiple filters have the same pushdown priority, the user-supplied order will generally be maintained. Stateful filters and filter Barriers are always respected during pushdown operations.
 
 ## Single value columns and regions
 

@@ -4,11 +4,11 @@ title: Barrier
 
 A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.Barrier) is a synchronization primitive for coordinating execution order between column calculations and filters. A `Barrier` instance carries no data of its own. It is a unique marker you create once and share between the operations that need to coordinate.
 
-## Why use a barrier?
+## Why use a Barrier?
 
-By default, Deephaven is free to parallelize column calculations and filters that are eligible for it — eligibility depends on statelessness, how many rows the operation processes, available threads, and, for a formula or filter that calls a Python function or uses Python objects, a free-threaded (no-GIL) Python build. A barrier lets you enforce that one operation completes all of its rows before another operation starts — for example, when one column populates a cache that another column reads from, or computes a running total that another column depends on.
+By default, Deephaven is free to parallelize column calculations and filters that are eligible for it — eligibility depends on statelessness, how many rows the operation processes, available threads, and, for a formula or filter that calls a Python function or uses Python objects, a free-threaded (no-GIL) Python build. A Barrier lets you enforce that one operation completes all of its rows before another operation starts — for example, when one column populates a cache that another column reads from, or computes a running total that another column depends on.
 
-A barrier alone does not force either operation to run serially. If an operation has shared mutable state that could race across its own rows, you typically need **both** [`with_serial`](./ConcurrencyControl.md#with_serial) (for sequential row processing within that operation) **and** a barrier (for ordering between operations).
+A Barrier alone does not force either operation to run serially. If an operation has shared mutable state that could race across its own rows, you typically need **both** [`with_serial`](./ConcurrencyControl.md#with_serial) (for sequential row processing within that operation) **and** a Barrier (for ordering between operations).
 
 ## Creating a Barrier
 
@@ -18,23 +18,23 @@ from deephaven.concurrency_control import Barrier
 barrier = Barrier()
 ```
 
-Create one `Barrier` instance per ordering constraint you need. Each barrier can be declared by only one expression (declaring the same instance twice is an error), and every expression that respects it waits for that one declarer, so one instance cannot express two independent constraints; use a separate instance for each.
+Create one `Barrier` instance per ordering constraint you need. Each Barrier can be declared by only one expression (declaring the same instance twice is an error), and every expression that respects it waits for that one declarer, so one instance cannot express two independent constraints; use a separate instance for each.
 
-## Using a barrier
+## Using a Barrier
 
-One operation **declares** the barrier — it goes first. Another operation **respects** the barrier — it waits until the operation that declares that barrier has finished all of its rows. Both roles are part of the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](./Selectable.md) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](./Filter.md) (used by [`where`](../../table-operations/filter/where.md)) both implement:
+One operation **declares** the Barrier — it goes first. Another operation **respects** the Barrier — it waits until the operation that declares that Barrier has finished all of its rows. Both roles are part of the [`ConcurrencyControl`](./ConcurrencyControl.md) interface, which [`Selectable`](./Selectable.md) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](./Filter.md) (used by [`where`](../../table-operations/filter/where.md)) both implement:
 
-- [`with_declared_barriers(barriers)`](./ConcurrencyControl.md#with_declared_barriers) — this operation declares the given barrier(s); it runs to completion before any operation that respects the same barrier.
-- [`with_respected_barriers(barriers)`](./ConcurrencyControl.md#with_respected_barriers) — this operation respects the given barrier(s); it does not start until the operation that declares each barrier has finished.
+- [`with_declared_barriers(barriers)`](./ConcurrencyControl.md#with_declared_barriers) — this operation declares the given Barrier(s); it runs to completion before any operation that respects the same Barrier.
+- [`with_respected_barriers(barriers)`](./ConcurrencyControl.md#with_respected_barriers) — this operation respects the given Barrier(s); it does not start until the operation that declares each Barrier has finished.
 
 > [!IMPORTANT]
-> A barrier only coordinates expressions passed to the **same** [`select`](../../table-operations/select/select.md), [`update`](../../table-operations/select/update.md), or [`where`](../../table-operations/filter/where.md) call — it cannot order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a barrier is respected before it is declared, or never declared at all.
+> A Barrier only coordinates expressions passed to the **same** [`select`](../../table-operations/select/select.md), [`update`](../../table-operations/select/update.md), or [`where`](../../table-operations/filter/where.md) call — it cannot order operations across two separate calls. Within that call, a respecting expression must come after the declaring expression, in left-to-right order; the engine raises an error if a Barrier is respected before it is declared, or never declared at all.
 >
-> For a [`Selectable`](./Selectable.md), a constant-valued expression cannot declare or respect a barrier either — the engine never evaluates constants during [`select`](../../table-operations/select/select.md)/[`update`](../../table-operations/select/update.md) processing, so it raises an error if you try. "Constant" here is narrower than "does not depend on a column or row-position variable": it means a literal, or literals joined by binary operators (arithmetic, comparison, logical, or bitwise), optionally parenthesized, such as `Selectable.parse("A = 1")` or `Selectable.parse("A = 1 + 2")`. A no-argument function call like `get_and_increment_counter()` in the example below does not depend on a column or row variable either, but it is not constant — it is still evaluated for each row, so it can freely use barriers.
+> For a [`Selectable`](./Selectable.md), a constant-valued expression cannot declare or respect a Barrier either — the engine never evaluates constants during [`select`](../../table-operations/select/select.md)/[`update`](../../table-operations/select/update.md) processing, so it raises an error if you try. "Constant" here is narrower than "does not depend on a column or row-position variable": it means a literal, or literals joined by binary operators (arithmetic, comparison, logical, or bitwise), optionally parenthesized, such as `Selectable.parse("A = 1")` or `Selectable.parse("A = 1 + 2")`. A no-argument function call like `get_and_increment_counter()` in the example below does not depend on a column or row variable either, but it is not constant — it is still evaluated for each row, so it can freely use Barriers.
 
 ### Example: coordinating two columns
 
-Consider two columns that share a counter, where column `A` should assign IDs 0-9 and column `B` should continue from 10-19. Without a barrier, the engine gives no guarantee about the order in which `A` and `B` run relative to each other — `B` could just as easily end up with 0-9 while `A` gets 10-19. A barrier removes that ambiguity: column `A` is guaranteed to run first (0-9), then column `B` starts where `A` left off (10-19):
+Consider two columns that share a counter, where column `A` should assign IDs 0-9 and column `B` should continue from 10-19. Without a Barrier, the engine gives no guarantee about the order in which `A` and `B` run relative to each other — `B` could just as easily end up with 0-9 while `A` gets 10-19. A Barrier removes that ambiguity: column `A` is guaranteed to run first (0-9), then column `B` starts where `A` left off (10-19):
 
 ```python order=t
 from deephaven.concurrency_control import Barrier
@@ -70,11 +70,11 @@ col_b = (
 t = empty_table(10).update([col_a, col_b])
 ```
 
-`A` gets values 0-9. `B` gets values 10-19. Without the barrier, there is no guarantee `A` runs before `B` — the two columns could just as easily come out reversed. Without [`with_serial`](./ConcurrencyControl.md#with_serial), a column's own rows could also be evaluated out of row-set order, breaking the correspondence between row and counter value even within a single column.
+`A` gets values 0-9. `B` gets values 10-19. Without the Barrier, there is no guarantee `A` runs before `B` — the two columns could just as easily come out reversed. Without [`with_serial`](./ConcurrencyControl.md#with_serial), a column's own rows could also be evaluated out of row-set order, breaking the correspondence between row and counter value even within a single column.
 
 ### Example: coordinating two filters
 
-Barriers work the same way for [`Filter`](./Filter.md) objects in [`where`](../../table-operations/filter/where.md) operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs [`with_serial`](./ConcurrencyControl.md#with_serial): on the common GIL-enabled build, the GIL already serializes the underlying `dict` writes; on a free-threaded build, `dict`'s own internal per-object locking keeps a simple assignment to a distinct key thread-safe without extra synchronization (free-threaded CPython only requires an explicit lock for compound operations or invariants spanning more than one dict access). Either way, the barrier — not [`with_serial`](./ConcurrencyControl.md#with_serial) — is what enforces that the cache is fully populated before it is read:
+Barriers work the same way for [`Filter`](./Filter.md) objects in [`where`](../../table-operations/filter/where.md) operations. Here, one filter populates a cache that a second filter depends on. Neither filter needs [`with_serial`](./ConcurrencyControl.md#with_serial): on the common GIL-enabled build, the GIL already serializes the underlying `dict` writes; on a free-threaded build, `dict`'s own internal per-object locking keeps a simple assignment to a distinct key thread-safe without extra synchronization (free-threaded CPython only requires an explicit lock for compound operations or invariants spanning more than one dict access). Either way, the Barrier — not [`with_serial`](./ConcurrencyControl.md#with_serial) — is what enforces that the cache is fully populated before it is read:
 
 ```python order=result
 from deephaven.concurrency_control import Barrier
@@ -105,9 +105,9 @@ source = empty_table(10).update("Key = i")
 result = source.where([filter_a, filter_b])
 ```
 
-### Multiple barriers
+### Multiple Barriers
 
-You can create multiple `Barrier` instances when operations have different dependencies. Each barrier is an independent constraint, and one operation can respect more than one:
+You can create multiple `Barrier` instances when operations have different dependencies. Each Barrier is an independent constraint, and one operation can respect more than one:
 
 ```python order=t
 from deephaven.concurrency_control import Barrier

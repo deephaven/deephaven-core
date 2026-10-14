@@ -2,7 +2,7 @@
 title: Selectable
 ---
 
-A [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) represents a column expression used in [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) operations. Use `Selectable` objects when you need to control how Deephaven processes column calculations — specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
+A [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) represents a column expression used in [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) operations. Use `Selectable` objects when you need to control how Deephaven processes column calculations — specifically, to force sequential (serial) execution or to coordinate execution order with Barriers.
 
 ## Creating a Selectable
 
@@ -42,18 +42,18 @@ result = empty_table(10).update(col)
 ```
 
 > [!IMPORTANT]
-> In Python, `Selectable` objects can only be used with [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md). The [`view`](../../table-operations/select/view.md), [`update_view`](../../table-operations/select/update-view.md), and [`lazy_update`](../../table-operations/select/lazy-update.md) methods take formula strings only, so `with_serial` and barriers cannot be attached to their formulas.
+> In Python, `Selectable` objects can only be used with [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md). The [`view`](../../table-operations/select/view.md), [`update_view`](../../table-operations/select/update-view.md), and [`lazy_update`](../../table-operations/select/lazy-update.md) methods take formula strings only, so `with_serial` and Barriers cannot be attached to their formulas.
 
 ### `with_declared_barriers` and `with_respected_barriers`
 
-These two methods work together to enforce execution order between columns. One column **declares** the barrier (goes first), and another column **respects** the barrier (waits).
+These two methods work together to enforce execution order between columns. One column **declares** the Barrier (goes first), and another column **respects** the Barrier (waits).
 
 A [`Barrier`](./Barrier.md) is a synchronization object you create and share between columns:
 
 - `with_declared_barriers(barrier)` — This column **goes first**. All of its rows are computed before any respecting column's rows are computed.
-- `with_respected_barriers(barrier)` — This column **waits**. Its rows are not computed until the column that declares the barrier has finished.
+- `with_respected_barriers(barrier)` — This column **waits**. Its rows are not computed until the column that declares the Barrier has finished.
 
-For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md); for broader context on when barriers matter, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
+For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md); for broader context on when Barriers matter, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
 ## When to use Selectable
 
@@ -76,7 +76,7 @@ You need a `Selectable` object when parallel execution would produce incorrect r
 - Logging or file writes that must happen sequentially.
 - Any formula where the result for row N depends on what happened in row N-1.
 
-**Use barriers** when one column must finish all its rows before another column starts. When several columns share state, use barriers together with [`with_serial`](./ConcurrencyControl.md#with_serial) on each column: a barrier orders the columns, but it does not stop a column's own rows from running in parallel. See [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
+**Use Barriers** when one column must finish all its rows before another column starts. When several columns share state, use Barriers together with [`with_serial`](./ConcurrencyControl.md#with_serial) on each column: a Barrier orders the columns, but it does not stop a column's own rows from running in parallel. See [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
 
 If you are unsure whether your formula is safe for parallel execution, ask: "Would this produce the same result if the rows were processed in a random order by multiple threads?" If the answer is no, you need a `Selectable`.
 

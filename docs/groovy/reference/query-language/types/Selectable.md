@@ -2,7 +2,7 @@
 title: Selectable
 ---
 
-A [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) represents a column expression used in [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) operations. Use `Selectable` objects when you need to control how Deephaven processes column calculations — specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
+A [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) represents a column expression used in [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) operations. Use `Selectable` objects when you need to control how Deephaven processes column calculations — specifically, to force sequential (serial) execution or to coordinate execution order with Barriers.
 
 ## Creating a Selectable
 
@@ -49,18 +49,18 @@ result = emptyTable(10).update([col])
 ```
 
 > [!IMPORTANT]
-> [`view`](../../table-operations/select/view.md), [`updateView`](../../table-operations/select/update-view.md), and [`lazyUpdate`](../../table-operations/select/lazy-update.md) accept `Selectable` objects, but they compute values on-demand and cannot guarantee processing order. The three concurrency control methods behave differently there: `withRespectedBarriers` throws an error on `view`/`updateView` ("view and updateView cannot respect barriers"), and [`withSerial`](./ConcurrencyControl.md#withserial) throws an error on `view`/`updateView` under the default configuration ("A stateful column cannot safely be used in a view or updateView"). `withDeclaredBarriers` on `view`/`updateView`, and all three methods on `lazyUpdate`, are accepted and have no effect on evaluation order. The usual barrier validation still applies: a respected barrier must be declared earlier in the same call, each barrier is declared once, and a constant-valued column cannot declare or respect one. Use [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) instead when you need serial evaluation or barriers.
+> [`view`](../../table-operations/select/view.md), [`updateView`](../../table-operations/select/update-view.md), and [`lazyUpdate`](../../table-operations/select/lazy-update.md) accept `Selectable` objects, but they compute values on-demand and cannot guarantee processing order. The three concurrency control methods behave differently there: `withRespectedBarriers` throws an error on `view`/`updateView` ("view and updateView cannot respect Barriers"), and [`withSerial`](./ConcurrencyControl.md#withserial) throws an error on `view`/`updateView` under the default configuration ("A stateful column cannot safely be used in a view or updateView"). `withDeclaredBarriers` on `view`/`updateView`, and all three methods on `lazyUpdate`, are accepted and have no effect on evaluation order. The usual Barrier validation still applies: a respected Barrier must be declared earlier in the same call, each Barrier is declared once, and a constant-valued column cannot declare or respect one. Use [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) instead when you need serial evaluation or Barriers.
 
 ### `withDeclaredBarriers` and `withRespectedBarriers`
 
-These two methods work together to enforce execution order between columns. One column **declares** the barrier (goes first), and another column **respects** the barrier (waits).
+These two methods work together to enforce execution order between columns. One column **declares** the Barrier (goes first), and another column **respects** the Barrier (waits).
 
-A [barrier](./Barrier.md) is a synchronization object you create and share between columns. In Groovy, any Java object can serve as a barrier:
+A [Barrier](./Barrier.md) is a synchronization object you create and share between columns. In Groovy, any Java object can serve as a Barrier:
 
 - `withDeclaredBarriers(barrier)` — This column **goes first**. All of its rows are computed before any respecting column's rows are computed.
-- `withRespectedBarriers(barrier)` — This column **waits**. Its rows are not computed until the column that declares the barrier has finished.
+- `withRespectedBarriers(barrier)` — This column **waits**. Its rows are not computed until the column that declares the Barrier has finished.
 
-For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md); for broader context on when barriers matter, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
+For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md); for broader context on when Barriers matter, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
 ## When to use Selectable
 
@@ -83,7 +83,7 @@ You need a `Selectable` object when parallel execution would produce incorrect r
 - Logging or file writes that must happen sequentially.
 - Any formula where the result for row N depends on what happened in row N-1.
 
-**Use barriers** when one column must finish all its rows before another column starts. When several columns share state, use barriers together with [`withSerial`](./ConcurrencyControl.md#withserial) on each column: a barrier orders the columns, but it does not stop a column's own rows from running in parallel. See [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
+**Use Barriers** when one column must finish all its rows before another column starts. When several columns share state, use Barriers together with [`withSerial`](./ConcurrencyControl.md#withserial) on each column: a Barrier orders the columns, but it does not stop a column's own rows from running in parallel. See [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
 
 If you are unsure whether your formula is safe for parallel execution, ask: "Would this produce the same result if the rows were processed in a random order by multiple threads?" If the answer is no, you need a `Selectable`.
 

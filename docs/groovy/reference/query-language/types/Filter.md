@@ -2,7 +2,7 @@
 title: Filter
 ---
 
-A [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) represents a filter condition used in [`where`](../../table-operations/filter/where.md) operations. Use `Filter` objects when you need to compose conditions programmatically (combining filters with boolean logic) or to control how Deephaven evaluates them — specifically, to force sequential (serial) execution or to coordinate execution order with barriers.
+A [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) represents a filter condition used in [`where`](../../table-operations/filter/where.md) operations. Use `Filter` objects when you need to compose conditions programmatically (combining filters with boolean logic) or to control how Deephaven evaluates them — specifically, to force sequential (serial) execution or to coordinate execution order with Barriers.
 
 ## Creating a Filter
 
@@ -82,14 +82,14 @@ result = source.where(myFilter)
 
 ### `withDeclaredBarriers` and `withRespectedBarriers`
 
-These two methods work together to enforce execution order between filters. One filter **declares** the barrier (goes first), and another filter **respects** the barrier (waits).
+These two methods work together to enforce execution order between filters. One filter **declares** the Barrier (goes first), and another filter **respects** the Barrier (waits).
 
-A [barrier](./Barrier.md) is a synchronization object you create and share between filters. In Groovy, any Java object can serve as a barrier:
+A [Barrier](./Barrier.md) is a synchronization object you create and share between filters. In Groovy, any Java object can serve as a Barrier:
 
 - `withDeclaredBarriers(barrier)` — This filter **goes first**. All rows are evaluated by this filter before any respecting filter's rows are evaluated.
-- `withRespectedBarriers(barrier)` — This filter **waits**. Its rows are not evaluated until the filter that declares the barrier has finished.
+- `withRespectedBarriers(barrier)` — This filter **waits**. Its rows are not evaluated until the filter that declares the Barrier has finished.
 
-For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md); for broader context on when barriers matter, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
+For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md); for broader context on when Barriers matter, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
 ## When to use Filter objects
 
