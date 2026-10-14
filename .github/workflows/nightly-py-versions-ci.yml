@@ -1,8 +1,8 @@
 name: Nightly Python Versions CI
 
-# Runs the py/server test suite on every supported Python version. The Docker-based suite in Integrations runs only on
-# the Python baked into the server image. This one runs the same tests on the JVM from the deephaven-server wheel, so
-# each version needs only Python, a JDK and that wheel. The rest installs from source.
+# Runs the py/server and py/client test suites on every supported Python version. The Docker-based suites run only on
+# the Python in the server image and the python registry image. These run the same tests on the JVM from the
+# deephaven-server wheel, so each version needs only Python, a JDK and that wheel. The rest installs from source.
 #
 # Floor: python_requires in py/server/setup.py. Ceiling: the newest Python that every dependency has a wheel for
 # (jpy has none for 3.15 yet). The free-threaded 3.14t build runs with the GIL kept off.
@@ -56,13 +56,14 @@ jobs:
           retention-days: 1
 
   test:
-    name: test (Python ${{ matrix.python-version }})
+    name: test (${{ matrix.suite }}, Python ${{ matrix.python-version }})
     needs: build
     strategy:
       fail-fast: false
       matrix:
         # 3.14t is the free-threaded build. 3.13t is left out: grpcio and numba have no 3.13t wheels.
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14', '3.14t']
+        suite: ['server', 'client']
     runs-on: ubuntu-24.04
     env:
       DEEPHAVEN_MAXMEM: 2G
@@ -89,6 +90,7 @@ jobs:
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
 
       - name: Install Graphviz
+        if: ${{ matrix.suite == 'server' }}
         # tests/test_perfmon.py renders an SVG through graphviz-java. Without the dot binary it needs the GraalJS jars,
         # which are on the Integrations test classpath but not in the deephaven-server wheel.
         run: |
@@ -96,29 +98,30 @@ jobs:
           sudo apt-get install -y -q --no-install-recommends graphviz
 
       - name: Start Kafka and Postgres
+        if: ${{ matrix.suite == 'server' }}
         # The Kafka and database tests reach these services by the host names "redpanda" and "postgres".
         run: |
           echo "127.0.0.1 redpanda postgres" | sudo tee -a /etc/hosts
           docker compose -f Integrations/docker-compose.yml up -d --wait
 
       - name: Run tests
-        # The same script runs behind ./gradlew :py-server:testEmbedded. uv picks older numpy, pandas, pyarrow and numba
-        # releases on the older Pythons, since the newest ones dropped them. So those runs test different dependency
-        # versions.
-        run: py/server/run-tests-embedded.sh ${{ matrix.python-version }}
+        # The same scripts run behind ./gradlew :py-server:testEmbedded and :py-client:testEmbedded. uv picks older numpy,
+        # pandas, pyarrow and numba releases on the older Pythons, since the newest ones dropped them. So those runs test
+        # different dependency versions.
+        run: py/${{ matrix.suite }}/run-tests-embedded.sh ${{ matrix.python-version }}
 
       - name: Upload Test Results
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: nightly-py-versions-py${{ matrix.python-version }}-ci-results
-          path: py/server/build/test-results/test-embedded/**
+          name: nightly-py-versions-${{ matrix.suite }}-py${{ matrix.python-version }}-ci-results
+          path: py/${{ matrix.suite }}/build/test-results/test-embedded/**
 
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
-          name: nightly-py-versions-py${{ matrix.python-version }}-ci-jvm-err
+          name: nightly-py-versions-${{ matrix.suite }}-py${{ matrix.python-version }}-ci-jvm-err
           path: |
             **/*_pid*.log
             **/core.*

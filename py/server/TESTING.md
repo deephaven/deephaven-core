@@ -1,9 +1,9 @@
-# Testing the Deephaven Python server package
+# Testing the Deephaven Python packages
 
-The tests in `tests/` run in two ways:
+The server tests in `py/server/tests` and the client tests in `py/client/tests` each run in two ways:
 
-- **In Docker**, with `./gradlew :Integrations:test-py-deephaven`. This is the suite that `check` runs. It uses the Python version in the server Docker image.
-- **On the embedded server**, with `./gradlew :py-server:testEmbedded`. This runs the same tests on any Python version, without the server Docker image. The nightly `Nightly Python Versions CI` workflow runs it on every supported version.
+- **In Docker**, with `./gradlew :Integrations:test-py-deephaven` and `./gradlew :py-client:testPyClient`. These are the suites that `check` runs. They use the Python version in the server Docker image and in the `python` registry image.
+- **On the embedded server**, with `./gradlew :py-server:testEmbedded` and `./gradlew :py-client:testEmbedded`. These run the same tests on any Python version, without the server Docker image. The nightly `Nightly Python Versions CI` workflow runs both on every supported version.
 
 This page covers the second way.
 
@@ -17,20 +17,24 @@ This page covers the second way.
 
 ```bash
 ./gradlew :py-server:testEmbedded -PpythonVersion=3.14t
+./gradlew :py-client:testEmbedded -PpythonVersion=3.14t
 ```
 
 - `-PpythonVersion` takes any version uv accepts, such as `3.9`, `3.14` or `3.14t`. A version ending in `t` is the free-threaded build. The default is `3.12`.
 - `-PpyTests` runs only some tests. It takes a comma-separated list of test names, such as `-PpyTests=tests.test_csv,tests.test_time`.
 
-The task builds the `deephaven-server` wheel and the Java test classes, then calls `run-tests-embedded.sh`. Once those are built, you can call the script directly, which skips Gradle:
+Each task builds what it needs, then calls the `run-tests-embedded.sh` script next to its `build.gradle`. The server task builds the `deephaven-server` wheel and the Java test classes. The client task builds only the wheel. Once those are built, you can call a script directly, which skips Gradle:
 
 ```bash
 py/server/run-tests-embedded.sh 3.14t tests.test_csv
+py/client/run-tests-embedded.sh 3.14t tests.test_session
 ```
 
-The JUnit XML reports go to `py/server/build/test-results/test-embedded/<version>/`. The venv and a copy of the tests go to `py/server/build/test-embedded/<version>/`. The script deletes both at the start of each run.
+The JUnit XML reports go to `build/test-results/test-embedded/<version>/` under `py/server` or `py/client`. The venv and a copy of the tests go to `build/test-embedded/<version>/`. Each script deletes both at the start of a run.
 
-## What the script does
+The two suites both use port 10000, so run them one at a time.
+
+## What the server script does
 
 1. It creates a venv with `uv venv --python <version>`.
 2. It installs `py/server` and `py/client` from source and the `deephaven-server` wheel from `py/embedded-server/build/wheel`. It then installs the soft dependencies `numba`, `adbc-driver-manager`, `adbc-driver-postgresql` and `connectorx` one at a time, and skips any that have no wheel for that version.
@@ -39,9 +43,15 @@ The JUnit XML reports go to `py/server/build/test-results/test-embedded/<version
 5. For a free-threaded version, it sets `PYTHON_GIL=0`. Without it, importing `grpcio` through `pydeephaven` turns the GIL back on for the rest of the run.
 6. It runs the tests from a copy of `tests/`, because some tests write files into the working directory, and leftovers from an earlier run make them fail.
 
+## What the client script does
+
+1. It creates a venv and installs `py/server`, `py/client` and the `deephaven-server` wheel. It then installs the soft dependencies `flightsql-dbapi`, `adbc-driver-flightsql` and `numba`. The server-side script in `py/client/tests/test_console.py` imports `numba`.
+2. It starts a server from the `deephaven-server` wheel on port 10000, with the same settings as the Docker-based `testPyClient` task: anonymous and PSK logins, with the PSK `deephaven`. The server runs in the same venv, so it runs on the same Python version. Its log goes to `server.log` next to the test reports.
+3. It runs the client tests against that server, then stops the server.
+
 ## Kafka and Postgres tests
 
-`tests/test_kafka_consumer.py`, `tests/test_kafka_producer.py` and `tests/test_dbc.py` need Redpanda and Postgres. Without them, those tests fail. To run them, start the containers and map their host names to your machine:
+In the server suite, `tests/test_kafka_consumer.py`, `tests/test_kafka_producer.py` and `tests/test_dbc.py` need Redpanda and Postgres. Without them, those tests fail. To run them, start the containers and map their host names to your machine:
 
 ```bash
 docker compose -f Integrations/docker-compose.yml up -d --wait
