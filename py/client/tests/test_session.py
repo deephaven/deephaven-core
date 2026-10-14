@@ -256,6 +256,41 @@ t1 = empty_table(0) if t.is_blink else None
         worker.join(5)
         self.assertFalse(worker.is_alive())
 
+    def test_failing_job_does_not_stop_worker(self):
+        from pydeephaven.session import _SessionJob
+
+        ran_after_failure = threading.Event()
+
+        class FailingJob(_SessionJob):
+            def run(self, session):
+                raise RuntimeError("simulated job failure")
+
+        class MarkerJob(_SessionJob):
+            def run(self, session):
+                ran_after_failure.set()
+
+        session = Session()
+        try:
+            with self.assertLogs("pydeephaven.session", level="ERROR") as logs:
+                session._worker_queue.put(FailingJob())
+                session._worker_queue.put(MarkerJob())
+                self.assertTrue(ran_after_failure.wait(10))
+            self.assertIn("FailingJob failed", logs.output[0])
+            self.assertTrue(session._worker_thread.is_alive())
+        finally:
+            session.close()
+
+    def test_reconnect_leaves_one_worker(self):
+        session = Session()
+        old_worker = session._worker_thread
+        session.is_connected = False  # as a failed is_alive check leaves it
+        with session:  # reconnects
+            new_worker = session._worker_thread
+            self.assertIsNot(new_worker, old_worker)
+            old_worker.join(5)
+            self.assertFalse(old_worker.is_alive())
+            self.assertTrue(new_worker.is_alive())
+
     def test_dropped_session_is_collected(self):
         session = Session()
         worker = session._worker_thread

@@ -14,6 +14,7 @@ import sys
 import threading
 import time
 import weakref
+from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from random import random
 from typing import Any, NewType, Optional, Union, cast
@@ -55,41 +56,69 @@ from pydeephaven.ticket import (
 logger = logging.getLogger(__name__)
 
 
+class _SessionJob(ABC):
+    """Work for a session's worker thread."""
+
+    @abstractmethod
+    def run(self, session: Session) -> None:
+        pass
+
+
+class _ReleaseTicket(_SessionJob):
+    """Releases the ticket of a garbage-collected Table."""
+
+    def __init__(self, ticket: Ticket):
+        self.ticket = ticket
+
+    def run(self, session: Session) -> None:
+        session.release(self.ticket)
+
+
+class _RefreshToken(_SessionJob):
+    """Refreshes the session's auth token and schedules the next refresh."""
+
+    def run(self, session: Session) -> None:
+        session._keep_alive()
+
+
+class _Stop(_SessionJob):
+    """Ends the worker thread, which exits before running it."""
+
+    def run(self, session: Session) -> None:
+        pass
+
+
+_REFRESH_TOKEN = _RefreshToken()
+_STOP = _Stop()
+
+
 def _run_session_worker(
     session_ref: weakref.ReferenceType[Session],
-    work: queue.SimpleQueue[Optional[Ticket]],
+    jobs: queue.SimpleQueue[_SessionJob],
 ) -> None:
-    """Runs a session's background work on one thread. It releases the tickets that garbage-collected Tables queue
-    with Session._release_later, and refreshes the auth token of a session that never times out. Between jobs it holds
-    the session only weakly, so a dropped session can be collected. It exits on None, or when the session is gone or
-    closed."""
+    """Runs a session's jobs on one thread: _RefreshToken when a refresh is due, and whatever else is queued, until
+    _STOP or until the session is gone or closed. Between jobs it holds the session only weakly, so a dropped session
+    can be collected. A failing job is logged and does not end the thread."""
+    job: Optional[_SessionJob] = None  # nothing to run on the first pass
     while True:
         session = session_ref()
         if session is None or not session.is_connected:
             return
+        if job is not None:
+            try:
+                job.run(session)
+            except Exception:
+                logger.exception(
+                    f"{session._logpfx}: background job {type(job).__name__} failed"
+                )
         timeout = session._seconds_until_refresh()
-        del session
+        del session  # hold the session only weakly while waiting
         try:
-            ticket = work.get(timeout=timeout)
+            job = jobs.get(timeout=timeout)
         except queue.Empty:
-            session = session_ref()
-            if session is None:
-                return
-            session._keep_alive()
-            del session
-            continue
-        if ticket is None:
+            job = _REFRESH_TOKEN
+        if job is _STOP:
             return
-        session = session_ref()
-        if session is None or not session.is_connected:
-            return
-        try:
-            session.release(ticket)
-        except Exception as e:
-            logger.warning(
-                f"{session._logpfx}: failed to release a garbage-collected table: {e}"
-            )
-        del session
 
 
 class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
@@ -262,7 +291,7 @@ class Session:
         self._never_timeout = never_timeout
         # The time.monotonic() time of the next token refresh, or None for no refresh.
         self._next_refresh: Optional[float] = None
-        self._worker_queue: queue.SimpleQueue[Optional[Ticket]] = queue.SimpleQueue()
+        self._worker_queue: queue.SimpleQueue[_SessionJob] = queue.SimpleQueue()
         self._worker_thread: Optional[threading.Thread] = None
         self._session_type = session_type
         self._flight_client: Optional[paflight.FlightClient] = None
@@ -521,7 +550,9 @@ class Session:
             if self._never_timeout:
                 self._next_refresh = time.monotonic() + 0.5 * self._timeout_seconds
 
-            # A new queue per connection: tickets from an earlier connection are invalid.
+            # A new queue and worker per connection: tickets from an earlier connection are invalid. Stop the earlier
+            # worker, which still runs if the session was marked disconnected without close().
+            self._worker_queue.put(_STOP)
             self._worker_queue = queue.SimpleQueue()
             self._worker_thread = threading.Thread(
                 target=_run_session_worker,
@@ -597,7 +628,7 @@ class Session:
         """
         with self._r_lock:
             # Stop the worker thread even if already disconnected. The server releases any tickets still queued.
-            self._worker_queue.put(None)
+            self._worker_queue.put(_STOP)
             if not self.is_connected:
                 return
             try:
@@ -622,7 +653,7 @@ class Session:
     def _release_later(self, ticket: Ticket) -> None:
         """Queues a ticket for the worker thread to release. Unlike release, it makes no RPC, so a finalizer can call
         it: queue.SimpleQueue.put is reentrant."""
-        self._worker_queue.put(ticket)
+        self._worker_queue.put(_ReleaseTicket(ticket))
 
     # convenience/factory methods
     def run_script(self, script: str, systemic: Optional[bool] = None) -> None:
