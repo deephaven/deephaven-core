@@ -181,12 +181,27 @@ t1 = empty_table(0) if t.is_blink else None
                 append_input_t.delete(dh_table)
 
     def test_close_stops_worker_thread(self):
-        session = Session()
-        worker = session._worker_thread
-        self.assertTrue(worker.is_alive())
-        session.close()
-        worker.join(5)
-        self.assertFalse(worker.is_alive())
+        def failing_close():
+            raise DHError("simulated CloseSession failure")
+
+        for case in ("normal", "CloseSession fails", "already disconnected"):
+            with self.subTest(case):
+                session = Session()
+                worker = session._worker_thread
+                self.assertTrue(worker.is_alive())
+                if case == "CloseSession fails":
+                    session.session_service.close = failing_close
+                    with self.assertRaises(DHError):
+                        session.close()
+                else:
+                    if case == "already disconnected":
+                        session.is_connected = (
+                            False  # as a failed token refresh leaves it
+                        )
+                    session.close()
+                self.assertFalse(session.is_connected)
+                worker.join(5)
+                self.assertFalse(worker.is_alive())
 
     def test_token_is_refreshed(self):
         refreshes = []
@@ -233,28 +248,6 @@ t1 = empty_table(0) if t.is_blink else None
             worker.join(10)
             self.assertFalse(worker.is_alive())
             self.assertEqual(len(refreshes), 1, "refreshed after close")
-
-    def test_close_disconnects_when_close_session_fails(self):
-        session = Session()
-        worker = session._worker_thread
-
-        def failing_close():
-            raise DHError("simulated CloseSession failure")
-
-        session.session_service.close = failing_close
-        with self.assertRaises(DHError):
-            session.close()
-        self.assertFalse(session.is_connected)
-        worker.join(5)
-        self.assertFalse(worker.is_alive())
-
-    def test_close_stops_worker_thread_of_disconnected_session(self):
-        session = Session()
-        worker = session._worker_thread
-        session.is_connected = False  # as a failed token refresh leaves it
-        session.close()
-        worker.join(5)
-        self.assertFalse(worker.is_alive())
 
     def test_failing_job_does_not_stop_worker(self):
         from pydeephaven.session import _SessionJob

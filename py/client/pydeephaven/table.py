@@ -76,7 +76,7 @@ class Table(TableInterface["Table"], ServerObject):
                 and isinstance(self.ticket, ExportTicket)
                 and self.session.is_connected
             ):
-                self.session._release_later(self.ticket)
+                self.session._queue_release(self.ticket)
                 self._closed = True
         except Exception:
             # TODO(deephaven-core#1858): Better error handling for pyclient around release #1858

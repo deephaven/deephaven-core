@@ -650,7 +650,7 @@ class Session:
         """
         self.session_service.release(ticket)
 
-    def _release_later(self, ticket: Ticket) -> None:
+    def _queue_release(self, ticket: Ticket) -> None:
         """Queues a ticket for the worker thread to release. Unlike release, it makes no RPC, so a finalizer can call
         it: queue.SimpleQueue.put is reentrant."""
         self._worker_queue.put(_ReleaseTicket(ticket))
