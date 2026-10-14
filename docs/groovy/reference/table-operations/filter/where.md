@@ -154,7 +154,7 @@ See [Parallelization](../../../conceptual/query-engine/parallelization.md) for m
 
 A partitioned source, such as a directory of Parquet files or an Iceberg table, has partitioning columns whose values identify each partition. Deephaven can apply a filter that uses only partitioning columns to whole partitions before it reads any data. It evaluates the filter once per partition instead of once per row, and runs it ahead of the other filters, so whole partitions are skipped.
 
-Deephaven applies such a filter this way even when stateless by default is turned off, because that is nearly always what users want. For example, with stateless by default turned off, `Date = today()` is stateful, but Deephaven still evaluates it early, partition by partition.
+Deephaven applies such a filter this way even when [stateless by default](../../../conceptual/query-table-configuration.md#stateless-by-default) is turned off, because that is nearly always what users want. For example, with stateless by default turned off, `Date = today()` is stateful, but Deephaven still evaluates it early, partition by partition.
 
 Deephaven does not apply a filter on partitioning columns this way in these cases:
 

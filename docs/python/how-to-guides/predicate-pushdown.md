@@ -6,13 +6,15 @@ Predicate pushdown is a powerful feature in Deephaven that allows you to filter 
 
 ## Overview
 
-By default, the filtering engine runs user-supplied filters one after another in the order you specify, unless predicate pushdown reorders them (see below). The first filter to run decides which rows of the full table pass, and the engine hands only those rows to the next filter. This continues until only rows that satisfy every filter remain.
+Predicate pushdown lets a data source rule out data before Deephaven reads it. A filter no longer has to read every row to decide whether the row passes, so queries on large datasets finish sooner and load less data.
 
-Parallelism happens inside a single filter, which can split its rows across threads. A filter that Deephaven treats as stateless therefore has no guaranteed order in which it sees rows, and [Filter evaluation order](../reference/table-operations/filter/where.md#filter-evaluation-order) describes the guarantees that do hold.
+Storage systems divide a table into regions. A Parquet dataset, for example, is usually many files, and each file is divided into row groups. A region is one such file or row group. Each region can carry information about its contents, such as the minimum and maximum value of a column, that a filter can check without reading the data.
 
-Storage systems often divide tables into multiple regions. For instance, multiple files frequently compose a Parquet dataset, and multiple row groups further divide each individual file. Storage engines can apply specific optimization techniques to individual files and even to distinct data regions within those files.
+For example, a match or range filter can use a row group's min/max statistics to skip the whole row group, or a whole file, when no value in it can pass. The engine never loads that data from storage, which is a major advantage for large datasets in formats such as Parquet and Iceberg.
 
-Predicate pushdown enhances row elimination by leveraging these underlying data structures. For example, match and range filters may use storage file metadata (such as min/max statistics) to eliminate entire row groups or files. Consequently, the engine avoids loading unnecessary data from storage — a massive advantage for large datasets in formats like Parquet and Iceberg. Although the engine generally processes filters sequentially, the pushdown mechanism may reorder them to maximize efficiency based on the capabilities of the data sources. Therefore, you cannot guarantee the final execution order of pushed-down filters. To enforce a specific order, use [Barriers and serial execution](../conceptual/query-engine/parallelization.md#controlling-execution-order).
+Pushdown can also change the order in which filters run. Without pushdown, the engine runs user-supplied filters one after another in the order you specify. The first filter to run decides which rows of the full table pass, and the engine hands only those rows to the next filter. This continues until only rows that satisfy every filter remain.
+
+With pushdown, the engine can run a filter that a data source can answer cheaply before a filter listed earlier, so the argument order of pushed-down filters is not guaranteed. Parallelism also happens inside a single filter, which can split its rows across threads, so a filter that Deephaven treats as stateless has no guaranteed order in which it sees rows. [Filter evaluation order](../reference/table-operations/filter/where.md#filter-evaluation-order) describes the guarantees that do hold, and [Barriers and serial execution](../conceptual/query-engine/parallelization.md#controlling-execution-order) shows how to enforce an order.
 
 ## Filter priority
 
