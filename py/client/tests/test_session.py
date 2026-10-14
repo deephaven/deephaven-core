@@ -334,7 +334,8 @@ t1 = empty_table(0) if t.is_blink else None
 
     def test_garbage_collected_borrowed_wrapper_is_not_released(self):
         t = self.session.empty_table(10)
-        wrapper = Table(self.session, ticket=t.ticket)  # shares t's export, as InputTable(session, t.ticket) does
+        # Shares t's export, as InputTable(session, t.ticket) does.
+        wrapper = Table(self.session, ticket=t.ticket)
         with mock.patch.object(self.session, "_queue_release") as queue_release:
             del wrapper
             gc.collect()
