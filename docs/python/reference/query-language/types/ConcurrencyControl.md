@@ -72,7 +72,7 @@ A declared [Barrier](./Barrier.md) has these constraints:
 
 - Only one expression declares a given [Barrier](./Barrier.md).
 - The declaring and respecting expressions belong to the same [`select`](../../table-operations/select/select.md), [`update`](../../table-operations/select/update.md), or [`where`](../../table-operations/filter/where.md) call.
-- A constant-valued [`Selectable`](./Selectable.md) cannot declare a [Barrier](./Barrier.md). A [`Filter`](./Filter.md) has no such restriction.
+- A constant-valued [`Selectable`](./Selectable.md) cannot declare or respect a [Barrier](./Barrier.md). A [`Filter`](./Filter.md) has no such restriction.
 
 See [Barrier](./Barrier.md) for the full constraints and a complete worked example.
 
@@ -112,11 +112,11 @@ Expressions that share state typically need both controls: [`with_serial`](#with
 
 The two types share these methods but differ in the following ways.
 
-|                                                                | [`Selectable`](./Selectable.md)                                                                                            | [`Filter`](./Filter.md)                                                                                                                                    |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Table operations                                               | [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)                | [`where`](../../table-operations/filter/where.md)                                                                                                          |
-| Effect of [`with_serial`](#with_serial) on other expressions   | By default, none. Two independent selectables can still run at the same time unless a [Barrier](./Barrier.md) orders them. | A serial filter is an absolute ordering barrier: no filter in the same [`where`](../../table-operations/filter/where.md) call runs out of order around it. |
-| Constant-valued expression declaring a [Barrier](./Barrier.md) | Not allowed.                                                                                                               | Allowed.                                                                                                                                                   |
+|                                                                              | [`Selectable`](./Selectable.md)                                                                                            | [`Filter`](./Filter.md)                                                                                                                                    |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Table operations                                                             | [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)                | [`where`](../../table-operations/filter/where.md)                                                                                                          |
+| Effect of [`with_serial`](#with_serial) on other expressions                 | By default, none. Two independent selectables can still run at the same time unless a [Barrier](./Barrier.md) orders them. | A serial filter is an absolute ordering barrier: no filter in the same [`where`](../../table-operations/filter/where.md) call runs out of order around it. |
+| Constant-valued expression declaring or respecting a [Barrier](./Barrier.md) | Not allowed.                                                                                                               | Allowed.                                                                                                                                                   |
 
 The default for [`Selectable`](./Selectable.md) comes from the [`QueryTable.serialSelectImplicitBarriers`](../../../conceptual/query-table-configuration.md#stateless-by-default) property. [Implicit Barriers](../../../conceptual/query-engine/parallelization.md#implicit-barriers) describes the alternative.
 
