@@ -320,6 +320,20 @@ up front, rather than re-deriving them per check.
   summary table that currently appears near the end could be promoted earlier as a short preview,
   so the reader has an orientation map before working through the detailed walkthrough.
 
+### Storyline check (every section)
+
+Write a one-sentence purpose for each H2 and H3 ("this section tells the reader how X orders Y"). Then check:
+
+- The section opens with a sentence that states that purpose, or the purpose is obvious from the heading and the first paragraph.
+- Details come in the order a reader needs them, and the section ends where the reader's question is answered, not on a trailing caveat or an unrelated rule.
+- No sentence "comes out of nowhere": each one connects to the sentence before it or to the purpose. A rule about filters inside a paragraph about partitioning columns, or an advice sentence after a reference definition, is a finding, with the place it belongs.
+- A term the section coins is defined before the first sentence that uses it.
+- A section whose paragraphs could be reordered with no loss lacks a storyline. Report it with a proposed order, not only the complaint.
+
+### Related documentation check
+
+List what the page discusses (types, methods, features, guides) and check that the Related documentation list links each one that has a page, and nothing irrelevant. Bullets are link text only, with no trailing period, and the section is last.
+
 ## 3. Report
 
 Output a clear, concise bullet list, one bullet per finding, each naming the specific pattern
