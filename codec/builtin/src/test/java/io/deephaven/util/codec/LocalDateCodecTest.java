@@ -3,13 +3,15 @@
 //
 package io.deephaven.util.codec;
 
-import junit.framework.TestCase;
 import org.junit.Assert;
+import org.junit.Test;
 
 import java.time.LocalDate;
 import java.time.Year;
 
-public class LocalDateCodecTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class LocalDateCodecTest {
     private void roundTrip(final String args, final String value) {
         final LocalDate v = LocalDate.parse(value);
         roundTripWithOffset(args, v, v, 0);
@@ -73,6 +75,7 @@ public class LocalDateCodecTest extends TestCase {
         assertEquals(v1, null);
     }
 
+    @Test
     public void testFullEncoding() {
         roundTrip("", LocalDate.of(Year.MIN_VALUE, 1, 1));
         roundTrip("", LocalDate.of(Year.MAX_VALUE, 12, 31));
@@ -86,6 +89,7 @@ public class LocalDateCodecTest extends TestCase {
         roundTrip("", (LocalDate) null);
     }
 
+    @Test
     public void testFullYearRange() {
         for (int year = Year.MIN_VALUE; year <= Year.MAX_VALUE; year += 1_000_000) {
             roundTrip("", LocalDate.of(year, 1, 1));
@@ -93,6 +97,7 @@ public class LocalDateCodecTest extends TestCase {
         }
     }
 
+    @Test
     public void testCompactYearRange() {
         for (int year = -9999; year <= 9999; year++) {
             roundTrip("", LocalDate.of(year, 1, 1));
@@ -100,6 +105,7 @@ public class LocalDateCodecTest extends TestCase {
         }
     }
 
+    @Test
     public void testCompactEncoding() {
         roundTrip(LocalDateCodec.Domain.Compact.name(), "0000-01-01"); // minimum compact value
         roundTrip(LocalDateCodec.Domain.Compact.name(), "9999-12-31");
@@ -110,6 +116,7 @@ public class LocalDateCodecTest extends TestCase {
         roundTrip("Compact", (LocalDate) null);
     }
 
+    @Test
     public void testFullNotNullEncoding() {
         roundTrip("Full,notnull", LocalDate.of(-999_999_999, 1, 1));
         roundTrip("Full,notnull", LocalDate.of(999_999_999, 12, 31));
@@ -129,6 +136,7 @@ public class LocalDateCodecTest extends TestCase {
 
     }
 
+    @Test
     public void testCompactNotNullEncoding() {
         roundTrip("Compact,notnull", "0000-01-01"); // minimum compact value
         roundTrip("Compact,notnull", "9999-12-31");
@@ -144,23 +152,28 @@ public class LocalDateCodecTest extends TestCase {
         }
     }
 
+    @Test
     public void testVariableNull() {
         expectNull("");
     }
 
+    @Test
     public void testFixedEncodeWhitspaceArg() {
         roundTrip(" " + LocalDateCodec.Domain.Compact.name() + " ", "2018-01-01");
     }
 
+    @Test
     public void testIllegalEncodingType() {
         expectIllegalArgumentException("blah", LocalDate.of(2018, 1, 1));
     }
 
+    @Test
     public void testOutOfRangeCompactDate() {
         expectIllegalArgumentException("compact", LocalDate.of(-1, 1, 1));
         expectIllegalArgumentException("compact", LocalDate.of(10000, 1, 1));
     }
 
+    @Test
     public void testCompactEncodingWithOffset() {
         roundTripWithOffset(LocalDateCodec.Domain.Compact.name(), "0000-01-01", 3); // minimum compact value
         roundTripWithOffset(LocalDateCodec.Domain.Compact.name(), "9999-12-31", 3);
@@ -171,6 +184,7 @@ public class LocalDateCodecTest extends TestCase {
         roundTripWithOffset("Compact", (LocalDate) null, 0);
     }
 
+    @Test
     public void testFullEncodingWithOffset() {
         roundTripWithOffset("", LocalDate.of(Year.MIN_VALUE, 1, 1), 3);
         roundTripWithOffset("", LocalDate.of(Year.MAX_VALUE, 12, 31), 3);

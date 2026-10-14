@@ -14,7 +14,9 @@ on:
     branches: [main, 'rc/**']
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # pull_request_target runs in the context of the base branch, so github.ref is the same for every PR.
+  # Key the group on the PR number so a new run cancels only an earlier run of the same PR.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -28,7 +30,7 @@ jobs:
 
     steps:
       - name: Detect docs changes
-        uses: dorny/paths-filter@v4
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           filters: |
@@ -39,7 +41,7 @@ jobs:
 
       - name: No changes comment
         if: ${{ !contains(steps.filter.outputs.*, 'true') }}
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           message: |
             ## No docs changes detected for ${{ github.event.pull_request.head.sha }}
@@ -55,10 +57,11 @@ jobs:
 
     steps:
       - name: Deploy preview comment
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           message: |
             ## Deploying docs previews for ${{ github.event.pull_request.head.sha }} (available for 14 days)
+            The preview sites are password protected. Find the credentials in LastPass under "Docs Preview".
 
       ##########
       # Do NOT run any scripts sourced from the repo after this point. We have checked out the repo from a fork.
@@ -76,7 +79,7 @@ jobs:
       - name: Sync core Python to the salmon bucket
         id: sync-python
         if: ${{ needs.doc-changes.outputs.python == 'true' }}
-        uses: deephaven/salmon-sync@v1
+        uses: deephaven/salmon-sync@65084289d6aee0ce30df0a826a9650155e028609 # v1.3.0
         with:
           source: docs/python
           destination: deephaven/deephaven-core/docs/pr-${{ github.event.number }}
@@ -85,7 +88,7 @@ jobs:
           aws-role: ${{ vars.DOCS_AWS_ROLE }}
       - name: Update PR comment
         if: ${{ steps.sync-python.outcome == 'success' }}
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           append: true
           message: |
@@ -94,7 +97,7 @@ jobs:
       - name: Sync core Groovy to the salmon bucket
         id: sync-groovy
         if: ${{ needs.doc-changes.outputs.groovy == 'true' }}
-        uses: deephaven/salmon-sync@v1
+        uses: deephaven/salmon-sync@65084289d6aee0ce30df0a826a9650155e028609 # v1.3.0
         with:
           source: docs/groovy
           destination: deephaven/deephaven-core/groovy/docs/pr-${{ github.event.number }}
@@ -103,7 +106,7 @@ jobs:
           aws-role: ${{ vars.DOCS_AWS_ROLE }}
       - name: Update PR comment
         if: ${{ steps.sync-groovy.outcome == 'success' }}
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           append: true
           message: |
@@ -111,7 +114,7 @@ jobs:
 
       - name: Update PR comment on fail
         if: ${{ failure() }}
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
         with:
           message: |
             ## :warning: Failed to deploy docs previews for ${{ github.event.pull_request.head.sha }}

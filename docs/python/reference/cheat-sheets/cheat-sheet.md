@@ -1,6 +1,5 @@
 ---
 title: Ultimate cheat sheet
-sidebar_label: Ultimate cheat sheet
 ---
 
 ## Necessary data

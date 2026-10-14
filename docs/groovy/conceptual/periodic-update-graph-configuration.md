@@ -1,6 +1,5 @@
 ---
 title: Periodic Update Graph
-sidebar_label: Periodic Update Graph configuration
 ---
 
 This guide discusses how to control the update frequency of your Deephaven tables, which allows you to fine-tune your application's latency.

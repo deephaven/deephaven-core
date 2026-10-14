@@ -8,12 +8,16 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.datasets.multiseries.MultiXYSeries;
 import io.deephaven.plot.datasets.xy.XYDataSeriesArray;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Test SeriesLocation.
  */
 public class TestSeriesLocation extends RefreshingTableTestCase {
 
+    @Test
     public void testLocation() {
         final Table t = TableTools.emptyTable(100).update("A=i%2==0?`A`:`B`", "X=1.0*i", "Y=1.0*i*i");
 

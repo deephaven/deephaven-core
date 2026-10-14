@@ -54,6 +54,22 @@ class BaseTestCase(unittest.TestCase):
 
             self.assertGreaterEqual(table.size, row_count)
 
+    def wait_ticking_table_failure(self, table: Table, timeout: int):
+        """Waits for a refreshing table to enter the failed state or times out.
+
+        Args:
+            table (Table): the refreshing table
+            timeout (int): the number of seconds to wait
+        """
+        with exclusive_lock(table):
+            timeout *= 10**9
+            while not table.is_failed and timeout > 0:
+                s_time = time.time_ns()
+                table.await_update(timeout // 10**6)
+                timeout -= time.time_ns() - s_time
+
+            self.assertTrue(table.is_failed)
+
     def wait_ticking_proxy_table_update(
         self, pt: PartitionedTableProxy, row_count: int, timeout: int
     ):

@@ -1,6 +1,5 @@
 ---
 title: Arrays vs vectors
-sidebar_label: Vectors
 ---
 
 Deephaven tables can store multi-element data in two forms: **Java primitive arrays** and **Deephaven vectors**. While both represent ordered collections of elements, they have important differences that affect how you work with them.

@@ -18,7 +18,7 @@ dependencies {
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':log-factory')
     api libs.deephaven.barrage.format
-    implementation libs.hdrhistogram
+    api libs.hdrhistogram
 
     implementation libs.flatbuffers.java
 

@@ -1,38 +1,32 @@
 plugins {
-    id 'java-library'
     id 'io.deephaven.project.register'
 }
 
 description 'Barrage Benchmark: Benchmarks for Barrage message serialization/deserialization'
 
-sourceSets {
-    test {
-        java {
-            srcDir 'src/benchmark/java'
-        }
-    }
-}
-
-test {
-    failOnNoDiscoveredTests = false
-}
-
 dependencies {
-    testImplementation project(':extensions-barrage')
-    testImplementation project(':engine-table')
-    testImplementation project(':BenchmarkSupport')
-    testImplementation libs.arrow.vector
-    testImplementation libs.flatbuffers.java
-    testImplementation platform(libs.grpc.bom)
-    testImplementation libs.grpc.api
-    testImplementation TestTools.projectDependency(project, 'engine-rowset')
-    testImplementation TestTools.projectDependency(project, 'engine-table')
+    implementation project(':extensions-barrage')
+    implementation project(':engine-table')
+    implementation project(':BenchmarkSupport')
+    // BarrageMessageProducerPropagateBenchmark drives a real BarrageMessageProducer on a TestControlledScheduler
+    implementation project(':server')
+    implementation project(':server-test-utils')
+    implementation libs.dsi.fastutil
+    implementation libs.arrow.vector
+    implementation libs.flatbuffers.java
+    implementation platform(libs.grpc.bom)
+    implementation libs.grpc.api
+    // BarrageGrpcPropagateBenchmark writes through a real gRPC Netty transport to clients on the loopback interface
+    implementation libs.grpc.stub
+    implementation libs.grpc.netty
+    implementation TestTools.projectDependency(project, 'engine-rowset')
+    implementation TestTools.projectDependency(project, 'engine-table')
 
-    testAnnotationProcessor libs.jmh.generator.annprocess
-    testCompileOnly libs.jmh.generator.annprocess
+    annotationProcessor libs.jmh.generator.annprocess
+    compileOnly libs.jmh.generator.annprocess
 
-    testRuntimeOnly project(':configs')
-    testRuntimeOnly project(':test-configs')
+    runtimeOnly project(':configs')
+    runtimeOnly project(':test-configs')
 }
 
 def createJmhTask = {
@@ -41,7 +35,7 @@ def createJmhTask = {
         new File("$rootDir/tmp/logs").mkdirs()
 
         task.workingDir "$rootDir/tmp/workspace"
-        task.classpath = sourceSets.test.runtimeClasspath
+        task.classpath = sourceSets.main.runtimeClasspath
         task.mainClass.set 'io.deephaven.benchmarking.runner.BenchmarkRunner'
 
         // arguments to pass to the application
@@ -54,10 +48,78 @@ def createJmhTask = {
         ]
         jvmArgs.addAll(jvmAddArgs)
         task.jvmArgs jvmArgs
-        task.args cliArgs
+        // cliArgs may be a single benchmark name or a list of JMH command-line arguments
+        task.setArgs(([] + cliArgs).flatten().collect { it.toString() })
 
         return
     })
 }
 
 createJmhTask('jmhRunBarrageRoundTrip', 'BarrageMessageRoundTripBenchmark')
+
+// One propagation phase's writes to N subscribers, fanned out over T threads (T=1 is the sequential loop).
+createJmhTask('jmhRunBarrageFanOut', 'BarrageSubscriberFanOutBenchmark')
+
+// The same, over viewport and mixed full/viewport subscriptions.
+createJmhTask('jmhRunBarrageFanOutMixed',
+        ['BarrageSubscriberFanOutBenchmark', '-p', 'mix=viewport,mixed', '-p', 'subscribers=4,8,16'])
+
+// String and dictionary-encoded String columns; full subscribers of the latter share one dictionary per column.
+createJmhTask('jmhRunBarrageFanOutStrings',
+        ['BarrageSubscriberFanOutBenchmark', '-p', 'columnType=String,dictString', '-p', 'subscribers=1,4,8,16',
+         '-p', 'threads=1,8'])
+
+// A real BarrageMessageProducer's propagation job, end to end: initial snapshots and ticking updates.
+createJmhTask('jmhRunBarrageProducerPropagate', 'BarrageMessageProducerPropagateBenchmark')
+
+// The producer supplying 1 to 16 subscribers through a real gRPC Netty transport on the loopback interface, from a
+// 30-column table of mixed types with a dictionary-encoded and a run-end encoded column: snapshots of 1M and 5M rows,
+// and updates of 100k and 1M rows, each with the full job's parts reported beside its time. The fork takes 12g of heap
+// and up to 32g of direct memory; the largest cell holds about 12 GB of serialized messages per side of the transport.
+createJmhTask('jmhRunBarrageGrpcPropagate', 'BarrageGrpcPropagateBenchmark')
+
+// The same at a size that runs in minutes rather than an hour: 1M-row snapshots, 100k-row updates, 1, 4 and 16
+// subscribers, and shorter iterations.
+createJmhTask('jmhRunBarrageGrpcPropagateQuick',
+        ['BarrageGrpcPropagateBenchmark', '-p', 'subscribers=1,4,16', '-p', 'rows=1000000', '-p', 'deltaRows=100000',
+         '-wi', '2', '-i', '3', '-w', '5', '-r', '5'])
+
+// A smoke test of the gRPC benchmark's plumbing, in under a minute: tiny tables, two subscribers, one iteration.
+createJmhTask('jmhRunBarrageGrpcPropagateSmoke',
+        ['BarrageGrpcPropagateBenchmark', '-p', 'subscribers=2', '-p', 'threads=1,2', '-p', 'rows=20000',
+         '-p', 'deltaRows=2000', '-wi', '1', '-i', '1', '-w', '1', '-r', '1'])
+
+createJmhTask('jmhRunBarrageCopyKernel', 'BarrageCopyKernelBenchmark')
+
+// Three forks throughout: single-fork runs of these arms have disagreed with each other by more than the effects
+// they measure, and the sign of a small difference has flipped between forks.
+def copyKernelJmhArgs = ['-f', '3', '-wi', '3', '-i', '10', '-w', '2', '-r', '2', '-gc', 'true']
+
+// The two algorithms on one column, across the run lengths either side of the kernel's threshold.
+createJmhTask('jmhRunBarrageCopyKernelAlgorithms',
+        ['BarrageCopyKernelBenchmark\\.(mappingOnly|rangeAware)$', copyKernelJmhArgs])
+
+// The same matrix at ~100k rows with the chunk size scaled to match, to see whether 2^20 rows was needed.
+createJmhTask('jmhRunBarrageCopyKernelAlgorithms100k',
+        ['BarrageCopyKernelBenchmark\\.(mappingOnly|rangeAware)$', copyKernelJmhArgs],
+        ['-Dbench.deltaChunkSize=4096', '-Dbench.totalRows=98304'])
+
+// Where the run copy starts winning: both algorithms across the short run lengths, one JVM run.
+createJmhTask('jmhRunBarrageCopyKernelCrossover',
+        ['BarrageCopyKernelBenchmark\\.(mappingOnly|rangeAware)$', copyKernelJmhArgs, '-p', 'avgRunLength=1,2,3,4,5'])
+
+// Does sharing one set of runs between columns pay off? Two columns per operation.
+createJmhTask('jmhRunBarrageCopyKernelSharing',
+        ['BarrageCopyKernelBenchmark\\.twoColumns.*$', copyKernelJmhArgs, '-p', 'columnType=Int',
+         '-p', 'avgRunLength=1,2,5,16'])
+
+// The same question at ~100k rows.
+createJmhTask('jmhRunBarrageCopyKernelSharing100k',
+        ['BarrageCopyKernelBenchmark\\.twoColumns.*$', copyKernelJmhArgs, '-p', 'columnType=Int',
+         '-p', 'avgRunLength=1,2,5,16'],
+        ['-Dbench.deltaChunkSize=4096', '-Dbench.totalRows=98304'])
+
+// The String arm runs fewer columns than the primitive default: String cells are wide enough that 5000 columns of
+// them split the snapshot across record batches, which the single-batch reader in this benchmark cannot parse.
+createJmhTask('jmhRunBarrageRoundTripStrings',
+        ['BarrageMessageRoundTripBenchmark', '-p', 'columnType=String', '-p', 'numColumns=1000'])

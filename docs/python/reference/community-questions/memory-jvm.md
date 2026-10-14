@@ -1,6 +1,5 @@
 ---
 title: How does memory work in the JVM?
-sidebar_label: How does memory work in the JVM?
 ---
 
 - "Why does my Java application's memory usage keep going up and down like a sawtooth pattern?"

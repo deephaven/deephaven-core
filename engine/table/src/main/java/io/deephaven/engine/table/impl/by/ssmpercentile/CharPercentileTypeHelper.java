@@ -70,7 +70,7 @@ public class CharPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
         final int result = upperBound(asCharChunk, startPosition, startPosition + runLength, hiValue);
 
         final long hiCount = ssmLo.getMaxCount();
-        if (result > startPosition && CharComparisons.eq(asCharChunk.get(result - 1), hiValue)
+        if (result > startPosition && eq(asCharChunk.get(result - 1), hiValue)
                 && counts.get(result - 1) > hiCount) {
             leftOvers.set((int) (counts.get(result - 1) - hiCount));
         } else {
@@ -90,6 +90,16 @@ public class CharPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
         final int result = upperBound(asCharChunk, startPosition, startPosition + runLength, hiValue);
 
         return result - startPosition;
+    }
+
+    /**
+     * Test two values for equality consistent with the ordering of the SSMs; each SSM holds one entry for each class of
+     * equal values.
+     */
+    private static boolean eq(char lhs, char rhs) {
+        // region equality function
+        return CharComparisons.eq(lhs, rhs);
+        // endregion equality function
     }
 
     /**

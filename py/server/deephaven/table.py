@@ -1119,6 +1119,44 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create a table without attributes.") from e
 
+    def with_keys(self, cols: Union[str, Sequence[str]]) -> Table:
+        """Returns a new Table that shares the underlying data and schema with this table and has the specified
+        columns marked as its key columns.
+
+        Args:
+            cols (Union[str, Sequence[str]]): the key column name(s), must name at least one existing column
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            return Table(j_table=self.j_table.withKeys(*cols))
+        except Exception as e:
+            raise DHError(e, "failed to create a table with key columns.") from e
+
+    def with_unique_keys(self, cols: Union[str, Sequence[str]]) -> Table:
+        """Returns a new Table that shares the underlying data and schema with this table and has the specified
+        columns marked as its key columns, additionally indicating that each key set will be unique.
+
+        Args:
+            cols (Union[str, Sequence[str]]): the key column name(s), must name at least one existing column
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            cols = to_sequence(cols)
+            return Table(j_table=self.j_table.withUniqueKeys(*cols))
+        except Exception as e:
+            raise DHError(e, "failed to create a table with unique key columns.") from e
+
     def to_string(
         self, num_rows: int = 10, cols: Optional[Union[str, Sequence[str]]] = None
     ) -> str:
@@ -1507,8 +1545,7 @@ class Table(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            with auto_locking_ctx(self, filter_table):
-                return Table(j_table=self.j_table.whereIn(filter_table.j_table, *cols))
+            return Table(j_table=self.j_table.whereIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "table where_in operation failed.") from e
 
@@ -1530,10 +1567,7 @@ class Table(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            with auto_locking_ctx(self, filter_table):
-                return Table(
-                    j_table=self.j_table.whereNotIn(filter_table.j_table, *cols)
-                )
+            return Table(j_table=self.j_table.whereNotIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "table where_not_in operation failed.") from e
 
@@ -1897,7 +1931,9 @@ class Table(JObjectWrapper):
         To efficiently produce updates, the bits that represent a key for a given row are split into two. Unless
         specified, join reserves 10 bits to represent a right row. When there are too few bits to represent all the
         right rows, the table will shift a bit from the left side to the right side. The default of 10 bits was
-        carefully chosen because it results in an efficient implementation to process live updates.
+        carefully chosen because it results in an efficient implementation to process live updates. A join whose
+        result can never change, such as a join of two static tables, ignores reserve_bits and uses just enough bits
+        for its right rows.
 
         Args:
             table (Table): the right-table of the join
@@ -1906,8 +1942,8 @@ class Table(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            reserve_bits (Optional[int]): the number of bits to reserve for the right row; default is None,
-                meaning the configured value is used, which is 10 bits by default.
+            reserve_bits (Optional[int]): the number of bits to reserve for the right row, between 1 and 62
+                (inclusive); default is None, meaning the configured value is used, which is 10 bits by default.
 
         Returns:
             a new table
@@ -1919,9 +1955,8 @@ class Table(JObjectWrapper):
             on = ",".join(to_sequence(on))
             joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(self.j_object, _JTableOperations)
-            reserve_bits = (
-                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
-            )
+            if reserve_bits is None:
+                reserve_bits = _default_cross_join_reserve_bits()
             with auto_locking_ctx(self, table):
                 return Table(
                     j_table=table_op.join(
@@ -2021,9 +2056,9 @@ class Table(JObjectWrapper):
         and then (2) aggregates over the joined data. Oftentimes this is used to join data for a particular time range
         from the right table onto the left table.
 
-        Rows from the right table with null or NaN key values are discarded; that is, they are never included in the
-        vectors used for aggregation.  For all rows that are not discarded, the right table must be sorted according
-        to the right range column for all rows within a group.
+        Rows from the right table with null or NaN right range column values are discarded; that is, they are never
+        included in the vectors used for aggregation.  For all rows that are not discarded, the right table must be
+        sorted according to the right range column for all rows within a group.
 
         Join key ranges, specified by the 'on' argument, are defined by zero-or-more exact join matches and a single
         range join match. The range join match must be the last match in the list.
@@ -2063,6 +2098,7 @@ class Table(JObjectWrapper):
             Empty Range
             An empty range occurs for any left row with no matching right rows. That is, no non-null, non-NaN right
             rows were found using the exact join matches, or none were in range according to the range join match.
+            For an empty range, the aggregation output is an empty vector.
 
             Single-value Ranges
             A single-value range is a range where the left row's values for the left start column and left end
@@ -2090,7 +2126,8 @@ class Table(JObjectWrapper):
             end, and only the left start column subexpression will be used for the match. If the left start column
             and left end column values are null, the range is unbounded, and all rows will be included.
 
-        Note: At this time, implementations only support static tables. This operation remains under active development.
+        Note: At this time, implementations only support static tables and group aggregations. This operation remains
+        under active development.
 
         Args:
             table (Table): the right table of the join
@@ -2905,8 +2942,8 @@ class Table(JObjectWrapper):
         using one less by column on each level. The column that is no longer part of the aggregation key is
         replaced with null on each level.
 
-        Note some aggregations can not be used in creating a rollup tables, these include: group, partition, median,
-        pct, weighted_avg
+        Note that some aggregations can not be used in creating a rollup table: partition, median, pct, and
+        formula when formula_param is provided
 
         Args:
             aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
@@ -4045,8 +4082,8 @@ class PartitionedTableProxy(JObjectWrapper):
                 i.e. "col_a = col_b" for different column names; default is None
             joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            reserve_bits (Optional[int]): the number of bits to reserve for the join; default is None, meaning the
-                configured value is used, which is 10 by default
+            reserve_bits (Optional[int]): the number of bits to reserve for the join, between 1 and 62 (inclusive);
+                default is None, meaning the configured value is used, which is 10 by default
 
         Returns:
             a new PartitionedTableProxy
@@ -4058,9 +4095,8 @@ class PartitionedTableProxy(JObjectWrapper):
             on = ",".join(to_sequence(on))
             joins = ",".join(to_sequence(joins))
             table_op = jpy.cast(table.j_object, _JTableOperations)
-            reserve_bits = (
-                reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
-            )
+            if reserve_bits is None:
+                reserve_bits = _default_cross_join_reserve_bits()
 
             with auto_locking_ctx(self, table):
                 return PartitionedTableProxy(

@@ -3,11 +3,13 @@
 //
 package io.deephaven.time;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class TestDateTimeFormatters extends BaseArrayTestCase {
+import static org.junit.Assert.*;
 
+public class TestDateTimeFormatters {
+
+    @Test
     public void testAll() {
         final boolean isISO = true;
         final boolean hasDate = true;
@@ -17,7 +19,7 @@ public class TestDateTimeFormatters extends BaseArrayTestCase {
         final DateTimeFormatter dtf1 = new DateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
         final DateTimeFormatters dtf2 = DateTimeFormatters.ISO9TZ;
 
-        TestCase.assertEquals(dtf1.getPattern(), dtf2.getFormatter().getPattern());
-        TestCase.assertEquals(dtf1.toString(), dtf2.toString());
+        assertEquals(dtf1.getPattern(), dtf2.getFormatter().getPattern());
+        assertEquals(dtf1.toString(), dtf2.toString());
     }
 }

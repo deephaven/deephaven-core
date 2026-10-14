@@ -1,15 +1,14 @@
 ---
 title: Search functions
-sidebar_label: Search
 ---
 
-Binary search functions from [`io.deephaven.function.BinSearch`](/core/javadoc/io/deephaven/function/BinSearch.html).
+Binary search and string matching utilities.
 
 | Type     | Name              | Signature                                                                                                                                                                                                           | Description                                                 |
 | -------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| CONSTANT | BS_ANY            | [BinSearchAlgo](/core/javadoc/io/deephaven/function/BinSearchAlgo.html#BS_ANY)                                                                                                                                      | Binary search algorithm returns any matching index.         |
-| CONSTANT | BS_HIGHEST        | [BinSearchAlgo](/core/javadoc/io/deephaven/function/BinSearchAlgo.html#BS_HIGHEST)                                                                                                                                  | Binary search algorithm returns the highest matching index. |
-| CONSTANT | BS_LOWEST         | [BinSearchAlgo](/core/javadoc/io/deephaven/function/BinSearchAlgo.html#BS_LOWEST)                                                                                                                                   | Binary search algorithm returns the lowest matching index.  |
+| CONSTANT | BS_ANY            | [BinSearchAlgo](https://deephaven.io/core/javadoc/io/deephaven/function/BinSearchAlgo.html#BS_ANY)                                                                                                                  | Binary search algorithm returns any matching index.         |
+| CONSTANT | BS_HIGHEST        | [BinSearchAlgo](https://deephaven.io/core/javadoc/io/deephaven/function/BinSearchAlgo.html#BS_HIGHEST)                                                                                                              | Binary search algorithm returns the highest matching index. |
+| CONSTANT | BS_LOWEST         | [BinSearchAlgo](https://deephaven.io/core/javadoc/io/deephaven/function/BinSearchAlgo.html#BS_LOWEST)                                                                                                               | Binary search algorithm returns the lowest matching index.  |
 | FUNCTION | binSearchIndex    | [int\(ByteVector, byte, BinSearchAlgo\)](https://deephaven.io/core/javadoc/io/deephaven/function/BinSearch.html#binSearchIndex(io.deephaven.vector.ByteVector,byte,io.deephaven.function.BinSearchAlgo))            | Performs a binary search to find a key.                     |
 | FUNCTION | binSearchIndex    | [int\(CharVector, char, BinSearchAlgo\)](https://deephaven.io/core/javadoc/io/deephaven/function/BinSearch.html#binSearchIndex(io.deephaven.vector.CharVector,char,io.deephaven.function.BinSearchAlgo))            | Performs a binary search to find a key.                     |
 | FUNCTION | binSearchIndex    | [int\(Comparable\[\], Comparable, BinSearchAlgo\)](https://deephaven.io/core/javadoc/io/deephaven/function/BinSearch.html#binSearchIndex(T[],T,io.deephaven.function.BinSearchAlgo))                                | Performs a binary search to find a key.                     |
@@ -46,3 +45,4 @@ Binary search functions from [`io.deephaven.function.BinSearch`](/core/javadoc/i
 ## Related documentation
 
 - [Auto-imported functions](./index.md)
+- [Query language functions](../../../../how-to-guides/built-in-functions.md)

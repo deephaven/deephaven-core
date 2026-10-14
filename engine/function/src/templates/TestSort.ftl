@@ -4,7 +4,7 @@
 
 package io.deephaven.function;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
 import io.deephaven.vector.*;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -12,16 +12,19 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 import static io.deephaven.function.Sort.*;
 
 /**
  * Test Sort.
  */
 @SuppressWarnings({"ConstantConditions", "rawtypes", "RedundantCast", "RedundantArrayCreation", "unchecked"})
-public class TestSort extends BaseArrayTestCase {
+public class TestSort {
 
     //////////////////////////// Object ////////////////////////////
 
+    @Test
     public void testObjSort() {
         final ObjectVector<ComparableExtended> comparableExtendedObjectVector = new ObjectVectorDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
                 , new ComparableExtended(9.4d), null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d));
@@ -41,6 +44,7 @@ public class TestSort extends BaseArrayTestCase {
         assertEquals(expectedBDs, sortObj(null, null, BigDecimal.valueOf(Long.MIN_VALUE), BigDecimal.valueOf(-2395.365), BigDecimal.valueOf(2.369), BigDecimal.valueOf(26), BigDecimal.valueOf(Float.MAX_VALUE)));
     }
 
+    @Test
     public void testObjSortDescending() {
         final ObjectVector<ComparableExtended> comparableExtendedObjectVector = new ObjectVectorDirect<>(null, new ComparableExtended(1d), new ComparableExtended(12d), new ComparableExtended(0d)
                 , new ComparableExtended(9.4d), null, new ComparableExtended(-5.6d), new ComparableExtended(-2.3d), new ComparableExtended(-2.3d));
@@ -60,6 +64,7 @@ public class TestSort extends BaseArrayTestCase {
         assertEquals(expectedBDs, sortDescendingObj(BigDecimal.valueOf(Float.MAX_VALUE), BigDecimal.valueOf(26), BigDecimal.valueOf(2.369), BigDecimal.valueOf(-2395.365), BigDecimal.valueOf(Long.MIN_VALUE), null, null));
     }
 
+    @Test
     public void testObjSortExceptions() {
         //sort
         ObjectVector vectorToSort = null;
@@ -95,6 +100,7 @@ public class TestSort extends BaseArrayTestCase {
         assertTrue(ArrayUtils.isEmpty(sortedNumbers));
     }
 
+    @Test
     public void testObjSortDoubles() {
         final Comparable [] a = new Comparable[7];
         a[0] = 7.0;
@@ -114,6 +120,7 @@ public class TestSort extends BaseArrayTestCase {
         assertEquals(new Comparable[]{Double.POSITIVE_INFINITY, 7.0, Math.E, -Math.PI, Double.NEGATIVE_INFINITY, null}, new ObjectVectorDirect<>(resd).subVector(1, 7).toArray());
     }
 
+    @Test
     public void testObjRankDoubles() {
         final Comparable [] a = new Comparable[7];
         a[0] = 7.0;
@@ -133,6 +140,7 @@ public class TestSort extends BaseArrayTestCase {
 
     <#list primitiveTypes as pt>
 
+    @Test
     public void test${pt.boxed}Sort() {
     <#if pt.valueType.isChar>
         final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, 5, 2, 2, 96, 0, 12, ${pt.null}, ${pt.null}};
@@ -160,6 +168,7 @@ public class TestSort extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{}, sort(new ${pt.boxed}[]{}));
     }
 
+    @Test
     public void test${pt.boxed}Rank() {
     <#if pt.valueType.isChar>
         final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, 5, 2, 2, 96, 0, 12, ${pt.null}, ${pt.null}};
@@ -188,6 +197,7 @@ public class TestSort extends BaseArrayTestCase {
         assertEquals(new int[]{}, rank(new ${pt.boxed}[]{}));
     }
 
+    @Test
     public void test${pt.boxed}SortDescending() {
     <#if pt.valueType.isChar>
         final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, 5, 2, 2, 96, 0, 12, ${pt.null}, ${pt.null}};
@@ -216,6 +226,7 @@ public class TestSort extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{}, sortDescending(new ${pt.boxed}[]{}));
     }
 
+    @Test
     public void test${pt.boxed}RankDescending() {
     <#if pt.valueType.isChar>
         final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, 5, 2, 2, 96, 0, 12, ${pt.null}, ${pt.null}};
@@ -244,6 +255,7 @@ public class TestSort extends BaseArrayTestCase {
         assertEquals(new int[]{}, rankDescending(new ${pt.boxed}[]{}));
     }
 
+    @Test
     public void test${pt.boxed}SortExceptions() {
         ${pt.vector} db${pt.boxed}Array = null;
         ${pt.primitive}[] sort = sort(db${pt.boxed}Array);
@@ -261,6 +273,7 @@ public class TestSort extends BaseArrayTestCase {
         assertTrue(ArrayUtils.isEmpty(sortArray));
     }
 
+    @Test
     public void test${pt.boxed}RankExceptions() {
         ${pt.vector} db${pt.boxed}Array = null;
         int[] sort = rank(db${pt.boxed}Array);
@@ -278,6 +291,7 @@ public class TestSort extends BaseArrayTestCase {
         assertTrue(ArrayUtils.isEmpty(sortArray));
     }
 
+    @Test
     public void test${pt.boxed}SortDescendingExceptions() {
         ${pt.vector} db${pt.boxed}Array = null;
         ${pt.primitive}[] sort = sortDescending(db${pt.boxed}Array);
@@ -295,6 +309,7 @@ public class TestSort extends BaseArrayTestCase {
         assertTrue(ArrayUtils.isEmpty(sortArray));
     }
 
+    @Test
     public void test${pt.boxed}RankDescendingExceptions() {
         ${pt.vector} db${pt.boxed}Array = null;
         int[] sort = rankDescending(db${pt.boxed}Array);

@@ -1,6 +1,5 @@
 ---
 title: Query language functions reference
-sidebar_label: Query language functions
 ---
 
 <!--TODO: Link to the start of the series for https://github.com/deephaven/deephaven.io/issues/1455-->

@@ -1,0 +1,53 @@
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+    id 'io.deephaven.deephaven-in-docker'
+}
+
+evaluationDependsOn Docker.registryProject('dotnet')
+evaluationDependsOn Docker.registryProject('dotnet-runtime-8')
+
+// start a grpc-api server
+String randomSuffix = UUID.randomUUID().toString();
+deephavenDocker {
+    envVars.set([
+            'START_OPTS':'-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler'
+    ])
+    containerName.set "dh-server-for-csharp-${randomSuffix}"
+    networkName.set "csharp-test-network-${randomSuffix}"
+}
+
+def testCsharpClient = Docker.registerDockerTask(project, 'testCsharpClient') {
+    copyIn {
+        // Dh_NetClient.csproj references the backplane .proto files via a relative
+        // path (../../../proto/...), so lay things out just like the repo does.
+        from(layout.projectDirectory) {
+            include 'Dh_NetClient/**'
+            include 'Dh_NetClientTests/**'
+            exclude '**/bin/**'
+            exclude '**/obj/**'
+            into 'csharp/client'
+        }
+        from("${rootDir}/proto/proto-backplane-grpc/src/main/proto") {
+            into 'proto/proto-backplane-grpc/src/main/proto'
+        }
+    }
+    copyOut {
+        into layout.buildDirectory.dir('test-results')
+    }
+    dockerfile file('Dockerfile')
+    containerDependencies.dependsOn = [deephavenDocker.healthyTask]
+    containerDependencies.finalizedBy = deephavenDocker.endTask
+    network = deephavenDocker.networkName.get()
+    parentContainers = [ Docker.registryTask(project, 'dotnet'), Docker.registryTask(project, 'dotnet-runtime-8') ]
+    entrypoint = ['/bin/bash', '-c',
+                  """set -euxo pipefail
+                     export DH_HOST=${deephavenDocker.containerName.get()}
+                     export DH_PORT=10000
+                     # global.json opts dotnet test into Microsoft.Testing.Platform mode,
+                     # which runs the tests for every target framework in the project.
+                     cd /project/csharp/client/Dh_NetClientTests
+                     dotnet test -c Release --no-build --report-trx --results-directory /out"""]
+}
+deephavenDocker.shouldLogIfTaskFails testCsharpClient
+tasks.check.dependsOn(testCsharpClient)

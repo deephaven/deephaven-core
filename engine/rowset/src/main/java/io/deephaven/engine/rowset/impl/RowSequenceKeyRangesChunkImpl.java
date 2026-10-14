@@ -88,13 +88,6 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
 
     }
 
-    private RowSequenceKeyRangesChunkImpl(final WritableLongChunk<OrderedRowKeyRanges> backingChunkToOwn,
-            final long minKeyValue,
-            final long maxKeyValue) {
-        this(backingChunkToOwn, backingChunkToOwn, minKeyValue, maxKeyValue);
-
-    }
-
     private class OffsetHelper {
         public int offset = 0;
         public long currKeyValue =
@@ -164,6 +157,13 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
         @Override
         public RowSequence getNextRowSequenceThrough(long maxKeyInclusive) {
             tryClosePendingClose();
+            // Our own bound wins: the keys past it belong to the backing chunk but not to this sequence.
+            maxKeyInclusive = Math.min(maxKeyInclusive, maxKeyValue);
+            if (helper.isEmpty() || maxKeyInclusive < helper.currKeyValue) {
+                // Nothing remains at or before maxKeyInclusive; without this check a max key inside the
+                // already-consumed part of the current range would produce a corrupt (min > max) slice.
+                return RowSequenceFactory.EMPTY;
+            }
             final int newStartOffset = helper.offset;
             final long newMinKeyValue = helper.currKeyValue;
 
@@ -216,11 +216,17 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
             final int newEndOffset = OrderedChunkUtils.findInChunk(backingChunk, nextKey, helper.offset,
                     backingChunk.size());
             helper.offset = newEndOffset - (newEndOffset % 2);
-            boolean hasMore = helper.offset < backingChunk.size();
-            if (hasMore) {
+            if (helper.offset < backingChunk.size()) {
                 helper.currKeyValue = Math.max(nextKey, backingChunk.get(helper.offset));
+                if (helper.currKeyValue <= maxKeyValue) {
+                    return true;
+                }
             }
-            return hasMore;
+            // Landing past our bound exhausts us even though the backing chunk has more; leave the helper at the
+            // same state advanceInPositionSpace does when it runs off the end, so positions stay within our view.
+            helper.offset = backingChunk.size();
+            helper.currKeyValue = maxKeyValue;
+            return false;
         }
 
         @Override
@@ -264,7 +270,12 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
     }
 
     @Override
-    public RowSequence getRowSequenceByPosition(final long startPositionInclusive, final long length) {
+    public RowSequence getRowSequenceByPosition(final long startPositionInclusiveIn, final long lengthIn) {
+        if (lengthIn <= 0) {
+            return RowSequenceFactory.EMPTY;
+        }
+        final long startPositionInclusive = Math.max(startPositionInclusiveIn, 0);
+        final long length = startPositionInclusiveIn < 0 ? startPositionInclusiveIn + lengthIn : lengthIn;
         if (length <= 0) {
             return RowSequenceFactory.EMPTY;
         }
@@ -294,6 +305,11 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
         // Apply this container's bounds to the requested bounds.
         startRowKeyInclusive = Math.max(startRowKeyInclusive, minKeyValue);
         endRowKeyInclusive = Math.min(endRowKeyInclusive, maxKeyValue);
+        if (endRowKeyInclusive < startRowKeyInclusive) {
+            // The interval selects nothing, either as asked for or once clamped to what we hold. Searching for its
+            // bounds below would give an end offset before the start one, and a negative slice length.
+            return RowSequenceFactory.EMPTY;
+        }
 
         int newStartOffset = OrderedChunkUtils.findInChunk(backingChunk, startRowKeyInclusive);
         newStartOffset -= newStartOffset % 2; // beginning of range
@@ -387,6 +403,10 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
     public void fillRowKeyRangesChunk(final WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
         int newSize = backingChunk.size();
         newSize -= newSize & 1;
+        if (newSize == 0) {
+            chunkToFill.setSize(0);
+            return;
+        }
         backingChunk.copyToChunk(0, chunkToFill, 0, newSize);
         chunkToFill.setSize(newSize);
         chunkToFill.set(0, Math.max(minKeyValue, chunkToFill.get(0)));
@@ -435,6 +455,11 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
         for (long v = start; v <= endInclusive; ++v) {
             if (!lc.accept(v)) {
                 return false;
+            }
+            if (v == endInclusive) {
+                // Checked here rather than by the loop bound, which would step past the last key of the key space and
+                // wrap to a negative value that still compares as inside the range.
+                break;
             }
         }
         return true;

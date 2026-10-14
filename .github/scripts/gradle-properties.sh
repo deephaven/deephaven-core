@@ -13,8 +13,9 @@ OTHER_BYTES=2147483648
 TOTAL_SYSTEM_BYTES="$(free --bytes | grep Mem | awk -F " " '{print $2}')"
 
 # This is accounting for "worst case", assuming every single worker is using the theoretical maximum.
-# Currently, engine/table/build.gradle sets a heap size of 6GiB, so that's the maximum.
-PER_WORKER_BYTES=6442450944
+# Test heaps are at most 3500MiB (see engine/table/build.gradle); 4GiB covers that plus JVM overhead (metaspace, code
+# cache, GC structures, thread stacks). On the standard 16GiB GitHub runners this yields 3 workers.
+PER_WORKER_BYTES=4294967296
 
 # See https://github.com/gradle/gradle/issues/14431#issuecomment-1601724453 for why we need to have this sort of logic
 # here

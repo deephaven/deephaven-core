@@ -96,6 +96,11 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                 final long firstKey = it.peekNextKey();
 
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
+                if (isFreshBlock(block)) {
+                    // the block's previous values are the ones it was allocated with, and are shared
+                    final RowSequence ignored = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    continue;
+                }
 
                 final long[] inUse;
                 if (prevBlocks[block] == null) {
@@ -182,15 +187,22 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
     }
 
     @Override
-    final T[] allocateNullFilledBlock(int size) {
+    final T[] allocateBlock(final int size, final boolean nullFilled) {
+        // an object block is null-filled either way
         // noinspection unchecked
         return (T[]) new Object[size];
     }
 
+    /** The previous values of blocks allocated during the current update cycle, all null; never written. */
+    private static final Object[] FRESH_PREV_BLOCK = new Object[BLOCK_SIZE];
+
     @Override
-    final T[] allocateBlock(int size) {
+    final T[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
         // noinspection unchecked
-        return (T[]) new Object[size];
+        return (T[]) FRESH_PREV_BLOCK;
     }
 
     @Override

@@ -28,6 +28,7 @@ import java.util.function.Function;
 import java.util.function.ToLongFunction;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestTransformedDataIndex extends RefreshingTableTestCase {
@@ -100,7 +101,7 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
                     InMemoryColumnSource.makeImmutableSource(Integer.class, null)));
             final DataIndex firstRemappedIndex = dataIndex.remapKeyColumns(firstRemap);
             // Verify that the original and remapped indexes point to the same index table columns
-            assertEquals(dataIndex.keyColumns(), firstRemappedIndex.keyColumns());
+            assertArrayEquals(dataIndex.keyColumns(), firstRemappedIndex.keyColumns());
 
             // Map new dummy columns to the old dummy columns (second-level)
             final Map<ColumnSource<?>, ColumnSource<?>> secondRemap = new HashMap<>();
@@ -108,7 +109,7 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
                     InMemoryColumnSource.makeImmutableSource(Integer.class, null)));
             final DataIndex secondRemappedIndex = firstRemappedIndex.remapKeyColumns(secondRemap);
             // Verify that the original and remapped indexes point to the same index table columns
-            assertEquals(dataIndex.keyColumns(), secondRemappedIndex.keyColumns());
+            assertArrayEquals(dataIndex.keyColumns(), secondRemappedIndex.keyColumns());
 
             // Map even newer dummy columns to the old dummy columns (third-level)
             final Map<ColumnSource<?>, ColumnSource<?>> thirdRemap = new HashMap<>();
@@ -116,7 +117,7 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
                     InMemoryColumnSource.makeImmutableSource(Integer.class, null)));
             final DataIndex thirdRemappedIndex = secondRemappedIndex.remapKeyColumns(secondRemap);
             // Verify that the original and remapped indexes point to the same index table columns
-            assertEquals(dataIndex.keyColumns(), thirdRemappedIndex.keyColumns());
+            assertArrayEquals(dataIndex.keyColumns(), thirdRemappedIndex.keyColumns());
         }
     }
 
@@ -128,22 +129,21 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
                     Map.of(testTable.getColumnSource(dataIndex.keyColumnNames().get(0)), firstDummy);
             final DataIndex firstRemappedIndex = dataIndex.remapKeyColumns(firstRemap);
             // Verify that the original and remapped indexes point to the same index table columns
-            assertEquals(dataIndex.keyColumns(), firstRemappedIndex.keyColumns());
+            assertArrayEquals(dataIndex.keyColumns(), firstRemappedIndex.keyColumns());
 
             final ColumnSource<?> secondDummy = InMemoryColumnSource.makeImmutableSource(Integer.class, null);
             final Map<ColumnSource<?>, ColumnSource<?>> secondRemap = Map.of(firstDummy, secondDummy);
             final DataIndex secondRemappedIndex = firstRemappedIndex.remapKeyColumns(secondRemap);
             // Verify that the original and remapped indexes point to the same index table columns
-            assertEquals(dataIndex.keyColumns(), firstRemappedIndex.keyColumns());
+            assertArrayEquals(dataIndex.keyColumns(), firstRemappedIndex.keyColumns());
 
             final ColumnSource<?> thirdDummy = InMemoryColumnSource.makeImmutableSource(Integer.class, null);
             final Map<ColumnSource<?>, ColumnSource<?>> thirdRemap = Map.of(secondDummy, thirdDummy);
             final DataIndex thirdRemappedIndex = secondRemappedIndex.remapKeyColumns(thirdRemap);
             // Verify that the original and remapped indexes point to the same index table columns
-            assertEquals(dataIndex.keyColumns(), thirdRemappedIndex.keyColumns());
+            assertArrayEquals(dataIndex.keyColumns(), thirdRemappedIndex.keyColumns());
         }
     }
-
 
     @Test
     public void testMultiColumnOutOfOrderLookup() {
@@ -391,7 +391,6 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
             }
         }
     }
-
 
     private void assertStatic(final BasicDataIndex subIndex) {
         assertFalse(subIndex.isRefreshing());

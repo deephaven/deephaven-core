@@ -11,6 +11,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.util.compare.ByteComparisons;
 import org.jetbrains.annotations.NotNull;
 
 public class ByteDupCompactKernel implements DupCompactKernel {
@@ -106,7 +107,7 @@ public class ByteDupCompactKernel implements DupCompactKernel {
 
     // region comparison functions
     private static int doComparison(byte lhs, byte rhs) {
-        return Byte.compare(lhs, rhs);
+        return ByteComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 
@@ -116,7 +117,7 @@ public class ByteDupCompactKernel implements DupCompactKernel {
 
     private static boolean eq(byte lhs, byte rhs) {
         // region equality function
-        return lhs == rhs;
+        return ByteComparisons.eq(lhs, rhs);
         // endregion equality function
     }
 }

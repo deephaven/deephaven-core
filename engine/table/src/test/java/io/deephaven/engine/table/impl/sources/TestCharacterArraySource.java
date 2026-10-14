@@ -19,7 +19,6 @@ import io.deephaven.base.testing.Shuffle;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import junit.framework.TestCase;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -28,9 +27,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.LongStream;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.chunk.ArrayGenerator.indexDataGenerator;
 import static io.deephaven.util.QueryConstants.*;
-import static junit.framework.TestCase.*;
+import static org.junit.Assert.*;
 
 public class TestCharacterArraySource {
     @Rule
@@ -551,7 +551,7 @@ public class TestCharacterArraySource {
                 // fill from that aliased chunk
                 try {
                     source.fillFromChunk(destContext, chunk, destKeys);
-                    TestCase.fail();
+                    fail();
                 } catch (UnsupportedOperationException uoe) {
                     // Expected
                 }

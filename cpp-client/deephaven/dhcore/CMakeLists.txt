@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(dhcore)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # for CMAKE_INSTALL_{dir}
 include(GNUInstallDirs)
@@ -130,6 +130,9 @@ endif()
 
 foreach (whichlib dhcore dhcore_static)
   set_property(TARGET ${whichlib} PROPERTY POSITION_INDEPENDENT_CODE ON)
+  # Exported (PUBLIC) so that consumers of the installed package inherit the
+  # requirement; the whole client is built as C++20.
+  target_compile_features(${whichlib} PUBLIC cxx_std_20)
 
   if (LINUX)
     target_compile_options(${whichlib} PRIVATE -Wall -Werror -Wno-deprecated-declarations -Wno-tautological-compare -Wno-stringop-overflow)

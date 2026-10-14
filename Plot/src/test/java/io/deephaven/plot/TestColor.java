@@ -3,12 +3,14 @@
 //
 package io.deephaven.plot;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.gui.color.Color;
-import junit.framework.TestCase;
+import org.junit.Test;
 
-public class TestColor extends BaseArrayTestCase {
+import static org.junit.Assert.*;
 
+public class TestColor {
+
+    @Test
     public void testColorMisc() {
         assertTrue(Color.colorNames().length > 0);
 
@@ -16,6 +18,7 @@ public class TestColor extends BaseArrayTestCase {
         assertEquals(c.javaColor().hashCode(), c.hashCode());
     }
 
+    @Test
     public void testColorDefinitions() {
         // string
         assertEquals(new Color("BLUE"), new Color(0, 0, 255));
@@ -24,22 +27,20 @@ public class TestColor extends BaseArrayTestCase {
 
         try {
             new Color("Blu e");
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Invalid color name"));
         }
 
         try {
             new Color(null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("null"));
         }
 
         assertEquals(new Color("#FFFFFF"), new Color(255, 255, 255));
         assertEquals(new Color("#FFFFFFF"), new Color(255, 255, 255));
-
-
 
         // rgba
         assertEquals(new Color(1, 2, 3).javaColor(), new java.awt.Color(1, 2, 3));
@@ -52,6 +53,7 @@ public class TestColor extends BaseArrayTestCase {
         assertEquals(new Color(0.1f, 0.2f, 0.3f, 0.4f).javaColor(), new java.awt.Color(0.1f, 0.2f, 0.3f, 0.4f));
     }
 
+    @Test
     public void testStaticHelpers() {
         // string
         assertEquals(Color.color("BLUE"), new Color(0, 0, 255));
@@ -60,22 +62,20 @@ public class TestColor extends BaseArrayTestCase {
 
         try {
             Color.color("Blu e");
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Invalid color name"));
         }
 
         try {
             Color.color(null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("null"));
         }
 
         assertEquals(Color.color("#FFFFFF"), new Color(255, 255, 255));
         assertEquals(Color.color("#FFFFFFF"), new Color(255, 255, 255));
-
-
 
         // rgba
         assertEquals(Color.colorRGB(1, 2, 3).javaColor(), new java.awt.Color(1, 2, 3));
@@ -88,7 +88,6 @@ public class TestColor extends BaseArrayTestCase {
         assertEquals(Color.colorRGB(0.1f, 0.2f, 0.3f, 0.4f).javaColor(), new java.awt.Color(0.1f, 0.2f, 0.3f, 0.4f));
         assertEquals(Color.colorHSL(36f, 20, 20).javaColor(), new java.awt.Color(61, 53, 41));
         assertEquals(Color.colorHSL(36f, 20, 20, 0.5f).javaColor(), new java.awt.Color(61, 53, 41, 128));
-
 
         try {
             Color.colorHSL(1f, -13, 99, 0.5f);
@@ -109,6 +108,7 @@ public class TestColor extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testEquals() {
         final Color color1 = new Color(0, 0, 0, 0);
         final Color color2 = new Color(0, 0, 0, 0);

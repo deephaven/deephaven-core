@@ -3,8 +3,10 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
@@ -17,25 +19,28 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
-import junit.framework.TestCase;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.api.agg.Aggregation.AggSortedFirst;
 import static io.deephaven.api.agg.Aggregation.AggSortedLast;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
-
+    @Test
     public void testSortedFirstOrLastBy() {
         final int[] sizes = {10, 50, 200};
         for (final int size : sizes) {
@@ -93,6 +98,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testSortedFirstOrLastByArrayTuples() {
         final int seed = 0;
         final int size = 200;
@@ -146,7 +152,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         }
     }
 
-
+    @Test
     public void testIds6445() {
         final QueryTable source =
                 TstUtils.testRefreshingTable(RowSetFactory.flat(5).toTracking(),
@@ -172,8 +178,8 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         tuvbuck.getResultTable().addUpdateListener(failureListenerBuck);
 
         showWithRowSet(sfb);
-        TestCase.assertEquals(2, ColumnVectors.ofInt(sfb, "Sentinel").get(0));
-        TestCase.assertEquals(2, ColumnVectors.ofInt(bucketed, "Sentinel").get(0));
+        assertEquals(2, ColumnVectors.ofInt(sfb, "Sentinel").get(0));
+        assertEquals(2, ColumnVectors.ofInt(bucketed, "Sentinel").get(0));
 
         // this part is the original bug, if we didn't change the actual value of the row redirection; because the
         // shift modify combination left it at the same row key; we would not notice the mdoification
@@ -224,9 +230,9 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         System.out.println("Shifted SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(1, ColumnVectors.ofInt(sfb, "Sentinel").get(0));
+        assertEquals(1, ColumnVectors.ofInt(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(1, ColumnVectors.ofInt(bucketed, "Sentinel").get(0));
+        assertEquals(1, ColumnVectors.ofInt(bucketed, "Sentinel").get(0));
 
         // here we are shifting, but not modifying the SFB column (but are modifying sentinel)
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -251,9 +257,9 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         System.out.println("Shifted and Modified SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(9, ColumnVectors.ofInt(sfb, "Sentinel").get(0));
+        assertEquals(9, ColumnVectors.ofInt(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(9, ColumnVectors.ofInt(bucketed, "Sentinel").get(0));
+        assertEquals(9, ColumnVectors.ofInt(bucketed, "Sentinel").get(0));
 
         // we are shifting, and claiming to modify SFB but not actually doing it
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -278,9 +284,9 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         System.out.println("Shifted and Modified SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(9, ColumnVectors.ofInt(sfb, "Sentinel").get(0));
+        assertEquals(9, ColumnVectors.ofInt(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(9, ColumnVectors.ofInt(bucketed, "Sentinel").get(0));
+        assertEquals(9, ColumnVectors.ofInt(bucketed, "Sentinel").get(0));
 
         // here we are shifting, and modifying SFB but not actually doing it
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -305,9 +311,9 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         System.out.println("Shifted and Really Really Modified SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(6, ColumnVectors.ofInt(sfb, "Sentinel").get(0));
+        assertEquals(6, ColumnVectors.ofInt(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(6, ColumnVectors.ofInt(bucketed, "Sentinel").get(0));
+        assertEquals(6, ColumnVectors.ofInt(bucketed, "Sentinel").get(0));
 
         // claim to modify sfb, but don't really. Actually modify sentinel.
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -332,8 +338,71 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         System.out.println("Shifted and Really Really Modified SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(13, ColumnVectors.ofInt(sfb, "Sentinel").get(0));
+        assertEquals(13, ColumnVectors.ofInt(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(13, ColumnVectors.ofInt(bucketed, "Sentinel").get(0));
+        assertEquals(13, ColumnVectors.ofInt(bucketed, "Sentinel").get(0));
+    }
+
+    /**
+     * BigDecimal values that differ only in scale compare equal, so they tie in a sorted first or last; the sorted
+     * first is the tied row with the lowest row key and the sorted last is the tied row with the highest row key. Ties
+     * are added out of row key order and removed from a ticking source, and each result matches a fresh aggregation of
+     * a static snapshot.
+     */
+    @Test
+    public void testSortedFirstOrLastByBigDecimalCompareEqualTies() {
+        final QueryTable source = TstUtils.testRefreshingTable(i(20, 40, 50).toTracking(),
+                col("Bucket", "A", "A", "A"),
+                col("Value", new BigDecimal("1.00"), new BigDecimal("5.0"), new BigDecimal("3")),
+                intCol("Sentinel", 20, 40, 50));
+        final List<Aggregation> aggregations = List.of(AggSortedFirst("Value", "First=Sentinel"),
+                AggSortedLast("Value", "Last=Sentinel"));
+        final Table unbucketed = source.aggBy(aggregations);
+        final Table bucketed = source.aggBy(aggregations, "Bucket");
+        checkBigDecimalTies("initial", source, aggregations, unbucketed, bucketed, 20, 40);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(10, 30, 45, 60), col("Bucket", "A", "A", "A", "A"),
+                    col("Value", new BigDecimal("1.0"), new BigDecimal("1.000"), new BigDecimal("5"),
+                            new BigDecimal("5.00")),
+                    intCol("Sentinel", 10, 30, 45, 60));
+            source.notifyListeners(i(10, 30, 45, 60), i(), i());
+        });
+        checkBigDecimalTies("after add", source, aggregations, unbucketed, bucketed, 10, 60);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(10, 60));
+            source.notifyListeners(i(), i(10, 60), i());
+        });
+        checkBigDecimalTies("after remove", source, aggregations, unbucketed, bucketed, 20, 45);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(20));
+            source.notifyListeners(i(), i(20), i());
+        });
+        checkBigDecimalTies("after second remove", source, aggregations, unbucketed, bucketed, 30, 45);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(5, 70), col("Bucket", "A", "A"),
+                    col("Value", new BigDecimal("1"), new BigDecimal("5.000")), intCol("Sentinel", 5, 70));
+            source.notifyListeners(i(5, 70), i(), i());
+        });
+        checkBigDecimalTies("after second add", source, aggregations, unbucketed, bucketed, 5, 70);
+    }
+
+    private static void checkBigDecimalTies(final String context, final QueryTable source,
+            final List<Aggregation> aggregations, final Table unbucketed, final Table bucketed,
+            final int expectedFirst, final int expectedLast) {
+        final Table snapshot = source.snapshot();
+        final Table staticUnbucketed = snapshot.aggBy(aggregations);
+        final Table staticBucketed = snapshot.aggBy(aggregations, "Bucket");
+        for (final Table result : new Table[] {unbucketed, bucketed, staticUnbucketed, staticBucketed}) {
+            assertEquals(context + ": size", 1, result.size());
+            assertEquals(context + ": first", expectedFirst, ColumnVectors.ofInt(result, "First").get(0));
+            assertEquals(context + ": last", expectedLast, ColumnVectors.ofInt(result, "Last").get(0));
+        }
+        assertTableEquals(staticUnbucketed, unbucketed);
+        assertTableEquals(staticBucketed, bucketed);
     }
 }

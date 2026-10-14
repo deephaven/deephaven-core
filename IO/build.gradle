@@ -7,6 +7,7 @@ dependencies {
     implementation project(':SevenZip')
     implementation libs.commons.compress
     testImplementation project(path: ':Base', configuration: 'tests')
+    testImplementation project(':base-test-utils')
     testImplementation libs.junit4
     testImplementation libs.jmock.junit4
     testImplementation libs.jmock.imposters

@@ -5,102 +5,109 @@ isort:skip_file
 Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 """
 
-import builtins
-import collections.abc
-import deephaven_core.proto.ticket_pb2
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.internal.enum_type_wrapper
-import google.protobuf.message
+from collections import abc as _abc
+from deephaven_core.proto import ticket_pb2 as _ticket_pb2
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
+import builtins as _builtins
 import sys
-import typing
+import typing as _typing
 
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
-@typing.final
-class PartitionByRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class PartitionByRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    TABLE_ID_FIELD_NUMBER: builtins.int
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    KEY_COLUMN_NAMES_FIELD_NUMBER: builtins.int
-    DROP_KEYS_FIELD_NUMBER: builtins.int
-    drop_keys: builtins.bool
-    @property
-    def table_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
-    def key_column_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    TABLE_ID_FIELD_NUMBER: _builtins.int
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    KEY_COLUMN_NAMES_FIELD_NUMBER: _builtins.int
+    DROP_KEYS_FIELD_NUMBER: _builtins.int
+    drop_keys: _builtins.bool
+    @_builtins.property
+    def table_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
+    def key_column_names(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        table_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        key_column_names: collections.abc.Iterable[builtins.str] | None = ...,
-        drop_keys: builtins.bool = ...,
+        table_id: _ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
+        key_column_names: _abc.Iterable[_builtins.str] | None = ...,
+        drop_keys: _builtins.bool = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id", "table_id", b"table_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["drop_keys", b"drop_keys", "key_column_names", b"key_column_names", "result_id", b"result_id", "table_id", b"table_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id", "table_id", b"table_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["drop_keys", b"drop_keys", "key_column_names", b"key_column_names", "result_id", b"result_id", "table_id", b"table_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___PartitionByRequest: typing_extensions.TypeAlias = PartitionByRequest
+Global___PartitionByRequest: _TypeAlias = PartitionByRequest  # noqa: Y015
 
-@typing.final
-class PartitionByResponse(google.protobuf.message.Message):
+@_typing.final
+class PartitionByResponse(_message.Message):
     """Deliberately empty response, use /ObjectService/FetchObject to read the object by ticket."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___PartitionByResponse: typing_extensions.TypeAlias = PartitionByResponse
+Global___PartitionByResponse: _TypeAlias = PartitionByResponse  # noqa: Y015
 
-@typing.final
-class MergeRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class MergeRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    PARTITIONED_TABLE_FIELD_NUMBER: builtins.int
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    @property
-    def partitioned_table(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    PARTITIONED_TABLE_FIELD_NUMBER: _builtins.int
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def partitioned_table(self) -> _ticket_pb2.Ticket:
         """The ticket for the PartitionedTable object to merge."""
 
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket:
         """The ticket to use to hold the results of the merge operation."""
 
     def __init__(
         self,
         *,
-        partitioned_table: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        partitioned_table: _ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["partitioned_table", b"partitioned_table", "result_id", b"result_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["partitioned_table", b"partitioned_table", "result_id", b"result_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["partitioned_table", b"partitioned_table", "result_id", b"result_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["partitioned_table", b"partitioned_table", "result_id", b"result_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___MergeRequest: typing_extensions.TypeAlias = MergeRequest
+Global___MergeRequest: _TypeAlias = MergeRequest  # noqa: Y015
 
-@typing.final
-class GetTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class GetTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     class _UniqueBehavior:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _UniqueBehaviorEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[GetTableRequest._UniqueBehavior.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _UniqueBehaviorEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[GetTableRequest._UniqueBehavior.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         NOT_SET_UNIQUE_BEHAVIOR: GetTableRequest._UniqueBehavior.ValueType  # 0
         """The behavior is unset, in which case we default to requiring unique results."""
         REQUIRE_UNIQUE_RESULTS_STATIC_SINGLE_KEY: GetTableRequest._UniqueBehavior.ValueType  # 1
@@ -116,68 +123,69 @@ class GetTableRequest(google.protobuf.message.Message):
     PERMIT_MULTIPLE_KEYS: GetTableRequest.UniqueBehavior.ValueType  # 2
     """Merge results from multiple (or zero keys)."""
 
-    PARTITIONED_TABLE_FIELD_NUMBER: builtins.int
-    KEY_TABLE_TICKET_FIELD_NUMBER: builtins.int
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    UNIQUE_BEHAVIOR_FIELD_NUMBER: builtins.int
+    PARTITIONED_TABLE_FIELD_NUMBER: _builtins.int
+    KEY_TABLE_TICKET_FIELD_NUMBER: _builtins.int
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    UNIQUE_BEHAVIOR_FIELD_NUMBER: _builtins.int
     unique_behavior: Global___GetTableRequest.UniqueBehavior.ValueType
     """The behavior for handling result Tables that do not have a unique result."""
-    @property
-    def partitioned_table(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def partitioned_table(self) -> _ticket_pb2.Ticket:
         """The ticket for the PartitionedTable object to query."""
 
-    @property
-    def key_table_ticket(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def key_table_ticket(self) -> _ticket_pb2.Ticket:
         """The ticket for the table containing the key to fetch from the partitioned table."""
 
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket:
         """The ticket to use to hold the newly returned table."""
 
     def __init__(
         self,
         *,
-        partitioned_table: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        key_table_ticket: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        partitioned_table: _ticket_pb2.Ticket | None = ...,
+        key_table_ticket: _ticket_pb2.Ticket | None = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
         unique_behavior: Global___GetTableRequest.UniqueBehavior.ValueType = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["key_table_ticket", b"key_table_ticket", "partitioned_table", b"partitioned_table", "result_id", b"result_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["key_table_ticket", b"key_table_ticket", "partitioned_table", b"partitioned_table", "result_id", b"result_id", "unique_behavior", b"unique_behavior"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["key_table_ticket", b"key_table_ticket", "partitioned_table", b"partitioned_table", "result_id", b"result_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["key_table_ticket", b"key_table_ticket", "partitioned_table", b"partitioned_table", "result_id", b"result_id", "unique_behavior", b"unique_behavior"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___GetTableRequest: typing_extensions.TypeAlias = GetTableRequest
+Global___GetTableRequest: _TypeAlias = GetTableRequest  # noqa: Y015
 
-@typing.final
-class PartitionedTableDescriptor(google.protobuf.message.Message):
+@_typing.final
+class PartitionedTableDescriptor(_message.Message):
     """
     A message that describes a partitioned table, able to be sent as a plugin object to a client.
     This object will also come with a ticket to the underlying table that can be used to get the
     constituent tables by key.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    KEY_COLUMN_NAMES_FIELD_NUMBER: builtins.int
-    CONSTITUENT_COLUMN_NAME_FIELD_NUMBER: builtins.int
-    UNIQUE_KEYS_FIELD_NUMBER: builtins.int
-    CONSTITUENT_DEFINITION_SCHEMA_FIELD_NUMBER: builtins.int
-    CONSTITUENT_CHANGES_PERMITTED_FIELD_NUMBER: builtins.int
-    constituent_column_name: builtins.str
+    KEY_COLUMN_NAMES_FIELD_NUMBER: _builtins.int
+    CONSTITUENT_COLUMN_NAME_FIELD_NUMBER: _builtins.int
+    UNIQUE_KEYS_FIELD_NUMBER: _builtins.int
+    CONSTITUENT_DEFINITION_SCHEMA_FIELD_NUMBER: _builtins.int
+    CONSTITUENT_CHANGES_PERMITTED_FIELD_NUMBER: _builtins.int
+    constituent_column_name: _builtins.str
     """The name of the column in the underlying table that contains the table represented by that row."""
-    unique_keys: builtins.bool
+    unique_keys: _builtins.bool
     """True if the keys will be unique, so any set of known keys can be queried using GetTable."""
-    constituent_definition_schema: builtins.bytes
+    constituent_definition_schema: _builtins.bytes
     """Returns a flight Messsage wrapping a Schema that will describe every table contained in this
     PartitionedTable.
     """
-    constituent_changes_permitted: builtins.bool
+    constituent_changes_permitted: _builtins.bool
     """True if the underlying table may tick with updates. See PartitionedTable.constituentChangesPermitted()
     for more details.
     """
-    @property
-    def key_column_names(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+    @_builtins.property
+    def key_column_names(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
         """The names of the key columns. The underlying table will contain these columns - a client can
         subscribe to these columns to see what keys are present.
         """
@@ -185,13 +193,16 @@ class PartitionedTableDescriptor(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        key_column_names: collections.abc.Iterable[builtins.str] | None = ...,
-        constituent_column_name: builtins.str = ...,
-        unique_keys: builtins.bool = ...,
-        constituent_definition_schema: builtins.bytes = ...,
-        constituent_changes_permitted: builtins.bool = ...,
+        key_column_names: _abc.Iterable[_builtins.str] | None = ...,
+        constituent_column_name: _builtins.str = ...,
+        unique_keys: _builtins.bool = ...,
+        constituent_definition_schema: _builtins.bytes = ...,
+        constituent_changes_permitted: _builtins.bool = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["constituent_changes_permitted", b"constituent_changes_permitted", "constituent_column_name", b"constituent_column_name", "constituent_definition_schema", b"constituent_definition_schema", "key_column_names", b"key_column_names", "unique_keys", b"unique_keys"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["constituent_changes_permitted", b"constituent_changes_permitted", "constituent_column_name", b"constituent_column_name", "constituent_definition_schema", b"constituent_definition_schema", "key_column_names", b"key_column_names", "unique_keys", b"unique_keys"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___PartitionedTableDescriptor: typing_extensions.TypeAlias = PartitionedTableDescriptor
+Global___PartitionedTableDescriptor: _TypeAlias = PartitionedTableDescriptor  # noqa: Y015

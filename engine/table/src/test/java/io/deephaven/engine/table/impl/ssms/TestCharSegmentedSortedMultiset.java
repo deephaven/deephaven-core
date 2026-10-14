@@ -33,23 +33,27 @@ import io.deephaven.engine.table.impl.util.compact.CharCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.TreeMap;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 @Category(ParallelTest.class)
 public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
 
+    @Test
     public void testInsertion() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 10; ++seed) {
@@ -61,6 +65,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testRemove() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         for (int seed = 0; seed < 10; ++seed) {
@@ -72,6 +77,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testInsertAndRemove() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         final int nSeeds = scaleToDesiredTestLength(100);
@@ -84,6 +90,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMove() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         final int nSeeds = scaleToDesiredTestLength(200);
@@ -96,6 +103,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testEqualsArray() {
         // exercise the singleton (size == 1), single-leaf (partial, then exactly full), and multi-leaf (exactly two
         // full leaves, then several with a partial tail) representations
@@ -106,12 +114,15 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         checkEqualsArray(20);
     }
 
+    @Test
     public void testIterator() {
-        // exercise the empty, singleton (size == 1), single-leaf, and multi-leaf representations
-        checkIterator(0);
-        checkIterator(1);
-        checkIterator(3);
-        checkIterator(20);
+        // node sizes that put the same value counts in different representations
+        for (final int nodeSize : new int[] {4, 8}) {
+            // exercise the empty, singleton (size == 1), single-leaf, and multi-leaf representations
+            for (final int valueCount : new int[] {0, 1, 3, 4, 8, 20}) {
+                checkIterator(nodeSize, valueCount);
+            }
+        }
     }
 
     /**
@@ -120,6 +131,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
      * and multi-leaf representations so the copy cannot drift -- equals() accepts any Vector with matching contents,
      * so a divergence here would silently break the hashCode contract.
      */
+    @Test
     public void testHashCodeMatchesVectorHelper() {
         for (final int valueCount : new int[] {0, 1, 3, 4, 8, 20}) {
             final char[] values = new char[valueCount];
@@ -137,6 +149,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMoveSingletonSource() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -147,6 +160,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMoveSingletonMerge() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -191,6 +205,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testInsertIntoMiddleLeafSplit() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -221,6 +236,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         verifySsm(ssm, expected, desc);
     }
 
+    @Test
     public void testRemoveMaxMultiLeaf() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -236,6 +252,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         verifySsm(dest, new char[] {(char) ('a' + 4), (char) ('a' + 4), (char) ('a' + 5)}, desc);
     }
 
+    @Test
     public void testRemoveMaxSizeOne() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -258,6 +275,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         verifySsm(dest2, new char[] {(char) ('a' + 3), (char) ('a' + 3), (char) ('a' + 6)}, desc);
     }
 
+    @Test
     public void testMoveFrontToBackPartialAppend() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -288,6 +306,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testMoveBackToFrontCompleteLeaves() {
         final int nodeSize = 4;
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
@@ -307,6 +326,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                 (char) ('a' + 7), (char) ('a' + 8), (char) ('a' + 9), (char) ('a' + 10)}, desc);
     }
 
+    @Test
     public void testScalarInsertRemove() {
         final SsaTestHelpers.TestDescriptor desc = new SsaTestHelpers.TestDescriptor();
         final int alphabet = 12;
@@ -374,6 +394,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         assertEquals(total, ssm.totalSize());
     }
 
+    @Test
     public void testInsertRemoveWithOffset() {
         final int nodeSize = 4;
         final int prefix = 3;
@@ -392,38 +413,62 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         applyRemove(subject, reference, prefix, new int[] {1, 3, 11}, new int[] {1, 2, 1});
     }
 
+    /**
+     * {@link CharSegmentedSortedMultiset#subVector} is exclusive at its end, and -- like every Vector -- must accept
+     * offsets outside {@code [0, size())}, which read as the null value rather than throwing. Pin every representation
+     * against {@link CharVectorDirect}, the reference implementation of that contract.
+     */
+    @Test
     public void testPartialCopy() {
-        final int nodeSize = 8;
-        final CharSegmentedSortedMultiset ssm = new CharSegmentedSortedMultiset(nodeSize);
-
-        final char[] data = new char[24];
-        try (final WritableCharChunk<Values> valuesChunk = WritableCharChunk.makeWritableChunk(24);
-             final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(24)) {
-
-            for (int ii = 0; ii < 24; ii++) {
-                data[ii] = (char) ('a' + ii);
-                countsChunk.set(ii, 1);
-                valuesChunk.set(ii, data[ii]);
+        // node sizes that put the same value counts in different representations
+        for (final int nodeSize : new int[] {4, 8}) {
+            // empty, singleton, partial leaf, exactly-full leaf, two full leaves, and many leaves
+            for (final int valueCount : new int[] {0, 1, 3, 4, 8, 24}) {
+                checkPartialCopy(nodeSize, valueCount);
             }
+        }
+    }
 
-            ssm.insert(valuesChunk, countsChunk);
+    private void checkPartialCopy(final int nodeSize, final int valueCount) {
+        final char[] values = new char[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            values[ii] = (char) ('a' + ii);
+        }
+        final CharSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+        final CharVector reference = new CharVectorDirect(values);
+        final String prefix = "nodeSize=" + nodeSize + ", valueCount=" + valueCount;
+
+        assertArrayEquals(prefix, values, ssm.toArray()/*EXTRA*/);
+
+        // an offset outside [0, size()) reads as null; it is neither an error nor a peek at a leaf's unused slots
+        assertEquals(prefix, NULL_CHAR, ssm.get(-1));
+        assertEquals(prefix, NULL_CHAR, ssm.get(valueCount));
+        assertEquals(prefix, NULL_CHAR, ssm.get(valueCount + 1));
+        assertEquals(prefix, NULL_CHAR, ssm.get(Long.MAX_VALUE));
+
+        // sub-ranges that fall short of, span, and overrun each end
+        for (int from = -3; from <= valueCount + 3; ++from) {
+            for (int to = from; to <= valueCount + 3; ++to) {
+                final String message = prefix + ", from=" + from + ", to=" + to;
+                final CharVector expected = reference.subVector(from, to);
+                final CharVector actual = ssm.subVector(from, to);
+                assertEquals(message, to - from, actual.size());
+                assertArrayEquals(message, expected.toArray(), actual.toArray()/*EXTRA*/);
+                for (int ii = 0; ii < to - from; ++ii) {
+                    assertEquals(message, expected.get(ii), actual.get(ii));
+                }
+            }
         }
 
-        assertArrayEquals(data, ssm.toArray()/*EXTRA*/);
-        assertArrayEquals(data, ssm.subVector(0, 23).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data,0, 4), ssm.subVector(0, 3).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 0, 8), ssm.subVector(0, 7).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 0, 16), ssm.subVector(0, 15).toArray()/*EXTRA*/);
-
-        assertArrayEquals(Arrays.copyOfRange(data, 2, 6), ssm.subVector(2, 5).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 2, 12), ssm.subVector(2, 11).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 7, 12), ssm.subVector(7, 11).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 7, 16), ssm.subVector(7, 15).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 11, 16), ssm.subVector(11, 15).toArray()/*EXTRA*/);
-        assertArrayEquals(Arrays.copyOfRange(data, 2, 20), ssm.subVector(2, 19).toArray()/*EXTRA*/);
+        // positions are read individually, in the order given, may repeat, and may fall outside [0, size())
+        final long[] positions =
+                new long[] {valueCount - 1, -1, 0, valueCount, valueCount / 2, 0, Long.MAX_VALUE};
+        assertArrayEquals(prefix, reference.subVectorByPositions(positions).toArray(),
+                ssm.subVectorByPositions(positions).toArray()/*EXTRA*/);
     }
 
     // region SortFixupSanityCheck
+    @Test
     public void testSanity() {
         QueryTable john = TstUtils.testRefreshingTable(TableTools.charCol("John", NULL_CHAR, NULL_CHAR, (char)0x0, (char)0x1, Character.MAX_VALUE, Character.MAX_VALUE));
         final ColumnSource<Character> valueSource = john.getColumnSource("John");
@@ -468,7 +513,6 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                             CharCompactKernel.compactAndCount(chunk, counts, countNullNaN, countNullNaN);
                             ssm.remove(removeContext, chunk, counts);
                         }
-
 
                         if (added.isNonempty()) {
                             valueSource.fillChunk(fillContext, chunk, added);
@@ -531,7 +575,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                 assertEquals(totalExpectedSize, ssmLo.totalSize() + ssmHi.totalSize());
 
             } catch (AssertionFailure e) {
-                TestCase.fail("Moving lo to hi failed at " + desc + ": " + e.getMessage());
+                fail("Moving lo to hi failed at " + desc + ": " + e.getMessage());
             }
 
             try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asCharacter.intSize());
@@ -564,7 +608,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                 assertEquals(newHiCount, ssmHi.totalSize());
                 assertEquals(totalExpectedSize, ssmLo.totalSize() + ssmHi.totalSize());
             } catch (AssertionFailure e) {
-                TestCase.fail("Moving hi to lo failed at " + desc + ": " + e.getMessage());
+                fail("Moving hi to lo failed at " + desc + ": " + e.getMessage());
             }
         }
 
@@ -629,7 +673,7 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                 });
             }
         } catch (AssertionFailure e) {
-            TestCase.fail("Check failed at " + desc + ": " + e.getMessage());
+            fail("Check failed at " + desc + ": " + e.getMessage());
         }
     }
 
@@ -771,21 +815,21 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         }
         final CharSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
 
-        final Character[] boxed = new Character[valueCount];
-        for (int ii = 0; ii < valueCount; ++ii) {
-            boxed[ii] = values[ii];
-        }
-
         // a Vector with identical contents is equal, in both directions, and anything equal must hash alike -- so the
         // SSM has to use the same shared Vector helper that the *VectorDirect implementations use, and compare
         // elements the same way that helper hashes them, rather than either with a scheme of its own
         assertEqualBothWays(ssm, ssm.getDirect());
         assertEqualBothWays(ssm, new CharVectorDirect(values));
 
-        // the boxed comparison only runs in one direction for the primitive variants, because a primitive SSM is a
-        // CharVector rather than an ObjectVector and so is not a comparand ObjectVectorDirect will accept
-        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxed)));
-        assertEquals(ssm.hashCode(), new ObjectVectorDirect<>(boxed).hashCode());
+        // region BoxedEquals
+        // a boxed Vector of the same values is not equal in either direction: it would hold a null reference wherever
+        // this SSM holds the null sentinel, so accepting it would make equal values hash differently
+        final Character[] boxed = new Character[valueCount];
+        for (int ii = 0; ii < valueCount; ++ii) {
+            boxed[ii] = values[ii];
+        }
+        assertNotEqualBothWays(ssm, new ObjectVectorDirect<>(boxed));
+        // endregion BoxedEquals
 
         // another SSM holding the same values is equal however those values happen to be laid out: equality is a
         // property of the contents, and identical contents can occupy different leaf structures, since leaves need
@@ -815,11 +859,6 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
             longer[ii] = (char) ('a' + ii);
         }
         assertFalse(ssm.equals(new CharVectorDirect(longer)));
-        final Character[] longerBoxed = new Character[valueCount + 1];
-        for (int ii = 0; ii < longerBoxed.length; ++ii) {
-            longerBoxed[ii] = (char) ('a' + ii);
-        }
-        assertFalse(ssm.equals(new ObjectVectorDirect<>(longerBoxed)));
 
         // a Vector that differs from the original in a single position is not equal; check the first, middle, and last
         if (valueCount > 0) {
@@ -828,10 +867,6 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
                 final char[] modifiedValues = values.clone();
                 modifiedValues[position] = different;
                 assertFalse(ssm.equals(new CharVectorDirect(modifiedValues)));
-
-                final Character[] modifiedBoxed = boxed.clone();
-                modifiedBoxed[position] = different;
-                assertFalse(ssm.equals(new ObjectVectorDirect<>(modifiedBoxed)));
             }
         }
     }
@@ -855,42 +890,66 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         assertFalse(rhs + " should not equal " + lhs, rhs.equals(lhs));
     }
 
-    private void checkIterator(int valueCount) {
-        final int nodeSize = 4;
+    private void checkIterator(final int nodeSize, final int valueCount) {
         final char[] values = new char[valueCount];
         for (int ii = 0; ii < valueCount; ++ii) {
             values[ii] = (char) ('a' + ii);
         }
         final CharSegmentedSortedMultiset ssm = makeSsm(nodeSize, values);
+        // the reference implementation of the slice contract, including the null values owed for offsets outside
+        // [0, size())
+        final CharVector reference = new CharVectorDirect(values);
+        final String prefix = "nodeSize=" + nodeSize + ", valueCount=" + valueCount;
 
         // a full traversal must visit every element in order
         try (final ValueIteratorOfChar it = ssm.iterator()) {
-            assertEquals(valueCount, it.remaining());
+            assertEquals(prefix, valueCount, it.remaining());
             for (int ii = 0; ii < valueCount; ++ii) {
-                assertTrue(it.hasNext());
-                assertEquals(values[ii], it.nextChar());
+                assertTrue(prefix, it.hasNext());
+                assertEquals(prefix, values[ii], it.nextChar());
             }
-            assertFalse(it.hasNext());
+            assertFalse(prefix, it.hasNext());
         }
 
         // every sub-range must resolve its starting leaf correctly and stop at the right position; for a multi-leaf
-        // SSM the start may land mid-leaf, on a leaf boundary, or past several whole leaves
-        for (int from = 0; from <= valueCount; ++from) {
-            for (int to = from; to <= valueCount; ++to) {
+        // SSM the start may land mid-leaf, on a leaf boundary, or past several whole leaves. Ranges that fall outside
+        // [0, size()) are legal, and iterate as null at those offsets.
+        for (int from = -3; from <= valueCount + 3; ++from) {
+            for (int to = from; to <= valueCount + 3; ++to) {
+                final String message = prefix + ", from=" + from + ", to=" + to;
                 try (final ValueIteratorOfChar it = ssm.iterator(from, to)) {
-                    assertEquals(to - from, it.remaining());
+                    assertEquals(message, to - from, it.remaining());
                     for (int ii = from; ii < to; ++ii) {
-                        assertTrue(it.hasNext());
-                        assertEquals(values[ii], it.nextChar());
-                        assertEquals(to - ii - 1, it.remaining());
+                        assertTrue(message, it.hasNext());
+                        assertEquals(message, reference.get(ii), it.nextChar());
+                        assertEquals(message, to - ii - 1, it.remaining());
                     }
-                    assertFalse(it.hasNext());
+                    assertFalse(message, it.hasNext());
+
+                    // an exhausted iterator must not hand back whatever value happens to be stored next
+                    try {
+                        it.nextChar();
+                        fail(message + ": expected a NoSuchElementException from an exhausted iterator");
+                    } catch (NoSuchElementException expected) {
+                        // expected
+                    }
+                }
+
+                // documented equivalence: iterator(from, to) matches subVector(from, to).iterator()
+                try (final ValueIteratorOfChar it = ssm.iterator(from, to);
+                     final ValueIteratorOfChar sliceIt = ssm.subVector(from, to).iterator()) {
+                    while (sliceIt.hasNext()) {
+                        assertTrue(message, it.hasNext());
+                        assertEquals(message, sliceIt.nextChar(), it.nextChar());
+                    }
+                    assertFalse(message, it.hasNext());
                 }
             }
         }
     }
 
     // region NullEquals
+    @Test
     public void testEqualsArrayNull() {
         // a singleton holding the null sentinel
         checkEqualsArrayNull(4, new char[] {NULL_CHAR});
@@ -906,31 +965,33 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
         final CharSegmentedSortedMultiset ssm = makeSsm(nodeSize, sortedValues);
         final char[] stored = ssm.toArray();
 
-        // boxing the null sentinel yields a non-null element holding the sentinel value, which compares equal
+        // the null sentinel is an ordinary value to a CharVector comparison: equal both ways, and hashing alike
+        assertEqualBothWays(ssm, new CharVectorDirect(stored));
+
+        // boxing the sentinel yields a non-null element holding the sentinel value...
         final Character[] boxedSentinel = new Character[stored.length];
         for (int ii = 0; ii < stored.length; ++ii) {
             boxedSentinel[ii] = stored[ii];
         }
-        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedSentinel)));
+        // ...but a boxed Vector is still not a CharVector, so it is not equal in either direction
+        assertNotEqualBothWays(ssm, new ObjectVectorDirect<>(boxedSentinel));
 
-        // a literal null also compares equal to the stored null sentinel
+        // a boxed Vector holding a literal null where this SSM holds the sentinel is likewise not equal. This is the
+        // case that made the branch unsound: the two would have compared equal while hashing differently, since
+        // hashCode() hashes the sentinel and a boxed Vector hashes the null reference.
         final Character[] boxedNull = boxedSentinel.clone();
         for (int ii = 0; ii < stored.length; ++ii) {
             if (stored[ii] == NULL_CHAR) {
                 boxedNull[ii] = null;
             }
         }
-        assertTrue(ssm.equals(new ObjectVectorDirect<>(boxedNull)));
+        final ObjectVectorDirect<Character> boxedNullVector = new ObjectVectorDirect<>(boxedNull);
+        assertNotEqualBothWays(ssm, boxedNullVector);
 
-        // a null at a position holding a non-null value is not equal
-        for (int ii = 0; ii < stored.length; ++ii) {
-            if (stored[ii] != NULL_CHAR) {
-                final Character[] boxedWrongNull = boxedSentinel.clone();
-                boxedWrongNull[ii] = null;
-                assertFalse(ssm.equals(new ObjectVectorDirect<>(boxedWrongNull)));
-                break;
-            }
-        }
+        // ... and a hash lookup keyed on that boxed Vector must therefore miss rather than silently mismatch
+        final Map<Object, String> map = new HashMap<>();
+        map.put(boxedNullVector, "boxed");
+        assertNull(map.get(ssm));
     }
     // endregion NullEquals
 

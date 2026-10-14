@@ -26,7 +26,6 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
-import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,8 +44,7 @@ import java.util.stream.Stream;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.intCol;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestWindowCheck {
@@ -321,7 +319,7 @@ public class TestWindowCheck {
         final long memChange = memEnd - memStart;
         System.out.println("Change: " + memChange);
         // this previously would require about 2 gigabytes, so we're doing better
-        TestCase.assertTrue(memChange < 100_000_000);
+        assertTrue(memChange < 100_000_000);
         assertTableEquals(inputTable.updateView("InLastXSeconds=false"), withCheck);
     }
 
@@ -347,7 +345,7 @@ public class TestWindowCheck {
                 exception = originalException;
                 final StringWriter errors = new StringWriter();
                 originalException.printStackTrace(new PrintWriter(errors));
-                TestCase.fail(errors.toString());
+                fail(errors.toString());
             }
         }
 
@@ -370,14 +368,14 @@ public class TestWindowCheck {
         public void validate(String msg) {
             org.junit.Assert.assertNull(exception);
 
-            TestCase.assertEquals(table.getRowSet(), windowed.first.getRowSet());
+            assertEquals(table.getRowSet(), windowed.first.getRowSet());
             final Map<String, ColumnSource<?>> map = table.getColumnSourceMap();
             final Map<String, ? extends ColumnSource<?>> map2 = windowed.first.getColumnSourceMap();
-            TestCase.assertEquals(map.size(), map2.size() - 1);
+            assertEquals(map.size(), map2.size() - 1);
 
             for (final Map.Entry<String, ? extends ColumnSource<?>> me : map2.entrySet()) {
                 if (!me.getKey().equals("InWindow")) {
-                    TestCase.assertEquals(map.get(me.getKey()), me.getValue());
+                    assertEquals(map.get(me.getKey()), me.getValue());
                 }
             }
 
@@ -392,10 +390,10 @@ public class TestWindowCheck {
 
                 final Boolean actual = inWindow.get(key);
                 if (tableTime == null) {
-                    TestCase.assertNull(actual);
+                    assertNull(actual);
                 } else {
                     final boolean expected = now - DateTimeUtils.epochNanos(tableTime) < windowNanos;
-                    TestCase.assertEquals((boolean) actual, expected);
+                    assertEquals((boolean) actual, expected);
                 }
             }
 

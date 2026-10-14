@@ -15,6 +15,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.vector.DoubleVectorDirect;
 import io.deephaven.vector.ObjectVectorDirect;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link DoubleSegmentedSortedMultiset} behavior around the special double values that
@@ -68,6 +71,7 @@ public class TestDoubleSegmentedSortedMultisetSpecialValues extends RefreshingTa
      * AND the delta-tracking should recognize that the removal cancels the prior addition, leaving both added and
      * removed sets empty.
      */
+    @Test
     public void testInsertNegativeZeroThenRemovePositiveZero() {
         final DoubleSegmentedSortedMultiset ssm = trackingSsm();
 
@@ -89,6 +93,7 @@ public class TestDoubleSegmentedSortedMultisetSpecialValues extends RefreshingTa
      * Insert {@code +0.0d} then remove {@code -0.0d} -- the mirror of the previous test. Same DoubleComparisons
      * semantics apply.
      */
+    @Test
     public void testInsertPositiveZeroThenRemoveNegativeZero() {
         final DoubleSegmentedSortedMultiset ssm = trackingSsm();
 
@@ -106,6 +111,7 @@ public class TestDoubleSegmentedSortedMultisetSpecialValues extends RefreshingTa
      * Remove {@code +0.0d} from an SSM that contains {@code -0.0d} placed there outside of the tracked cycle. The
      * removal should match the existing entry and be recorded in {@code removed} exactly once.
      */
+    @Test
     public void testRemoveZeroAcrossSign() {
         final DoubleSegmentedSortedMultiset ssm = new DoubleSegmentedSortedMultiset(NODE_SIZE);
         // Seed the leaf without delta tracking.
@@ -123,6 +129,7 @@ public class TestDoubleSegmentedSortedMultisetSpecialValues extends RefreshingTa
      * so the leaf must collapse them into a single entry with count 2 and the delta-tracking added set must contain
      * exactly one NaN entry.
      */
+    @Test
     public void testNaNsWithDifferentBitPatternsAreSameValue() {
         final DoubleSegmentedSortedMultiset ssm = trackingSsm();
         final double nanA = Double.NaN; // canonical 0x7ff8000000000000L
@@ -144,6 +151,7 @@ public class TestDoubleSegmentedSortedMultisetSpecialValues extends RefreshingTa
      * Insert one NaN bit pattern then remove a different NaN bit pattern. DoubleComparisons treats them as equal, so the
      * leaf empties and the delta tracking should net to no change.
      */
+    @Test
     public void testInsertOneNaNThenRemoveAnotherNaN() {
         final DoubleSegmentedSortedMultiset ssm = trackingSsm();
         final double nanA = Double.NaN;
@@ -165,6 +173,7 @@ public class TestDoubleSegmentedSortedMultisetSpecialValues extends RefreshingTa
      * Remove a NaN with one bit pattern from an SSM seeded (outside the tracked cycle) with NaN of a different bit
      * pattern. The removal should find the existing entry and record exactly one removal.
      */
+    @Test
     public void testRemoveNaNAcrossBitPattern() {
         final DoubleSegmentedSortedMultiset ssm = new DoubleSegmentedSortedMultiset(NODE_SIZE);
         final double nanA = Double.NaN;
@@ -185,6 +194,7 @@ public class TestDoubleSegmentedSortedMultisetSpecialValues extends RefreshingTa
      * {@link io.deephaven.util.compare.DoubleComparisons#hashCode(double)}, which collapses NaN bit patterns, so
      * comparing elements with {@code ==} here would break the hashCode contract.
      */
+    @Test
     public void testEqualsAcrossNaNBitPatterns() {
         final double nanA = Double.NaN; // canonical 0x7ff8000000000000L
         final double nanB = Double.longBitsToDouble(0x7ff8000000000001L); // alternate NaN bit pattern
@@ -201,20 +211,19 @@ public class TestDoubleSegmentedSortedMultisetSpecialValues extends RefreshingTa
         assertEqualBothWays(ssmA, ssmB.getDirect());
         assertEqualBothWays(ssmA, new DoubleVectorDirect(withB));
 
-        // the boxed comparison only runs in one direction: a DoubleSegmentedSortedMultiset is a DoubleVector rather
-        // than an ObjectVector, so it is not a comparand an ObjectVectorDirect will accept
+        // a boxed Vector of the same values is a different Vector type, and so not equal in either direction
         final Double[] boxedB = new Double[withB.length];
         for (int ii = 0; ii < withB.length; ++ii) {
             boxedB[ii] = withB[ii];
         }
-        assertTrue(ssmA.equals(new ObjectVectorDirect<>(boxedB)));
-        assertEquals(ssmA.hashCode(), new ObjectVectorDirect<>(boxedB).hashCode());
+        assertNotEqualBothWays(ssmA, new ObjectVectorDirect<>(boxedB));
     }
 
     /**
      * The same requirement for signed zero: DoubleComparisons treats {@code -0.0d} and {@code +0.0d} as one value and
      * hashes them alike, so an SSM seeded with one must compare equal to every Vector spelling of the other.
      */
+    @Test
     public void testEqualsAcrossSignedZero() {
         final double[] withNegative = new double[] {-0.0d, Double.MAX_VALUE};
         final double[] withPositive = new double[] {0.0d, Double.MAX_VALUE};
@@ -232,8 +241,7 @@ public class TestDoubleSegmentedSortedMultisetSpecialValues extends RefreshingTa
         for (int ii = 0; ii < withPositive.length; ++ii) {
             boxedPositive[ii] = withPositive[ii];
         }
-        assertTrue(ssmNegative.equals(new ObjectVectorDirect<>(boxedPositive)));
-        assertEquals(ssmNegative.hashCode(), new ObjectVectorDirect<>(boxedPositive).hashCode());
+        assertNotEqualBothWays(ssmNegative, new ObjectVectorDirect<>(boxedPositive));
     }
 
     /**
@@ -244,5 +252,14 @@ public class TestDoubleSegmentedSortedMultisetSpecialValues extends RefreshingTa
         assertTrue(lhs + " should equal " + rhs, lhs.equals(rhs));
         assertTrue(rhs + " should equal " + lhs, rhs.equals(lhs));
         assertEquals("equal values must hash alike", lhs.hashCode(), rhs.hashCode());
+    }
+
+    /**
+     * Assert that two Vectors agree that they are unequal no matter which is the receiver. Their hash codes are
+     * unconstrained -- unequal values are permitted to collide.
+     */
+    private void assertNotEqualBothWays(final Object lhs, final Object rhs) {
+        assertFalse(lhs + " should not equal " + rhs, lhs.equals(rhs));
+        assertFalse(rhs + " should not equal " + lhs, rhs.equals(lhs));
     }
 }

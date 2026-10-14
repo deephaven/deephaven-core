@@ -15,12 +15,15 @@ import io.deephaven.plot.ChartImpl;
 import io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesInternal;
 import io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesTableArray;
 import io.deephaven.plot.util.tables.TableHandle;
+import org.junit.Test;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
+import static org.junit.Assert.*;
 
 public class XYErrorBarDataSeriesTableArrayTest extends RefreshingTableTestCase {
 
+    @Test
     public void testXYErrorBarDataSeriesTableArray() {
         final BaseFigureImpl figure = new BaseFigureImpl();
         final ChartImpl chart = figure.newChart();
@@ -48,27 +51,28 @@ public class XYErrorBarDataSeriesTableArrayTest extends RefreshingTableTestCase 
         final XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(), 1, "Test", h,
                 "x", null, null, "y", "yLow", "yHigh", false, true);
 
-        assertEquals(series.getX(0), 0.0);
-        assertEquals(series.getX(5), 5.0);
-        assertEquals(series.getX(10), Double.NaN);
-        assertEquals(series.getX(25), 25.0);
+        assertEquals(series.getX(0), 0.0, 0.0);
+        assertEquals(series.getX(5), 5.0, 0.0);
+        assertEquals(series.getX(10), Double.NaN, 0.0);
+        assertEquals(series.getX(25), 25.0, 0.0);
 
-        assertEquals(series.getY(0), Double.NaN);
-        assertEquals(series.getY(5), 10.0);
-        assertEquals(series.getY(10), 20.0);
-        assertEquals(series.getY(25), 50.0);
+        assertEquals(series.getY(0), Double.NaN, 0.0);
+        assertEquals(series.getY(5), 10.0, 0.0);
+        assertEquals(series.getY(10), 20.0, 0.0);
+        assertEquals(series.getY(25), 50.0, 0.0);
 
-        assertEquals(series.getStartY(0), -10 + series.getY(0));
-        assertEquals(series.getStartY(5), -10 + series.getY(5));
-        assertEquals(series.getStartY(55), -10 + series.getY(55));
-        assertEquals(series.getStartY(100), -10 + series.getY(100));
+        assertEquals(series.getStartY(0), -10 + series.getY(0), 0.0);
+        assertEquals(series.getStartY(5), -10 + series.getY(5), 0.0);
+        assertEquals(series.getStartY(55), -10 + series.getY(55), 0.0);
+        assertEquals(series.getStartY(100), -10 + series.getY(100), 0.0);
 
-        assertEquals(series.getEndY(0), 10 + series.getY(0));
-        assertEquals(series.getEndY(5), 10 + series.getY(5));
-        assertEquals(series.getEndY(55), 10 + series.getY(55));
-        assertEquals(series.getEndY(100), 10 + series.getY(100));
+        assertEquals(series.getEndY(0), 10 + series.getY(0), 0.0);
+        assertEquals(series.getEndY(5), 10 + series.getY(5), 0.0);
+        assertEquals(series.getEndY(55), 10 + series.getY(55), 0.0);
+        assertEquals(series.getEndY(100), 10 + series.getY(100), 0.0);
     }
 
+    @Test
     public void testRefreshingTable() {
         final BaseFigureImpl figure = new BaseFigureImpl();
         final ChartImpl chart = figure.newChart();
@@ -80,8 +84,7 @@ public class XYErrorBarDataSeriesTableArrayTest extends RefreshingTableTestCase 
         final XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(), 1, "Test", h,
                 "x", null, null, "y", "yLow", "yHigh", false, true);
 
-
-        assertEquals(series.getX(4), Double.NaN);
+        assertEquals(series.getX(4), Double.NaN, 0.0);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -89,11 +92,12 @@ public class XYErrorBarDataSeriesTableArrayTest extends RefreshingTableTestCase 
             refreshingTable.notifyListeners(i(7, 9), i(), i());
         });
 
-        assertEquals(5.0, series.getX(4));
-        assertEquals(4.0, series.getStartY(4));
-        assertEquals(6.0, series.getEndY(4));
+        assertEquals(5.0, series.getX(4), 0.0);
+        assertEquals(4.0, series.getStartY(4), 0.0);
+        assertEquals(6.0, series.getEndY(4), 0.0);
     }
 
+    @Test
     public void testCopy() {
         final BaseFigureImpl figure = new BaseFigureImpl();
         final ChartImpl chart = figure.newChart();
@@ -130,28 +134,28 @@ public class XYErrorBarDataSeriesTableArrayTest extends RefreshingTableTestCase 
     }
 
     private void testCopy(final XYErrorBarDataSeriesTableArray series, final XYErrorBarDataSeriesInternal copy) {
-        assertEquals(series.getX(0), copy.getX(0));
-        assertEquals(series.getX(5), copy.getX(5));
-        assertEquals(series.getX(10), copy.getX(10));
+        assertEquals(series.getX(0), copy.getX(0), 0.0);
+        assertEquals(series.getX(5), copy.getX(5), 0.0);
+        assertEquals(series.getX(10), copy.getX(10), 0.0);
 
-        assertEquals(series.getStartX(0), copy.getStartX(0));
-        assertEquals(series.getStartX(5), copy.getStartX(5));
-        assertEquals(series.getStartX(10), copy.getStartX(10));
+        assertEquals(series.getStartX(0), copy.getStartX(0), 0.0);
+        assertEquals(series.getStartX(5), copy.getStartX(5), 0.0);
+        assertEquals(series.getStartX(10), copy.getStartX(10), 0.0);
 
-        assertEquals(series.getEndX(0), copy.getEndX(0));
-        assertEquals(series.getEndX(5), copy.getEndX(5));
-        assertEquals(series.getEndX(10), copy.getEndX(10));
+        assertEquals(series.getEndX(0), copy.getEndX(0), 0.0);
+        assertEquals(series.getEndX(5), copy.getEndX(5), 0.0);
+        assertEquals(series.getEndX(10), copy.getEndX(10), 0.0);
 
-        assertEquals(series.getY(0), copy.getY(0));
-        assertEquals(series.getY(5), copy.getY(5));
-        assertEquals(series.getY(10), copy.getY(10));
+        assertEquals(series.getY(0), copy.getY(0), 0.0);
+        assertEquals(series.getY(5), copy.getY(5), 0.0);
+        assertEquals(series.getY(10), copy.getY(10), 0.0);
 
-        assertEquals(series.getStartY(0), copy.getStartY(0));
-        assertEquals(series.getStartY(5), copy.getStartY(5));
-        assertEquals(series.getStartY(10), copy.getStartY(10));
+        assertEquals(series.getStartY(0), copy.getStartY(0), 0.0);
+        assertEquals(series.getStartY(5), copy.getStartY(5), 0.0);
+        assertEquals(series.getStartY(10), copy.getStartY(10), 0.0);
 
-        assertEquals(series.getEndY(0), copy.getEndY(0));
-        assertEquals(series.getEndY(5), copy.getEndY(5));
-        assertEquals(series.getEndY(10), copy.getEndY(10));
+        assertEquals(series.getEndY(0), copy.getEndY(0), 0.0);
+        assertEquals(series.getEndY(5), copy.getEndY(5), 0.0);
+        assertEquals(series.getEndY(10), copy.getEndY(10), 0.0);
     }
 }

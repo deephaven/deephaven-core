@@ -376,7 +376,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                 coalescedParent.getRowSet(),
                 coalescedParent.getModifiedColumnSetForUpdates(),
                 coalescedParent.getAttributes());
-        coalescedParent.propagateFlatness(child);
+        coalescedParent.propagateFlatness(child, false);
 
         final List<ListenerRecorder> recorders = new ArrayList<>(1 + dependentValidations.length);
 
@@ -557,7 +557,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                 distinctKeys.getRowSet(),
                 distinctKeys.getModifiedColumnSetForUpdates(),
                 distinctKeys.getAttributes());
-        distinctKeys.propagateFlatness(validated);
+        distinctKeys.propagateFlatness(validated, false);
         distinctKeys
                 .addUpdateListener(new BaseTable.ListenerImpl("Non-overlapping Join Keys", distinctKeys, validated) {
                     @Override

@@ -15,7 +15,6 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
-import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.i;
+import static org.junit.Assert.*;
 
 public class TestBlinkTableTools {
 
@@ -45,8 +45,8 @@ public class TestBlinkTableTools {
         final Table appendOnly = BlinkTableTools.blinkToAppendOnly(blinkTable);
 
         assertTableEquals(blinkTable, appendOnly);
-        TestCase.assertEquals(true, appendOnly.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
-        TestCase.assertTrue(appendOnly.isFlat());
+        assertEquals(true, appendOnly.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
+        assertTrue(appendOnly.isFlat());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -71,6 +71,17 @@ public class TestBlinkTableTools {
                 TableTools.newTable(intCol("I", 7, 1, 2), doubleCol("D", Double.NEGATIVE_INFINITY, Math.PI, Math.E),
                         instantCol("DT", dt1, dt2, dt3), col("B", true, true, false)),
                 appendOnly);
+    }
+
+    @Test
+    public void testSizeLimitZero() {
+        final QueryTable blinkTable = TstUtils.testRefreshingTable(i(1).toTracking(), intCol("I", 7));
+        blinkTable.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+
+        final Table appendOnly = BlinkTableTools.blinkToAppendOnly(blinkTable, 0);
+        assertFalse(appendOnly.isRefreshing());
+        assertEquals(blinkTable.getDefinition(), appendOnly.getDefinition());
+        assertTableEquals(TableTools.newTable(blinkTable.getDefinition()), appendOnly);
     }
 
     @Test

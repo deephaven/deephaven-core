@@ -6,13 +6,14 @@ package io.deephaven.util.datastructures;
 import io.deephaven.base.reference.HardSimpleReference;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.util.mutable.MutableInt;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for {@link SimpleReferenceManager}.
@@ -42,23 +43,23 @@ public class TestSimpleReferenceManager {
         int expectedSum = 500 * (499 + 0) / 2;
         testSumExpectations(SUT, expectedSum);
 
-        Arrays.stream(refs, 0, 500).forEach(ref -> TestCase.assertSame(ref.get(),
+        Arrays.stream(refs, 0, 500).forEach(ref -> assertSame(ref.get(),
                 SUT.getFirstItem((final Integer other) -> ref.get() == other)));
-        Arrays.stream(refs, 0, 500).forEach(ref -> TestCase.assertSame(ref,
+        Arrays.stream(refs, 0, 500).forEach(ref -> assertSame(ref,
                 SUT.getFirstReference((final Integer other) -> ref.get() == other)));
 
         refs[200].clear();
         expectedSum -= 200;
-        TestCase.assertSame(refs[199].get(), SUT.getFirstItem((final Integer other) -> refs[199].get() == other));
-        TestCase.assertNull(SUT.getFirstItem((final Integer other) -> refs[200].get() == other));
-        TestCase.assertSame(refs[201].get(), SUT.getFirstItem((final Integer other) -> refs[201].get() == other));
+        assertSame(refs[199].get(), SUT.getFirstItem((final Integer other) -> refs[199].get() == other));
+        assertNull(SUT.getFirstItem((final Integer other) -> refs[200].get() == other));
+        assertSame(refs[201].get(), SUT.getFirstItem((final Integer other) -> refs[201].get() == other));
         testSumExpectations(SUT, expectedSum);
 
         refs[300].clear();
         expectedSum -= 300;
-        TestCase.assertSame(refs[299], SUT.getFirstReference((final Integer other) -> refs[299].get() == other));
-        TestCase.assertNull(SUT.getFirstReference((final Integer other) -> refs[300].get() == other));
-        TestCase.assertSame(refs[301], SUT.getFirstReference((final Integer other) -> refs[301].get() == other));
+        assertSame(refs[299], SUT.getFirstReference((final Integer other) -> refs[299].get() == other));
+        assertNull(SUT.getFirstReference((final Integer other) -> refs[300].get() == other));
+        assertSame(refs[301], SUT.getFirstReference((final Integer other) -> refs[301].get() == other));
         testSumExpectations(SUT, expectedSum);
 
         refs[400].clear();
@@ -86,9 +87,9 @@ public class TestSimpleReferenceManager {
             final int expectedSum) {
         final MutableInt sum = new MutableInt();
         SUT.forEach((ref, item) -> {
-            TestCase.assertSame(ref.get(), item);
+            assertSame(ref.get(), item);
             sum.add(item);
         });
-        TestCase.assertEquals(expectedSum, sum.get());
+        assertEquals(expectedSum, sum.get());
     }
 }

@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.MathUtil;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.join.dupcompact.DupCompactKernel;
@@ -47,7 +49,8 @@ class AsOfStampContext implements Context {
     private final StampKernel stampKernel;
 
     AsOfStampContext(SortingOrder order, boolean disallowExactMatch, ColumnSource<?> leftStampSource,
-            ColumnSource<?> rightStampSource, ColumnSource<?> originalRightStampSource) {
+            ColumnSource<?> rightStampSource, ColumnSource<?> originalRightStampSource,
+            boolean stampEqualsConsistent) {
         this.order = order;
         this.leftStampSource = leftStampSource;
         this.rightStampSource = rightStampSource;
@@ -60,8 +63,8 @@ class AsOfStampContext implements Context {
         }
         this.stampType = leftType;
         this.stampKernel = StampKernel.makeStampKernel(stampType, order, disallowExactMatch);
-        this.rightDupCompact =
-                DupCompactKernel.makeDupCompactDeephavenOrdering(stampType, order == SortingOrder.Descending);
+        this.rightDupCompact = DupCompactKernel.makeDupCompactDeephavenOrdering(stampType,
+                stampEqualsConsistent, order == SortingOrder.Descending);
     }
 
     private void ensureSortCapacity(int length) {
@@ -69,10 +72,12 @@ class AsOfStampContext implements Context {
             return;
         }
         if (length < 1 << 16) {
-            length = Integer.highestOneBit(length) * 2;
+            length = MathUtil.roundUpPowerOf2(length);
         }
         if (sortKernel != null) {
+            sortCapacity = -1;
             sortKernel.close();
+            sortKernel = null;
         }
         sortKernel = LongSortKernel.makeContext(stampType, order, length, true);
         sortCapacity = length;
@@ -83,7 +88,7 @@ class AsOfStampContext implements Context {
             return;
         }
         if (length < 1 << 16) {
-            length = Integer.highestOneBit(length) * 2;
+            length = MathUtil.roundUpPowerOf2(length);
         }
         ensureSortCapacity(length);
 
@@ -98,17 +103,22 @@ class AsOfStampContext implements Context {
     }
 
     private void closeLeftThings() {
+        leftCapacity = -1;
         if (leftStampChunk != null) {
             leftStampChunk.close();
+            leftStampChunk = null;
         }
         if (leftFillContext != null) {
             leftFillContext.close();
+            leftFillContext = null;
         }
         if (leftKeyIndicesChunk != null) {
             leftKeyIndicesChunk.close();
+            leftKeyIndicesChunk = null;
         }
         if (leftRedirections != null) {
             leftRedirections.close();
+            leftRedirections = null;
         }
     }
 
@@ -117,11 +127,13 @@ class AsOfStampContext implements Context {
             return;
         }
         if (length < 1 << 16) {
-            length = Integer.highestOneBit(length) * 2;
+            length = MathUtil.roundUpPowerOf2(length);
         }
         ensureSortCapacity(length);
         if (rightFillContext != null) {
+            rightFillCapacity = -1;
             rightFillContext.close();
+            rightFillContext = null;
         }
         rightFillContext = rightStampSource.makeFillContext(length);
         rightFillCapacity = length;
@@ -132,7 +144,7 @@ class AsOfStampContext implements Context {
             return;
         }
         if (length < 1 << 16) {
-            length = Integer.highestOneBit(length) * 2;
+            length = MathUtil.roundUpPowerOf2(length);
         }
         closeRightChunks();
 
@@ -142,11 +154,14 @@ class AsOfStampContext implements Context {
     }
 
     private void closeRightChunks() {
+        rightCapacity = -1;
         if (rightStampChunk != null) {
             rightStampChunk.close();
+            rightStampChunk = null;
         }
         if (rightKeyIndicesChunk != null) {
             rightKeyIndicesChunk.close();
+            rightKeyIndicesChunk = null;
         }
     }
 
@@ -193,7 +208,10 @@ class AsOfStampContext implements Context {
 
         sortKernel.sort(rightKeyIndicesChunk, rightStampChunk);
 
-        rightDupCompact.compactDuplicates(rightStampChunk, rightKeyIndicesChunk);
+        // the stamps were just sorted with the comparison the kernel uses, so only a stamp whose comparison is not a
+        // total order can leave one out of order
+        final int firstOutOfOrderPosition = rightDupCompact.compactDuplicates(rightStampChunk, rightKeyIndicesChunk);
+        Assert.eq(firstOutOfOrderPosition, "firstOutOfOrderPosition", -1);
     }
 
     /**

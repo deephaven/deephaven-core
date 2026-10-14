@@ -2,22 +2,17 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit ObjectNoExactReverseStampKernel and run "./gradlew replicateStampKernel" to regenerate
+// ****** Edit CharNoExactStampKernel and run "./gradlew replicateStampKernel" to regenerate
 //
 // @formatter:off
 
 package io.deephaven.engine.table.impl.join.stamp;
 
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
-
-import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
-
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.compare.ObjectComparisons;
 
 
 public class ObjectNoExactReverseStampKernel implements StampKernel {
@@ -100,7 +95,7 @@ public class ObjectNoExactReverseStampKernel implements StampKernel {
 
     private static boolean eq(Object lhs, Object rhs) {
         // region equality function
-        return Objects.equals(lhs, rhs);
+        return ObjectComparisons.compareEquals(lhs, rhs);
         // endregion equality function
     }
 }

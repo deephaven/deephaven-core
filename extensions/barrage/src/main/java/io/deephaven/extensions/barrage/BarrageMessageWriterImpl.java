@@ -1182,27 +1182,34 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             return view.addRowOffsets().intSize();
         }
 
-        // find the writer for the initial position-space key
-        final long startPos = view.addRowOffsets().get(startRange);
-        final int chunkIdx = findWriterForOffset(addColumnData[0].chunks(), startPos);
-
-        // adjust the batch size if we would cross a chunk boundary
+        final RowSet addRowOffsets = view.addRowOffsets();
+        int chunkIdx = 0;
         long shift = 0;
-        long endPos = view.addRowOffsets().get(startRange + targetBatchSize - 1);
-        if (endPos == RowSet.NULL_ROW_KEY) {
-            endPos = Long.MAX_VALUE;
-        }
-        if (addColumnData[0].chunks().length != 0) {
-            final ChunkWriter.Context writer = addColumnData[0].chunks()[chunkIdx];
-            endPos = Math.min(endPos, writer.getLastRowOffset());
-            shift = -writer.getRowOffset();
+        final WritableRowSet myAddedOffsets;
+        if (startRange >= addRowOffsets.size()) {
+            // nothing is left to add, but every column must still write an empty field node
+            myAddedOffsets = RowSetFactory.empty();
+        } else {
+            // find the writer for the initial position-space key
+            final long startPos = addRowOffsets.get(startRange);
+            chunkIdx = findWriterForOffset(addColumnData[0].chunks(), startPos);
+
+            // adjust the batch size if we would cross a chunk boundary
+            long endPos = addRowOffsets.get(startRange + targetBatchSize - 1);
+            if (endPos == RowSet.NULL_ROW_KEY) {
+                endPos = Long.MAX_VALUE;
+            }
+            if (addColumnData[0].chunks().length != 0) {
+                final ChunkWriter.Context writer = addColumnData[0].chunks()[chunkIdx];
+                endPos = Math.min(endPos, writer.getLastRowOffset());
+                shift = -writer.getRowOffset();
+            }
+            myAddedOffsets = addRowOffsets.subSetByKeyRange(startPos, endPos);
         }
 
         // all column writers have the same boundaries, so we can re-use the offsets internal to this chunkIdx
         final DictionaryWriterRegistry dictionaryRegistry = view.dictionaryRegistry();
-        try (final RowSet allowedRange = RowSetFactory.fromRange(startPos, endPos);
-                final WritableRowSet myAddedOffsets =
-                        view.addRowOffsets().intersect(allowedRange);
+        try (myAddedOffsets;
                 final RowSet adjustedOffsets = shift == 0 ? null : myAddedOffsets.shift(shift)) {
             // every column must write to the stream
             for (final ColumnChunksWriter<Chunk<Values>> chunkListWriter : addColumnData) {
@@ -1300,8 +1307,12 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             final ChunkWriter.FieldNodeListener fieldNodeListener,
             final ChunkWriter.BufferListener bufferListener,
             final ColumnChunksWriter<Chunk<Values>> chunkListWriter) throws IOException {
-        // use an empty writer to publish the column data
-        final ChunkWriter.DrainableColumn drainableColumn = chunkListWriter.empty(view.options());
+        // use an empty writer to publish the column data. Forward the registry so a dictionary-encoded writer nested
+        // inside a composite writer (e.g. the values child of a run-end-encoded column) still registers its
+        // dictionary state -- and gets its initial isDelta=false DictionaryBatch emitted -- even when this column's
+        // very first batch carries no rows (e.g. a freshly-created ticking table's initial, still-empty snapshot).
+        final ChunkWriter.DrainableColumn drainableColumn =
+                chunkListWriter.empty(view.options(), view.dictionaryRegistry());
         drainableColumn.visitFieldNodes(fieldNodeListener);
         drainableColumn.visitBuffers(bufferListener);
         return drainableColumn;
@@ -1372,9 +1383,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 // not all mod columns have the same length
                 myModOffsets = RowSetFactory.empty();
             } else if (modOffsets != null) {
-                try (final RowSet allowedRange = RowSetFactory.fromRange(startPos, endPos)) {
-                    myModOffsets = modOffsets.intersect(allowedRange);
-                }
+                myModOffsets = modOffsets.subSetByKeyRange(startPos, endPos);
             } else {
                 myModOffsets = RowSetFactory.fromRange(startPos, endPos);
             }

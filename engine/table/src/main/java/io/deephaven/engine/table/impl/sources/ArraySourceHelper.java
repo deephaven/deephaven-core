@@ -15,6 +15,7 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.util.copy.CopyKernel;
 import io.deephaven.engine.updategraph.UpdateCommitter;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
@@ -30,6 +31,27 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
      */
     protected transient UpdateCommitter<ArraySourceHelper<T, UArray>> prevFlusher = null;
     protected transient IntArrayList prevAllocated = null;
+
+    /**
+     * The in-use bitset of every block allocated during the current update cycle, with every bit set, so that writes to
+     * the block record no previous values and reads of its previous values see the {@link #sharedFreshPrevBlock
+     * read-only block} of the values it was allocated with. It is never written.
+     */
+    static final long[] FRESH_IN_USE = makeFreshInUse();
+    /** The value of {@link #firstFreshBlock} when no block has been allocated during the current update cycle. */
+    private static final int NO_FIRST_FRESH_BLOCK = Integer.MAX_VALUE;
+    /**
+     * The first block allocated during the current update cycle, or {@link #NO_FIRST_FRESH_BLOCK} if none was. Blocks
+     * are only ever allocated after every other, so every block allocated during the cycle is at or after it, and
+     * commit scans upward from it to clear their previous-value entries.
+     */
+    private transient int firstFreshBlock = NO_FIRST_FRESH_BLOCK;
+
+    private static long[] makeFreshInUse() {
+        final long[] inUse = new long[IN_USE_BLOCK_SIZE];
+        Arrays.fill(inUse, -1L);
+        return inUse;
+    }
 
     /**
      * If ensure previous has been called, we need not check previous values when filling.
@@ -119,12 +141,24 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         // Allocate storage up to 'requestedNumBlocks' (not roundedNumBlocks). The difference is that the array size may
         // double, but we only allocate the minimum number of blocks needed. Put another way, we only allocate blocks up
         // to the requested capacity, not all the way up to (the capacity rounded to the next power of two).
+        // When a block is allocated during an update cycle, there are no previous values to preserve. Therefore, all
+        // freshly-allocated blocks share read-only arrays for their prevBlocks and prevInUse entries. There is a single
+        // in-use array, and one previous-value array for each element type and shape, where the shape is whether the
+        // block is null-filled or zeroed.
+        final boolean markFresh = prevFlusher != null && allocatedNumBlocks < requestedNumBlocks
+                && updateGraph.clock().currentState() == LogicalClock.State.Updating;
         for (int ii = allocatedNumBlocks; ii < requestedNumBlocks; ++ii) {
-            if (nullFilled) {
-                blocks[ii] = allocateNullFilledBlock(BLOCK_SIZE);
-            } else {
-                blocks[ii] = allocateBlock(BLOCK_SIZE);
+            blocks[ii] = allocateBlock(BLOCK_SIZE, nullFilled);
+            if (markFresh) {
+                prevBlocks[ii] = sharedFreshPrevBlock(BLOCK_SIZE, nullFilled);
+                prevInUse[ii] = FRESH_IN_USE;
             }
+        }
+        if (markFresh) {
+            // This correctly updates the minimum both in the initial case (where firstFreshBlock ==
+            // NO_FIRST_FRESH_BLOCK) and subsequent cases.
+            firstFreshBlock = Math.min(firstFreshBlock, allocatedNumBlocks);
+            prevFlusher.maybeActivate();
         }
         // Note: if we get this far, requestedMaxIndex > maxIndex, so this will always increase maxIndex.
         maxIndex = requestedMaxIndex;
@@ -209,6 +243,18 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     }
 
     private void commitBlocks() {
+        if (firstFreshBlock != NO_FIRST_FRESH_BLOCK) {
+            final UArray[] prevBlocks = getPrevBlocks();
+            final int allocatedBlocks = (int) Math.min(prevInUse.length, (maxIndex + 1) >> LOG_BLOCK_SIZE);
+            // a block the range skipped, as ensureCapacityLike does, was never pointed at the shared entries
+            for (int block = firstFreshBlock; block < allocatedBlocks; ++block) {
+                if (prevInUse[block] == FRESH_IN_USE) {
+                    prevBlocks[block] = null;
+                    prevInUse[block] = null;
+                }
+            }
+            firstFreshBlock = NO_FIRST_FRESH_BLOCK;
+        }
         if (prevAllocated == null) {
             return;
         }
@@ -250,9 +296,29 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
 
     abstract void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
 
-    abstract UArray allocateNullFilledBlock(int size);
+    /**
+     * @param size the size of the block, which must be {@link #BLOCK_SIZE}
+     * @param nullFilled whether the block's values were allocated null-filled, rather than the element type's default
+     * @return a block, shared and never written, of the values a block is allocated with, as the previous values of a
+     *         block allocated during the current update cycle
+     * @throws IllegalArgumentException if {@code size} is not {@link #BLOCK_SIZE}, the only size of shared block
+     */
+    abstract UArray sharedFreshPrevBlock(int size, boolean nullFilled);
 
-    abstract UArray allocateBlock(int size);
+    /**
+     * @return whether the block was allocated during the current update cycle, so that its previous values are the ones
+     *         it was allocated with and must not be written
+     */
+    final boolean isFreshBlock(final int block) {
+        return prevInUse[block] == FRESH_IN_USE;
+    }
+
+    /**
+     * @param size the size of the block
+     * @param nullFilled whether to fill the block with the element type's null, rather than its default
+     * @return a newly allocated block
+     */
+    abstract UArray allocateBlock(int size, boolean nullFilled);
 
     abstract void resetBlocks(UArray[] newBlocks, UArray[] newPrev);
 

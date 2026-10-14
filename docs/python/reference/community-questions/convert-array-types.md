@@ -1,6 +1,5 @@
 ---
 title: How do I convert a vector column to a primitive array column?
-sidebar_label: How do I convert vector columns to primitive array columns?
 ---
 
 _How can I convert a Deephaven vector column to a primitive array column in Deephaven?_

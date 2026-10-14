@@ -9,7 +9,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.TableTransformationColumn;
@@ -24,7 +23,6 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
-import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -793,7 +791,16 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
-        final MutableLong minCost = new MutableLong(PushdownResult.UNSUPPORTED_ACTION_COST);
+        if (ctx.matchers.isEmpty()) {
+            // No constituent that overlaps the selection can push the filter down.
+            onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
+            return;
+        }
+
+        final long[] costs = new long[ctx.matchers.size()];
+        Arrays.fill(costs, PushdownResult.UNSUPPORTED_ACTION_COST);
+        final WritableRowSet[] localSelections = new WritableRowSet[ctx.matchers.size()];
+        // Close on success and failure to ensure no resource leaks.
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
@@ -805,30 +812,28 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
                     final long firstRowKey = ctx.firstRowKeys.getLong(idx);
                     final long lastRowKey = ctx.lastRowKeys.getLong(idx);
-                    try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
-                        if (localSelection.isEmpty()) {
-                            // No rows remain for this constituent, so we can skip it.
-                            resume.run();
-                            return;
-                        }
-                        // Shift to local space and delegate to the constituent matcher.
-                        localSelection.shiftInPlace(-firstRowKey);
-                        final RowSet localSelectionCopy = localSelection.copy();
-                        matcher.estimatePushdownFilterCost(
-                                filter, localSelectionCopy, usePrev, ctx.contexts.get(idx), jobScheduler,
-                                cost -> {
-                                    synchronized (minCost) {
-                                        minCost.set(Math.min(minCost.get(), cost));
-                                    }
-                                    localSelectionCopy.close();
-                                    resume.run();
-                                }, nec);
+                    final WritableRowSet localSelection =
+                            localSelections[idx] = selection.subSetByKeyRange(firstRowKey, lastRowKey);
+                    if (localSelection.isEmpty()) {
+                        // No rows remain for this constituent, so we can skip it.
+                        resume.run();
+                        return;
                     }
+                    // Shift to local space and delegate to the constituent matcher.
+                    localSelection.shiftInPlace(-firstRowKey);
+                    matcher.estimatePushdownFilterCost(
+                            filter, localSelection, usePrev, ctx.contexts.get(idx), jobScheduler,
+                            cost -> {
+                                costs[idx] = cost;
+                                resume.run();
+                            }, nec);
                 },
-                () -> onComplete.accept(minCost.get()),
-                () -> {
-                }, // no cleanup needed
-                onError);
+                () -> onComplete.accept(Arrays.stream(costs).min().getAsLong()),
+                () -> SafeCloseableArray.close(localSelections),
+                e -> {
+                    SafeCloseable.closeAllDuringFailure(e, localSelections);
+                    onError.accept(e);
+                });
     }
 
     @Override
@@ -844,9 +849,16 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         final UnionSourcePushdownFilterContext ctx = (UnionSourcePushdownFilterContext) context;
         ctx.initialize(selection, usePrev);
+        if (ctx.matchers.isEmpty()) {
+            // No constituent that overlaps the selection can push the filter down, so every row is a maybe.
+            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+            return;
+        }
 
         final WritableRowSet[] matches = new WritableRowSet[ctx.matchers.size()];
         final WritableRowSet[] maybeMatches = new WritableRowSet[ctx.matchers.size()];
+        final WritableRowSet[] localSelections = new WritableRowSet[ctx.matchers.size()];
+        // Close on success and failure to ensure no resource leaks.
 
         jobScheduler.iterateParallel(
                 ExecutionContext.getContext(),
@@ -858,58 +870,74 @@ public class UnionSourceManager implements PushdownPredicateManager {
                     final PushdownFilterMatcher matcher = ctx.matchers.get(idx);
                     final long firstRowKey = ctx.firstRowKeys.getLong(idx);
                     final long lastRowKey = ctx.lastRowKeys.getLong(idx);
-                    try (final WritableRowSet localSelection = selection.subSetByKeyRange(firstRowKey, lastRowKey)) {
-                        if (localSelection.isEmpty()) {
-                            matches[idx] = RowSetFactory.empty();
-                            maybeMatches[idx] = RowSetFactory.empty();
-                            resume.run();
-                            return;
-                        }
-                        localSelection.shiftInPlace(-firstRowKey);
-                        final RowSet localSelectionCopy = localSelection.copy();
-                        matcher.pushdownFilter(
-                                filter, localSelectionCopy, usePrev, ctx.contexts.get(idx), costCeiling, jobScheduler,
-                                result -> {
-                                    result.match().shiftInPlace(firstRowKey);
-                                    result.maybeMatch().shiftInPlace(firstRowKey);
-
-                                    matches[idx] = result.match();
-                                    maybeMatches[idx] = result.maybeMatch();
-
-                                    localSelectionCopy.close();
-                                    resume.run();
-                                }, nec);
+                    final WritableRowSet localSelection =
+                            localSelections[idx] = selection.subSetByKeyRange(firstRowKey, lastRowKey);
+                    if (localSelection.isEmpty()) {
+                        matches[idx] = RowSetFactory.empty();
+                        maybeMatches[idx] = RowSetFactory.empty();
+                        resume.run();
+                        return;
                     }
+                    localSelection.shiftInPlace(-firstRowKey);
+                    matcher.pushdownFilter(
+                            filter, localSelection, usePrev, ctx.contexts.get(idx), costCeiling, jobScheduler,
+                            result -> {
+                                result.match().shiftInPlace(firstRowKey);
+                                result.maybeMatch().shiftInPlace(firstRowKey);
+
+                                matches[idx] = result.match();
+                                maybeMatches[idx] = result.maybeMatch();
+
+                                resume.run();
+                            }, nec);
                 },
                 () -> {
-                    // Note: it's not obvious what the best approach for building these RowSets is; that is, sequential
-                    // insertion vs sequential builder. We know that the individual results are ordered and
-                    // non-overlapping.
-                    // If this becomes important, we can do more benchmarking.
-                    try (final WritableRowSet match = RowSetFactory.unionInsert(Arrays.asList(matches));
-                            final WritableRowSet maybeMatch = RowSetFactory.unionInsert(Arrays.asList(maybeMatches))) {
-                        // Insert the rows from the constituents that don't support pushdown.
-                        maybeMatch.insert(ctx.maybeMatch);
+                    // The per constituent results are ordered and non-overlapping, which RowSetFactory.union merges
+                    // by appending.
+                    try (final WritableRowSet match = RowSetFactory.union(matches);
+                            final WritableRowSet maybeMatch = RowSetFactory.union(maybeMatches)) {
+                        // Selected rows outside every pushdown constituent are "maybe" rows: those of constituents
+                        // that cannot push down, and of any the context did not see when it was initialized.
+                        try (final WritableRowSet uncovered = selection.minus(ctx.pushdownKeys)) {
+                            maybeMatch.subsume(uncovered);
+                        }
                         onComplete.accept(PushdownResult.of(selection, match, maybeMatch));
                     }
                 },
                 () -> {
+                    SafeCloseableArray.close(localSelections);
                     SafeCloseableArray.close(matches);
                     SafeCloseableArray.close(maybeMatches);
                 },
-                onError);
+                e -> {
+                    SafeCloseable.closeAllDuringFailure(e, localSelections);
+                    SafeCloseable.closeAllDuringFailure(e, matches);
+                    SafeCloseable.closeAllDuringFailure(e, maybeMatches);
+                    onError.accept(e);
+                });
     }
 
-    public static class UnionSourcePushdownFilterContext extends BasePushdownFilterContextImpl {
+    /**
+     * Pushdown context for a filter over {@link UnionColumnSource union sources}. The context is initialized once, by
+     * the first {@link #estimatePushdownFilterCost estimate} or {@link #pushdownFilter pushdown} call, and caches only
+     * the constituents that overlapped that selection and support pushdown, with the key ranges they occupy. Every call
+     * derives the rows it reports from the selection it was given; selected rows outside the cached ranges are always
+     * "maybe", so a selection the context has not seen is answered correctly, if less selectively.
+     */
+    public static class UnionSourcePushdownFilterContext extends ForwardingPushdownFilterContext {
         final UnionSourceManager manager;
-        final WritableRowSet maybeMatch;
         final Map<String, String> renameMap;
 
         boolean initialized = false;
-        List<PushdownFilterMatcher> matchers;
-        LongArrayList firstRowKeys;
-        LongArrayList lastRowKeys;
-        List<io.deephaven.engine.table.impl.PushdownFilterContext> contexts;
+
+        /** Per constituent that supports pushdown: its matcher, its key range in the union, and its own context. */
+        final ArrayList<PushdownFilterMatcher> matchers = new ArrayList<>();
+        final LongArrayList firstRowKeys = new LongArrayList();
+        final LongArrayList lastRowKeys = new LongArrayList();
+        final ArrayList<io.deephaven.engine.table.impl.PushdownFilterContext> contexts = new ArrayList<>();
+
+        /** The union of the key ranges in {@link #firstRowKeys} and {@link #lastRowKeys}. */
+        final WritableRowSet pushdownKeys = RowSetFactory.empty();
 
         public UnionSourcePushdownFilterContext(
                 @NotNull final WhereFilter filter,
@@ -917,7 +945,6 @@ public class UnionSourceManager implements PushdownPredicateManager {
                 @NotNull final UnionSourceManager manager) {
             super(filter, columnSources);
             this.manager = Require.neqNull(manager, "manager");
-            maybeMatch = RowSetFactory.empty();
 
             final List<String> filterColumns = filter.getColumns();
             Require.eq(filterColumns.size(), "filterColumns.size()",
@@ -929,7 +956,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
         /**
          * Initialize the context with the selection and whether to use previous values. This must be called before
-         * using the context.
+         * using the context to estimate or execute a filter; a context that is never initialized can still be
+         * {@link #close() closed}.
          *
          * @param selection The selection of row keys to filter
          * @param usePrev Whether to use previous values for filtering
@@ -945,11 +973,10 @@ public class UnionSourceManager implements PushdownPredicateManager {
 
             final RowSet rowSetToUse = usePrev ? manager.constituentRows.prev() : manager.constituentRows;
             final int constituentCount = rowSetToUse.intSize();
-
-            matchers = new ArrayList<>(constituentCount);
-            contexts = new ArrayList<>(constituentCount);
-            firstRowKeys = new LongArrayList(constituentCount);
-            lastRowKeys = new LongArrayList(constituentCount);
+            matchers.ensureCapacity(constituentCount);
+            contexts.ensureCapacity(constituentCount);
+            firstRowKeys.ensureCapacity(constituentCount);
+            lastRowKeys.ensureCapacity(constituentCount);
 
             // Use a 0-based slot counter for unionRedirection lookups (which are position-indexed, not
             // row-key-indexed). Slot positions diverge from constituentRows row keys when
@@ -957,6 +984,8 @@ public class UnionSourceManager implements PushdownPredicateManager {
             try (final ObjectColumnIterator<Table> constituents = usePrev
                     ? manager.prevConstituentIter(rowSetToUse)
                     : manager.currConstituentIter(rowSetToUse)) {
+                // Slots are visited in key order, so the pushdown ranges arrive ordered and non-overlapping.
+                final RowSetBuilderSequential pushdownKeysBuilder = RowSetFactory.builderSequential();
                 int slot = 0;
                 while (constituents.hasNext()) {
                     final Table constituent = constituents.next();
@@ -976,27 +1005,32 @@ public class UnionSourceManager implements PushdownPredicateManager {
                         final PushdownFilterMatcher matcher =
                                 PushdownFilterMatcher.getPushdownFilterMatcher(filter(), filterSources);
 
+                        // A constituent that cannot push the filter down is left out; pushdownFilter reports its rows.
                         if (matcher != null) {
+                            final io.deephaven.engine.table.impl.PushdownFilterContext constituentContext =
+                                    matcher.makePushdownFilterContext(filter(), filterSources);
+                            addChildContext(constituentContext);
                             matchers.add(matcher);
-                            contexts.add(matcher.makePushdownFilterContext(filter(), filterSources));
+                            contexts.add(constituentContext);
                             firstRowKeys.add(firstKey);
                             lastRowKeys.add(lastKey);
-                        } else {
-                            // Skip this table, but save the rows from this constituent as "maybe"
-                            try (final RowSet localSelection = selection.subSetByKeyRange(firstKey, lastKey)) {
-                                maybeMatch.insert(localSelection);
-                            }
+                            pushdownKeysBuilder.appendRange(firstKey, lastKey);
                         }
                     }
                     ++slot;
+                }
+                try (final WritableRowSet built = pushdownKeysBuilder.build()) {
+                    pushdownKeys.subsume(built);
                 }
             }
         }
 
         @Override
         public void close() {
-            contexts.forEach(io.deephaven.engine.table.impl.PushdownFilterContext::close);
-            super.close();
+            // Closes pushdownKeys, then super.close() (which closes the constituent contexts) even if the first fails.
+            try (final SafeCloseable ignoredSuper = super::close) {
+                pushdownKeys.close();
+            }
         }
     }
 

@@ -124,6 +124,10 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
             }
             head = Math.max(head, minPos.get());
             tail = Math.min(tail, maxPos);
+            if (head > tail) {
+                // A window that excludes the current row can be empty for a short range.
+                return;
+            }
             builder.appendRange(head, tail);
             minPos.set(tail + 1);
         });
@@ -197,9 +201,9 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
         if (upstream.modified().isNonempty() && ctx.inputModified) {
             // compute the rows affected from these changes
             try (final WritableRowSet modifiedInverted = ctx.sourceRowSet.invert(upstream.modified());
-                    final RowSet modifiedAffected =
+                    final WritableRowSet modifiedAffected =
                             computeAffectedRowsTicks(ctx.sourceRowSet, modifiedInverted, prevUnits, fwdUnits)) {
-                tmpAffected.insert(modifiedAffected);
+                tmpAffected.subsume(modifiedAffected);
             }
         }
 
@@ -209,8 +213,9 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
             final long fwd = Math.max(0, fwdUnits);
 
             try (final RowSet addedInverted = ctx.sourceRowSet.invert(upstream.added());
-                    final RowSet addedAffected = computeAffectedRowsTicks(ctx.sourceRowSet, addedInverted, prev, fwd)) {
-                tmpAffected.insert(addedAffected);
+                    final WritableRowSet addedAffected =
+                            computeAffectedRowsTicks(ctx.sourceRowSet, addedInverted, prev, fwd)) {
+                tmpAffected.subsume(addedAffected);
             }
         }
 
@@ -227,7 +232,7 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
                 upstream.shifted().apply(removedAffected);
                 // retain only the rows that still exist in the sourceRowSet
                 removedAffected.retain(ctx.sourceRowSet);
-                tmpAffected.insert(removedAffected);
+                tmpAffected.subsume(removedAffected);
             }
         }
 

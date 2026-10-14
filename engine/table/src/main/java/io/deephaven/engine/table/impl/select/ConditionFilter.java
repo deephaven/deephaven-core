@@ -38,6 +38,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -54,7 +55,13 @@ public class ConditionFilter extends AbstractConditionFilter {
     protected static final String CLASS_NAME = "GeneratedFilterKernel";
 
     private Future<Class<?>> filterKernelClassFuture = null;
-    private List<Pair<String, Class<?>>> usedInputs; // that is columns and special variables
+    /**
+     * The columns and special variables used by this filter, paired with the types the generated kernel consumes them
+     * as. Assigned by {@link #getClassBody}, which {@link AbstractConditionFilter#checkAndInitializeVectorization}
+     * skips for a vectorizable Python function (it installs a chunk filter and marks the filter initialized instead).
+     * Never null, so that {@link #permitParallelization()} is answerable on that path too.
+     */
+    private List<Pair<String, Class<?>>> usedInputs = List.of();
     private String classBody;
     private Filter filter = null;
     private boolean pythonFilter = false;
@@ -83,6 +90,27 @@ public class ConditionFilter extends AbstractConditionFilter {
         return createConditionFilter(formula, FormulaParserConfiguration.parser);
     }
 
+    /**
+     * Return an {@link Optional} containing the {@link ConditionFilter} that implements the provided filter: the filter
+     * itself when it is a {@link ConditionFilter}, or the {@link ConditionFilter} that a {@link MatchFilter} or
+     * {@link RangeFilter} is implemented by. Otherwise returns {@code Optional.empty()}.
+     *
+     * @param filter an initialized filter
+     * @return the {@link ConditionFilter} that implements {@code filter}, if any
+     */
+    public static Optional<ConditionFilter> extractConditionFilter(@NotNull final WhereFilter filter) {
+        if (filter instanceof ConditionFilter) {
+            return Optional.of((ConditionFilter) filter);
+        }
+        if (filter instanceof MatchFilter) {
+            return Optional.ofNullable(((MatchFilter) filter).getFailoverFilter());
+        }
+        if (filter instanceof RangeFilter && ((RangeFilter) filter).getRealFilter() instanceof ConditionFilter) {
+            return Optional.of((ConditionFilter) ((RangeFilter) filter).getRealFilter());
+        }
+        return Optional.empty();
+    }
+
     public static WhereFilter createStateless(@NotNull String formula) {
         return new ConditionFilter(formula) {
             @Override
@@ -98,9 +126,30 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     /**
      * Get the number of inputs (columns and special variables) used by this filter.
+     *
+     * <p>
+     * The count is derived from the formula analysis that {@link #init(TableDefinition)} performs, so it is answerable
+     * for every initialized filter, including one initialized from a vectorizable Python function, which never runs
+     * {@link #getClassBody}. Returns {@code 0} before initialization.
+     * </p>
      */
     public int getNumInputsUsed() {
-        return usedInputs.size();
+        if (usedColumns == null) {
+            return 0;
+        }
+        // usedColumns holds no duplicates, but the vectorized Python path records i/ii/k in it as well as in the flags,
+        // so count a flag only when its variable is not already there.
+        int count = usedColumns.size();
+        if (usesI && !usedColumns.contains("i")) {
+            ++count;
+        }
+        if (usesII && !usedColumns.contains("ii")) {
+            ++count;
+        }
+        if (usesK && !usedColumns.contains("k")) {
+            ++count;
+        }
+        return count;
     }
 
     public interface FilterKernel<CONTEXT extends FilterKernel.Context> {
@@ -673,7 +722,6 @@ public class ConditionFilter extends AbstractConditionFilter {
         indenter.indent(classBody, "" +
                 "final boolean __newResult = " + result.getConvertedExpression() + ";\n" +
                 "__results.set(__my_i__, __newResult);\n" +
-                "__results.set(__my_i__, __newResult);\n" +
                 "// increment the count if the new result is TRUE\n" +
                 "__count += __newResult ? 1 : 0;\n");
 
@@ -761,6 +809,9 @@ public class ConditionFilter extends AbstractConditionFilter {
             copy.filterKernelClassFuture = filterKernelClassFuture;
             copy.usedInputs = usedInputs;
             copy.classBody = classBody;
+            // The copy is a Python filter iff this one is; permitParallelization() consults the marker to decide
+            // whether the interpreter's threading model allows parallel evaluation.
+            copy.pythonFilter = pythonFilter;
             if (filterValidForCopy) {
                 copy.filter = filter;
             }

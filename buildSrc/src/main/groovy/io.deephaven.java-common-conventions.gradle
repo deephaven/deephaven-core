@@ -13,3 +13,12 @@ tasks.named(LifecycleBasePlugin.CLEAN_TASK_NAME) {
     Delete d ->
         d.delete('out')
 }
+
+// Tools that import this build through the Gradle Tooling API's Eclipse model, whether IDEs (Eclipse Buildship, VS Code)
+// or coding agents (through an Eclipse JDT LS plugin), apply the eclipse plugin themselves and by default compile into
+// <project>/bin/. Keep that output under the build directory instead. Regular builds never apply the eclipse plugin, so
+// this has no effect on them.
+pluginManager.withPlugin('eclipse') {
+    eclipse.classpath.baseSourceOutputDir = layout.buildDirectory.dir('eclipse')
+    eclipse.classpath.defaultOutputDir = layout.buildDirectory.dir('eclipse/default').get().asFile
+}

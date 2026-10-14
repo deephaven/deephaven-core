@@ -15,7 +15,6 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,26 +44,12 @@ public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Value
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final ChunkWriter.Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
-        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> {
-            if (objectChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final ChunkWriter.Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(objectChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(objectChunk.isNull((int) row)));
     }
 
     @Override
@@ -277,12 +262,15 @@ public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Value
             // write the validity array with LSB indexing
             bytesWritten += writeValidityBuffer(dos);
 
-            // write offsets array
+            // Write the offsets array in bounded windows, flushing a full window with a single bulk write rather than
+            // one DataOutput int — i.e. four individual byte writes — per element.
             if (mode == ListChunkReader.Mode.VARIABLE) {
                 // write down only offset (+1) buffer
                 final WritableIntChunk<ChunkPositions> offsetsToUse = myOffsets == null ? context.offsets : myOffsets;
-                for (int i = 0; i < offsetsToUse.size(); ++i) {
-                    dos.writeInt(offsetsToUse.get(i));
+                try (final BulkIntWriter offsetWriter = new BulkIntWriter(outputStream)) {
+                    for (int i = 0; i < offsetsToUse.size(); ++i) {
+                        offsetWriter.write(offsetsToUse.get(i));
+                    }
                 }
                 bytesWritten += ((long) offsetsToUse.size()) * Integer.BYTES;
                 bytesWritten += writePadBuffer(dos, bytesWritten);
@@ -291,15 +279,19 @@ public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Value
                 final WritableIntChunk<ChunkPositions> offsetsToUse = myOffsets == null ? context.offsets : myOffsets;
 
                 // note that we have one extra offset because we keep dense offsets internally
-                for (int i = 0; i < offsetsToUse.size() - 1; ++i) {
-                    dos.writeInt(offsetsToUse.get(i));
+                try (final BulkIntWriter offsetWriter = new BulkIntWriter(outputStream)) {
+                    for (int i = 0; i < offsetsToUse.size() - 1; ++i) {
+                        offsetWriter.write(offsetsToUse.get(i));
+                    }
                 }
                 bytesWritten += ((long) offsetsToUse.size() - 1) * Integer.BYTES;
                 bytesWritten += writePadBuffer(dos, bytesWritten);
 
                 // write down length buffer
-                for (int i = 0; i < offsetsToUse.size() - 1; ++i) {
-                    dos.writeInt(offsetsToUse.get(i + 1) - offsetsToUse.get(i));
+                try (final BulkIntWriter lengthWriter = new BulkIntWriter(outputStream)) {
+                    for (int i = 0; i < offsetsToUse.size() - 1; ++i) {
+                        lengthWriter.write(offsetsToUse.get(i + 1) - offsetsToUse.get(i));
+                    }
                 }
                 bytesWritten += ((long) offsetsToUse.size() - 1) * Integer.BYTES;
                 bytesWritten += writePadBuffer(dos, bytesWritten);

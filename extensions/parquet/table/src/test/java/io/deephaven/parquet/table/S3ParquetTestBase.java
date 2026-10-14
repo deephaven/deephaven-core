@@ -20,7 +20,6 @@ import io.deephaven.extensions.s3.testlib.S3SeekableChannelTestSetup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.channel.CachedChannelProvider;
 import io.deephaven.util.channel.SeekableChannelsProvider;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,8 +48,7 @@ import static io.deephaven.parquet.table.ParquetTools.writeKeyValuePartitionedTa
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTables;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
@@ -177,7 +175,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
                 .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
         try {
             ParquetTools.writeTable(badTable, fileUri.toString(), instructions);
-            TestCase.fail("Exception expected for invalid formula");
+            fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);
@@ -216,7 +214,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         try {
             writeTables(new Table[] {firstTable, badTable},
                     new String[] {firstFileUri.toString(), secondFileUri.toString()}, instructions);
-            TestCase.fail("Exception expected for invalid formula");
+            fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof UncheckedDeephavenException);
             assertTrue(e.getCause().getCause() instanceof FormulaEvaluationException);

@@ -15,11 +15,11 @@ import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.util.SafeCloseable;
-import junit.framework.TestCase;
 
 import java.util.*;
 
 import static io.deephaven.engine.table.impl.dataindex.DataIndexUtils.lookupKeysEqual;
+import static org.junit.Assert.*;
 
 /**
  * This class listens to a table and on each update verifies that the indexes returned by the table's RowSet for a set
@@ -160,6 +160,6 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
     @Override
     public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         originalException.printStackTrace();
-        TestCase.fail("Failure for context " + context + ": " + originalException.getMessage());
+        fail("Failure for context " + context + ": " + originalException.getMessage());
     }
 }

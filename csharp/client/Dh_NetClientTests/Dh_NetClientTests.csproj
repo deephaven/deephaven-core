@@ -2,6 +2,10 @@
 
   <PropertyGroup>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <!-- TUnit's package props set this anyway, but they are not loaded during a cold
+         restore; without it declared here, restore evaluates the project as a Library
+         and skips downloading the AppHost pack that the build then needs. -->
+    <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
@@ -13,7 +17,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="TUnit" Version="1.56.0" />
   </ItemGroup>
 

@@ -3,19 +3,23 @@
 //
 package io.deephaven.plot;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class TestFont extends BaseArrayTestCase {
+import static org.junit.Assert.*;
 
+public class TestFont {
+
+    @Test
     public void testFontMisc() {
         assertTrue(Font.fontFamilyNames().length > 2);
         assertTrue(Font.fontStyleNames().length > 2);
     }
 
+    @Test
     public void testStyle() {
         try {
             // noinspection ConstantConditions
@@ -28,8 +32,6 @@ public class TestFont extends BaseArrayTestCase {
         assertEquals(Font.FontStyle.BOLD.mask(), java.awt.Font.BOLD);
         assertEquals(Font.FontStyle.ITALIC.mask(), java.awt.Font.ITALIC);
         assertEquals(Font.FontStyle.BOLD_ITALIC.mask(), java.awt.Font.BOLD | java.awt.Font.ITALIC);
-
-
 
         assertEquals(Font.FontStyle.PLAIN, Font.fontStyle("plain"));
         assertEquals(Font.FontStyle.PLAIN, Font.fontStyle("PLAIN"));
@@ -51,12 +53,12 @@ public class TestFont extends BaseArrayTestCase {
         assertEquals(target, new HashSet<String>(Arrays.asList(Font.fontStyleNames())));
     }
 
+    @Test
     public void testConstructors() {
         assertEquals(new Font("Ariel", Font.FontStyle.PLAIN, 10).javaFont(),
                 new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
         assertEquals(new Font("Ariel", "PLAIN", 10).javaFont(), new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
         assertEquals(new Font("Ariel", "P", 10).javaFont(), new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
-
 
         assertEquals(Font.font("Ariel", Font.FontStyle.PLAIN, 10).javaFont(),
                 new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
@@ -64,6 +66,7 @@ public class TestFont extends BaseArrayTestCase {
         assertEquals(Font.font("Ariel", "P", 10).javaFont(), new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
     }
 
+    @Test
     public void testTransforms() {
         Font f = new Font("Ariel", Font.FontStyle.PLAIN, 10);
 
@@ -80,6 +83,7 @@ public class TestFont extends BaseArrayTestCase {
         assertEquals(f.javaFont(), new java.awt.Font("SanSerif", java.awt.Font.PLAIN, 12));
     }
 
+    @Test
     public void testEquals() {
         final Font font1 = new Font("Arial", Font.FontStyle.BOLD, 12);
         final Font font2 = new Font("Arial", Font.FontStyle.BOLD, 12);

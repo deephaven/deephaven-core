@@ -191,6 +191,10 @@ public final class SortedRangesInt extends SortedRangesPacked<int[]> {
         if (range > Short.MAX_VALUE) {
             return null;
         }
+        // Respect the target type's capacity limit: packing must not create over-capacity instances.
+        if (shortArrayCapacityForLastIndex(count - 1) == 0) {
+            return null;
+        }
         final SortedRangesShort sr = new SortedRangesShort(count, first);
         copyTo(sr);
         return sr;

@@ -10,6 +10,8 @@ from deephaven import empty_table
 from deephaven.perfmon import (
     ancestor_dot,
     ancestor_svg,
+    barrage_snapshot_performance_log,
+    barrage_subscription_performance_log,
     metrics_get_counters,
     metrics_reset_counters,
     process_info_log,
@@ -83,6 +85,10 @@ class PerfmonTestCase(BaseTestCase):
         self.assertTrue(log_table.to_string())
         log_table = query_performance_tree_table()
         self.assertIsNotNone(log_table)
+        log_table = barrage_subscription_performance_log()
+        self.assertTrue(log_table.to_string())
+        log_table = barrage_snapshot_performance_log()
+        self.assertTrue(log_table.to_string())
 
     def test_graphviz(self):
         upl = update_performance_log()

@@ -1,6 +1,5 @@
 ---
 title: How do I run Deephaven behind an AWS Application Load Balancer?
-sidebar_label: How do I run Deephaven behind AWS ALB?
 ---
 
 _I'm running Deephaven behind an AWS Application Load Balancer (ALB) on Kubernetes. When I try to access the IDE, I get an HTTP 500 error with a `NullPointerException` mentioning "host" is null. How do I fix this?_

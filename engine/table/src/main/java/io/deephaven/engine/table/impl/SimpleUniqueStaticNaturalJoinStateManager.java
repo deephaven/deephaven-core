@@ -4,9 +4,11 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.NaturalJoinType;
+import io.deephaven.engine.exceptions.DuplicateRightKeyException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.util.hashing.ToIntFunctor;
+import io.deephaven.chunk.util.hashing.ToIntegerCast;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
@@ -16,6 +18,8 @@ import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Arrays;
 
 import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
 
@@ -33,29 +37,46 @@ import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
  */
 class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateManager {
     private final int tableSize;
-    private final ToIntFunctor<Values> transform;
+    /** The chunk type and offset that map a key value onto a table slot; a functor is made per pass over the keys. */
+    private final ChunkType keyChunkType;
+    private final int keyOffset;
 
-    private final LongArraySource rightRowSetSource = new LongArraySource();
+    /**
+     * The right row key for each possible key value, indexed by the transformed key; {@link RowSequence#NULL_ROW_KEY}
+     * for no right row, {@link #DUPLICATE_RIGHT_VALUE} for several. The table is fixed size, so a plain array serves.
+     */
+    private final long[] rightRowKeys;
 
     SimpleUniqueStaticNaturalJoinStateManager(
             ColumnSource<?>[] tableKeySources,
             int tableSize,
-            ToIntFunctor<Values> transform,
+            ChunkType keyChunkType,
+            int keyOffset,
             NaturalJoinType joinType,
             boolean addOnly) {
         super(tableKeySources, joinType, addOnly);
         this.tableSize = Require.gtZero(tableSize, "tableSize");
-        this.transform = transform;
-        rightRowSetSource.ensureCapacity(tableSize);
-        for (int ii = 0; ii < tableSize; ++ii) {
-            rightRowSetSource.set(ii, RowSequence.NULL_ROW_KEY);
-        }
+        this.keyChunkType = keyChunkType;
+        this.keyOffset = keyOffset;
+        rightRowKeys = new long[tableSize];
+        Arrays.fill(rightRowKeys, RowSequence.NULL_ROW_KEY);
+    }
+
+    /**
+     * Make a functor that maps a chunk of key values onto table slots. The functor owns a pooled chunk, so it lives no
+     * longer than the pass over the keys that uses it.
+     *
+     * @param chunkSize the largest chunk the functor will be applied to
+     */
+    private ToIntFunctor<Values> makeKeyTransform(final int chunkSize) {
+        return ToIntegerCast.makeToIntegerCast(keyChunkType, chunkSize, keyOffset);
     }
 
     void setRightSide(RowSet rightRowSet, ColumnSource<?> valueSource) {
+        final int chunkSize = (int) Math.min(CHUNK_SIZE, rightRowSet.size());
         try (final RowSequence.Iterator rsIt = rightRowSet.getRowSequenceIterator();
-                final ColumnSource.GetContext getContext =
-                        valueSource.makeGetContext((int) Math.min(CHUNK_SIZE, rightRowSet.size()))) {
+                final ToIntFunctor<Values> transform = makeKeyTransform(chunkSize);
+                final ColumnSource.GetContext getContext = valueSource.makeGetContext(chunkSize)) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
 
@@ -69,14 +90,14 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                     if (tableLocation < 0 || tableLocation >= tableSize) {
                         return true;
                     }
-                    final long existingRight = rightRowSetSource.getLong(tableLocation);
+                    final long existingRight = rightRowKeys[tableLocation];
                     if (existingRight == RowSequence.NULL_ROW_KEY || joinType == NaturalJoinType.LAST_MATCH) {
-                        rightRowSetSource.set(tableLocation, keyIndex);
+                        rightRowKeys[tableLocation] = keyIndex;
                     } else {
                         if (joinType == NaturalJoinType.FIRST_MATCH) {
                             // no-op, already have the first match
                         } else {
-                            rightRowSetSource.set(tableLocation, DUPLICATE_RIGHT_VALUE);
+                            rightRowKeys[tableLocation] = DUPLICATE_RIGHT_VALUE;
                         }
                     }
                     return true;
@@ -95,9 +116,10 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
         Assert.eq(valueSources.length, "valueSources.length", 1);
         final ColumnSource<?> valueSource = valueSources[0];
 
+        final int chunkSize = (int) Math.min(CHUNK_SIZE, leftRowSet.size());
         try (final RowSequence.Iterator rsIt = leftRowSet.getRowSequenceIterator();
-                final ColumnSource.GetContext getContext =
-                        valueSource.makeGetContext((int) Math.min(CHUNK_SIZE, leftRowSet.size()))) {
+                final ToIntFunctor<Values> transform = makeKeyTransform(chunkSize);
+                final ColumnSource.GetContext getContext = valueSource.makeGetContext(chunkSize)) {
             long offset = 0;
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
@@ -111,10 +133,10 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
                         leftRedirections.set(offset + ii, NO_RIGHT_ENTRY_VALUE);
                         continue;
                     }
-                    final long existingRight = rightRowSetSource.getLong(tableLocation);
+                    final long existingRight = rightRowKeys[tableLocation];
 
                     if (existingRight == DUPLICATE_RIGHT_VALUE) {
-                        throw new IllegalStateException(":Natural Join found duplicate right key for "
+                        throw new DuplicateRightKeyException("Natural Join found duplicate right key for "
                                 + keySourcesForErrorMessages[0].get(leftRowSet.get(offset + ii)));
                     }
                     leftRedirections.set(offset + ii, existingRight);

@@ -1,6 +1,5 @@
 ---
 title: How to dial down the update frequency of ticking tables
-sidebar_label: Dial down the update frequency of ticking tables
 ---
 
 This guide will show you how to reduce the update frequency of ticking tables.

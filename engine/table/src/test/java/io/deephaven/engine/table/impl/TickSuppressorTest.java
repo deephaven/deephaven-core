@@ -17,13 +17,16 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
 import java.util.Random;
 
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TickSuppressorTest extends QueryTableTestBase {
+    @Test
     public void testModifyToAddRemoves() {
         final Random random = new Random(0);
         final ColumnInfo<?, ?>[] columnInfo;
@@ -50,12 +53,14 @@ public class TickSuppressorTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testRemoveSpuriousModificationsIterative() {
         for (int seed = 0; seed < 1; ++seed) {
             testRemoveSpuriousModificationsIterative(seed, 100, 100);
         }
     }
 
+    @Test
     public void testRemoveSpuriousModificationsLargeIterative() {
         for (int seed = 0; seed < 1; ++seed) {
             testRemoveSpuriousModificationsIterative(seed, 32000, 5);
@@ -121,6 +126,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testRemoveSpuriousModifications() {
         final QueryTable input = TstUtils.testRefreshingTable(i(5, 10, 15).toTracking(),
                 intCol("SentinelA", 5, 10, 15),

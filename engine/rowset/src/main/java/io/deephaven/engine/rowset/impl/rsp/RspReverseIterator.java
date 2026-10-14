@@ -76,7 +76,7 @@ public class RspReverseIterator implements SafeCloseable {
             final long singletonValue = spanInfoToSingletonSpanValue(spanInfo);
             ri = new SingletonContainer.ReverseIter(lowBits(singletonValue));
         } else {
-            riView.init(rp.arr(), rp.arrIdx(), spanInfo, s);
+            riView.init(spanInfo, s);
             ri = riView.getContainer().getReverseShortIterator();
         }
         nextValid = true;
@@ -85,8 +85,10 @@ public class RspReverseIterator implements SafeCloseable {
     }
 
     private void computeNextFromFullSpan() {
-        --next;
-        if (Long.compareUnsigned(next, fullBlockSpanKey) >= 0) {
+        // Checked before stepping, not after: a span starting at key 0 would underflow, and an unsigned comparison
+        // reads the result as an enormous value rather than as having gone past the span's start.
+        if (Long.compareUnsigned(next, fullBlockSpanKey) > 0) {
+            --next;
             nextValid = true;
             return;
         }
@@ -137,7 +139,7 @@ public class RspReverseIterator implements SafeCloseable {
         if (flen > 0) {
             current = key;
         } else {
-            try (SpanView res = workDataPerThread.get().borrowSpanView(rp.arr(), rp.arrIdx(), spanInfo, span)) {
+            try (SpanView res = workDataPerThread.get().borrowSpanView(spanInfo, span)) {
                 current = key | res.getContainer().first();
             }
         }

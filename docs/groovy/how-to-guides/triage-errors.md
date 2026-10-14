@@ -257,7 +257,7 @@ result = left.naturalJoin(right, "DeptID")
 Because `31` appears twice in the `DeptID` column in the right table, the following error will be thrown:
 
 ```none
-r-Scheduler-Serial-1 | .c.ConsoleServiceGrpcImpl | Error running script: java.lang.IllegalStateException: Natural Join found duplicate right key for 31
+r-Scheduler-Serial-1 | .c.ConsoleServiceGrpcImpl | Error running script: io.deephaven.engine.exceptions.DuplicateRightKeyException: Natural Join found duplicate right key for 31
 ```
 
 ### Non-deterministic formulas

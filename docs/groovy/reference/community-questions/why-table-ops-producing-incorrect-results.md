@@ -1,6 +1,5 @@
 ---
 title: Why are my table operations producing incorrect results?
-sidebar_label: Why are my table operations producing incorrect results?
 ---
 
 <em>My query uses table operations that produce incorrect results. What's going on?</em>

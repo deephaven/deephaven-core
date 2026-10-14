@@ -3,23 +3,32 @@
 //
 package io.deephaven.plot;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.base.testing.JMockRule;
+import io.deephaven.base.testing.JMockRule.Expectations;
 import io.deephaven.plot.datasets.category.CategoryDataSeriesInternal;
 import io.deephaven.plot.datasets.multiseries.MultiSeriesInternal;
 import io.deephaven.plot.datasets.xy.XYDataSeriesInternal;
+import org.junit.Rule;
+import org.junit.Test;
 
-public class TestSeriesCollection extends BaseArrayTestCase {
+import static org.junit.Assert.*;
 
+public class TestSeriesCollection {
+
+    @Rule
+    public final JMockRule jmock = new JMockRule();
+
+    @Test
     public void testSeriesCollection() {
         final SeriesCollection sc = new SeriesCollection(null);
 
         assertEquals(0, sc.getSeriesDescriptions().size());
 
-        final CategoryDataSeriesInternal s1 = mock(CategoryDataSeriesInternal.class);
-        final MultiSeriesInternal s2 = mock(MultiSeriesInternal.class);
-        final XYDataSeriesInternal s3 = mock(XYDataSeriesInternal.class);
+        final CategoryDataSeriesInternal s1 = jmock.mock(CategoryDataSeriesInternal.class);
+        final MultiSeriesInternal s2 = jmock.mock(MultiSeriesInternal.class);
+        final XYDataSeriesInternal s3 = jmock.mock(XYDataSeriesInternal.class);
 
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 atLeast(1).of(s1).name();
                 will(returnValue("S1"));
@@ -35,7 +44,6 @@ public class TestSeriesCollection extends BaseArrayTestCase {
                 will(returnValue(3));
             }
         });
-
 
         sc.add(SeriesCollection.SeriesType.CATEGORY, false, s1);
         assertEquals(1, sc.getSeriesDescriptions().size());
@@ -72,6 +80,7 @@ public class TestSeriesCollection extends BaseArrayTestCase {
         assertEquals(series, sd.getSeries());
     }
 
+    @Test
     public void testNextId() {
         final SeriesCollection sc = new SeriesCollection(null);
         assertEquals(0, sc.nextId());
@@ -79,16 +88,17 @@ public class TestSeriesCollection extends BaseArrayTestCase {
         assertEquals(2, sc.nextId());
     }
 
+    @Test
     public void testCopy() {
         final SeriesCollection sc = new SeriesCollection(null);
 
-        final CategoryDataSeriesInternal s1 = mock(CategoryDataSeriesInternal.class, "S1");
-        final CategoryDataSeriesInternal s1copy = mock(CategoryDataSeriesInternal.class, "S1C");
-        final MultiSeriesInternal s2 = mock(MultiSeriesInternal.class, "S2");
-        final MultiSeriesInternal s2copy = mock(MultiSeriesInternal.class, "S2C");
-        final AxesImpl axes = mock(AxesImpl.class);
+        final CategoryDataSeriesInternal s1 = jmock.mock(CategoryDataSeriesInternal.class, "S1");
+        final CategoryDataSeriesInternal s1copy = jmock.mock(CategoryDataSeriesInternal.class, "S1C");
+        final MultiSeriesInternal s2 = jmock.mock(MultiSeriesInternal.class, "S2");
+        final MultiSeriesInternal s2copy = jmock.mock(MultiSeriesInternal.class, "S2C");
+        final AxesImpl axes = jmock.mock(AxesImpl.class);
 
-        checking(new Expectations() {
+        jmock.checking(new Expectations() {
             {
                 atLeast(1).of(s1).name();
                 will(returnValue("S1"));
@@ -116,7 +126,6 @@ public class TestSeriesCollection extends BaseArrayTestCase {
                 atLeast(1).of(axes).getPlotInfo();
             }
         });
-
 
         sc.add(SeriesCollection.SeriesType.CATEGORY, false, s1);
         sc.add(SeriesCollection.SeriesType.XY, true, s2);

@@ -153,7 +153,7 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
                     final Object2IntMap<String> tmpMap = new Object2IntOpenHashMap<>(length, 0.75f);
                     tmpMap.defaultReturnValue(UNKNOWN_ROW);
                     try (final CloseableIterator<String> keyIterator = new ChunkedObjectColumnIterator<>(
-                            keyColumn, RowSequenceFactory.forRange(0, length - 1))) {
+                            keyColumn, RowSequenceFactory.flat(length))) {
                         for (int ii = 0; ii < length; ii++) {
                             tmpMap.put(keyIterator.next(), ii);
                         }

@@ -31,7 +31,7 @@ public interface StampKernel extends Context {
     static StampKernel makeStampKernel(ChunkType type) {
         switch (type) {
             case Char:
-                return NullAwareCharStampKernel.INSTANCE;
+                return CharStampKernel.INSTANCE;
             case Byte:
                 return ByteStampKernel.INSTANCE;
             case Short:
@@ -56,7 +56,7 @@ public interface StampKernel extends Context {
     static StampKernel makeStampKernelNoExact(ChunkType type) {
         switch (type) {
             case Char:
-                return NullAwareCharNoExactStampKernel.INSTANCE;
+                return CharNoExactStampKernel.INSTANCE;
             case Byte:
                 return ByteNoExactStampKernel.INSTANCE;
             case Short:
@@ -81,7 +81,7 @@ public interface StampKernel extends Context {
     static StampKernel makeReverseStampKernel(ChunkType type) {
         switch (type) {
             case Char:
-                return NullAwareCharReverseStampKernel.INSTANCE;
+                return CharReverseStampKernel.INSTANCE;
             case Byte:
                 return ByteReverseStampKernel.INSTANCE;
             case Short:
@@ -106,7 +106,7 @@ public interface StampKernel extends Context {
     static StampKernel makeReverseStampKernelNoExact(ChunkType type) {
         switch (type) {
             case Char:
-                return NullAwareCharNoExactReverseStampKernel.INSTANCE;
+                return CharNoExactReverseStampKernel.INSTANCE;
             case Byte:
                 return ByteNoExactReverseStampKernel.INSTANCE;
             case Short:

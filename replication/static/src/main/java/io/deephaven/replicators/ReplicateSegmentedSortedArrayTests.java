@@ -24,6 +24,8 @@ public class ReplicateSegmentedSortedArrayTests {
                 charToObject("replicateSegmentedSortedArrayTests",
                         "engine/table/src/test/java/io/deephaven/engine/table/impl/ssa/TestCharSegmentedSortedArray.java");
         fixupObjectSsaTest(objectSsaTest);
+        ReplicateSegmentedSortedArray.equalsConsistentObjectCopy("replicateSegmentedSortedArrayTests",
+                "TestCharSegmentedSortedArray", objectSsaTest);
     }
 
     private static void fixupObjectSsaTest(String objectPath) throws IOException {

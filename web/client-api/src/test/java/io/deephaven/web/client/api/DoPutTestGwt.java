@@ -16,7 +16,7 @@ public class DoPutTestGwt extends AbstractAsyncGwtTestCase {
      * server via DoPut (WorkerConnection.newTable), and sets a viewport to confirm the row count is correct.
      */
     public void testLargeTable() {
-        final int rowCount = 25_000;
+        final int rowCount = 100_000;
 
         // Build column-oriented data (Object[][] for WorkerConnection.newTable)
         Object[] intCol = new Object[rowCount];

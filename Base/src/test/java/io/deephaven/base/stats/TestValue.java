@@ -3,20 +3,23 @@
 //
 package io.deephaven.base.stats;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.concurrent.Semaphore;
 import java.util.function.LongFunction;
+
+import static org.junit.Assert.*;
 
 // --------------------------------------------------------------------
 /**
  * Tests for {@link Value}, {@link State}, {@link Counter}, and {@link History}
  */
-public class TestValue extends TestCase {
+public class TestValue {
 
     private static final int[] SAMPLES = new int[] {3, 1, 5, 2, 4};
 
     // ----------------------------------------------------------------
+    @Test
     public void testState() {
         State state = State.FACTORY.apply(0L);
         assertEquals('S', state.getTypeTag());
@@ -34,6 +37,7 @@ public class TestValue extends TestCase {
     }
 
     // ----------------------------------------------------------------
+    @Test
     public void testCounter() {
         Counter counter = Counter.FACTORY.apply(0L);
         assertEquals('C', counter.getTypeTag());
@@ -50,6 +54,7 @@ public class TestValue extends TestCase {
         checkValue(Counter.FACTORY);
     }
 
+    @Test
     public void testToString() {
         // this is purposefully a heisentest, this should make it fail if it is really broken
         for (int ii = 0; ii < 10; ++ii) {

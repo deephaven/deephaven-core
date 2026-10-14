@@ -8,10 +8,10 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.vector.FloatVector;
 import io.deephaven.vector.FloatVectorDirect;
-import junit.framework.TestCase;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static org.junit.Assert.*;
 
 public class FloatVectorCompareTest {
     protected FloatVector makeTestVector(final float... data) {
@@ -115,41 +115,41 @@ public class FloatVectorCompareTest {
      */
     private static void checkPairs(final FloatVector a0, final FloatVector a1, final FloatVector a2,
             final FloatVector b0, final FloatVector b1, final FloatVector b2) {
-        TestCase.assertEquals(0, a0.compareTo(b0));
-        TestCase.assertTrue(a0.compareTo(b1) < 0);
-        TestCase.assertTrue(a0.compareTo(b2) < 0);
+        assertEquals(0, a0.compareTo(b0));
+        assertTrue(a0.compareTo(b1) < 0);
+        assertTrue(a0.compareTo(b2) < 0);
 
-        TestCase.assertTrue(a1.compareTo(b0) > 0);
-        TestCase.assertEquals(0, a1.compareTo(b1));
-        TestCase.assertTrue(a1.compareTo(b2) < 0);
+        assertTrue(a1.compareTo(b0) > 0);
+        assertEquals(0, a1.compareTo(b1));
+        assertTrue(a1.compareTo(b2) < 0);
 
-        TestCase.assertTrue(a2.compareTo(b0) > 0);
-        TestCase.assertTrue(a2.compareTo(b1) > 0);
-        TestCase.assertEquals(0, a2.compareTo(b2));
+        assertTrue(a2.compareTo(b0) > 0);
+        assertTrue(a2.compareTo(b1) > 0);
+        assertEquals(0, a2.compareTo(b2));
 
-        TestCase.assertEquals(a0, a0);
-        TestCase.assertEquals(a0, b0);
-        TestCase.assertEquals(a0.hashCode(), b0.hashCode());
-        TestCase.assertFalse(a0.equals(a1));
-        TestCase.assertFalse(a0.equals(a1));
-        TestCase.assertFalse(a0.equals(a2));
-        TestCase.assertFalse(a0.equals(b2));
+        assertEquals(a0, a0);
+        assertEquals(a0, b0);
+        assertEquals(a0.hashCode(), b0.hashCode());
+        assertFalse(a0.equals(a1));
+        assertFalse(a0.equals(a1));
+        assertFalse(a0.equals(a2));
+        assertFalse(a0.equals(b2));
 
-        TestCase.assertFalse(a1.equals(a0));
-        TestCase.assertFalse(a1.equals(b0));
-        TestCase.assertEquals(a1, a1);
-        TestCase.assertEquals(a1, b1);
-        TestCase.assertEquals(a1.hashCode(), b1.hashCode());
-        TestCase.assertFalse(a1.equals(a2));
-        TestCase.assertFalse(a1.equals(b2));
+        assertFalse(a1.equals(a0));
+        assertFalse(a1.equals(b0));
+        assertEquals(a1, a1);
+        assertEquals(a1, b1);
+        assertEquals(a1.hashCode(), b1.hashCode());
+        assertFalse(a1.equals(a2));
+        assertFalse(a1.equals(b2));
 
-        TestCase.assertFalse(a2.equals(a0));
-        TestCase.assertFalse(a2.equals(b0));
-        TestCase.assertFalse(a2.equals(a1));
-        TestCase.assertFalse(a2.equals(b1));
-        TestCase.assertEquals(a2, a2);
-        TestCase.assertEquals(a2, b2);
-        TestCase.assertEquals(a2.hashCode(), b2.hashCode());
+        assertFalse(a2.equals(a0));
+        assertFalse(a2.equals(b0));
+        assertFalse(a2.equals(a1));
+        assertFalse(a2.equals(b1));
+        assertEquals(a2, a2);
+        assertEquals(a2, b2);
+        assertEquals(a2.hashCode(), b2.hashCode());
     }
 
     /**
@@ -157,20 +157,20 @@ public class FloatVectorCompareTest {
      */
     private static void checkPairs2(final FloatVector a0, final FloatVector a1, final FloatVector a2,
             final FloatVector b0, final FloatVector b1, final FloatVector b2) {
-        TestCase.assertEquals(0, a0.compareTo(b0));
-        TestCase.assertEquals(0, a0.compareTo(b1));
-        TestCase.assertTrue(a0.compareTo(b2) < 0);
+        assertEquals(0, a0.compareTo(b0));
+        assertEquals(0, a0.compareTo(b1));
+        assertTrue(a0.compareTo(b2) < 0);
 
-        TestCase.assertEquals(a0.hashCode(), a1.hashCode());
-        TestCase.assertEquals(a0.hashCode(), b0.hashCode());
-        TestCase.assertEquals(a0.hashCode(), b1.hashCode());
+        assertEquals(a0.hashCode(), a1.hashCode());
+        assertEquals(a0.hashCode(), b0.hashCode());
+        assertEquals(a0.hashCode(), b1.hashCode());
 
-        TestCase.assertEquals(0, a1.compareTo(b0));
-        TestCase.assertEquals(0, a1.compareTo(b1));
-        TestCase.assertTrue(a1.compareTo(b2) < 0);
+        assertEquals(0, a1.compareTo(b0));
+        assertEquals(0, a1.compareTo(b1));
+        assertTrue(a1.compareTo(b2) < 0);
 
-        TestCase.assertTrue(a2.compareTo(b0) > 0);
-        TestCase.assertTrue(a2.compareTo(b1) > 0);
-        TestCase.assertEquals(0, a2.compareTo(b2));
+        assertTrue(a2.compareTo(b0) > 0);
+        assertTrue(a2.compareTo(b1) > 0);
+        assertEquals(0, a2.compareTo(b2));
     }
 }

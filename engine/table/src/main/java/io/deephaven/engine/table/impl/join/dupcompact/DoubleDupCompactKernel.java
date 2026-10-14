@@ -7,12 +7,11 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.join.dupcompact;
 
-import io.deephaven.util.compare.DoubleComparisons;
-
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.util.compare.DoubleComparisons;
 import org.jetbrains.annotations.NotNull;
 
 public class DoubleDupCompactKernel implements DupCompactKernel {

@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.util;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.base.testing.JMockRule;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.gui.color.Color;
@@ -11,28 +11,35 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import static io.deephaven.gui.color.Color.*;
+import static org.junit.Assert.*;
 
-public class TestColorUtil extends BaseArrayTestCase {
+public class TestColorUtil {
+
+    @Rule
+    public final JMockRule jmock = new JMockRule();
 
     private final int size = 10;
     private SafeCloseable executionContext;
     private Table t1;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         executionContext = TestExecutionContext.createForUnitTests().open();
         t1 = TableTools.emptyTable(size).updateView("X = i", "Y = 2*i");
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         executionContext.close();
     }
 
+    @Test
     public void testRowFormatWhereNew() {
         testRowFormatWhere(t1.formatRowWhere("X > 5", "ALICEBLUE"), ALICEBLUE);
         testRowFormatWhere(t1.formatRowWhere("X > 5", "`#F0F8FF`"), ALICEBLUE);
@@ -40,12 +47,14 @@ public class TestColorUtil extends BaseArrayTestCase {
         testRowFormatWhere(t1.formatRowWhere("X > 5", "io.deephaven.gui.color.Color.color(`aliceblue`)"), ALICEBLUE);
     }
 
+    @Test
     public void testRowFormatWhereOld() {
         testRowFormatWhere(t1.formatRowWhere("X > 5", "VIVID_RED"), VIVID_RED);
         testRowFormatWhere(t1.formatRowWhere("X > 5", "`VIVID_RED`"), VIVID_RED);
         testRowFormatWhere(t1.formatRowWhere("X > 5", "io.deephaven.gui.color.Color.color(`VIVID_RED`)"), VIVID_RED);
     }
 
+    @Test
     public void testFormatColumnsNew() {
         testFormatColumns(t1.formatColumns("X = i > 200 ? NO_FORMATTING : ALICEBLUE"), ALICEBLUE);
         testFormatColumns(t1.formatColumns("X = `#F0F8FF`"), ALICEBLUE);
@@ -53,12 +62,14 @@ public class TestColorUtil extends BaseArrayTestCase {
         testFormatColumns(t1.formatColumns("X = io.deephaven.gui.color.Color.color(`aliceblue`)"), ALICEBLUE);
     }
 
+    @Test
     public void testFormatColumnsOld() {
         testFormatColumns(t1.formatColumns("X = i > 200 ? NO_FORMATTING : VIVID_RED"), VIVID_RED);
         testFormatColumns(t1.formatColumns("X = `VIVID_RED`"), VIVID_RED);
         testFormatColumns(t1.formatColumns("X = io.deephaven.gui.color.Color.color(`VIVID_RED`)"), VIVID_RED);
     }
 
+    @Test
     public void testBackground() {
         assertEquals("111111111111111111111111100000000000000000000000000000000",
                 Long.toBinaryString(ColorUtil.background(Color.colorRGB(255, 255, 255))));
@@ -69,7 +80,6 @@ public class TestColorUtil extends BaseArrayTestCase {
         assertEquals(ColorUtil.bg(ALICEBLUE), ColorUtil.background("ALICEBLUE"));
         assertEquals(ColorUtil.bg(ALICEBLUE), ColorUtil.background("#F0F8FF"));
 
-
         t1.formatColumns("X = bg(ALICEBLUE)");
         t1.formatColumns("X = bg(`ALICEBLUE`)");
         t1.formatColumns("X = bg(`#FF00FF`)");
@@ -78,6 +88,7 @@ public class TestColorUtil extends BaseArrayTestCase {
         t1.formatColumns("X = background(VIVID_RED)");
     }
 
+    @Test
     public void testForeground() {
         assertEquals("101111111111111111111111111",
                 Long.toBinaryString(ColorUtil.foreground(Color.colorRGB(255, 255, 255))));
@@ -91,7 +102,6 @@ public class TestColorUtil extends BaseArrayTestCase {
         assertEquals(ColorUtil.fg(ALICEBLUE), ColorUtil.fg(240, 248, 255));
         assertEquals(ColorUtil.fg(ALICEBLUE), ColorUtil.fg("#F0F8FF"));
 
-
         t1.formatColumns("X = fg(ALICEBLUE)");
         t1.formatColumns("X = fg(`ALICEBLUE`)");
         t1.formatColumns("X = fg(`#F0F8FF`)");
@@ -100,6 +110,7 @@ public class TestColorUtil extends BaseArrayTestCase {
         t1.formatColumns("X = foreground(VIVID_RED)");
     }
 
+    @Test
     public void testForegroundOverride() {
         assertEquals("111111111111111111111111111",
                 Long.toBinaryString(ColorUtil.foregroundOverride(Color.colorRGB(255, 255, 255))));
@@ -113,7 +124,6 @@ public class TestColorUtil extends BaseArrayTestCase {
         assertEquals(ColorUtil.fgo(ALICEBLUE), ColorUtil.fgo(ColorUtil.bgfga(240, 248, 255)));
         assertEquals(ColorUtil.fgo(ALICEBLUE), ColorUtil.fgo("ALICEBLUE"));
 
-
         t1.formatColumns("X = foregroundOverride(ALICEBLUE)");
         t1.formatColumns("X = foregroundOverride(`ALICEBLUE`)");
         t1.formatColumns("X = foregroundOverride(VIVID_RED)");
@@ -126,6 +136,7 @@ public class TestColorUtil extends BaseArrayTestCase {
         assertFalse(ColorUtil.isForegroundSelectionOverride(ColorUtil.bgo(ALICEBLUE)));
     }
 
+    @Test
     public void testBackgroundOverride() {
         assertEquals("1111111111111111111111111100000000000000000000000000000000",
                 Long.toBinaryString(ColorUtil.backgroundOverride(Color.colorRGB(255, 255, 255))));
@@ -139,7 +150,6 @@ public class TestColorUtil extends BaseArrayTestCase {
         assertEquals(ColorUtil.bgo(ALICEBLUE), ColorUtil.bgo(ColorUtil.bgfga(240, 248, 255)));
         assertEquals(ColorUtil.bgo(ALICEBLUE), ColorUtil.bgo("ALICEBLUE"));
 
-
         t1.formatColumns("X = backgroundOverride(ALICEBLUE)");
         t1.formatColumns("X = backgroundOverride(`ALICEBLUE`)");
         t1.formatColumns("X = backgroundOverride(VIVID_RED)");
@@ -152,6 +162,7 @@ public class TestColorUtil extends BaseArrayTestCase {
         assertFalse(ColorUtil.isBackgroundSelectionOverride(ColorUtil.fgo(ALICEBLUE)));
     }
 
+    @Test
     public void testBackgroundForeground() {
         assertEquals("111111111111111111111111100000101111111111111111111111111", Long.toBinaryString(
                 ColorUtil.backgroundForeground(Color.colorRGB(255, 255, 255), Color.colorRGB(255, 255, 255))));
@@ -165,7 +176,6 @@ public class TestColorUtil extends BaseArrayTestCase {
         assertEquals(ColorUtil.bgfg(ALICEBLUE, ANTIQUEWHITE), ColorUtil.backgroundForeground("#F0F8FF", "#FAEBD7"));
         assertEquals(ColorUtil.bgfg(ALICEBLUE, ANTIQUEWHITE), ColorUtil.bgfg("#F0F8FF", "#FAEBD7"));
         assertEquals(ColorUtil.bgfg(ALICEBLUE, ANTIQUEWHITE), ColorUtil.bgfg(240, 248, 255, 250, 235, 215));
-
 
         t1.formatColumns("X = bgfg(ALICEBLUE,ANTIQUEWHITE)");
         t1.formatColumns("X = bgfg(VIVID_RED,VIVID_BLUE)");
@@ -193,6 +203,7 @@ public class TestColorUtil extends BaseArrayTestCase {
                 ColorUtil.bgfg(ColorUtil.bgo(ALICEBLUE), ColorUtil.fgo(ANTIQUEWHITE))));
     }
 
+    @Test
     public void testBackgroundForegroundAuto() {
         assertEquals("111111111111111111111111100000001000000000000000000000000",
                 Long.toBinaryString(ColorUtil.bgfga(255, 255, 255)));
@@ -206,7 +217,6 @@ public class TestColorUtil extends BaseArrayTestCase {
         assertEquals(ColorUtil.bgfga(ALICEBLUE), ColorUtil.bgfga("#F0F8FF"));
         assertEquals(ColorUtil.bgfga(ALICEBLUE), ColorUtil.bgfga(240, 248, 255));
 
-
         t1.formatColumns("X = bgfga(ALICEBLUE)");
         t1.formatColumns("X = bgfga(VIVID_RED)");
         t1.formatColumns("X = bgfga(`VIVID_RED`)");
@@ -215,6 +225,7 @@ public class TestColorUtil extends BaseArrayTestCase {
         t1.formatColumns("X = backgroundForegroundAuto(ALICEBLUE)");
     }
 
+    @Test
     public void testHeatmap() {
         assertEquals(ColorUtil.bgfga(RED), ColorUtil.heatmap(0, 0, 100, RED, BLUE));
         assertEquals(ColorUtil.bgfga(RED),
@@ -224,13 +235,13 @@ public class TestColorUtil extends BaseArrayTestCase {
         assertEquals(ColorUtil.bgfga(63, 0, 191), ColorUtil.heatmap(75, 0, 100, RED, BLUE));
         assertEquals(ColorUtil.bgfga(63, 0, 191), ColorUtil.heatmap(75, 0, 100, "RED", "BLUE"));
 
-
         t1.formatColumns("X = heatmap(100, 0, 100, RED, BLUE)");
         t1.formatColumns("X = heatmap(100, 0, 100, `RED`, `BLUE`)");
         t1.formatColumns("X = heatmap(2, 0, 100, bgfga(RED), bgfga(BLUE))");
         t1.formatColumns("X = heatmap(2, 0, 100, bgfga(`#F0F8FF`), bgfga(`#F0F80F`))");
     }
 
+    @Test
     public void testHeatmapForeground() {
         assertEquals(ColorUtil.fg(RED), ColorUtil.heatmapForeground(0, 0, 100, RED, BLUE));
         assertEquals(ColorUtil.fg(BLUE), ColorUtil.heatmapForeground(100, 0, 100, RED, BLUE));
@@ -255,6 +266,7 @@ public class TestColorUtil extends BaseArrayTestCase {
         t1.formatColumns("X = heatmapForeground(100, 0, 100, RED, BLUE)");
     }
 
+    @Test
     public void testToLong() {
         assertEquals(ColorUtil.bgfga(ALICEBLUE), ColorUtil.toLong(ALICEBLUE));
         assertEquals(0L, ColorUtil.toLong((Color) null));
@@ -276,6 +288,7 @@ public class TestColorUtil extends BaseArrayTestCase {
         assertEquals(0L, ColorUtil.toLong(Color.NO_FORMATTING));
     }
 
+    @Test
     public void testIsForegroundSet() {
         assertTrue(ColorUtil.isForegroundSet(ColorUtil.fg(240, 248, 255)));
         assertTrue(ColorUtil.isForegroundSet(ColorUtil.fg(ALICEBLUE)));

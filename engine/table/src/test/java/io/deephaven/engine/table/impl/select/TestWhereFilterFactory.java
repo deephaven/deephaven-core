@@ -8,9 +8,12 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.Assert.*;
 
 public class TestWhereFilterFactory extends RefreshingTableTestCase {
 
@@ -42,26 +45,31 @@ public class TestWhereFilterFactory extends RefreshingTableTestCase {
                 TableTools.col(BOOLEAN_COLUMN, true, false, true, false, true, false));
     }
 
+    @Test
     public void testColumnNameInValueNormal() {
         String value = runSimpleFilterExpresion(" in ", NORMAL_STRING);
         assertEquals(NORMAL_STRING, value);
     }
 
+    @Test
     public void testColumnNameInValueNeedsEscape() {
         String value = runSimpleFilterExpresion(" in ", NEEDS_ESCAPE);
         assertEquals(NEEDS_ESCAPE, value);
     }
 
+    @Test
     public void testColumnNameEqualsStringNormal() {
         String value = runSimpleFilterExpresion("==", NORMAL_STRING);
         assertEquals(NORMAL_STRING, value);
     }
 
+    @Test
     public void testColumnNameEqualsStringNeedsEscape() {
         String value = runSimpleFilterExpresion("==", NEEDS_ESCAPE);
         assertEquals(NEEDS_ESCAPE, value);
     }
 
+    @Test
     public void testNoEmbeddedCommas() {
         String values = String.join(", ", wrapQuotes(NO_COMMAS_A), wrapBackTicks(NO_COMMAS_B));
         List<Object> result = runDelimitedExpression(STRING_COLUMN, values);
@@ -73,6 +81,7 @@ public class TestWhereFilterFactory extends RefreshingTableTestCase {
         assertFalse(result.contains(WITH_COMMAS_B));
     }
 
+    @Test
     public void testWithEmbeddedCommas() {
         String values = String.join(", ", wrapQuotes(WITH_COMMAS_A), wrapBackTicks(WITH_COMMAS_B));
         List<Object> result = runDelimitedExpression(STRING_COLUMN, values);
@@ -84,6 +93,7 @@ public class TestWhereFilterFactory extends RefreshingTableTestCase {
         assertTrue(result.contains(WITH_COMMAS_B));
     }
 
+    @Test
     public void testQuotesMixedCommas() {
         String values = String.join(", ", wrapQuotes(NO_COMMAS_A), wrapQuotes(WITH_COMMAS_A));
         List<Object> result = runDelimitedExpression(STRING_COLUMN, values);
@@ -95,6 +105,7 @@ public class TestWhereFilterFactory extends RefreshingTableTestCase {
         assertFalse(result.contains(WITH_COMMAS_B));
     }
 
+    @Test
     public void testBackTicksMixedCommas() {
         String values = String.join(", ", wrapBackTicks(NO_COMMAS_A), wrapBackTicks(WITH_COMMAS_A));
         List<Object> result = runDelimitedExpression(STRING_COLUMN, values);
@@ -106,6 +117,7 @@ public class TestWhereFilterFactory extends RefreshingTableTestCase {
         assertFalse(result.contains(WITH_COMMAS_B));
     }
 
+    @Test
     public void testQuotesAndBackTicksMixedCommas() {
         String values = String.join(", ", wrapQuotes(NO_COMMAS_A), wrapQuotes(WITH_COMMAS_A),
                 wrapBackTicks(NO_COMMAS_B), wrapBackTicks(WITH_COMMAS_B));
@@ -118,6 +130,7 @@ public class TestWhereFilterFactory extends RefreshingTableTestCase {
         assertTrue(result.contains(WITH_COMMAS_B));
     }
 
+    @Test
     public void testIntegers() {
         List<Object> result = runDelimitedExpression(INTEGER_COLUMN, "1, 3, 5");
         assertFalse(result.contains(0));
@@ -128,6 +141,7 @@ public class TestWhereFilterFactory extends RefreshingTableTestCase {
         assertTrue(result.contains(5));
     }
 
+    @Test
     public void testFloats() {
         List<Object> result = runDelimitedExpression(FLOAT_COLUMN, "1.0, 3.0, 5.0");
         assertFalse(result.contains(0.0));
@@ -138,12 +152,14 @@ public class TestWhereFilterFactory extends RefreshingTableTestCase {
         assertTrue(result.contains(5.0));
     }
 
+    @Test
     public void testBooleans() {
         List<Object> result = runDelimitedExpression(BOOLEAN_COLUMN, "true, false");
         assertTrue(result.contains(true));
         assertTrue(result.contains(false));
     }
 
+    @Test
     public void testUnmatchedQuoteNoCommas() {
         final String values = String.join(", ", unmatchedQuote(NO_COMMAS_A), wrapQuotes(NO_COMMAS_B));
         try {
@@ -154,6 +170,7 @@ public class TestWhereFilterFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testUnmatchedQuoteCommas() {
         final String values = String.join(", ", unmatchedQuote(WITH_COMMAS_A), wrapQuotes(WITH_COMMAS_B));
         try {
@@ -164,6 +181,7 @@ public class TestWhereFilterFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testUnmatchedBackTicksNoCommas() {
         final String values = String.join(", ", unmatchedBackTick(NO_COMMAS_A), wrapBackTicks(NO_COMMAS_B));
         try {
@@ -174,6 +192,7 @@ public class TestWhereFilterFactory extends RefreshingTableTestCase {
         }
     }
 
+    @Test
     public void testUnmatchedBackTicksCommas() {
         final String values = String.join(", ", unmatchedBackTick(WITH_COMMAS_A), wrapBackTicks(WITH_COMMAS_B));
         try {

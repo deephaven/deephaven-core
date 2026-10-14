@@ -1,6 +1,5 @@
 ---
 title: Export Deephaven Tables to Parquet Files
-sidebar_label: Export to Parquet
 ---
 
 The [Deephaven Parquet Python module](/core/pydoc/code/deephaven.parquet.html#module-deephaven.parquet) provides tools to integrate Deephaven with the Parquet file format. This module makes it easy to write Deephaven tables to Parquet files and directories. This document covers writing Deephaven tables to single Parquet files, flat partitioned Parquet directories, and key-value partitioned Parquet directories.
@@ -12,7 +11,7 @@ By default, Deephaven tables are written to Parquet files using `SNAPPY` compres
 
 First, create some tables that will be used for the examples in this guide.
 
-```python test-set=1 order=grades,math_grades,science_grades,history_grades docker-config=minio
+```python test-set=1 order=grades,math_grades,science_grades,history_grades docker-config=rustfs
 from deephaven import new_table, merge
 from deephaven.column import int_col, double_col, string_col
 
@@ -84,7 +83,7 @@ parquet.write(
     path="s3://example-bucket/grades.parquet",
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         credentials=credentials,
     ),
 )
@@ -161,7 +160,7 @@ parquet.write_partitioned(
     destination_dir="s3://example-bucket/partitioned-directory/",
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         credentials=credentials,
     ),
 )
@@ -248,7 +247,7 @@ parquet.batch_write(
     table_definition=grades_def,
     special_instructions=s3.S3Instructions(
         region_name="us-east-1",
-        endpoint_override="http://minio.example.com:9000",
+        endpoint_override="http://rustfs.example.com:9000",
         credentials=credentials,
     ),
 )

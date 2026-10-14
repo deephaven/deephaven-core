@@ -3,20 +3,21 @@
 //
 package io.deephaven.plot.axisformatters;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTimeUtils;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 
-public class TestNanosAxisFormat extends BaseArrayTestCase {
+import static org.junit.Assert.*;
+
+public class TestNanosAxisFormat {
     private static final ZoneId TZ_NY = ZoneId.of("America/New_York");
     private static final ZoneId TZ_JP = ZoneId.of("Asia/Tokyo");
     private static final ZoneId TZ_MN = ZoneId.of("America/Chicago");
 
-
+    @Test
     public void testFormat() {
         final NanosAxisFormat nyFormat = new NanosAxisFormat();
         final NanosAxisFormat tokyoFormat = new NanosAxisFormat(TZ_JP);
@@ -33,12 +34,13 @@ public class TestNanosAxisFormat extends BaseArrayTestCase {
 
         try {
             nyNumberFormat.parse("TEST", null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("Not implemented"));
         }
     }
 
+    @Test
     public void testFormatString() {
         final Instant time = DateTimeUtils.parseInstant("2017-03-24T14:32:12.345678 MN");
 

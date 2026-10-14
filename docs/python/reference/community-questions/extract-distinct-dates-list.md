@@ -1,6 +1,5 @@
 ---
 title: How do I extract a list of distinct dates from a table?
-sidebar_label: How do I extract a list of distinct dates from a table?
 ---
 
 _I have a table with a date column that contains many repeated dates. How can I get a list of the unique dates?_

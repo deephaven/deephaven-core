@@ -9,8 +9,9 @@ package io.deephaven.engine.table.impl.ssms;
 
 import java.lang.reflect.Array;
 
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+
 import java.util.Objects;
-import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -18,8 +19,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.util.compare.ObjectComparisons;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.primitive.value.iterator.ValueIterator;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.chunk.*;
@@ -32,9 +33,10 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 
 
-public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, ObjectVector<Object> {
+public final class ObjectSegmentedSortedMultiset extends AbstractObjectSegmentedSortedMultiset {
     private final int leafSize;
     private int leafCount;
     private int size;
@@ -74,7 +76,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     private final Class componentType;
 
     /**
-     * Create a ObjectSegmentedSortedArray with the given leafSize.
+     * Create an ObjectSegmentedSortedMultiset with the given leafSize.
      *
      * @param leafSize the maximumSize for any leaf
      * @param componentType the type of the underlying Object
@@ -138,7 +140,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             return true;
         }
         if (isSingleton()) {
-            if (ObjectComparisons.eq(value, singletonValue)) {
+            if (eq(value, singletonValue)) {
                 singletonCount += count;
                 totalSize += count;
                 validate();
@@ -148,21 +150,21 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         final boolean added;
-        final Object max = getMaxObject();
-        if (ObjectComparisons.gt(value, max)) {
+        final int maxComparison = ObjectComparisons.compare(value, getMaxObject());
+        if (maxComparison > 0) {
             maybeAccumulateAddition(value);
             appendMaximum(value, count);
             added = true;
-        } else if (ObjectComparisons.eq(value, max)) {
+        } else if (maxComparison == 0) {
             addMaxCount(count);
             added = false;
         } else {
-            final Object min = getMinObject();
-            if (ObjectComparisons.lt(value, min)) {
+            final int minComparison = ObjectComparisons.compare(value, getMinObject());
+            if (minComparison < 0) {
                 maybeAccumulateAddition(value);
                 prependMinimum(value, count);
                 added = true;
-            } else if (ObjectComparisons.eq(value, min)) {
+            } else if (minComparison == 0) {
                 addMinCount(count);
                 added = false;
             } else {
@@ -181,7 +183,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     private boolean insertInterior(Object value, long count) {
         if (leafCount == 1) {
             final int ip = upperBound(directoryValues, 0, size, value);
-            if (ObjectComparisons.eq(directoryValues[ip], value)) {
+            if (eq(directoryValues[ip], value)) {
                 directoryCount[ip] += count;
                 totalSize += count;
                 return false;
@@ -209,7 +211,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         final long[] leafCount = leafCounts[leaf];
         final int leafSz = leafSizes[leaf];
         final int ip = upperBound(leafValue, 0, leafSz, value);
-        if (ip < leafSz && ObjectComparisons.eq(leafValue[ip], value)) {
+        if (ip < leafSz && eq(leafValue[ip], value)) {
             leafCount[ip] += count;
             totalSize += count;
             return false;
@@ -289,7 +291,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             } else {
                 rlpos = upperBound(leafValues, rlpos, leafSize, nextValue);
                 if (rlpos < leafSize) {
-                    if (ObjectComparisons.eq(leafValues[rlpos], nextValue)) {
+                    if (eq(leafValues[rlpos], nextValue)) {
                         totalSize += counts.get(ripos);
                         leafCounts[rlpos] += counts.get(ripos);
                         ripos++;
@@ -646,7 +648,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
 
         if (isSingleton()) {
-            if (length == 1 && ObjectComparisons.eq(valuesToInsert.get(offset), singletonValue)) {
+            if (length == 1 && eq(valuesToInsert.get(offset), singletonValue)) {
                 // the only value being inserted is the one we already hold; just bump its count
                 singletonCount += counts.get(offset);
                 totalSize += counts.get(offset);
@@ -1104,6 +1106,16 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         return lo;
     }
 
+    /**
+     * Test two values for equality consistent with the ordering of this set; the set holds one entry for each class of
+     * equal values.
+     */
+    private static boolean eq(Object lhs, Object rhs) {
+        // region equality function
+        return ObjectComparisons.compareEquals(lhs, rhs);
+        // endregion equality function
+    }
+
     // endregion
 
     // region Removal
@@ -1146,13 +1158,13 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         Assert.gtZero(count, "count");
         validate();
         if (isSingleton()) {
-            Assert.assertion(ObjectComparisons.eq(value, singletonValue),
-                    "ObjectComparisons.eq(value, singletonValue)");
+            Assert.assertion(eq(value, singletonValue),
+                    "eq(value, singletonValue)");
             Assert.leq(count, "count", singletonCount, "singletonCount");
             singletonCount -= count;
             totalSize -= count;
             if (singletonCount == 0) {
-                maybeAccumulateRemoval(value);
+                maybeAccumulateRemoval(singletonValue);
                 clear();
                 validate();
                 return true;
@@ -1162,8 +1174,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
         if (leafCount == 1) {
             final int pos = upperBound(directoryValues, 0, size, value);
-            Assert.assertion(pos < size && ObjectComparisons.eq(directoryValues[pos], value),
-                    "pos < size && ObjectComparisons.eq(directoryValues[pos], value)");
+            Assert.assertion(pos < size && eq(directoryValues[pos], value),
+                    "pos < size && eq(directoryValues[pos], value)");
             Assert.leq(count, "count", directoryCount[pos], "directoryCount[pos]");
             directoryCount[pos] -= count;
             totalSize -= count;
@@ -1171,7 +1183,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 validate();
                 return false;
             }
-            maybeAccumulateRemoval(value);
+            maybeAccumulateRemoval(directoryValues[pos]);
             System.arraycopy(directoryValues, pos + 1, directoryValues, pos, size - pos - 1);
             System.arraycopy(directoryCount, pos + 1, directoryCount, pos, size - pos - 1);
             size--;
@@ -1187,8 +1199,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         final long[] leafCount = leafCounts[leaf];
         final int leafSz = leafSizes[leaf];
         final int pos = upperBound(leafValue, 0, leafSz, value);
-        Assert.assertion(pos < leafSz && ObjectComparisons.eq(leafValue[pos], value),
-                "pos < leafSz && ObjectComparisons.eq(leafValue[pos], value)");
+        Assert.assertion(pos < leafSz && eq(leafValue[pos], value),
+                "pos < leafSz && eq(leafValue[pos], value)");
         Assert.leq(count, "count", leafCount[pos], "leafCount[pos]");
         leafCount[pos] -= count;
         totalSize -= count;
@@ -1196,7 +1208,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             validate();
             return false;
         }
-        maybeAccumulateRemoval(value);
+        maybeAccumulateRemoval(leafValue[pos]);
         System.arraycopy(leafValue, pos + 1, leafValue, pos, leafSz - pos - 1);
         System.arraycopy(leafCount, pos + 1, leafCount, pos, leafSz - pos - 1);
         leafSizes[leaf] = leafSz - 1;
@@ -1252,8 +1264,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             // by contract we only remove values that are present, so a singleton can only be asked to remove its one
             // value
             Assert.eq(length, "length", 1);
-            Assert.assertion(ObjectComparisons.eq(valuesToRemove.get(offset), singletonValue),
-                    "ObjectComparisons.eq(valuesToRemove.get(offset), singletonValue)");
+            Assert.assertion(eq(valuesToRemove.get(offset), singletonValue),
+                    "eq(valuesToRemove.get(offset), singletonValue)");
             singletonCount -= counts.get(offset);
             totalSize -= counts.get(offset);
             Assert.geqZero(singletonCount, "singletonCount");
@@ -1500,11 +1512,12 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             if (rlpos == sz.get()) {
                 break;
             }
+            Assert.assertion(eq(leafValues[rlpos], removeValue), "eq(leafValues[rlpos], removeValue)");
             leafCounts[rlpos] -= counts.get(ripos);
             totalSize -= counts.get(ripos);
             Assert.geqZero(leafCounts[rlpos], "leafCounts[rlpos]");
             if (leafCounts[rlpos] == 0) {
-                maybeAccumulateRemoval(removeValue);
+                maybeAccumulateRemoval(leafValues[rlpos]);
                 // we need to do some compaction at the end of this iteration
                 if (cl == -1) {
                     removeContext.compactionLocations[cl = 0] = rlpos;
@@ -2024,7 +2037,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         if (isSingleton()) {
             // we hold a single value; it can only leave us, never grow our cardinality. Transfer count copies of it to
             // the back of the destination (merging if it already holds that value as its maximum) and shed them.
-            if (destination.size > 0 && ObjectComparisons.eq(singletonValue, destination.getMaxObject())) {
+            if (destination.size > 0 && eq(singletonValue, destination.getMaxObject())) {
                 destination.addMaxCount(count);
             } else {
                 destination.appendMaximum(singletonValue, count);
@@ -2040,7 +2053,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             return;
         }
 
-        if (destination.size > 0 && ObjectComparisons.eq(getMinObject(), destination.getMaxObject())) {
+        if (destination.size > 0 && eq(getMinObject(), destination.getMaxObject())) {
             final long minCount = getMinCount();
             final long toAdd;
             if (minCount > count) {
@@ -2483,7 +2496,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         if (isSingleton()) {
             // we hold a single value; it can only leave us, never grow our cardinality. Transfer count copies of it to
             // the front of the destination (merging if it already holds that value as its minimum) and shed them.
-            if (destination.size > 0 && ObjectComparisons.eq(singletonValue, destination.getMinObject())) {
+            if (destination.size > 0 && eq(singletonValue, destination.getMinObject())) {
                 destination.addMinCount(count);
             } else {
                 destination.prependMinimum(singletonValue, count);
@@ -2499,7 +2512,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             return;
         }
 
-        if (destination.size > 0 && ObjectComparisons.eq(getMaxObject(), destination.getMinObject())) {
+        if (destination.size > 0 && eq(getMaxObject(), destination.getMinObject())) {
             final long maxCount = getMaxCount();
             final long toAdd;
             if (maxCount > count) {
@@ -2779,55 +2792,72 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     }
 
     private Object[] keyArray() {
-        return keyArray(0, size - 1);
+        return keyArray(0, size);
     }
 
     /**
-     * Create an array of the current keys beginning with the first (inclusive) and ending with the last (inclusive)
-     * 
-     * @param first
-     * @param last
-     * @return
+     * Create an array of the current keys from {@code fromIndexInclusive} (inclusive) to {@code toIndexExclusive}
+     * (exclusive). Following the {@link ObjectVector} contract, offsets outside {@code [0, size())} are legal and
+     * contribute the null value rather than an error.
+     *
+     * @param fromIndexInclusive The first offset to include
+     * @param toIndexExclusive The first offset after {@code fromIndexInclusive} to not include
+     * @return An array of the requested keys, of length {@code toIndexExclusive - fromIndexInclusive}
      */
-    private Object[] keyArray(long first, long last) {
-        if (isEmpty()) {
+    private Object[] keyArray(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+
+        final int totalSize =
+                LongSizedDataStructure.intSize("keyArray", toIndexExclusive - fromIndexInclusive);
+        if (totalSize == 0) {
             // region EmptyKeyArrayAllocation
             return (Object[]) Array.newInstance(getComponentType(), 0);
             // endregion EmptyKeyArrayAllocation
         }
 
-        final int totalSize = (int) (last - first + 1);
         // region KeyArrayAllocation
         final Object[] keyArray = (Object[]) Array.newInstance(getComponentType(), totalSize);
         // endregion KeyArrayAllocation
+
+        // the requested range may extend past either end of this SSM; those offsets read as null
+        final long firstIncluded = Math.max(fromIndexInclusive, 0);
+        final long lastExcluded = Math.max(Math.min(toIndexExclusive, size), firstIncluded);
+        int remaining = (int) (lastExcluded - firstIncluded);
+        if (remaining == 0) {
+            // the range lies entirely outside this SSM, so every offset is null
+            Arrays.fill(keyArray, null);
+            return keyArray;
+        }
+
+        // null only what the copy below will not reach: with something in range, destOffset is within the result and
+        // destOffset + remaining is at most its length
+        final int destOffset = (int) (firstIncluded - fromIndexInclusive);
+        if (destOffset > 0) {
+            Arrays.fill(keyArray, 0, destOffset, null);
+        }
+        if (destOffset + remaining < totalSize) {
+            Arrays.fill(keyArray, destOffset + remaining, totalSize, null);
+        }
+
         if (leafCount == 1) {
             if (directoryValues == null) {
-                keyArray[0] = singletonValue;
+                keyArray[destOffset] = singletonValue;
             } else {
-                System.arraycopy(directoryValues, (int) first, keyArray, 0, totalSize);
+                System.arraycopy(directoryValues, (int) firstIncluded, keyArray, destOffset, remaining);
             }
-        } else if (leafCount > 0) {
-            int offset = 0;
-            int copied = 0;
-            int skipped = 0;
-            for (int li = 0; li < leafCount && copied < totalSize; ++li) {
-                if (skipped < first) {
-                    final int toSkip = (int) first - skipped;
-                    if (toSkip < leafSizes[li]) {
-                        final int nToCopy = Math.min(leafSizes[li] - toSkip, totalSize);
-                        System.arraycopy(leafValues[li], toSkip, keyArray, 0, nToCopy);
-                        copied = nToCopy;
-                        offset = copied;
-                        skipped = (int) first;
-                    } else {
-                        skipped += leafSizes[li];
-                    }
-                } else {
-                    int nToCopy = Math.min(leafSizes[li], totalSize - copied);
-                    System.arraycopy(leafValues[li], 0, keyArray, offset, nToCopy);
-                    offset += leafSizes[li];
-                    copied += nToCopy;
+        } else {
+            int dest = destOffset;
+            int toSkip = (int) firstIncluded;
+            for (int li = 0; li < leafCount && remaining > 0; ++li) {
+                if (toSkip >= leafSizes[li]) {
+                    toSkip -= leafSizes[li];
+                    continue;
                 }
+                final int nToCopy = Math.min(leafSizes[li] - toSkip, remaining);
+                System.arraycopy(leafValues[li], toSkip, keyArray, dest, nToCopy);
+                dest += nToCopy;
+                remaining -= nToCopy;
+                toSkip = 0;
             }
         }
         return keyArray;
@@ -2939,8 +2969,9 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     // region ObjectVector
     @Override
     public Object get(long index) {
-        if (index < 0 || index > size()) {
-            throw new IllegalArgumentException("Illegal index " + index + " current size: " + size());
+        // offsets outside [0, size()) are legal and read as null, per the ObjectVector contract
+        if (index < 0 || index >= size()) {
+            return null;
         }
 
         if (leafCount == 1) {
@@ -2970,12 +3001,56 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     public ValueIterator<Object> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
 
+        // The requested slice may extend past either end of this SSM; those offsets are legal and iterate as null.
+        // Split it into the leading nulls, the part this SSM actually stores, and the trailing nulls.
+        final long totalWanted = toIndexExclusive - fromIndexInclusive;
+        final long prefixNulls = fromIndexInclusive < 0 ? Math.min(-fromIndexInclusive, totalWanted) : 0;
+        final long innerFrom = Math.max(fromIndexInclusive, 0);
+        final long innerLength = innerFrom < size ? Math.min(size - innerFrom, totalWanted - prefixNulls) : 0;
+
+        return ValueIterator.wrapWithNulls(
+                innerLength == 0 ? null : inRangeIterator(innerFrom, innerFrom + innerLength),
+                prefixNulls,
+                totalWanted - prefixNulls - innerLength);
+    }
+
+    /**
+     * Iterate a non-empty slice of the values this SSM stores. Both bounds must lie within {@code [0, size()]}.
+     *
+     * @param fromIndexInclusive The first offset to include
+     * @param toIndexExclusive The first offset after {@code fromIndexInclusive} to not include
+     * @return An iterator over the requested slice
+     */
+    private ValueIterator<Object> inRangeIterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (leafCount <= 1) {
             // Empty, singleton, and single-leaf SSMs store their values contiguously, so get(long) is already O(1).
-            return ObjectVector.super.iterator(fromIndexInclusive, toIndexExclusive);
+            return new ValueIterator<Object>() {
+
+                private long nextIndex = fromIndexInclusive;
+
+                @Override
+                public Object next() {
+                    if (nextIndex >= toIndexExclusive) {
+                        throw new NoSuchElementException();
+                    }
+                    // O(1): with at most one leaf there is no directory to rescan, so this is a single array read
+                    return get(nextIndex++);
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return nextIndex < toIndexExclusive;
+                }
+
+                @Override
+                public long remaining() {
+                    return toIndexExclusive - nextIndex;
+                }
+            };
         }
 
         // Resolve the starting leaf once; from there each element is a constant-time step.
+        // Scanned rather than binary searched: that needs a prefix sum of leafSizes, which then has to be maintained.
         int firstLeaf = 0;
         long firstOffset = fromIndexInclusive;
         while (firstLeaf < leafCount && firstOffset >= leafSizes[firstLeaf]) {
@@ -2997,8 +3072,12 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
             @Override
             public Object next() {
+                if (remaining <= 0) {
+                    throw new NoSuchElementException();
+                }
                 while (offset >= leafSize) {
                     if (++leaf >= leafCount) {
+                        // unreachable: the bounds were clamped to this SSM's size before we were constructed
                         throw new IllegalStateException(
                                 "Index " + (toIndexExclusive - remaining) + " not found in this SSM");
                     }
@@ -3024,6 +3103,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
     @Override
     public ObjectVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+        // materialized rather than a ObjectVectorSlice view: an SSM is live and mutable, and a slice would capture our
+        // size at construction and then read stale bounds
         return new ObjectVectorDirect(keyArray(fromIndexInclusive, toIndexExclusive));
     }
 
@@ -3059,18 +3140,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     }
     // endregion
 
-    // region VectorEquals
-    // endregion VectorEquals
-
-    // region UnboxValue
-    // endregion UnboxValue
-
     private boolean equalsArray(ObjectVector<?> o) {
-        // region EqualsArrayTypeCheck
-        // No component-type check: it only guards the primitive variants' unboxValue() cast, and gating
-        // on the declared type would break symmetry with ObjectVector.equals().
-        // endregion EqualsArrayTypeCheck
-
         if (size() != o.size()) {
             return false;
         }
@@ -3107,22 +3177,26 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
      * {@inheritDoc}
      *
      * <p>
-     * Equal to any Vector holding the same values, including another SSM: an SSM <em>is</em> a Vector, so it takes the
-     * same element-wise path rather than a structural comparison of leaf layouts. Two SSMs can hold identical values in
-     * different layouts -- leaves need not be full, and the node sizes need not agree -- so layout is not a sound basis
-     * for equality.
+     * Equal to any {@link ObjectVector} holding the same values, including another SSM: an SSM <em>is</em> a
+     * {@link ObjectVector}, so it takes the same element-wise path rather than a structural comparison of leaf layouts.
+     * Two SSMs can hold identical values in different layouts -- leaves need not be full, and the node sizes need not
+     * agree -- so layout is not a sound basis for equality.
+     *
+     * <p>
+     * Nothing else is equal, exactly as {@link ObjectVector#equals(ObjectVector, Object)} requires: a Vector that stores
+     * its elements some other way cannot be accepted without breaking the {@link #hashCode()} contract, and would not
+     * be reciprocated in any case, since that Vector's own {@code equals} rejects a {@link ObjectVector}.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        // region VectorEquals
-        // endregion VectorEquals
 
         if (o instanceof ObjectVector) {
             return equalsArray((ObjectVector<?>) o);
         }
+
         return false;
     }
 

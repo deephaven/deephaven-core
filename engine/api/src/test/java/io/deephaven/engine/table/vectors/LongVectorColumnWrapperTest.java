@@ -12,11 +12,11 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import io.deephaven.vector.LongVectorTest;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static org.junit.Assert.*;
 
 /**
  * {@link LongVectorTest} implementation for {@link io.deephaven.engine.table.vectors.LongVectorColumnWrapper}.
@@ -91,16 +91,16 @@ public class LongVectorColumnWrapperTest extends LongVectorTest {
 
     private static void checkPairs(final LongVector a0, final LongVector a1, final LongVector a3,
             final LongVector b0, final LongVector b1, final LongVector b3) {
-        TestCase.assertEquals(0, a0.compareTo(b0));
-        TestCase.assertTrue(a0.compareTo(b1) < 0);
-        TestCase.assertTrue(a0.compareTo(b3) < 0);
+        assertEquals(0, a0.compareTo(b0));
+        assertTrue(a0.compareTo(b1) < 0);
+        assertTrue(a0.compareTo(b3) < 0);
 
-        TestCase.assertTrue(a1.compareTo(b0) > 0);
-        TestCase.assertEquals(0, a1.compareTo(b1));
-        TestCase.assertTrue(a1.compareTo(b3) < 0);
+        assertTrue(a1.compareTo(b0) > 0);
+        assertEquals(0, a1.compareTo(b1));
+        assertTrue(a1.compareTo(b3) < 0);
 
-        TestCase.assertTrue(a3.compareTo(b0) > 0);
-        TestCase.assertTrue(a3.compareTo(b1) > 0);
-        TestCase.assertEquals(0, a3.compareTo(b3));
+        assertTrue(a3.compareTo(b0) > 0);
+        assertTrue(a3.compareTo(b1) > 0);
+        assertEquals(0, a3.compareTo(b3));
     }
 }

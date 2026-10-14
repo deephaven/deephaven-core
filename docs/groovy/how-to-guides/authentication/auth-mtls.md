@@ -1,6 +1,5 @@
 ---
 title: Configure mTLS for Deephaven
-sidebar_label: mTLS
 ---
 
 This guide will show you how to configure Deephaven to use mTLS to authenticate users trying to gain access.

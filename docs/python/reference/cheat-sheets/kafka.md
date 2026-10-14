@@ -1,6 +1,5 @@
 ---
 title: Kafka Cheat Sheet
-sidebar_label: Kafka
 ---
 
 - [`consume`](../data-import-export/Kafka/consume.md)

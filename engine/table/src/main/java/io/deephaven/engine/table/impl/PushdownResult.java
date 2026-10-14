@@ -180,6 +180,25 @@ public final class PushdownResult implements SafeCloseable {
     }
 
     /**
+     * Constructs a new result with {@code match} as {@link #match() match} and no {@link #maybeMatch() maybeMatch}, so
+     * that no residual filter runs over the selection. Semantically equivalent to
+     * {@code of(selection, match, RowSetFactory.empty())}, but this method is preferred over that case as the caller
+     * need not create and close the empty row set. {@code match} must be a subset of {@code selection}, and
+     * {@code selection} must be the {@code selection} from
+     * {@link PushdownFilterMatcher#pushdownFilter(WhereFilter, RowSet, boolean, PushdownFilterContext, long, JobScheduler, Consumer, Consumer)}.
+     *
+     * @param selection the selection
+     * @param match rows that match, a subset of {@code selection}
+     * @return the result
+     * @see #of(RowSet, RowSet, RowSet)
+     */
+    public static PushdownResult exactMatch(@NotNull final RowSet selection, @NotNull final RowSet match) {
+        try (final WritableRowSet empty = RowSetFactory.empty()) {
+            return of(selection, match, empty);
+        }
+    }
+
+    /**
      * Constructs a new result with {@code selection}, {@code match}, and {@code maybeMatch}. {@code match} and
      * {@code maybeMatch} must be non-overlapping subsets of {@code selection}, but this may not be thoroughly checked.
      * {@code selection} must be the {@code selection} from

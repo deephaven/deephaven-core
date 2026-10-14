@@ -18,15 +18,17 @@ class JsPluginsFromManifest {
         for (JsPluginManifestEntry entry : manifest.plugins()) {
             final Path pluginPath = manifestRoot.resolve(entry.name());
             final Path pluginMain = pluginPath.relativize(pluginPath.resolve(entry.main()));
-            final JsPlugin plugin = JsPlugin.builder()
+            final JsPlugin.Builder builder = JsPlugin.builder()
                     .name(entry.name())
                     .version(entry.version())
                     .main(pluginMain)
-                    .path(pluginPath)
-                    .build();
+                    .path(pluginPath);
+            if (entry.loader() != null) {
+                builder.loader(entry.loader());
+            }
             // We expect manifests to be "production" use cases - they should already be packed as appropriate.
             // Additionally, there is no strict requirement that they have package.json anyways.
-            plugins.add(plugin);
+            plugins.add(builder.build());
         }
         return plugins;
     }

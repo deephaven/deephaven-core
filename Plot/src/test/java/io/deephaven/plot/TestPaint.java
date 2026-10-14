@@ -3,11 +3,14 @@
 //
 package io.deephaven.plot;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.gui.color.Color;
+import org.junit.Test;
 
-public class TestPaint extends BaseArrayTestCase {
+import static org.junit.Assert.*;
 
+public class TestPaint {
+
+    @Test
     public void testComponenet() {
         Color c = new Color(0, 0, 0);
         Color c2 = new Color(1, 1, 1);

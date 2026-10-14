@@ -9,7 +9,9 @@ import numpy as np
 
 import deephaven._udf as _udf
 from deephaven import DHError, dtypes, empty_table, new_table
-from deephaven.column import int_col
+from deephaven.agg import count_where
+from deephaven.column import int_col, long_col
+from deephaven.execution_context import make_user_exec_ctx
 from deephaven.filters import Filter, and_
 from tests.test_udf_scalar_args import (
     _J_TYPE_J_ARRAY_TYPE_MAP,
@@ -195,6 +197,19 @@ class VectorizationTestCase(BaseTestCase):
         self.assertEqual(4, _udf.vectorized_count)
         self.assertEqual(t1.size, t.size)
         self.assertEqual(9, t.size)
+
+    def test_count_where_vectorized_later_filter(self):
+        def pyfunc_bool(p1) -> bool:
+            return p1 % 2 == 0
+
+        # Without group-by columns, count_where takes its count from the return value of the last filter's filterAnd,
+        # which must be the number of values still true: rows 1 and 3 pass both filters.
+        t = new_table([int_col("X", [1, 2, -3, 4]), int_col("Y", [1, 2, 3, 4])])
+        # agg_by adds the caller's variables to the query scope only for formula aggregations
+        with make_user_exec_ctx(freeze_vars=["pyfunc_bool"]):
+            counted = t.agg_by(count_where("N", ["X > 0", "pyfunc_bool(Y)"]))
+        self.assertGreater(_udf.vectorized_count, 0)
+        self.assert_table_equals(new_table([long_col("N", [2])]), counted)
 
     def test_return_types(self):
         def pyfunc_bool() -> bool:

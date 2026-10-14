@@ -18,7 +18,7 @@ import org.junit.Test;
 // region NullConstantImport
 // endregion NullConstantImport
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static junit.framework.TestCase.*;
+import static org.junit.Assert.*;
 
 /**
  * Unit tests for various permutations of {@link ObjectVector}.

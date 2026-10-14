@@ -19,7 +19,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.util.unboxer.ChunkUnboxer;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,26 +56,12 @@ public class MapChunkWriter<T>
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final BaseChunkWriter.Context context,
-            @NotNull final RowSequence subset) {
-        final MutableInt nullCount = new MutableInt(0);
-        final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> {
-            if (objectChunk.isNull((int) row)) {
-                nullCount.increment();
-            }
-        });
-        return nullCount.get();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final BaseChunkWriter.Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         final ObjectChunk<Object, Values> objectChunk = context.getChunk().asObjectChunk();
-        subset.forAllRowKeys(row -> serContext.setNextIsNull(objectChunk.isNull((int) row)));
+        subset.forAllRowKeys(row -> validity.setNextIsNull(objectChunk.isNull((int) row)));
     }
 
     public final class Context extends ChunkWriter.Context {
@@ -305,10 +290,13 @@ public class MapChunkWriter<T>
             // write the validity array with LSB indexing
             bytesWritten += writeValidityBuffer(dos);
 
-            // write offsets array
+            // Write the offsets array in bounded windows, flushing a full window with a single bulk write rather than
+            // one DataOutput int — i.e. four individual byte writes — per element.
             final WritableIntChunk<ChunkPositions> offsetsToUse = myOffsets == null ? context.offsets : myOffsets;
-            for (int i = 0; i < offsetsToUse.size(); ++i) {
-                dos.writeInt(offsetsToUse.get(i));
+            try (final BulkIntWriter offsetWriter = new BulkIntWriter(outputStream)) {
+                for (int i = 0; i < offsetsToUse.size(); ++i) {
+                    offsetWriter.write(offsetsToUse.get(i));
+                }
             }
             bytesWritten += ((long) offsetsToUse.size()) * Integer.BYTES;
             bytesWritten += writePadBuffer(dos, bytesWritten);

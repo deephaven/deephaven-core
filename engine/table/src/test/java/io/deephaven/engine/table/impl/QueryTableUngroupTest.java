@@ -34,17 +34,19 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static io.deephaven.base.testing.Asserts.assertEquals;
 import static io.deephaven.engine.table.impl.SnapshotTestUtils.verifySnapshotBarrageMessage;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 /**
  * Test of QueryTable functionality.
@@ -58,6 +60,7 @@ import static org.junit.Assert.assertArrayEquals;
 @Category(OutOfBandTest.class)
 public class QueryTableUngroupTest extends QueryTableTestBase {
 
+    @Test
     public void testShifts() {
         final QueryTable source = testRefreshingTable(
                 intCol("Key", 1, 2, 3),
@@ -95,6 +98,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertTableEquals(expected.head(0), ungrouped);
     }
 
+    @Test
     public void testContiguousShift() {
         final int oldBase = QueryTable.minimumUngroupBase;
         try (final SafeCloseable ignored = () -> QueryTable.minimumUngroupBase = oldBase) {
@@ -143,6 +147,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testContiguousRemoves() {
         final int oldBase = QueryTable.minimumUngroupBase;
         try (final SafeCloseable ignored = () -> QueryTable.minimumUngroupBase = oldBase) {
@@ -179,6 +184,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testStatic() {
         final Table source = newTable(
                 intCol("Key", 1, 2, 3),
@@ -191,6 +197,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertTableEquals(expected, ungrouped);
     }
 
+    @Test
     public void testUngroupWithNullSecondColumn() {
         final QueryTable qt = testRefreshingTable(
                 col("C1", new int[] {1, 2, 3}, new int[0], null),
@@ -212,6 +219,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertTableEquals(expected, ug);
     }
 
+    @Test
     public void testNullFillWithNull() {
         final String[][] dataWithNullStringArray = new String[][] {null};
         final Boolean[][] dataWithNullBooleanArray = new Boolean[][] {null};
@@ -246,6 +254,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertTableEquals(expected2.update("C2=(Object)C2", "C3=(Object)C3"), ungrouped2);
     }
 
+    @Test
     public void testModifyToNull() {
         final QueryTable qt = testRefreshingTable(
                 col("C1", new int[] {1, 2, 3}, new int[0], null, new int[] {7}),
@@ -274,6 +283,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertTableEquals(expected2, ug);
     }
 
+    @Test
     public void testModifyToNullFill() {
         final QueryTable qt = testRefreshingTable(
                 col("C1", new int[] {1, 2, 3}, new int[0], null, new int[] {7}),
@@ -302,6 +312,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertTableEquals(expected2, ug);
     }
 
+    @Test
     public void testNoColumns() {
         final Table table = newTable(col("X", 1, 2, 3));
         final Table result = table.ungroup();
@@ -313,6 +324,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertEquals("Column X is not an array or Vector", columnException.getMessage());
     }
 
+    @Test
     public void testSimple() {
         final int[][] data1 = new int[][] {new int[] {4, 5, 6}, new int[0], new int[] {7, 8}};
         final Table table = testRefreshingTable(col("X", 1, 2, 3),
@@ -368,7 +380,6 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                 ColumnVectors.ofObject(t1, "Y", String.class).toArray());
         assertArrayEquals(new int[] {4, 5, 6, 4, 5, 6, 4, 5, 6}, ColumnVectors.ofInt(t1, "Z").toArray());
 
-
         t1 = table2.ungroup("Z");
         assertEquals(5, t1.size());
         assertEquals(Arrays.asList("X", "Y", "Z"), t1.getDefinition().getColumnNames());
@@ -383,6 +394,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                 ColumnVectors.ofObject(t1, "Y", String.class).toArray());
     }
 
+    @Test
     public void testSomeSizesChanged() {
         final int[][] dataY1 = new int[][] {new int[] {4, 5, 6}, new int[0], new int[] {7, 8}};
         final double[][] dataZ1 =
@@ -485,7 +497,6 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertFalse(tuv3.getResultTable().isFailed());
         assertFalse(tuv4.getResultTable().isFailed());
 
-
         // now we'll break the "Z" column, using "Y" as an (unmodified) reference
         final double[][] dataZ6 = new double[][] {dataZ1[1]};
         try (final ExpectingError ignored2 = new ExpectingError()) {
@@ -531,6 +542,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         return result;
     }
 
+    @Test
     public void testUngroupConstructSnapshotOfBoxedNull() {
         final Table t =
                 testRefreshingTable(i(0).toTracking())
@@ -582,7 +594,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertEquals(NULL_INT, snap.addColumnData[1].data.get(0).asIntChunk().get(1));
     }
 
-
+    @Test
     public void testUngroupConstructSnapshotSingleColumnTable() {
         final Table t =
                 testRefreshingTable(i(0).toTracking())
@@ -608,6 +620,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testUngroupableColumnSources() {
         final Table table = testRefreshingTable(col("X", 1, 1, 2, 2, 3, 3, 4, 4), col("Int", 1, 2, 3, 4, 5, 6, 7, null),
                 col("Double", 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, null, 0.45),
@@ -671,7 +684,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
-
+    @Test
     public void testUngroupOverflow() {
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
             final QueryTable table = testRefreshingTable(i(5, 7).toTracking(), col("X", 1, 2),
@@ -708,6 +721,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testUngroupMaxBase() {
         final QueryTable table = testTable(RowSetFactory.flat(1L << 62).toTracking());
         final Table withSingle = table.update("X=1");
@@ -748,6 +762,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                 ise.getMessage());
     }
 
+    @Test
     public void testBaseTooBig() {
         final QueryTable table = testTable(RowSetFactory.flat((1L << 63) - 1).toTracking());
         // noinspection SizeReplaceableByIsEmpty
@@ -769,6 +784,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                 af.getMessage());
     }
 
+    @Test
     public void testUngroupWithRebase() {
         final int minimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try {
@@ -819,6 +835,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testRebaseWithShift() {
         final int minimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try {
@@ -855,6 +872,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testRebaseWithShift2() {
         final int minimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try {
@@ -892,7 +910,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
-
+    @Test
     public void testUngroupIncrementalRebase() {
         final int minimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try (final SafeCloseable ignored2 = () -> QueryTable.setMinimumUngroupBase(minimumUngroupBase)) {
@@ -960,6 +978,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testUngroupIncrementalLarge() throws ParseException {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             testUngroupIncrementalLarge(3000, false, 0, 5);
@@ -1024,7 +1043,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
-
+    @Test
     public void testUngroupIncrementalPartialModificationsRebase() {
         final int minimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try (final SafeCloseable ignored2 = () -> QueryTable.setMinimumUngroupBase(minimumUngroupBase)) {
@@ -1056,7 +1075,6 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                         new IntGenerator(0, 3),
                         new IntGenerator(4, 7)));
 
-
         final QueryTable withArrays =
                 addRandomizedArrays(table.update("ArraySize=MiddleArray ? MiddleSize: SmallSize"),
                         "ArraySize", List.of(ColumnDefinition.of("IA", Type.find(int[].class)),
@@ -1084,7 +1102,6 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                     columnInfo, en);
         }
     }
-
 
     public static QueryTable addRandomizedArrays(final Table parent, final String sizeColumn,
             final List<ColumnDefinition<?>> outputColumns, final int seed) {
@@ -1126,7 +1143,6 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                             final ObjectTestSource<?> outputSource =
                                     (ObjectTestSource<?>) columnSources.get(columnDefinition.getName());
                             outputSource.remove(upstream.removed());
-
 
                             upstream.shifted().apply(outputSource::shift);
 
@@ -1214,6 +1230,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         return new ObjectVectorDirect<>(data);
     }
 
+    @Test
     public void testUngroupIncremental() throws ParseException {
         testUngroupIncremental(100, false, 0, 50);
         testUngroupIncremental(100, true, 0, 50);
@@ -1285,6 +1302,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testUngroupBlink() throws ParseException {
         testUngroupBlink(100, false, 0, 20);
         testUngroupBlink(100, true, 0, 20);
@@ -1322,6 +1340,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testUngroupMismatch() {
         testUngroupMismatch(100, true);
         try {
@@ -1360,6 +1379,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
     }
 
     @SuppressWarnings({"RedundantCast", "unchecked"})
+    @Test
     public void testUngroupJoined_IDS6311() {
         final QueryTable left =
                 testRefreshingTable(col("Letter", 'a', 'b', 'c', 'd'), intCol("Value", 0, 1, 2, 3));
@@ -1440,12 +1460,12 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertEquals(1, ungrouped.getColumnSource("LValue").getLong(secondKey));
 
         assertEquals(QueryConstants.NULL_FLOAT,
-                ungrouped.getColumnSource("FValue").getFloat(firstKey));
-        assertEquals(1.1f, ungrouped.getColumnSource("FValue").getFloat(secondKey));
+                ungrouped.getColumnSource("FValue").getFloat(firstKey), 0.0);
+        assertEquals(1.1f, ungrouped.getColumnSource("FValue").getFloat(secondKey), 0.0);
 
         assertEquals(QueryConstants.NULL_DOUBLE,
-                ungrouped.getColumnSource("DValue").getDouble(firstKey));
-        assertEquals(1.1d, ungrouped.getColumnSource("DValue").getDouble(secondKey));
+                ungrouped.getColumnSource("DValue").getDouble(firstKey), 0.0);
+        assertEquals(1.1d, ungrouped.getColumnSource("DValue").getDouble(secondKey), 0.0);
 
         assertEquals(QueryConstants.NULL_CHAR, ungrouped.getColumnSource("CCol").getChar(firstKey));
         assertEquals('b', ungrouped.getColumnSource("CCol").getChar(secondKey));
@@ -1468,12 +1488,12 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         assertEquals(1, ungrouped.getColumnSource("LValue").getPrevLong(secondKey));
 
         assertEquals(QueryConstants.NULL_FLOAT,
-                ungrouped.getColumnSource("FValue").getPrevFloat(firstKey));
-        assertEquals(1.1f, ungrouped.getColumnSource("FValue").getPrevFloat(secondKey));
+                ungrouped.getColumnSource("FValue").getPrevFloat(firstKey), 0.0);
+        assertEquals(1.1f, ungrouped.getColumnSource("FValue").getPrevFloat(secondKey), 0.0);
 
         assertEquals(QueryConstants.NULL_DOUBLE,
-                ungrouped.getColumnSource("DValue").getPrevDouble(firstKey));
-        assertEquals(1.1d, ungrouped.getColumnSource("DValue").getPrevDouble(secondKey));
+                ungrouped.getColumnSource("DValue").getPrevDouble(firstKey), 0.0);
+        assertEquals(1.1d, ungrouped.getColumnSource("DValue").getPrevDouble(secondKey), 0.0);
 
         assertEquals(QueryConstants.NULL_CHAR, ungrouped.getColumnSource("CCol").getPrevChar(firstKey));
         assertEquals('b', ungrouped.getColumnSource("CCol").getPrevChar(secondKey));
@@ -1487,6 +1507,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testUngroupRebase() {
         final int oldMinimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try {
@@ -1523,7 +1544,6 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
                     .completeCycleForUnitTests();
             TableTools.show(table);
             TstUtils.validate("ungroupRebase add no rebase", en);
-
 
             // Now let's modify the first row such that we will cause a rebasing operation
             ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
@@ -1606,6 +1626,7 @@ public class QueryTableUngroupTest extends QueryTableTestBase {
         }
     }
 
+    @Test
     public void testRevertToMinimumSize() {
         final int oldMinimumUngroupBase = QueryTable.setMinimumUngroupBase(2);
         try {

@@ -1,6 +1,5 @@
 ---
 title: Merge tables
-sidebar_label: Merge
 ---
 
 Deephaven tables can be combined via two different categories of operation: merge operations and join operations. Merge operations combine tables by stacking them vertically, one on top of the other. Join operations combine tables (or specific columns from tables) horizontally, side by side.

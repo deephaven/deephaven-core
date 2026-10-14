@@ -17,17 +17,19 @@ import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
-import junit.framework.TestCase;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class TestSymbolTableCombiner extends RefreshingTableTestCase {
+    @Test
     public void testSymbolTableCombiner() {
         for (int seed = 0; seed < 3; ++seed) {
             testSymbolTableCombiner(seed);
@@ -82,7 +84,7 @@ public class TestSymbolTableCombiner extends RefreshingTableTestCase {
                     @Override
                     public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
                         originalException.printStackTrace();
-                        TestCase.fail(originalException.getMessage());
+                        fail(originalException.getMessage());
                         super.onFailureInternal(originalException, sourceEntry);
                     }
                 };

@@ -524,8 +524,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    protected RollupTableImpl copy() {
-        return new RollupTableImpl(getAttributes(), source, aggregations, includesConstituents, groupByColumns,
+    protected RollupTableImpl copy(@NotNull final Map<String, Object> attributes) {
+        return new RollupTableImpl(attributes, source, aggregations, includesConstituents,
+                groupByColumns,
                 levelTables, levelRowLookups, levelNodeTableSources,
                 aggregatedNodeDefinition, aggregatedNodeOperations,
                 constituentNodeDefinition, constituentNodeOperations,
@@ -798,7 +799,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
         final int nodeSlot = nodeSlot(childNodeId);
 
         final TrackingRowSet rowSet = levelTables[nodeDepth - 1].getRowSet();
-        if ((usePrev ? rowSet.findPrev(nodeSlot) : rowSet.find(nodeSlot)) == NULL_ROW_KEY) {
+        if ((usePrev ? rowSet.findPrev(nodeSlot) : rowSet.find(nodeSlot)) < 0) {
             // the aggregation knows about this key, but it does not actually exist in the table
             return NULL_ROW_KEY;
         }

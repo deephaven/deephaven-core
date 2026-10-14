@@ -21,6 +21,7 @@ import io.deephaven.engine.testutil.locations.TableBackedTableLocationKey;
 import io.deephaven.engine.testutil.locations.TableBackedTableLocationProvider;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.FindExceptionCause;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class SourcePartitionedTableTest extends RefreshingTableTestCase {
@@ -530,5 +532,58 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
             Thread.sleep(50);
         } while (System.currentTimeMillis() < cleanupDeadlineMillis);
         assertNull(p2tl.getRowSet());
+    }
+
+    /**
+     * The constructor populates the initial locations while the update graph is idle. A concurrent snapshot taken
+     * during the next update cycle reads previous values, and those must agree with the previous row set, which reports
+     * the initial rows as present.
+     */
+    @Test
+    public void testPrevReadableInFirstCycleAfterConstruction() {
+        final SourcePartitionedTable spt = setUpData(true);
+        final Table underlying = spt.table();
+        final ColumnSource<?> keySource = underlying.getColumnSource("TableLocationKey");
+        final ColumnSource<?> nameSource = underlying.getColumnSource("TableName");
+        final ColumnSource<?> constituentSource = underlying.getColumnSource("LocationTable");
+
+        final Runnable checkPrev = () -> {
+            try (final RowSet prevRows = underlying.getRowSet().copyPrev()) {
+                assertEquals(2, prevRows.size());
+                prevRows.forAllRowKeys(rowKey -> {
+                    assertEquals(keySource.get(rowKey), keySource.getPrev(rowKey));
+                    assertEquals(nameSource.get(rowKey), nameSource.getPrev(rowKey));
+                    assertSame(constituentSource.get(rowKey), constituentSource.getPrev(rowKey));
+                });
+            }
+        };
+
+        // The first cycle after construction is the one that exposes stale previous values
+        for (int cycle = 0; cycle < 2; ++cycle) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                updateGraph.refreshSources();
+                updateGraph.markSourcesRefreshedForUnitTests();
+                registrar.run();
+                checkPrev.run();
+            }, false);
+        }
+    }
+
+    @Test
+    public void testConstituentsFollowCreatorSystemicMarking() {
+        for (final boolean systemic : new boolean[] {true, false}) {
+            setUpData(false);
+            final SourcePartitionedTable spt = SystemicObjectTracker.executeSystemically(systemic,
+                    () -> new SourcePartitionedTable(p1.getDefinition(), t -> t.update("Doubled = intCol * 2"),
+                            tlp, false, false, null));
+            // Constituents are made when first read, which here is with the opposite systemic marking
+            final Table[] constituents = SystemicObjectTracker.executeSystemically(!systemic, spt::constituents);
+            assertEquals(2, constituents.length);
+            for (final Table constituent : constituents) {
+                assertTrue(constituent.hasColumns("Doubled"));
+                assertEquals(systemic,
+                        Boolean.TRUE.equals(constituent.getAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE)));
+            }
+        }
     }
 }

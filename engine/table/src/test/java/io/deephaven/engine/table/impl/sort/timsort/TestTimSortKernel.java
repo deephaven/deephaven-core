@@ -20,6 +20,8 @@ import org.junit.Rule;
 
 import java.util.Comparator;
 import java.util.List;
+import io.deephaven.util.QueryConstants;
+
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -245,7 +247,9 @@ public abstract class TestTimSortKernel {
     }
 
     static char generateCharValue(Random random) {
-        return (char) ('A' + random.nextInt(26));
+        // nulls are included so that the kernels' null-aware ordering (NULL_CHAR first) is exercised
+        final int selector = random.nextInt(27);
+        return selector == 26 ? QueryConstants.NULL_CHAR : (char) ('A' + selector);
     }
 
     static byte generateByteValue(Random random) {

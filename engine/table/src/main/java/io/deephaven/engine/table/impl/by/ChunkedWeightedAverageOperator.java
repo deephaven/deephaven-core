@@ -377,7 +377,7 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
             if (totalWeightedSum != existingWeightedSum) {
                 weightedSum.set(destination, totalWeightedSum);
             }
-            if (totalSumOfWeights != existingWeightedSum) {
+            if (totalSumOfWeights != existingSumOfWeights) {
                 sumOfWeights.set(destination, totalSumOfWeights);
             }
 

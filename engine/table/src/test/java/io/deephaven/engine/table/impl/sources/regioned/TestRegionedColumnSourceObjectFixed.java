@@ -7,13 +7,14 @@ import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.util.mutable.MutableLong;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.stream.Stream;
+
+import static org.junit.Assert.*;
 
 /**
  * Tests for {@link RegionedColumnSourceObject} with fixed length codec.
@@ -56,7 +57,6 @@ public class TestRegionedColumnSourceObjectFixed extends TstRegionedColumnSource
         }
     };
 
-
     private static final Value<String>[] REUSABLE_VALUES;
     static {
         final MutableLong length = new MutableLong(0);
@@ -76,7 +76,7 @@ public class TestRegionedColumnSourceObjectFixed extends TstRegionedColumnSource
     public void setUp() throws Exception {
         super.setUp();
         SUT = new RegionedColumnSourceObject.AsValues<String>(manager, String.class);
-        TestCase.assertEquals(String.class, SUT.getType());
+        assertEquals(String.class, SUT.getType());
     }
 
     private static byte[] objectToBytes(String inObject) {

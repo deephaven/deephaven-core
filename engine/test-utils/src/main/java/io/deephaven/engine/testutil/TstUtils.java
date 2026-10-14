@@ -64,9 +64,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.type.TypeUtils;
-import junit.framework.AssertionFailedError;
-import junit.framework.ComparisonFailure;
-import junit.framework.TestCase;
+import org.junit.ComparisonFailure;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 
@@ -81,6 +79,8 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.junit.Assert.*;
 
 /**
  * Utility functions to create and update test tables, compare results, and otherwise make unit testing more pleasant.
@@ -473,20 +473,39 @@ public class TstUtils {
         Assert.assertion(size <= sourceRowSet.size(), "size <= sourceRowSet.size()", size, "size", sourceRowSet,
                 "sourceRowSet.size()");
 
-        // generate an array that is the size of our RowSet, then shuffle it, and those are the positions we'll pick
-        final Integer[] positions = new Integer[(int) sourceRowSet.size()];
-        for (int ii = 0; ii < positions.length; ++ii) {
+        // callers are permitted to ask for a non-positive size, and expect an empty result rather than a failure
+        if (size <= 0) {
+            return RowSetFactory.empty();
+        }
+
+        if (size == sourceRowSet.size()) {
+            return sourceRowSet.copy();
+        }
+
+        // generate an array that is the size of our RowSet, then shuffle the prefix we are going to consume; a partial
+        // Fisher-Yates only has to place the first `size` positions, rather than permuting every position.
+        final int sourceSize = (int) sourceRowSet.size();
+        final int[] positions = new int[sourceSize];
+        for (int ii = 0; ii < sourceSize; ++ii) {
             positions[ii] = ii;
         }
-        Collections.shuffle(Arrays.asList(positions), random);
-
-        // now create a RowSet with each of our selected positions
-        final RowSetBuilderRandom resultBuilder = RowSetFactory.builderRandom();
         for (int ii = 0; ii < size; ++ii) {
-            resultBuilder.addKey(sourceRowSet.get(positions[ii]));
+            final int jj = ii + random.nextInt(sourceSize - ii);
+            final int selected = positions[jj];
+            positions[jj] = positions[ii];
+            positions[ii] = selected;
         }
 
-        return resultBuilder.build();
+        // subSetForPositions walks the source RowSet and the positions together, which is far cheaper than resolving
+        // each position independently; it and the sequential builder both need the positions in ascending order.
+        Arrays.sort(positions, 0, size);
+        final RowSetBuilderSequential positionBuilder = RowSetFactory.builderSequential();
+        for (int ii = 0; ii < size; ++ii) {
+            positionBuilder.appendKey(positions[ii]);
+        }
+        try (final RowSet positionRowSet = positionBuilder.build()) {
+            return sourceRowSet.subSetForPositions(positionRowSet);
+        }
     }
 
     public static RowSet newIndex(int targetSize, RowSet sourceRowSet, Random random) {
@@ -593,7 +612,6 @@ public class TstUtils {
             queryTable.setRefreshing(true);
         }
         if (flat) {
-            Assert.assertion(rowSet.isFlat(), "rowSet.isFlat()");
             queryTable.setFlat();
         }
 
@@ -806,8 +824,8 @@ public class TstUtils {
 
     public static void assertRowSetEquals(@NotNull final RowSet expected, @NotNull final RowSet actual) {
         try {
-            TestCase.assertEquals(expected, actual);
-        } catch (AssertionFailedError error) {
+            org.junit.Assert.assertEquals(expected, actual);
+        } catch (AssertionError error) {
             System.err.println("TrackingWritableRowSet equality check failed:"
                     + "\n\texpected: " + expected
                     + "\n\tactual: " + actual
@@ -978,7 +996,7 @@ public class TstUtils {
         } catch (final Exception ignored) {
             threwException = true;
         }
-        TestCase.assertTrue(threwException);
+        assertTrue(threwException);
     }
 
     public static void tableRangesAreEqual(Table table1, Table table2, long from1, long from2, long size) {

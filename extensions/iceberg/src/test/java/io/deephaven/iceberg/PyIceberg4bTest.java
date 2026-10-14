@@ -6,6 +6,7 @@ package io.deephaven.iceberg;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.iceberg.sqlite.DbResource;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergTableAdapter;
@@ -13,13 +14,13 @@ import io.deephaven.iceberg.util.TableParquetWriterOptions;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 
@@ -36,6 +37,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PyIceberg4bTest {
     private static final Namespace NAMESPACE = Namespace.of("trading");
 
+    private final EngineCleanup engineCleanup = new EngineCleanup();
+
     private static final TableIdentifier TABLE_ID = TableIdentifier.of(NAMESPACE, "drop_identity_partition_field");
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
@@ -50,8 +53,14 @@ class PyIceberg4bTest {
     public static final DbResource dbResource = new DbResource();
 
     @BeforeEach
-    void setUp(@TempDir Path rootDir) throws IOException {
+    void setUp(@TempDir Path rootDir) throws Exception {
+        engineCleanup.setUp();
         catalogAdapter = dbResource.openReadWriteCatalog("pyiceberg-4", rootDir);
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        engineCleanup.tearDown();
     }
 
     @Test

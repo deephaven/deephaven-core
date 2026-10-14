@@ -29,6 +29,13 @@ project.tasks.named('test', Test, { test ->
 // This applies to all test types, including the testOutOfBand, testSerial, and testParallel
 project.tasks.withType(Test).configureEach { Test t ->
     t.with {
+        // Gradle 9 no longer provides default testClassesDirs/classpath for custom Test tasks.
+        // Use convention() so these act as defaults: JvmTestSuite tasks that explicitly set
+        // their own testClassesDirs/classpath will override these conventions automatically.
+        // Unlike direct assignment, convention values are discarded when the property is set explicitly.
+        t.testClassesDirs.convention(testing.suites.test.sources.output.classesDirs)
+        t.classpath.convention(testing.suites.test.sources.runtimeClasspath)
+
         t.defaultCharacterEncoding = 'UTF-8'
 
         onlyIf { TestTools.shouldRunTests(project) }
@@ -48,6 +55,11 @@ project.tasks.withType(Test).configureEach { Test t ->
         if (!maxHeapSize) {
             maxHeapSize = '3g'
         }
+
+        // As of 43.0 in September 2026 the longest healthy task, :engine-table:testOutOfBand, runs
+        // roughly 35 minutes of wall clock on a CI runner. A fork that hangs holds the task open
+        // until the CI job's own limit, which is hours later and yields no test report.
+        t.timeout = java.time.Duration.ofMinutes(90)
 
         if (findProperty('shortTests') == 'true') {
             systemProperty 'TstUtils.shortTests', 'true'

@@ -7,7 +7,8 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.select.NoPredicatePushdown;
+import io.deephaven.engine.table.impl.filter.ExtractAllFilters;
+import io.deephaven.engine.table.impl.select.ReindexingFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 
@@ -137,15 +138,18 @@ public interface PushdownFilterMatcher {
     }
 
     /**
-     * Check if the given filter can be pushed down.
+     * Check if the given filter can be pushed down: it must have at least one column and no column arrays, and it (and
+     * any filter it wraps or is composed of) must also support pushdown.
      *
      * @param filter The {@link WhereFilter filter} to check.
      * @return {@code true} if the filter can be pushed down, {@code false} otherwise.
      */
     static boolean canPushdownFilter(final WhereFilter filter) {
         return !filter.getColumns().isEmpty()
-                && !filter.hasVirtualRowVariables()
                 && filter.getColumnArrays().isEmpty()
-                && !(filter instanceof NoPredicatePushdown);
+                && ExtractAllFilters.stream(filter).noneMatch(
+                        f -> f instanceof ReindexingFilter
+                                || f.hasVirtualRowVariables()
+                                || !f.canPushdown());
     }
 }

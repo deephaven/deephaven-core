@@ -605,14 +605,8 @@ void TableHandleImpl::Unsubscribe(const std::shared_ptr<SubscriptionHandle> &han
 }
 
 void TableHandleImpl::BindToVariable(std::string variable) {
-  const auto &console_id = managerImpl_->ConsoleId();
-  if (!console_id.has_value()) {
-    auto message = DEEPHAVEN_LOCATION_STR(
-        "Client was created without specifying a script language");
-    throw std::runtime_error(message);
-  }
   BindTableToVariableRequest req;
-  *req.mutable_console_id() = *console_id;
+  *req.mutable_console_id() = managerImpl_->EnsureConsoleId();
   req.set_variable_name(std::move(variable));
   *req.mutable_table_id() = ticket_;
 
@@ -663,7 +657,8 @@ std::shared_ptr<Schema> TableHandleImpl::Schema() {
     auto gs_result = server->FlightClient()->GetSchema(options, fd);
     OkOrThrow(DEEPHAVEN_LOCATION_EXPR(gs_result));
 
-    auto schema_result = (*gs_result)->GetSchema(nullptr);
+    arrow::ipc::DictionaryMemo dict_memo;
+    auto schema_result = (*gs_result)->GetSchema(&dict_memo);
     auto arrow_schema = ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(schema_result));
     auto deephaven_schema = ArrowUtil::MakeDeephavenSchema(*arrow_schema);
     schema_promise.set_value(std::move(deephaven_schema));

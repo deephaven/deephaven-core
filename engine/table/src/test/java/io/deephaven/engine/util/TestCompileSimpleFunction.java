@@ -4,21 +4,25 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import junit.framework.TestCase;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 public class TestCompileSimpleFunction extends RefreshingTableTestCase {
 
+    @Test
     public void testString() {
         String res = DynamicCompileUtils.compileSimpleFunction(String.class, "return \"Hello, world\"").get();
-        TestCase.assertEquals("Hello, world", res);
+        assertEquals("Hello, world", res);
     }
 
+    @Test
     public void testNotString() {
         try {
             DynamicCompileUtils.compileSimpleFunction(String.class, "return 7");
-            TestCase.fail("Should never have reached this statement.");
+            fail("Should never have reached this statement.");
         } catch (RuntimeException e) {
-            TestCase.assertTrue(e.getMessage().contains("int cannot be converted to java.lang.String"));
+            assertTrue(e.getMessage().contains("int cannot be converted to java.lang.String"));
         }
     }
 }

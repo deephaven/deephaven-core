@@ -72,18 +72,10 @@ public class DictionaryChunkWriter extends BaseChunkWriter<Chunk<Values>> {
     }
 
     @Override
-    protected int computeNullCount(
-            @NotNull final ChunkWriter.Context context,
-            @NotNull final RowSequence subset) {
-        // Not called — we override getInputStream completely.
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    protected void writeValidityBufferInternal(
+    protected void computeValidity(
             @NotNull final ChunkWriter.Context context,
             @NotNull final RowSequence subset,
-            @NotNull final SerContext serContext) {
+            @NotNull final ValidityBuffer validity) {
         // Not called — we override getInputStream completely.
         throw new UnsupportedOperationException();
     }

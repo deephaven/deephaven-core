@@ -1,6 +1,5 @@
 ---
 title: Use pandas in Deephaven queries
-sidebar_label: pandas
 ---
 
 This guide covers the intersection of [Pandas](https://pandas.pydata.org/) and Deephaven in queries. Pandas is a popular Python library for data analysis and manipulation that centers around [DataFrames](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html), similar to how Deephaven centers around tables. Deephaven's Pandas integration is used to convert between tables and DataFrames.

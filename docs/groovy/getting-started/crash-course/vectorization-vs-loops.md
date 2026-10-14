@@ -2,7 +2,7 @@
 title: Recipes, not loops!
 ---
 
-Deephaven works fundamentally differently from traditional data processing. Understanding this difference early will save you countless hours of frustration and help you write better, faster code.
+Deephaven works fundamentally differently from traditional data processing. Understanding this difference early saves you frustration and helps you write better, faster code.
 
 ## The fundamental paradigm shift: recipes, not loops
 
@@ -38,15 +38,15 @@ Notice:
 This is the critical difference. **Loops execute once and stop. Recipes update automatically.**
 
 ```groovy ticking-table order=null test-set=groovy-ticking-demo
-// This table adds a new row every second
+// This table adds roughly one new row every second
 source = timeTable("PT1s").update("X = i", "XSquared = X * X", "XCubed = X * X * X")
 ```
 
 Watch what happens:
 
-- The table **keeps updating** — new rows appear every second.
+- The table **keeps updating** — new rows appear about every second.
 - Your **recipe runs automatically** on every new row.
-- You wrote it **once**, but it executes **forever**.
+- You wrote it **once**, but it keeps executing as the table updates.
 
 With a loop approach, you'd need to build your own subscription and recomputation logic. With recipes, it's automatic.
 
@@ -82,7 +82,7 @@ The engine decides:
 ### The engine is smart about updates
 
 1. **Tracks dependencies** — It knows that `Y` depends on `X`.
-2. **Computes incrementally** — Only new or changed rows are processed.
+2. **Computes incrementally** — Only new rows, and rows whose input values changed, are processed.
 3. **Updates automatically** — Results update without you doing anything.
 
 ## When loops ARE appropriate
@@ -124,7 +124,7 @@ source = emptyTable(10).update("X = i")
 
 // NEVER do this!
 resultData = []
-for (x in source.getColumnSource("X")) {
+for (x in source.integerColumnIterator("X")) {
     resultData.add(x * 2)  // ❌ Use .update() instead!
 }
 ```
@@ -140,7 +140,7 @@ source = emptyTable(10).update("X = i")
 
 // Don't do this!
 values = []
-for (x in source.getColumnSource("X")) {
+for (x in source.integerColumnIterator("X")) {
     values.add(x * x)
 }
 // Now what? How do you get this back into a table?
@@ -165,8 +165,6 @@ result = emptyTable(10).update("X = i", "Label = (X % 2 == 0) ? `Even` : `Odd`")
 ✅ **Right** (use updateBy):
 
 ```groovy order=result test-set=groovy-pattern3
-import static io.deephaven.api.updateby.UpdateByOperation.CumSum
-
 result = emptyTable(10).update("X = i").updateBy(CumSum("SumX = X"))
 ```
 

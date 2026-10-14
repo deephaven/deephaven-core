@@ -1,6 +1,5 @@
 ---
 title: Does Deephaven have a built-in ATR (average true range)?
-sidebar_label: Does Deephaven have a built-in ATR?
 ---
 
 No, Deephaven does not have a built-in [ATR (average true range)](https://www.investopedia.com/terms/a/atr.asp) operation. However, you can accomplish this using aggregations and [`update_by`](../../reference/table-operations/update-by-operations/updateBy.md), such as in the code below.

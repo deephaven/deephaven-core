@@ -9,12 +9,13 @@ import io.deephaven.tuple.generated.ObjectObjectObjectTuple;
 import io.deephaven.tuple.generated.ObjectObjectTuple;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.io.*;
 import java.util.Date;
+
+import static org.junit.Assert.*;
 
 /**
  * Test serialization code used for {@link StreamingExternalizable} implementations.
@@ -124,9 +125,9 @@ public class TestSerializationUtils {
         final ObjectInputStream objectIn = new ObjectInputStream(dataIn);
 
         final Int2ObjectMap<SerializationUtils.Reader> cachedReaders = new Int2ObjectOpenHashMap<>();
-        TestCase.assertEquals(nullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
-        TestCase.assertEquals(fullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
-        TestCase.assertEquals(nullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
-        TestCase.assertEquals(fullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
+        assertEquals(nullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
+        assertEquals(fullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
+        assertEquals(nullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
+        assertEquals(fullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
     }
 }

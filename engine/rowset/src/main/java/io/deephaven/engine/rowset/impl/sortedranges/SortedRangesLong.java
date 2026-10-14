@@ -196,6 +196,9 @@ public final class SortedRangesLong extends SortedRangesTyped<long[]> {
         if (v + shiftOffset < 0) {
             throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when first=" + v);
         }
+        if (shiftOffset > 0 && last() + shiftOffset < 0) {
+            throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when last=" + last());
+        }
         final boolean isNew = !canWrite();
         final long[] targetData = isNew ? new long[data.length] : data;
         shiftValues(targetData, shiftOffset, this, v);
@@ -216,6 +219,9 @@ public final class SortedRangesLong extends SortedRangesTyped<long[]> {
         long v = data[0];
         if (v + shiftOffset < 0) {
             throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when first=" + v);
+        }
+        if (shiftOffset > 0 && last() + shiftOffset < 0) {
+            throw new IllegalArgumentException("shiftOffset=" + shiftOffset + " when last=" + last());
         }
         final long[] targetData = new long[data.length];
         shiftValues(targetData, shiftOffset, this, v);
@@ -279,9 +285,16 @@ public final class SortedRangesLong extends SortedRangesTyped<long[]> {
         if (range > Integer.MAX_VALUE) {
             return null;
         }
-        final SortedRanges sr = (range > Short.MAX_VALUE)
-                ? new SortedRangesInt(count, first)
-                : new SortedRangesShort(count, first);
+        // Respect the target type's capacity limit: packing must not create over-capacity instances.
+        if (range <= Short.MAX_VALUE && shortArrayCapacityForLastIndex(count - 1) != 0) {
+            final SortedRanges sr = new SortedRangesShort(count, first);
+            copyTo(sr);
+            return sr;
+        }
+        if (intArrayCapacityForLastIndex(count - 1, isDense()) == 0) {
+            return null;
+        }
+        final SortedRanges sr = new SortedRangesInt(count, first);
         copyTo(sr);
         return sr;
     }

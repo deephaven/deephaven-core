@@ -1,7 +1,6 @@
 ---
 id: custom-data-sources
 title: Can I integrate custom data sources with Deephaven?
-sidebar_label: Can I integrate custom data sources?
 ---
 
 Yes, you can integrate custom data sources with Deephaven. While Deephaven includes a proprietary columnar store for persistent historical and intraday data, you can integrate your own data stores to leverage Deephaven's efficient engine, analytics, and data visualization capabilities.

@@ -1,5 +1,5 @@
 ---
-title: Export HTML files
+title: Convert tables to HTML strings
 ---
 
 Deephaven can convert tables to HTML table-formatted strings via the [`html`](/core/javadoc/io/deephaven/engine/util/TableTools.html#html(io.deephaven.engine.table.Table)) method from [`TableTools`](/core/javadoc/io/deephaven/engine/util/TableTools.html). It converts a Deephaven table to a string HTML table.

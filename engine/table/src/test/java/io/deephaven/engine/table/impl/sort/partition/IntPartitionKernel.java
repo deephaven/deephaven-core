@@ -18,6 +18,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.compare.IntComparisons;
 
 import java.util.stream.IntStream;
 
@@ -239,7 +240,7 @@ public class IntPartitionKernel {
 
     // region comparison functions
     private static int doComparison(int lhs, int rhs) {
-        return Integer.compare(lhs, rhs);
+        return IntComparisons.compare(lhs, rhs);
     }
     // endregion comparison functions
 

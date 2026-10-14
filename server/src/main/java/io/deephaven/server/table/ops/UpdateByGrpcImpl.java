@@ -17,6 +17,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.select.FormulaUtil;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.validation.ColumnExpressionValidator;
@@ -295,11 +296,17 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                     TableTools.newTable(TableDefinition.of(formulaInputDefinition)).groupBy(groupByColumns);
 
             final String formulaString = spec.getRollingFormula().getFormula();
-            final SelectColumn[] sc = SelectColumn.from(
-                    Selectable.from(pair.output().name() + "="
-                            + formulaString.replaceAll(spec.getRollingFormula().getParamToken(), inputName)));
+            // Substitute the param token with FormulaUtil.replaceFormulaTokens, the literal token-aware replace
+            // BaseRollingFormulaOperator uses at runtime, so the validator inspects the string the engine compiles.
+            // Build the expanded output=expression assignment once and pass it as both the parsed Selectable and the
+            // original expression; validators such as MethodNameColumnExpressionValidator re-parse the original and
+            // require the Column=Formula form, so passing the bare formula would break them.
+            final String expandedExpression = pair.output().name() + "="
+                    + FormulaUtil.replaceFormulaTokens(formulaString,
+                            spec.getRollingFormula().getParamToken(), inputName);
+            final SelectColumn[] sc = SelectColumn.from(Selectable.from(expandedExpression));
 
-            expressionValidator.validateColumnExpressions(sc, new String[] {formulaString},
+            expressionValidator.validateColumnExpressions(sc, new String[] {expandedExpression},
                     formulaInputPrototype.getDefinition());
         });
     }

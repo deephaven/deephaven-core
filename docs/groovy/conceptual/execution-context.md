@@ -118,7 +118,7 @@ import io.deephaven.util.SafeCloseable
 
 defaultCtx = ExecutionContext.getContext()
 
-maxDate = { ->
+maxDate = { t ->
     try (SafeCloseable ignored = defaultCtx.open()) {
         return t.updateBy(cumMax("MaxTimestamp=Timestamp"))
             .updateView("Date=formatDate(MaxTimestamp, timeZone(`PT`))")

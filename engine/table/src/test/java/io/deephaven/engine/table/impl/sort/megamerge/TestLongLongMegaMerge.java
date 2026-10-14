@@ -16,10 +16,11 @@ import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import junit.framework.TestCase;
 import org.junit.Test;
 
 import java.util.Random;
+
+import static org.junit.Assert.*;
 
 public class TestLongLongMegaMerge {
     @Test
@@ -83,20 +84,20 @@ public class TestLongLongMegaMerge {
                             valuesSource.getChunk(valueContext, rowSequence).asLongChunk();
                     final LongChunk<Values> checkKeys = keySource.getChunk(keyContext, rowSequence).asLongChunk();
 
-                    TestCase.assertEquals(checkValues.size(), allValues.size());
+                    assertEquals(checkValues.size(), allValues.size());
                     int firstDifferentValue = LongChunkEquals.firstDifference(checkValues, allValues);
                     if (firstDifferentValue < checkValues.size()) {
                         System.out.println("Expected Values:\n" + ChunkUtils.dumpChunk(allValues));
                         System.out.println("Actual Values:\n" + ChunkUtils.dumpChunk(checkValues));
                     }
-                    TestCase.assertEquals(allValues.size(), firstDifferentValue);
+                    assertEquals(allValues.size(), firstDifferentValue);
 
                     int firstDifferentKey = LongChunkEquals.firstDifference(checkKeys, allKeys);
                     if (firstDifferentKey < checkKeys.size()) {
                         System.out.println("Expected Indices:\n" + ChunkUtils.dumpChunk(allKeys));
                         System.out.println("Actual Indices:\n" + ChunkUtils.dumpChunk(checkKeys));
                     }
-                    TestCase.assertEquals(allKeys.size(), firstDifferentKey);
+                    assertEquals(allKeys.size(), firstDifferentKey);
                 }
             }
 

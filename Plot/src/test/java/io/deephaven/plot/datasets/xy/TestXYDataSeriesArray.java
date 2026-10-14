@@ -16,12 +16,15 @@ import io.deephaven.plot.util.PlotUtils;
 import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.plot.util.tables.TableBackedPartitionedTableHandle;
 import io.deephaven.plot.util.tables.TableHandle;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.ArrayList;
 
+import static org.junit.Assert.*;
+
 public class TestXYDataSeriesArray extends RefreshingTableTestCase {
 
+    @Test
     public void testXYDataSeriesArray() {
         ChartImpl chart = new BaseFigureImpl().newChart();
         final double[] valueArray = {1, 2, 3};
@@ -34,10 +37,10 @@ public class TestXYDataSeriesArray extends RefreshingTableTestCase {
         assertEquals(x1.size(), valueArray.length);
         assertEquals(x2.size(), valueArray.length);
         for (int i = 0; i < valueArray.length; i++) {
-            assertEquals(x1.getX(i), valueArray[i]);
-            assertEquals(x1.getY(i), valueArray2[i]);
-            assertEquals(x2.getX(i), valueArray2[i]);
-            assertEquals(x2.getY(i), valueArray[i]);
+            assertEquals(x1.getX(i), valueArray[i], 0.0);
+            assertEquals(x1.getY(i), valueArray2[i], 0.0);
+            assertEquals(x2.getX(i), valueArray2[i], 0.0);
+            assertEquals(x2.getY(i), valueArray[i], 0.0);
         }
 
         final double[] misSized = {1, 2};
@@ -45,25 +48,24 @@ public class TestXYDataSeriesArray extends RefreshingTableTestCase {
 
         try {
             new XYDataSeriesArray(new BaseFigureImpl().newChart().newAxes(), 3, "Test", misSizedValues, values2);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("inconsistent size"));
         }
 
         try {
             new XYDataSeriesArray(new BaseFigureImpl().newChart().newAxes(), 4, "Test", null, values2);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
             new XYDataSeriesArray(new BaseFigureImpl().newChart().newAxes(), 5, "Test", misSizedValues, null);
-            TestCase.fail("Expected an exception");
+            fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
-
 
         x1.seriesColor(1);
         assertEquals(x1.getPointColor(0), PlotUtils.intToColor(1));
@@ -75,7 +77,7 @@ public class TestXYDataSeriesArray extends RefreshingTableTestCase {
         assertEquals(x1.getLineColor(), color);
     }
 
-
+    @Test
     public void testCopy() {
         final double[] valueArray = {1, 2, 3};
         final double[] valueArray2 = {4, 5, 6};
@@ -99,7 +101,6 @@ public class TestXYDataSeriesArray extends RefreshingTableTestCase {
 
         final XYDataSeriesArray x1Copy = x1.copy(new BaseFigureImpl().newChart().newAxes());
         TestAbstractXYDataSeries.testCopy(x1, x1Copy);
-
 
         x2.pointsVisible(false);
         x2.linesVisible(true);

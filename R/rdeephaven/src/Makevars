@@ -1,11 +1,12 @@
 # set C++ standard
-CXX_STD = CXX17
+# (C++20 because arrow >= 24 requires it; its headers use std::span et al.)
+CXX_STD = CXX20
 
 #
 # The code below assumes an environment variable DHCPP is defined and
 # points to a pre-existing directory where the deephaven C++ client
 # and its dependent libraries was built, as per the instructions in
-# https://github.com/deephaven/deephaven-core/blob/main/cpp-client/README.md
+# https://github.com/deephaven/deephaven-core/blob/main/cpp-client/BUILDING.md
 #
 DEPENDENCY_DIRS = -L$(DHCPP)/lib
 

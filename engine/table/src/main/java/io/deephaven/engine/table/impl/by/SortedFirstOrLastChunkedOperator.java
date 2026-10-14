@@ -17,6 +17,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
+import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
@@ -39,11 +40,12 @@ public class SortedFirstOrLastChunkedOperator
     private final ObjectArraySource<SegmentedSortedArray> ssas;
     private final boolean exposeRedirections;
 
-    SortedFirstOrLastChunkedOperator(ChunkType chunkType, boolean isFirst, MatchPair[] resultNames,
-            Table originalTable, String exposeRedirectionAs) {
+    SortedFirstOrLastChunkedOperator(ChunkType chunkType, Class<?> dataType, boolean isFirst,
+            MatchPair[] resultNames, Table originalTable, String exposeRedirectionAs) {
         this.chunkType = chunkType;
         this.isFirst = isFirst;
-        this.ssaFactory = SegmentedSortedArray.makeFactory(chunkType, false, 1024);
+        this.ssaFactory = SegmentedSortedArray.makeFactory(chunkType,
+                BinarySearchKernelHelper.compareConsistentWithEquality(dataType), false, 1024);
         this.redirections = new LongArraySource();
         this.rowRedirection = new LongColumnSourceWritableRowRedirection(redirections);
         this.ssas = new ObjectArraySource<>(SegmentedSortedArray.class);

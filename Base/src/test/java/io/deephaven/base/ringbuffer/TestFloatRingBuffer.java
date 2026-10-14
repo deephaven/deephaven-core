@@ -9,13 +9,14 @@ package io.deephaven.base.ringbuffer;
 
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.verify.AssertionFailure;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.NoSuchElementException;
 
-import static org.junit.Assert.assertThrows;
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
 
-public class TestFloatRingBuffer extends TestCase {
+public class TestFloatRingBuffer {
 
     final float SENTINEL = Float.MIN_VALUE;
 
@@ -105,6 +106,7 @@ public class TestFloatRingBuffer extends TestCase {
     float E = 'E';
     float F = 'F';
 
+    @Test
     public void testAddRemove() {
 
         FloatRingBuffer rb = new FloatRingBuffer(3);
@@ -185,6 +187,7 @@ public class TestFloatRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testOfferPoll() {
         FloatRingBuffer rb = new FloatRingBuffer(3);
 
@@ -244,6 +247,7 @@ public class TestFloatRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testGrowSimple() {
         FloatRingBuffer rb = new FloatRingBuffer(4);
 
@@ -268,6 +272,7 @@ public class TestFloatRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testGrowComplex() {
         FloatRingBuffer rb = new FloatRingBuffer(5);
 
@@ -297,6 +302,7 @@ public class TestFloatRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testIterator() {
         FloatRingBuffer rb = new FloatRingBuffer(3);
 
@@ -355,6 +361,7 @@ public class TestFloatRingBuffer extends TestCase {
                 iterFinal::remove);
     }
 
+    @Test
     public void testBack() {
         FloatRingBuffer rb = new FloatRingBuffer(5);
 
@@ -366,6 +373,7 @@ public class TestFloatRingBuffer extends TestCase {
         assertEquals(rb.back(), C);
     }
 
+    @Test
     public void testBackWhenEmpty() {
         FloatRingBuffer rb = new FloatRingBuffer(5);
         try {
@@ -376,6 +384,7 @@ public class TestFloatRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testBackTailIsZero() {
         FloatRingBuffer rb = new FloatRingBuffer(5, false);
 
@@ -390,6 +399,7 @@ public class TestFloatRingBuffer extends TestCase {
         assertEquals(rb.back(), F);
     }
 
+    @Test
     public void testLargeAmounts() {
         FloatRingBuffer rb = new FloatRingBuffer(3);
 
@@ -409,6 +419,7 @@ public class TestFloatRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testAddExceptionWhenFull() {
         FloatRingBuffer rb = new FloatRingBuffer(4, false);
         assert (rb.add(A));
@@ -421,6 +432,7 @@ public class TestFloatRingBuffer extends TestCase {
                 () -> rb.add(E));
     }
 
+    @Test
     public void testAddOverwriteAndOffer() {
         FloatRingBuffer rb = new FloatRingBuffer(4, false);
         assert (4 == rb.remaining());
@@ -466,7 +478,7 @@ public class TestFloatRingBuffer extends TestCase {
         assert (A == rb.peekBack(A));
     }
 
-
+    @Test
     public void testMultipleRemove() {
         FloatRingBuffer rb = new FloatRingBuffer(10, false);
 
@@ -509,6 +521,7 @@ public class TestFloatRingBuffer extends TestCase {
         assertEmpty(rb);
     }
 
+    @Test
     public void testAddRemoveUnsafe() {
         FloatRingBuffer rbNoGrow = new FloatRingBuffer(3, false);
 
@@ -532,7 +545,6 @@ public class TestFloatRingBuffer extends TestCase {
         assertEquals(rbNoGrow.removeUnsafe(), C);
         assertEmpty(rbNoGrow);
 
-
         FloatRingBuffer rbGrow = new FloatRingBuffer(3, true);
 
         for (int size = 10; size < 1_000_000; size *= 10) {
@@ -544,6 +556,7 @@ public class TestFloatRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testOverflow() {
         FloatRingBuffer rbA = new FloatRingBuffer(0);
         // this should throw

@@ -154,7 +154,11 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
-                outputPositionToHashSlot.ensureCapacity(nextOutputPosition.get() + nextChunkSize, false);
+                // Rows of existing states take no positions, so only
+                // ChunkedOperatorAggregationHelper.allocateOutputPosition checks for running out; the capacity for the
+                // chunk's worst case is limited to the positions there are.
+                outputPositionToHashSlot.ensureCapacity(
+                        Math.min((long) nextOutputPosition.get() + nextChunkSize, Integer.MAX_VALUE), false);
                 while (doRehash(bc.rehashCredits, nextChunkSize)) {
                     migrateFront();
                 }

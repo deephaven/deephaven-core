@@ -10,6 +10,7 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.value.iterator.ValueIterator;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.InstantSsmSourceWrapper;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.LongSsmBackedSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -18,12 +19,14 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.*;
 
 /**
  * Tests for the Instant view of a {@link LongSegmentedSortedMultiset}.
@@ -52,18 +55,21 @@ public class TestInstantSegmentedSortedMultiset extends RefreshingTableTestCase 
      * two views together rather than restate the expected contents: it is the drift between them that a hand-written
      * extension to replicated code can introduce.
      */
+    @Test
     public void testInstantExtensions() {
         for (final int valueCount : VALUE_COUNTS) {
             checkInstantExtensions(NODE_SIZE, valueCount);
         }
     }
 
+    @Test
     public void testInstantSubArrays() {
         for (final int valueCount : VALUE_COUNTS) {
             checkInstantSubArrays(NODE_SIZE, valueCount);
         }
     }
 
+    @Test
     public void testInstantSsmSourceWrapper() {
         for (final int valueCount : VALUE_COUNTS) {
             checkInstantSsmSourceWrapper(NODE_SIZE, valueCount);
@@ -75,6 +81,7 @@ public class TestInstantSegmentedSortedMultiset extends RefreshingTableTestCase 
      * itself as its own previous value and must be wrapped in place, while one that has accumulated deltas returns a
      * materialized LongVector that must be converted element by element.
      */
+    @Test
     public void testInstantSsmSourceWrapperColumnSource() {
         final LongSsmBackedSource source = new LongSsmBackedSource();
         source.ensureCapacity(2);
@@ -101,8 +108,14 @@ public class TestInstantSegmentedSortedMultiset extends RefreshingTableTestCase 
         assertArrayEquals(asInstants(initial), wrapper.getPrev(0).toArray());
         assertArrayEquals(asInstants(instantNanos(7)), wrapper.get(0).toArray());
 
-        // a row that never had an SSM has no previous value at all
+        // a row that never had an SSM has no current or previous value at all
+        assertNull(wrapper.get(1));
         assertNull(wrapper.getPrev(1));
+        assertNull(wrapper.get(RowSequence.NULL_ROW_KEY));
+
+        // an SSM that is cleared, as the distinct operators do once a state holds no values, is null again
+        source.clear(0);
+        assertNull(wrapper.get(0));
     }
 
     private void checkInstantExtensions(final int nodeSize, final int valueCount) {
@@ -142,31 +155,31 @@ public class TestInstantSegmentedSortedMultiset extends RefreshingTableTestCase 
         final Instant[] expected = asInstants(nanos);
         final LongSegmentedSortedMultiset ssm = makeSsm(nodeSize, nanos);
 
-        // unlike the iterator's, the SSM's sub-array bounds are inclusive on both ends, so the Instant sub-array
-        // must cover exactly the range -- and produce exactly as many elements as -- the long subVector does
-        for (int first = 0; first < valueCount; ++first) {
-            for (int last = first; last < valueCount; ++last) {
-                final String message = "valueCount=" + valueCount + ", first=" + first + ", last=" + last;
-                final LongVector asLongs = ssm.subVector(first, last);
-                final ObjectVector<Instant> asInstants = ssm.subArrayAsInstants(first, last);
+        // the reference implementation of the slice contract, including the nulls owed at offsets outside [0, size())
+        final ObjectVector<Instant> reference = new ObjectVectorDirect<>(expected);
+
+        // the Instant sub-array is exclusive at its end, exactly like the long subVector it mirrors, and must accept
+        // offsets outside [0, size()) -- which read as null
+        for (int from = -3; from <= valueCount + 3; ++from) {
+            for (int to = from; to <= valueCount + 3; ++to) {
+                final String message = "valueCount=" + valueCount + ", from=" + from + ", to=" + to;
+                final LongVector asLongs = ssm.subVector(from, to);
+                final ObjectVector<Instant> asInstants = ssm.subArrayAsInstants(from, to);
+                final ObjectVector<Instant> expectedSlice = reference.subVector(from, to);
+                assertEquals(message, (long) (to - from), asInstants.size());
                 assertEquals(message, asLongs.size(), asInstants.size());
-                for (int ii = 0; ii <= last - first; ++ii) {
-                    assertEquals(message, expected[first + ii], asInstants.get(ii));
+                for (int ii = 0; ii < to - from; ++ii) {
+                    assertEquals(message, expectedSlice.get(ii), asInstants.get(ii));
+                    // the two faces of the same leaves must agree
+                    assertEquals(message, DateTimeUtils.epochNanosToInstant(asLongs.get(ii)), asInstants.get(ii));
                 }
             }
         }
 
-        if (valueCount == 0) {
-            return;
-        }
-
-        // positions are read individually, in the order given, and may repeat
-        final long[] positions = new long[] {valueCount - 1, 0, valueCount / 2, 0};
-        final Instant[] expectedAtPositions = new Instant[positions.length];
-        for (int ii = 0; ii < positions.length; ++ii) {
-            expectedAtPositions[ii] = expected[(int) positions[ii]];
-        }
-        assertArrayEquals("valueCount=" + valueCount, expectedAtPositions,
+        // positions are read individually, in the order given, may repeat, and may fall outside [0, size())
+        final long[] positions = new long[] {valueCount - 1, -1, 0, valueCount, valueCount / 2, 0};
+        assertArrayEquals("valueCount=" + valueCount,
+                reference.subVectorByPositions(positions).toArray(),
                 ssm.subArrayByPositionsAsInstants(positions).toArray());
     }
 
@@ -187,6 +200,10 @@ public class TestInstantSegmentedSortedMultiset extends RefreshingTableTestCase 
         for (int ii = 0; ii < valueCount; ++ii) {
             assertEquals(message, expected[ii], wrapper.get(ii));
         }
+        // offsets outside [0, size()) read as null rather than throwing
+        assertNull(message, wrapper.get(-1));
+        assertNull(message, wrapper.get(valueCount));
+        assertNull(message, wrapper.get(Long.MAX_VALUE));
         assertArrayEquals(message, expected, wrapper.toArray());
         assertArrayEquals(message, expected, wrapper.copyToArray());
 
@@ -200,38 +217,43 @@ public class TestInstantSegmentedSortedMultiset extends RefreshingTableTestCase 
             }
             assertFalse(message, it.hasNext());
         }
-        for (int from = 0; from <= valueCount; ++from) {
-            for (int to = from; to <= valueCount; ++to) {
+        // the reference implementation of the slice contract, including the nulls owed at offsets outside [0, size())
+        final ObjectVector<Instant> reference = new ObjectVectorDirect<>(expected);
+        for (int from = -3; from <= valueCount + 3; ++from) {
+            for (int to = from; to <= valueCount + 3; ++to) {
+                final String rangeMessage = message + ", from=" + from + ", to=" + to;
                 try (final ValueIterator<Instant> it = wrapper.iterator(from, to)) {
-                    assertEquals(message, to - from, it.remaining());
+                    assertEquals(rangeMessage, to - from, it.remaining());
                     for (int ii = from; ii < to; ++ii) {
-                        assertTrue(message, it.hasNext());
-                        assertEquals(message, expected[ii], it.next());
-                        assertEquals(message, to - ii - 1, it.remaining());
+                        assertTrue(rangeMessage, it.hasNext());
+                        assertEquals(rangeMessage, reference.get(ii), it.next());
+                        assertEquals(rangeMessage, to - ii - 1, it.remaining());
                     }
-                    assertFalse(message, it.hasNext());
+                    assertFalse(rangeMessage, it.hasNext());
+
+                    // an exhausted iterator must not hand back whatever value happens to be stored next
+                    try {
+                        it.next();
+                        fail(rangeMessage + ": expected a NoSuchElementException from an exhausted iterator");
+                    } catch (NoSuchElementException expectedException) {
+                        // expected
+                    }
+                }
+
+                // sub-vector bounds are exclusive at the end, matching the iterator's
+                final ObjectVector<Instant> sub = wrapper.subVector(from, to);
+                final ObjectVector<Instant> expectedSlice = reference.subVector(from, to);
+                assertEquals(rangeMessage, (long) (to - from), sub.size());
+                for (int ii = 0; ii < to - from; ++ii) {
+                    assertEquals(rangeMessage, expectedSlice.get(ii), sub.get(ii));
                 }
             }
         }
 
-        // sub-vector bounds are the SSM's inclusive-inclusive ones, not the iterator's
-        for (int first = 0; first < valueCount; ++first) {
-            for (int last = first; last < valueCount; ++last) {
-                final ObjectVector<Instant> sub = wrapper.subVector(first, last);
-                assertEquals(message, (long) (last - first + 1), sub.size());
-                for (int ii = 0; ii <= last - first; ++ii) {
-                    assertEquals(message, expected[first + ii], sub.get(ii));
-                }
-            }
-        }
-        if (valueCount > 0) {
-            final long[] positions = new long[] {valueCount - 1, 0, valueCount / 2};
-            final Instant[] expectedAtPositions = new Instant[positions.length];
-            for (int ii = 0; ii < positions.length; ++ii) {
-                expectedAtPositions[ii] = expected[(int) positions[ii]];
-            }
-            assertArrayEquals(message, expectedAtPositions, wrapper.subVectorByPositions(positions).toArray());
-        }
+        // positions are read individually, in the order given, may repeat, and may fall outside [0, size())
+        final long[] positions = new long[] {valueCount - 1, -1, 0, valueCount, valueCount / 2, 0};
+        assertArrayEquals(message, reference.subVectorByPositions(positions).toArray(),
+                wrapper.subVectorByPositions(positions).toArray());
 
         // the wrapper must be interchangeable with any ObjectVector holding the same Instants -- notably its own
         // getDirect() result -- however those Instants happen to be laid out across leaves, and hash alike

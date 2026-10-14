@@ -114,6 +114,13 @@ public interface Chunk<ATTR extends Any> {
      */
     ChunkType getChunkType();
 
+    /**
+     * @return the width in bytes of one slot of this chunk's backing array; see {@link ChunkType#elementBytes()}
+     */
+    default int elementBytes() {
+        return getChunkType().elementBytes();
+    }
+
     default void checkChunkType(ChunkType expected) {
         final ChunkType actual = getChunkType();
         if (actual != expected) {

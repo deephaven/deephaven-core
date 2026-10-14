@@ -12,11 +12,9 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.vector.FloatVector;
 import io.deephaven.vector.FloatVectorDirect;
-import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.FloatComparisons;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.util.type.TypeUtils;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.engine.primitive.value.iterator.ValueIteratorOfFloat;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
@@ -29,6 +27,7 @@ import io.deephaven.util.mutable.MutableLong;
 import it.unimi.dsi.fastutil.floats.FloatSet;
 
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
@@ -127,7 +126,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             return true;
         }
         if (isSingleton()) {
-            if (FloatComparisons.eq(value, singletonValue)) {
+            if (eq(value, singletonValue)) {
                 singletonCount += count;
                 totalSize += count;
                 validate();
@@ -137,21 +136,21 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         final boolean added;
-        final float max = getMaxFloat();
-        if (FloatComparisons.gt(value, max)) {
+        final int maxComparison = FloatComparisons.compare(value, getMaxFloat());
+        if (maxComparison > 0) {
             maybeAccumulateAddition(value);
             appendMaximum(value, count);
             added = true;
-        } else if (FloatComparisons.eq(value, max)) {
+        } else if (maxComparison == 0) {
             addMaxCount(count);
             added = false;
         } else {
-            final float min = getMinFloat();
-            if (FloatComparisons.lt(value, min)) {
+            final int minComparison = FloatComparisons.compare(value, getMinFloat());
+            if (minComparison < 0) {
                 maybeAccumulateAddition(value);
                 prependMinimum(value, count);
                 added = true;
-            } else if (FloatComparisons.eq(value, min)) {
+            } else if (minComparison == 0) {
                 addMinCount(count);
                 added = false;
             } else {
@@ -170,7 +169,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     private boolean insertInterior(float value, long count) {
         if (leafCount == 1) {
             final int ip = upperBound(directoryValues, 0, size, value);
-            if (FloatComparisons.eq(directoryValues[ip], value)) {
+            if (eq(directoryValues[ip], value)) {
                 directoryCount[ip] += count;
                 totalSize += count;
                 return false;
@@ -198,7 +197,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         final long[] leafCount = leafCounts[leaf];
         final int leafSz = leafSizes[leaf];
         final int ip = upperBound(leafValue, 0, leafSz, value);
-        if (ip < leafSz && FloatComparisons.eq(leafValue[ip], value)) {
+        if (ip < leafSz && eq(leafValue[ip], value)) {
             leafCount[ip] += count;
             totalSize += count;
             return false;
@@ -278,7 +277,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             } else {
                 rlpos = upperBound(leafValues, rlpos, leafSize, nextValue);
                 if (rlpos < leafSize) {
-                    if (FloatComparisons.eq(leafValues[rlpos], nextValue)) {
+                    if (eq(leafValues[rlpos], nextValue)) {
                         totalSize += counts.get(ripos);
                         leafCounts[rlpos] += counts.get(ripos);
                         ripos++;
@@ -635,7 +634,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
 
         if (isSingleton()) {
-            if (length == 1 && FloatComparisons.eq(valuesToInsert.get(offset), singletonValue)) {
+            if (length == 1 && eq(valuesToInsert.get(offset), singletonValue)) {
                 // the only value being inserted is the one we already hold; just bump its count
                 singletonCount += counts.get(offset);
                 totalSize += counts.get(offset);
@@ -1093,6 +1092,16 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         return lo;
     }
 
+    /**
+     * Test two values for equality consistent with the ordering of this set; the set holds one entry for each class of
+     * equal values.
+     */
+    private static boolean eq(float lhs, float rhs) {
+        // region equality function
+        return FloatComparisons.eq(lhs, rhs);
+        // endregion equality function
+    }
+
     // endregion
 
     // region Removal
@@ -1135,13 +1144,13 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         Assert.gtZero(count, "count");
         validate();
         if (isSingleton()) {
-            Assert.assertion(FloatComparisons.eq(value, singletonValue),
-                    "FloatComparisons.eq(value, singletonValue)");
+            Assert.assertion(eq(value, singletonValue),
+                    "eq(value, singletonValue)");
             Assert.leq(count, "count", singletonCount, "singletonCount");
             singletonCount -= count;
             totalSize -= count;
             if (singletonCount == 0) {
-                maybeAccumulateRemoval(value);
+                maybeAccumulateRemoval(singletonValue);
                 clear();
                 validate();
                 return true;
@@ -1151,8 +1160,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         }
         if (leafCount == 1) {
             final int pos = upperBound(directoryValues, 0, size, value);
-            Assert.assertion(pos < size && FloatComparisons.eq(directoryValues[pos], value),
-                    "pos < size && FloatComparisons.eq(directoryValues[pos], value)");
+            Assert.assertion(pos < size && eq(directoryValues[pos], value),
+                    "pos < size && eq(directoryValues[pos], value)");
             Assert.leq(count, "count", directoryCount[pos], "directoryCount[pos]");
             directoryCount[pos] -= count;
             totalSize -= count;
@@ -1160,7 +1169,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
                 validate();
                 return false;
             }
-            maybeAccumulateRemoval(value);
+            maybeAccumulateRemoval(directoryValues[pos]);
             System.arraycopy(directoryValues, pos + 1, directoryValues, pos, size - pos - 1);
             System.arraycopy(directoryCount, pos + 1, directoryCount, pos, size - pos - 1);
             size--;
@@ -1176,8 +1185,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         final long[] leafCount = leafCounts[leaf];
         final int leafSz = leafSizes[leaf];
         final int pos = upperBound(leafValue, 0, leafSz, value);
-        Assert.assertion(pos < leafSz && FloatComparisons.eq(leafValue[pos], value),
-                "pos < leafSz && FloatComparisons.eq(leafValue[pos], value)");
+        Assert.assertion(pos < leafSz && eq(leafValue[pos], value),
+                "pos < leafSz && eq(leafValue[pos], value)");
         Assert.leq(count, "count", leafCount[pos], "leafCount[pos]");
         leafCount[pos] -= count;
         totalSize -= count;
@@ -1185,7 +1194,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             validate();
             return false;
         }
-        maybeAccumulateRemoval(value);
+        maybeAccumulateRemoval(leafValue[pos]);
         System.arraycopy(leafValue, pos + 1, leafValue, pos, leafSz - pos - 1);
         System.arraycopy(leafCount, pos + 1, leafCount, pos, leafSz - pos - 1);
         leafSizes[leaf] = leafSz - 1;
@@ -1241,8 +1250,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             // by contract we only remove values that are present, so a singleton can only be asked to remove its one
             // value
             Assert.eq(length, "length", 1);
-            Assert.assertion(FloatComparisons.eq(valuesToRemove.get(offset), singletonValue),
-                    "FloatComparisons.eq(valuesToRemove.get(offset), singletonValue)");
+            Assert.assertion(eq(valuesToRemove.get(offset), singletonValue),
+                    "eq(valuesToRemove.get(offset), singletonValue)");
             singletonCount -= counts.get(offset);
             totalSize -= counts.get(offset);
             Assert.geqZero(singletonCount, "singletonCount");
@@ -1489,11 +1498,12 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             if (rlpos == sz.get()) {
                 break;
             }
+            Assert.assertion(eq(leafValues[rlpos], removeValue), "eq(leafValues[rlpos], removeValue)");
             leafCounts[rlpos] -= counts.get(ripos);
             totalSize -= counts.get(ripos);
             Assert.geqZero(leafCounts[rlpos], "leafCounts[rlpos]");
             if (leafCounts[rlpos] == 0) {
-                maybeAccumulateRemoval(removeValue);
+                maybeAccumulateRemoval(leafValues[rlpos]);
                 // we need to do some compaction at the end of this iteration
                 if (cl == -1) {
                     removeContext.compactionLocations[cl = 0] = rlpos;
@@ -2013,7 +2023,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         if (isSingleton()) {
             // we hold a single value; it can only leave us, never grow our cardinality. Transfer count copies of it to
             // the back of the destination (merging if it already holds that value as its maximum) and shed them.
-            if (destination.size > 0 && FloatComparisons.eq(singletonValue, destination.getMaxFloat())) {
+            if (destination.size > 0 && eq(singletonValue, destination.getMaxFloat())) {
                 destination.addMaxCount(count);
             } else {
                 destination.appendMaximum(singletonValue, count);
@@ -2029,7 +2039,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             return;
         }
 
-        if (destination.size > 0 && FloatComparisons.eq(getMinFloat(), destination.getMaxFloat())) {
+        if (destination.size > 0 && eq(getMinFloat(), destination.getMaxFloat())) {
             final long minCount = getMinCount();
             final long toAdd;
             if (minCount > count) {
@@ -2472,7 +2482,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
         if (isSingleton()) {
             // we hold a single value; it can only leave us, never grow our cardinality. Transfer count copies of it to
             // the front of the destination (merging if it already holds that value as its minimum) and shed them.
-            if (destination.size > 0 && FloatComparisons.eq(singletonValue, destination.getMinFloat())) {
+            if (destination.size > 0 && eq(singletonValue, destination.getMinFloat())) {
                 destination.addMinCount(count);
             } else {
                 destination.prependMinimum(singletonValue, count);
@@ -2488,7 +2498,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             return;
         }
 
-        if (destination.size > 0 && FloatComparisons.eq(getMaxFloat(), destination.getMinFloat())) {
+        if (destination.size > 0 && eq(getMaxFloat(), destination.getMinFloat())) {
             final long maxCount = getMaxCount();
             final long toAdd;
             if (maxCount > count) {
@@ -2768,55 +2778,72 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     private float[] keyArray() {
-        return keyArray(0, size - 1);
+        return keyArray(0, size);
     }
 
     /**
-     * Create an array of the current keys beginning with the first (inclusive) and ending with the last (inclusive)
-     * 
-     * @param first
-     * @param last
-     * @return
+     * Create an array of the current keys from {@code fromIndexInclusive} (inclusive) to {@code toIndexExclusive}
+     * (exclusive). Following the {@link FloatVector} contract, offsets outside {@code [0, size())} are legal and
+     * contribute the null value rather than an error.
+     *
+     * @param fromIndexInclusive The first offset to include
+     * @param toIndexExclusive The first offset after {@code fromIndexInclusive} to not include
+     * @return An array of the requested keys, of length {@code toIndexExclusive - fromIndexInclusive}
      */
-    private float[] keyArray(long first, long last) {
-        if (isEmpty()) {
+    private float[] keyArray(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+
+        final int totalSize =
+                LongSizedDataStructure.intSize("keyArray", toIndexExclusive - fromIndexInclusive);
+        if (totalSize == 0) {
             // region EmptyKeyArrayAllocation
             return ArrayTypeUtils.EMPTY_FLOAT_ARRAY;
             // endregion EmptyKeyArrayAllocation
         }
 
-        final int totalSize = (int) (last - first + 1);
         // region KeyArrayAllocation
         final float[] keyArray = new float[totalSize];
         // endregion KeyArrayAllocation
+
+        // the requested range may extend past either end of this SSM; those offsets read as null
+        final long firstIncluded = Math.max(fromIndexInclusive, 0);
+        final long lastExcluded = Math.max(Math.min(toIndexExclusive, size), firstIncluded);
+        int remaining = (int) (lastExcluded - firstIncluded);
+        if (remaining == 0) {
+            // the range lies entirely outside this SSM, so every offset is null
+            Arrays.fill(keyArray, NULL_FLOAT);
+            return keyArray;
+        }
+
+        // null only what the copy below will not reach: with something in range, destOffset is within the result and
+        // destOffset + remaining is at most its length
+        final int destOffset = (int) (firstIncluded - fromIndexInclusive);
+        if (destOffset > 0) {
+            Arrays.fill(keyArray, 0, destOffset, NULL_FLOAT);
+        }
+        if (destOffset + remaining < totalSize) {
+            Arrays.fill(keyArray, destOffset + remaining, totalSize, NULL_FLOAT);
+        }
+
         if (leafCount == 1) {
             if (directoryValues == null) {
-                keyArray[0] = singletonValue;
+                keyArray[destOffset] = singletonValue;
             } else {
-                System.arraycopy(directoryValues, (int) first, keyArray, 0, totalSize);
+                System.arraycopy(directoryValues, (int) firstIncluded, keyArray, destOffset, remaining);
             }
-        } else if (leafCount > 0) {
-            int offset = 0;
-            int copied = 0;
-            int skipped = 0;
-            for (int li = 0; li < leafCount && copied < totalSize; ++li) {
-                if (skipped < first) {
-                    final int toSkip = (int) first - skipped;
-                    if (toSkip < leafSizes[li]) {
-                        final int nToCopy = Math.min(leafSizes[li] - toSkip, totalSize);
-                        System.arraycopy(leafValues[li], toSkip, keyArray, 0, nToCopy);
-                        copied = nToCopy;
-                        offset = copied;
-                        skipped = (int) first;
-                    } else {
-                        skipped += leafSizes[li];
-                    }
-                } else {
-                    int nToCopy = Math.min(leafSizes[li], totalSize - copied);
-                    System.arraycopy(leafValues[li], 0, keyArray, offset, nToCopy);
-                    offset += leafSizes[li];
-                    copied += nToCopy;
+        } else {
+            int dest = destOffset;
+            int toSkip = (int) firstIncluded;
+            for (int li = 0; li < leafCount && remaining > 0; ++li) {
+                if (toSkip >= leafSizes[li]) {
+                    toSkip -= leafSizes[li];
+                    continue;
                 }
+                final int nToCopy = Math.min(leafSizes[li] - toSkip, remaining);
+                System.arraycopy(leafValues[li], toSkip, keyArray, dest, nToCopy);
+                dest += nToCopy;
+                remaining -= nToCopy;
+                toSkip = 0;
             }
         }
         return keyArray;
@@ -2928,8 +2955,9 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     // region FloatVector
     @Override
     public float get(long index) {
-        if (index < 0 || index > size()) {
-            throw new IllegalArgumentException("Illegal index " + index + " current size: " + size());
+        // offsets outside [0, size()) are legal and read as null, per the FloatVector contract
+        if (index < 0 || index >= size()) {
+            return NULL_FLOAT;
         }
 
         if (leafCount == 1) {
@@ -2959,12 +2987,56 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     public ValueIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
 
+        // The requested slice may extend past either end of this SSM; those offsets are legal and iterate as null.
+        // Split it into the leading nulls, the part this SSM actually stores, and the trailing nulls.
+        final long totalWanted = toIndexExclusive - fromIndexInclusive;
+        final long prefixNulls = fromIndexInclusive < 0 ? Math.min(-fromIndexInclusive, totalWanted) : 0;
+        final long innerFrom = Math.max(fromIndexInclusive, 0);
+        final long innerLength = innerFrom < size ? Math.min(size - innerFrom, totalWanted - prefixNulls) : 0;
+
+        return ValueIteratorOfFloat.wrapWithNulls(
+                innerLength == 0 ? null : inRangeIterator(innerFrom, innerFrom + innerLength),
+                prefixNulls,
+                totalWanted - prefixNulls - innerLength);
+    }
+
+    /**
+     * Iterate a non-empty slice of the values this SSM stores. Both bounds must lie within {@code [0, size()]}.
+     *
+     * @param fromIndexInclusive The first offset to include
+     * @param toIndexExclusive The first offset after {@code fromIndexInclusive} to not include
+     * @return An iterator over the requested slice
+     */
+    private ValueIteratorOfFloat inRangeIterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (leafCount <= 1) {
             // Empty, singleton, and single-leaf SSMs store their values contiguously, so get(long) is already O(1).
-            return FloatVector.super.iterator(fromIndexInclusive, toIndexExclusive);
+            return new ValueIteratorOfFloat() {
+
+                private long nextIndex = fromIndexInclusive;
+
+                @Override
+                public float nextFloat() {
+                    if (nextIndex >= toIndexExclusive) {
+                        throw new NoSuchElementException();
+                    }
+                    // O(1): with at most one leaf there is no directory to rescan, so this is a single array read
+                    return get(nextIndex++);
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return nextIndex < toIndexExclusive;
+                }
+
+                @Override
+                public long remaining() {
+                    return toIndexExclusive - nextIndex;
+                }
+            };
         }
 
         // Resolve the starting leaf once; from there each element is a constant-time step.
+        // Scanned rather than binary searched: that needs a prefix sum of leafSizes, which then has to be maintained.
         int firstLeaf = 0;
         long firstOffset = fromIndexInclusive;
         while (firstLeaf < leafCount && firstOffset >= leafSizes[firstLeaf]) {
@@ -2986,8 +3058,12 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
             @Override
             public float nextFloat() {
+                if (remaining <= 0) {
+                    throw new NoSuchElementException();
+                }
                 while (offset >= leafSize) {
                     if (++leaf >= leafCount) {
+                        // unreachable: the bounds were clamped to this SSM's size before we were constructed
                         throw new IllegalStateException(
                                 "Index " + (toIndexExclusive - remaining) + " not found in this SSM");
                     }
@@ -3013,6 +3089,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
     @Override
     public FloatVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+        // materialized rather than a FloatVectorSlice view: an SSM is live and mutable, and a slice would capture our
+        // size at construction and then read stale bounds
         return new FloatVectorDirect(keyArray(fromIndexInclusive, toIndexExclusive));
     }
 
@@ -3048,7 +3126,6 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
     // endregion
 
-    // region VectorEquals
     private boolean equalsArray(FloatVector o) {
         if (size() != o.size()) {
             return false;
@@ -3081,80 +3158,31 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
             return true;
         }
     }
-    // endregion VectorEquals
-
-    // region UnboxValue
-    /**
-     * Convert an element of a boxed {@link ObjectVector} into the primitive representation this SSM stores. A
-     * {@code null} element becomes the null sentinel, which is how the SSM itself stores nulls.
-     */
-    private static float unboxValue(final Object value) {
-        return TypeUtils.unbox((Float) value);
-    }
-    // endregion UnboxValue
-
-    private boolean equalsArray(ObjectVector<?> o) {
-        // region EqualsArrayTypeCheck
-        if (o.getComponentType() != float.class && o.getComponentType() != Float.class) {
-            return false;
-        }
-        // endregion EqualsArrayTypeCheck
-
-        if (size() != o.size()) {
-            return false;
-        }
-
-        // iterate o exactly once; random access via get can be expensive for some Vector implementations
-        try (final CloseableIterator<?> oit = o.iterator()) {
-            if (size == 1) {
-                return FloatComparisons.eq(get(0), unboxValue(oit.next()));
-            }
-
-            if (leafCount == 1) {
-                for (int ii = 0; ii < size; ii++) {
-                    if (!FloatComparisons.eq(directoryValues[ii], unboxValue(oit.next()))) {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            for (int li = 0; li < leafCount; ++li) {
-                for (int ai = 0; ai < leafSizes[li]; ai++) {
-                    if (!FloatComparisons.eq(leafValues[li][ai], unboxValue(oit.next()))) {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-    }
 
     /**
      * {@inheritDoc}
      *
      * <p>
-     * Equal to any Vector holding the same values, including another SSM: an SSM <em>is</em> a Vector, so it takes the
-     * same element-wise path rather than a structural comparison of leaf layouts. Two SSMs can hold identical values in
-     * different layouts -- leaves need not be full, and the node sizes need not agree -- so layout is not a sound basis
-     * for equality.
+     * Equal to any {@link FloatVector} holding the same values, including another SSM: an SSM <em>is</em> a
+     * {@link FloatVector}, so it takes the same element-wise path rather than a structural comparison of leaf layouts.
+     * Two SSMs can hold identical values in different layouts -- leaves need not be full, and the node sizes need not
+     * agree -- so layout is not a sound basis for equality.
+     *
+     * <p>
+     * Nothing else is equal, exactly as {@link FloatVector#equals(FloatVector, Object)} requires: a Vector that stores
+     * its elements some other way cannot be accepted without breaking the {@link #hashCode()} contract, and would not
+     * be reciprocated in any case, since that Vector's own {@code equals} rejects a {@link FloatVector}.
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        // region VectorEquals
+
         if (o instanceof FloatVector) {
             return equalsArray((FloatVector) o);
         }
-        // endregion VectorEquals
 
-        if (o instanceof ObjectVector) {
-            return equalsArray((ObjectVector<?>) o);
-        }
         return false;
     }
 

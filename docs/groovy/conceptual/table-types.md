@@ -1,6 +1,5 @@
 ---
 title: Deephaven's table types
-sidebar_label: Table types
 ---
 
 Deephaven tables are the core data structures supporting Deephaven's static and streaming capabilities. Deephaven implements several specialized table types that differ in how streaming data is stored and processed in the engine, how the UI displays data to the user, and how some downstream operations behave. This document covers static tables, standard streaming tables, and the four specialized streaming table types: [append-only](#specialization-1-append-only), [add-only](#specialization-2-add-only), [blink](#specialization-3-blink), and [ring](#specialization-4-ring).

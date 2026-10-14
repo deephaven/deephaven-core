@@ -3,12 +3,15 @@
 //
 package io.deephaven.base.ringbuffer;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-public class TestAggregatingCharRingBuffer extends TestCase {
+import static io.deephaven.base.testing.Asserts.assertEquals;
+import static org.junit.Assert.*;
+
+public class TestAggregatingCharRingBuffer {
 
     private void assertEmpty(AggregatingCharRingBuffer rb) {
         assertTrue(rb.isEmpty());
@@ -29,6 +32,7 @@ public class TestAggregatingCharRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testLargeAmounts() {
         final AggregatingCharRingBuffer rb = new AggregatingCharRingBuffer(3, (char) 0, (a, b) -> (char) (a + b));
 
@@ -51,6 +55,7 @@ public class TestAggregatingCharRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMinLargeAmounts() {
         final AggregatingCharRingBuffer rb =
                 new AggregatingCharRingBuffer(3, Character.MAX_VALUE, (a, b) -> (char) Math.min(a, b));
@@ -67,6 +72,7 @@ public class TestAggregatingCharRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testEvaluateMaxLargeAmounts() {
         final AggregatingCharRingBuffer rb =
                 new AggregatingCharRingBuffer(3, Character.MIN_VALUE, (a, b) -> (char) Math.max(a, b));
@@ -85,6 +91,7 @@ public class TestAggregatingCharRingBuffer extends TestCase {
 
     // region non-byte-tests
 
+    @Test
     public void testEvaluateSumLargeAmounts() {
         final AggregatingCharRingBuffer rb = new AggregatingCharRingBuffer(3, (char) 0, (a, b) -> (char) (a + b));
         char runningSum = (char) 0;
@@ -119,6 +126,7 @@ public class TestAggregatingCharRingBuffer extends TestCase {
         return (char) (n * (n - 1) / 2);
     }
 
+    @Test
     public void testEvaluationEdgeCase() {
         AggregatingCharRingBuffer rb = new AggregatingCharRingBuffer(512, (char) 0, (a, b) -> (char) (a + b));
 
@@ -197,7 +205,6 @@ public class TestAggregatingCharRingBuffer extends TestCase {
             assertEquals((char) 0, rb.evaluate());
         }
 
-
         rb = new AggregatingCharRingBuffer(512, (char) 0, (a, b) -> (char) (a + b));
         // need to get the buffer to state where we have clean pushes and a wrapped pop
 
@@ -228,6 +235,7 @@ public class TestAggregatingCharRingBuffer extends TestCase {
     }
     // endregion non-byte-tests
 
+    @Test
     public void testPushPopUnsafe() {
         final AggregatingCharRingBuffer rb =
                 new AggregatingCharRingBuffer(3, (char) -Character.MAX_VALUE, (a, b) -> (char) Math.max(a, b));
@@ -260,6 +268,7 @@ public class TestAggregatingCharRingBuffer extends TestCase {
         assertEquals((char) 99, rb.evaluate()); // last value added is max
     }
 
+    @Test
     public void testPopMultiple() {
         final AggregatingCharRingBuffer rb = new AggregatingCharRingBuffer(3, (char) 0, (a, b) -> (char) (a + b));
 
@@ -288,6 +297,7 @@ public class TestAggregatingCharRingBuffer extends TestCase {
         }
     }
 
+    @Test
     public void testSpecialCaseA() {
         // overlapping push and pop ranges with popTail < pushTail
         final AggregatingCharRingBuffer rb = new AggregatingCharRingBuffer(4, (char) 0, (a, b) -> (char) (a + b));
@@ -298,6 +308,7 @@ public class TestAggregatingCharRingBuffer extends TestCase {
         assertEquals((char) 5, rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseB() {
         // push the full capacity while wrapped
         final AggregatingCharRingBuffer rb = new AggregatingCharRingBuffer(64, (char) 0, (a, b) -> (char) (a + b));
@@ -310,6 +321,7 @@ public class TestAggregatingCharRingBuffer extends TestCase {
         assertEquals((char) 64, rb.evaluate());
     }
 
+    @Test
     public void testSpecialCaseC() {
         // overlapping push and pop ranges with popTail < pushTail
         final AggregatingCharRingBuffer rb = new AggregatingCharRingBuffer(16, (char) 0, (a, b) -> (char) (a + b));
