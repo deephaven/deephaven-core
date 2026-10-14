@@ -57,7 +57,7 @@ logger = logging.getLogger(__name__)
 
 
 class _SessionJob(ABC):
-    """Work for a session's worker thread."""
+    """Work for a session's release thread."""
 
     @abstractmethod
     def run(self, session: Session) -> None:
@@ -74,55 +74,59 @@ class _ReleaseTicket(_SessionJob):
         session.release(self.ticket)
 
 
-class _RefreshToken(_SessionJob):
-    """Refreshes the session's auth token and schedules the next refresh."""
-
-    def run(self, session: Session) -> None:
-        session._keep_alive()
-
-
 class _Stop(_SessionJob):
-    """Ends the worker thread, which exits before running it."""
+    """Ends the release thread, which exits before running it."""
 
     def run(self, session: Session) -> None:
         pass
 
 
-_REFRESH_TOKEN = _RefreshToken()
 _STOP = _Stop()
 
 
-def _run_session_worker(
+def _run_release_worker(
     session_ref: weakref.ReferenceType[Session],
     jobs: queue.SimpleQueue[_SessionJob],
 ) -> None:
-    """Runs a session's jobs on one thread: _RefreshToken when a refresh is due, and whatever else is queued, until
-    _STOP or until the session is gone or closed. Between jobs it holds the session only weakly, so a dropped session
-    can be collected. A failing job is logged and does not end the thread."""
-    job: Optional[_SessionJob] = None  # nothing to run on the first pass
+    """Runs the queued jobs of a session until _STOP, or until the session is gone or closed. While it waits for a job
+    it holds the session only weakly, so a dropped session can be collected. A failing job is logged and does not end
+    the thread."""
+    while True:
+        job = jobs.get()
+        if job is _STOP:
+            return
+        session = session_ref()
+        if session is None or not session.is_connected:
+            return
+        try:
+            job.run(session)
+        except Exception:
+            logger.exception(
+                f"{session._logpfx}: background job {type(job).__name__} failed"
+            )
+        del session  # hold the session only weakly while waiting
+
+
+def _run_token_refresher(
+    session_ref: weakref.ReferenceType[Session], stop: threading.Event
+) -> None:
+    """Refreshes a session's auth token whenever a refresh is due, until stop is set, the session is gone or closed, or
+    the refreshes give up. While it waits it holds the session only weakly, so a dropped session can be collected."""
+    refresh_due = False  # the first refresh is scheduled, not due
     while True:
         session = session_ref()
         if session is None or not session.is_connected:
             return
-        if job is not None:
+        if refresh_due:
             try:
-                job.run(session)
+                session._keep_alive()
             except Exception:
-                logger.exception(
-                    f"{session._logpfx}: background job {type(job).__name__} failed"
-                )
+                logger.exception(f"{session._logpfx}: token refresh failed")
         timeout = session._seconds_until_refresh()
         del session  # hold the session only weakly while waiting
-        if timeout == 0:
-            # Refresh before taking the next job. Behind a long queue of releases, the session would expire.
-            job = _REFRESH_TOKEN
-            continue
-        try:
-            job = jobs.get(timeout=timeout)
-        except queue.Empty:
-            job = _REFRESH_TOKEN
-        if job is _STOP:
+        if timeout is None or stop.wait(timeout):
             return
+        refresh_due = True
 
 
 class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
@@ -295,8 +299,10 @@ class Session:
         self._never_timeout = never_timeout
         # The time.monotonic() time of the next token refresh, or None for no refresh.
         self._next_refresh: Optional[float] = None
-        self._worker_queue: queue.SimpleQueue[_SessionJob] = queue.SimpleQueue()
-        self._worker_thread: Optional[threading.Thread] = None
+        self._release_queue: queue.SimpleQueue[_SessionJob] = queue.SimpleQueue()
+        self._release_thread: Optional[threading.Thread] = None
+        self._refresh_stop = threading.Event()
+        self._refresh_thread: Optional[threading.Thread] = None
         self._session_type = session_type
         self._flight_client: Optional[paflight.FlightClient] = None
         self._auth_handler = None
@@ -554,17 +560,32 @@ class Session:
             if self._never_timeout:
                 self._next_refresh = time.monotonic() + 0.5 * self._timeout_seconds
 
-            # A new queue and worker per connection: tickets from an earlier connection are invalid. Stop the earlier
-            # worker, which still runs if the session was marked disconnected without close().
-            self._worker_queue.put(_STOP)
-            self._worker_queue = queue.SimpleQueue()
-            self._worker_thread = threading.Thread(
-                target=_run_session_worker,
-                args=(weakref.ref(self), self._worker_queue),
-                name=f"pydh.Session {id(self)} worker",
+            # New threads per connection: tickets from an earlier connection are invalid. Stop the earlier threads,
+            # which still run if the session was marked disconnected without close().
+            self._stop_threads()
+            self._release_queue = queue.SimpleQueue()
+            self._release_thread = threading.Thread(
+                target=_run_release_worker,
+                args=(weakref.ref(self), self._release_queue),
+                name=f"pydh.Session {id(self)} release",
                 daemon=True,
             )
-            self._worker_thread.start()
+            self._release_thread.start()
+            self._refresh_stop = threading.Event()
+            self._refresh_thread = None
+            if self._never_timeout:
+                self._refresh_thread = threading.Thread(
+                    target=_run_token_refresher,
+                    args=(weakref.ref(self), self._refresh_stop),
+                    name=f"pydh.Session {id(self)} token refresh",
+                    daemon=True,
+                )
+                self._refresh_thread.start()
+
+    def _stop_threads(self) -> None:
+        """Stops the release and token refresh threads. Neither is joined: either may be in an RPC."""
+        self._release_queue.put(_STOP)
+        self._refresh_stop.set()
 
     def _seconds_until_refresh(self) -> Optional[float]:
         """The seconds until the next token refresh, or None for no refresh."""
@@ -573,7 +594,7 @@ class Session:
         return max(0.0, self._next_refresh - time.monotonic())
 
     def _keep_alive(self) -> None:
-        """Refreshes the auth token and schedules the next refresh. Runs on the session's worker thread."""
+        """Refreshes the auth token and schedules the next refresh. Runs on the session's token refresh thread."""
         _trace("_keep_alive")
         if not self.is_connected:
             return
@@ -631,8 +652,8 @@ class Session:
             DHError
         """
         with self._r_lock:
-            # Stop the worker thread even if already disconnected. The server releases any tickets still queued.
-            self._worker_queue.put(_STOP)
+            # Stop the threads even if already disconnected. The server releases any tickets still queued.
+            self._stop_threads()
             if not self.is_connected:
                 return
             try:
@@ -655,9 +676,9 @@ class Session:
         self.session_service.release(ticket)
 
     def _queue_release(self, ticket: Ticket) -> None:
-        """Queues a ticket for the worker thread to release. Unlike release, it makes no RPC, so a finalizer can call
+        """Queues a ticket for the release thread to release. Unlike release, it makes no RPC, so a finalizer can call
         it: queue.SimpleQueue.put is reentrant."""
-        self._worker_queue.put(_ReleaseTicket(ticket))
+        self._release_queue.put(_ReleaseTicket(ticket))
 
     # convenience/factory methods
     def run_script(self, script: str, systemic: Optional[bool] = None) -> None:

@@ -8,7 +8,7 @@ import sys
 import threading
 import unittest
 import weakref
-from time import monotonic, sleep, time
+from time import sleep, time
 from unittest import mock
 
 import pandas as pd
@@ -21,17 +21,31 @@ from pydeephaven.table import Table
 from pydeephaven.ticket import ScopeTicket, SharedTicket
 from tests.testbase import BaseTestCase
 
+_Event = threading.Event
+
 
 class _WaitSignalingQueue(queue.SimpleQueue):
-    """A SimpleQueue that signals when a worker starts to wait on it."""
+    """A SimpleQueue that signals when a thread starts to wait on it."""
 
     def __init__(self):
         super().__init__()
-        self.waiting = threading.Event()
+        self.waiting = _Event()
 
     def get(self, block=True, timeout=None):
         self.waiting.set()
         return super().get(block, timeout)
+
+
+class _WaitSignalingEvent(threading.Event):
+    """A threading.Event that signals when a thread starts to wait on it."""
+
+    def __init__(self):
+        super().__init__()
+        self.waiting = _Event()
+
+    def wait(self, timeout=None):
+        self.waiting.set()
+        return super().wait(timeout)
 
 
 class SessionTestCase(BaseTestCase):
@@ -195,15 +209,15 @@ t1 = empty_table(0) if t.is_blink else None
             with self.assertRaises(PermissionError):
                 append_input_t.delete(dh_table)
 
-    def test_close_stops_worker_thread(self):
+    def test_close_stops_threads(self):
         def failing_close():
             raise DHError("simulated CloseSession failure")
 
         for case in ("normal", "CloseSession fails", "already disconnected"):
             with self.subTest(case):
                 session = Session()
-                worker = session._worker_thread
-                self.assertTrue(worker.is_alive())
+                threads = [session._release_thread, session._refresh_thread]
+                self.assertTrue(all(t.is_alive() for t in threads))
                 if case == "CloseSession fails":
                     session.session_service.close = failing_close
                     with self.assertRaises(DHError):
@@ -215,8 +229,9 @@ t1 = empty_table(0) if t.is_blink else None
                         )
                     session.close()
                 self.assertFalse(session.is_connected)
-                worker.join(5)
-                self.assertFalse(worker.is_alive())
+                for t in threads:
+                    t.join(5)
+                    self.assertFalse(t.is_alive())
 
     def test_token_is_refreshed(self):
         refreshes = []
@@ -256,15 +271,15 @@ t1 = empty_table(0) if t.is_blink else None
             _refresh_token=slow_refresh,
         ):
             session = Session()
-            worker = session._worker_thread
+            refresher = session._refresh_thread
             self.assertTrue(refresh_started.wait(10))
             session.close()
             finish_refresh.set()
-            worker.join(10)
-            self.assertFalse(worker.is_alive())
+            refresher.join(10)
+            self.assertFalse(refresher.is_alive())
             self.assertEqual(len(refreshes), 1, "refreshed after close")
 
-    def test_failing_job_does_not_stop_worker(self):
+    def test_failing_job_does_not_stop_release_thread(self):
         ran_after_failure = threading.Event()
 
         class FailingJob(_SessionJob):
@@ -278,70 +293,76 @@ t1 = empty_table(0) if t.is_blink else None
         session = Session()
         try:
             with self.assertLogs("pydeephaven.session", level="ERROR") as logs:
-                session._worker_queue.put(FailingJob())
-                session._worker_queue.put(MarkerJob())
+                session._release_queue.put(FailingJob())
+                session._release_queue.put(MarkerJob())
                 self.assertTrue(ran_after_failure.wait(10))
             self.assertIn("FailingJob failed", logs.output[0])
-            self.assertTrue(session._worker_thread.is_alive())
+            self.assertTrue(session._release_thread.is_alive())
         finally:
             session.close()
 
-    def test_reconnect_leaves_one_worker(self):
+    def test_reconnect_leaves_one_set_of_threads(self):
         session = Session()
-        old_worker = session._worker_thread
+        old_threads = [session._release_thread, session._refresh_thread]
         session.is_connected = False  # as a failed is_alive check leaves it
         with session:  # reconnects
-            new_worker = session._worker_thread
-            self.assertIsNot(new_worker, old_worker)
-            old_worker.join(5)
-            self.assertFalse(old_worker.is_alive())
-            self.assertTrue(new_worker.is_alive())
+            new_threads = [session._release_thread, session._refresh_thread]
+            for old, new in zip(old_threads, new_threads):
+                self.assertIsNot(new, old)
+                old.join(5)
+                self.assertFalse(old.is_alive())
+                self.assertTrue(new.is_alive())
 
-    def test_due_refresh_runs_before_queued_releases(self):
-        session = Session()
-        try:
-            released = []
-            first_started = threading.Event()
-            finish_first = threading.Event()
-            releases_before_refresh = []
-            refreshed = threading.Event()
+    def test_paused_release_does_not_block_token_refresh(self):
+        refreshed = threading.Event()
 
-            def paused_release(ticket):
-                released.append(ticket)
-                if len(released) == 1:
-                    first_started.set()
-                    finish_first.wait(10)
+        def recording_refresh(session):
+            refreshed.set()
+            return True
 
-            def recording_refresh():
-                releases_before_refresh.append(len(released))
-                refreshed.set()
-                return True
+        with mock.patch.multiple(
+            Session,
+            _seconds_until_refresh=lambda self: 0.05,
+            _refresh_token=recording_refresh,
+        ):
+            session = Session()
+            try:
+                release_started = threading.Event()
+                finish_release = threading.Event()
 
-            session.release = paused_release
-            session._refresh_token = recording_refresh
-            for _ in range(5):
+                def paused_release(ticket):
+                    release_started.set()
+                    finish_release.wait(10)
+
+                session.release = paused_release
                 session._queue_release(session.make_export_ticket())
-            self.assertTrue(first_started.wait(10))
-            session._next_refresh = monotonic()  # comes due behind a queue of releases
-            finish_first.set()
-            self.assertTrue(refreshed.wait(10))
-            self.assertEqual(releases_before_refresh[0], 1)
-        finally:
-            session.close()
+                self.assertTrue(release_started.wait(10))
+                refreshed.clear()
+                self.assertTrue(
+                    refreshed.wait(10), "no token refresh while a release ran"
+                )
+            finally:
+                finish_release.set()
+                session.close()
 
     def test_dropped_session_is_collected(self):
-        with mock.patch("queue.SimpleQueue", _WaitSignalingQueue):
+        with (
+            mock.patch("queue.SimpleQueue", _WaitSignalingQueue),
+            mock.patch("threading.Event", _WaitSignalingEvent),
+        ):
             session = Session()
-        worker = session._worker_thread
-        waiting = session._worker_queue.waiting
+        threads = [session._release_thread, session._refresh_thread]
+        waits = [session._release_queue.waiting, session._refresh_stop.waiting]
         session_ref = weakref.ref(session)
         del session
-        # The worker drops its reference to the session before it waits for a job.
-        self.assertTrue(waiting.wait(30), "the worker never waited for a job")
+        # Each thread drops its reference to the session before it waits.
+        for waiting in waits:
+            self.assertTrue(waiting.wait(30), "a thread never started to wait")
         gc.collect()
-        self.assertIsNone(session_ref(), "the worker thread kept the session alive")
-        worker.join(5)
-        self.assertFalse(worker.is_alive())
+        self.assertIsNone(session_ref(), "a session thread kept the session alive")
+        for t in threads:
+            t.join(5)
+            self.assertFalse(t.is_alive())
 
     def test_unclosed_session_does_not_block_interpreter_exit(self):
         # A session left open in a reference cycle is collected during interpreter shutdown.
