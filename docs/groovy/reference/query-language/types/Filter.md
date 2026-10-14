@@ -50,6 +50,7 @@ The [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.
 | [`Filter.isTrue(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isTrue(io.deephaven.api.expression.Expression))       | True if the boolean expression is true  |
 | [`Filter.isFalse(expression)`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#isFalse(io.deephaven.api.expression.Expression))     | True if the boolean expression is false |
 | [`Filter.ofTrue()`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#ofTrue())                                                       | Always true (matches every row)         |
+| [`Filter.ofFalse()`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html#ofFalse())                                                     | Always false (matches no rows)          |
 
 ## Methods
 
