@@ -4,6 +4,8 @@ title: Get Started
 
 _A Crash Course in Deephaven_ is your backpack guide through the world of real-time data analysis using the Deephaven data engine.
 
+This crash course provides a broad, clear, and technically informative overview of Deephaven's capabilities. Let's dive in and unlock the potential of this powerful platform.
+
 This first chapter gets a Deephaven server running and opens the Deephaven IDE, where you run the code for the rest of the crash course.
 
 ## Start Deephaven
@@ -29,7 +31,7 @@ The command's options do the following:
 - `--rm` deletes the container when it stops.
 - `--name deephaven` names the container `deephaven`, so you can refer to it by name in other Docker commands, such as `docker stop deephaven`.
 
-Files you save in the IDE go to `data/storage` on your machine. Anything your code writes under `/data` in the container also appears in your local `data` directory. Because these files live on your machine, you keep your work after `--rm` deletes the container.
+Files you save in the IDE go to `data/storage` on your machine. Anything your code writes under `/data` in the container also appears in your local `data` directory. Because these files live on your machine, you won't lose your work when `--rm` deletes the container. To learn more about mounting directories in Docker, see [Docker data volumes](../../conceptual/docker-data-volumes.md).
 
 ## Get the example data
 

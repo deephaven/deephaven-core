@@ -12,7 +12,7 @@ Table operations are integral to the Deephaven Query Language (DQL). Besides cre
 - [`sort`](../../reference/table-operations/sort/sort.md), which sorts a table by the given columns from least to greatest.
 - [`sort_descending`](../../reference/table-operations/sort/sort-descending.md), which sorts a table by the given columns from greatest to least.
 
-You can think of these as different transformations applied to the data in a table. The rest of this page builds on them.
+You can think of these as different transformations applied to the data in a table. The rest of this page builds on them with the basic table operations that make up the backbone of the most common queries.
 
 The operations on this page also work on ticking tables, such as the ones in [Create Tables](./create-tables.md#create-ticking-tables), the same way they work on the static tables used in these examples. [Blink tables](../../conceptual/table-types.md#specialization-3-blink), ticking tables that keep only the rows added in the current update cycle, are the exception: a few operations on this page behave differently on them or [aren't supported](../../conceptual/table-types.md#unsupported-operations).
 
@@ -71,7 +71,7 @@ t_lazy_updated = t_updated.lazy_update(
 
 ### Select columns
 
-[`select`](../../reference/table-operations/select/select.md) and [`view`](../../reference/table-operations/select/view.md) both create tables that contain only the columns you list: existing columns and new columns computed from them. They differ in the kind of column they create.
+[`select`](../../reference/table-operations/select/select.md) and [`view`](../../reference/table-operations/select/view.md) both create tables that contain only the columns you list: existing columns and new columns computed from them. They differ in the kind of column they create, which determines how much memory they allocate and when formulas are evaluated. Performance and memory considerations dictate the best method for a particular use case.
 
 [`select`](../../reference/table-operations/select/select.md), like [`update`](../../reference/table-operations/select/update.md), creates _in-memory_ columns. The following code block selects two existing columns from `t_updated` and adds a new column.
 
@@ -89,7 +89,7 @@ t_viewed = t_updated.view(
 )
 ```
 
-For guidance on choosing between in-memory, formula, and memoized columns, see [Choose the right column selection method](../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method).
+There's a lot to consider when choosing between in-memory, formula, and memoized columns in queries. For guidance, see [Choose the right column selection method](../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method).
 
 ### Drop columns
 
@@ -202,7 +202,7 @@ See the [sorting guide](../../how-to-guides/sort.md) for more information.
 
 ## Group and aggregate data
 
-Grouping data places rows into groups based on zero or more key columns. Rows that have the same values in the key columns go into the same group. Aggregation calculates summary statistics over a group of data. Grouping and aggregation are key components of data analysis. On a blink table, aggregations such as `avg_by` and `agg_by` cover every row the table delivers after the aggregation is created, not only the rows in the current update cycle.
+Grouping data places rows into groups based on zero or more key columns. Rows that have the same values in the key columns go into the same group. Aggregation calculates summary statistics over a group of data. Grouping and aggregation are key components of data analysis, especially in Deephaven queries. On a blink table, aggregations such as `avg_by` and `agg_by` cover every row the table delivers after the aggregation is created, not only the rows in the current update cycle.
 
 The examples in this section use a new `t` with random `X` and `Y` columns plus `Group` and `Letter` columns to group by. It replaces the root table `t` from the top of this page.
 
@@ -352,7 +352,7 @@ See the [`update_by` user guide](../../how-to-guides/rolling-aggregations.md) to
 
 ## Combine tables
 
-Deephaven combines tables in two ways: merging and joining. Merging stacks tables vertically. Joining combines tables horizontally.
+Deephaven combines tables in two ways: merging and joining. Merging can be visualized as stacking tables vertically, whereas joining is more horizontal in nature: it appends columns from matching rows of another table, based on values in key columns.
 
 Each subsection below defines its own tables to demonstrate merging and joining tables in Deephaven.
 

@@ -29,7 +29,7 @@ from deephaven import empty_table
 result = empty_table(5).update(["X = i", "XSquared = X * X"])
 ```
 
-There's **no loop**. You describe the relationship (`XSquared = X * X`), and the engine applies it to every row.
+There's **no loop**. You describe the relationship (`XSquared = X * X`), and the engine applies it to every row. This works the same way for arbitrarily complex operations.
 
 When you write `XSquared = X * X`, you're **not** saying:
 
@@ -62,7 +62,7 @@ Even for static, one-time calculations, the recipe approach has advantages:
 
 ### For real-time data
 
-Real-time data is where loops and recipes differ most. **Loops execute once and stop. Recipes keep applying to new rows as they arrive.**
+This is the critical difference. **Loops execute once and stop. Recipes keep applying to new rows as they arrive.**
 
 ```python ticking-table order=null test-set=ticking-demo
 from deephaven import time_table
@@ -93,7 +93,7 @@ When the source data changes, the engine:
 2. **Computes incrementally** — each update tells the engine which rows were added, which existing rows changed (modified rows), and which columns changed. The engine computes `XSquared` for the added rows. For modified rows, it recomputes `XSquared` only when `X` is one of the changed columns.
 3. **Updates results in place** — it writes the new values into the result table, so you never re-run the query.
 
-To get this behavior from a loop, you'd have to write your own code to detect new and changed rows and recompute them.
+With loops, this requires significant additional infrastructure. A loop executes once and stops, so you'd have to write your own code to detect new and changed rows and recompute them. With recipes, it's automatic.
 
 ## Common patterns: wrong vs. right
 
@@ -189,7 +189,7 @@ for symbol in ["AAPL", "GOOGL", "MSFT"]:
 
 ## Bridging pandas and Deephaven
 
-Many users work with both pandas and Deephaven. The habit to break is looping over DataFrame rows:
+Many users work with both pandas and Deephaven. Here's how to think about the transition. The habit to break is looping over DataFrame rows:
 
 ```python skip-test
 # pandas habit: loop over rows
@@ -213,6 +213,8 @@ result = t.update("DoubleValue = Value * 2")
 # Convert back to pandas if needed
 df2 = dhpd.to_pandas(result)
 ```
+
+**Key principle:** Once you're in Deephaven, think in recipes.
 
 ### Quick reference: pandas operations as recipes
 

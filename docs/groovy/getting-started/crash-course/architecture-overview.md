@@ -2,11 +2,11 @@
 title: An Overview of Deephaven's Architecture
 ---
 
-Deephaven's power is largely due to the concept that _everything_ is a table. Think of Deephaven tables like spreadsheets or database tables, except that they support real-time operations! The Deephaven table is the key abstraction that unites static and real-time data. This chapter covers the three main pieces of Deephaven's architecture: tables and the operations that act on them, the engine that runs your queries, and the web user interface.
+Deephaven's power is largely due to the concept that _everything_ is a table. Think of Deephaven tables like spreadsheets or database tables, except that they support real-time operations! The Deephaven table is the key abstraction that unites static and real-time data for a seamless, integrated experience. This chapter covers the three main pieces of Deephaven's architecture: tables and the operations that act on them, the engine that runs your queries, and the web user interface. Let's look at each one before diving deeper into code.
 
 ## Tables and table operations
 
-Beyond representing data as tables, Deephaven lets you manipulate, transform, extract, and analyze that data to produce valuable insight. Deephaven represents transformations to the data stored in a table as _operations_ on that table. You can chain these [table operations](./table-ops.md) together to transform the data step by step:
+If you're familiar with tabular data (think Excel, pandas, and more), Deephaven will feel natural to you. Beyond representing data as tables, Deephaven lets you manipulate, transform, extract, and analyze that data to produce valuable insight. Deephaven represents transformations to the data stored in a table as _operations_ on that table. You can chain these [table operations](./table-ops.md) together to transform the data step by step:
 
 ```groovy order=resultTable,sourceTable
 sourceTable = newTable(stringCol("Group", "A", "B", "A", "B"), intCol("Data", 1, 2, 3, 4))
@@ -23,7 +23,7 @@ Here's what each step does:
 - [`sumBy`](../../reference/table-operations/group-and-aggregate/sumBy.md) sums the `Data` and `NewData` columns for each value in `Group`.
 - [`renameColumns`](../../reference/table-operations/select/rename-columns.md) gives the sums clearer names.
 
-This paradigm of representing data transformations with methods that act on tables is not new. However, Deephaven takes this a step further. In addition to its table operations, Deephaven provides a large library of functions that you call through _query strings_. You pass query strings _into_ table operations. The `"NewData = Data * 2"` argument in the example above is a query string. Query strings are one of Deephaven's most powerful features. The [query strings chapter](./query-strings.md) covers them in detail.
+This paradigm of representing data transformations with methods that act on tables is not new. However, Deephaven takes this a step further. In addition to its large collection of table operations, Deephaven provides a vast library of efficient functions that you call through _query strings_. You pass query strings _into_ table operations. The `"NewData = Data * 2"` argument in the example above is a query string. Query strings are one of Deephaven's most powerful features. The [query strings chapter](./query-strings.md) covers them in detail.
 
 Together, tables, the table operations that act on them, and the query strings inside those operations make up the _Deephaven Query Language_, or DQL. Code written in DQL, like the example above, is a _Deephaven query_. The fundamental principle of the Deephaven experience is this:
 
@@ -75,7 +75,7 @@ This is the same [`updateView`](../../reference/table-operations/select/update-v
 
 ## The engine
 
-The Deephaven engine implements everything you've seen so far. Every Deephaven query runs through the engine, which processes both static and streaming data.
+The Deephaven engine is the powerhouse that implements everything you've seen so far. Every Deephaven query runs through the engine, which processes both static and streaming data as efficiently as possible.
 
 Internally, the engine represents queries as [directed acyclic graphs (DAGs)](../../conceptual/dag.md). In the graph:
 
@@ -93,8 +93,10 @@ For the sake of efficiency and scalability, the engine is implemented mostly in 
 
 ## User interface
 
-The Deephaven user interface (UI) is a web-based application that runs in your browser and communicates with the Deephaven engine using the [JavaScript API](../../how-to-guides/use-jsapi.md). In the UI, you can explore tables, write queries, and visualize data.
+The Deephaven user interface (UI) is a web-based application that runs in your browser and communicates with the Deephaven engine using the [JavaScript API](../../how-to-guides/use-jsapi.md). The UI provides a rich experience for exploring tables, writing queries, and visualizing data.
 
-You can also extend the UI with [JavaScript plugins](../../how-to-guides/configuration/js-plugins.md) that add custom widgets and visualizations.
+The UI is also highly extensible. You can add custom widgets, visualizations, and functionality with [JavaScript plugins](../../how-to-guides/configuration/js-plugins.md). Create your own plugin starting with one of the [plugin templates](https://github.com/deephaven/deephaven-plugins/tree/main/templates) available on GitHub.
+
+All Core components of the UI are open source on GitHub in the [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui) repository, and the source code for the plugins is at [deephaven/deephaven-plugins](https://github.com/deephaven/deephaven-plugins). You can explore the source code, contribute to the project, or even fork it to create your own custom version of the Deephaven UI.
 
 Next, [Create Your First Tables](./create-tables.md) shows how to build static and ticking tables of your own.

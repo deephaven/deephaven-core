@@ -20,7 +20,7 @@ This crash course takes you from starting a Deephaven server to building real-ti
 
 ## Get started
 
-Start a Deephaven server with Docker, open the IDE, and get familiar with the console and workspace.
+Start a Deephaven server with Docker, open the IDE, and get familiar with the console and workspace. Dive in and unlock the potential of this powerful platform.
 
 </CoreTutorialCard>
 
@@ -60,7 +60,7 @@ Work with date-time types, time zones, time arithmetic, and business calendars.
 
 ## Query strings
 
-Learn the query-string syntax that table operations use to filter rows and compute new columns, and how to call built-in and user-defined functions from inside a query string.
+Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They tell the engine what to compute, and the engine turns them into filters and formulas, compiling code where needed. Learn the query-string syntax that table operations use to filter rows and compute new columns, and how to call built-in and user-defined functions from inside a query string.
 
 </CoreTutorialCard>
 
@@ -68,7 +68,7 @@ Learn the query-string syntax that table operations use to filter rows and compu
 
 ## Recipes, not loops!
 
-Understand why Deephaven uses declarative recipes instead of loops. Learn how a recipe lets query results update in real time as new data arrives, without re-running your code.
+Understand why Deephaven uses declarative recipes instead of loops. Learn the paradigm shift that unlocks automatic real-time updates: a recipe lets query results update in real time as new data arrives, without re-running your code.
 
 </CoreTutorialCard>
 
@@ -84,7 +84,7 @@ Whether your data is static or updating in real time, Deephaven can plot it. Bui
 
 ## Data I/O
 
-Read data into Deephaven and write it back out in common formats and systems, including CSV, Parquet, Kafka, and Iceberg.
+Data I/O is mission-critical for any real-time data analysis platform. Read data into Deephaven and write it back out in common formats and systems, including CSV, Parquet, Kafka, and Iceberg.
 
 </CoreTutorialCard>
 
@@ -92,7 +92,7 @@ Read data into Deephaven and write it back out in common formats and systems, in
 
 ## Configure your Deephaven instance
 
-Change authentication, choose a deployment, install Java packages, set memory limits, and keep your instance up to date.
+Take your Deephaven instance beyond the defaults: change authentication, choose a deployment, install Java packages, set memory limits, and keep your instance up to date.
 
 </CoreTutorialCard>
 

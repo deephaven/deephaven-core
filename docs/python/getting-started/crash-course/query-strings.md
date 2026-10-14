@@ -2,11 +2,11 @@
 title: Deephaven's Query Strings
 ---
 
-Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They translate the user's intention into compiled code that the engine can execute. Query strings use Java-like syntax and can use Python variables, functions, and objects. They are the entry point to Deephaven's built-in function library, and they let you mix Python and Java objects in one expression.
+Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They tell the engine what to compute, and the engine turns them into filters and formulas, compiling code where needed. Query strings use Java-like syntax and can use Python variables, functions, and objects. They are the entry point to a universe of powerful built-in tools and Python-Java interoperability: Deephaven's built-in function library, and the ability to mix Python and Java objects in one expression.
 
 ## Syntax
 
-Query strings are Python strings that you pass to table operations. Use double quotes for query strings, because query strings use single quotes for their own date-time and `char` literals.
+Query strings are Python strings that you pass to table operations. Deephaven **highly** recommends using double quotes for query strings, because query strings use single quotes for their own date-time and `char` literals.
 
 ```python test-set=1
 from deephaven import empty_table
@@ -161,7 +161,7 @@ conditional = empty_table(10).update(
 )
 ```
 
-Query strings support Java-style [typecasts](../../reference/query-language/control-flow/casting.md).
+In Deephaven, typecasting is easy: query strings support Java-style [typecasts](../../reference/query-language/control-flow/casting.md).
 
 ```python test-set=1
 typecasted = empty_table(10).update(
@@ -263,11 +263,11 @@ converted_meta = converted_date_times.meta_table
 
 The [time user guide](../../conceptual/time-in-deephaven.md) provides a comprehensive overview of working with date-time data in Deephaven.
 
-The numeric and date-time functions above are only a small part of the built-in library. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
+These functions provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
 
 ## Java methods
 
-The data structures that underlie Deephaven tables are Java data structures. Many of the literals, operators, and functions covered so far are Java under the hood. Query strings can call methods on Java objects.
+The data structures that underlie Deephaven tables are Java data structures. Many of the literals, operators, and functions covered so far are Java under the hood. Query strings can call methods on Java objects, unlocking new levels of functionality and efficiency.
 
 To find out which methods a column's values have, first check the column's Java type with [`meta_table`](../../reference/table-operations/metadata/meta_table.md), as in the [Literals](#literals) section.
 
@@ -510,7 +510,7 @@ To learn more about using Python in query strings, see [Python in query strings]
 
 ## Scoping
 
-Query strings resolve Python names from the calling function's local scope first, then from the global (module) scope.
+Functions that return tables or otherwise use query strings should pay careful attention to scoping details. Query strings resolve Python names from the calling function's local scope first, then from the global (module) scope.
 
 ```python test-set=2 order=source,result1,result2
 from deephaven import empty_table
@@ -554,9 +554,9 @@ def get_element_stateless(idx) -> int:
 t_stateless = empty_table(10).update("X = get_element_stateless(ii)")
 ```
 
-`get_element_stateless` reads `my_list` but never changes it.
+`get_element_stateless` is stateless because it reads `my_list` but never changes it. It could be evaluated in any order and give the same result.
 
-A stateful function modifies objects outside its local scope, so its result can depend on execution order. The engine assumes functions in query strings are stateless, so it may evaluate rows in any order, including in parallel.
+A stateful function modifies objects outside its local scope: it doesn't leave the world as it found it. Its result can also depend on execution order. The engine assumes functions in query strings are stateless, so it may evaluate rows in any order, including in parallel.
 
 To make the engine evaluate a query string in row order, wrap it with [`Selectable.parse`](/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) and call [`with_serial`](../../conceptual/query-engine/parallelization.md) on the result. In the following example, the `update` call that uses a stateful function produces the same table as `t_stateless` because the query string is marked serial.
 
@@ -584,6 +584,10 @@ Print `idx` to verify that `get_element_stateful` changed it.
 print(idx)
 ```
 
-Use stateless functions whenever possible, so the engine is free to choose the execution order and you don't need [`with_serial`](../../conceptual/query-engine/parallelization.md).
+Queries should use stateless functions whenever possible because:
+
+- They minimize side effects when called.
+- Their result does not depend on the order of evaluation, so you don't need [`with_serial`](../../conceptual/query-engine/parallelization.md).
+- The engine is free to choose the execution order, including evaluating them in parallel where it supports it.
 
 This chapter covered the building blocks of query strings: literals, special variables and constants, operators, built-in functions, Java methods, arrays, and Python objects. It also showed how query strings resolve variables and why you should prefer stateless functions. Next, [Recipes, not loops!](./vectorization-vs-loops.md) explains why Deephaven queries describe calculations as column formulas rather than loops over rows.

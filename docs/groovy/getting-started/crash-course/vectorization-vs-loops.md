@@ -27,7 +27,7 @@ In Deephaven, you specify **what** you want, not **how** to compute it. You writ
 result = emptyTable(5).update("X = i", "XSquared = X * X")
 ```
 
-There's **no loop**. You describe the relationship (`XSquared = X * X`), and the engine applies it to every row.
+There's **no loop**. You describe the relationship (`XSquared = X * X`), and the engine applies it to every row. This works the same way for arbitrarily complex operations.
 
 When you write `XSquared = X * X`, you're **not** saying:
 
@@ -60,7 +60,7 @@ Even for static, one-time calculations, the recipe approach has advantages:
 
 ### For real-time data
 
-Real-time data is where loops and recipes differ most. **Loops execute once and stop. Recipes keep applying to new rows as they arrive.**
+This is the critical difference. **Loops execute once and stop. Recipes keep applying to new rows as they arrive.**
 
 ```groovy ticking-table order=null test-set=groovy-ticking-demo
 // This table adds roughly one new row every second
@@ -91,7 +91,7 @@ When the source data changes, the engine:
 2. **Computes incrementally** — each update tells the engine which rows were added, which existing rows changed (modified rows), and which columns changed. The engine computes `XSquared` for the added rows. For modified rows, it recomputes `XSquared` only when `X` is one of the changed columns.
 3. **Updates results in place** — it writes the new values into the result table, so you never re-run the query.
 
-To get this behavior from a loop, you'd have to write your own code to detect new and changed rows and recompute them.
+With loops, this requires significant additional infrastructure. A loop executes once and stops, so you'd have to write your own code to detect new and changed rows and recompute them. With recipes, it's automatic.
 
 ## Common patterns: wrong vs. right
 

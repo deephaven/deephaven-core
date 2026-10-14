@@ -4,6 +4,8 @@ title: Get Started
 
 _A Crash Course in Deephaven_ is your backpack guide through the world of real-time data analysis using the Deephaven data engine.
 
+This crash course provides a broad, clear, and technically informative overview of Deephaven's capabilities. Let's dive in and unlock the potential of this powerful platform.
+
 This first chapter gets a Deephaven server running and opens the Deephaven IDE, where you run the code for the rest of the crash course.
 
 ## Start Deephaven
@@ -16,14 +18,11 @@ To follow along, ensure you have [Docker](https://docs.docker.com/engine/install
 > - Unless you set your own [pre-shared key](../../how-to-guides/authentication/auth-psk.md), the server prints a key when it starts. Enter that key as your password when you log in to the IDE. If you start the server with the `deephaven server` command, it opens the IDE in your browser and logs you in automatically.
 > - Later chapters read and write files under `/data`. With pip, `/data` is a directory on your own machine. On Linux, create it and make sure your user can write to it. On macOS, you can't create directories at the root of the file system. Choose a directory you can write to, such as one in your home directory, and use it in place of `/data` in later chapters.
 > - Later chapters also read Deephaven's example datasets from `/data/examples`. The [Deephaven examples](https://github.com/deephaven/examples) repository stores its data files with [Git LFS](https://git-lfs.com/). Install Git LFS, then clone the repository into `/data/examples`. If you chose a different directory in place of `/data`, clone into its `examples` subdirectory instead:
->
 >   ```bash skip-test
 >   git lfs install
 >   git clone https://github.com/deephaven/examples.git /data/examples
 >   ```
->
 > - The [deephaven.ui](./deephaven-ui.md) chapter uses the `deephaven-plugin-ui` and `deephaven-plugin-plotly-express` packages, which the Docker image includes but `deephaven-server` doesn't. Install them into the same environment before you start the server:
->
 >   ```bash skip-test
 >   pip install deephaven-plugin-ui deephaven-plugin-plotly-express
 >   ```
@@ -49,7 +48,7 @@ The command's options do the following:
 - `--rm` deletes the container when it stops.
 - `--name deephaven` names the container `deephaven`, so you can refer to it by name in other Docker commands, such as `docker stop deephaven`.
 
-Files you save in the IDE go to `data/storage` on your machine. Anything your code writes under `/data` in the container also appears in your local `data` directory. Because these files live on your machine, you keep your work after `--rm` deletes the container.
+Files you save in the IDE go to `data/storage` on your machine. Anything your code writes under `/data` in the container also appears in your local `data` directory. Because these files live on your machine, you won't lose your work when `--rm` deletes the container. To learn more about mounting directories in Docker, see [Docker data volumes](../../conceptual/docker-data-volumes.md).
 
 ## Get the example data
 

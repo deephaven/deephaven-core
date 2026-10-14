@@ -47,7 +47,7 @@ crypto = readCsv(
 
 ## Create ticking tables
 
-The [Architecture Overview](./architecture-overview.md#immutable-schema-mutable-data) briefly used [`timeTable`](../../reference/table-operations/create/timeTable.md). `timeTable` creates a ticking table with a single `Timestamp` column and adds a new row at a regular interval that you set.
+You can create ticking tables to get a feel for live data in Deephaven. The [Architecture Overview](./architecture-overview.md#immutable-schema-mutable-data) briefly used [`timeTable`](../../reference/table-operations/create/timeTable.md). `timeTable` creates a ticking table with a single `Timestamp` column and adds a new row at a regular interval that you set.
 
 ```groovy test-set=2 ticking-table order=null
 tickingTable = timeTable("PT1s")
@@ -71,7 +71,7 @@ Most real-world use cases for ticking data involve connecting to data streams th
 
 ## Replay static data as ticking data
 
-One of the easiest ways to work with realistic ticking data is to replay static data with the [`Replayer`](../../reference/table-operations/create/Replayer.md). Use it to replay the `crypto` table ingested above:
+Real-time data is Deephaven's mission statement. One of the easiest ways to work with realistic ticking data is to replay static data with the [`Replayer`](../../reference/table-operations/create/Replayer.md). Use it to replay the `crypto` table ingested above:
 
 ```groovy test-set=3 ticking-table order=null
 import io.deephaven.engine.table.impl.replay.Replayer
