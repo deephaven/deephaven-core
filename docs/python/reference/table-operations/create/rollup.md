@@ -61,7 +61,7 @@ Whether or not to include constituent rows at the leaf level. Default is `False`
 
 ### Instance
 
-- `with_filters(filters)` - Create a new rollup table that applies a set of filters to the source table before the rollup. Filters may use group-by and constituent columns but not aggregation columns, and may not use column arrays.
+- `with_filters(filters)` - Create a new rollup table that applies a set of filters. If every filter uses only group-by columns, Deephaven filters the lowest aggregated level and reaggregates. Otherwise, it applies the filters to the source table and rebuilds the rollup. Filters may use group-by and constituent columns but not aggregation columns, and may not use column arrays.
 - `with_update_view(columns...)` - Create a new rollup table that applies a set of `update_view` operations to the `groupByColumns` of the rollup table.
 - `node_operation_recorder(nodeType)` - Get a [`recorder`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.RollupNodeOperationsRecorder) for per-node operations to apply during snapshots of the requested [`NodeType`](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.NodeType.html).
 - `with_node_operations(recorders...)` - Create a new rollup table that applies the [`recorded`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.RollupNodeOperationsRecorder) operations to nodes when gathering snapshots.

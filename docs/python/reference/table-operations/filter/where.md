@@ -137,8 +137,8 @@ When [`where`](#syntax) receives several filters, Deephaven evaluates them one a
 
 The order of the filters depends on whether each one is stateless or stateful:
 
-- A **stateless** filter is one that Deephaven assumes is safe to evaluate in parallel. Every string-formula filter is stateless by default, as [Stateless by default](../../../conceptual/query-table-configuration.md#stateless-by-default) describes.
-- A **stateful** filter is one that Deephaven does not assume is safe to evaluate in parallel. A filter marked serial with [`with_serial`](../../query-language/types/Filter.md#with_serial) is stateful, and every string-formula filter is stateful when stateless by default is turned off. On a non-free-threaded Python build, a string-formula filter that calls a Python function or uses Python objects is also stateful.
+- A **stateless** filter is one that Deephaven assumes is safe to evaluate in parallel. Every conditional formula filter is stateless by default, as [Stateless by default](../../../conceptual/query-table-configuration.md#stateless-by-default) describes.
+- A **stateful** filter is one that Deephaven does not assume is safe to evaluate in parallel. A filter marked serial with [`with_serial`](../../query-language/types/Filter.md#with_serial) is stateful, and every conditional formula filter is stateful when stateless by default is turned off. This setting does not affect a match filter that Deephaven evaluates directly, which stays stateless. On a non-free-threaded Python build, a conditional formula filter that calls a Python function or uses Python objects is also stateful.
 
 Deephaven applies these rules:
 
@@ -193,7 +193,7 @@ Deephaven does not apply a filter on partitioning columns this way in these case
 - The filter respects a [Barrier](../../query-language/types/Barrier.md) declared by a filter that is not applied this way.
 - The filter uses row variables such as `i` or `ii`, or its results can change over time (a refreshing filter).
 
-In these cases Deephaven includes every partition in the table and evaluates the filter against every row. On a large partitioned source, that can be much slower. Mark a filter on partitioning columns serial only when the order in which it is evaluated matters.
+In these cases Deephaven does not use that filter to skip partitions. It evaluates the filter on the rows of the partitions that other filters on partitioning columns leave in. On a large partitioned source, that can be much slower. Mark a filter on partitioning columns serial only when the order in which it is evaluated matters.
 
 ## Related documentation
 

@@ -67,7 +67,7 @@ One or more columns to group on and create hierarchy from.
 - `includesConstituents` - Returns a boolean indicating whether or not the constituent rows at the lowest level are included.
 - `makeNodeOperationsRecorder(nodeType)` - Get a [`recorder`](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.NodeOperationsRecorder.html) for per-node operations to apply during snapshots of the requested [`NodeType`](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.NodeType.html).
 - `translateAggregatedNodeOperationsForConstituentNodes(aggregatedNodeOperationsToTranslate)` - Translate node operations for aggregated nodes to the closest equivalent for a constituent node.
-- `withFilter(filter)` - Create a new rollup table that will apply a filter to the Group By or Constituent columns of the rollup table.
+- `withFilter(filter)` - Create a new rollup table that applies a filter to the Group By or Constituent columns of the rollup table. If every filter uses only group-by columns, Deephaven filters the lowest aggregated level and reaggregates. Otherwise, it applies the filters to the source table and rebuilds the rollup.
 - `withNodeOperations(nodeOperations...)` - Create a new rollup table that applies the [`recorded`](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.NodeOperationsRecorder.html) operations to nodes when gathering snapshots.
 - `withUpdateView(columns...)` - Create a new rollup table that applies a set of `updateView` operations to the `groupByColumns` of the rollup table.
 

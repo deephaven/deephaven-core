@@ -227,7 +227,7 @@ When a [`Filter`](../../reference/query-language/types/Filter.md) is serial, Dee
 Partitioned sources need extra care. A table read from a directory of Parquet files or from an Iceberg table has partitioning columns, whose values identify each partition. Deephaven normally applies a filter on those columns to whole partitions before it reads any data. It skips that shortcut when the filter is serial, when any earlier filter in the argument list is serial, and in the other cases the linked section lists. See [Filters on partitioning columns](../../reference/table-operations/filter/where.md#filters-on-partitioning-columns).
 
 > [!WARNING]
-> When Deephaven cannot apply a filter on partitioning columns to whole partitions first, it includes every partition in the table and evaluates the filter against every row instead of once per partition. On a large partitioned source, that can be much slower. Mark a filter on partitioning columns serial only when its evaluation order matters.
+> When Deephaven cannot apply a filter on partitioning columns to whole partitions first, that filter does not skip any partitions. It evaluates the filter on the rows of the partitions that other filters on partitioning columns leave in, instead of once per partition. On a large partitioned source, that can be much slower. Mark a filter on partitioning columns serial only when its evaluation order matters.
 
 ### Barriers
 
