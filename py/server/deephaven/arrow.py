@@ -4,7 +4,6 @@
 """This module supports conversions between pyarrow tables and Deephaven tables."""
 
 import io
-import struct
 from collections.abc import Sequence
 from typing import Optional
 
@@ -149,13 +148,7 @@ class _ConverterStream(io.RawIOBase):
     def __init__(self, j_arrow_builder: jpy.JType):
         super().__init__()
         self._j_arrow_builder = j_arrow_builder
-        # The schema message's length field leaves out the padding that follows its metadata. Read alone it parses,
-        # but a stream reader takes that padding for the next message's length, reads zero, and ends the stream. Count
-        # the padding in the length, as the Arrow IPC format specifies.
-        schema = bytearray(j_arrow_builder.getSchema())
-        if len(schema) >= 8 and schema[:4] == b"\xff\xff\xff\xff":
-            struct.pack_into("<i", schema, 4, len(schema) - 8)
-        self._message = memoryview(schema)
+        self._message = memoryview(j_arrow_builder.getSchema()).cast("B")
         self._offset = 0
 
     def readable(self) -> bool:

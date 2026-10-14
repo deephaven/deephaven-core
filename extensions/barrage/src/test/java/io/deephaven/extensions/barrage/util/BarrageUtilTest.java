@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.barrage.util;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -25,10 +26,12 @@ import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.ColumnEncoding;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
+import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.IntVectorDirect;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
@@ -438,6 +441,33 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
                                         f.getMetadata()),
                                 f.getChildren()))
                 .collect(Collectors.toList()), schema.getCustomMetadata());
+    }
+
+    /**
+     * An encapsulated IPC message's size counts the padding after its metadata, as the Arrow IPC format specifies: a
+     * stream reader looks for the next message right after the size it reads. Column names of every length mod 8 give
+     * metadata that needs each amount of padding.
+     */
+    @Test
+    public void testIpcBytesCountPaddingInSize() {
+        boolean sawPadding = false;
+        for (int nameLength = 1; nameLength <= 8; ++nameLength) {
+            final Schema schema =
+                    new Schema(List.of(Field.nullable("C".repeat(nameLength), Types.MinorType.INT.getType())));
+            final FlatBufferBuilder builder = new FlatBufferBuilder();
+            builder.finish(MessageHelper.wrapInMessage(builder, schema.getSchema(builder), MessageHeader.Schema));
+            final int metadataSize = builder.dataBuffer().remaining();
+            sawPadding |= metadataSize % 8 != 0;
+
+            final byte[] bytes = MessageHelper.toIpcBytes(builder);
+            final ByteBuffer bb = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
+            assertThat(bb.getInt(0)).as("continuation token").isEqualTo(-1);
+            assertThat(bb.getInt(4)).as("size, for a name of length " + nameLength)
+                    .isEqualTo(bytes.length - 8)
+                    .isGreaterThanOrEqualTo(metadataSize);
+            assertThat(bytes.length % 8).as("message length").isZero();
+        }
+        assertThat(sawPadding).as("some metadata needed padding").isTrue();
     }
 
     @Test
