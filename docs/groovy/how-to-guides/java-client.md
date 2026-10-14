@@ -529,7 +529,10 @@ try (final ConsoleSession console = barrageSession.session().console("python").g
     } else {
         log.info().append("Added " + place).endl();
     }
-} catch (ExecutionException | InterruptedException | TimeoutException e) {
+} catch (InterruptedException e) {
+    // Restore the interrupt so the calling code can see it
+    Thread.currentThread().interrupt();
+} catch (ExecutionException | TimeoutException e) {
     e.printStackTrace();
 }
 ```
