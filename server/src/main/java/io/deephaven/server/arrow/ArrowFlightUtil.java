@@ -185,8 +185,9 @@ public class ArrowFlightUtil {
                 processMessage(request);
             } catch (final RuntimeException err) {
                 // gRPC closes the call when onNext throws, and calls neither onError nor onCompleted afterwards, so
-                // release the decoded dictionaries before the error propagates
-                abandon();
+                // clean up as onError does before the error propagates, and ignore any later message
+                abandoned = true;
+                failStream(err);
                 throw err;
             }
         }
@@ -287,6 +288,13 @@ public class ArrowFlightUtil {
         @Override
         public void onError(final Throwable t) {
             // ok; we're done then
+            failStream(t);
+        }
+
+        /**
+         * Releases what this stream holds, and fails its export with {@code t}, which propagates to the observer.
+         */
+        private void failStream(final Throwable t) {
             releaseDictionaries();
             if (resultTable != null) {
                 resultTable.dropReference();

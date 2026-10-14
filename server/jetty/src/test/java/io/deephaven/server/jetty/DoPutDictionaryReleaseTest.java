@@ -47,6 +47,7 @@ import java.util.function.BiConsumer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 /**
@@ -127,13 +128,26 @@ public class DoPutDictionaryReleaseTest {
     public void testFailedMessageReleasesDictionaries() throws IOException {
         final InputStream unknownDictionaryMessage = flightData(dictionaryBatchMessage(99L, "date"));
         runDoPutWithDictionary((doPut, observer) -> {
+            assertNotNull("the dictionary batch should have created the result table", resultTableOf(doPut));
             // gRPC closes the call when onNext throws, and calls none of the observer's terminal methods afterwards
             try {
                 doPut.onNext(unknownDictionaryMessage);
                 fail("Expected a dictionary batch for an id the schema does not have to be rejected");
             } catch (final RuntimeException expected) {
             }
+            assertNull("the failed stream should release its result table", resultTableOf(doPut));
         });
+    }
+
+    /** The converter's partial result table; it offers no other way to see that a failed stream released it. */
+    private static Object resultTableOf(final ArrowToTableConverter converter) {
+        try {
+            final java.lang.reflect.Field field = ArrowToTableConverter.class.getDeclaredField("resultTable");
+            field.setAccessible(true);
+            return field.get(converter);
+        } catch (final ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
     }
 
     @Test
