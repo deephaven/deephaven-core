@@ -85,7 +85,7 @@ The update graph never updates a table before the tables it depends on have fini
 
 Queries execute in two phases, and Deephaven uses a separate thread pool for each.
 
-**Initialization**: Every table operation runs once when you call it, whether at the top of a script or later in a running console. Deephaven computes the initial result from all existing data, splitting the rows across cores as described above. This work runs on the operation initialization thread pool.
+**Initialization**: Every table operation runs once when you call it, whether at the top of a script or later in a running console. Except for the deferred operations described above, which compute nothing yet, Deephaven computes the initial result from all existing data. Operations that parallelize, as described above, split their rows across cores on the operation initialization thread pool. The other operations run on the calling thread.
 
 For live (refreshing) tables, Deephaven also registers the result in the [update graph](../dag.md) during initialization so it receives future updates.
 
