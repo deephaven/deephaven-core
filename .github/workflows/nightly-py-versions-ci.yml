@@ -1,15 +1,14 @@
 name: Nightly Python Versions CI
 
-# Runs the py/server and py/client test suites on every supported Python version. The Docker-based suites run only on
-# the Python in the server image and the python registry image. These run the same tests without Docker, so each version
-# needs only Python and a JDK:
-# - The server suite starts its JVM from the deephaven-server wheel, as the Docker-based suite does from its classpath.
-# - The client suite tests against the server-jetty distribution, the start script and jars the server Docker image
-#   runs, with Java hosting Python from the job's venv.
+# Runs the py/server and py/client tests on every supported Python version. The Docker-based suites in check cover only
+# the Python in the Docker images. These run the same tests without Docker, so each version needs only Python and a JDK.
+# - The server suite starts its JVM from the deephaven-server wheel.
+# - The client suite tests against the server-jetty distribution, which has the start script and jars of the server
+#   Docker image. Java hosts Python from the job's venv.
 # The Python packages install from source.
 #
-# Floor: python_requires in py/server/setup.py. Ceiling: the newest Python that every dependency has a wheel for
-# (jpy has none for 3.15 yet). The free-threaded 3.14t build runs with the GIL kept off.
+# Floor: python_requires in py/server/setup.py. Ceiling: the newest Python that every dependency has a wheel for. jpy
+# has none for 3.15 yet. The free-threaded 3.14t build runs with the GIL off.
 
 on:
   schedule:
@@ -127,9 +126,8 @@ jobs:
           docker compose -f Integrations/docker-compose.yml up -d --wait
 
       - name: Run tests
-        # The same scripts run behind ./gradlew :py-server:testEmbedded and :py-client:testEmbedded. uv picks older numpy,
-        # pandas, pyarrow and numba releases on the older Pythons, since the newest ones dropped them. So those runs test
-        # different dependency versions.
+        # ./gradlew :py-server:testEmbedded and :py-client:testEmbedded run the same scripts. On the older Pythons, uv picks
+        # older numpy, pandas, pyarrow and numba releases, because the newest ones dropped those Pythons.
         run: py/${{ matrix.suite }}/run-tests-embedded.sh ${{ matrix.python-version }}
 
       - name: Upload Test Results

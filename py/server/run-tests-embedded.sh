@@ -57,8 +57,8 @@ export DEEPHAVEN_VERSION
 rm -rf "${BUILD}" "${RESULTS}"
 mkdir -p "${BUILD}" "${RESULTS}" "${BUILD}/data" "${BUILD}/cache"
 uv venv --quiet --python "${PY_VERSION}" "${VENV}"
-# --reinstall-package rebuilds the local packages on every run, so no uv version can reuse a cached build of older
-# source.
+# --reinstall-package rebuilds the local packages on every run. Without it, uv can reuse a cached build of older source,
+# because the package version does not change between edits.
 uv pip install --quiet --python "${VENV}/bin/python" --reinstall-package deephaven-core --reinstall-package pydeephaven \
     "${ROOT}/py/server" "${WHEELS[0]}" "${ROOT}/py/client" unittest-xml-reporting
 # Soft dependencies. Some have no wheel for every Python version, for example numba and connectorx on 3.13t. Their

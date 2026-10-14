@@ -4,9 +4,9 @@
 #
 
 # Runs the tests in tests/ on one Python version, against the server-jetty distribution instead of the server Docker
-# image. That is the same start script and jars the Docker image runs: Java is the main program and hosts Python. The
-# server's Python and the client's share one venv, so both run on that Python version. uv creates the venv and
-# downloads the Python version if it is not installed.
+# image. The distribution has the same start script and jars as the image. Java is the main program and hosts Python.
+# The server and the client share one venv, so both run on that Python version. uv creates the venv and downloads the
+# Python version if it is not installed.
 #
 # usage: run-tests-embedded.sh <python-version> [test ...]
 #   python-version  any version uv accepts, for example 3.9, 3.14 or 3.14t (free-threaded)
@@ -55,8 +55,8 @@ export DEEPHAVEN_VERSION
 rm -rf "${BUILD}" "${RESULTS}"
 mkdir -p "${BUILD}" "${RESULTS}" "${BUILD}/data" "${BUILD}/cache" "${BUILD}/config"
 uv venv --quiet --python "${PY_VERSION}" "${VENV}"
-# --reinstall-package rebuilds the local packages on every run, so no uv version can reuse a cached build of older
-# source.
+# --reinstall-package rebuilds the local packages on every run. Without it, uv can reuse a cached build of older source,
+# because the package version does not change between edits.
 uv pip install --quiet --python "${VENV}/bin/python" --reinstall-package deephaven-core --reinstall-package pydeephaven \
     "${ROOT}/py/server" "${ROOT}/py/client" unittest-xml-reporting
 # Soft dependencies. tests/test_flightsql.py uses flightsql-dbapi and adbc-driver-flightsql, and the server script in
@@ -71,12 +71,11 @@ if [[ "${PY_VERSION}" == *t ]]; then
     export PYTHON_GIL=0
 fi
 
-# Start the server the same way the Docker-based testPyClient task does: anonymous and PSK logins, PSK "deephaven".
-# It allows anonymous logins, so it listens on 127.0.0.1 only.
-# The start script finds Python through VIRTUAL_ENV, and the server reads its directories from DEEPHAVEN_*_DIR, as in
-# the Docker image.
-# Start it from the build directory. Python puts the working directory first on sys.path, and the repository root
-# has a coverage/ folder that shadows the coverage package numba imports.
+# Start the server with the settings of the Docker-based testPyClient task: anonymous and PSK logins, PSK "deephaven".
+# Anonymous logins are on, so it listens on 127.0.0.1 only. The start script finds Python through VIRTUAL_ENV. The
+# server reads its directories from DEEPHAVEN_*_DIR, as in the Docker image.
+# Start it from the build directory. Python puts the working directory first on sys.path, and the repository root has a
+# coverage/ folder that shadows the coverage package numba imports.
 cd "${BUILD}"
 VIRTUAL_ENV="${VENV}" \
     DEEPHAVEN_DATA_DIR="${BUILD}/data" DEEPHAVEN_CACHE_DIR="${BUILD}/cache" DEEPHAVEN_CONFIG_DIR="${BUILD}/config" \
