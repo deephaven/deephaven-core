@@ -122,24 +122,28 @@ public abstract class SparseArrayColumnSource<T>
     // the lowest level inUse bitmap recycle
     static final SoftRecycler<long[]> inUseRecycler =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_CAPACITY,
+                    SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_MAXIMUM_CAPACITY,
                     () -> new long[IN_USE_BLOCK_SIZE],
                     block -> Arrays.fill(block, 0));
 
     // the recycler for blocks of bitmaps
     static final SoftRecycler<long[][]> inUse2Recycler =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_CAPACITY2,
+                    SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_MAXIMUM_CAPACITY2,
                     () -> new long[BLOCK2_SIZE][],
                     null);
 
     // the recycler for blocks of blocks of bitmaps
     static final SoftRecycler<LongOneOrN.Block2[]> inUse1Recycler =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_CAPACITY1,
+                    SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_MAXIMUM_CAPACITY1,
                     () -> new LongOneOrN.Block2[BLOCK1_SIZE],
                     null);
 
     // the highest level block of blocks of blocks of inUse bitmaps
     static final SoftRecycler<LongOneOrN.Block1[]> inUse0Recycler =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_CAPACITY0,
+                    SparseArrayColumnSourceConfiguration.IN_USE_RECYCLER_MAXIMUM_CAPACITY0,
                     () -> new LongOneOrN.Block1[BLOCK0_SIZE],
                     null);
 

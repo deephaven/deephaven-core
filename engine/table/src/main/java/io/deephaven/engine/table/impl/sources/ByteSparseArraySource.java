@@ -51,15 +51,19 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte>
     // region recyclers
     private static final SoftRecycler<byte[]> recycler =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.BYTE_RECYCLER_CAPACITY,
+                    SparseArrayColumnSourceConfiguration.BYTE_RECYCLER_MAXIMUM_CAPACITY,
                     () -> new byte[BLOCK_SIZE], null);
     private static final SoftRecycler<byte[][]> recycler2 =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.BYTE_RECYCLER_CAPACITY2,
+                    SparseArrayColumnSourceConfiguration.BYTE_RECYCLER_MAXIMUM_CAPACITY2,
                     () -> new byte[BLOCK2_SIZE][], null);
     private static final SoftRecycler<ByteOneOrN.Block2[]> recycler1 =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.BYTE_RECYCLER_CAPACITY1,
+                    SparseArrayColumnSourceConfiguration.BYTE_RECYCLER_MAXIMUM_CAPACITY1,
                     () -> new ByteOneOrN.Block2[BLOCK1_SIZE], null);
     private static final SoftRecycler<ByteOneOrN.Block1[]> recycler0 =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.BYTE_RECYCLER_CAPACITY0,
+                    SparseArrayColumnSourceConfiguration.BYTE_RECYCLER_MAXIMUM_CAPACITY0,
                     () -> new ByteOneOrN.Block1[BLOCK0_SIZE], null);
     // endregion recyclers
 

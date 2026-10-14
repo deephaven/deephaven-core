@@ -94,6 +94,7 @@ public abstract class ArrayBackedColumnSource<T>
 
     static final SoftRecycler<long[]> inUseRecycler =
             new SoftRecycler<>(ArrayColumnSourceConfiguration.IN_USE_RECYCLER_CAPACITY,
+                    ArrayColumnSourceConfiguration.IN_USE_RECYCLER_MAXIMUM_CAPACITY,
                     () -> new long[IN_USE_BLOCK_SIZE],
                     block -> Arrays.fill(block, 0));
 

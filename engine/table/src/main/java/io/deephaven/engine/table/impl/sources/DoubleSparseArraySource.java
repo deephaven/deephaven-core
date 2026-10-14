@@ -51,15 +51,19 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double>
     // region recyclers
     private static final SoftRecycler<double[]> recycler =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY,
+                    SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_MAXIMUM_CAPACITY,
                     () -> new double[BLOCK_SIZE], null);
     private static final SoftRecycler<double[][]> recycler2 =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY2,
+                    SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_MAXIMUM_CAPACITY2,
                     () -> new double[BLOCK2_SIZE][], null);
     private static final SoftRecycler<DoubleOneOrN.Block2[]> recycler1 =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY1,
+                    SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_MAXIMUM_CAPACITY1,
                     () -> new DoubleOneOrN.Block2[BLOCK1_SIZE], null);
     private static final SoftRecycler<DoubleOneOrN.Block1[]> recycler0 =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY0,
+                    SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_MAXIMUM_CAPACITY0,
                     () -> new DoubleOneOrN.Block1[BLOCK0_SIZE], null);
     // endregion recyclers
 
