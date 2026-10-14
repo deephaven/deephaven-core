@@ -5,152 +5,158 @@ isort:skip_file
 Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 """
 
-import builtins
-import collections.abc
-import deephaven_core.proto.ticket_pb2
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.message
+from collections import abc as _abc
+from deephaven_core.proto import ticket_pb2 as _ticket_pb2
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+import builtins as _builtins
 import sys
-import typing
+import typing as _typing
 
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
-@typing.final
-class RemoteFileSourceServerMessage(google.protobuf.message.Message):
+@_typing.final
+class RemoteFileSourceServerMessage(_message.Message):
     """Server → Client: Requests sent from server to client via MessageStream"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    REQUEST_ID_FIELD_NUMBER: builtins.int
-    META_REQUEST_FIELD_NUMBER: builtins.int
-    SET_REMOTE_SOURCES_RESPONSE_FIELD_NUMBER: builtins.int
-    request_id: builtins.str
+    REQUEST_ID_FIELD_NUMBER: _builtins.int
+    META_REQUEST_FIELD_NUMBER: _builtins.int
+    SET_REMOTE_SOURCES_RESPONSE_FIELD_NUMBER: _builtins.int
+    request_id: _builtins.str
     """Unique identifier for this request, used to correlate the response"""
-    @property
+    @_builtins.property
     def meta_request(self) -> Global___RemoteFileSourceMetaRequest:
         """Request source data/resource from the client"""
 
-    @property
+    @_builtins.property
     def set_remote_sources_response(self) -> Global___SetRemoteSourcesResponse:
         """Acknowledgment that the remote sources were declared"""
 
     def __init__(
         self,
         *,
-        request_id: builtins.str = ...,
+        request_id: _builtins.str = ...,
         meta_request: Global___RemoteFileSourceMetaRequest | None = ...,
         set_remote_sources_response: Global___SetRemoteSourcesResponse | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["meta_request", b"meta_request", "request", b"request", "set_remote_sources_response", b"set_remote_sources_response"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["meta_request", b"meta_request", "request", b"request", "request_id", b"request_id", "set_remote_sources_response", b"set_remote_sources_response"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["meta_request", b"meta_request", "request", b"request", "set_remote_sources_response", b"set_remote_sources_response"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["meta_request", b"meta_request", "request", b"request", "request_id", b"request_id", "set_remote_sources_response", b"set_remote_sources_response"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_request: typing_extensions.TypeAlias = typing.Literal["meta_request", "set_remote_sources_response"]
-    _WhichOneofArgType_request: typing_extensions.TypeAlias = typing.Literal["request", b"request"]
+    _WhichOneofReturnType_request: _TypeAlias = _typing.Literal["meta_request", "set_remote_sources_response"]  # noqa: Y015
+    _WhichOneofArgType_request: _TypeAlias = _typing.Literal["request", b"request"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_request) -> _WhichOneofReturnType_request | None: ...
 
-Global___RemoteFileSourceServerMessage: typing_extensions.TypeAlias = RemoteFileSourceServerMessage
+Global___RemoteFileSourceServerMessage: _TypeAlias = RemoteFileSourceServerMessage  # noqa: Y015
 
-@typing.final
-class RemoteFileSourceClientMessage(google.protobuf.message.Message):
+@_typing.final
+class RemoteFileSourceClientMessage(_message.Message):
     """Client → Server: Requests/responses sent from client to server via MessageStream"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    REQUEST_ID_FIELD_NUMBER: builtins.int
-    META_RESPONSE_FIELD_NUMBER: builtins.int
-    SET_REMOTE_SOURCES_FIELD_NUMBER: builtins.int
-    request_id: builtins.str
+    REQUEST_ID_FIELD_NUMBER: _builtins.int
+    META_RESPONSE_FIELD_NUMBER: _builtins.int
+    SET_REMOTE_SOURCES_FIELD_NUMBER: _builtins.int
+    request_id: _builtins.str
     """The request_id from the ServerRequest this is responding to (if applicable)"""
-    @property
+    @_builtins.property
     def meta_response(self) -> Global___RemoteFileSourceMetaResponse:
         """Response to a resource request"""
 
-    @property
+    @_builtins.property
     def set_remote_sources(self) -> Global___SetRemoteSourcesRequest:
         """Declare which resources to source from this client for the next script execution"""
 
     def __init__(
         self,
         *,
-        request_id: builtins.str = ...,
+        request_id: _builtins.str = ...,
         meta_response: Global___RemoteFileSourceMetaResponse | None = ...,
         set_remote_sources: Global___SetRemoteSourcesRequest | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["meta_response", b"meta_response", "request", b"request", "set_remote_sources", b"set_remote_sources"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["meta_response", b"meta_response", "request", b"request", "request_id", b"request_id", "set_remote_sources", b"set_remote_sources"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["meta_response", b"meta_response", "request", b"request", "set_remote_sources", b"set_remote_sources"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["meta_response", b"meta_response", "request", b"request", "request_id", b"request_id", "set_remote_sources", b"set_remote_sources"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_request: typing_extensions.TypeAlias = typing.Literal["meta_response", "set_remote_sources"]
-    _WhichOneofArgType_request: typing_extensions.TypeAlias = typing.Literal["request", b"request"]
+    _WhichOneofReturnType_request: _TypeAlias = _typing.Literal["meta_response", "set_remote_sources"]  # noqa: Y015
+    _WhichOneofArgType_request: _TypeAlias = _typing.Literal["request", b"request"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_request) -> _WhichOneofReturnType_request | None: ...
 
-Global___RemoteFileSourceClientMessage: typing_extensions.TypeAlias = RemoteFileSourceClientMessage
+Global___RemoteFileSourceClientMessage: _TypeAlias = RemoteFileSourceClientMessage  # noqa: Y015
 
-@typing.final
-class RemoteFileSourceMetaRequest(google.protobuf.message.Message):
+@_typing.final
+class RemoteFileSourceMetaRequest(_message.Message):
     """Request source data/resource from the client"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESOURCE_NAME_FIELD_NUMBER: builtins.int
-    resource_name: builtins.str
+    RESOURCE_NAME_FIELD_NUMBER: _builtins.int
+    resource_name: _builtins.str
     """The name/path of the resource being requested (e.g., "com/example/MyClass.java")"""
     def __init__(
         self,
         *,
-        resource_name: builtins.str = ...,
+        resource_name: _builtins.str = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["resource_name", b"resource_name"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["resource_name", b"resource_name"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___RemoteFileSourceMetaRequest: typing_extensions.TypeAlias = RemoteFileSourceMetaRequest
+Global___RemoteFileSourceMetaRequest: _TypeAlias = RemoteFileSourceMetaRequest  # noqa: Y015
 
-@typing.final
-class RemoteFileSourceMetaResponse(google.protobuf.message.Message):
+@_typing.final
+class RemoteFileSourceMetaResponse(_message.Message):
     """Response to a resource request"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    CONTENT_FIELD_NUMBER: builtins.int
-    FOUND_FIELD_NUMBER: builtins.int
-    ERROR_FIELD_NUMBER: builtins.int
-    content: builtins.bytes
+    CONTENT_FIELD_NUMBER: _builtins.int
+    FOUND_FIELD_NUMBER: _builtins.int
+    ERROR_FIELD_NUMBER: _builtins.int
+    content: _builtins.bytes
     """The content of the resource, which is empty for an empty file. Ignored when found is false."""
-    found: builtins.bool
+    found: _builtins.bool
     """Indicates whether the resource was found"""
-    error: builtins.str
+    error: _builtins.str
     """Error message if the resource could not be retrieved"""
     def __init__(
         self,
         *,
-        content: builtins.bytes = ...,
-        found: builtins.bool = ...,
-        error: builtins.str = ...,
+        content: _builtins.bytes = ...,
+        found: _builtins.bool = ...,
+        error: _builtins.str = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["content", b"content", "error", b"error", "found", b"found"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["content", b"content", "error", b"error", "found", b"found"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___RemoteFileSourceMetaResponse: typing_extensions.TypeAlias = RemoteFileSourceMetaResponse
+Global___RemoteFileSourceMetaResponse: _TypeAlias = RemoteFileSourceMetaResponse  # noqa: Y015
 
-@typing.final
-class SetRemoteSourcesRequest(google.protobuf.message.Message):
+@_typing.final
+class SetRemoteSourcesRequest(_message.Message):
     """Request to declare which resources to source from this client for the next script execution"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESOURCE_PATHS_FIELD_NUMBER: builtins.int
-    IS_DIRTY_FIELD_NUMBER: builtins.int
-    is_dirty: builtins.bool
+    RESOURCE_PATHS_FIELD_NUMBER: _builtins.int
+    IS_DIRTY_FIELD_NUMBER: _builtins.int
+    is_dirty: _builtins.bool
     """Indicates whether remote sources have changed and cache should be cleared"""
-    @property
-    def resource_paths(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+    @_builtins.property
+    def resource_paths(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
         """Resource paths that should be resolved from the remote source
         (e.g., ["com/example/Test.groovy", "org/mycompany/Utils.groovy"])
         """
@@ -158,49 +164,58 @@ class SetRemoteSourcesRequest(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        resource_paths: collections.abc.Iterable[builtins.str] | None = ...,
-        is_dirty: builtins.bool = ...,
+        resource_paths: _abc.Iterable[_builtins.str] | None = ...,
+        is_dirty: _builtins.bool = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["is_dirty", b"is_dirty", "resource_paths", b"resource_paths"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["is_dirty", b"is_dirty", "resource_paths", b"resource_paths"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___SetRemoteSourcesRequest: typing_extensions.TypeAlias = SetRemoteSourcesRequest
+Global___SetRemoteSourcesRequest: _TypeAlias = SetRemoteSourcesRequest  # noqa: Y015
 
-@typing.final
-class SetRemoteSourcesResponse(google.protobuf.message.Message):
+@_typing.final
+class SetRemoteSourcesResponse(_message.Message):
     """Response acknowledging the remote sources were declared. Intentionally empty: receipt of
     this message is itself the acknowledgment. Failures are reported as stream errors.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___SetRemoteSourcesResponse: typing_extensions.TypeAlias = SetRemoteSourcesResponse
+Global___SetRemoteSourcesResponse: _TypeAlias = SetRemoteSourcesResponse  # noqa: Y015
 
-@typing.final
-class RemoteFileSourcePluginFetchRequest(google.protobuf.message.Message):
+@_typing.final
+class RemoteFileSourcePluginFetchRequest(_message.Message):
     """Fetch the remote file source plugin into the specified ticket (Flight command, not MessageStream)"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ID_FIELD_NUMBER: builtins.int
-    PLUGIN_NAME_FIELD_NUMBER: builtins.int
-    plugin_name: builtins.str
+    RESULT_ID_FIELD_NUMBER: _builtins.int
+    PLUGIN_NAME_FIELD_NUMBER: _builtins.int
+    plugin_name: _builtins.str
     """The plugin name to create the PluginMarker for."""
-    @property
-    def result_id(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
+    @_builtins.property
+    def result_id(self) -> _ticket_pb2.Ticket: ...
     def __init__(
         self,
         *,
-        result_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        plugin_name: builtins.str = ...,
+        result_id: _ticket_pb2.Ticket | None = ...,
+        plugin_name: _builtins.str = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_id", b"result_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["plugin_name", b"plugin_name", "result_id", b"result_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["plugin_name", b"plugin_name", "result_id", b"result_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___RemoteFileSourcePluginFetchRequest: typing_extensions.TypeAlias = RemoteFileSourcePluginFetchRequest
+Global___RemoteFileSourcePluginFetchRequest: _TypeAlias = RemoteFileSourcePluginFetchRequest  # noqa: Y015
