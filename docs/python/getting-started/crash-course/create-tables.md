@@ -50,7 +50,7 @@ crypto = read_csv(
 ```
 
 > [!NOTE]
-> To read your own file, pass its path to `read_csv`. If you run Deephaven in Docker, the file must be in a directory that your Docker command mounts into the container. The Docker command in [Get Started](./get-started.md) mounts the `data` directory in your current working directory at `/data`, so you read a file saved as `data/my-file.csv` on your machine with `read_csv("/data/my-file.csv")`. If you installed Deephaven with pip, use the file's path on your machine. See [Docker data volumes](../../conceptual/docker-data-volumes.md) for more.
+> To read your own file, pass its path to [`read_csv`](../../reference/data-import-export/CSV/readCsv.md). If you run Deephaven in Docker, the file must be in a directory that your Docker command mounts into the container. The Docker command in [Get Started](./get-started.md) mounts the `data` directory in your current working directory at `/data`, so you read a file saved as `data/my-file.csv` on your machine with `read_csv("/data/my-file.csv")`. If you installed Deephaven with pip, use the file's path on your machine. See [Docker data volumes](../../conceptual/docker-data-volumes.md) for more.
 
 ## Create ticking tables
 

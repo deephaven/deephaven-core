@@ -210,7 +210,7 @@ timeFunctions = emptyTable(10).update(
 )
 ```
 
-Date-time functions that begin with `parse`, such as `parseInstant` and `parseDuration`, convert strings to date-time types.
+Date-time functions that begin with `parse`, such as [`parseInstant`](../../reference/time/datetime/parseInstant.md) and [`parseDuration`](../../reference/time/datetime/parseDuration.md), convert strings to date-time types.
 
 ```groovy test-set=1 order=stringMeta,stringDateTimes,convertedMeta,convertedDateTimes
 stringDateTimes = emptyTable(10).update(

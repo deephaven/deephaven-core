@@ -43,7 +43,7 @@ crypto = readCsv(
 ```
 
 > [!NOTE]
-> To read your own file, put it in a directory that your Docker command mounts into the container and pass its container path to `readCsv`. The Docker command in [Get Started](./get-started.md) mounts the `data` directory in your current working directory at `/data`, so you read a file saved as `data/my-file.csv` on your machine with `readCsv("/data/my-file.csv")`. See [Docker data volumes](../../conceptual/docker-data-volumes.md) for more.
+> To read your own file, put it in a directory that your Docker command mounts into the container and pass its container path to [`readCsv`](../../reference/data-import-export/CSV/readCsv.md). The Docker command in [Get Started](./get-started.md) mounts the `data` directory in your current working directory at `/data`, so you read a file saved as `data/my-file.csv` on your machine with `readCsv("/data/my-file.csv")`. See [Docker data volumes](../../conceptual/docker-data-volumes.md) for more.
 
 ## Create ticking tables
 

@@ -198,7 +198,7 @@ for _, row in df.iterrows():
     doubled.append(row["Value"] * 2)
 ```
 
-Instead, convert the DataFrame to a table once with `to_table` from the `deephaven.pandas` module, and use a recipe. Convert back with `to_pandas` only if you need a DataFrame again. The next chapter, [Python integrations](./py-integrations.md#pandas), covers both functions:
+Instead, convert the DataFrame to a table once with [`to_table`](../../reference/pandas/to-table.md) from the `deephaven.pandas` module, and use a recipe. Convert back with [`to_pandas`](../../reference/pandas/to-pandas.md) only if you need a DataFrame again. The next chapter, [Python integrations](./py-integrations.md#pandas), covers both functions:
 
 ```python order=t,result,df,df2 test-set=pandas-bridge
 import pandas as pd

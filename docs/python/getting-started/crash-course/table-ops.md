@@ -202,7 +202,7 @@ See the [sorting guide](../../how-to-guides/sort.md) for more information.
 
 ## Group and aggregate data
 
-Grouping data places rows into groups based on zero or more key columns. Rows that have the same values in the key columns go into the same group. Aggregation calculates summary statistics over a group of data. Grouping and aggregation are key components of data analysis, especially in Deephaven queries. On a blink table, aggregations such as `avg_by` and `agg_by` cover every row the table delivers after the aggregation is created, not only the rows in the current update cycle.
+Grouping data places rows into groups based on zero or more key columns. Rows that have the same values in the key columns go into the same group. Aggregation calculates summary statistics over a group of data. Grouping and aggregation are key components of data analysis, especially in Deephaven queries. On a blink table, aggregations such as [`avg_by`](../../reference/table-operations/group-and-aggregate/avgBy.md) and [`agg_by`](../../reference/table-operations/group-and-aggregate/aggBy.md) cover every row the table delivers after the aggregation is created, not only the rows in the current update cycle.
 
 The examples in this section use a new `t` with random `X` and `Y` columns plus `Group` and `Letter` columns to group by. It replaces the root table `t` from the top of this page.
 
