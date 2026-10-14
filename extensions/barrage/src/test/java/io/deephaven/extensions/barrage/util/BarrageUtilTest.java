@@ -377,8 +377,9 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
             final Schema plain = BarrageUtil.makeSchema(
                     BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table.getDefinition(), Map.of(), table.isFlat());
             assertThat(countSnapshotDictionaryBatches(table, plain)).as(which + ", plain schema").isZero();
+            // one snapshot message, so the dictionary goes out once, ahead of it
             assertThat(countSnapshotDictionaryBatches(table, withDictionary(plain, "Sym")))
-                    .as(which + ", dictionary-encoded schema").isPositive();
+                    .as(which + ", dictionary-encoded schema").isEqualTo(1);
         }
     }
 
