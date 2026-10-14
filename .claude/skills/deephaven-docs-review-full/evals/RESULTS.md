@@ -135,3 +135,25 @@ Copilot found that `--diff-filter=D` omits the old path of a rename (git reports
 - Adding "mark a cell with a check only once that step has run; until then write `pending`" to the rule, and rerunning the changed skill once, gave `pending` in every step cell and an explicit "nothing has run yet" line: 8 of 8.
 - The baseline produced a Page / Status / Reviewed-as table with no step columns, so it has no step cells to fill, and noted the rename's old path only inside the new path's row. It did list the deleted page with a reason, but as a list item, not a table row. It names the status-aware command because the prompt gives it.
 - One run per configuration is a signal, not a measurement. The eval still does not test that every step is then run on every page.
+
+### Eval 5, third version: the category column (#8910, Copilot's thirteenth review)
+
+Copilot noted that the PR checklist skipped the skill's own step 0, "Identify the doc's category", so a report could mark every listed step complete on a Concept page and a Reference page without recording which calibration applies. The rule and report template now include category identification and a Category column next to each page (the category comes from the directory via `ref-deephaven-doc-categories`, so it is filled in at once and is not a step that waits to run). Eval 5 gained a ninth expectation: each page's category is identified from its directory (Concept guide for the two conceptual pages, Reference guide for the two `update` pages, How-to guide for the renamed `parallel-select` page), and the table expectation now includes the Category column. One run of the changed skill on the new rule, graded by the author (not blind); the baseline row re-grades the earlier baseline report against the nine expectations, since the baseline skill is unchanged.
+
+| Check | Changed skill | Baseline |
+| --- | --- | --- |
+| Lists the six modified pages | pass | pass |
+| Drops sidebar.json and snapshots | pass | pass |
+| Keeps the configuration and update pages | pass | pass |
+| One row per page, a Category column, one column per step | pass | fail |
+| Check only for a step that has run, otherwise a stated status or reason | pass | fail |
+| Names `git diff --name-status -M` | pass | pass |
+| Rename: new path reviewed, old path its own removed-page row | pass | fail |
+| Deleted page: own row with a reason, no step marks | pass | pass |
+| Category identified from the directory for every page | pass | pass |
+| Total | 9/9 | 6/9 |
+
+- The changed skill's report has a Category column filled in from the directory, `pending` in the step cells, a stated reason for re-verify ("n/a, report only, no edits applied"), and separate rows with reasons for the deleted page and the rename's old path.
+- The baseline names a category for each page under "Reviewed as", so it passes the category expectation, but it has no per-step columns to fill in, and it mentions the rename's old path only inside the new path's row.
+- The category expectation does not discriminate (both pass); it is there so the report cannot drop the prerequisite step. One run per configuration is a signal, not a measurement.
+
