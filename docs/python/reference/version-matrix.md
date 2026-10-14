@@ -13,7 +13,6 @@ A :white_check_mark: indicates that the Deephaven version supports the Python ve
 | 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
 | 41.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
 | 42.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| 43.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
 Free-threaded Python is the build of Python that runs without the global interpreter lock (GIL). Deephaven does not support the experimental free-threaded build of Python 3.13.
 
