@@ -5,7 +5,7 @@ The server tests in `py/server/tests` and the client tests in `py/client/tests` 
 - **In Docker**, with `./gradlew :Integrations:test-py-deephaven` and `./gradlew :py-client:testPyClient`. These are the suites that `check` runs. They use the Python version in the server Docker image and in the `python` registry image.
 - **On the embedded server**, with `./gradlew :py-server:testEmbedded` and `./gradlew :py-client:testEmbedded`. These run the same tests on any Python version, without the server Docker image. The nightly `Nightly Python Versions CI` workflow runs both on every supported version.
 
-This page covers the second way.
+This page covers the second way. It does not measure coverage. For coverage reports, run the Docker tasks with `-Pcoverage.enabled=true`.
 
 ## Prerequisites
 
