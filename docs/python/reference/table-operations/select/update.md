@@ -2,9 +2,9 @@
 title: update
 ---
 
-The `update` method creates a new table containing a new, in-memory column for each argument.
+The `update` method creates a new table containing a new, [in-memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand) column for each argument.
 
-When using `update`, the new columns are evaluated and stored in memory. Existing columns are referenced without additional memory allocation.
+When using `update`, the new columns are evaluated and [stored in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand). Existing columns are referenced without additional memory allocation.
 
 > [!NOTE]
 > `update` accepts [formula strings](../../../how-to-guides/formulas.md) and [`Selectable`](../../query-language/types/Selectable.md) objects. [`update_view`](./update-view.md) and [`lazy_update`](./lazy-update.md) accept only [formula strings](../../../how-to-guides/formulas.md). All three methods return a table with all the source columns plus the new columns. `update` stores the new columns in memory, while [`update_view`](./update-view.md) stores formulas and recalculates cells on access.
