@@ -67,6 +67,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.ObjIntConsumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import org.apache.arrow.flatbuf.Message;
@@ -1048,6 +1049,84 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
             nugget.flushClientEvents();
             updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
             nugget.validate("Int" + indexBitWidth + " churn step " + step);
+        }
+    }
+
+    /**
+     * Compacting a dictionary cannot help when a single message holds more distinct values than its index can address.
+     * A message with exactly as many values as the index allows still replicates. One with a single value more must
+     * fail the subscribers that would receive it, each once, and send them nothing more.
+     */
+    @Test
+    public void testDictionaryEncodedInt8MessageWiderThanIndexFailsSubscribers() {
+        final int indexBitWidth = 8;
+        final int numRows = 1_000;
+        final int indexCapacity = 1 << (indexBitWidth - 1);
+
+        final String[] initialValues = new String[numRows];
+        Arrays.fill(initialValues, "initial");
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(RowSetFactory.flat(numRows).toTracking(),
+                TableTools.stringCol("Sym", initialValues), TableTools.intCol("intCol", new int[numRows]));
+        sourceTable.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE,
+                buildDictEncodedSchema(sourceTable.getDefinition(), "Sym", indexBitWidth));
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "wide-full");
+        nugget.newClient(RowSetFactory.flat(2 * indexCapacity + 2), allCols, "wide-viewport");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        flushProducerTable();
+        nugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("initial snapshot");
+
+        // Writes a distinct, never-seen value to each of the first numValues rows, in one cycle.
+        final ObjIntConsumer<String> writeDistinctValues = (prefix, numValues) -> {
+            final String[] values = new String[numValues];
+            for (int ii = 0; ii < numValues; ++ii) {
+                values[ii] = prefix + ii;
+            }
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet changed = RowSetFactory.flat(numValues);
+                TstUtils.addToTable(sourceTable, changed, TableTools.stringCol("Sym", values),
+                        TableTools.intCol("intCol", new int[numValues]));
+                final ModifiedColumnSet modified = sourceTable.getModifiedColumnSetForUpdates();
+                modified.clear();
+                modified.setAll("Sym");
+                sourceTable.notifyListeners(new TableUpdateImpl(
+                        RowSetFactory.empty(), RowSetFactory.empty(), changed, RowSetShiftData.EMPTY, modified));
+            });
+            flushProducerTable();
+        };
+
+        writeDistinctValues.accept("fits", indexCapacity);
+        nugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("a message with as many values as the index allows");
+        for (final RemoteClient client : nugget.clients) {
+            assertTrue(client.name + ": " + client.dummyObserver.errors, client.dummyObserver.errors.isEmpty());
+        }
+
+        writeDistinctValues.accept("wide", indexCapacity + 1);
+        final int[] messagesBeforeFailing = new int[nugget.clients.size()];
+        for (int ci = 0; ci < nugget.clients.size(); ++ci) {
+            final RemoteClient client = nugget.clients.get(ci);
+            final List<Throwable> errors = client.dummyObserver.errors;
+            assertEquals(client.name + ": expected exactly one error, got " + errors, 1, errors.size());
+            assertTrue(client.name + ": expected a gRPC status, got " + errors.get(0),
+                    errors.get(0) instanceof StatusRuntimeException);
+            messagesBeforeFailing[ci] = client.pendingMessageCount();
+        }
+
+        writeDistinctValues.accept("after", indexCapacity + 1);
+        for (int ci = 0; ci < nugget.clients.size(); ++ci) {
+            final RemoteClient client = nugget.clients.get(ci);
+            assertEquals(client.name + ": sent nothing after failing", messagesBeforeFailing[ci],
+                    client.pendingMessageCount());
+            assertEquals(client.name + ": failed only once", 1, client.dummyObserver.errors.size());
         }
     }
 
