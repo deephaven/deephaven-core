@@ -314,6 +314,9 @@ def begin_watch(city_name):
         raise ValueError("Could not locate observation URL for " + city_name)
 
     with CITY_LOCK:
+        # Check again under the lock, in case another call added this city first
+        if loc in tracked_cities:
+            return
         tracked_cities.add(loc)
         update_observation(loc)
 
