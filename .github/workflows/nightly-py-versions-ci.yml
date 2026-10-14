@@ -19,6 +19,7 @@ jobs:
   build:
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -65,6 +66,9 @@ jobs:
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14', '3.14t']
         suite: ['server', 'client']
     runs-on: ubuntu-24.04
+    # A normal run takes under 10 minutes. The first 3.14t run also compiles grpcio, about 17 minutes. Without a limit a
+    # hung test runs for GitHub's default of 6 hours.
+    timeout-minutes: 45
     env:
       DEEPHAVEN_MAXMEM: 2G
     steps:
@@ -88,6 +92,12 @@ jobs:
       - name: Setup uv
         # run-tests-embedded.sh uses uv to download the Python version and create the venv.
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          # grpcio has no Linux wheel for 3.14t, so uv compiles it, which takes about 17 minutes. The cache keeps the
+          # built wheel for later runs.
+          enable-cache: true
+          cache-dependency-glob: 'py/*/setup.py'
+          cache-suffix: ${{ matrix.suite }}-${{ matrix.python-version }}
 
       - name: Install Graphviz
         if: ${{ matrix.suite == 'server' }}
