@@ -11,14 +11,14 @@ Parallelization is running multiple calculations at the same time on different C
 
 ## Quick reference
 
-| Situation                                                        | Example                                                       | Solution                                                                                               |
-| ---------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| A formula uses only its own row's values                         | `Total = Price * Quantity`                                    | Default (parallel)                                                                                     |
-| One formula updates shared state or needs rows in order          | A running counter or sequential IDs                           | [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial)                        |
-| One formula calls something that isn't thread-safe               | Writing to a file or log, or calling an unsynchronized client | [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial)                        |
-| One column needs another column to finish first                  | Column `B` reads a cache that column `A` fills                | Barriers                                                                                               |
-| Several columns share the same state or non-thread-safe resource | Two columns that call the same counter function               | [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) on each, plus Barriers |
-| Several tables share the same state or non-thread-safe resource  | Two tables whose formulas call the same counter function      | Thread-safe code, because Barriers only work within one operation                                      |
+| Situation                                                        | Example                                                       | Solution                                                                                                            |
+| ---------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| A formula uses only its own row's values                         | `Total = Price * Quantity`                                    | Default (parallel)                                                                                                  |
+| One formula updates shared state or needs rows in order          | A running counter or sequential IDs                           | [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial)                                     |
+| One formula calls something that isn't thread-safe               | Writing to a file or log, or calling an unsynchronized client | [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial)                                     |
+| One column needs another column to finish first                  | Column `B` reads a cache that column `A` fills                | [Barriers](#barriers)                                                                                               |
+| Several columns share the same state or non-thread-safe resource | Two columns that call the same counter function               | [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) on each, plus [Barriers](#barriers) |
+| Several tables share the same state or non-thread-safe resource  | Two tables whose formulas call the same counter function      | Thread-safe code, because [Barriers](#barriers) only work within one operation                                      |
 
 ## How parallelization works
 
@@ -81,7 +81,7 @@ The update graph never updates a table before the tables it depends on have fini
 
 **Operations that are not currently parallelized:** joins other than [`range_join`](../../reference/table-operations/join/range-join.md), [aggregations](../../how-to-guides/dedicated-aggregations.md), [`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md), [`head`](../../reference/table-operations/filter/head.md), [`tail`](../../reference/table-operations/filter/tail.md), [`merge`](../../reference/table-operations/merge/merge.md), and [`snapshot`](../../reference/table-operations/snapshot/snapshot.md). They still benefit from concurrent table updates.
 
-**Deferred evaluation:** [`view`](../../reference/table-operations/select/view.md), [`update_view`](../../reference/table-operations/select/update-view.md), and [`lazy_update`](../../reference/table-operations/select/lazy-update.md) don't compute anything when you call them. They store the formula and evaluate it whenever a cell is read, on whichever thread reads it. That evaluation can itself happen in parallel, for example when a downstream [`update`](../../reference/table-operations/select/update.md) that reads the column is split across cores, and a row can be evaluated more than once. There is no single evaluation pass to serialize, so [`view`](../../reference/table-operations/select/view.md) and [`update_view`](../../reference/table-operations/select/update-view.md) reject [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial), and [`lazy_update`](../../reference/table-operations/select/lazy-update.md) takes only formula strings, so you cannot pass it a serial [`Selectable`](../../reference/query-language/types/Selectable.md).
+**Deferred evaluation:** [`view`](../../reference/table-operations/select/view.md), [`update_view`](../../reference/table-operations/select/update-view.md), and [`lazy_update`](../../reference/table-operations/select/lazy-update.md) don't compute anything when you call them. They store the formula and evaluate it whenever a cell is read, on whichever thread reads it. That evaluation can itself happen in parallel, for example when a downstream [`update`](../../reference/table-operations/select/update.md) that reads the column is split across cores, and a row can be evaluated more than once. There is no single evaluation pass to serialize, so [`view`](../../reference/table-operations/select/view.md) and [`update_view`](../../reference/table-operations/select/update-view.md) reject [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial), and [`lazy_update`](../../reference/table-operations/select/lazy-update.md) takes only [formula strings](../../how-to-guides/formulas.md), so you cannot pass it a serial [`Selectable`](../../reference/query-language/types/Selectable.md).
 
 **What you can control:** [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) and [Barriers](#barriers) apply only to formulas and filters, which is where your code usually runs. [`where_in`](../../reference/table-operations/filter/where-in.md), [`where_not_in`](../../reference/table-operations/filter/where-not-in.md), [`sort`](../../reference/table-operations/sort/sort.md), and [`range_join`](../../reference/table-operations/join/range-join.md) run only Deephaven's own code, which is always safe to run in parallel, so they have no per-call control. A `transform` function, or the formula in [`rolling_formula_tick`](../../reference/table-operations/update-by-operations/rolling-formula-tick.md) and [`rolling_formula_time`](../../reference/table-operations/update-by-operations/rolling-formula-time.md), is your own code, and Deephaven runs it on several constituents or key groups at once with no per-call control, so make it thread-safe.
 
@@ -171,12 +171,12 @@ Serialization processes rows one at a time, in order, and never runs a column co
 Without it, parallel execution can produce incorrect results, such as out-of-order values, gaps, or values that don't match what the formula intended.
 
 > [!NOTE]
-> Most queries don't need serial execution. Use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) only when parallelization causes incorrect results.
+> Most queries don't need [serial execution](#serial-execution). Use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) only when parallelization causes incorrect results.
 
 The [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) interface provides the [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method for [`Filter`](../../reference/query-language/types/Filter.md) ([`where`](../../reference/table-operations/filter/where.md#serial-execution)) and [`Selectable`](../../reference/query-language/types/Selectable.md) ([`update`](../../reference/table-operations/select/update.md#serial-execution) and [`select`](../../reference/table-operations/select/select.md)).
 
 > [!IMPORTANT]
-> You cannot use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) with [`view`](../../reference/table-operations/select/view.md) or [`update_view`](../../reference/table-operations/select/update-view.md). These operations compute values on demand, when a cell is read, so they cannot guarantee processing order. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when you need serial execution.
+> You cannot use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) with [`view`](../../reference/table-operations/select/view.md) or [`update_view`](../../reference/table-operations/select/update-view.md). These operations compute values on demand, when a cell is read, so they cannot guarantee processing order. Use [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) instead when you need [serial execution](#serial-execution).
 
 #### Example: a counter needs serialization
 
@@ -261,7 +261,7 @@ Partitioned sources need extra care. A table read from a directory of Parquet fi
 
 ### Barriers
 
-Use Barriers when one column must finish all its rows before another column begins. For example:
+Use [Barriers](#barriers) when one column must finish all its rows before another column begins. For example:
 
 - Column `A` fills a dictionary that column `B` reads from.
 - Column `A` computes a running total that column `B` normalizes against.
@@ -269,19 +269,19 @@ Use Barriers when one column must finish all its rows before another column begi
 
 A [`Barrier`](../../reference/query-language/types/Barrier.md) is an ordering dependency between two columns:
 
-- One column **declares** the Barrier. It runs first.
-- Another column **respects** the Barrier. It waits.
+- One column **declares** the [Barrier](../../reference/query-language/types/Barrier.md). It runs first.
+- Another column **respects** the [Barrier](../../reference/query-language/types/Barrier.md). It waits.
 
-Barrier rules:
+[Barrier](../../reference/query-language/types/Barrier.md) rules:
 
 - The declaring column finishes all of its rows before the respecting column starts.
-- Only one column can declare a given Barrier. Any number of columns can respect it.
-- The declaring column must come before the respecting columns in the argument list. Respecting a Barrier that no earlier column declared is an error.
-- A Barrier only orders columns and filters within one operation. It cannot order work across tables.
+- Only one column can declare a given [Barrier](../../reference/query-language/types/Barrier.md). Any number of columns can respect it.
+- The declaring column must come before the respecting columns in the argument list. Respecting a [Barrier](../../reference/query-language/types/Barrier.md) that no earlier column declared is an error.
+- A [Barrier](../../reference/query-language/types/Barrier.md) only orders columns and filters within one operation. It cannot order work across tables.
 
 #### Example: extending the counter with a Barrier
 
-This example builds on the [counter example](#example-a-counter-needs-serialization). Two columns share the counter. Column `A` should assign IDs 0–9, and column `B` should continue from 10–19. Without a Barrier, Deephaven does not promise which column runs first, so the two ranges could interleave or overlap instead of landing as two clean blocks. With a Barrier, column `A` runs first and takes 0–9, then column `B` starts where `A` left off and takes 10–19:
+This example builds on the [counter example](#example-a-counter-needs-serialization). Two columns share the counter. Column `A` should assign IDs 0–9, and column `B` should continue from 10–19. Without a [Barrier](../../reference/query-language/types/Barrier.md), Deephaven does not promise which column runs first, so the two ranges could interleave or overlap instead of landing as two clean blocks. With a [Barrier](../../reference/query-language/types/Barrier.md), column `A` runs first and takes 0–9, then column `B` starts where `A` left off and takes 10–19:
 
 ```python order=t
 from deephaven.concurrency_control import Barrier
@@ -317,16 +317,16 @@ col_b = (
 t = empty_table(10).update([col_a, col_b])
 ```
 
-Column `A` gets values 0–9. Column `B` gets values 10–19. Without the Barrier, nothing guarantees that `A` finishes before `B` starts, so the two ranges could interleave.
+Column `A` gets values 0–9. Column `B` gets values 10–19. Without the [Barrier](../../reference/query-language/types/Barrier.md), nothing guarantees that `A` finishes before `B` starts, so the two ranges could interleave.
 
 > [!IMPORTANT]
-> Barriers don't make a column execute serially. If your formula has shared mutable state, you typically need both controls. [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) orders the rows within a column, and a Barrier orders the columns relative to each other.
+> [Barriers](#barriers) don't make a column execute serially. If your formula has shared mutable state, you typically need both controls. [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) orders the rows within a column, and a [Barrier](../../reference/query-language/types/Barrier.md) orders the columns relative to each other.
 
-Both columns need [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) here because both change the shared `counter`. A respecting column that only reads what the declaring column wrote does not need [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial). The Barrier alone guarantees that the write finished first.
+Both columns need [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) here because both change the shared `counter`. A respecting column that only reads what the declaring column wrote does not need [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial). The [Barrier](../../reference/query-language/types/Barrier.md) alone guarantees that the write finished first.
 
 #### Multiple Barriers
 
-You can create multiple Barriers when columns have different dependencies. Each Barrier is an independent constraint:
+You can create multiple [Barriers](#barriers) when columns have different dependencies. Each [Barrier](../../reference/query-language/types/Barrier.md) is an independent constraint:
 
 ```python order=t
 from deephaven.concurrency_control import Barrier
@@ -359,25 +359,25 @@ Execution order:
 
 #### Barriers on filters
 
-Barriers work the same way for [`Filter`](../../reference/query-language/types/Filter.md) objects in [`where`](../../reference/table-operations/filter/where.md) operations. Use them when one filter has side effects that another filter depends on. This is uncommon. Most filters are stateless and do not need Barriers.
+[Barriers](#barriers) work the same way for [`Filter`](../../reference/query-language/types/Filter.md) objects in [`where`](../../reference/table-operations/filter/where.md) operations. Use them when one filter has side effects that another filter depends on. This is uncommon. Most filters are stateless and do not need [Barriers](#barriers).
 
 #### Implicit Barriers
 
-An implicit Barrier is a Barrier that Deephaven adds for you.
+An implicit [Barrier](../../reference/query-language/types/Barrier.md) is a [Barrier](../../reference/query-language/types/Barrier.md) that Deephaven adds for you.
 
-When implicit Barriers are turned on (see [Configuration](#configuration)):
+When implicit [Barriers](#barriers) are turned on (see [Configuration](#configuration)):
 
 - Every [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) column in a [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md) waits for every earlier [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) column in the same operation to finish.
-- Each serial column acts as if it declared a Barrier that every later serial column respects.
-- You get that ordering without creating any Barrier objects.
+- Each serial column acts as if it declared a [Barrier](../../reference/query-language/types/Barrier.md) that every later serial column respects.
+- You get that ordering without creating any [Barrier](../../reference/query-language/types/Barrier.md) objects.
 
 They are off by default:
 
 - Serial columns only order their own rows.
 - Two serial columns in the same [`update`](../../reference/table-operations/select/update.md) can still run at the same time.
-- You add an explicit Barrier when one must finish before the other.
+- You add an explicit [Barrier](../../reference/query-language/types/Barrier.md) when one must finish before the other.
 
-Turn them on when many serial columns share state and you would otherwise add a Barrier between every pair. See [Configuration](#configuration).
+Turn them on when many serial columns share state and you would otherwise add a [Barrier](../../reference/query-language/types/Barrier.md) between every pair. See [Configuration](#configuration).
 
 ## Configuration
 
