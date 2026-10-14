@@ -184,7 +184,7 @@
     },
     {
       "prompt": "Run a style review of the attached page, report only. It is the Python-docs Concept guide docs/python/conceptual/query-table-configuration.md as it stood at commit 7b648e4a2b (resolve relative links from that page). Follow the skill, including its mechanical verification searches.",
-      "expected_output": "Chip Kent's 2026-10-13 review of #7457 asked why \"filter and select operations\" in the Stateless by default section was not linked on query-table-configuration.md. On the full 255-line page the style skill without the plain-word operation search did not flag that sentence as unlinked operation names (it mentioned it only to say \"stateless\" is undefined), and the skill with the search does. This is the regression eval for the plain-word search: eval 12 is a short control that both versions pass.",
+      "expected_output": "Chip Kent's 2026-10-13 review of #7457 asked why \"filter and select operations\" in the Stateless by default section was not linked on query-table-configuration.md. On the full 254-line page the style skill without the plain-word operation search did not flag that sentence as unlinked operation names (it mentioned it only to say \"stateless\" is undefined), and the skill with the search does. This is the regression eval for the plain-word search: eval 12 is a short control that both versions pass.",
       "files": [
         "../eval-fixtures/query-table-configuration-pre-review-7b648e4a2b.md"
       ],

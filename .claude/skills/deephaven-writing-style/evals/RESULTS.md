@@ -154,7 +154,7 @@ Chip asked why "filter and select operations" was not linked in `query-table-con
 
 ### Eval 13: full-page regression eval for the plain-word search (#8910, Copilot's eighth review)
 
-Copilot pointed out that eval 12 passes with or without the new search, so removing the search would leave it green. Eval 13 uses the full 255-line `query-table-configuration.md` as it stood at commit `7b648e4a2b` (Chip's review), where the miss actually happened, with a neutral prompt that does not mention plain-word names.
+Copilot pointed out that eval 12 passes with or without the new search, so removing the search would leave it green. Eval 13 uses the full 254-line `query-table-configuration.md` as it stood at commit `7b648e4a2b` (Chip's review), where the miss actually happened, with a neutral prompt that does not mention plain-word names.
 
 3 runs per configuration, graded by the author by reading each report for the target sentence (not blind). The check is whether the report flags "filter and select operations" (line 237) as unlinked operation names.
 
