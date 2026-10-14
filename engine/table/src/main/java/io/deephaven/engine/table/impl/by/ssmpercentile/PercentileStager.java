@@ -255,6 +255,13 @@ final class PercentileStager {
     }
 
     /**
+     * @return an upper bound on the number of entries after the window is next flushed
+     */
+    long maximumEntries() {
+        return (values == null ? 0L : values.size()) + windowCapacity;
+    }
+
+    /**
      * @return the number of entries; valid after {@link #flush()}
      */
     int size() {

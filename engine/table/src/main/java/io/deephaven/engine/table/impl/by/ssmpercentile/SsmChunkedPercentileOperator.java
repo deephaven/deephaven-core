@@ -294,7 +294,13 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             return false;
         }
         if (objectRemoves != null) {
-            (removal ? objectRemoves : objectAdds).stage(destination, values, start, length);
+            final PercentileStager stager = removal ? objectRemoves : objectAdds;
+            if (stager.maximumEntries() + length > ArrayUtil.MAX_ARRAY_SIZE) {
+                // Staged removals are values present before this cycle, so staged values may be applied early; each
+                // destination is applied again with the values staged after this
+                applyAllStaged();
+            }
+            stager.stage(destination, values, start, length);
             return true;
         }
         final ObjectArraySource<WritableChunk<Values>> staged = removal ? stagedRemoves : stagedAdds;
