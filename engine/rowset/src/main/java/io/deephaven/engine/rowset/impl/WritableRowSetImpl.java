@@ -123,6 +123,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insert(final long key) {
         preMutationHook();
+        Assert.geqZero(key, "key");
         assign(innerSet.ixInsert(key));
         postMutationHook();
     }
@@ -130,9 +131,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insertRange(final long startKey, final long endKey) {
         preMutationHook();
-        if (endKey >= startKey) {
-            assign(innerSet.ixInsertRange(startKey, endKey));
-        }
+        Assert.geqZero(startKey, "startKey");
+        Assert.leq(startKey, "startKey", endKey, "endKey");
+        assign(innerSet.ixInsertRange(startKey, endKey));
         postMutationHook();
     }
 
@@ -140,6 +141,10 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     public final void insert(final LongChunk<OrderedRowKeys> keys, final int offset, final int length) {
         Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
         preMutationHook();
+        // The keys are ordered, so the first one is the least.
+        if (length > 0) {
+            Assert.geqZero(keys.get(offset), "keys.get(offset)");
+        }
         assign(innerSet.ixInsert(keys, offset, length));
         postMutationHook();
     }
@@ -299,6 +304,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final void insertWithShift(final long shiftAmount, final RowSet other) {
         preMutationHook();
+        checkShiftNonnegative(other, shiftAmount);
         if (other == this) {
             // Applying this to ourselves is not a no-op the way self-insertion is; it unions in a shifted copy of
             // our own keys. The ix* implementations build the result by mutating in place, so the operand being
@@ -427,6 +433,21 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     @Override
     public final WritableRowSet shift(final long shiftAmount) {
         return new WritableRowSetImpl(innerSet.ixShiftOnNew(shiftAmount));
+    }
+
+    /**
+     * A negative shift can move the first key below zero, and a positive one can carry the last key past
+     * {@link Long#MAX_VALUE}, where it wraps negative.
+     */
+    private static void checkShiftNonnegative(final RowSet rowSet, final long shiftAmount) {
+        if (rowSet.isEmpty()) {
+            return;
+        }
+        if (shiftAmount < 0) {
+            Assert.geqZero(rowSet.firstRowKey() + shiftAmount, "firstRowKey() + shiftAmount");
+        } else {
+            Assert.geqZero(rowSet.lastRowKey() + shiftAmount, "lastRowKey() + shiftAmount");
+        }
     }
 
     @Override

@@ -4,51 +4,45 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.extensions.s3.S3Instructions.Builder;
-import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
-import io.deephaven.base.OSUtil;
-import org.junit.Assume;
+import io.deephaven.extensions.s3.testlib.SingletonContainers.RustFS;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-@Ignore("The MinIO container is disabled")
-public class S3ParquetMinIOTest extends S3ParquetTestBase {
+public class S3ParquetRustFSTest extends S3ParquetTestBase {
 
     @BeforeClass
     public static void initContainer() {
-        // TODO(deephaven-core#5116): MinIO testcontainers does not work on OS X
-        Assume.assumeFalse("OSUtil.runningMacOS()", OSUtil.runningMacOS());
         // ensure container is started so container startup time isn't associated with a specific test
-        MinIO.init();
+        RustFS.init();
     }
 
     @Override
-    public Builder s3Instructions(final Builder builder) {
-        return MinIO.s3Instructions(builder);
+    public Builder s3Instructions(Builder builder) {
+        return RustFS.s3Instructions(builder);
     }
 
     @Override
     public String s3Endpoint() {
-        return MinIO.s3Endpoint();
+        return RustFS.s3Endpoint();
     }
 
     @Override
     public String region() {
-        return MinIO.region();
+        return RustFS.region();
     }
 
     @Override
     public String accessKey() {
-        return MinIO.accessKey();
+        return RustFS.accessKey();
     }
 
     @Override
     public String secretAccessKey() {
-        return MinIO.secretAccessKey();
+        return RustFS.secretAccessKey();
     }
 
     @Override
     public S3AsyncClient s3AsyncClient() {
-        return MinIO.s3AsyncClient();
+        return RustFS.s3AsyncClient();
     }
 }

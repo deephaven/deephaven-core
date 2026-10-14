@@ -61,7 +61,7 @@ s.start()
 > [!NOTE]
 > Anonymous authentication provides no application security.
 
-For more advanced configuration options, see the [pip installation guide](../getting-started/pip-install.md). It includes [extra instructions for M2 Macs](../getting-started/pip-install.md#m2-macs).
+For more advanced configuration options, see the [pip installation guide](../getting-started/pip-install.md). It includes [extra instructions for M2 Macs](../getting-started/pip-install.md#start-a-deephaven-server).
 
 ## 3. Import static and streaming data
 
