@@ -4,10 +4,10 @@
 package io.deephaven.server.barrage;
 
 /**
- * Runs {@link BarrageMessageIncrementalRoundTripTest} with every producer writing each propagation phase to its
+ * Runs {@link BarrageMessageIncrementalRoundTripTestBase} with every producer writing each propagation phase to its
  * subscribers on four threads.
  */
-public class BarrageMessageIncrementalRoundTripParallelTest extends BarrageMessageIncrementalRoundTripTest {
+public class BarrageMessageIncrementalRoundTripParallelTest extends BarrageMessageIncrementalRoundTripTestBase {
     @Override
     protected int propagationThreads() {
         return 4;
