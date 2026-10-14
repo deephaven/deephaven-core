@@ -208,7 +208,7 @@
       ],
       "expectations": [
         "Flags the bare `with_serial` later in the same Serial execution paragraph (\"When a column uses `with_serial`\" is unlinked even though the paragraph's first mention is linked) and gives the Selectable.md#with_serial target",
-        "Flags the bare plain-word or backticked mentions of Selectable and Barrier in the Serial execution paragraph and gives link targets (the Selectable reference page; the Barrier reference page or the parallelization concept guide barriers anchor)",
+        "Flags the bare \"Barrier\" in the Serial execution paragraph, and the bare \"Selectable\" in the next paragraph (\"differ in how they handle a Selectable\") and in the table header, and gives link targets (the Barrier reference page or the parallelization concept guide barriers anchor; the Selectable reference page)",
         "Flags the bare `update_view`, `where`, and `with_serial` in the bullet list, and the bare `view` and `with_serial` in the table, as unlinked mentions",
         "Does not ask for the page's own `update` mentions (including `update` in the table and in the sentence after the example) to be linked, because a page never links a name to itself",
         "Control: does not ask for `X` or `Y`, or anything inside the fenced code block, to be linked"
