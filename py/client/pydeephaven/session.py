@@ -494,7 +494,7 @@ class Session:
 
             self.is_connected = True
 
-            # A new queue per connection: tickets queued on an earlier connection are no longer valid.
+            # A new queue per connection: tickets from an earlier connection are invalid.
             self._release_queue = queue.SimpleQueue()
             self._release_thread = threading.Thread(
                 target=_release_tickets,
@@ -527,9 +527,13 @@ class Session:
         else:
             timer_wakeup = self._refresh_backoff[self._refresh_failures]
         _trace(f"_keep_alive timer_wakeup={timer_wakeup}")
-        self._keep_alive_timer = threading.Timer(timer_wakeup, self._keep_alive)
-        self._keep_alive_timer.daemon = True
-        self._keep_alive_timer.start()
+        # Recheck under the lock close() holds: close() may have run during the refresh.
+        with self._r_lock:
+            if not self.is_connected:
+                return
+            self._keep_alive_timer = threading.Timer(timer_wakeup, self._keep_alive)
+            self._keep_alive_timer.daemon = True
+            self._keep_alive_timer.start()
         if not ok:
             logger.warning(
                 f"{self._logpfx}: failed to refresh auth token (retry #{self._refresh_failures - 1})."
@@ -574,18 +578,20 @@ class Session:
             if self._keep_alive_timer:
                 self._keep_alive_timer.cancel()
                 self._keep_alive_timer = None
+            # Stop the release thread even if already disconnected. The server releases any tickets still queued.
+            self._release_queue.put(None)
             if not self.is_connected:
                 return
-            # Stop the release thread. Closing the session releases all of its exports on the server, including the
-            # tickets still queued.
-            self._release_queue.put(None)
-            self.session_service.close()
-            if self.grpc_channel:
-                self.grpc_channel.close()
-            self.is_connected = False
-            self._last_export_ticket_number = 0
-            if self._flight_client:
-                self._flight_client.close()
+            try:
+                self.session_service.close()
+            finally:
+                # Disconnect locally even if CloseSession fails.
+                if self.grpc_channel:
+                    self.grpc_channel.close()
+                self.is_connected = False
+                self._last_export_ticket_number = 0
+                if self._flight_client:
+                    self._flight_client.close()
 
     def release(self, ticket: Ticket) -> None:
         """Releases a ticket.

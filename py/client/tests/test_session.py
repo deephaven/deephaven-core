@@ -189,6 +189,50 @@ t1 = empty_table(0) if t.is_blink else None
         self.assertFalse(keep_alive_timer.is_alive())
         self.assertFalse(release_thread.is_alive())
 
+    def test_close_during_keep_alive_refresh(self):
+        session = Session()
+        refresh_started = threading.Event()
+        finish_refresh = threading.Event()
+
+        def slow_refresh():
+            refresh_started.set()
+            finish_refresh.wait(10)
+            return True
+
+        session._refresh_token = slow_refresh
+        keep_alive = threading.Thread(target=session._keep_alive, daemon=True)
+        keep_alive.start()
+        self.assertTrue(refresh_started.wait(10))
+        session.close()
+        finish_refresh.set()
+        keep_alive.join(10)
+        self.assertFalse(keep_alive.is_alive())
+        self.assertIsNone(
+            session._keep_alive_timer, "the refresh restarted the timer after close"
+        )
+
+    def test_close_disconnects_when_close_session_fails(self):
+        session = Session()
+        release_thread = session._release_thread
+
+        def failing_close():
+            raise DHError("simulated CloseSession failure")
+
+        session.session_service.close = failing_close
+        with self.assertRaises(DHError):
+            session.close()
+        self.assertFalse(session.is_connected)
+        release_thread.join(5)
+        self.assertFalse(release_thread.is_alive())
+
+    def test_close_stops_release_thread_of_disconnected_session(self):
+        session = Session()
+        release_thread = session._release_thread
+        session.is_connected = False  # as a failed token refresh leaves it
+        session.close()
+        release_thread.join(5)
+        self.assertFalse(release_thread.is_alive())
+
     def test_garbage_collected_table_is_released(self):
         for name, columns in (("with columns", ["X = i"]), ("without columns", [])):
             with self.subTest(name):

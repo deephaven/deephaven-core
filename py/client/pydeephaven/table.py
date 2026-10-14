@@ -67,11 +67,9 @@ class Table(TableInterface["Table"], ServerObject):
         self._closed: bool = False
 
     def __del__(self) -> None:
-        # The garbage collector runs this, possibly in the middle of a gRPC call on this thread while gRPC holds its
-        # channel lock. A Release RPC here would wait on that lock forever, so the session releases the ticket on its
-        # own thread instead. For the same reason this checks is_connected, not is_alive, which can make an RPC.
-        # Only export tickets are released: they are the session's own exports. Tables over other tickets, such as the
-        # ScopeTicket in Session.open_table or a SharedTicket from Session.fetch_table, do not own them.
+        # Must not make an RPC: it can run inside a gRPC call that holds the channel lock, and would deadlock. So the
+        # session releases the ticket on its own thread, and this checks is_connected, not is_alive. Only export
+        # tickets belong to the session.
         try:
             if (
                 not self._closed
