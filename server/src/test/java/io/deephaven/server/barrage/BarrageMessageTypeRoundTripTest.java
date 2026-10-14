@@ -991,6 +991,66 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
         }
     }
 
+    /**
+     * Like {@link #testDictionaryEncodedInt8ValueChurn()}, but for an Int16 dictionary, where each cycle rewrites
+     * thousands of rows. The dictionary must be compacted once the values a cycle may add would take it past the index
+     * width, well before the cumulative count reaches the live row count; the viewport is likewise wider than the
+     * index.
+     */
+    @Test
+    public void testDictionaryEncodedInt16ValueChurn() {
+        final int indexBitWidth = 16;
+        final int numRows = 100_000;
+        final int viewportSize = 40_000;
+        final int indexCapacity = 1 << (indexBitWidth - 1);
+        final int churnedRows = 4_000;
+
+        final String[] initialValues = new String[numRows];
+        Arrays.fill(initialValues, "initial");
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(RowSetFactory.flat(numRows).toTracking(),
+                TableTools.stringCol("Sym", initialValues), TableTools.intCol("intCol", new int[numRows]));
+        sourceTable.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE,
+                buildDictEncodedSchema(sourceTable.getDefinition(), "Sym", indexBitWidth));
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "churn-full-" + indexBitWidth);
+        nugget.newClient(RowSetFactory.flat(viewportSize), allCols, "churn-viewport-" + indexBitWidth);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        flushProducerTable();
+        nugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("initial snapshot");
+
+        // Each step writes never-seen values to the first churnedRows rows, so at most churnedRows + 1 distinct values
+        // are ever live, while the number of values ever sent grows by churnedRows per step until it exceeds the index
+        // width.
+        final int numSteps = indexCapacity / churnedRows + 2;
+        for (int step = 0; step < numSteps; step++) {
+            final String[] values = new String[churnedRows];
+            for (int ii = 0; ii < churnedRows; ++ii) {
+                values[ii] = "churn" + step + "_" + ii;
+            }
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet churned = RowSetFactory.flat(churnedRows);
+                TstUtils.addToTable(sourceTable, churned, TableTools.stringCol("Sym", values),
+                        TableTools.intCol("intCol", new int[churnedRows]));
+                final ModifiedColumnSet modified = sourceTable.getModifiedColumnSetForUpdates();
+                modified.clear();
+                modified.setAll("Sym");
+                sourceTable.notifyListeners(new TableUpdateImpl(
+                        RowSetFactory.empty(), RowSetFactory.empty(), churned, RowSetShiftData.EMPTY, modified));
+            });
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("Int" + indexBitWidth + " churn step " + step);
+        }
+    }
+
     // ---- Dictionary-encoding ticking tests ----
 
     /**
