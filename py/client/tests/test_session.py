@@ -365,21 +365,23 @@ t1 = empty_table(0) if t.is_blink else None
     def test_session_collected_on_refresh_thread_does_not_hang(self):
         dropped = _Event()
         collected = _Event()
+        tested_thread = []
 
         def collecting_sleep(seconds):
-            if (
-                threading.current_thread().name.endswith("token refresh")
-                and not collected.is_set()
-            ):
-                dropped.wait(10)
-                gc.collect()  # runs Session.__del__ on the refresh thread
-                collected.set()
+            # The patch is global. Only the tested session's refresh thread may collect, or a refresh thread left
+            # over from another test could pass the test.
+            if threading.current_thread().name.endswith("token refresh"):
+                dropped.wait(10)  # until the tested thread is known
+                if threading.current_thread() in tested_thread:
+                    gc.collect()  # runs Session.__del__ on the refresh thread
+                    collected.set()
             sleep(seconds)
 
         gc.disable()  # only the collection on the refresh thread may free the session
         try:
             with mock.patch("time.sleep", collecting_sleep):
                 session = Session()
+                tested_thread.append(session._refresh_thread)
                 session.cycle = session  # only the garbage collector frees a cycle
                 session_ref = weakref.ref(session)
                 del session
