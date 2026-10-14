@@ -290,7 +290,11 @@ t1 = empty_table(0) if t.is_blink else None
         worker = session._worker_thread
         session_ref = weakref.ref(session)
         del session
-        gc.collect()
+        # The worker holds the session for a moment on each pass, so retry until it lets go.
+        deadline = time() + 5
+        while session_ref() is not None and time() < deadline:
+            gc.collect()
+            sleep(0.05)
         self.assertIsNone(session_ref(), "the worker thread kept the session alive")
         worker.join(5)
         self.assertFalse(worker.is_alive())
