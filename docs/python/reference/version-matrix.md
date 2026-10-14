@@ -6,11 +6,11 @@ This page lists the Python versions, server Python dependencies, Java (JDK) vers
 
 ## Python versions
 
-Deephaven Community supports the following Python versions:
+A :white_check_mark: indicates that Deephaven supports the Python version. Python 3.14t is the free-threaded build of Python 3.14.
 
-| Minimum Python | Maximum Python | Free-threaded Python |
-| :------------: | :------------: | :------------------: |
-|      3.9       |      3.14      |        3.14t         |
+| Deephaven version |     Python 3.9     |    Python 3.10     |    Python 3.11     |    Python 3.12     |    Python 3.13     |    Python 3.14     |    Python 3.14t    |
+| ----------------- | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
+| Latest release    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
 Free-threaded Python is the build of Python that runs without the global interpreter lock (GIL). Deephaven does not support the experimental free-threaded build of Python 3.13.
 
