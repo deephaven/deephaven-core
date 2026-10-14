@@ -65,11 +65,7 @@ jobs:
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14', '3.14t']
     runs-on: ubuntu-24.04
     env:
-      DEEPHAVEN_TEST_EMBEDDED: 'true'
-      DEEPHAVEN_PROPFILE: dh-defaults.prop
       DEEPHAVEN_MAXMEM: 2G
-      # tests/test_time.py expects the JVM default time zone to be named "Etc/UTC", as it is in the Docker image.
-      TZ: Etc/UTC
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -88,10 +84,9 @@ jobs:
           java-version: |
             21
 
-      - name: Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: ${{ matrix.python-version }}
+      - name: Setup uv
+        # run-tests-embedded.sh uses uv to download the Python version and create the venv.
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
 
       - name: Install Graphviz
         # tests/test_perfmon.py renders an SVG through graphviz-java. Without the dot binary it needs the GraalJS jars,
@@ -106,43 +101,18 @@ jobs:
           echo "127.0.0.1 redpanda postgres" | sudo tee -a /etc/hosts
           docker compose -f Integrations/docker-compose.yml up -d --wait
 
-      - name: Install packages and test dependencies
-        # pip picks older numpy, pandas, pyarrow and numba releases on the older Pythons, since the newest ones dropped
-        # them. So those runs test different dependency versions.
-        run: |
-          # py/server/setup.py and py/client/setup.py read their version from DEEPHAVEN_VERSION. It must match the
-          # wheel's version, because deephaven-server pins deephaven-core to it.
-          export DEEPHAVEN_VERSION="$(basename py/embedded-server/build/wheel/deephaven_server-*.whl | cut -d- -f2)"
-          python -m pip install --upgrade pip
-          python -m pip install \
-            ./py/server \
-            py/embedded-server/build/wheel/*.whl \
-            ./py/client \
-            unittest-xml-reporting numba adbc-driver-manager adbc-driver-postgresql connectorx
-          python -m pip list
-
       - name: Run tests
-        working-directory: py/server
-        run: |
-          # Beyond the server jars, the tests need the test config, time zones and calendars, and the test classes.
-          W="$GITHUB_WORKSPACE"
-          export DEEPHAVEN_CLASSPATH="$W/props/test-configs/src/main/resources:$W/Integrations/src/test/resources:$W/Integrations/build/classes/java/test:$W/engine/time/build/classes/java/test"
-          export DEEPHAVEN_DATA_DIR="$RUNNER_TEMP/dh-data"
-          export DEEPHAVEN_CACHE_DIR="$RUNNER_TEMP/dh-cache"
-          mkdir -p "$DEEPHAVEN_DATA_DIR" "$DEEPHAVEN_CACHE_DIR"
-          if [[ "${{ matrix.python-version }}" == *t ]]; then
-            # grpcio, which pydeephaven and test_barrage use, has not declared itself free-thread safe. Importing it
-            # turns the GIL back on for the rest of the run, unless PYTHON_GIL=0 keeps it off.
-            export PYTHON_GIL=0
-          fi
-          python -m xmlrunner discover -s tests -t . -v -o "$GITHUB_WORKSPACE/build/test-results/py${{ matrix.python-version }}"
+        # The same script runs behind ./gradlew :py-server:testEmbedded. uv picks older numpy, pandas, pyarrow and numba
+        # releases on the older Pythons, since the newest ones dropped them. So those runs test different dependency
+        # versions.
+        run: py/server/run-tests-embedded.sh ${{ matrix.python-version }}
 
       - name: Upload Test Results
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: nightly-py-versions-py${{ matrix.python-version }}-ci-results
-          path: build/test-results/**
+          path: py/server/build/test-results/test-embedded/**
 
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

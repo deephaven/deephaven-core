@@ -8,3 +8,22 @@ wheel {
     src 'test_helper'
     src 'tests'
 }
+
+// Runs tests/ on one Python version without the server Docker image, through run-tests-embedded.sh. uv creates the
+// venv and downloads the Python version if needed. See TESTING.md.
+//   ./gradlew :py-server:testEmbedded -PpythonVersion=3.14t
+//   ./gradlew :py-server:testEmbedded -PpythonVersion=3.9 -PpyTests=tests.test_csv,tests.test_time
+tasks.register('testEmbedded', Exec) {
+    group = 'verification'
+    description = 'Runs the Python server tests on the embedded server, on the Python version given by -PpythonVersion.'
+    dependsOn ':py-embedded-server:assemble', ':Integrations:testClasses', ':engine-time:testClasses'
+    def pythonVersion = providers.gradleProperty('pythonVersion').orElse('3.12')
+    def pyTests = providers.gradleProperty('pyTests').orElse('')
+    workingDir projectDir
+    executable './run-tests-embedded.sh'
+    argumentProviders.add({
+        [pythonVersion.get()] + pyTests.get().tokenize(',')
+    } as CommandLineArgumentProvider)
+    // The results depend on the Python version, the venv and the services that are running, none of which Gradle tracks.
+    outputs.upToDateWhen { false }
+}
