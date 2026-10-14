@@ -2,11 +2,11 @@
 title: Deephaven's Query Strings
 ---
 
-Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They translate the user's intention into compiled code that the engine can execute. These query strings can contain a mix of Java and Python code and are the entry point to a universe of powerful built-in tools and Python-Java interoperability.
+Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They translate the user's intention into compiled code that the engine can execute. Query strings use Java-like syntax and can use Python variables, functions, and objects. They are the entry point to Deephaven's built-in function library, and they let you mix Python and Java objects in one expression.
 
 ## Syntax
 
-Query strings are just Python strings that get passed into table operations. Deephaven **highly** recommends using double quotes to encapsulate query strings.
+Query strings are Python strings that you pass to table operations. Use double quotes for query strings, because query strings use single quotes for their own date-time and `char` literals.
 
 ```python test-set=1
 from deephaven import empty_table
@@ -20,9 +20,9 @@ Here, the query string `NewColumn = 1` defines a formula for the engine to execu
 
 Query strings often use [literals](https://en.wikipedia.org/wiki/Literal_(computer_programming)). How the engine interprets a literal depends on how it's written in the query string.
 
-- Literals not encapsulated by any special characters are interpreted as booleans, numeric values, column names, or variables.
-- Literals encapsulated in backticks (`` ` ``) are interpreted as strings.
-- Literals encapsulated in single quotes (`'`) are interpreted as date-time values (including dates, times, durations, periods, and time zones), except single characters, which are interpreted as `char`s.
+- The engine reads unquoted literals as booleans, numbers, or `null`. Other unquoted names refer to columns or variables.
+- The engine reads literals in backticks (`` ` ``) as strings.
+- The engine reads literals in single quotes (`'`) as date-time values, such as dates, times, durations, periods, and time zones. It reads a single character in single quotes as a `char`.
 
 ```python test-set=1
 literals = empty_table(10).update(
@@ -43,7 +43,7 @@ literals = empty_table(10).update(
         "DateCol = '2020-01-01'",
         "TimeCol = '12:30:45.000'",
         "DateTimeCol = '2020-01-01T12:30:45.000Z'",
-        # Durations must be enclosed with single quotes and have a leading PT
+        # Durations are enclosed with single quotes and use the ISO-8601 time-based format, such as 'PT1m'
         "DurationCol = 'PT1m'",
         # For object types, 'null' is the literal for null values
         "NullCol = null",
@@ -59,7 +59,7 @@ literals_meta = literals.meta_table
 
 ## Special variables and constants
 
-Deephaven provides several [special variables and constants](../../reference/query-language/variables/special-variables.md). The most commonly used of these are `i` and `ii`. They represent the row indices as 32-bit and 64-bit integers, `int` and `long`, respectively.
+Deephaven provides several [special variables and constants](../../reference/query-language/variables/special-variables.md). The most commonly used of these are `i` and `ii`. They represent the row position as 32-bit and 64-bit integers, `int` and `long`, respectively.
 
 ```python test-set=1 order=special_meta,special_vars
 special_vars = empty_table(10).update(["IdxInt = i", "IdxLong = ii"])
@@ -68,9 +68,9 @@ special_meta = special_vars.meta_table
 ```
 
 > [!NOTE]
-> The special variables `i` and `ii` are safe to use on static tables and on [append-only](../../conceptual/table-types.md#specialization-1-append-only) and blink tables. On other ticking tables, the engine throws an error.
+> The special variables `i` and `ii` are safe to use on static tables, on [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables (ticking tables that only add rows at the end), and on [blink](../../conceptual/table-types.md#specialization-3-blink) tables. On other ticking tables, the engine throws an error. See [refreshing table restrictions](../../reference/query-language/variables/special-variables.md#refreshing-table-restrictions).
 
-Additionally, Deephaven provides a range of common constants that can be accessed from query strings. These constants are always written with snake case in capital letters. They include [minimum and maximum values for various data types](/core/javadoc/io/deephaven/util/QueryConstants.html), [conversion factors for time types](/core/javadoc/io/deephaven/time/DateTimeUtils.html), and more. Of particular interest are the null constants for primitive types.
+Deephaven also provides a range of common constants that you can use in query strings. Their names are in uppercase snake case, such as `NULL_INT`. They include [minimum and maximum values for various data types](/core/javadoc/io/deephaven/util/QueryConstants.html), [conversion factors for time types](/core/javadoc/io/deephaven/time/DateTimeUtils.html), and more. Of particular interest are the null constants for primitive types.
 
 ```python test-set=1 order=null_values_meta,null_values
 null_values = empty_table(1).update(
@@ -108,7 +108,7 @@ math_ops = empty_table(10).update(
 )
 ```
 
-String concatenation is also supported via the `+` operator.
+The `+` operator also concatenates strings.
 
 ```python test-set=1
 add_strings = empty_table(10).update("StringCol = `Hello ` + `there!`")
@@ -119,9 +119,9 @@ The `+` and `-` operators are defined for date-time types, making arithmetic on 
 ```python test-set=1
 time_ops = empty_table(10).update(
     [
-        # Times in nanoseconds can be added or subtracted from date-times
+        # Times in nanoseconds can be added to or subtracted from date-times
         "Timestamp = '2021-07-11T12:00:00.000Z' + (ii * HOUR)",
-        # Durations or day-based Periods can be added or subtracted from date-times
+        # Durations or day-based Periods can be added to or subtracted from date-times
         "TimestampPlus365Days = Timestamp + 'P365d'",
         "TimestampMinusOneHour = Timestamp - 'PT1h'",
         # Timestamps can be subtracted to get their difference in nanoseconds
@@ -131,7 +131,7 @@ time_ops = empty_table(10).update(
 )
 ```
 
-Logical operations, expressions, and comparison operators are supported.
+Query strings support logical operators such as `&&` and `||`, and comparison operators such as `==` and `>`.
 
 ```python test-set=1
 logical_ops = empty_table(10).update(
@@ -153,6 +153,7 @@ conditional = empty_table(10).update(
         "Parity = ii % 2 == 0 ? `Even!` : `Odd...`",
         # Any logical expression is a valid condition
         "IsDivisibleBy6 = ((ii % 2 == 0) && (ii % 3 == 0)) ? true : false",
+        # randomGaussian is a built-in function; the next section covers these
         "RandomNumber = randomGaussian(0.0, 1.0)",
         # In-line conditionals can be chained together
         "Score = RandomNumber < -1.282 ? `Bottom 10%` : RandomNumber > 1.282 ? `Top 10%` : `Middle of the pack`",
@@ -160,7 +161,7 @@ conditional = empty_table(10).update(
 )
 ```
 
-In Deephaven, typecasting is easy.
+Query strings support Java-style [typecasts](../../reference/query-language/control-flow/casting.md).
 
 ```python test-set=1
 typecasted = empty_table(10).update(
@@ -175,13 +176,13 @@ typecasted = empty_table(10).update(
 )
 ```
 
-There are many more such operators supported in Deephaven. See the [guide on operators](../../how-to-guides/operators.md) to learn more.
+Deephaven supports many more operators. See the [guide on operators](../../how-to-guides/operators.md) to learn more.
 
 ## Built-in functions
 
-Aside from the common operations, Deephaven hosts a large library of functions known as [built-in or auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) that can be used in query strings.
+Aside from the common operations, Deephaven hosts a large library of functions known as [built-in or auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) that you can use in query strings.
 
-The [numeric subset of this library](/core/javadoc/io/deephaven/function/package-summary.html) is full of functions that perform common mathematical operations on numeric types. These include exponentials, trigonometric functions, random number generators, and more.
+The [numeric subset of this library](/core/javadoc/io/deephaven/function/Numeric.html) is full of functions that perform common mathematical operations on numeric types. These include exponentials, trigonometric functions, and more. [Random number generators](/core/javadoc/io/deephaven/function/Random.html) are also available.
 
 ```python test-set=1
 math_functions = empty_table(10).update(
@@ -189,8 +190,8 @@ math_functions = empty_table(10).update(
         # Each function can be applied to many different types
         "Exponential = exp(ii)",
         "NatLog = log(i)",
-        "Square = pow((float)ii, 2)",
-        "Sqrt = sqrt((double)i)",
+        "Square = pow((float) ii, 2)",
+        "Sqrt = sqrt((double) i)",
         "Trig = sin(ii)",
         # Functions can be composed
         "AbsVal = abs(cos(ii))",
@@ -200,21 +201,21 @@ math_functions = empty_table(10).update(
 )
 ```
 
-These functions can be combined with previously discussed literals and operators to generate complex expressions.
+Combine these functions with the literals and operators covered earlier to build complex expressions.
 
 ```python test-set=1
 fake_data = empty_table(100).update(
     [
         "Group = randomInt(1, 4)",
         "GroupIntercept = Group == 1 ? 0 : Group == 2 ? 5 : 10",
-        "GroupSlope = abs(GroupIntercept * randomGaussian(0, 1))",
+        "GroupSlope = Group == 1 ? 0.5 : Group == 2 ? 1.0 : 2.0",
         "GroupStdDev = pow(sin(Group), 2)",
         "Data = GroupIntercept + GroupSlope * ii + randomGaussian(0.0, GroupStdDev)",
     ]
 )
 ```
 
-The built-in library also contains many functions for [working with date-time values](/core/javadoc/io/deephaven/time/DateTimeUtils.html).
+The previous chapter, [Time and Calendars](./time-calendars.md), used several of the built-in date-time functions, such as [`now`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()), [`upperBin`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#upperBin(java.time.Instant,long)), and [`lowerBin`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)). The library contains many more [functions for working with date-time values](/core/javadoc/io/deephaven/time/DateTimeUtils.html).
 
 ```python test-set=1
 time_functions = empty_table(10).update(
@@ -231,7 +232,7 @@ time_functions = empty_table(10).update(
 )
 ```
 
-Functions that begin with `parse` are useful for converting strings to date-time types.
+Date-time functions that begin with `parse`, such as `parseInstant` and `parseDuration`, convert strings to date-time types.
 
 ```python test-set=1 order=string_meta,string_date_times,converted_meta,converted_date_times
 string_date_times = empty_table(10).update(
@@ -260,32 +261,15 @@ string_meta = string_date_times.meta_table
 converted_meta = converted_date_times.meta_table
 ```
 
-[`upperBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#upperBin(java.time.Instant,long)) and [`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)) bin timestamps into buckets. They are particularly useful in aggregation operations, as aggregated statistics are commonly computed over temporal buckets.
-
-```python test-set=1 order=binned_timestamps,last_by_bin
-binned_timestamps = empty_table(60).update(
-    [
-        "Timestamp = now() + ii * MINUTE",
-        # Rounds Timestamp to the last 5 minute mark
-        "Last5Mins = lowerBin(Timestamp, 5 * MINUTE)",
-        # Rounds Timestamp to the next 10 minute mark
-        "Next10Mins = upperBin(Timestamp, 10 * MINUTE)",
-        "Value = random()",
-    ]
-)
-
-last_by_bin = binned_timestamps.last_by("Last5Mins")
-```
-
 The [time user guide](../../conceptual/time-in-deephaven.md) provides a comprehensive overview of working with date-time data in Deephaven.
 
-These functions provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
+The numeric and date-time functions above are only a small part of the built-in library. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
 
 ## Java methods
 
-The data structures that underlie Deephaven tables are Java data structures. So, many of the literals, operators, and functions we've spoken about are, at some level, Java. Java objects have methods attached to them that can be called from query strings, unlocking new levels of functionality and efficiency for Deephaven users.
+The data structures that underlie Deephaven tables are Java data structures. Many of the literals, operators, and functions covered so far are Java under the hood. Query strings can call methods on Java objects.
 
-To discover these, use [`meta_table`](../../reference/table-operations/metadata/meta_table.md) to inspect a column's underlying data type.
+To find out which methods a column's values have, first check the column's Java type with [`meta_table`](../../reference/table-operations/metadata/meta_table.md), as in the [Literals](#literals) section.
 
 ```python test-set=1 order=call_methods_meta,call_methods
 call_methods = empty_table(1).update("Timestamp = '2024-03-03T15:00:00.000 UTC'")
@@ -293,7 +277,7 @@ call_methods = empty_table(1).update("Timestamp = '2024-03-03T15:00:00.000 UTC'"
 call_methods_meta = call_methods.meta_table
 ```
 
-This column is a Java [Instant](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html). Java's [documentation](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) provides all of the available [methods](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html#method.summary) that can be called. Here are just a few.
+This column is a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html). Its Javadoc lists every [method](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html#method.summary) you can call. Here are a few.
 
 ```python test-set=1
 call_methods = call_methods.update(
@@ -305,55 +289,57 @@ call_methods = call_methods.update(
 )
 ```
 
-A basic understanding of [how to read Javadocs](../../how-to-guides/read-javadocs.md) helps you make the most of these built-in methods.
+A basic understanding of [how to read Javadocs](../../how-to-guides/read-javadocs.md) helps you make the most of these Java methods.
 
-Additionally, there are several ways to create Java objects for use in query strings. The following example uses (1) the `new` keyword and (2) the Python [jpy](../../how-to-guides/use-jpy.md) package to create new instances of Java's [URL](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/URL.html) class.
+You can also create Java objects for use in query strings. The following example uses Java's [`URI`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/URI.html) class in query strings in three ways:
+
+- `t1` uses the `new` keyword inside the query string.
+- `t2` uses the Python [jpy](../../how-to-guides/use-jpy.md) package to create the object, then passes it into the query string as a [Python variable](#python-in-query-strings).
+- `t3` uses [jpy](../../how-to-guides/use-jpy.md) to create the object and call its methods in Python, then passes the results into the query string.
 
 ```python test-set=1 order=t1,m1,t2,m2,t3,m3
 import jpy
 
-# Use 'new' keyword to create a new URL object, then call methods
+# Use 'new' keyword to create a new URI object, then call methods
 t1 = empty_table(2).update(
     [
-        "URL = new java.net.URL(`https://deephaven.io:` + i)",
-        "Protocol = URL.getProtocol()",
-        "Host = URL.getHost()",
-        "Port = URL.getPort()",
-        "URI = URL.toURI()",
+        "URI = new java.net.URI(`https://deephaven.io:` + i)",
+        "Scheme = URI.getScheme()",
+        "Host = URI.getHost()",
+        "Port = URI.getPort()",
+        "URL = URI.toURL()",
     ]
 )
 m1 = t1.meta_table
 
-# Use 'jpy' to create a new URL object, pass object to query string, then call methods
-URL = jpy.get_type("java.net.URL")
-url = URL("https://deephaven.io")
+# Use 'jpy' to create a new URI object, pass object to query string, then call methods
+JavaURI = jpy.get_type("java.net.URI")
+uri = JavaURI("https://deephaven.io")
 
 t2 = empty_table(1).update(
     [
-        "URL = url",
-        "Protocol = URL.getProtocol()",
-        "Host = URL.getHost()",
-        "Port = URL.getPort()",
-        "URI = URL.toURI()",
+        "URI = uri",
+        "Scheme = URI.getScheme()",
+        "Host = URI.getHost()",
+        "Port = URI.getPort()",
+        "URL = URI.toURL()",
     ]
 )
 m2 = t2.meta_table
 
-# Use 'jpy' to create a new URL object, call methods, then pass results to query string
-URL = jpy.get_type("java.net.URL")
-url = URL("https://deephaven.io")
-protocol = url.getProtocol()
-host = url.getHost()
-port = url.getPort()
-uri = url.toURI()
+# Reuse the jpy URI object, call its methods in Python, then pass the results to the query string
+scheme = uri.getScheme()
+host = uri.getHost()
+port = uri.getPort()
+url = uri.toURL()
 
 t3 = empty_table(1).update(
     [
-        "URL = url",
-        "Protocol = protocol",
+        "URI = uri",
+        "Scheme = scheme",
         "Host = host",
         "Port = port",
-        "URI = uri",
+        "URL = url",
     ]
 )
 m3 = t3.meta_table
@@ -371,7 +357,7 @@ t = empty_table(10).update(["Group = ii % 2 == 0 ? `A` : `B`", "X = ii"])
 t_grouped = t.group_by("Group")
 ```
 
-Many built-in functions support array arguments.
+Many operators and built-in functions support array arguments. Operators apply element by element, while functions such as `sum` and `avg` reduce the array to a single value.
 
 ```python test-set=1
 t_array_funcs = t_grouped.update(
@@ -385,14 +371,14 @@ t_array_funcs = t_grouped.update(
 )
 ```
 
-These results can then be ungrouped with [`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md), which expands array columns back into separate rows.
+> [!NOTE]
+> On ticking tables, aggregations with [`deephaven.agg`](../../how-to-guides/combined-aggregations.md) are more performant than [`group_by`](../../reference/table-operations/group-and-aggregate/groupBy.md) followed by array functions.
+
+[`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md) expands the array columns back into separate rows.
 
 ```python test-set=1
 t_array_funcs_ungrouped = t_array_funcs.ungroup()
 ```
-
-> [!NOTE]
-> On ticking tables, aggregations with [`deephaven.agg`](../../how-to-guides/combined-aggregations.md) are more performant than `group_by` followed by array functions.
 
 Deephaven provides array indexing and slicing operations.
 
@@ -411,7 +397,7 @@ t_indexed = t_grouped.update(
 )
 ```
 
-Lastly, the columns of a Deephaven table can be interpreted as arrays.
+Lastly, query strings can treat the columns of a Deephaven table as arrays.
 
 ```python test-set=1
 column_as_array = empty_table(10).update(
@@ -423,18 +409,18 @@ column_as_array = empty_table(10).update(
         "SumX = sum(X_)",
         "AvgX = avg(X_)",
         # Indexing and slicing work just the same
-        "XMinus2 = X_[ii-2]",
-        "RollingGroup = X_.subVector(i, i+3)",
-        "RollingAvg = avg(RollingGroup)",
+        "XMinus2 = X_[ii - 2]",
+        "NextThree = X_.subVector(i, i + 3)",
+        "NextThreeAvg = avg(NextThree)",
     ]
 )
 ```
 
-Simple constant-offset access such as `X_[ii-2]` works on all tables. Other uses of column arrays, such as `sum(X_)` or `X_.subVector(i, i+3)`, are only supported for static and blink tables; on other ticking tables, append-only ones included, the engine throws an error. See [working with arrays](../../how-to-guides/work-with-arrays.md) and the [special variables reference](../../reference/query-language/variables/special-variables.md#refreshing-table-restrictions) for more information.
+Simple constant-offset access such as `X_[ii - 2]` works on all tables, even though it uses `ii`. The engine recognizes this pattern as an exception to the `i` and `ii` restriction described in [Special variables and constants](#special-variables-and-constants). Other uses of column arrays, such as `sum(X_)` or `X_.subVector(i, i + 3)`, work only on static and blink tables. On any other ticking table, including an append-only table, the engine throws an error. See [working with arrays](../../how-to-guides/work-with-arrays.md) and the [special variables reference](../../reference/query-language/variables/special-variables.md#refreshing-table-restrictions) for more information.
 
 ## Python in query strings
 
-Python objects can be used in query strings. Variables are the simplest case.
+Query strings can use Python objects. Variables are the simplest case.
 
 ```python test-set=1
 a = 1
@@ -443,7 +429,7 @@ b = 2
 add_vars = empty_table(1).update("Sum = a + b")
 ```
 
-Python functions can also be used.
+Query strings can also call Python functions.
 
 ```python test-set=1
 def my_sum(x, y):
@@ -488,7 +474,7 @@ add_vars_class = empty_table(1).update(
 )
 ```
 
-Without any type casts or [type hints](https://docs.python.org/3/library/typing.html), the Deephaven query engine cannot infer what datatype results from a Python function. It stores the result as a Java [PyObject](../../how-to-guides/pyobjects.md#what-is-a-pyobject) or [Object](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html).
+Without any type casts or [type hints](https://docs.python.org/3/library/typing.html), the Deephaven query engine cannot infer what data type results from a Python function. It stores the result as a Java [`PyObject`](../../how-to-guides/pyobjects.md#what-is-a-pyobject) or [`Object`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html). Plain Python variables are different: the engine converts them to Java types, so the `Sum` column in `add_vars` is an `int`.
 
 ```python test-set=1 order=add_vars_meta,add_vars_func_meta,add_vars_class_meta
 add_vars_meta = add_vars.meta_table
@@ -496,39 +482,18 @@ add_vars_func_meta = add_vars_func.meta_table
 add_vars_class_meta = add_vars_class.meta_table
 ```
 
-This isn't ideal, as neither of these data types support many of the DQL features we've covered. To rectify this, Python functions should utilize [type hints](https://docs.python.org/3/library/typing.html). The engine infers the correct column types for functions that use type hints. Class methods don't support type hints yet, so a typecast in the query string is required.
+This isn't ideal, as [`PyObject`](../../how-to-guides/pyobjects.md#what-is-a-pyobject) and [`Object`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html) columns don't support many of the query language features we've covered. To fix this, add [type hints](https://docs.python.org/3/library/typing.html) to Python functions so the engine can infer the correct column types. The engine ignores type hints on class methods, so cast class method results in the query string instead.
 
-```python test-set=2 order=add_vars_func_meta,add_vars_func,add_vars_class_meta,add_vars_class
-from deephaven import empty_table
+The following example redefines `my_sum` with a return type hint and casts the results of the `MyMathClass` methods defined above.
 
-
+```python test-set=1 order=add_vars_func_meta,add_vars_func,add_vars_class_meta,add_vars_class
 def my_sum(x, y) -> int:
     return x + y
 
 
-class MyMathClass:
-    def __init__(self, x):
-        self.x = x
-
-    def sum(self, y):
-        return self.x + y
-
-    @classmethod
-    def class_sum(cls, x, y):
-        return x + y
-
-    @staticmethod
-    def static_sum(x, y):
-        return x + y
-
-
-a = 1
-b = 2
-class_instance = MyMathClass(a)
-
 add_vars_func = empty_table(1).update(["Sum1 = my_sum(1, 2)", "Sum2 = my_sum(a, b)"])
 
-# Class methods can't use type hints, so note the (int) casts
+# The engine ignores type hints on class methods, so note the (int) casts
 add_vars_class = empty_table(1).update(
     [
         "Sum1 = (int) class_instance.sum(b)",
@@ -543,9 +508,14 @@ add_vars_class_meta = add_vars_class.meta_table
 
 To learn more about using Python in query strings, see [Python in query strings](../../how-to-guides/query-string-overview.md#python).
 
-Scoping in Deephaven follows rules similar to Python's [LEGB](https://realpython.com/python-scope-legb-rule/) rules, with some distinctions. Functions that return tables or otherwise make use of query strings should pay careful attention to scoping details.
+## Scoping
+
+Query strings resolve Python names from the calling function's local scope first, then from the global (module) scope.
 
 ```python test-set=2 order=source,result1,result2
+from deephaven import empty_table
+
+
 def f(a, b) -> int:
     return a * b
 
@@ -560,9 +530,18 @@ result1 = compute(source, 10)
 result2 = compute(source, 3)
 ```
 
-For more information, including those distinctions, see [scoping rules](../../how-to-guides/query-scope.md).
+Inside `compute`, the query string's `a` resolves to the function's local `a` argument (10, then 3), so `result1` and `result2` differ.
 
-Be mindful of whether or not Python functions are stateless or stateful. Generally, stateless functions have no side effects — they don't modify any objects outside of their scope. Also, they are invariant to execution order, so function calls can be evaluated in any order without affecting the result. This stateless function extracts elements from a list in a query string.
+Python's [LEGB](https://realpython.com/python-scope-legb-rule/) rules resolve names from the local, enclosing, global, and built-in scopes. Query strings follow similar rules, with two differences:
+
+- Python's built-in names aren't in scope.
+- A query string inside a nested function can't see the enclosing function's variables unless the nested function's own code references them, for example by declaring them `nonlocal`.
+
+For those cases and more examples, see [scoping rules](../../how-to-guides/query-scope.md).
+
+## Stateless and stateful functions
+
+Know whether each Python function you call in a query string is stateless or stateful. A stateless function has no side effects: it doesn't modify any object outside its own scope. Its result also doesn't depend on execution order, so the engine can evaluate the calls in any order. The following stateless function extracts elements from a list.
 
 ```python test-set=2
 my_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -575,9 +554,11 @@ def get_element_stateless(idx) -> int:
 t_stateless = empty_table(10).update("X = get_element_stateless(ii)")
 ```
 
-`get_element_stateless` is stateless because it does not modify any objects outside its local scope. It could be evaluated in any order and give the same result.
+`get_element_stateless` reads `my_list` but never changes it.
 
-Stateful functions modify objects outside their local scope — they do not leave the world as they found it. They also may depend on execution order. This stateful function achieves the same resulting table.
+A stateful function modifies objects outside its local scope, so its result can depend on execution order. The engine assumes functions in query strings are stateless, so it may evaluate rows in any order, including in parallel.
+
+To make the engine evaluate a query string in row order, wrap it with [`Selectable.parse`](/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) and call [`with_serial`](../../conceptual/query-engine/parallelization.md) on the result. In the following example, the `update` call that uses a stateful function produces the same table as `t_stateless` because the query string is marked serial.
 
 ```python test-set=2
 from deephaven.table import Selectable
@@ -597,16 +578,12 @@ t_stateful = empty_table(10).update(
 )
 ```
 
-Print `idx` to verify it's been changed.
+Print `idx` to verify that `get_element_stateful` changed it.
 
-```python test-set=2
+```python test-set=2 order=:log
 print(idx)
 ```
 
-Because `get_element_stateful` is stateful, it must be evaluated in the correct order to give the correct result. The engine assumes functions in query strings are stateless unless told otherwise, so mark stateful ones with [`with_serial`](../../conceptual/query-engine/parallelization.md), as the example above does. Without it, nothing guarantees the rows are evaluated in order.
+Use stateless functions whenever possible, so the engine is free to choose the execution order and you don't need [`with_serial`](../../conceptual/query-engine/parallelization.md).
 
-Queries should use stateless functions whenever possible because:
-
-- They minimize side effects when called.
-- Their result does not depend on the order of evaluation.
-- They can be evaluated in parallel where the engine supports it.
+This chapter covered the building blocks of query strings: literals, special variables and constants, operators, built-in functions, Java methods, arrays, and Python objects. It also showed how query strings resolve variables and why you should prefer stateless functions. Next, [Recipes, not loops!](./vectorization-vs-loops.md) explains why Deephaven queries describe calculations as column formulas rather than loops over rows.

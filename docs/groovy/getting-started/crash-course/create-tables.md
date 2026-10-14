@@ -2,7 +2,9 @@
 title: Create Your First Tables
 ---
 
-## Static tables
+Static tables hold data that doesn't change, and ticking tables update as new data arrives. This chapter shows how to create static tables from scratch, read data from a file or URL into a table, create ticking tables, and replay static data as a ticking table.
+
+## Create static tables from scratch
 
 The simplest way to create static tables from scratch is with [`newTable`](../../reference/table-operations/create/newTable.md) and [`emptyTable`](../../reference/table-operations/create/emptyTable.md).
 
@@ -20,39 +22,17 @@ staticTable2 = emptyTable(5).updateView(
 )
 ```
 
-> [!NOTE]
-> The [special variables](../../reference/query-language/variables/special-variables.md) `i` and `ii` hold each row's position as an `int` and a `long`, respectively. They are safe in static tables like this one. In ticking tables, they are only supported in [append-only](../../conceptual/table-types.md#specialization-1-append-only) and [blink](../../conceptual/table-types.md#specialization-3-blink) tables, because a row's position can change between updates in other ticking tables.
-
-The two tables look identical but are created differently.
+The two tables hold the same data, but each method builds it in a different way.
 
 - [`newTable`](../../reference/table-operations/create/newTable.md) builds a table directly from column type specifications and raw data.
-- [`emptyTable`](../../reference/table-operations/create/emptyTable.md) builds an empty table with no columns and a specified number of rows. You can add columns with the Deephaven Query Language (DQL).
+- [`emptyTable`](../../reference/table-operations/create/emptyTable.md) builds a table with a specified number of rows and no columns. The example then adds columns with [`updateView`](../../reference/table-operations/select/update-view.md) and [query strings](./query-strings.md) such as `"IntColumn = i"`.
 
-## Ticking tables
+> [!NOTE]
+> The [special variables](../../reference/query-language/variables/special-variables.md) `i` and `ii` hold each row's position as an `int` and a `long`, respectively. They're safe in static tables like this one. The [Query Strings](./query-strings.md) chapter covers the limits on using them in ticking tables.
 
-You can create ticking tables to get a feel for live data in Deephaven. The [`timeTable`](../../reference/table-operations/create/timeTable.md) method creates a ticking table. Unlike [`emptyTable`](../../reference/table-operations/create/emptyTable.md), whose columns you add with DQL, `timeTable` supplies its own `Timestamp` column and adds rows as time passes.
+## Read data from a file or URL
 
-```groovy test-set=2 ticking-table order=null
-tickingTable = timeTable("PT1s")
-```
-
-![A GIF showing the creation and updating of a ticking table in Deephaven](../../assets/tutorials/crash-course/crash-course-3.gif)
-
-The `PT1s` argument is an [ISO 8601 duration string](https://www.digi.com/resources/documentation/digidocs/90001488-13/reference/r_iso_8601_duration_format.htm) that sets the period between rows. With `PT1s`, consecutive rows have `Timestamp` values one second apart, and a delayed update cycle can add several rows at once.
-
-New ticking tables can be derived from existing ones using DQL, just as in the static case.
-
-```groovy test-set=2 ticking-table order=null
-newTickingTable = tickingTable.updateView("TimestampPlusOneSecond = Timestamp + 'PT1s'")
-```
-
-![A GIF showing a new ticking table updating in tandem with a source ticking table](../../assets/tutorials/crash-course/crash-course-4.gif)
-
-This exemplifies Deephaven's use of the Directed Acyclic Graph (DAG). The table `tickingTable` is a root node in the DAG, and `newTickingTable` is a downstream node. Because the source table is ticking, the new table is also ticking. Every update to `tickingTable` propagates down the DAG to `newTickingTable`, and only the added rows propagate with each update cycle. Because `updateView` formulas are evaluated when cells are read, the engine computes new values only for rows that are actually requested.
-
-## Ingesting static data
-
-Deephaven supports reading from various common file formats like [CSV](../../reference/data-import-export/CSV/readCsv.md) and [Parquet](../../reference/data-import-export/Parquet/readTable.md). The following code block reads CSV data from a URL directly into a table.
+Deephaven can read common file formats such as [CSV](../../reference/data-import-export/CSV/readCsv.md) and [Parquet](../../reference/data-import-export/Parquet/readTable.md). The following code block reads CSV data from a URL directly into a table.
 
 ```groovy test-set=3
 import static io.deephaven.csv.CsvTools.readCsv
@@ -62,22 +42,49 @@ crypto = readCsv(
 )
 ```
 
-If you're running Deephaven in a Docker container, reading your own files requires that you mount the local directory containing the files to a volume in the Docker container, which you can learn more about in the guide on [Docker data volumes](../../conceptual/docker-data-volumes.md).
+> [!NOTE]
+> To read your own file, put it in a directory that your Docker command mounts into the container and pass its container path to `readCsv`. The Docker command in [Get Started](./get-started.md) mounts the `data` directory in your current working directory at `/data`, so you read a file saved as `data/my-file.csv` on your machine with `readCsv("/data/my-file.csv")`. See [Docker data volumes](../../conceptual/docker-data-volumes.md) for more.
 
-## Real-world ticking data
+## Create ticking tables
 
-Real-time data is Deephaven's mission statement. One of the easiest ways to work with realistic ticking data is by using the [`Replayer`](../../reference/table-operations/create/Replayer.md) to replay the static data. Use it to replay the data ingested above:
+The [Architecture Overview](./architecture-overview.md#immutable-schema-mutable-data) briefly used [`timeTable`](../../reference/table-operations/create/timeTable.md). `timeTable` creates a ticking table with a single `Timestamp` column and adds a new row at a regular interval that you set.
 
-```groovy test-set=3 order=null
+```groovy test-set=2 ticking-table order=null
+tickingTable = timeTable("PT1s")
+```
+
+![A GIF showing the creation and updating of a ticking table in Deephaven](../../assets/tutorials/crash-course/crash-course-3.gif)
+
+The `PT1s` argument is an ISO 8601 [duration string](../../reference/query-language/types/durations.md) that sets the period between rows. Consecutive rows have `Timestamp` values one second apart. In each [update cycle](./architecture-overview.md#the-engine), the engine usually adds one row to this table, but a delayed cycle can add several rows at once.
+
+As in the Architecture Overview, you derive new ticking tables from existing ones with the same table operations and [query strings](./query-strings.md) you used in the static case. This time, watch how the two tables relate.
+
+```groovy test-set=2 ticking-table order=null
+newTickingTable = tickingTable.updateView("TimestampPlusOneSecond = Timestamp + 'PT1s'")
+```
+
+![A GIF showing a new ticking table updating in tandem with a source ticking table](../../assets/tutorials/crash-course/crash-course-4.gif)
+
+This is the [DAG](./architecture-overview.md#the-engine) from the Architecture Overview at work. `tickingTable` is the parent (upstream) table, and `newTickingTable` is its child (downstream) table. The new table therefore ticks along with its source. In each update cycle that adds rows to `tickingTable`, the engine sends `newTickingTable` a change summary that lists only the newly added rows, so `newTickingTable` handles just those rows instead of the whole table.
+
+Most real-world use cases for ticking data involve connecting to data streams that update continuously. Setting up these connections is outside the scope of this crash course. When you need one, see Deephaven's [Apache Kafka integration](../../how-to-guides/data-import-export/kafka-stream.md), or use [`TablePublisher`](../../how-to-guides/table-publisher.md#table-publisher) or [`DynamicTableWriter`](../../how-to-guides/table-publisher.md#dynamictablewriter) for other real-time sources.
+
+## Replay static data as ticking data
+
+One of the easiest ways to work with realistic ticking data is to replay static data with the [`Replayer`](../../reference/table-operations/create/Replayer.md). Use it to replay the `crypto` table ingested above:
+
+```groovy test-set=3 ticking-table order=null
 import io.deephaven.engine.table.impl.replay.Replayer
 
-resultReplayer = new Replayer(parseInstant("2023-02-09T12:09:18 ET"), parseInstant("2023-02-09T12:58:09 ET"))
+replayer = new Replayer(parseInstant("2023-02-09T12:09:18 ET"), parseInstant("2023-02-09T12:58:09 ET"))
 
-replayedCrypto = resultReplayer.replay(
+replayedCrypto = replayer.replay(
     crypto.sort("Timestamp"), "Timestamp"
 ).sortDescending("Timestamp")
 
-resultReplayer.start()
+replayer.start()
 ```
 
-Most real-world use cases for ticking data involve connecting to data streams that are constantly being updated. For this, Deephaven provides an [Apache Kafka integration](../../how-to-guides/data-import-export/kafka-stream.md), and you can ingest other real-time sources with the [`TablePublisher`](../../how-to-guides/table-publisher.md#table-publisher) or [`DynamicTableWriter`](../../how-to-guides/table-publisher.md#dynamictablewriter). Setting up pipelines for Kafka streams or other real-time sources is outside the scope of this guide.
+When the replay starts, its clock begins at the start time passed to [`Replayer`](../../reference/table-operations/create/Replayer.md) and advances in real time. Each row appears in `replayedCrypto` once the clock reaches the row's `Timestamp`. The code uses [`sort`](../../reference/table-operations/sort/sort.md) to order `crypto` by `Timestamp` first, because the replayer can't replay timestamps that decrease. [`sortDescending`](../../reference/table-operations/sort/sort-descending.md) then puts the newest rows at the top.
+
+Next, [Basic Table Operations](./table-ops.md) covers the table operations that appear in almost every query.

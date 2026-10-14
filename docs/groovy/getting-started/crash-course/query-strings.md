@@ -2,11 +2,11 @@
 title: Deephaven's Query Strings
 ---
 
-Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They translate the user's intention into compiled code that the engine can execute. These query strings can contain a mix of Java and Groovy code and are the entry point to a universe of powerful built-in tools.
+Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They translate the user's intention into compiled code that the engine can execute. Query strings use Java-like syntax and can use Groovy variables, closures, and classes defined in your session. They are the entry point to Deephaven's built-in function library.
 
 ## Syntax
 
-Query strings are just Groovy strings that get passed into table operations. Deephaven **highly** recommends using double quotes to encapsulate query strings.
+Query strings are Groovy strings that you pass to table operations. Use double quotes for query strings, because query strings use single quotes for their own date-time and `char` literals.
 
 ```groovy test-set=1
 t = emptyTable(10).update("NewColumn = 1")
@@ -18,9 +18,9 @@ Here, the query string `NewColumn = 1` defines a formula for the engine to execu
 
 Query strings often use [literals](https://en.wikipedia.org/wiki/Literal_(computer_programming)). How the engine interprets a literal depends on how it's written in the query string.
 
-- Literals not encapsulated by any special characters are interpreted as booleans, numeric values, column names, or variables.
-- Literals encapsulated in backticks (`` ` ``) are interpreted as strings.
-- Literals encapsulated in single quotes (`'`) are interpreted as date-time values (including dates, times, durations, periods, and time zones), except single characters, which are interpreted as `char`s.
+- The engine reads unquoted literals as booleans, numbers, or `null`. Other unquoted names refer to columns or variables.
+- The engine reads literals in backticks (`` ` ``) as strings.
+- The engine reads literals in single quotes (`'`) as date-time values, such as dates, times, durations, periods, and time zones. It reads a single character in single quotes as a `char`.
 
 ```groovy test-set=1
 literals = emptyTable(10).update(
@@ -40,7 +40,7 @@ literals = emptyTable(10).update(
         "DateCol = '2020-01-01'",
         "TimeCol = '12:30:45.000'",
         "DateTimeCol = '2020-01-01T12:30:45.000Z'",
-        // Durations must be enclosed with single quotes and have a leading PT
+        // Durations are enclosed with single quotes and use the ISO-8601 time-based format, such as 'PT1m'
         "DurationCol = 'PT1m'",
         // For object types, 'null' is the literal for null values
         "NullCol = null",
@@ -55,7 +55,7 @@ literalsMeta = literals.meta()
 
 ## Special variables and constants
 
-Deephaven provides several [special variables and constants](../../reference/query-language/variables/special-variables.md). The most commonly used of these are `i` and `ii`. They represent the row indices as 32-bit and 64-bit integers, `int` and `long`, respectively.
+Deephaven provides several [special variables and constants](../../reference/query-language/variables/special-variables.md). The most commonly used of these are `i` and `ii`. They represent the row position as 32-bit and 64-bit integers, `int` and `long`, respectively.
 
 ```groovy test-set=1 order=specialMeta,specialVars
 specialVars = emptyTable(10).update("IdxInt = i", "IdxLong = ii")
@@ -64,9 +64,9 @@ specialMeta = specialVars.meta()
 ```
 
 > [!NOTE]
-> The special variables `i` and `ii` are safe to use on static tables and on [append-only](../../conceptual/table-types.md#specialization-1-append-only) and blink tables. On other ticking tables, the engine throws an error.
+> The special variables `i` and `ii` are safe to use on static tables, on [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables (ticking tables that only add rows at the end), and on [blink](../../conceptual/table-types.md#specialization-3-blink) tables. On other ticking tables, the engine throws an error. See [refreshing table restrictions](../../reference/query-language/variables/special-variables.md#refreshing-table-restrictions).
 
-Additionally, Deephaven provides a range of common constants that can be accessed from query strings. These constants are always written with snake case in capital letters. They include [minimum and maximum values for various data types](/core/javadoc/io/deephaven/util/QueryConstants.html), [conversion factors for time types](/core/javadoc/io/deephaven/time/DateTimeUtils.html), and more. Of particular interest are the null constants for primitive types.
+Deephaven also provides a range of common constants that you can use in query strings. Their names are in uppercase snake case, such as `NULL_INT`. They include [minimum and maximum values for various data types](/core/javadoc/io/deephaven/util/QueryConstants.html), [conversion factors for time types](/core/javadoc/io/deephaven/time/DateTimeUtils.html), and more. Of particular interest are the null constants for primitive types.
 
 ```groovy test-set=1 order=nullValuesMeta,nullValues
 nullValues = emptyTable(1).update(
@@ -100,7 +100,7 @@ mathOps = emptyTable(10).update(
 )
 ```
 
-String concatenation is also supported via the `+` operator.
+The `+` operator also concatenates strings.
 
 ```groovy test-set=1
 addStrings = emptyTable(10).update("StringCol = `Hello ` + `there!`")
@@ -110,9 +110,9 @@ The `+` and `-` operators are defined for date-time types, making arithmetic on 
 
 ```groovy test-set=1
 timeOps = emptyTable(10).update(
-        // Times in nanoseconds can be added or subtracted from date-times
+        // Times in nanoseconds can be added to or subtracted from date-times
         "Timestamp = '2021-07-11T12:00:00.000Z' + (ii * HOUR)",
-        // Durations or day-based Periods can be added or subtracted from date-times
+        // Durations or day-based Periods can be added to or subtracted from date-times
         "TimestampPlus365Days = Timestamp + 'P365d'",
         "TimestampMinusOneHour = Timestamp - 'PT1h'",
         // Timestamps can be subtracted to get their difference in nanoseconds
@@ -121,7 +121,7 @@ timeOps = emptyTable(10).update(
 )
 ```
 
-Logical operations, expressions, and comparison operators are supported.
+Query strings support logical operators such as `&&` and `||`, and comparison operators such as `==` and `>`.
 
 ```groovy test-set=1
 logicalOps = emptyTable(10).update(
@@ -140,13 +140,14 @@ conditional = emptyTable(10).update(
         "Parity = ii % 2 == 0 ? `Even!` : `Odd...`",
         // Any logical expression is a valid condition
         "IsDivisibleBy6 = ((ii % 2 == 0) && (ii % 3 == 0)) ? true : false",
+        // randomGaussian is a built-in function; the next section covers these
         "RandomNumber = randomGaussian(0.0, 1.0)",
         // In-line conditionals can be chained together
         "Score = RandomNumber < -1.282 ? `Bottom 10%` : RandomNumber > 1.282 ? `Top 10%` : `Middle of the pack`",
 )
 ```
 
-In Deephaven, typecasting is easy.
+Query strings support Java-style [typecasts](../../reference/query-language/control-flow/casting.md).
 
 ```groovy test-set=1
 typecasted = emptyTable(10).update(
@@ -159,21 +160,21 @@ typecasted = emptyTable(10).update(
 )
 ```
 
-There are many more such operators supported in Deephaven. See the [guide on operators](../../how-to-guides/operators.md) to learn more.
+Deephaven supports many more operators. See the [guide on operators](../../how-to-guides/operators.md) to learn more.
 
 ## Built-in functions
 
-Aside from the common operations, Deephaven hosts a large library of functions known as [built-in or auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) that can be used in query strings.
+Aside from the common operations, Deephaven hosts a large library of functions known as [built-in or auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) that you can use in query strings.
 
-The [numeric subset of this library](/core/javadoc/io/deephaven/function/package-summary.html) is full of functions that perform common mathematical operations on numeric types. These include exponentials, trigonometric functions, random number generators, and more.
+The [numeric subset of this library](/core/javadoc/io/deephaven/function/Numeric.html) is full of functions that perform common mathematical operations on numeric types. These include exponentials, trigonometric functions, and more. [Random number generators](/core/javadoc/io/deephaven/function/Random.html) are also available.
 
 ```groovy test-set=1
 mathFunctions = emptyTable(10).update(
         // Each function can be applied to many different types
         "Exponential = exp(ii)",
         "NatLog = log(i)",
-        "Square = pow((float)ii, 2)",
-        "Sqrt = sqrt((double)i)",
+        "Square = pow((float) ii, 2)",
+        "Sqrt = sqrt((double) i)",
         "Trig = sin(ii)",
         // Functions can be composed
         "AbsVal = abs(cos(ii))",
@@ -182,19 +183,19 @@ mathFunctions = emptyTable(10).update(
 )
 ```
 
-These functions can be combined with previously discussed literals and operators to generate complex expressions.
+Combine these functions with the literals and operators covered earlier to build complex expressions.
 
 ```groovy test-set=1
 fakeData = emptyTable(100).update(
         "Group = randomInt(1, 4)",
         "GroupIntercept = Group == 1 ? 0 : Group == 2 ? 5 : 10",
-        "GroupSlope = abs(GroupIntercept * randomGaussian(0, 1))",
+        "GroupSlope = Group == 1 ? 0.5 : Group == 2 ? 1.0 : 2.0",
         "GroupStdDev = pow(sin(Group), 2)",
         "Data = GroupIntercept + GroupSlope * ii + randomGaussian(0.0, GroupStdDev)",
 )
 ```
 
-The built-in library also contains many functions for [working with date-time values](/core/javadoc/io/deephaven/time/DateTimeUtils.html).
+The previous chapter, [Time and Calendars](./time-calendars.md), used several of the built-in date-time functions, such as [`now`](../../reference/time/datetime/now.md), [`upperBin`](../../reference/time/datetime/upperBin.md), and [`lowerBin`](../../reference/time/datetime/lowerBin.md). The library contains many more [functions for working with date-time values](/core/javadoc/io/deephaven/time/DateTimeUtils.html).
 
 ```groovy test-set=1
 timeFunctions = emptyTable(10).update(
@@ -209,7 +210,7 @@ timeFunctions = emptyTable(10).update(
 )
 ```
 
-Functions that begin with `parse` are useful for converting strings to date-time types.
+Date-time functions that begin with `parse`, such as `parseInstant` and `parseDuration`, convert strings to date-time types.
 
 ```groovy test-set=1 order=stringMeta,stringDateTimes,convertedMeta,convertedDateTimes
 stringDateTimes = emptyTable(10).update(
@@ -234,30 +235,15 @@ stringMeta = stringDateTimes.meta()
 convertedMeta = convertedDateTimes.meta()
 ```
 
-[`upperBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#upperBin(java.time.Instant,long)) and [`lowerBin`](https://deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)) bin timestamps into buckets. They are particularly useful in aggregation operations, as aggregated statistics are commonly computed over temporal buckets.
-
-```groovy test-set=1 order=binnedTimestamps,lastByBin
-binnedTimestamps = emptyTable(60).update(
-        "Timestamp = now() + ii * MINUTE",
-        // Rounds Timestamp to the last 5 minute mark
-        "Last5Mins = lowerBin(Timestamp, 5 * MINUTE)",
-        // Rounds Timestamp to the next 10 minute mark
-        "Next10Mins = upperBin(Timestamp, 10 * MINUTE)",
-        "Value = random()",
-)
-
-lastByBin = binnedTimestamps.lastBy("Last5Mins")
-```
-
 The [time user guide](../../conceptual/time-in-deephaven.md) provides a comprehensive overview of working with date-time data in Deephaven.
 
-These functions provide only a glimpse of what the built-in library offers. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
+The numeric and date-time functions above are only a small part of the built-in library. There are modules for [sorting](/core/javadoc/io/deephaven/function/Sort.html), [searching](/core/javadoc/io/deephaven/function/BinSearch.html), [string parsing](/core/javadoc/io/deephaven/function/Parse.html), [null handling](/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)), and much more. See the document on [auto-imported functions](../../reference/query-language/query-library/auto-imported/index.md) for a comprehensive list of what's available or the [module summary page](/core/javadoc/io/deephaven/function/package-summary.html) for a high-level overview of what's offered.
 
 ## Java methods
 
-The data structures that underlie Deephaven tables are Java data structures. So, many of the literals, operators, and functions we've spoken about are, at some level, Java. Java objects have methods attached to them that can be called from query strings, unlocking new levels of functionality and efficiency for Deephaven users.
+The data structures that underlie Deephaven tables are Java data structures. Many of the literals, operators, and functions covered so far are Java under the hood. Query strings can call methods on Java objects.
 
-To discover these, use [`meta`](../../reference/table-operations/metadata/meta.md) to inspect a column's underlying data type.
+To find out which methods a column's values have, first check the column's Java type with [`meta`](../../reference/table-operations/metadata/meta.md), as in the [Literals](#literals) section.
 
 ```groovy test-set=1 order=callMethodsMeta,callMethods
 callMethods = emptyTable(1).update("Timestamp = '2024-03-03T15:00:00.000 UTC'")
@@ -265,7 +251,7 @@ callMethods = emptyTable(1).update("Timestamp = '2024-03-03T15:00:00.000 UTC'")
 callMethodsMeta = callMethods.meta()
 ```
 
-This column is a Java [Instant](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html). Java's [documentation](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) provides all of the available [methods](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html#method.summary) that can be called. Here are just a few.
+This column is a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html). Its Javadoc lists every [method](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html#method.summary) you can call. Here are a few.
 
 ```groovy test-set=1
 callMethods = callMethods.update(
@@ -275,16 +261,16 @@ callMethods = callMethods.update(
 )
 ```
 
-Additionally, you can create Java objects for use in query strings with the `new` keyword. The following example creates new instances of Java's [URL](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/URL.html) class.
+Additionally, you can create Java objects for use in query strings with the `new` keyword. The following example creates new instances of Java's [`URI`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/URI.html) class.
 
 ```groovy test-set=1 order=t1,m1
-// Use 'new' keyword to create a new URL object, then call methods
+// Use 'new' keyword to create a new URI object, then call methods
 t1 = emptyTable(2).update(
-        "URL = new java.net.URL(`https://deephaven.io:` + i)",
-        "Protocol = URL.getProtocol()",
-        "Host = URL.getHost()",
-        "Port = URL.getPort()",
-        "URI = URL.toURI()",
+        "URI = new java.net.URI(`https://deephaven.io:` + i)",
+        "Scheme = URI.getScheme()",
+        "Host = URI.getHost()",
+        "Port = URI.getPort()",
+        "URL = URI.toURL()",
 )
 m1 = t1.meta()
 ```
@@ -299,7 +285,7 @@ t = emptyTable(10).update("Group = ii % 2 == 0 ? `A` : `B`", "X = ii")
 tGrouped = t.groupBy("Group")
 ```
 
-Many built-in functions support array arguments.
+Many operators and built-in functions support array arguments. Operators apply element by element, while functions such as `sum` and `avg` reduce the array to a single value.
 
 ```groovy test-set=1
 tArrayFuncs = tGrouped.update(
@@ -311,14 +297,14 @@ tArrayFuncs = tGrouped.update(
 )
 ```
 
-These results can then be ungrouped with [`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md), which expands array columns back into separate rows.
+> [!NOTE]
+> On ticking tables, [aggregations](../../how-to-guides/combined-aggregations.md) are more performant than [`groupBy`](../../reference/table-operations/group-and-aggregate/groupBy.md) followed by array functions.
+
+[`ungroup`](../../reference/table-operations/group-and-aggregate/ungroup.md) expands the array columns back into separate rows.
 
 ```groovy test-set=1
 tArrayFuncsUngrouped = tArrayFuncs.ungroup()
 ```
-
-> [!NOTE]
-> On ticking tables, [aggregations](../../how-to-guides/combined-aggregations.md) are more performant than `groupBy` followed by array functions.
 
 Deephaven provides array indexing and slicing operations.
 
@@ -335,7 +321,7 @@ tIndexed = tGrouped.update(
 )
 ```
 
-Lastly, the columns of a Deephaven table can be interpreted as arrays.
+Lastly, query strings can treat the columns of a Deephaven table as arrays.
 
 ```groovy test-set=1
 columnAsArray = emptyTable(10).update(
@@ -346,17 +332,17 @@ columnAsArray = emptyTable(10).update(
         "SumX = sum(X_)",
         "AvgX = avg(X_)",
         // Indexing and slicing work just the same
-        "XMinus2 = X_[ii-2]",
-        "RollingGroup = X_.subVector(i, i+3)",
-        "RollingAvg = avg(RollingGroup)",
+        "XMinus2 = X_[ii - 2]",
+        "NextThree = X_.subVector(i, i + 3)",
+        "NextThreeAvg = avg(NextThree)",
 )
 ```
 
-Simple constant-offset access such as `X_[ii-2]` works on all tables. Other uses of column arrays, such as `sum(X_)` or `X_.subVector(i, i+3)`, are supported only for static and blink tables; on other ticking tables, append-only ones included, the engine throws an error. See [working with arrays](../../how-to-guides/work-with-arrays.md) and the [special variables reference](../../reference/query-language/variables/special-variables.md#refreshing-table-restrictions) for more information.
+Simple constant-offset access such as `X_[ii - 2]` works on all tables, even though it uses `ii`. The engine recognizes this pattern as an exception to the `i` and `ii` restriction described in [Special variables and constants](#special-variables-and-constants). Other uses of column arrays, such as `sum(X_)` or `X_.subVector(i, i + 3)`, work only on static and blink tables. On any other ticking table, including an append-only table, the engine throws an error. See [working with arrays](../../how-to-guides/work-with-arrays.md) and the [special variables reference](../../reference/query-language/variables/special-variables.md#refreshing-table-restrictions) for more information.
 
 ## Groovy in query strings
 
-Groovy objects can be used in query strings. Variables are the simplest case.
+Query strings can use Groovy objects. Variables are the simplest case.
 
 ```groovy test-set=1
 a = 1
@@ -365,7 +351,7 @@ b = 2
 addVars = emptyTable(1).update("Sum = a + b")
 ```
 
-Groovy functions can also be used.
+Query strings can also call Groovy closures.
 
 ```groovy test-set=1
 mySum = { x, y -> x + y }
@@ -391,7 +377,7 @@ public class MyMathClass {
         return this.x + y
     }
 
-    public classSum(x, y) {
+    public instanceSum(x, y) {
         return x + y
     }
 
@@ -400,9 +386,7 @@ public class MyMathClass {
     }
 }
 
-// import the class into the Query Library
-// this enables the class methods to be called inside query strings
-import io.deephaven.engine.context.ExecutionContext
+// Import the class into the query library so query strings can call its methods
 ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)
 
 a = 1
@@ -411,12 +395,15 @@ classInstance = new MyMathClass(a)
 
 addVarsClass = emptyTable(1).update(
         "Sum1 = classInstance.sum(b)",
-        "Sum2 = classInstance.classSum(a, b)",
+        "Sum2 = classInstance.instanceSum(a, b)",
         "Sum3 = MyMathClass.staticSum(a, b)",
 )
 ```
 
-Without any type casts, the Deephaven query engine cannot infer what datatype results from a Groovy function. It stores the result as a Java [Object](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html).
+> [!NOTE]
+> This example uses `ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)` to import the class into the query library of the current [`ExecutionContext`](../../conceptual/execution-context.md). This is a quick way to make a user-defined class available in query strings. For production code, see [Import packages with user-defined functions](../../how-to-guides/groovy-closures.md#import-packages-with-user-defined-functions) to put classes in their own Groovy files on the classpath.
+
+Closures don't expose a return type, and the class methods above don't declare one, so the engine can't infer what data type they return. It stores each result as a Java [`Object`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html). Plain Groovy variables are different: the engine knows their types, so the `Sum` column in `addVars` is an `int`.
 
 ```groovy test-set=1 order=addVarsMeta,addVarsFuncMeta,addVarsClassMeta
 addVarsMeta = addVars.meta()
@@ -424,52 +411,26 @@ addVarsFuncMeta = addVarsFunc.meta()
 addVarsClassMeta = addVarsClass.meta()
 ```
 
-This isn't ideal, as it doesn't support many of the DQL features we've covered. To rectify this, Groovy functions should utilize [casting](../../reference/query-language/control-flow/casting.md).
+This isn't ideal, as [`Object`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html) columns don't support many of the query language features we've covered. To fix this, [cast](../../reference/query-language/control-flow/casting.md) the results of Groovy closures and methods in the query string. The following example casts the results of `mySum` and the `MyMathClass` methods defined above.
 
-```groovy test-set=2 order=addVarsClass
-public class MyMathClass {
+```groovy test-set=1 order=addVarsFuncTypedMeta,addVarsFuncTyped,addVarsClassTypedMeta,addVarsClassTyped
+addVarsFuncTyped = emptyTable(1).update("Sum1 = (int) mySum(1, 2)", "Sum2 = (int) mySum(a, b)")
 
-    public int x
-
-    public MyMathClass(x) {
-        this.x = x
-    }
-
-    public sum(y) {
-        return this.x + y
-    }
-
-    public classSum(x, y) {
-        return x + y
-    }
-
-    public static staticSum(x, y) {
-        return x + y
-    }
-}
-
-// import the class into the Query Library
-// this enables the class methods to be called inside query strings
-import io.deephaven.engine.context.ExecutionContext
-ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)
-
-a = 1
-b = 2
-classInstance = new MyMathClass(a)
-
-addVarsClass = emptyTable(1).update(
-        "Sum1 = (int)classInstance.sum(b)",
-        "Sum2 = (int)classInstance.classSum(a, b)",
-        "Sum3 = (int)MyMathClass.staticSum(a, b)",
+addVarsClassTyped = emptyTable(1).update(
+        "Sum1 = (int) classInstance.sum(b)",
+        "Sum2 = (int) classInstance.instanceSum(a, b)",
+        "Sum3 = (int) MyMathClass.staticSum(a, b)",
 )
-```
 
-> [!NOTE]
-> In the two queries above, we used `ExecutionContext.getContext().getQueryLibrary().importClass(MyMathClass.class)` to import our class into the query library. This is a quick and easy way to make a user-defined class available in query strings. However, it is not best practice. It is recommended to define classes in their own Groovy files, and import those files via the `docker-compose.yml` file at startup. For an in-depth guide on how to do this, see [User-defined functions](../../how-to-guides/groovy-closures.md#import-packages-with-user-defined-functions).
+addVarsFuncTypedMeta = addVarsFuncTyped.meta()
+addVarsClassTypedMeta = addVarsClassTyped.meta()
+```
 
 To learn more about using Groovy in query strings, see the user guides on [functions](../../how-to-guides/groovy-closures.md) and [classes](../../how-to-guides/groovy-classes.md#classes-and-objects-in-groovy).
 
-In Groovy, new variables are global by default, but Deephaven provides tools that allow users finer control over the scoping of variables and queries.
+## Scoping
+
+Query strings resolve names from the [query scope](../../how-to-guides/query-scope.md), the set of variables the engine can see when it compiles a query string. Variables you assign at the top level of a Groovy script without `def` or a type, such as `int1 = 10`, are in the query scope automatically. Variables declared with `def` or a type are not in the query scope, and neither are closure parameters. To use one of those in a query string, add it to the query scope with [`QueryScope.addParam`](../../how-to-guides/query-scope.md#manually).
 
 ```groovy test-set=2 order=result1,result2
 // Define the function f
@@ -480,10 +441,10 @@ f = { a, b ->
 int1 = 10
 int2 = 3
 
-compute = {sourceTable, anInteger ->
-    // add our integer to the query scope
+compute = { sourceTable, anInteger ->
+    // Add the integer to the query scope
     QueryScope.addParam("intInScope", anInteger)
-    return sourceTable.update("X = f(intInScope, A)")
+    return sourceTable.update("X = (int) f(intInScope, A)")
 }
 
 // Create an empty table and update it with values
@@ -494,13 +455,16 @@ result1 = compute(table, int1)
 result2 = compute(table, int2)
 ```
 
+`compute` adds `anInteger` to the query scope as `intInScope`, so `result1` uses 10 and `result2` uses 3.
+
 For more information, see the [scoping rules](../../how-to-guides/query-scope.md).
 
-Be mindful of whether or not Groovy functions are stateless or stateful. Generally, stateless functions have no side effects — they don't modify any objects outside of their scope. Also, they are invariant to execution order, so function calls can be evaluated in any order without affecting the result. This stateless function extracts elements from a list in a query string.
+## Stateless and stateful functions
+
+Know whether each Groovy closure you call in a query string is stateless or stateful. A stateless function has no side effects: it doesn't modify any object outside its own scope. Its result also doesn't depend on execution order, so the engine can evaluate the calls in any order. The following stateless function extracts elements from a list.
 
 ```groovy test-set=2
 myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-
 
 getElementStateless = { idx ->
     return myList[idx]
@@ -509,9 +473,11 @@ getElementStateless = { idx ->
 tStateless = emptyTable(10).update("X = getElementStateless(ii)")
 ```
 
-`getElementStateless` is stateless because it does not modify any objects outside its local scope. It could be evaluated in any order and give the same result.
+`getElementStateless` reads `myList` but never changes it.
 
-Stateful functions modify objects outside their local scope — they do not leave the world as they found it. They also may depend on execution order. This stateful function achieves the same resulting table.
+A stateful function modifies objects outside its local scope, so its result can depend on execution order. The engine assumes functions in query strings are stateless, so it may evaluate rows in any order, including in parallel.
+
+To make the engine evaluate a query string in row order, wrap it with [`Selectable.parse`](/core/javadoc/io/deephaven/api/Selectable.html#parse(java.lang.String)) and call [`withSerial`](../../conceptual/query-engine/parallelization.md) on the result. In the following example, the `update` call that uses a stateful closure produces the same table as `tStateless` because the query string is marked serial.
 
 ```groovy test-set=2
 myList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -523,20 +489,17 @@ getElementStateful = {
 }
 
 tStateful = emptyTable(10).update(
+    // update accepts a list of Selectable objects, so wrap the serial Selectable in List.of
     List.of(Selectable.parse("X = getElementStateful()").withSerial())
 )
 ```
 
-Print `idx` to verify it's been changed.
+Print `idx` to verify that `getElementStateful` changed it.
 
-```groovy test-set=2
+```groovy test-set=2 order=:log
 println idx
 ```
 
-Because `getElementStateful` is stateful, it must be evaluated in the correct order to give the correct result. The engine assumes functions in query strings are stateless unless told otherwise, so mark stateful ones with [`withSerial`](../../conceptual/query-engine/parallelization.md), as the example above does. Without it, nothing guarantees the rows are evaluated in order.
+Use stateless functions whenever possible, so the engine is free to choose the execution order and you don't need [`withSerial`](../../conceptual/query-engine/parallelization.md).
 
-Queries should use stateless functions whenever possible because:
-
-- They minimize side effects when called.
-- Their result does not depend on the order of evaluation.
-- They can be evaluated in parallel where the engine supports it.
+This chapter covered the building blocks of query strings: literals, special variables and constants, operators, built-in functions, Java methods, arrays, and Groovy objects. It also showed how query strings resolve variables and why you should prefer stateless functions. Next, [Recipes, not loops!](./vectorization-vs-loops.md) explains why Deephaven queries describe calculations as column formulas rather than loops over rows.
