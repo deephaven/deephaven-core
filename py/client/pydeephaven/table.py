@@ -68,12 +68,14 @@ class Table(TableInterface["Table"], ServerObject):
 
     def __del__(self) -> None:
         # Must not make an RPC: it can run inside a gRPC call that holds the channel lock, and would deadlock. So the
-        # session releases the ticket on its own thread, and this checks is_connected, not is_alive. Only export
-        # tickets belong to the session.
+        # session releases the ticket on its own thread, and this checks is_connected, not is_alive. Only an export
+        # with a schema is owned by this wrapper. A wrapper built from another table's ticket has none, and releasing
+        # it would break that table.
         try:
             if (
                 not self._closed
                 and isinstance(self.ticket, ExportTicket)
+                and self.schema is not None
                 and self.session.is_connected
             ):
                 self.session._queue_release(self.ticket)

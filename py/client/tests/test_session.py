@@ -15,6 +15,7 @@ import pyarrow as pa
 from pyarrow import csv
 
 from pydeephaven import DHError, Session
+from pydeephaven.table import Table
 from pydeephaven.ticket import ScopeTicket, SharedTicket
 from tests.testbase import BaseTestCase
 
@@ -331,6 +332,15 @@ t1 = empty_table(0) if t.is_blink else None
                             self.fail("the table was not released")
                         sleep(0.1)
 
+    def test_garbage_collected_borrowed_wrapper_is_not_released(self):
+        t = self.session.empty_table(10)
+        wrapper = Table(self.session, ticket=t.ticket)  # shares t's export, as InputTable(session, t.ticket) does
+        with mock.patch.object(self.session, "_queue_release") as queue_release:
+            del wrapper
+            gc.collect()
+        queue_release.assert_not_called()
+        self.assertEqual(t.update(["X = i"]).size, 10)
+
     def test_garbage_collection_during_rpc_does_not_deadlock(self):
         """A Table finalized in the middle of a gRPC call on the same thread must not make an RPC itself. gRPC holds
         its channel lock there, so that RPC would wait on the lock forever. This forces a collection at that point:
@@ -347,8 +357,10 @@ t1 = empty_table(0) if t.is_blink else None
         collected_under_lock = threading.Event()
 
         def spin_thread_with_gc(state):
-            gc.collect()
-            collected_under_lock.set()
+            # The patch is global. Only the test thread's call may collect, or another session's RPC could pass the test.
+            if threading.current_thread() is thread:
+                gc.collect()
+                collected_under_lock.set()
             return original_spin(state)
 
         table_refs = []
