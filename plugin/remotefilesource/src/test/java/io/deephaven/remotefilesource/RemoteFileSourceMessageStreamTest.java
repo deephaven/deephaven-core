@@ -333,10 +333,6 @@ class RemoteFileSourceMessageStreamTest {
     }
 
     /**
-     * A failed acknowledgment must reach the object service, which closes the stream in response. Swallowing it would
-     * leave the declaration installed and claimable while the client waited out its timeout.
-     */
-    /**
      * Responds to the request the stream last sent, the way a client does.
      */
     private static void respond(final RemoteFileSourceMessageStream stream, final RecordingConnection connection,
@@ -387,6 +383,10 @@ class RemoteFileSourceMessageStreamTest {
         }
     }
 
+    /**
+     * A failed acknowledgment must reach the object service, which closes the stream in response. Swallowing it would
+     * leave the declaration installed and claimable while the client waited out its timeout.
+     */
     @Test
     void aFailedAcknowledgmentPropagates() throws Exception {
         final FailingConnection connection = new FailingConnection();

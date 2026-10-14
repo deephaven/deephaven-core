@@ -72,7 +72,7 @@ public class TestGroovyClassCacheReset {
 
         assertFalse("Cached classes compiled from earlier sources should be cleared", staleClass.exists());
         assertFalse("Cached classes in nested packages should be cleared", staleNestedClass.exists());
-        assertTrue("The cache directory must remain for Groovy and the QueryCompiler", cacheDirectory.isDirectory());
+        assertTrue("Groovy should have recreated the cache directory", cacheDirectory.isDirectory());
         assertEquals(1, (int) session.getQueryScope().<Integer>readParamValue("x"));
     }
 
@@ -85,7 +85,7 @@ public class TestGroovyClassCacheReset {
         declareDirty();
         session.evaluateScript("x = 1").throwIfError();
 
-        assertTrue("The cache directory should exist again after the evaluation", cacheDirectory.isDirectory());
+        assertTrue("Groovy should have recreated the cache directory", cacheDirectory.isDirectory());
         assertEquals(1, (int) session.getQueryScope().<Integer>readParamValue("x"));
     }
 
