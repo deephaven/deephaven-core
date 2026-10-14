@@ -141,7 +141,7 @@ The intent is for each row to get a unique ID: 1, 2, 3, and so on. But with para
 
 ### The fix: force sequential processing with `withSerial`
 
-The [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) method tells Deephaven to process this formula serially. The formula never runs concurrently with itself, and its rows are evaluated one at a time, in order:
+The [`withSerial`](../../reference/query-language/types/Selectable.md#withserial) method tells Deephaven to process a formula serially. The formula never runs concurrently with itself, and its rows are evaluated one at a time, in order:
 
 ```groovy order=result
 import io.deephaven.api.Selectable

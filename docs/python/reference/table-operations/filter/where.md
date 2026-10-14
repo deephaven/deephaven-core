@@ -133,7 +133,7 @@ result_not_filtered = source.where(filters=["!((boolean)my_filter(IntegerColumn)
 
 ## Serial execution
 
-By default, Deephaven can parallelize filter evaluation across multiple CPU cores when the input is large enough. For filters with side effects or order dependencies, use [`with_serial`](../../query-language/types/Filter.md#with_serial) to force sequential processing.
+By default, Deephaven parallelizes filter evaluation across multiple CPU cores when the input is large enough. For filters with side effects or order dependencies, use [`with_serial`](../../query-language/types/Filter.md#with_serial) to force sequential processing.
 
 This filter tracks how many rows it evaluates. Once more than about 131,072 rows reach this filter, it becomes eligible for parallel evaluation — it is not guaranteed to run in parallel, since that also depends on available worker threads and, for a Python-backed filter, a free-threaded Python build; a standard GIL-enabled build never invokes it concurrently. That is current behavior, not a guarantee. Only [`with_serial`](../../query-language/types/Filter.md#with_serial) promises that the filter's rows are evaluated in row-set order, so use it to protect a filter like this regardless of build. The example below uses 100 rows for clarity.
 
@@ -161,7 +161,7 @@ See [Parallelization](../../../conceptual/query-engine/parallelization.md) for m
 
 ## Filters on partitioning columns
 
-When a table comes from a partitioned source, such as a directory of Parquet files or an Iceberg table, a filter that uses only partitioning columns can be applied to the partitions before any data is read. Deephaven evaluates it once per partition instead of once per row, and runs it ahead of the other filters, so whole partitions are skipped.
+When a table comes from a partitioned source, such as a directory of Parquet files or an Iceberg table, a filter that uses only partitioning columns can be applied to the partitions before any data is read. Deephaven evaluates the filter once per partition instead of once per row, and runs it ahead of the other filters, so whole partitions are skipped.
 
 Deephaven applies a filter this way even when filters are configured to be stateful by default, because that is nearly always what users want. For example, `Date = today()` is stateful when filters are stateful by default, but Deephaven still evaluates it early, partition by partition.
 

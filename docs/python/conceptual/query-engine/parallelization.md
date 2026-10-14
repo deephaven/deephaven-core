@@ -101,7 +101,7 @@ Both pools use all CPU cores by default. See [Configuration](#configuration) to 
 
 Most Python builds use a global interpreter lock, or GIL, which lets only one thread at a time run Python code. Formulas and filters that call Python functions or read Python objects are Python-backed, and the GIL changes how Deephaven parallelizes them:
 
-- On a standard build with the GIL enabled, Deephaven never splits the calculation of one Python-backed column or filter across cores.
+- On a non-free-threaded build, which has the GIL enabled, Deephaven never splits the calculation of one Python-backed column or filter across cores.
 - On a [free-threaded Python build](https://docs.python.org/3/howto/free-threading-python.html), Deephaven splits the calculation of Python-backed columns and filters across cores like any other column or filter.
 
 Shared state is not safe on either build. On a GIL-enabled build, two different Python-backed columns in the same [`update`](../../reference/table-operations/select/update.md) can still run concurrently on different threads, so their Python calls interleave even though the GIL lets only one of them execute Python code at any instant. Deephaven can also evaluate a column out of row order even when it does not split that column across cores. If your formula or filter has side effects that depend on row order, use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) no matter which Python build you run.
@@ -397,7 +397,7 @@ Parallelization is enabled by default with reasonable settings. The properties b
 
 ## Key takeaways
 
-By default, Deephaven runs independent tables and columns concurrently, and it splits the rows of a column or filter input across cores when the column or input is large enough. On a standard (GIL) Python build, it does not split Python-backed columns or filters. Most code works without changes.
+By default, Deephaven runs independent tables and columns concurrently, and it splits the rows of a column or filter input across cores when the column or input is large enough. On a non-free-threaded Python build, it does not split Python-backed columns or filters. Most code works without changes.
 
 - Deephaven assumes all formulas are safe to run in parallel by default.
 - Use [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) when a formula has side effects, depends on row order, or calls functions that are not thread-safe.

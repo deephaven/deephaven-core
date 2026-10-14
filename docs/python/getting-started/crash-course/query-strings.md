@@ -561,7 +561,3 @@ result2 = compute(source, 3)
 ```
 
 For more information, including those distinctions, see [scoping rules](../../how-to-guides/query-scope.md).
-
-### Parallel-safety of query-string functions
-
-When Deephaven parallelizes a query, it may process rows in any order on several CPU cores. A function you call from a query string is safe to run that way when it is **stateless**: its output depends only on its inputs, like `x * 2`. It is not safe when it is **stateful**: it reads or changes state outside the function that changes between calls, like a counter. See [Query parallelization](./parallelization.md) for a worked example of a stateful function producing corrupted output, and how to force sequential execution with [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial).

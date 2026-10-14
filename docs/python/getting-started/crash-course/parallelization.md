@@ -168,11 +168,11 @@ The intent is for each row to get a unique ID: 1, 2, 3, and so on. On a free-thr
 | 5  |
 | 7  |
 
-On a free-threaded build, two cores might simultaneously read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers. On a standard Python build, Deephaven doesn't split a Python-backed column across cores, so this single column doesn't race. The [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method guarantees sequential, in-order evaluation on any build.
+On a free-threaded build, two cores might simultaneously read `counter = 5`, both add 1 to get 6, and both return 6. The result: duplicate IDs and skipped numbers. On a non-free-threaded Python build, Deephaven doesn't split a Python-backed column calculation across cores, so this single column doesn't race. The [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method guarantees sequential, in-order evaluation on any build.
 
 ### The fix: force sequential processing with `with_serial`
 
-The [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method tells Deephaven to process this formula serially. The formula never runs concurrently with itself, and its rows are evaluated one at a time, in order:
+The [`with_serial`](../../reference/query-language/types/Selectable.md#with_serial) method tells Deephaven to process a formula serially. The formula never runs concurrently with itself, and its rows are evaluated one at a time, in order:
 
 ```python test-set=serial order=result
 from deephaven import empty_table

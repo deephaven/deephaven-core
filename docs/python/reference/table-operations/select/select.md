@@ -34,7 +34,7 @@ Formulas to compute columns in the new table:
 - Column from `table`: `"A"` (equivalent to `"A = A"`)
 - Renamed column from `table`: `"X = A"`
 - Calculated column: `"X = A * sqrt(B)"`
-- A [`Selectable`](../../query-language/types/Selectable.md): the same formula plus concurrency controls such as [`with_serial`](../../query-language/types/Selectable.md#with_serial)
+- A [`Selectable`](../../query-language/types/Selectable.md): a formula plus concurrency controls
 
 </Param>
 </ParamTable>
