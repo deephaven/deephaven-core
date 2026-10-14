@@ -339,15 +339,23 @@ t1 = empty_table(0) if t.is_blink else None
 
     def test_dropped_session_is_collected(self):
         refresher_sleeping = _Event()
+        tested_known = _Event()
+        tested_thread = []
 
         def signaling_sleep(seconds):
+            # The patch is global. Only the tested session's refresh thread may signal, not one left over from another
+            # test.
             if threading.current_thread().name.endswith("token refresh"):
-                refresher_sleeping.set()
+                tested_known.wait(10)
+                if threading.current_thread() in tested_thread:
+                    refresher_sleeping.set()
             sleep(seconds)
 
         with mock.patch("time.sleep", signaling_sleep):
             with mock.patch("queue.SimpleQueue", _WaitSignalingQueue):
                 session = Session()
+            tested_thread.append(session._refresh_thread)
+            tested_known.set()
             releaser = session._release_thread
             release_waiting = session._release_queue.waiting
             session_ref = weakref.ref(session)
