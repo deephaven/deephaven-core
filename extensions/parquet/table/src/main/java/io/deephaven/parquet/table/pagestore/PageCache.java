@@ -91,4 +91,17 @@ public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.Intr
         pinned = ConcurrentHashMap.newKeySet();
         return () -> pinned = null;
     }
+
+    /**
+     * Release every page pinned so far from its cache, as memory pressure would, and unpin it, so that a GC collects
+     * it.
+     */
+    @TestUseOnly
+    static void evictPinnedPages() {
+        final Set<IntrusivePage<?>> localPinned = pinned;
+        for (final IntrusivePage<?> page : localPinned) {
+            page.getOwner().clear();
+        }
+        localPinned.clear();
+    }
 }

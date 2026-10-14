@@ -69,6 +69,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
      * The number of sparse misses of a page, each a fill that opens the page to decode rows its cached sparse values
      * lack, after which the page is materialized and cached whole. A fill that starts on the page past every row
      * requested there continues an in-order read, such as a viewport scrolling in file order, and is not a miss.
+     * Evicting the page's sparse values restarts its count.
      */
     private static volatile int sparseMissesBeforeFullCaching = Configuration.getInstance()
             .getIntegerForClassWithDefault(ColumnChunkPageStore.class, "sparseMissesBeforeFullCaching", 2);
@@ -330,15 +331,21 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
 
     @Nullable
     private SparsePage<ATTR> getSparsePage(@NotNull final SparseState<ATTR> state) {
-        final WeakReference<SparsePage<ATTR>> unlockedRef = state.pageRef;
-        if (unlockedRef == null || unlockedRef.get() == null) {
+        if (state.pageRef == null) {
             return null;
         }
         // Touch under the lock for the reason in publishSparse.
         synchronized (state) {
             final WeakReference<SparsePage<ATTR>> localRef = state.pageRef;
-            final SparsePage<ATTR> page;
-            if (localRef == null || (page = localRef.get()) == null) {
+            if (localRef == null) {
+                return null;
+            }
+            final SparsePage<ATTR> page = localRef.get();
+            if (page == null) {
+                // Evicted under memory pressure. Reopening the page then is no sign of repeated passes, so restart the
+                // count.
+                state.pageRef = null;
+                state.misses.set(0);
                 return null;
             }
             pageCache.touch(page);

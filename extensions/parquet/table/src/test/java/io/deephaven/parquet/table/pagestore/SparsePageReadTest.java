@@ -528,6 +528,26 @@ public class SparsePageReadTest {
     }
 
     /**
+     * Reopening a page because its cached values were evicted is not a repeated pass: a single reader of the same rows
+     * keeps reading sparsely, however often memory pressure evicts them.
+     */
+    @Test
+    public void testEvictionResetsMisses() {
+        final String path = writeTestTable();
+        ColumnChunkPageStore.setSparseMissesBeforeFullCaching(2);
+        final Table expected = dense(() -> ParquetTools.readTable(path).where(FILTERS[0]).select());
+        final Table filtered = ParquetTools.readTable(path).where(FILTERS[0]);
+        try (final SafeCloseable ignored = PageCache.pinTouchedPages()) {
+            assertPass("first", expected, filtered, Reads.DECODE);
+            for (int pass = 2; pass <= 4; ++pass) {
+                PageCache.evictPinnedPages();
+                System.gc();
+                assertPass("after eviction " + (pass - 1), expected, filtered, Reads.DECODE);
+            }
+        }
+    }
+
+    /**
      * A viewport scrolling in file order, with a fresh context per step, returns to the page the previous step ended
      * on. Those continuations are not misses, so even a limit of one caches no page whole.
      */
