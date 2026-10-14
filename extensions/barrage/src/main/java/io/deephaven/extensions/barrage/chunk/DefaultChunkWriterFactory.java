@@ -433,12 +433,16 @@ public class DefaultChunkWriterFactory implements ChunkWriter.Factory {
      * Returns the transform that an encoding writer, which reads source values itself before handing them to a values
      * writer for {@code valuesTypeInfo}, must apply to its source chunks; {@code null} when sources always arrive as
      * {@code valuesTypeInfo}'s chunk type.
+     * <p>
+     * The transform neither closes nor keeps the chunk it is given, which stays its caller's. It returns that same
+     * chunk when no conversion is needed, and otherwise a new chunk that the caller must close.
      */
     @Nullable
     private static UnaryOperator<Chunk<Values>> sourceTransformFor(final BarrageTypeInfo<Field> valuesTypeInfo) {
         // TODO (https://github.com/deephaven/deephaven-core/issues/5241): Inconsistent handling of ZonedDateTime
         // A ZonedDateTime source that cannot be reinterpreted to long delivers an ObjectChunk to a writer built for
-        // long (see timestampFromLong); encode epoch nanos, which is what the values writer expects.
+        // long. This works around that rather than resolving it, by encoding the epoch nanos the values writer
+        // expects, as timestampFromLong does for a column written without an encoding.
         return valuesTypeInfo.chunkType() == ChunkType.Long
                 && valuesTypeInfo.arrowField().getType().getTypeID() == ArrowType.ArrowTypeID.Timestamp
                         ? DefaultChunkWriterFactory::zonedDateTimesToEpochNanos
