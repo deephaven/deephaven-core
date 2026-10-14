@@ -70,6 +70,7 @@ if [[ "${PY_VERSION}" == *t ]]; then
 fi
 
 # Start the server the same way the Docker-based testPyClient task does: anonymous and PSK logins, PSK "deephaven".
+# It allows anonymous logins, so it listens on 127.0.0.1 only.
 # The start script finds Python through VIRTUAL_ENV, and the server reads its directories from DEEPHAVEN_*_DIR, as in
 # the Docker image.
 # Start it from the build directory. Python puts the working directory first on sys.path, and the repository root
@@ -77,10 +78,11 @@ fi
 cd "${BUILD}"
 VIRTUAL_ENV="${VENV}" \
     DEEPHAVEN_DATA_DIR="${BUILD}/data" DEEPHAVEN_CACHE_DIR="${BUILD}/cache" DEEPHAVEN_CONFIG_DIR="${BUILD}/config" \
-    START_OPTS="-Xmx1g -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler,io.deephaven.authentication.psk.PskAuthenticationHandler -Dauthentication.psk=deephaven -DSystemicObjectTracker.enabled=true -Dhttp.port=${PORT}" \
+    START_OPTS="-Xmx1g -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler,io.deephaven.authentication.psk.PskAuthenticationHandler -Dauthentication.psk=deephaven -DSystemicObjectTracker.enabled=true -Dhttp.host=127.0.0.1 -Dhttp.port=${PORT}" \
     "${SERVER_DIST}/bin/start" > "${RESULTS}/server.log" 2>&1 &
 SERVER_PID=$!
-trap 'kill "${SERVER_PID}" 2>/dev/null || true' EXIT
+# Wait for the server to exit too, so the port is free when this script returns.
+trap 'kill "${SERVER_PID}" 2>/dev/null || true; wait "${SERVER_PID}" 2>/dev/null || true' EXIT
 
 for _ in $(seq 1 120); do
     if grep -q "Server started on port ${PORT}" "${RESULTS}/server.log"; then
@@ -96,6 +98,9 @@ if ! grep -q "Server started on port ${PORT}" "${RESULTS}/server.log"; then
     echo "The server did not start within 120 seconds. See ${RESULTS}/server.log." >&2
     exit 1
 fi
+
+# Point the tests at this server, whatever DH_HOST and DH_PORT the calling shell has.
+export DH_HOST=127.0.0.1 DH_PORT="${PORT}"
 
 # Run from a copy of the tests, so files they write do not land in the source tree.
 mkdir -p "${WORK}"
