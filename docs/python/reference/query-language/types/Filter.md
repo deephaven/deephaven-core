@@ -107,7 +107,7 @@ You need a `Filter` object in three situations:
 
 **Stateful filters**: If your filter modifies shared state (e.g., counting how many rows pass), use [`with_serial`](./ConcurrencyControl.md#with_serial) to force sequential evaluation. Without it, multiple threads evaluating rows simultaneously could corrupt the shared state.
 
-**Complex boolean logic**: Use `and_`, `or_`, and `not_` to compose filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
+**Complex boolean logic**: Use [`and_`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.and_), [`or_`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.or_), and [`not_`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.not_) to compose filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
 
 **Barriers between filters** are rarely needed — most filters are stateless. If you do have filters with shared state where one must complete before another, see [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
 

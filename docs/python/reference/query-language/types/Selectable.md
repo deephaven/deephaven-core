@@ -6,7 +6,7 @@ A [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#
 
 ## Creating a Selectable
 
-Use `Selectable.parse` to create a `Selectable` from a formula string. The formula follows the same `"ColumnName = expression"` syntax used in [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) calls:
+Use [`Selectable.parse`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable.parse) to create a `Selectable` from a formula string. The formula follows the same `"ColumnName = expression"` syntax used in [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) calls:
 
 ```python syntax
 from deephaven.table import Selectable

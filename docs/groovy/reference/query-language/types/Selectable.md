@@ -10,7 +10,7 @@ There are two common ways to create a `Selectable` object, depending on whether 
 
 ### From a formula string
 
-Use `Selectable.parse` when you have a complete column assignment as a string. This is the most common approach.
+Use [`Selectable.parse`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) when you have a complete column assignment as a string. This is the most common approach.
 
 ```groovy syntax
 import io.deephaven.api.Selectable
@@ -20,7 +20,7 @@ col = Selectable.parse("NewColumn = ExistingColumn * 2")
 
 ### From column name and expression
 
-Use `Selectable.of` with [`ColumnName`](https://deephaven.io/core/javadoc/io/deephaven/api/ColumnName.html) and [`RawString`](https://deephaven.io/core/javadoc/io/deephaven/api/RawString.html) when the column name and expression are separate values you construct programmatically, such as from application variables. Only build the expression from a trusted source. Both paths compile it as query code without validating it: `RawString` stores it unparsed, and `Selectable.parse` wraps everything after the `=` in a `RawString` the same way. Passing untrusted user input to either lets an attacker inject arbitrary query code, so validate or allowlist external input first.
+Use [`Selectable.of`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) with [`ColumnName`](https://deephaven.io/core/javadoc/io/deephaven/api/ColumnName.html) and [`RawString`](https://deephaven.io/core/javadoc/io/deephaven/api/RawString.html) when the column name and expression are separate values you construct programmatically, such as from application variables. Only build the expression from a trusted source. Both paths compile it as query code without validating it: `RawString` stores it unparsed, and [`Selectable.parse`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) wraps everything after the `=` in a `RawString` the same way. Passing untrusted user input to either lets an attacker inject arbitrary query code, so validate or allowlist external input first.
 
 ```groovy syntax
 import io.deephaven.api.Selectable

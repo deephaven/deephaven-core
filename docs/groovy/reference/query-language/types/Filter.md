@@ -10,7 +10,7 @@ Here are two common ways to create a `Filter` object: from a condition string, o
 
 ### From a condition string
 
-Use `Filter.from` when you have filter conditions as strings. Note that `Filter.from` returns a collection, so use `[0]` to get a single filter.
+Use [`Filter.from`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) when you have filter conditions as strings. Note that `Filter.from` returns a collection, so use `[0]` to get a single filter.
 
 ```groovy syntax
 import io.deephaven.api.filter.Filter
@@ -21,7 +21,7 @@ myFilter = Filter.from("X > 5")[0]
 
 ### Combining filters with boolean logic
 
-Use `Filter.or` and `Filter.and` to combine multiple filters. These accept any `Filter` instances — as varargs or as a collection — such as filters created with `Filter.from`.
+Use [`Filter.or`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) and [`Filter.and`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) to combine multiple filters. These accept any `Filter` instances — as varargs or as a collection — such as filters created with [`Filter.from`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html).
 
 ```groovy syntax
 import io.deephaven.api.filter.Filter
@@ -108,7 +108,7 @@ You need a `Filter` object in three situations:
 
 **Stateful filters**: If your filter modifies shared state (e.g., counting how many rows pass), use [`withSerial`](./ConcurrencyControl.md#withserial) to force sequential evaluation. Without it, multiple threads evaluating rows simultaneously could corrupt the shared state.
 
-**Complex boolean logic**: Use `Filter.and`, `Filter.or`, and `Filter.not` to combine filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
+**Complex boolean logic**: Use [`Filter.and`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html), [`Filter.or`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html), and [`Filter.not`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) to combine filters programmatically. This is useful when building filter conditions dynamically or combining multiple conditions that are easier to express as separate objects.
 
 **Barriers between filters** are rarely needed — most filters are stateless. If you do have filters with shared state where one must complete before another, see [Barrier](./Barrier.md) for the full reference or the [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) section in the parallelization guide for broader context.
 
