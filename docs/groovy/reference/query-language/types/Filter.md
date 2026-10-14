@@ -2,13 +2,13 @@
 title: Filter
 ---
 
-A [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) is an object that represents a filter condition. [`where`](../../table-operations/filter/where.md) accepts [`Filter`](./Filter.md) objects as well as strings.
+A [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) is an object that represents a filter condition. [`where`](../../table-operations/filter/where.md) accepts `Filter` objects as well as strings.
 
-A string condition covers most filters. Create a [`Filter`](./Filter.md) object to compose conditions with boolean logic in code, to mark a filter serial with [`withSerial`](./ConcurrencyControl.md#withserial), or to order a filter relative to other filters with [Barriers](./Barrier.md).
+A string condition covers most filters. Create a `Filter` object to compose conditions with boolean logic in code, to mark a filter serial with [`withSerial`](./ConcurrencyControl.md#withserial), or to order a filter relative to other filters with [Barriers](./Barrier.md).
 
 ## Creating a Filter
 
-A [`Filter`](./Filter.md) object comes from a condition string or from combining other filters with boolean logic. The [Filter functions](#filter-functions) table lists the remaining factories.
+A `Filter` object comes from a condition string or from combining other filters with boolean logic. The [Filter functions](#filter-functions) table lists the remaining factories.
 
 ### From a condition string
 
@@ -23,7 +23,7 @@ myFilter = Filter.from("X > 5")[0]
 
 ### Combining filters with boolean logic
 
-Use [`Filter.or`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) and [`Filter.and`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) to combine multiple filters. These accept any [`Filter`](./Filter.md) instances, as varargs or as a collection, such as filters created with [`Filter.from`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html).
+Use [`Filter.or`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) and [`Filter.and`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) to combine multiple filters. These accept any `Filter` instances, as varargs or as a collection, such as filters created with [`Filter.from`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html).
 
 ```groovy syntax
 import io.deephaven.api.filter.Filter
@@ -37,7 +37,7 @@ andFilter = Filter.and(Filter.from("X > 5", "Y < 10"))
 
 ## Filter functions
 
-The [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) interface provides static factory methods for common conditions. These return [`Filter`](./Filter.md) objects that you can combine with [`Filter.and`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) and [`Filter.or`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) or modify with the [concurrency methods](#methods).
+The [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) interface provides static factory methods for common conditions. These return `Filter` objects that you can combine with [`Filter.and`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) and [`Filter.or`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) or modify with the [concurrency methods](#methods).
 
 | Function                                                                                                                                                  | Description                             |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
@@ -56,7 +56,7 @@ The [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.
 
 ## Methods
 
-[`Filter`](./Filter.md) implements [`ConcurrencyControl`](./ConcurrencyControl.md), which provides three methods that control how Deephaven evaluates the filter. By default, Deephaven parallelizes the evaluation of a single filter across CPU cores when enough rows reach it. Use these methods when a filter has side effects or needs coordination with other filters.
+`Filter` implements [`ConcurrencyControl`](./ConcurrencyControl.md), which provides three methods that control how Deephaven evaluates the filter. By default, Deephaven parallelizes the evaluation of a single filter across CPU cores when enough rows reach it. Use these methods when a filter has side effects or needs coordination with other filters.
 
 ### `withSerial`
 
@@ -99,9 +99,9 @@ For the full reference, constraints, and worked examples, see [Barrier](./Barrie
 
 ## When to use Filter objects
 
-When you pass a string condition to [`where`](../../table-operations/filter/where.md), Deephaven creates a [`Filter`](./Filter.md) internally and parallelizes its evaluation across cores when enough rows reach it. A string condition is enough when the condition examines only values in the current row, such as `"Price > 100"`, and has no side effects. A condition with no side effects does not modify global variables, write to files, or depend on evaluation order.
+When you pass a string condition to [`where`](../../table-operations/filter/where.md), Deephaven creates a `Filter` internally and parallelizes its evaluation across cores when enough rows reach it. A string condition is enough when the condition examines only values in the current row, such as `"Price > 100"`, and has no side effects. A condition with no side effects does not modify global variables, write to files, or depend on evaluation order.
 
-Use a [`Filter`](./Filter.md) object in these three situations:
+Use a `Filter` object in these three situations:
 
 - **Stateful filters**: a filter that modifies shared state, such as counting how many rows pass, is stateful. Mark it serial with [`withSerial`](./ConcurrencyControl.md#withserial) so that threads do not corrupt the shared state by evaluating rows at the same time.
 - **Complex boolean logic**: use [`Filter.and`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html), [`Filter.or`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html), and [`Filter.not`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) to combine filters programmatically when you build conditions dynamically or when separate objects express the conditions more clearly.

@@ -2,27 +2,27 @@
 title: view
 ---
 
-The [`view`](./view.md) method creates a new table that includes one formula column for each argument.
+The `view` method creates a new table that includes one formula column for each argument.
 
 A formula column is not stored in memory. Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
 
 > [!NOTE]
-> [`view`](./view.md) accepts only [formula strings](../../../how-to-guides/formulas.md). [`select`](./select.md) accepts [formula strings](../../../how-to-guides/formulas.md) and [`Selectable`](../../query-language/types/Selectable.md) objects. Both methods return a table with one column for each argument. [`view`](./view.md) stores formulas and recalculates cells on access, while [`select`](./select.md) stores those columns in memory.
+> `view` accepts only [formula strings](../../../how-to-guides/formulas.md). [`select`](./select.md) accepts [formula strings](../../../how-to-guides/formulas.md) and [`Selectable`](../../query-language/types/Selectable.md) objects. Both methods return a table with one column for each argument. `view` stores formulas and recalculates cells on access, while [`select`](./select.md) stores those columns in memory.
 >
-> [`view`](./view.md) fits best when:
+> `view` fits best when:
 >
 > 1. the formula is fast to compute,
 > 2. only a small portion of the data is being accessed,
 > 3. cells are accessed very few times, or
 > 4. memory usage must be minimized.
 >
-> [`select`](./select.md), [`update_view`](./update-view.md), [`update`](./update.md), and [`lazy_update`](./lazy-update.md) differ from [`view`](./view.md) in memory and computation costs.
+> [`select`](./select.md), [`update_view`](./update-view.md), [`update`](./update.md), and [`lazy_update`](./lazy-update.md) differ from `view` in memory and computation costs.
 
 > [!CAUTION]
-> When using [`view`](./view.md) or [`update_view`](./update-view.md), non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods belong in [`select`](./select.md) or [`update`](./update.md) instead.
+> When using `view` or [`update_view`](./update-view.md), non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods belong in [`select`](./select.md) or [`update`](./update.md) instead.
 
 > [!CAUTION]
-> [`view`](./view.md) and [`update_view`](./update-view.md) do not support [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) or respecting [Barriers](../../../conceptual/query-engine/parallelization.md#barriers). These operations compute results lazily, when cells are accessed, so rows can be evaluated in any order, at any time, and by any thread. This makes ordering guarantees meaningless. A formula that requires serial evaluation or must wait for another operation belongs in [`select`](./select.md) or [`update`](./update.md) instead.
+> `view` and [`update_view`](./update-view.md) do not support [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) or respecting [Barriers](../../../conceptual/query-engine/parallelization.md#barriers). These operations compute results lazily, when cells are accessed, so rows can be evaluated in any order, at any time, and by any thread. This makes ordering guarantees meaningless. A formula that requires serial evaluation or must wait for another operation belongs in [`select`](./select.md) or [`update`](./update.md) instead.
 
 ## Syntax
 

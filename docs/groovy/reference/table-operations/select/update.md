@@ -2,21 +2,21 @@
 title: update
 ---
 
-The [`update`](./update.md) method creates a new table containing a new, in-memory column for each argument.
+The `update` method creates a new table containing a new, in-memory column for each argument.
 
-When using [`update`](./update.md), the new columns are evaluated and stored in memory. Existing columns are referenced without additional memory allocation.
+When using `update`, the new columns are evaluated and stored in memory. Existing columns are referenced without additional memory allocation.
 
 > [!NOTE]
-> [`update`](./update.md), [`updateView`](./update-view.md), and [`lazyUpdate`](./lazy-update.md) take the same arguments: [formula strings](../../../how-to-guides/formulas.md) or a collection of [`Selectable`](../../query-language/types/Selectable.md) objects. All three methods return a table with all the source columns plus the new columns. [`update`](./update.md) stores the new columns in memory, while [`updateView`](./update-view.md) stores formulas and recalculates cells on access.
+> `update`, [`updateView`](./update-view.md), and [`lazyUpdate`](./lazy-update.md) take the same arguments: [formula strings](../../../how-to-guides/formulas.md) or a collection of [`Selectable`](../../query-language/types/Selectable.md) objects. All three methods return a table with all the source columns plus the new columns. `update` stores the new columns in memory, while [`updateView`](./update-view.md) stores formulas and recalculates cells on access.
 >
-> [`update`](./update.md) fits best when:
+> `update` fits best when:
 >
 > 1. all the source columns are desired in the result,
 > 2. the formula is expensive to evaluate,
 > 3. cells are accessed many times, and/or
 > 4. a large amount of memory is available.
 >
-> [`select`](./select.md), [`view`](./view.md), [`updateView`](./update-view.md), and [`lazyUpdate`](./lazy-update.md) differ from [`update`](./update.md) in memory and computation costs.
+> [`select`](./select.md), [`view`](./view.md), [`updateView`](./update-view.md), and [`lazyUpdate`](./lazy-update.md) differ from `update` in memory and computation costs.
 
 ## Syntax
 
@@ -45,7 +45,7 @@ A new table that includes all the original columns from the source table and the
 
 ## Examples
 
-In the following example, [`update`](./update.md) adds two columns. The new column `Y` allocates memory and is immediately populated with values. The new column `X = B` points to the same in-memory data as `B`, so it allocates none. `A`, `B`, and `C` are the source table's own columns, which `newTable` holds in memory, so referencing them allocates none either.
+In the following example, `update` adds two columns. The new column `Y` allocates memory and is immediately populated with values. The new column `X = B` points to the same in-memory data as `B`, so it allocates none. `A`, `B`, and `C` are the source table's own columns, which `newTable` holds in memory, so referencing them allocates none either.
 
 ```groovy order=source,result
 source = newTable(
@@ -59,7 +59,7 @@ result = source.update("A", "X = B", "Y = sqrt(C)")
 
 ## Serial execution
 
-By default, Deephaven parallelizes [`update`](./update.md) calculations across multiple CPU cores when the input is large enough. A formula that has side effects or depends on row order can use [`withSerial`](../../query-language/types/Selectable.md#withserial) to force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) in row-set order.
+By default, Deephaven parallelizes `update` calculations across multiple CPU cores when the input is large enough. A formula that has side effects or depends on row order can use [`withSerial`](../../query-language/types/Selectable.md#withserial) to force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) in row-set order.
 
 The following example marks the `ID` column as serial with [`withSerial`](../../query-language/types/Selectable.md#withserial). Each row calls `counter.getAndIncrement()` in row-set order, so the counter increments one row at a time and `ID` holds the values 0 through 9 in row order.
 

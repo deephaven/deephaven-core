@@ -6,7 +6,7 @@ A [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.h
 
 ## Creating a Selectable
 
-Two methods create a [`Selectable`](./Selectable.md). [`Selectable.parse`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) takes a complete column assignment as one string. [`Selectable.of`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) takes the column name and the expression as separate values.
+Two methods create a `Selectable`. [`Selectable.parse`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) takes a complete column assignment as one string. [`Selectable.of`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) takes the column name and the expression as separate values.
 
 ### From a formula string
 
@@ -35,11 +35,11 @@ col = Selectable.of(ColumnName.of("NewColumn"), RawString.of("ExistingColumn * 2
 
 ## Methods
 
-A [`Selectable`](./Selectable.md) has the three methods defined in [`ConcurrencyControl`](./ConcurrencyControl.md): [`withSerial`](./ConcurrencyControl.md#withserial), [`withDeclaredBarriers`](./ConcurrencyControl.md#withdeclaredbarriers), and [`withRespectedBarriers`](./ConcurrencyControl.md#withrespectedbarriers). This section describes how they apply to column calculations.
+A `Selectable` has the three methods defined in [`ConcurrencyControl`](./ConcurrencyControl.md): [`withSerial`](./ConcurrencyControl.md#withserial), [`withDeclaredBarriers`](./ConcurrencyControl.md#withdeclaredbarriers), and [`withRespectedBarriers`](./ConcurrencyControl.md#withrespectedbarriers). This section describes how they apply to column calculations.
 
 ### `withSerial`
 
-[`withSerial`](./ConcurrencyControl.md#withserial) returns a [`Selectable`](./Selectable.md) that is serial, as [`ConcurrencyControl`](./ConcurrencyControl.md) defines the term: the column calculation never runs concurrently with itself, and it evaluates its rows one at a time in row set order.
+[`withSerial`](./ConcurrencyControl.md#withserial) returns a `Selectable` that is serial, as [`ConcurrencyControl`](./ConcurrencyControl.md) defines the term: the column calculation never runs concurrently with itself, and it evaluates its rows one at a time in row set order.
 
 With default settings, Deephaven considers a column calculation for parallel evaluation once it processes about 4.2 million rows or more. That count is the whole table on initialization, or the added and modified rows of each cycle on a refreshing table.
 
@@ -69,7 +69,7 @@ See [Barrier](./Barrier.md) and [`ConcurrencyControl`](./ConcurrencyControl.md) 
 ### Table operations that accept a Selectable
 
 > [!IMPORTANT]
-> All five operations accept [`Selectable`](./Selectable.md) objects, but they differ in how they treat the concurrency methods:
+> All five operations accept `Selectable` objects, but they differ in how they treat the concurrency methods:
 >
 > - [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) honor all three methods.
 > - [`view`](../../table-operations/select/view.md) and [`updateView`](../../table-operations/select/update-view.md) compute values on demand and cannot guarantee processing order. [`withRespectedBarriers`](./ConcurrencyControl.md#withrespectedbarriers) throws an error ("view and updateView cannot respect Barriers"). [`withSerial`](./ConcurrencyControl.md#withserial) throws an error under the default configuration ("A stateful column cannot safely be used in a view or updateView"). [`withDeclaredBarriers`](./ConcurrencyControl.md#withdeclaredbarriers) is accepted and has no effect on evaluation order.
@@ -79,20 +79,20 @@ See [Barrier](./Barrier.md) and [`ConcurrencyControl`](./ConcurrencyControl.md) 
 
 ## When to use Selectable
 
-A [`Selectable`](./Selectable.md) adds concurrency controls to a column formula.
+A `Selectable` adds concurrency controls to a column formula.
 
 ### Do you need a Selectable at all?
 
-A [formula string](../../../how-to-guides/formulas.md) passed to [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) becomes a [`Selectable`](./Selectable.md) internally, and Deephaven parallelizes it by default. A string suffices for a formula that meets both of these conditions:
+A [formula string](../../../how-to-guides/formulas.md) passed to [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) becomes a `Selectable` internally, and Deephaven parallelizes it by default. A string suffices for a formula that meets both of these conditions:
 
 - It uses only values from the current row, such as `"Total = Price * Quantity"`.
 - It has no side effects. It does not modify global variables, write to files, or depend on processing order.
 
-Such a formula gains nothing from an explicit [`Selectable`](./Selectable.md) object.
+Such a formula gains nothing from an explicit `Selectable` object.
 
 ### When you need explicit control
 
-A formula is stateful when it reads or writes shared state that changes between rows. It is safe to run in parallel only if it produces the same result when multiple threads process the rows in any order. Parallel execution can produce incorrect results for a stateful formula, which then needs a [`Selectable`](./Selectable.md) with one of these controls:
+A formula is stateful when it reads or writes shared state that changes between rows. It is safe to run in parallel only if it produces the same result when multiple threads process the rows in any order. Parallel execution can produce incorrect results for a stateful formula, which then needs a `Selectable` with one of these controls:
 
 - [`withSerial`](./ConcurrencyControl.md#withserial): the formula evaluates its rows in row set order, never in parallel. Typical cases are:
   - A counter or accumulator that increments for each row.
