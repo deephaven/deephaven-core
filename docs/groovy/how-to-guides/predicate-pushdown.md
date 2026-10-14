@@ -6,7 +6,9 @@ Predicate pushdown is a powerful feature in Deephaven that allows you to filter 
 
 ## Overview
 
-By default, the filtering engine processes user-supplied filters one after another in the order you specify, unless predicate pushdown reorders them (see below). The first filter evaluates the rows of the full table and produces a subset of passing rows. The engine then passes this subset to subsequent filters, refining the data until only rows that satisfy every filter remain.
+By default, the filtering engine runs user-supplied filters one after another in the order you specify, unless predicate pushdown reorders them (see below). The first filter to run decides which rows of the full table pass, and the engine hands only those rows to the next filter. This continues until only rows that satisfy every filter remain.
+
+Parallelism happens inside a single filter, which can split its rows across threads. A filter that Deephaven treats as stateless therefore has no guaranteed order in which it sees rows, and [Filter evaluation order](../reference/table-operations/filter/where.md#filter-evaluation-order) describes the guarantees that do hold.
 
 Storage systems often divide tables into multiple regions. For instance, multiple files frequently compose a Parquet dataset, and multiple row groups further divide each individual file. Storage engines can apply specific optimization techniques to individual files and even to distinct data regions within those files.
 
