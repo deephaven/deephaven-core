@@ -26,6 +26,7 @@ _JArrowTypeInt = jpy.get_type("org.apache.arrow.vector.types.pojo.ArrowType$Int"
 _JRunEndEncoded = jpy.get_type("org.apache.arrow.vector.types.pojo.ArrowType$RunEndEncoded")
 _JArrayList = jpy.get_type("java.util.ArrayList")
 _JCollections = jpy.get_type("java.util.Collections")
+_JMap = jpy.get_type("java.util.Map")
 
 def _dictionary_encoded(j_field, dict_id):
     j_type = _JFieldType(j_field.isNullable(), j_field.getType(),
@@ -40,7 +41,9 @@ def _run_end_encoded(j_field, j_values):
     return _JField(j_field.getName(), j_type, j_children)
 
 def _with_barrage_encodings(table):
-    j_natural = _JBarrageUtil.schemaFromTable(table.j_table)
+    # makeSchema, unlike schemaFromTable, never infers encodings, so the encodings named here are the only ones
+    j_natural = _JBarrageUtil.makeSchema(_JBarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table.j_table.getDefinition(),
+                                         _JMap.of(), table.j_table.isFlat())
     j_natural_fields = j_natural.getFields()
     j_fields = _JArrayList()
     for i in range(j_natural_fields.size()):

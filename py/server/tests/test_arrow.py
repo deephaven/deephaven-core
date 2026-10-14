@@ -45,6 +45,7 @@ _JRunEndEncoded = jpy.get_type(
 )
 _JArrayList = jpy.get_type("java.util.ArrayList")
 _JCollections = jpy.get_type("java.util.Collections")
+_JMap = jpy.get_type("java.util.Map")
 
 
 class ArrowTestCase(BaseTestCase):
@@ -478,7 +479,13 @@ def _with_barrage_encodings(
 ) -> Table:
     """Returns the table with a Barrage schema attribute that dictionary encodes dict_cols, run-end encodes ree_cols,
     and run-end encodes ree_dict_cols over dictionary encoded values."""
-    j_natural = _JBarrageUtil.schemaFromTable(table.j_table)
+    # makeSchema, unlike schemaFromTable, never infers encodings, so the encodings named here are the only ones
+    j_natural = _JBarrageUtil.makeSchema(
+        _JBarrageUtil.DEFAULT_SNAPSHOT_OPTIONS,
+        table.j_table.getDefinition(),
+        _JMap.of(),
+        table.j_table.isFlat(),
+    )
     j_natural_fields = j_natural.getFields()
     j_fields = _JArrayList()
     next_dict_id = 0

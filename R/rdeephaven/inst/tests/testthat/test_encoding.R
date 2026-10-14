@@ -124,6 +124,7 @@ _JField       = jpy.get_type("org.apache.arrow.vector.types.pojo.Field")
 _JFieldType   = jpy.get_type("org.apache.arrow.vector.types.pojo.FieldType")
 _JSchema      = jpy.get_type("org.apache.arrow.vector.types.pojo.Schema")
 _JArrayList   = jpy.get_type("java.util.ArrayList")
+_JMap         = jpy.get_type("java.util.Map")
 
 def _as_ree_field(field):
     children = _JArrayList()
@@ -136,7 +137,9 @@ _reenulls_src = empty_table(8).update([
     "Int = i < 3 ? NULL_INT : 7",
     "Ts = i % 4 < 2 ? null : parseInstant(`2024-01-01T00:00:00Z`)",
 ])
-_natural_fields = _JBarrageUtil.schemaFromTable(_reenulls_src.j_table).getFields()
+# makeSchema, unlike schemaFromTable, never infers encodings, so the run-end encodings added here are the only ones
+_natural_fields = _JBarrageUtil.makeSchema(_JBarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, _reenulls_src.j_table.getDefinition(),
+                                           _JMap.of(), _reenulls_src.j_table.isFlat()).getFields()
 _reenulls_fields = _JArrayList()
 for _i in range(_natural_fields.size()):
     _reenulls_fields.add(_as_ree_field(jpy.cast(_natural_fields.get(_i), _JField)))
