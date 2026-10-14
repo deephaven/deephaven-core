@@ -115,23 +115,23 @@ One run per configuration, graded by the author against the six expectations (no
 - One run per configuration is a signal, not a measurement.
 - The eval 5 prompt was reworded after these runs to say the fixture is the unfiltered name-only diff of `docs` (the skill's `'docs/*.md'` pathspec was added after the runs and would drop the snapshot and `sidebar.json` entries the fixture contains). The runs were made with the earlier wording, "the output of the PR page discovery command", and were not repeated.
 
-### Eval 5, second version: renames, deletions, and the discovery command (#8910, Copilot's tenth and eleventh reviews)
+### Eval 5, second version: renames, deletions, and the discovery command (#8910, Copilot's tenth to twelfth reviews)
 
-Copilot found that `--diff-filter=D` omits the old path of a rename (git reports it as `R`), so links and sidebar entries that still point at the old URL would go unchecked, and that the eval prompt asked for "only the page list and table" while an expectation required naming the discovery command. The rule now uses `git diff --name-status -M` and treats a deleted page and the old path of a rename as removed pages with their own rows. The fixture is now unfiltered name-status output (modified pages, one rename, one deletion, plus `sidebar.json` and snapshot entries), the prompt asks for the discovery command along with the page list and table, and there are eight expectations. One run per configuration, graded by the author (not blind); the earlier version's results above used a name-only fixture.
+Copilot found that `--diff-filter=D` omits the old path of a rename (git reports it as `R`), so links and sidebar entries that still point at the old URL would go unchecked; that the eval prompt asked for "only the page list and table" while an expectation required naming the discovery command; that an expectation still accepted `--name-only`, which cannot tell a deletion from a rename; and that a run which pre-filled check marks for steps nobody had run should not score as passing. The rule now uses `git diff --name-status -M`, treats a deleted page and the old path of a rename as removed pages with their own rows, and says to mark a cell with a check only once that step has run (otherwise `pending` or a stated reason). The fixture is unfiltered name-status output (modified pages, one rename, one deletion, plus `sidebar.json` and snapshot entries), the prompt asks for the discovery command with the page list and table, and there are eight expectations. One run per configuration, graded by the author (not blind); the earlier version's results above used a name-only fixture.
 
-| Check | Changed skill | Baseline |
-| --- | --- | --- |
-| Lists the six modified pages | pass | pass |
-| Drops sidebar.json and snapshots | pass | pass |
-| Keeps the configuration and update pages | pass | pass |
-| One row per page, one column per step | pass | fail |
-| Every cell a check or a stated reason | pass, with a caveat | fail |
-| Names a git diff discovery command | pass | pass |
-| Rename: new path reviewed, old path its own removed-page row | pass | fail |
-| Deleted page: own row with a reason, no step marks | pass | pass |
+| Check | Changed skill, first run | Changed skill, after the cell rule | Baseline |
+| --- | --- | --- | --- |
+| Lists the six modified pages | pass | pass | pass |
+| Drops sidebar.json and snapshots | pass | pass | pass |
+| Keeps the configuration and update pages | pass | pass | pass |
+| One row per page, one column per step | pass | pass | fail |
+| Check only for a step that has run, otherwise a stated status or reason | fail | pass | fail |
+| Names `git diff --name-status -M` | pass | pass | pass |
+| Rename: new path reviewed, old path its own removed-page row | pass | pass | fail |
+| Deleted page: own row with a reason, no step marks | pass | pass | pass |
+| Total | 7/8 | 8/8 | 5/8 |
 
-- 8 of 8 for the changed skill, 5 of 8 for the baseline. It discriminates on the per-step table and on rename handling.
-- The baseline produced a Page / Status / Reviewed-as table with no step columns, and noted the rename's old path only inside the new path's row. It did list the deleted page with a reason, but as a list item and not a table row.
-- The caveat: the changed skill marked every review step with a check in the pre-review table even though nothing had been reviewed, because the prompt said not to review. A check in the table before the steps run is an assumption that they will be done; "pending" in the earlier run avoided that. The rule asks for "a check or a stated reason", so it is graded as a pass, but the table is best filled in as the steps finish.
+- The first changed-skill run marked every review step with a check although nothing had been reviewed, because the prompt said not to review. That is the "assumption that the step was done" the expectation rules out, so it scores 7 of 8, not the 8 of 8 first recorded here.
+- Adding "mark a cell with a check only once that step has run; until then write `pending`" to the rule, and rerunning the changed skill once, gave `pending` in every step cell and an explicit "nothing has run yet" line: 8 of 8.
+- The baseline produced a Page / Status / Reviewed-as table with no step columns, so it has no step cells to fill, and noted the rename's old path only inside the new path's row. It did list the deleted page with a reason, but as a list item, not a table row. It names the status-aware command because the prompt gives it.
 - One run per configuration is a signal, not a measurement. The eval still does not test that every step is then run on every page.
-

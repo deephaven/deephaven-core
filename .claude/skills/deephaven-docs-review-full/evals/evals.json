@@ -91,8 +91,8 @@
         "Does not list sidebar.json or any snapshots/*.json file as a page to review",
         "Keeps the configuration page and the update reference page in the list (does not narrow the review to the headline concept guide)",
         "Gives the table one row per page and one column per step: developmental pass, accuracy, structure, re-verify, examples, and style",
-        "Every cell holds a check or a stated reason, not a blank or an assumption that the step was done",
-        "Names a git diff discovery command (--name-status, or --name-only with a deleted-file filter) in its output, not gh pr view",
+        "Every cell holds a check only for a step that has actually run, and otherwise a stated status or reason such as pending or not run; no check marks for steps that have not run, since nothing has been reviewed yet",
+        "Names git diff --name-status -M (status-aware, with rename detection) as the discovery command in its output, not --name-only, which cannot distinguish a deletion from a rename, and not gh pr view",
         "Reviews the new path of the rename (docs/python/how-to-guides/parallel-select.md) as a page, and gives the old path (use-parallel-select.md) its own row with a removed-page reason, such as inbound links and sidebar entries checked, instead of step marks",
         "Gives the deleted page (obsolete-parallel-notes.md) its own row with a removed-page reason instead of step marks, and does not run the review steps on it"
       ],

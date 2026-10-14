@@ -156,15 +156,15 @@ Chip asked why "filter and select operations" was not linked in `query-table-con
 
 Copilot pointed out that eval 12 passes with or without the new search, so removing the search would leave it green. Eval 13 uses the full 254-line `query-table-configuration.md` as it stood at commit `7b648e4a2b` (Chip's review), where the miss actually happened, with a neutral prompt that does not mention plain-word names.
 
-3 runs per configuration, graded by the author by reading each report for the target sentence (not blind). The check is whether the report flags "filter and select operations" (line 237) as unlinked operation names.
+3 runs per configuration, graded by the author by reading each report for the target sentence (not blind). Scores count expectation-runs, as for eval 12: 2 expectations across 3 runs is out of 6. The first expectation is whether the report flags "filter and select operations" (line 237) as unlinked operation names; the second is whether it gives context-matching link targets for them.
 
 | Eval | Check tested | Changed skill | Baseline |
 | --- | --- | --- | --- |
-| 13 (2 expectations) | "filter and select operations" flagged as an unlinked linking finding | 3/3 | 0/3 |
+| 13 (2 expectations, 3 runs) | "filter and select operations" flagged as an unlinked linking finding, with context-matching link targets | 6/6 | 0/6 |
 
-- This one discriminates. All three changed-skill reports list line 237 with link targets for `filter` and `select`.
+- This one discriminates. All three changed-skill reports list line 237 with link targets for `filter` and `select` (3 of 3 runs flag the sentence; 0 of 3 baseline runs do).
 - Two baseline reports (runs 2 and 3) quote the sentence, but only to say that "stateless" is never defined; the third does not mention it. None flags the operation names as unlinked.
-- The link-target expectation was not graded separately: it follows from the first in the three passing reports, which all name the filter and select reference pages.
+- All three changed-skill reports name `where.md` for `filter` and `select.md` for `select` at line 237, so both expectations pass in all three runs (6/6). No baseline report gives a link target for that sentence, so the baseline scores 0/6, including the second expectation, which cannot be met without the first.
 - Eval 12 stays as the short control that checks the rule on a small excerpt and the ordinary-English negative case. Eval 13 is the one that fails without the plain-word search.
 - Three runs per configuration is still a small sample. The baseline missing the sentence in 3 of 3 here, and in the earlier single replay, is consistent, not proof.
 
