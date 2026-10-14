@@ -167,6 +167,36 @@
       ],
       "id": 11,
       "notes": "DOC-1990 round 5 (PR #8897): new 11/12, baseline 5/12 (3 runs each, blind). The coined-phrase expectation went 0/2 before the rule gained its search step and 2/3 after."
+    },
+    {
+      "prompt": "Run a style review of the attached page excerpt, report only. It is an excerpt from the Python-docs Concept guide docs/python/conceptual/query-table-configuration.md; resolve relative links from that page. Apply the Page structure link rule and the mechanical verification searches literally.",
+      "expected_output": "Chip Kent's 2026-10-13 review of PR #7457 asked why 'filter and select operations' was not linked. The excerpt has no backticks, so a backtick-only search finds nothing; the review must treat plain-word operation names (filter, select, sort, joins) as unlinked first mentions and give link targets. Note: on this short excerpt the pre-change skill also passes; the gap showed on the full 254-line query-table-configuration.md, where the pre-change skill missed the sentence and the changed skill flagged it.",
+      "files": [
+        "evals/files/plain-word-ops-excerpt.md"
+      ],
+      "expectations": [
+        "Flags \"filter and select operations\" in the first paragraph as unlinked plain-word operation names, even though nothing in the excerpt is backticked",
+        "Gives the context-matching link target for each flagged operation name: a filter page for filter, the select reference or the select, view, and update guide for select (not the update page alone), the sort page for sort, and for the category noun joins both join guides (exact and relational, and time-series and range) named and linked, not one arbitrary join page",
+        "Also flags the unlinked plain-word operation names in the bullet list (a first mention per list item) and in the table (each distinct operation once: Filter and Sort, without repeating a link for the same operation in another cell)",
+        "Control: does not flag the markdown link in the last sentence as a defect",
+        "Control: does not flag the ordinary-English uses of group, select, and view in the sentence about settings (they are not Deephaven operations) as unlinked operation names",
+        "Does not report no linking problems, and does not restrict the link check to backticked identifiers"
+      ],
+      "id": 12,
+      "notes": "PR #8910: a short control, not a regression eval. On this 19-line excerpt both the changed skill and the pre-change skill pass all six expectations in all three runs (18/18 each; author-graded, not blind), including the ordinary-English negative case, because a short page is read closely. The expectations were tightened after the runs: link targets must be context-matching (the select reference for select, both join guides for joins) and each distinct operation in a table is linked once (Filter and Sort both need a link, a repeat of the same operation in another cell does not). All six runs already met both, so the scores stand. The fixture's closing link was corrected to ./query-engine/parallelization.md after the runs. Eval 13 is the one that separates the two versions."
+    },
+    {
+      "prompt": "Run a style review of the attached page, report only. It is the Python-docs Concept guide docs/python/conceptual/query-table-configuration.md as it stood at commit 7b648e4a2b (resolve relative links from that page). Follow the skill, including its mechanical verification searches.",
+      "expected_output": "Chip Kent's 2026-10-13 review of #7457 asked why \"filter and select operations\" in the Stateless by default section was not linked on query-table-configuration.md. On the full 254-line page the style skill without the plain-word operation search did not flag that sentence as unlinked operation names (it mentioned it only to say \"stateless\" is undefined), and the skill with the search does. This is the regression eval for the plain-word search: eval 12 is a short control that both versions pass.",
+      "files": [
+        "evals/files/query-table-configuration-pre-review-7b648e4a2b.md"
+      ],
+      "expectations": [
+        "Flags \"filter and select operations\" in the Stateless by default paragraph (line 237) as unlinked plain-word operation names, as a linking finding and not only as a terminology finding",
+        "Gives a context-matching link target for each name: a filter page for filter and the select reference or the select, view, and update guide for select"
+      ],
+      "id": 13,
+      "notes": "PR #8910: the regression eval for the plain-word operation search. On the full 254-line page as it stood at commit 7b648e4a2b (Chip Kent's 2026-10-13 review), the changed skill flags line 237 (\"filter and select operations\") as an unlinked operation name with context-matching link targets in 3 of 3 runs (6/6 expectation-runs); the baseline does so in 0 of 3 (0/6). Two baseline reports quote the sentence only to say \"stateless\" is undefined; the third does not mention it. Author-graded, not blind, three runs per configuration, so a small sample."
     }
   ]
 }

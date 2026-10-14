@@ -93,6 +93,8 @@ page, and the fix-not-rewrite limit above does not apply:
   round too, without starting another round. Then do one adversarial read, assuming problems
   remain, before handing the page to a human or a bot reviewer.
 
+**Reviewing a PR or a set of pages: cover every page with every step.** Before telling anyone a PR is ready, list every doc page the PR changes with `git diff --name-status -M <base>...HEAD -- 'docs/*.md'`, which keeps only Markdown and drops images, scripts, YAML, snapshots, and `sidebar.json`, in both languages. Review the pages marked `A` or `M` and the new path of each rename (`R`). A page the PR deletes (`D`) and the old path of each rename cannot be reviewed as pages: give each its own row with a reason in place of step marks, such as inbound links to the old path and sidebar entries checked. Run the whole sequence below on each page (category identification, developmental pass, accuracy, structure, re-verify when edits were applied, examples, style), including configuration pages, reference pages, and pages the PR only touches lightly: a page that received only an accuracy pass is the one a human reviewer finds walls of text and unlinked operation names on. Put a page-by-step table at the top of the report with a Category column next to each page (its category from `ref-deephaven-doc-categories`, which the directory decides, so fill it in at once) and one column per remaining step. Mark a step cell with a check only once that step has run on that page; until then write `pending`, or a reason such as `not run` or `n/a`, so a missing pass is visible instead of assumed.
+
 ## 0. Identify the doc's category
 
 Read `ref-deephaven-doc-categories` and determine which of the four categories this doc is. Carry
@@ -313,6 +315,11 @@ orphaned aside flagged harder because the doc is a Reference guide). If a cross-
 was pulled into scope by the accuracy step, report on both files.
 
 ```
+## Page coverage (only when reviewing a PR or a set of pages)
+The page-by-step table from "Reviewing a PR or a set of pages": one row per changed page, both
+languages, a Category column (the category name, filled in at once), one column per remaining step, a check only for a step that has run and `pending` or a stated reason otherwise. Place it above the
+editorial summary. Omit this section for a single page.
+
 ## Editorial summary
 2–4 sentences: overall assessment, the single biggest issue, and the developmental verdict
 (ready for technical review / needs revision / needs restructuring).
