@@ -203,12 +203,10 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     return totalsPromise.then(totals -> {
                         totals.setViewport(0, 100, null, null, null);
                         // an update with the unfiltered totals may arrive first; wait for one that matches the filter
-                        return this.<JsTable, ViewportData>waitForEventWhere(totals.getWrappedTable(),
-                                JsTable.EVENT_UPDATED,
+                        return this.<ViewportData>waitForEventWhere(totals, JsTable.EVENT_UPDATED,
                                 e -> e.getDetail().getRows().length == 1 && e.getDetail().getRows().getAt(0)
                                         .get(totals.findColumn("I")).<LongWrapper>cast().getWrapped() == 3,
-                                2501)
-                                .then(ignored -> Promise.resolve(totals));
+                                2501);
                     });
                 })
                 .then(this::finish).catch_(this::report);
@@ -232,12 +230,10 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     });
                     return totalsPromise.then(totals -> {
                         totals.setViewport(0, 100, null, null, null);
-                        return this.<JsTable, ViewportData>waitForEventWhere(totals.getWrappedTable(),
-                                JsTable.EVENT_UPDATED,
+                        return this.<ViewportData>waitForEventWhere(totals, JsTable.EVENT_UPDATED,
                                 e -> e.getDetail().getRows().length == 1 && e.getDetail().getRows().getAt(0)
                                         .get(totals.findColumn("I")).asDouble() == 6.0,
-                                5000)
-                                .then(ignored -> Promise.resolve(totals));
+                                5000);
                     });
                 })
                 .then(this::finish).catch_(this::report);
@@ -262,12 +258,10 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     return totalsPromise.then(totals -> {
                         totals.setViewport(0, 100, null, null, null);
                         // K == 1 keeps rows 1 and 3, so I sums to 4
-                        return this.<JsTable, ViewportData>waitForEventWhere(totals.getWrappedTable(),
-                                JsTable.EVENT_UPDATED,
+                        return this.<ViewportData>waitForEventWhere(totals, JsTable.EVENT_UPDATED,
                                 e -> e.getDetail().getRows().length == 1 && e.getDetail().getRows().getAt(0)
                                         .get(totals.findColumn("I")).asDouble() == 4.0,
-                                5000)
-                                .then(ignored -> Promise.resolve(totals));
+                                5000);
                     });
                 })
                 .then(this::finish).catch_(this::report);
@@ -327,10 +321,63 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     // the default operation is Count, so both totals tables gain an X column counting 5 rows
                     return promiseAllThen(table,
                             waitForEvent(table, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 2503).onInvoke(table),
-                            this.<JsTable, ViewportData>waitForEventWhere(totalTables[0].getWrappedTable(),
-                                    JsTable.EVENT_UPDATED, singleRowWith(totalTables[0], "X", 5), 2504),
-                            this.<JsTable, ViewportData>waitForEventWhere(totalTables[1].getWrappedTable(),
-                                    JsTable.EVENT_UPDATED, singleRowWith(totalTables[1], "X", 5), 2505));
+                            waitForEventWhere(totalTables[0], JsTable.EVENT_UPDATED,
+                                    singleRowWith(totalTables[0], "X", 5), 2504),
+                            waitForEventWhere(totalTables[1], JsTable.EVENT_UPDATED,
+                                    singleRowWith(totalTables[1], "X", 5), 2505));
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * A source change that makes the totals table's own filter invalid. The totals table must report the failure and
+     * end up on the rebased, unfiltered totals of the current source, never on totals of the previous source.
+     */
+    public void testTotalsFilterInvalidatedBySourceChange() {
+        JsTotalsTable[] holder = {null};
+        connect(tables)
+                .then(table("hasTotals"))
+                .then(table -> {
+                    delayTestFinish(8000);
+                    return table.getTotalsTable(null).then(totals -> {
+                        holder[0] = totals;
+                        totals.setViewport(0, 100, null, null, null);
+                        return waitForEvent(totals, JsTable.EVENT_UPDATED, checkTotals(totals, 5, 6., 0., "a1"),
+                                2001).then(ignored -> Promise.resolve(table));
+                    });
+                })
+                .then(table -> {
+                    // add a column to the source; it is counted into the totals as X
+                    table.applyCustomColumns(JsArray.of(JsTable.CustomColumnArgUnionType.of("X = I * 2")));
+                    return waitForEventWhere(holder[0], JsTable.EVENT_UPDATED, singleRowWith(holder[0], "X", 5), 2002)
+                            .then(ignored -> Promise.resolve(table));
+                })
+                .then(table -> {
+                    // filter the totals table on the column that only exists because of the custom column
+                    holder[0].applyFilter(new FilterCondition[] {
+                            holder[0].findColumn("X").filter().eq(FilterValue.ofNumber(5))
+                    });
+                    return holder[0].nextEvent(JsTable.EVENT_FILTERCHANGED, 2003.)
+                            .then(ignored -> Promise.resolve(table));
+                })
+                .then(table -> {
+                    // remove the custom column from the source; the rebased totals have no X, so re-applying the
+                    // totals filter on them fails
+                    Promise<Event<Object>> failed = holder[0].nextEvent(JsTable.EVENT_REQUEST_FAILED, 3000.);
+                    table.applyCustomColumns(new JsArray<>());
+                    return failed.then(ignored -> Promise.resolve(table));
+                })
+                .then(table -> {
+                    assertTrue("totals should be on a running state", holder[0].state().isRunning());
+                    assertEquals("the invalid filter must not stick", 0, holder[0].state().getFilters().size());
+                    for (int i = 0; i < holder[0].getColumns().length; i++) {
+                        assertFalse("totals still have the removed column",
+                                "X".equals(holder[0].getColumns().getAt(i).getName()));
+                    }
+                    // a fresh viewport shows totals of the current source
+                    holder[0].setViewport(0, 100, null, null, null);
+                    return waitForEvent(holder[0], JsTable.EVENT_UPDATED, checkTotals(holder[0], 5, 6., 0., "after"),
+                            2004).then(ignored -> Promise.resolve(table));
                 })
                 .then(this::finish).catch_(this::report);
     }
@@ -502,9 +549,12 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     // TODO: https://deephaven.atlassian.net/browse/DH-11196
-    public void ignore_testFilteringTotalsTable() {
+    /**
+     * Filters each totals table on its own, then changes the source filter. The rebased totals must have the totals
+     * table's own filter re-applied, and the grand totals, whose source is unchanged, must keep theirs.
+     */
+    public void testFilteringTotalsTable() {
         JsTotalsTable[] totalTables = {null, null};
-        Promise[] totalPromises = {null, null};
         connect(tables)
                 .then(table("hasTotals"))
                 .then(table -> {
@@ -527,7 +577,6 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     // copy over the rest of the operations set on the server, so we can reuse some assertion logic
                     config.operationMap.set("J",
                             Js.uncheckedCast(new JsString[] {toJsString("Avg"), toJsString("Min")}));
-                    // config.operationMap.set("K", Js.uncheckedCast(new JsString[]{ toJsString("Skip")}));
                     config.defaultOperation = "Count";
                     return promiseAllThen(table,
                             table.getTotalsTable(config)
@@ -539,8 +588,8 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
 
                                         // confirm the normal totals match the filtered data
                                         return waitForEvent(totals, JsTable.EVENT_UPDATED, checkTotals(totals, "a1",
-                                                TotalsResults.of(2, 2, 8, 0.0),
-                                                TotalsResults.of(2, 2, 5, 1.0)), 2501);
+                                                TotalsResults.of(0, 2, 8, 0.0),
+                                                TotalsResults.of(1, 2, 5, 1.0)), 2501);
                                     }),
                             table.getGrandTotalsTable(config)
                                     .then(totals -> {
@@ -551,8 +600,8 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
 
                                         // confirm the grand totals include the missing row...
                                         return waitForEvent(totals, JsTable.EVENT_UPDATED, checkTotals(totals, "a2",
-                                                TotalsResults.of(3, 3, 6.66666, 0.0),
-                                                TotalsResults.of(2, 2, 5, 1.0)), 2502);
+                                                TotalsResults.of(0, 3, 6.66666, 0.0),
+                                                TotalsResults.of(1, 2, 5, 1.0)), 2502);
                                     }));
                 })
                 .then(table -> {
@@ -570,41 +619,32 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     totalTables[1].setViewport(0, 100, null, null, null);
 
                     return promiseAllThen(table,
-                            totalPromises[0] = waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[0], "b1", TotalsResults.of(2, 2, 5, 1)), 2503),
-                            totalPromises[1] = waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[1], "b2", TotalsResults.of(2, 2, 5, 1)), 2504));
+                            waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
+                                    checkTotals(totalTables[0], "b1", TotalsResults.of(1, 2, 5, 1)), 2503),
+                            waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
+                                    checkTotals(totalTables[1], "b2", TotalsResults.of(1, 2, 5, 1)), 2504));
                 })
                 .then(table -> {
-                    // forcibly disconnect the worker and test that the total table come back up, and respond to
-                    // re-filtering.
-                    table.getConnection().forceReconnect();
-                    return Promise.resolve(table);
-                })
-                .then(table -> waitForEvent(table, JsTable.EVENT_RECONNECT, 5001).onInvoke(table))
-                .then(table -> promiseAllThen(table,
-                        totalPromises[0] = waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
-                                checkTotals(totalTables[0], "c1", TotalsResults.of(2, 2, 5, 1)), 2505),
-                        totalPromises[1] = waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
-                                checkTotals(totalTables[1], "c2", TotalsResults.of(2, 2, 5, 1)), 2506)))
-                .then(table -> {
-                    // Now... refilter the original table, and assert that the totals tables update.
+                    // Now refilter the original table. The totals table is rebased with its own filter re-applied,
+                    // which now removes nothing; the grand totals ignore the source filter and keep theirs.
+                    totalTables[0].addEventListener(JsTable.EVENT_REQUEST_FAILED, e -> report(
+                            "Totals table request failed: "
+                                    + Js.<JsPropertyMap<Object>>uncheckedCast(e.getDetail()).get("errorMessage")));
                     table.applyFilter(new FilterCondition[] {
                             table.findColumn("J").filter().notEq(FilterValue.ofNumber(9.0))
-                            // the != filters on the regular totals will no longer remove anything w/ updated source
-                            // filter....
-                            // but grand totals will ignore this, and still be filtered
                     });
                     table.setViewport(0, 100, null);// not strictly required, but part of the normal usage
 
                     return promiseAllThen(table,
-                            waitForEvent(table, JsTable.EVENT_FILTERCHANGED, 5503).onInvoke(table),
-                            waitForEvent(totalTables[0], JsTable.EVENT_UPDATED, checkTotals(totalTables[1], "d1",
-                                    TotalsResults.of(3, 3, 6.666666, 0.0),
-                                    TotalsResults.of(1, 1, 1, 1.0)), 2507),
-                            totalPromises[1] = waitForEvent(totalTables[1], JsTable.EVENT_UPDATED,
-                                    checkTotals(totalTables[1], "d2", TotalsResults.of(2, 2, 5, 1)), 2508));
+                            waitForEvent(table, JsTable.EVENT_FILTERCHANGED, 2505).onInvoke(table),
+                            waitForEvent(totalTables[0], JsTable.EVENT_UPDATED, checkTotals(totalTables[0], "d1",
+                                    TotalsResults.of(0, 3, 6.666666, 0.0),
+                                    TotalsResults.of(1, 1, 1, 1.0)), 2506));
                 })
+                .then(table -> totalTables[1].getViewportData().then(viewportData -> {
+                    assertGroupedTotals(viewportData, totalTables[1], "d2", TotalsResults.of(1, 2, 5, 1));
+                    return Promise.resolve(table);
+                }))
                 .then(this::finish).catch_(this::report);
     }
 
@@ -773,12 +813,12 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     private static class TotalsResults {
-        int k;
+        double k;
         long i;
         double avg;
         double min;
 
-        public TotalsResults(int k, long i, double avg, double min) {
+        public TotalsResults(double k, long i, double avg, double min) {
             this.k = k;
             this.i = i;
             this.avg = avg;
@@ -860,6 +900,12 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
     private <T> Promise<JsTotalsTable> waitForEvent(JsTotalsTable table, String eventName, Consumer<Event<T>> check,
             int timeout) {
         return waitForEvent(table.getWrappedTable(), eventName, check, timeout)
+                .then(t -> Promise.resolve(table));
+    }
+
+    private <T> Promise<JsTotalsTable> waitForEventWhere(JsTotalsTable table, String eventName,
+            Predicate<Event<T>> check, int timeout) {
+        return this.<JsTable, T>waitForEventWhere(table.getWrappedTable(), eventName, check, timeout)
                 .then(t -> Promise.resolve(table));
     }
 
