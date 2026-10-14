@@ -229,21 +229,25 @@ dependencies {
 }
 ```
 
-Load test data from CSV or Parquet files in your test resources:
+Load test data from CSV or Parquet files in your test resources. Reading the CSV file and converting the Parquet resource URL to a URI both throw checked exceptions, so the test method declares `throws Exception`:
 
 ```java skip-test
 import io.deephaven.csv.CsvTools;
 import io.deephaven.engine.table.Table;
 import io.deephaven.parquet.table.ParquetTools;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;
 
-// Read CSV from test resources
-Table csvTable = CsvTools.readCsv(getClass().getResourceAsStream("/test-data.csv"));
+@Test
+public void testReadTestData() throws Exception {
+    // Read CSV from test resources
+    Table csvTable = CsvTools.readCsv(getClass().getResourceAsStream("/test-data.csv"));
 
-// Read Parquet from test resources
-String parquetPath = Paths.get(getClass().getResource("/test-data.parquet").toURI()).toString();
-Table parquetTable = ParquetTools.readTable(parquetPath);
+    // Read Parquet from test resources
+    String parquetPath = Paths.get(getClass().getResource("/test-data.parquet").toURI()).toString();
+    Table parquetTable = ParquetTools.readTable(parquetPath);
+}
 ```
 
 See [`CsvTools.readCsv`](../reference/data-import-export/CSV/readCsv.md) and [`ParquetTools.readTable`](../reference/data-import-export/Parquet/readTable.md) for more options.
