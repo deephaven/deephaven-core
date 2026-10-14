@@ -10,7 +10,6 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
-import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
@@ -1185,30 +1184,38 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     // e.g. grand totals, whose source ignores a filter change
                     return;
                 }
-                // whenever the main table changes its state, reload the totals table from the new state
-                final ClientTableState existing = wrapped.state();
-                final ClientTableState nextState =
-                        workerConnection.newState(totalsFactory, summary);
-                JsLog.debug("Rebasing totals table", existing, " -> ", nextState, " for ",
-                        wrapped);
-                wrapped.setState(nextState);
-                // If the wrapped table's state has changed (any filter / sort / columns applied), then we'll
-                // want to re-apply these conditions on top of the newly set state.
-                final boolean needsMutation = !existing.isEqual(totals);
-
-                final ThenOnFulfilledCallbackFn<Object, Object> restoreVp = ignored -> {
-                    // now that we've (possibly) updated selection conditions, put back in any viewport.
-                    totalsTable.refreshViewport();
+                // Whenever the main table changes its state, reload the totals table from the new state. Create
+                // the rebased totals first; the wrapped table only moves once the state is running, so any filter or
+                // sort on the totals table is re-applied from a running state, the way any table is mutated.
+                final ClientTableState nextState = workerConnection.newState(totalsFactory, summary);
+                JsLog.debug("Rebasing totals table", wrapped.state(), " -> ", nextState, " for ", wrapped);
+                // own the state while it is fetched; a state nobody owns can be swept by any release check
+                nextState.retain(totalsTable);
+                nextState.refetch().then(ready -> {
+                    if (wrapped.isClosed() || source != state()) {
+                        // superseded by a newer source change, or no longer wanted; nothing else holds it
+                        nextState.unretain(totalsTable);
+                        return null;
+                    }
+                    final ClientTableState existing = wrapped.state();
+                    wrapped.setState(nextState);
+                    // the binding owns it now
+                    nextState.unretain(totalsTable);
+                    if (existing.isEqual(totals)) {
+                        totalsTable.refreshViewport();
+                        return null;
+                    }
+                    // The totals table has its own filter, sort or columns; re-apply them on top of the new state.
+                    return wrapped.batch(b -> b.setConfig(existing)).then(ignored -> {
+                        totalsTable.refreshViewport();
+                        return null;
+                    });
+                }, error -> {
+                    nextState.unretain(totalsTable);
+                    // The totals can no longer follow the source; say so rather than keep showing stale totals.
+                    wrapped.fireEvent(EVENT_REQUEST_FAILED, JsPropertyMap.of("errorMessage", String.valueOf(error)));
                     return null;
-                };
-                final Promise<ClientTableState> promise =
-                        nextState.refetch();
-                if (needsMutation) {
-                    // nextState will be empty, so we might want to test for isEmpty() instead
-                    wrapped.batch(b -> b.setConfig(existing)).then(restoreVp);
-                } else {
-                    promise.then(restoreVp);
-                }
+                });
             }, JsRunnable.doNothing());
         });
         wrapped.onClosed.add(remover::remove);
