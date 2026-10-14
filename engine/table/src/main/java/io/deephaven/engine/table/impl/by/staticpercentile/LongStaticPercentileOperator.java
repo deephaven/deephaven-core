@@ -54,7 +54,7 @@ public class LongStaticPercentileOperator extends StaticPercentileOperator {
      * @param percentile the percentile to compute
      * @param averageEvenlyDivided see {@link io.deephaven.api.agg.spec.AggSpecPercentile#averageEvenlyDivided()}
      * @param name the name of the result column
-     * @param expectedSize the number of values a destination's first array is sized for
+     * @param expectedSize the number of values a destination's array grows to when its first array fills
      */
     LongStaticPercentileOperator(final double percentile, final boolean averageEvenlyDivided, final String name,
             final long expectedSize) {

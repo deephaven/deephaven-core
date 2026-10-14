@@ -36,7 +36,7 @@ public abstract class StaticPercentileOperator implements IterativeChunkedAggreg
     final double percentile;
     final String name;
     /**
-     * The number of values a destination's first array is sized for.
+     * The number of values a destination's array grows to when its first array fills.
      */
     private final int expectedSize;
 
@@ -61,8 +61,8 @@ public abstract class StaticPercentileOperator implements IterativeChunkedAggreg
      * @param percentile the percentile to compute
      * @param averageEvenlyDivided see {@link io.deephaven.api.agg.spec.AggSpecPercentile#averageEvenlyDivided()}
      * @param name the name of the result column
-     * @param expectedSize the number of values a destination's first array is sized for, such as the table size when
-     *        every row belongs to one group; the array still grows past it as needed
+     * @param expectedSize the number of values a destination's array grows to when its first array fills, such as the
+     *        table size when every row belongs to one group; the array still grows past it as needed
      * @return the operator
      */
     public static IterativeChunkedAggregationOperator make(final Class<?> type, final boolean equalsConsistent,
@@ -114,7 +114,9 @@ public abstract class StaticPercentileOperator implements IterativeChunkedAggreg
      */
     final int grownCapacity(final int capacity, final int currentSize, final int length) {
         final long required = (long) currentSize + length;
-        final long grown = capacity == 0 ? Math.max(required, expectedSize) : Math.max(required, 2L * capacity);
+        // the first array holds the first run; the expected size applies once more values than that arrive, so a group
+        // whose values are all null, or that receives a NaN early, never allocates it
+        final long grown = capacity == 0 ? required : Math.max(required, Math.max(2L * capacity, expectedSize));
         return (int) Math.min(ArrayUtil.MAX_ARRAY_SIZE, grown);
     }
 
