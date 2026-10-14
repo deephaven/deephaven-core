@@ -1,8 +1,12 @@
 name: Nightly Python Versions CI
 
 # Runs the py/server and py/client test suites on every supported Python version. The Docker-based suites run only on
-# the Python in the server image and the python registry image. These run the same tests on the JVM from the
-# deephaven-server wheel, so each version needs only Python, a JDK and that wheel. The rest installs from source.
+# the Python in the server image and the python registry image. These run the same tests without Docker, so each version
+# needs only Python and a JDK:
+# - The server suite starts its JVM from the deephaven-server wheel, as the Docker-based suite does from its classpath.
+# - The client suite tests against the server-jetty distribution, the start script and jars the server Docker image
+#   runs, with Java hosting Python from the job's venv.
+# The Python packages install from source.
 #
 # Floor: python_requires in py/server/setup.py. Ceiling: the newest Python that every dependency has a wheel for
 # (jpy has none for 3.15 yet). The free-threaded 3.14t build runs with the GIL kept off.
@@ -41,17 +45,18 @@ jobs:
           .github/scripts/gradle-properties.sh 21 >> gradle.properties
           cat gradle.properties
 
-      - name: Build the deephaven-server wheel and the test classes
-        # The tests load a few Java test classes: CalendarInit from engine-time, and MyObject and
+      - name: Build the deephaven-server wheel, the server distribution and the test classes
+        # The server tests load a few Java test classes: CalendarInit from engine-time, and MyObject and
         # PythonTimeComponentsTest from Integrations.
-        run: ./gradlew --scan :py-embedded-server:assemble :Integrations:testClasses :engine-time:testClasses
+        run: ./gradlew --scan :py-embedded-server:assemble :server-jetty-app:distTar :Integrations:testClasses :engine-time:testClasses
 
-      - name: Upload the deephaven-server wheel and the test classes
+      - name: Upload the build outputs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: py-versions-build
           path: |
             py/embedded-server/build/wheel/*.whl
+            server/jetty-app/build/distributions/server-jetty-*.tar
             Integrations/build/classes/java/test/
             engine/time/build/classes/java/test/
           retention-days: 1
@@ -77,10 +82,17 @@ jobs:
         with:
           lfs: true
 
-      - name: Download the deephaven-server wheel and the test classes
+      - name: Download the build outputs
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: py-versions-build
+
+      - name: Unpack the server distribution
+        if: ${{ matrix.suite == 'client' }}
+        # py/client/run-tests-embedded.sh expects it where ./gradlew :server-jetty-app:installDist puts it.
+        run: |
+          mkdir -p server/jetty-app/build/install/server-jetty
+          tar -xf server/jetty-app/build/distributions/server-jetty-*.tar --strip-components=1 -C server/jetty-app/build/install/server-jetty
 
       - name: Setup JDKs
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1

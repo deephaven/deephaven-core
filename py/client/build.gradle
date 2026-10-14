@@ -109,13 +109,13 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
 tasks.getByName('check').dependsOn(testPyClient)
 deephavenDocker.shouldLogIfTaskFails testPyClient
 
-// Runs tests/ on one Python version against a server started from the deephaven-server wheel, through
-// run-tests-embedded.sh. uv creates the venv and downloads the Python version if needed. See py/server/TESTING.md.
+// Runs tests/ on one Python version against the server-jetty distribution, through run-tests-embedded.sh. uv creates
+// the venv and downloads the Python version if needed. See py/server/TESTING.md.
 //   ./gradlew :py-client:testEmbedded -PpythonVersion=3.14t
 tasks.register('testEmbedded', Exec) {
     group = 'verification'
-    description = 'Runs the Python client tests against the embedded server, on the Python version given by -PpythonVersion.'
-    dependsOn ':py-embedded-server:assemble'
+    description = 'Runs the Python client tests against the server-jetty distribution, on the Python version given by -PpythonVersion.'
+    dependsOn ':server-jetty-app:installDist'
     def pythonVersion = providers.gradleProperty('pythonVersion').orElse('3.12')
     def pyTests = providers.gradleProperty('pyTests').orElse('')
     workingDir projectDir

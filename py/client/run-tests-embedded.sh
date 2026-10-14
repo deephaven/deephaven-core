@@ -3,16 +3,17 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-# Runs the tests in tests/ on one Python version, against a server started from the deephaven-server wheel instead of
-# the server Docker image. The server and the client share one venv, so both run on that Python version. uv creates
-# the venv and downloads the Python version if it is not installed.
+# Runs the tests in tests/ on one Python version, against the server-jetty distribution instead of the server Docker
+# image. That is the same start script and jars the Docker image runs: Java is the main program and hosts Python. The
+# server's Python and the client's share one venv, so both run on that Python version. uv creates the venv and
+# downloads the Python version if it is not installed.
 #
 # usage: run-tests-embedded.sh <python-version> [test ...]
 #   python-version  any version uv accepts, for example 3.9, 3.14 or 3.14t (free-threaded)
 #   test            optional unittest names, for example tests.test_session. Default: all of tests/.
 #
-# Build the deephaven-server wheel first, or run it through Gradle, which builds it:
-#   ./gradlew :py-embedded-server:assemble
+# Build the server distribution first, or run it through Gradle, which builds it:
+#   ./gradlew :server-jetty-app:installDist
 #   ./gradlew :py-client:testEmbedded -PpythonVersion=3.14t
 #
 # See py/server/TESTING.md for details.
@@ -36,25 +37,26 @@ WORK="${BUILD}/work"
 RESULTS="${CLIENT_DIR}/build/test-results/test-embedded/${PY_VERSION}"
 PORT=10000
 
+SERVER_DIST="${ROOT}/server/jetty-app/build/install/server-jetty"
 shopt -s nullglob
-WHEELS=("${ROOT}"/py/embedded-server/build/wheel/deephaven_server-*.whl)
+ENGINE_JARS=("${SERVER_DIST}"/lib/deephaven-engine-table-*.jar)
 shopt -u nullglob
-if [[ ${#WHEELS[@]} -ne 1 ]]; then
-    echo "Expected one deephaven-server wheel in py/embedded-server/build/wheel, found ${#WHEELS[@]}." >&2
-    echo "Run: ./gradlew :py-embedded-server:assemble" >&2
+if [[ ! -x "${SERVER_DIST}/bin/start" || ${#ENGINE_JARS[@]} -ne 1 ]]; then
+    echo "Missing the server distribution in ${SERVER_DIST}. Run: ./gradlew :server-jetty-app:installDist" >&2
     exit 1
 fi
 
-# py/server/setup.py and py/client/setup.py read their version from DEEPHAVEN_VERSION. It must match the wheel's
-# version, because deephaven-server pins deephaven-core to it.
-DEEPHAVEN_VERSION="$(basename "${WHEELS[0]}" | cut -d- -f2)"
+# py/server/setup.py and py/client/setup.py read their version from DEEPHAVEN_VERSION. Use the server's version, taken
+# from one of its jar names, for example deephaven-engine-table-43.0-SNAPSHOT.jar.
+DEEPHAVEN_VERSION="$(basename "${ENGINE_JARS[0]}" .jar)"
+DEEPHAVEN_VERSION="${DEEPHAVEN_VERSION#deephaven-engine-table-}"
 export DEEPHAVEN_VERSION
 
 rm -rf "${BUILD}" "${RESULTS}"
-mkdir -p "${BUILD}" "${RESULTS}" "${BUILD}/data" "${BUILD}/cache"
+mkdir -p "${BUILD}" "${RESULTS}" "${BUILD}/data" "${BUILD}/cache" "${BUILD}/config"
 uv venv --quiet --python "${PY_VERSION}" "${VENV}"
 uv pip install --quiet --python "${VENV}/bin/python" \
-    "${ROOT}/py/server" "${WHEELS[0]}" "${ROOT}/py/client" unittest-xml-reporting
+    "${ROOT}/py/server" "${ROOT}/py/client" unittest-xml-reporting
 # Soft dependencies. tests/test_flightsql.py uses flightsql-dbapi and adbc-driver-flightsql, and the server script in
 # tests/test_console.py uses numba, as the server Docker image has it. A missing one must not stop the other tests.
 for pkg in flightsql-dbapi adbc-driver-flightsql numba; do
@@ -68,19 +70,17 @@ if [[ "${PY_VERSION}" == *t ]]; then
 fi
 
 # Start the server the same way the Docker-based testPyClient task does: anonymous and PSK logins, PSK "deephaven".
-# Its "server" command exits when stdin closes, so stdin is a FIFO that this script holds open until it exits.
-FIFO="${BUILD}/server-stdin"
-mkfifo "${FIFO}"
-exec 3<>"${FIFO}"
+# The start script finds Python through VIRTUAL_ENV, and the server reads its directories from DEEPHAVEN_*_DIR, as in
+# the Docker image.
 # Start it from the build directory. Python puts the working directory first on sys.path, and the repository root
 # has a coverage/ folder that shadows the coverage package numba imports.
 cd "${BUILD}"
-"${VENV}/bin/python" -c "from deephaven_server.cli import cli; cli()" server \
-    --port "${PORT}" --no-browser \
-    --jvm-args "-Xmx1g -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler,io.deephaven.authentication.psk.PskAuthenticationHandler -Dauthentication.psk=deephaven -DSystemicObjectTracker.enabled=true -Ddeephaven.dataDir=${BUILD}/data -Ddeephaven.cacheDir=${BUILD}/cache" \
-    <&3 > "${RESULTS}/server.log" 2>&1 &
+VIRTUAL_ENV="${VENV}" \
+    DEEPHAVEN_DATA_DIR="${BUILD}/data" DEEPHAVEN_CACHE_DIR="${BUILD}/cache" DEEPHAVEN_CONFIG_DIR="${BUILD}/config" \
+    START_OPTS="-Xmx1g -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler,io.deephaven.authentication.psk.PskAuthenticationHandler -Dauthentication.psk=deephaven -DSystemicObjectTracker.enabled=true -Dhttp.port=${PORT}" \
+    "${SERVER_DIST}/bin/start" > "${RESULTS}/server.log" 2>&1 &
 SERVER_PID=$!
-trap 'kill "${SERVER_PID}" 2>/dev/null || true; exec 3>&-' EXIT
+trap 'kill "${SERVER_PID}" 2>/dev/null || true' EXIT
 
 for _ in $(seq 1 120); do
     if grep -q "Server started on port ${PORT}" "${RESULTS}/server.log"; then
