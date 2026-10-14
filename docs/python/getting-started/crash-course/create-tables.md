@@ -66,7 +66,7 @@ ticking_table = time_table("PT1s")
 
 The `PT1s` argument is an ISO 8601 [duration string](../../reference/query-language/types/durations.md) that sets the period between rows. Consecutive rows have `Timestamp` values one second apart. In each [update cycle](./architecture-overview.md#the-engine), the engine usually adds one row to this table, but a delayed cycle can add several rows at once.
 
-As in the Architecture Overview, you derive new ticking tables from existing ones with the same table operations and [query strings](./query-strings.md) you used in the static case. This time, watch how the two tables relate.
+As in the [Architecture Overview](./architecture-overview.md), you derive new ticking tables from existing ones with the same table operations and [query strings](./query-strings.md) you used in the static case. This time, watch how the two tables relate.
 
 ```python test-set=2 ticking-table order=null
 new_ticking_table = ticking_table.update_view(

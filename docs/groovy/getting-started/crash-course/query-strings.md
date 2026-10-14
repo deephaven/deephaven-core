@@ -16,11 +16,11 @@ Here, the query string `NewColumn = 1` defines a formula for the engine to execu
 
 ## Literals
 
-Query strings often use [literals](https://en.wikipedia.org/wiki/Literal_(computer_programming)). How the engine interprets a literal depends on how it's written in the query string.
+Query strings often use [literals](https://en.wikipedia.org/wiki/Literal_(computer_programming)). How the engine interprets a literal depends on how it's written in the query string. The engine reads:
 
-- The engine reads unquoted literals as booleans, numbers, or `null`. Other unquoted names refer to columns or variables.
-- The engine reads literals in backticks (`` ` ``) as strings.
-- The engine reads literals in single quotes (`'`) as date-time values, such as dates, times, durations, periods, and time zones. It reads a single character in single quotes as a `char`.
+- Unquoted literals as booleans, numbers, or `null`. Other unquoted names refer to columns or variables.
+- Literals in backticks (`` ` ``) as strings.
+- Literals in single quotes (`'`) as date-time values, such as dates, times, durations, periods, and time zones. A single character in single quotes is a `char`.
 
 ```groovy test-set=1
 literals = emptyTable(10).update(

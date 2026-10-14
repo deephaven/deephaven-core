@@ -2,7 +2,7 @@
 title: An Overview of Deephaven's Architecture
 ---
 
-Deephaven's power is largely due to the concept that _everything_ is a table. Think of Deephaven tables like spreadsheets or database tables, except that they support real-time operations! The Deephaven table is the key abstraction that unites static and real-time data for a seamless, integrated experience. This chapter covers the three main pieces of Deephaven's architecture: tables and the operations that act on them, the engine that runs your queries, and the web user interface. Let's look at each one before diving deeper into code.
+Deephaven's power is largely due to the concept that _everything_ is a table. Think of Deephaven tables like DataFrames, except that they support real-time operations! The Deephaven table is the key abstraction that unites static and real-time data for a seamless, integrated experience. This chapter covers the three main pieces of Deephaven's architecture: tables and the operations that act on them, the engine that runs your queries, and the web user interface. Let's look at each one before diving deeper into code.
 
 ## Tables and table operations
 
