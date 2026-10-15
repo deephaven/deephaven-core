@@ -19,6 +19,11 @@ class Scan(unittest.TestCase):
         self.assertEqual(found(t),[(2,"select")])
     def test_shortcut_reference_link(self):
         self.assertEqual(found("Use [`where`] and bare `select`.\n\n[`where`]: where.md\n"),[(1,"select")])
+    def test_unrelated_brackets_do_not_hide_mentions(self):
+        self.assertEqual(found("Use [`select`] and [`where`](where.md).\n"),[(1,"select")])
+        self.assertEqual(found("Use [`select`] and [`where`][w].\n\n[w]: where.md\n"),[(1,"select")])
+        self.assertEqual(found("Use `arr[0]` and `select` with [`where`](where.md).\n"),[(1,"select")])
+        self.assertEqual(found("Use `f(x)` and `select` with [`where`](where.md).\n"),[(1,"select")])
     def test_url_in_backticks_keeps_later_mentions(self):
         self.assertEqual(found("Use `https://example.org` with `where`.\n"),[(1,"where")])
     def test_headings_and_front_matter_are_skipped(self):

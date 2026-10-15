@@ -9,7 +9,6 @@ cannot swallow a fence or later prose. Line numbers are preserved. Run with `pyt
 import re,sys
 PLAIN=[r"\bBarriers?\b",r"\bformula strings?\b",r"\bserial execution\b",r"\bpredicate pushdown\b",r"\bpartitioned tables?\b",r"\bConcurrencyControl\b",r"\bSelectables?\b",r"\bFilters?\b(?= objects?\b| instances?\b)"]
 FENCE=re.compile(r"^[ \t>]*(`{3,}|~{3,})(.*)$")
-NB=r"(?:[^\n]|\n(?!\s*\n))"        # any character except a paragraph break (blank line)
 def prose_lines(lines):
     """Return the lines with fenced code and front matter blanked."""
     out=[]; fence=None; fm=False
@@ -28,15 +27,23 @@ def prose_lines(lines):
             out.append("")
     return out
 def norm(label): return re.sub(r"\s+"," ",label.strip()).lower()
+LABEL=r"\[(?:[^\[\]\n]|\n(?!\s*\n))*\]"     # a link label: no nested brackets, no blank line
+def protect_code(text):
+    """Hide brackets and parentheses inside inline code spans so they cannot start or end a link."""
+    tr=str.maketrans("[]()","\x01\x02\x03\x04")
+    return re.sub(r"`[^`\n]*`",lambda m: m.group(0).translate(tr),text)
+def restore_code(text): return text.translate(str.maketrans("\x01\x02\x03\x04","[]()"))
 def mask_links(text):
     """Blank links, keeping line numbers."""
     keep=lambda m: "\n"*m.group(0).count("\n")
+    text=protect_code(text)
     labels={norm(m.group(1)) for m in re.finditer(r"(?m)^[ \t>]*\[((?:[^\]\n])+)\]:[ \t]*\S",text)}
-    text=re.sub(r"(?m)^[ \t>]*\[[^\]\n]+\]:[ \t]*\S.*$",keep,text)                    # reference definitions
-    text=re.sub(r"\[%s*?\]\(%s*?\)"%(NB,NB),keep,text)                                    # inline links
-    text=re.sub(r"\[%s*?\]\[[^\]\n]*\]"%NB,keep,text)                                     # [text][ref] and [text][]
-    def shortcut(m): return keep(m) if norm(m.group(1)) in labels else m.group(0)
-    return re.sub(r"\[((?:[^\]\n])+)\](?![\[(:])",shortcut,text)                          # shortcut [label]
+    text=re.sub(r"(?m)^[ \t>]*\[[^\]\n]+\]:[ \t]*\S.*$",keep,text)                  # reference definitions
+    text=re.sub(LABEL+r"\((?:[^()\n]|\n(?!\s*\n))*\)",keep,text)                        # inline links
+    text=re.sub(LABEL+r"\[[^\[\]\n]*\]",keep,text)                                      # [text][ref] and [text][]
+    def shortcut(m): return keep(m) if norm(m.group(1)[1:-1]) in labels else m.group(0)
+    text=re.sub("("+LABEL+r")(?![\[(:])",shortcut,text)                                    # shortcut [label]
+    return restore_code(text)
 def scan(path):
     out=[]; raw=open(path,encoding="utf-8").read().split("\n")
     lines=mask_links("\n".join(prose_lines(raw))).split("\n")
