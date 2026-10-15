@@ -6,10 +6,10 @@ Now that you're more familiar with the table API and visualizing data, it's time
 
 ## What is `deephaven.ui`?
 
-[`deephaven.ui`](/core/ui/docs/) is a [React](https://react.dev/)-like framework for building user experiences in Python. You don't need any front-end development, JavaScript, or CSS experience to get started. Key features include:
+[`deephaven.ui`](/core/ui/docs/) is a [React](https://react.dev/)-like framework for building user experiences in Python. You don't need any front-end development, JavaScript, or CSS experience to hit the ground running. Key features include:
 
 - **Components**: You build user interfaces from components defined entirely in Python.
-- **Live table integration**: Components use Deephaven tables as a data source, including [ticking tables](../../conceptual/table-types.md#standard-streaming-tables) that update as new data arrives.
+- **Live dataframe integration**: Components are live dataframe aware and use Deephaven tables as a data source, including [ticking tables](../../conceptual/table-types.md#standard-streaming-tables) that update as new data arrives.
 - **Reactive UI updates**: Components update automatically when a user interacts with them or when their source data changes.
 - **Declarative UI framework**: You describe the UI as a function of the data, and the framework renders it.
 - **Composability**: You combine and reuse components to build complex interfaces.
@@ -144,7 +144,7 @@ For a full list of available components, see the [Components overview](/core/ui/
 
 ### Table-backed components
 
-Things get a lot more interesting when you use Deephaven tables as the data source for components. When a source table is [ticking](../../conceptual/table-types.md#standard-streaming-tables), components built from it update as it ticks. The examples in this section use a static CSV file to keep things simple, and the [Dashboards](#dashboards) section shows components fed by ticking data.
+Things get a lot more interesting when you use Deephaven tables as the data source for components. When a source table is [ticking](../../conceptual/table-types.md#standard-streaming-tables), components built from it tick in lockstep with it. The examples in this section use a static CSV file to keep things simple, and the [Dashboards](#dashboards) section shows components fed by ticking data.
 
 You can pass a table to a component to display its data. Take the picker example above. What if you want to choose from the available values in a column of a table?
 
@@ -222,7 +222,7 @@ species_explorer_panel = species_explorer()
 
 ## Dashboards
 
-A [dashboard](/core/ui/docs/components/dashboard/) arranges panels into a layout, so you can present data and visualizations in a single view. You build the layout from these elements:
+A [dashboard](/core/ui/docs/components/dashboard/) arranges panels into a layout. Dashboards are a great way to present data and visualizations in a single view. You build the layout from these elements:
 
 - [`ui.panel`](/core/ui/docs/components/panel/) is a titled container for a component, like the panel the species explorer above returns.
 - `ui.row` arranges panels side by side, and `ui.column` arranges them top to bottom. Rows and columns nest inside each other.
@@ -270,7 +270,7 @@ dash_custom_layout = ui.dashboard(
 
 ![Custom dashboard layout](../../assets/tutorials/crash-course/dh-ui/dashboard_level2.png)
 
-Dashboards become much more useful when their panels hold real data. The next example uses `dx.data.iris`, a [ticking](../../conceptual/table-types.md#standard-streaming-tables) version of the Iris dataset that ships with [Deephaven Express](/core/plotly/docs/). It adds simulated rows every second, so the table and plots in the dashboard update as new rows arrive. Its column names differ from those in the CSV file used above. For example, it has `SepalLength` instead of `SepalLengthCM`.
+Dashboards are much more interesting when their panels hold real data, plots, and widgets. The next example uses `dx.data.iris`, a [ticking](../../conceptual/table-types.md#standard-streaming-tables) version of the Iris dataset that ships with [Deephaven Express](/core/plotly/docs/). It adds simulated rows every second, so the table and plots in the dashboard update as new rows arrive. Its column names differ from those in the CSV file used above. For example, it has `SepalLength` instead of `SepalLengthCM`.
 
 The dashboard holds a table, a [scatter plot](/core/plotly/docs/scatter/), two [histograms](/core/plotly/docs/histogram/), and a [Markdown](/core/ui/docs/components/markdown/) panel describing the dataset. The example wraps the table in [`ui.table`](/core/ui/docs/components/table/), which adds display options such as row order and which columns appear first or are hidden:
 

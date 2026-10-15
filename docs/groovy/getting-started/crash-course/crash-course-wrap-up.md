@@ -69,4 +69,4 @@ Learning Deephaven can be challenging at times, and we want you to succeed. Thes
 
 - The [Deephaven overview](../../conceptual/deephaven-overview.md) explains what Deephaven is and how it works.
 - The [community questions](../../reference/community-questions/cq-index.md) cover commonly asked Deephaven questions.
-- Our [community Slack channel](/slack) is where we're happy to support you through your Deephaven journey and answer any questions you may have.
+- We encourage you to join our [community Slack channel](/slack), where we're happy to support you through your Deephaven journey and answer any questions you may have.

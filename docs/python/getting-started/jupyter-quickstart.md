@@ -19,7 +19,7 @@ Deephaven Community Core and [Jupyter](https://jupyter.org) together make a powe
 > [!NOTE]
 > We recommend using a Python [virtual environment](https://docs.python.org/3/library/venv.html) to decouple and isolate Python installs and associated packages.
 
-Deephaven can operate in [JupyterLab](https://jupyterlab.readthedocs.io/en/latest/) or [Jupyter Notebook](https://jupyter-notebook.readthedocs.io/en/latest/). Install either one with `pip`:
+Deephaven can operate in [JupyterLab](https://jupyterlab.readthedocs.io/en/latest/) or [Jupyter Notebook](https://jupyter-notebook.readthedocs.io/en/latest/). The choice is yours! Install either one with `pip`:
 
 ```sh
 # install JupyterLab
@@ -77,7 +77,7 @@ For more advanced configuration options, see the [pip installation guide](../get
 
 ## 3. Import static and streaming data
 
-Deephaven works with both static and streaming data. It can ingest data from [CSV files](../how-to-guides/data-import-export/csv-import.md), [Parquet files](../how-to-guides/data-import-export/parquet-import.md), and [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md).
+Deephaven empowers you to wrangle static and streaming data with ease. It can ingest data from [CSV files](../how-to-guides/data-import-export/csv-import.md), [Parquet files](../how-to-guides/data-import-export/parquet-import.md), and [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md).
 
 ### Load a CSV
 
@@ -91,7 +91,7 @@ crypto_from_csv = read_csv(
 )
 ```
 
-Display the resulting table with `DeephavenWidget` from [`deephaven-ipywidgets`](https://pypi.org/project/deephaven-ipywidgets/):
+Display the resulting table with `DeephavenWidget` from [`deephaven-ipywidgets`](https://pypi.org/project/deephaven-ipywidgets/), which renders Deephaven tables and plots right inside Jupyter:
 
 ```python skip-test
 from deephaven_ipywidgets import DeephavenWidget
@@ -113,7 +113,7 @@ The table widget now in view is highly interactive:
 
 Ingesting real-time data is one of Deephaven's core strengths. However, streaming pipelines such as [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md) can be complicated to set up and are outside the scope of this guide. For a streaming data example, this guide uses Deephaven's [`TableReplayer`](../reference/table-operations/create/Replayer.md) to replay historical cryptocurrency data in real time.
 
-The following code takes fake historical crypto trade data from a CSV file and replays it in real time based on timestamps. Replaying a table is one of several ways to create real-time data in a few lines of code. Replaying historical data is a great way to test real-time algorithms before deployment into production.
+The following code takes fake historical crypto trade data from a CSV file and replays it in real time based on timestamps. Replaying a table is one of several ways to create real-time data in just a few lines of code. Replaying historical data is a great way to test real-time algorithms before deployment into production.
 
 ```python test-set=1 order=null ticking-table skip-test
 from deephaven import TableReplayer, read_csv
@@ -142,7 +142,7 @@ Deephaven represents both static and streaming data as tables. You derive new ta
 
 Deephaven represents data transformations as operations on tables. This is a familiar paradigm for data scientists using [pandas](https://pandas.pydata.org), [Polars](https://pola.rs), [R](https://www.r-project.org/), [MATLAB](https://www.mathworks.com/), and more.
 
-Deephaven's table operations have one key difference — **they work the same way whether the underlying data is static or streaming.** Code written for static data generally also works on streaming data. A few formulas are exceptions, such as those that use the [special variables](../reference/query-language/variables/special-variables.md) `i`, `ii`, and `k`.
+Deephaven's table operations are special — **they work the same way whether the underlying data is static or streaming!** This means that code written for static data generally works seamlessly on live data. A few formulas are exceptions, such as those that use the [special variables](../reference/query-language/variables/special-variables.md) `i`, `ii`, and `k`.
 
 There are many table operations to cover, so this guide keeps it short and gives you the highlights.
 
@@ -241,7 +241,7 @@ display(DeephavenWidget(max_transaction))
 
 ![Animated GIF showing largest transaction per instrument using max_by](../assets/tutorials/quickstart-jupyter/jquickstart-10.gif)
 
-[Dedicated aggregations](../how-to-guides/dedicated-aggregations.md) perform one aggregation at a time, but you often need to [perform multiple aggregations](../how-to-guides/combined-aggregations.md) on the same data. For this, Deephaven provides the [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md) table operation and the [`deephaven.agg`](/core/pydoc/code/deephaven.agg.html#module-deephaven.agg) Python module.
+While [dedicated aggregations](../how-to-guides/dedicated-aggregations.md) are powerful, they only perform one aggregation at a time. However, you often need to [perform multiple aggregations](../how-to-guides/combined-aggregations.md) on the same data. For this, Deephaven provides the [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md) table operation and the [`deephaven.agg`](/core/pydoc/code/deephaven.agg.html#module-deephaven.agg) Python module.
 
 First, use [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md) to compute the [mean](../reference/table-operations/group-and-aggregate/AggAvg.md) and [standard deviation](../reference/table-operations/group-and-aggregate/AggStd.md) of the price, grouped by instrument and exchange, and [`sort`](../reference/table-operations/sort/sort.md) the result:
 
@@ -351,7 +351,7 @@ combined_crypto = merge([crypto_from_csv, crypto_streaming]).sort("Timestamp")
 display(DeephavenWidget(combined_crypto))
 ```
 
-A join combines tables based on columns they have in common. Exact and relational joins include [`join`](../reference/table-operations/join/join.md), [`natural_join`](../reference/table-operations/join/natural-join.md), and [`exact_join`](../reference/table-operations/join/exact-join.md). The [exact and relational joins guide](../how-to-guides/joins-exact-relational.md) covers each of them.
+The ubiquitous join operation combines tables based on columns they have in common. Exact and relational joins include [`join`](../reference/table-operations/join/join.md), [`natural_join`](../reference/table-operations/join/natural-join.md), and [`exact_join`](../reference/table-operations/join/exact-join.md). The [exact and relational joins guide](../how-to-guides/joins-exact-relational.md) covers each of them.
 
 For example, summarize the older September 2021 trades in `crypto_from_csv`, the table you loaded at the start of this guide. Then, use [`rename_columns`](../reference/table-operations/select/rename-columns.md) and [`join`](../reference/table-operations/join/join.md) to combine that summary with `summary_prices`, the summary of the replayed February 2023 trades from [Aggregate data](#aggregate-data). The result shows both periods' price statistics side by side for the instruments and exchanges that appear in both datasets. A `join` drops rows that have no match, so PAXG/USD and YFI/USD aren't in the result:
 
@@ -375,7 +375,7 @@ display(DeephavenWidget(price_comparison))
 
 ![Animated GIF comparing February 2023 and September 2021 price summaries via join](../assets/tutorials/quickstart-jupyter/jquickstart-17.gif)
 
-Many real-time data applications combine data based on timestamps. [Exact and relational joins](../how-to-guides/joins-exact-relational.md) can't do this, because they require _exact_ matches in both datasets. Deephaven's [time-series joins](../how-to-guides/joins-timeseries-range.md#as-of-time-series-joins), such as [`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/table-operations/join/raj.md), join tables on timestamps with _approximate_ matches.
+Many real-time data applications combine data based on timestamps. [Exact and relational joins](../how-to-guides/joins-exact-relational.md) can't do this, because they require _exact_ matches in both datasets. To remedy this, Deephaven provides [time-series joins](../how-to-guides/joins-timeseries-range.md#as-of-time-series-joins), such as [`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/table-operations/join/raj.md), that join tables on timestamps with _approximate_ matches.
 
 The following example uses [`aj`](../reference/table-operations/join/aj.md) to find the Ethereum price at or immediately before the timestamp of each Bitcoin trade:
 
@@ -397,7 +397,7 @@ To learn more about our join methods, see the guides on [exact and relational jo
 
 ## 5. Plot data
 
-Deephaven supports _updating, real-time plots_. The following example uses [`plot_xy`](../reference/plot/plot.md) from Deephaven's [built-in plotting API](../how-to-guides/plotting/api-plotting.md). The code plots the Bitcoin price and its 30-second rolling average, and `DeephavenWidget` renders the resulting figure:
+Deephaven has rich plotting libraries that support _updating, real-time plots_. The following example uses [`plot_xy`](../reference/plot/plot.md) from Deephaven's [built-in plotting API](../how-to-guides/plotting/api-plotting.md). The code plots the Bitcoin price and its 30-second rolling average, and `DeephavenWidget` renders the resulting figure:
 
 ```python test-set=1 order=null ticking-table skip-test
 from deephaven.plot import Figure
@@ -416,11 +416,11 @@ display(DeephavenWidget(btc_plot))
 
 ![Animated GIF showing real-time line plot of Bitcoin prices and rolling average](../assets/tutorials/quickstart-jupyter/jquickstart-19.gif)
 
-For most new work, use [Deephaven Express](/core/plotly/docs/), built on [Plotly Express](https://plotly.com/python/), instead of the [built-in plotting API](../how-to-guides/plotting/api-plotting.md). Deephaven Express needs the `deephaven-plugin-plotly-express` package, which you must install before you start the server, as shown in [Install and launch Deephaven](#2-install-and-launch-deephaven). To compare Deephaven's plotting options, see the [plotting overview](../how-to-guides/plotting/overview.md).
+For most new work, use [Deephaven Express](/core/plotly/docs/), built on top of the popular [Plotly Express](https://plotly.com/python/) library, instead of the [built-in plotting API](../how-to-guides/plotting/api-plotting.md). Deephaven Express needs the `deephaven-plugin-plotly-express` package, which you must install before you start the server, as shown in [Install and launch Deephaven](#2-install-and-launch-deephaven). To compare Deephaven's plotting options, see the [plotting overview](../how-to-guides/plotting/overview.md).
 
 ## 6. Export data to popular formats
 
-Deephaven exports data to popular open formats such as CSV and Parquet, and converts tables to pandas DataFrames.
+It's easy to export your data out of Deephaven to popular open formats such as CSV and Parquet, or to convert tables to pandas DataFrames.
 
 To export a table to a CSV file, use [`write_csv`](../reference/data-import-export/CSV/writeCsv.md) with the table and the path where you want to save the file.
 

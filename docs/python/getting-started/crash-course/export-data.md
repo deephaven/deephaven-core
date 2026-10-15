@@ -35,7 +35,7 @@ from deephaven import write_csv
 write_csv(iris, "/data/iris_new.csv")
 ```
 
-The code below reads the new file back to confirm the write worked.
+Just to show that it's there, the code below reads the new file back.
 
 ```python test-set=1 order=iris_new
 iris_new = read_csv("/data/iris_new.csv")
@@ -64,7 +64,7 @@ The code below writes that same table back to a Parquet file.
 dhpq.write(crypto_trades, "/data/crypto_trades_new.parquet")
 ```
 
-The code below reads the new file back to confirm the write worked.
+Just to show that it worked, the code below reads the new file back.
 
 ```python test-set=2 order=crypto_trades_new
 crypto_trades_new = dhpq.read("/data/crypto_trades_new.parquet")
@@ -231,14 +231,14 @@ with open("/data/my_table.html", "w") as f:
 
 ## pandas DataFrames
 
-The [Python integrations](./py-integrations.md#pandas) chapter showed how [`to_pandas`](../../reference/pandas/to-pandas.md) and [`to_table`](../../reference/pandas/to-table.md) from the [`deephaven.pandas`](/core/pydoc/code/deephaven.pandas.html) module convert between Deephaven tables and [pandas DataFrames](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html). For I/O, that makes pandas a bridge. Convert a table with `to_pandas` to hand it to a Python library that works on DataFrames. Convert a DataFrame with `to_table` to bring that library's data into Deephaven.
+The [Python integrations](./py-integrations.md#pandas) chapter showed how [`to_pandas`](../../reference/pandas/to-pandas.md) and [`to_table`](../../reference/pandas/to-table.md) from the [`deephaven.pandas`](/core/pydoc/code/deephaven.pandas.html) module convert between Deephaven tables and [pandas DataFrames](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html). For I/O, that makes pandas a bridge. Convert a table with `to_pandas` to leverage pandas' extensive data manipulation and analysis capabilities, or to hand it to any other Python library that works on DataFrames. Convert a DataFrame with `to_table` to bring a library's results back into Deephaven.
 
 > [!NOTE]
 > Converting a table to a pandas DataFrame copies the entire table into memory. For large tables, [filter](../../how-to-guides/use-filters.md) or [aggregate](../../how-to-guides/combined-aggregations.md) the data in Deephaven first.
 
 ## Function-generated tables
 
-[Function-generated tables](../../how-to-guides/function-generated-tables.md) are a building block for ingesting data from external sources such as WebSockets and databases. A Python function populates a function-generated table. Deephaven reruns the function at a regular interval, or whenever one of the tables you pass in the `source_tables` argument of [`function_generated_table`](../../reference/table-operations/create/function_generated_table.md) changes. The table does no data I/O on its own, but your function can read from an external source each time it runs.
+[Function-generated tables](../../how-to-guides/function-generated-tables.md) are a powerful tool for ingesting data from external sources such as WebSockets, databases, and much more. A Python function populates a function-generated table. Deephaven reruns the function at a regular interval, or whenever one of the tables you pass in the `source_tables` argument of [`function_generated_table`](../../reference/table-operations/create/function_generated_table.md) changes. The table does no data I/O on its own, but your function can read from an external source each time it runs.
 
 The following example regenerates data in a table once per second. To keep the example self-contained, the function generates random data instead of reading from an external source.
 

@@ -6,7 +6,7 @@ Whether your data is static or updating in real time, Deephaven supports plottin
 
 ## Basic plots
 
-To create a simple [line plot](https://en.wikipedia.org/wiki/Line_chart) that ticks in lockstep with the source table, pass a series name, the table, and its x and y columns to [`plot`](../../reference/plot/plot.md), then call [`show`](/core/javadoc/io/deephaven/plot/Figure.html#show()) to display the plot. The series name labels the line in the plot's legend:
+The built-in plotting library supports many common plot types. To create a simple [line plot](https://en.wikipedia.org/wiki/Line_chart) that ticks in lockstep with the source table, pass a series name, the table, and its x and y columns to [`plot`](../../reference/plot/plot.md), then call [`show`](/core/javadoc/io/deephaven/plot/Figure.html#show()) to display the plot. The series name labels the line in the plot's legend:
 
 ```groovy test-set=1 ticking-table order=null
 tLine = timeTable("PT0.2s").update("X = 0.05 * ii", "Y1 = X * sin(X)", "Y2 = 5 * X * cos(X)")
@@ -60,7 +60,7 @@ plotSub = figure(1, 2)
 
 ## More plot types
 
-The built-in [plot package](/core/javadoc/io/deephaven/plot/package-summary.html) offers many more plot types, including [histograms](../../how-to-guides/plotting/api-plotting.md#histogram), [pie charts](../../how-to-guides/plotting/api-plotting.md#pie), and [scatter plots](../../how-to-guides/plotting/api-plotting.md#xy-series-as-a-scatter-plot).
+Far more plots are available in the built-in [plot package](/core/javadoc/io/deephaven/plot/package-summary.html), including [histograms](../../how-to-guides/plotting/api-plotting.md#histogram), [pie charts](../../how-to-guides/plotting/api-plotting.md#pie), and [scatter plots](../../how-to-guides/plotting/api-plotting.md#xy-series-as-a-scatter-plot).
 
 > [!TIP]
 > Prefer a no-code approach? Use the [Chart Builder](../../how-to-guides/user-interface/chart-builder.md) to create line, bar, scatter, and pie charts from any table directly in the UI.

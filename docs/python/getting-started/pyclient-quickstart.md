@@ -55,9 +55,7 @@ Many of these methods appear to return tables. Take, for example, the [`time_tab
 t = client_session.time_table("PT1s")
 ```
 
-This code creates a new ticking table on the server. A [ticking table](../conceptual/table-types.md) updates as new data arrives.
-
-However, `t` doesn't hold that table's data. Methods like [`time_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.time_table) return _references_ to tables on the server, not the data itself. The [`Table`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table) class represents these references, and its methods mirror the table operations of a server-side Deephaven table. To pull a table's data into your Python process, see [Retrieve data from the server](#5-retrieve-data-from-the-server).
+This code appears to create a new ticking table called `t`. A [ticking table](../conceptual/table-types.md) updates as new data arrives. The code does create one on the server, but `t` doesn't hold that table's data. Methods like [`time_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.time_table) return _references_ to tables on the server, not the data itself. The [`Table`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table) class represents these references, and its methods mirror the table operations of a server-side Deephaven table. To pull a table's data into your Python process, see [Retrieve data from the server](#5-retrieve-data-from-the-server).
 
 ## 3. Create, name, open, and import tables
 
@@ -165,7 +163,7 @@ other_table_ref = client_session.empty_table(2).update(
 joined_ref = table_ref.join(other_table_ref, on="Group", joins="ValueToJoin")
 ```
 
-The client supports Deephaven's [time-series joins](../how-to-guides/joins-timeseries-range.md) too, such as [`aj`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table.aj) and [`raj`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table.raj):
+The client even supports Deephaven's [time-series joins](../how-to-guides/joins-timeseries-range.md), such as [`aj`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table.aj) and [`raj`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table.raj):
 
 ```python test-set=1
 other_time_table_ref = client_session.empty_table(5 * 24 * 60).update(

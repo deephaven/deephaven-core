@@ -2,7 +2,7 @@
 title: Powerful Python Integrations
 ---
 
-Deephaven integrates with popular Python libraries. This chapter covers some highlights of Deephaven's Python interoperability: converting tables to and from pandas DataFrames and NumPy arrays, running AI models on real-time data with a [table listener](../../how-to-guides/table-listeners-python.md), and where [`deephaven.learn`](../../how-to-guides/use-deephaven-learn.md) fits in.
+Deephaven empowers Python developers with efficient integrations with popular Python libraries. This chapter covers some highlights of Deephaven's Python interoperability: converting tables to and from pandas DataFrames and NumPy arrays, running AI models on real-time data with a [table listener](../../how-to-guides/table-listeners-python.md), and where [`deephaven.learn`](../../how-to-guides/use-deephaven-learn.md) fits in. Along the way, it points out the inherent limitations of static Python data structures.
 
 ## pandas
 
@@ -40,7 +40,7 @@ t_group_avg = dhpd.to_table(t_df_group_avg)
 
 This example shows how flexible the pandas integration is. For this particular job, Deephaven Query Language (DQL) table operations are more efficient: `t.drop_columns("Timestamp").avg_by("Group")`. Unlike the pandas `mean` method, [`avg_by`](../../reference/table-operations/group-and-aggregate/avgBy.md) can't average timestamp columns. It raises an error when the table has one, so the DQL version drops `Timestamp` first.
 
-pandas DataFrames are static. Converting a ticking Deephaven table to a pandas DataFrame takes a snapshot of the table at that moment.
+pandas DataFrames are inherently static. Converting a ticking Deephaven table to a pandas DataFrame takes a snapshot of the table at that moment.
 
 ## NumPy
 
@@ -173,7 +173,7 @@ The example handles only added rows (`update.added`). To also handle modified ro
 
 ## `deephaven.learn`
 
-Aimed at AI/ML practitioners who want to go further, [`deephaven.learn`](../../how-to-guides/use-deephaven-learn.md) provides a general-purpose framework for efficient data interchange between Deephaven tables and Python objects such as NumPy arrays and PyTorch tensors. `deephaven.learn` uses a gather-compute-scatter model:
+Aimed at AI/ML practitioners who want to go further, [`deephaven.learn`](../../how-to-guides/use-deephaven-learn.md) provides a general-purpose framework for efficient data interchange between Deephaven tables and Python objects such as NumPy arrays and PyTorch tensors. It's fundamentally geared toward machine learning applications, because it lets you apply models to real-time data. `deephaven.learn` uses a gather-compute-scatter model:
 
 - **Gather**: copy data from table columns into a Python object, such as a NumPy array.
 - **Compute**: run a calculation, such as a model, on that object.

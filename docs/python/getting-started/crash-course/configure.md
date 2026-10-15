@@ -11,7 +11,7 @@ Keeping your real-time data secure is one of Deephaven's top priorities. By defa
 - With the flag, your key stays the same across server restarts.
 - Without the flag, Deephaven generates a new random key each time the server starts.
 
-Choose a long, hard-to-guess key rather than the placeholder `YOUR_PASSWORD_HERE`.
+For enhanced security, choose a long, hard-to-guess key rather than the placeholder `YOUR_PASSWORD_HERE`.
 
 In both cases, Deephaven prints the key in the server logs on startup, so you can find it there if you forget it. With the Get started command, the logs print in the terminal where you ran `docker run`. The key appears in a line like this one from a Docker Compose log:
 

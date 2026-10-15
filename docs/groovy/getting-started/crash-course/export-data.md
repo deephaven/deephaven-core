@@ -34,7 +34,7 @@ import static io.deephaven.csv.CsvTools.writeCsv
 writeCsv(iris, "/data/irisNew.csv")
 ```
 
-The code below reads the new file back to confirm the write worked.
+Just to show that it's there, the code below reads the new file back.
 
 ```groovy test-set=1 order=irisNew
 irisNew = readCsv("/data/irisNew.csv")
@@ -63,7 +63,7 @@ The code below writes that same table back to a Parquet file.
 ParquetTools.writeTable(cryptoTrades, "/data/cryptoTradesNew.parquet")
 ```
 
-The code below reads the new file back to confirm the write worked.
+Just to show that it worked, the code below reads the new file back.
 
 ```groovy test-set=2 order=cryptoTradesNew
 cryptoTradesNew = ParquetTools.readTable("/data/cryptoTradesNew.parquet")
@@ -237,7 +237,7 @@ new File("/data/myTable.html").text = htmlString
 
 ## Function-generated tables
 
-[Function-generated tables](../../how-to-guides/function-generated-tables.md) are a building block for ingesting data from external sources such as WebSockets and databases. A Groovy function populates a function-generated table. Deephaven reruns the function at a regular interval, or whenever one of the tables you pass in the `sourceTables` argument of [`FunctionGeneratedTableFactory.create`](../../reference/table-operations/create/create.md) changes. The table does no data I/O on its own, but your function can read from an external source each time it runs.
+[Function-generated tables](../../how-to-guides/function-generated-tables.md) are a powerful tool for ingesting data from external sources such as WebSockets, databases, and much more. A Groovy function populates a function-generated table. Deephaven reruns the function at a regular interval, or whenever one of the tables you pass in the `sourceTables` argument of [`FunctionGeneratedTableFactory.create`](../../reference/table-operations/create/create.md) changes. The table does no data I/O on its own, but your function can read from an external source each time it runs.
 
 The following example regenerates data in a table once per second. To keep the example self-contained, the function generates random data instead of reading from an external source.
 

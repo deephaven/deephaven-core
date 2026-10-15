@@ -88,7 +88,7 @@ plot_sub = (
 
 ## More plot types
 
-[Deephaven Express](/core/plotly/docs/) has its own [list of plot types](/core/plotly/docs#plot-types). The built-in [plotting API](/core/pydoc/code/deephaven.plot.html#module-deephaven.plot) also offers more plot types, including [histograms](../../how-to-guides/plotting/api-plotting.md#histogram), [pie charts](../../how-to-guides/plotting/api-plotting.md#pie), and [scatter plots](../../how-to-guides/plotting/api-plotting.md#xy-series-as-a-scatter-plot). For other options, see the [plotting overview](../../how-to-guides/plotting/overview.md), which also links to a guide on plotting with [Matplotlib and Seaborn](../../how-to-guides/plotting/matplot-seaborn.md).
+[Deephaven Express](/core/plotly/docs/) has its own [list of plot types](/core/plotly/docs#plot-types). The built-in [plotting API](/core/pydoc/code/deephaven.plot.html#module-deephaven.plot) also offers far more plot types, including [histograms](../../how-to-guides/plotting/api-plotting.md#histogram), [pie charts](../../how-to-guides/plotting/api-plotting.md#pie), and [scatter plots](../../how-to-guides/plotting/api-plotting.md#xy-series-as-a-scatter-plot). For other options, see the [plotting overview](../../how-to-guides/plotting/overview.md), which also links to a guide on plotting with [Matplotlib and Seaborn](../../how-to-guides/plotting/matplot-seaborn.md).
 
 > [!TIP]
 > Prefer a no-code approach? Use the [Chart Builder](../../how-to-guides/user-interface/chart-builder.md) to create line, bar, scatter, and pie charts from any table directly in the UI.

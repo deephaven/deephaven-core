@@ -4,7 +4,7 @@ title: Time and Calendars
 
 This chapter covers working with time and calendars in Deephaven queries. Since Deephaven specializes in real-time operations, understanding how to work with time is crucial to building effective analyses.
 
-It covers the following topics:
+Critical concepts covered in this chapter include:
 
 - [Time data types](#time-data-types)
 - [Time constants](#time-constants)
@@ -96,7 +96,7 @@ time_arithmetic_table = empty_table(10).update(
 
 [`plus`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#plus(java.time.Instant,java.time.Period)) and [`minus`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#minus(java.time.Instant,java.time.Period)) also accept a date-based [`Period`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Period.html), such as `'P1D'`.
 
-Filtering temporal data with [`where`](../../reference/table-operations/filter/where.md) works the same way as filtering numeric data:
+Filtering temporal data with [`where`](../../reference/table-operations/filter/where.md) isn't much different from filtering numeric data:
 
 ```python test-set=3 order=times_greater_than,times_less_than,times_in_range
 times_greater_than = time_arithmetic_table.where("Timestamp >= '2025-06-01T09:34Z'")
@@ -108,7 +108,7 @@ times_in_range = time_arithmetic_table.where(
 
 ## Time zones
 
-The same instant can have a different local date and time in different time zones. For example, if it's 6 PM in Los Angeles during daylight saving time, it's 9 AM the next day in Shanghai. Methods that extract a date or time component, such as [`secondOfDay`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#secondOfDay(java.time.Instant,java.time.ZoneId,boolean)), [`dayOfYear`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#dayOfYear(java.time.Instant,java.time.ZoneId)), and [`hourOfDay`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#hourOfDay(java.time.Instant,java.time.ZoneId,boolean)), take a time zone because their result depends on it.
+Time zones are a critical part of temporal data. The same instant can have a different local date and time in different time zones. For example, if it's 6 PM in Los Angeles during daylight saving time, it's 9 AM the next day in Shanghai. Methods that extract a date or time component, such as [`secondOfDay`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#secondOfDay(java.time.Instant,java.time.ZoneId,boolean)), [`dayOfYear`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#dayOfYear(java.time.Instant,java.time.ZoneId)), and [`hourOfDay`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#hourOfDay(java.time.Instant,java.time.ZoneId,boolean)), take a time zone because their result depends on it.
 
 Pass a time zone in single quotes, in either of these forms:
 
@@ -135,7 +135,7 @@ time_zone_arithmetic_table = empty_table(10).update(
 
 The final `true` argument to [`secondOfDay`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#secondOfDay(java.time.Instant,java.time.ZoneId,boolean)) and [`hourOfDay`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#hourOfDay(java.time.Instant,java.time.ZoneId,boolean)) sets `asLocalTime`. With `asLocalTime` set to `true`, they measure from local midnight by the wall clock, so a 9:30 AM local timestamp gives the same result on every day, including days when daylight saving time starts or ends.
 
-The previous operations use [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) values. An `Instant` contains no time zone information, so each method call needs a time zone argument such as `'PT'` or `'Asia/Shanghai'`. You can store the time zone in the data instead by converting to a [`ZonedDateTime`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/ZonedDateTime.html) with [`toZonedDateTime`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#toZonedDateTime(java.time.Instant,java.time.ZoneId)):
+The previous operations use [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) values. An `Instant` contains no time zone information, so each method call needs a time zone argument such as `'PT'` or `'Asia/Shanghai'`. Instead, you can bake the time zone into the data by converting to a [`ZonedDateTime`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/ZonedDateTime.html) with [`toZonedDateTime`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#toZonedDateTime(java.time.Instant,java.time.ZoneId)):
 
 ```python test-set=5
 from deephaven import empty_table
@@ -224,14 +224,12 @@ Grouping rows by date or by fixed intervals of time, then [aggregating](../../ho
 
 ### Daily summaries
 
-To summarize data by day, convert each timestamp to a date with [`toLocalDate`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#toLocalDate(java.time.Instant,java.time.ZoneId)), then aggregate with [`agg_by`](../../reference/table-operations/group-and-aggregate/aggBy.md). For example, the following query uses the `trading_data` table from [Filter and count with a calendar](#filter-and-count-with-a-calendar) to calculate the number of trades, the total size, and the average price for each ticker on each day:
+Combine time operations with aggregations for powerful analysis. To summarize data by day, convert each timestamp to a date with [`toLocalDate`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#toLocalDate(java.time.Instant,java.time.ZoneId)), then aggregate with [`agg_by`](../../reference/table-operations/group-and-aggregate/aggBy.md). For example, the following query uses the `trading_data` table from [Filter and count with a calendar](#filter-and-count-with-a-calendar) to calculate the number of trades, the total size, and the average price for each ticker on each day:
 
 ```python test-set=6 order=daily_summary
 from deephaven import agg
 
-daily_summary = trading_data.update(
-    ["Date = toLocalDate(Timestamp, 'ET')"]
-).agg_by(
+daily_summary = trading_data.update(["Date = toLocalDate(Timestamp, 'ET')"]).agg_by(
     [
         agg.count_("NumTrades"),
         agg.sum_("TotalSize = Size"),
@@ -256,7 +254,7 @@ avg_by_time_bucket = trading_data.update(
 
 ## Put it all together
 
-The following example combines the business-hours [filter](../../reference/table-operations/filter/where.md) from [Filter and count with a calendar](#filter-and-count-with-a-calendar) with the daily summary from [Daily summaries](#daily-summaries), a combination common in financial data analysis. It reuses the `nyse_cal` calendar and differs from those examples in two ways:
+Here's a practical example that brings these time concepts together. It combines the business-hours [filter](../../reference/table-operations/filter/where.md) from [Filter and count with a calendar](#filter-and-count-with-a-calendar) with the daily summary from [Daily summaries](#daily-summaries), a combination common in financial data analysis. It reuses the `nyse_cal` calendar and differs from those examples in two ways:
 
 - Its data starts on January 1, an NYSE holiday, so the calendar [filter](../../reference/table-operations/filter/where.md) removes that whole day.
 - Its query uses [`minuteOfDay`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#minuteOfDay(java.time.Instant,java.time.ZoneId,boolean)) to get each trade's minute of the day, then flags trades in the first hour after the open.
@@ -296,7 +294,7 @@ market_daily_summary = processed_data.agg_by(
 
 ## Next steps
 
-To go further with time-series analysis, see:
+Time handling is crucial for real-time data processing. The concepts covered here form the foundation for more advanced time-series analysis. To go further, see:
 
 - [Built-in time functions](../../reference/query-language/query-library/auto-imported/time.md)
 - [Rolling window calculations](../../how-to-guides/rolling-aggregations.md)
