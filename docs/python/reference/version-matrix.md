@@ -6,14 +6,14 @@ This page lists the Python versions, server Python dependencies, Java (JDK) vers
 
 ## Python versions
 
-A :white_check_mark: indicates that the Deephaven version supports the Python version, and a blank cell indicates that it does not. The Python 3.14/t column covers both Python 3.14 and Python 3.14t, the free-threaded build of Python 3.14.
+A :white_check_mark: indicates that the Deephaven version supports the Python version, and a blank cell indicates that it does not. The Python 3.14/t column covers both Python 3.14 and Python 3.14t, the free-threaded build of Python 3.14. Deephaven 0.40.x also supports Python 3.8.
 
-| Deephaven version |     Python 3.8     |     Python 3.9     |    Python 3.10     |    Python 3.11     |    Python 3.12     |    Python 3.13     |   Python 3.14/t    |
-| ----------------- | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
-| 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
-| 41.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
-| 42.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
-| 43.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Deephaven version |     Python 3.9     |    Python 3.10     |    Python 3.11     |    Python 3.12     |    Python 3.13     |   Python 3.14/t    |
+| ----------------- | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
+| 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
+| 41.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
+| 42.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
+| 43.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
 Free-threaded Python is the build of Python that runs without the global interpreter lock (GIL). Deephaven does not support the experimental free-threaded build of Python 3.13.
 
