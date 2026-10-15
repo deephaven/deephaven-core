@@ -115,7 +115,7 @@ class InputColumn:
             a new InputColumn
 
         Raises:
-            DHError
+            DHError: If unable to create an InputColumn ().
         """
         try:
             self._column_definition = col_def(
@@ -168,7 +168,7 @@ def col_def(
         a new ColumnDefinition
 
     Raises:
-        DHError
+        DHError: If unable to create a ColumnDefinition ().
     """
     try:
         return ColumnDefinition(

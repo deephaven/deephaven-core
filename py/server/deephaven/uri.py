@@ -26,7 +26,7 @@ def resolve(uri: str) -> Any:
         an object
 
     Raises:
-        DHError
+        DHError: If unable to resolve the URI.
     """
 
     try:

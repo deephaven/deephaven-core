@@ -17,7 +17,7 @@ def garbage_collect() -> None:
     mindful of the overhead that running garbage collection generally incurs.
 
     Raises:
-        DHError
+        DHError: If unable to initiate system-wide garbage collection.
     """
     try:
         gc.collect()

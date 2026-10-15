@@ -78,7 +78,7 @@ def _table_reader_all(
         A Python collection object, usually a dictionary or tuple.
 
     Raises:
-        ValueError
+        ValueError: If a column name is invalid.
     """
     col_defs = _col_defs(table, cols)
 
@@ -124,7 +124,7 @@ def _table_reader_all_dict(
         A dictionary of column names to numpy arrays or Java arrays.
 
     Raises:
-        ValueError
+        ValueError: If a column name is invalid.
     """
 
     def _emitter(col_defs, j_array):
@@ -171,7 +171,7 @@ def _table_reader_chunk(
         A generator that yields the desired Python type of the emitter.
 
     Raises:
-        ValueError
+        ValueError: If chunk_size is negative.
     """
     if chunk_size < 0:
         raise ValueError("chunk_size must not be negative.")
@@ -226,7 +226,7 @@ def _table_reader_chunk_dict(
         A generator that yields a dictionary of column names to numpy arrays or Java arrays.
 
     Raises:
-        ValueError
+        ValueError: If a column name is invalid.
     """
 
     def _emitter(
@@ -271,7 +271,7 @@ def _table_reader_chunk_tuple(
         A generator that yields a named tuple for each row in the table.
 
     Raises:
-        ValueError
+        ValueError: If a column name is invalid.
     """
     named_tuple_class: type[tuple] = namedtuple(  # type: ignore[misc]
         tuple_name, cols or table.column_names, rename=False
@@ -326,7 +326,7 @@ def _table_reader_row_dict(
         A generator that yields a dictionary of column names to values.
 
     Raises:
-        ValueError
+        ValueError: If a column name is invalid.
     """
 
     def _emitter(
@@ -379,7 +379,7 @@ def _table_reader_row_tuple(
         A generator that yields a named tuple for each row in the table
 
     Raises:
-        ValueError
+        ValueError: If a column name is invalid.
     """
     named_tuple_class: type[tuple] = namedtuple(  # type: ignore[misc]
         tuple_name, cols or table.column_names, rename=False
