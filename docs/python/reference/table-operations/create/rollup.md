@@ -61,7 +61,7 @@ Whether or not to include constituent rows at the leaf level. Default is `False`
 
 ### Instance
 
-- `with_filters(filters)` - Create a new rollup table that applies a set of filters. If every filter uses only group-by columns, Deephaven filters the lowest aggregated level and reaggregates. Otherwise, it applies the filters to the source table and rebuilds the rollup. Filters may use group-by and constituent columns but not aggregation columns, and may not use column arrays.
+- `with_filters(filters)` - Create a new rollup table that applies a set of filters. If every filter uses only group-by columns, Deephaven filters the lowest aggregated level and reaggregates. Otherwise, it applies the filters to the source table and rebuilds the rollup. Filters may use group-by and constituent columns but may not use columns that are inputs to an aggregation, and may not use column arrays.
 - `with_update_view(columns...)` - Create a new rollup table that applies a set of `update_view` operations to the `groupByColumns` of the rollup table.
 - `node_operation_recorder(nodeType)` - Get a [`recorder`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.RollupNodeOperationsRecorder) for per-node operations to apply during snapshots of the requested [`NodeType`](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.NodeType.html).
 - `with_node_operations(recorders...)` - Create a new rollup table that applies the [`recorded`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.RollupNodeOperationsRecorder) operations to nodes when gathering snapshots.
@@ -89,7 +89,7 @@ insurance_rollup = insurance.rollup(
 )
 ```
 
-Similar to the previous example, this example creates a rollup table from a source table of insurance expense data. However, this time we are filtering on the source table before applying the rollup using `with_filters`. Both group and constituent columns can be used in the filter, while aggregation columns cannot.
+Similar to the previous example, this example creates a rollup table from a source table of insurance expense data. However, this time we are filtering on the source table before applying the rollup using `with_filters`. Both group and constituent columns can be used in the filter, while columns that are inputs to an aggregation cannot, and neither can column arrays.
 
 ```python order=insurance,insurance_rollup
 from deephaven import read_csv, agg

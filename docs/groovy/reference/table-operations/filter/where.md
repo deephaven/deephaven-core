@@ -161,6 +161,7 @@ Deephaven does not apply a filter on partitioning columns this way in these case
 - The filter is marked serial with [`withSerial`](../../query-language/types/Filter.md#withserial), or any filter before it in the argument list is. From the first serial filter on, Deephaven evaluates that filter and every later one on the table's rows instead of on whole partitions.
 - The filter respects a [Barrier](../../query-language/types/Barrier.md) declared by a filter that is not applied this way.
 - The filter uses row variables such as `i` or `ii`, or its results can change over time (a refreshing filter).
+- The filter uses column arrays, even when the arrays come from partitioning columns.
 
 In these cases Deephaven does not use that filter to skip partitions. It evaluates the filter on the rows of the partitions that other filters on partitioning columns leave in. On a large partitioned source, that can be much slower. Mark a filter on partitioning columns serial only when the order in which it is evaluated matters.
 

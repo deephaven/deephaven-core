@@ -67,7 +67,7 @@ One or more columns to group on and create hierarchy from.
 - `includesConstituents` - Returns a boolean indicating whether or not the constituent rows at the lowest level are included.
 - `makeNodeOperationsRecorder(nodeType)` - Get a [`recorder`](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.NodeOperationsRecorder.html) for per-node operations to apply during snapshots of the requested [`NodeType`](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.NodeType.html).
 - `translateAggregatedNodeOperationsForConstituentNodes(aggregatedNodeOperationsToTranslate)` - Translate node operations for aggregated nodes to the closest equivalent for a constituent node.
-- `withFilter(filter)` - Create a new rollup table that applies a filter to the Group By or Constituent columns of the rollup table. If every filter uses only group-by columns, Deephaven filters the lowest aggregated level and reaggregates. Otherwise, it applies the filters to the source table and rebuilds the rollup.
+- `withFilter(filter)` - Create a new rollup table that applies a filter to the Group By or Constituent columns of the rollup table. If every filter uses only group-by columns, Deephaven filters the lowest aggregated level and reaggregates. Otherwise, it applies the filters to the source table and rebuilds the rollup. Filters may use group-by and constituent columns but may not use columns that are inputs to an aggregation, and may not use column arrays.
 - `withNodeOperations(nodeOperations...)` - Create a new rollup table that applies the [`recorded`](/core/javadoc/io/deephaven/engine/table/hierarchical/RollupTable.NodeOperationsRecorder.html) operations to nodes when gathering snapshots.
 - `withUpdateView(columns...)` - Create a new rollup table that applies a set of `updateView` operations to the `groupByColumns` of the rollup table.
 
@@ -91,7 +91,7 @@ aggList = [Aggregation.of(AggSpec.avg(), "bmi", "expenses")]
 insuranceRollup = insurance.rollup(aggList, false, "region", "age")
 ```
 
-Similar to the previous example, this example creates a rollup table from a source table of insurance expense data. However, this time we are filtering on the source table before applying the rollup using `withFilter`. Both group and constituent columns can be used in the filter, while aggregation columns cannot.
+Similar to the previous example, this example creates a rollup table from a source table of insurance expense data. However, this time we are filtering on the source table before applying the rollup using `withFilter`. Both group and constituent columns can be used in the filter, while columns that are inputs to an aggregation cannot, and neither can column arrays.
 
 ```groovy order=insurance,insuranceRollup
 import static io.deephaven.csv.CsvTools.readCsv
