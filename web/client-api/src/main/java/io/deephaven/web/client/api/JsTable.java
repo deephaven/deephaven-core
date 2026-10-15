@@ -1201,6 +1201,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     wrapped.setState(nextState);
                     // the binding owns it now
                     nextState.unretain(totalsTable);
+                    // The states the totals table was on are no longer reachable from it; let each one go once the
+                    // table's current state settles, the way the batcher disposes of the states it walks past.
+                    for (ClientTableState orphan : existing.reversed()) {
+                        orphan.cleanup();
+                    }
                     if (existing.isEqual(totals)) {
                         totalsTable.refreshViewport();
                         return null;

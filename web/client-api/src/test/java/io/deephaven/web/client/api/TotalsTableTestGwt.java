@@ -429,6 +429,67 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     /**
+     * A totals table with its own filter is rebased when the source changes. The states it was on before the rebase,
+     * the filtered totals and the totals root under them, are no longer reachable from it and must be released, and
+     * closing the totals table afterward must leave nothing bound to it.
+     */
+    public void testRebaseReleasesPreviousTotalsStates() {
+        JsTotalsTable[] holder = {null};
+        List<ClientTableState> previous = new ArrayList<>();
+        connect(tables)
+                .then(table("hasTotals"))
+                .then(table -> {
+                    delayTestFinish(8000);
+                    return table.getTotalsTable(null).then(totals -> {
+                        holder[0] = totals;
+                        totals.setViewport(0, 100, null, null, null);
+                        return waitForEvent(totals, JsTable.EVENT_UPDATED, checkTotals(totals, 5, 6., 0., "a1"),
+                                2001).then(ignored -> Promise.resolve(table));
+                    });
+                })
+                .then(table -> {
+                    // give the totals table a filter of its own, one that still matches after the source changes
+                    holder[0].applyFilter(new FilterCondition[] {
+                            holder[0].findColumn("J__Min").filter().eq(FilterValue.ofNumber(0))
+                    });
+                    return holder[0].nextEvent(JsTable.EVENT_FILTERCHANGED, 2002.)
+                            .then(ignored -> Promise.resolve(table));
+                })
+                .then(table -> {
+                    for (ClientTableState state : holder[0].state().reversed()) {
+                        previous.add(state);
+                    }
+                    assertEquals("filtered totals over the totals root", 2, previous.size());
+                    // change the source; the totals are rebuilt from the filtered source and the filter re-applied
+                    table.applyFilter(new FilterCondition[] {
+                            table.findColumn("K").filter().eq(FilterValue.ofNumber(0.0))
+                    });
+                    return waitForEventWhere(holder[0], JsTable.EVENT_UPDATED, singleRowWith(holder[0], "I", 3), 2003)
+                            .then(ignored -> Promise.resolve(table));
+                })
+                .then(waitFor(500))
+                .then(table -> {
+                    for (ClientTableState state : previous) {
+                        assertEquals("previous totals state not released: " + state,
+                                ClientTableState.ResolutionState.RELEASED, state.getResolution());
+                    }
+                    holder[0].close();
+                    return Promise.resolve(table);
+                })
+                .then(waitFor(500))
+                .then(table -> {
+                    JsTable wrapped = holder[0].getWrappedTable();
+                    for (ClientTableState state : holder[0].getConnection().getCache().getAllStates()) {
+                        for (JsTable bound : state.getBoundTables()) {
+                            assertNotSame("closed totals table still bound to " + state, wrapped, bound);
+                        }
+                    }
+                    return Promise.resolve(table);
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
      * Requests the totals table right after a filter the server will reject. The source rolls back to its last good
      * state, and the totals must reflect that state rather than fail.
      */
