@@ -438,7 +438,7 @@ public class SparsePageReadTest {
             // Every other cached row: each seek steps over one cached range.
             assertPass("subset", dense(() -> ParquetTools.readTable(path).where("ii % 26 == 0").select()),
                     source.where("ii % 26 == 0"), Reads.HIT);
-            // Every 100th cached row: each seek skips more cached ranges than it steps over, so it finds its position.
+            // Every 100th cached row: each seek skips past several checkpoints, so it jumps to the last one before it.
             assertPass("far subset", dense(() -> ParquetTools.readTable(path).where("ii % 1300 == 0").select()),
                     source.where("ii % 1300 == 0"), Reads.HIT);
         }
@@ -548,11 +548,11 @@ public class SparsePageReadTest {
     }
 
     /**
-     * A viewport scrolling in file order, with a fresh context per step, returns to the page the previous step ended
-     * on. Those continuations are not misses, so even a limit of one caches no page whole.
+     * A viewport scrolling in file order without a hint, with a fresh context per step, reopens the page the previous
+     * step ended on, decompressing it again. Those reopens are misses, so a page many steps land on is cached whole.
      */
     @Test
-    public void testForwardScrollIsNotMiss() {
+    public void testForwardScrollMisses() {
         final String path = writeTestTable();
         final Table expected = dense(() -> ParquetTools.readTable(path).select());
         try (final SafeCloseable ignored = PageCache.pinTouchedPages();
@@ -561,18 +561,41 @@ public class SparsePageReadTest {
             final long[] neverPromoted =
                     fillSteps(expectedSource, ParquetTools.readTable(path).getColumnSource("L"), rows, 50);
             ColumnChunkPageStore.setSparseMissesBeforeFullCaching(1);
-            final long[] limitOfOne =
-                    fillSteps(expectedSource, ParquetTools.readTable(path).getColumnSource("L"), rows, 50);
-            // More fills than steps: some steps span two pages, so the next step starts on the page the previous one
-            // ended on.
-            assertTrue("steps should span pages", neverPromoted[0] > (rows.size() + 49) / 50);
-            assertEquals("sparse fills", neverPromoted[0], limitOfOne[0]);
-            assertEquals("sparse hits", neverPromoted[1], limitOfOne[1]);
+            final ColumnSource<?> actual = ParquetTools.readTable(path).getColumnSource("L");
+            final long[] limitOfOne = fillSteps(expectedSource, actual, rows, 50);
+            // Dozens of steps land on each page; with a limit of one, a page's second open caches it whole.
+            assertTrue("sparse fills " + limitOfOne[0] + " vs " + neverPromoted[0],
+                    limitOfOne[0] * 5 < neverPromoted[0]);
+            final long[] again = fillSteps(expectedSource, actual, rows, 50);
+            assertEquals("sparse fills after promotion", 0, again[0]);
+            assertEquals("sparse hits after promotion", 0, again[1]);
         }
     }
 
     /**
-     * A fill that starts on a page behind rows requested there is a miss, even after continuations.
+     * A request dense enough to cache its page whole is served from the page's cached sparse values if they cover it,
+     * rather than reading the page again.
+     */
+    @Test
+    public void testDenseRequestHitsCachedValues() {
+        final String path = writeTestTable();
+        ColumnChunkPageStore.setSparseReadMaxDensity(0.1);
+        final Table expected = dense(() -> ParquetTools.readTable(path).select());
+        final ColumnSource<?> expectedSource = expected.getColumnSource("L");
+        final ColumnSource<?> actual = ParquetTools.readTable(path).getColumnSource("L");
+        try (final SafeCloseable ignored = PageCache.pinTouchedPages();
+                final RowSet cached = expected.where("ii % 13 == 0").getRowSet().copy();
+                final RowSet single = expected.where("ii % 1300 == 0").getRowSet().copy()) {
+            assertTrue("decodes", fillSteps(expectedSource, actual, cached, cached.intSize())[0] > 0);
+            // One row per fill: dense over its span of one row.
+            final long[] reads = fillSteps(expectedSource, actual, single, 1);
+            assertEquals("sparse fills", 0, reads[0]);
+            assertEquals("sparse hits", single.size(), reads[1]);
+        }
+    }
+
+    /**
+     * A fill that starts on a page behind rows requested there is a miss.
      */
     @Test
     public void testReadBehindIsMiss() {
@@ -584,10 +607,11 @@ public class SparsePageReadTest {
         try (final SafeCloseable ignored = PageCache.pinTouchedPages();
                 final RowSet rows = expected.where("ii % 13 == 0").getRowSet().copy();
                 final RowSet behind = expected.where("ii % 13 == 1").getRowSet().copy()) {
-            // One miss per page.
-            fillSteps(expectedSource, actual, rows, 50);
-            // A single fill, so that only its first page could continue a read, and it starts behind the rows read
-            // there: a second miss per page, which caches every page whole.
+            // A single fill: one miss per page.
+            final long[] first = fillSteps(expectedSource, actual, rows, rows.intSize());
+            assertTrue("sparse fills", first[0] > 0);
+            // Another single fill, behind the rows read on each page: a second miss per page, which caches every page
+            // whole.
             fillSteps(expectedSource, actual, behind, behind.intSize());
             final long[] reads = fillSteps(expectedSource, actual, rows, rows.intSize());
             assertEquals("sparse fills", 0, reads[0]);
