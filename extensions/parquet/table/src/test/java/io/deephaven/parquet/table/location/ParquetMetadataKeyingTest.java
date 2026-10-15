@@ -19,6 +19,8 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTableWriter;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.metadata.RowGroupInfo;
+import io.deephaven.util.codec.SimpleByteArrayCodec;
+import io.deephaven.util.codec.UTF8StringAsByteArrayCodec;
 import io.deephaven.vector.IntVector;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.junit.Rule;
@@ -277,6 +279,22 @@ public class ParquetMetadataKeyingTest {
         final Table fromDisk = ParquetTools.readTable(writeSortedTable(renamed), renamed);
         assertEquals(Optional.empty(), sortOrder(fromDisk, "X"));
         assertFilterMatchesOracle(fromDisk, "X >= 500");
+    }
+
+    /**
+     * The sorted column {@code X} is not written, and the column that is, {@code Y}, has the parquet name {@code X}
+     * would have had; the file must not claim {@code Y} is sorted.
+     */
+    @Test
+    public void sortednessOfColumnNotWritten() {
+        final String dest = path("projected.parquet");
+        ParquetTools.writeTable(sortedSource(), dest, ParquetInstructions.builder()
+                .setTableDefinition(TableDefinition.of(ColumnDefinition.ofInt("Y")))
+                .addColumnNameMapping("Y", "X")
+                .build());
+        final Table fromDisk = ParquetTools.readTable(dest);
+        assertEquals(Optional.empty(), sortOrder(fromDisk, "Y"));
+        assertFilterMatchesOracle(fromDisk, "Y >= 500");
     }
 
     // endregion sortedness
@@ -668,6 +686,40 @@ public class ParquetMetadataKeyingTest {
         assertEquals(BigInteger.class, indexKeyType(fromDisk, "Sym"));
         assertTableEquals(TableTools.emptyTable(5).update("Sym = java.math.BigInteger.valueOf(ii)"),
                 DataIndexer.getDataIndex(fromDisk, "Sym").table().view("Sym").sort("Sym"));
+    }
+
+    /**
+     * Inference installs the footer's codec for each column; a key column read with another codec, here a string column
+     * written as bytes and read as raw bytes, is read with that one in the index too.
+     */
+    @Test
+    public void dataIndexWithColumnResolverAndExplicitCodec() {
+        final String dest = path("codecIndexed.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(100).update("B = `b` + (int) (ii / 10)", "C = (int) ii"),
+                dest,
+                ParquetInstructions.builder()
+                        .addColumnCodec("B", UTF8StringAsByteArrayCodec.class.getName())
+                        .addIndexColumns("B")
+                        .build());
+        final ParquetColumnResolverMap resolver = ParquetColumnResolverMap.builder()
+                .putMap("Sym", List.of("B"))
+                .putMap("C", List.of("C"))
+                .build();
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setTableDefinition(TableDefinition.of(
+                        ColumnDefinition.fromGenericType("Sym", byte[].class, byte.class),
+                        ColumnDefinition.ofInt("C")))
+                .setColumnResolverFactory((tableKey, tableLocationKey) -> resolver)
+                .addColumnCodec("Sym", SimpleByteArrayCodec.class.getName())
+                .build();
+        final ParquetTableLocation location = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(new File(dest).toURI(), 0, null, instructions),
+                instructions);
+        final Table indexTable = location.loadDataIndex("Sym").table().select();
+        assertEquals(10, indexTable.size());
+        assertTrue(indexTable.getColumnSource("Sym").get(indexTable.getRowSet().firstRowKey()) instanceof byte[]);
     }
 
     /** A key column named like the index table's row set column can't be told apart from it, so it has no index. */

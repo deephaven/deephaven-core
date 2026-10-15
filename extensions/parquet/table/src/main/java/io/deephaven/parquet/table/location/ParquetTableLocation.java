@@ -700,8 +700,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             // The indexed table's renames don't describe a legacy grouping table, whose columns have fixed names. A
             // column resolver describes the indexed table's files, not the index table's, and resolution wins over any
             // name mapping alongside it; so map each data index key column's parquet name to its Deephaven name
-            // instead, with the codec its column is read with. A resolver can swap two names; the mappings apply
-            // together.
+            // instead. A resolver can swap two names; the mappings apply together.
             final ParquetInstructions.Builder builder = ParquetInstructions.builder()
                     .setFileLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
             final Object specialInstructions = parquetInstructions.getSpecialInstructions();
@@ -711,17 +710,21 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (indexFileMetaData.dataIndexInfo != null) {
                 for (int ki = 0; ki < keyColumnNames.length; ++ki) {
                     builder.addColumnNameMapping(parquetKeyColumnNames[ki], keyColumnNames[ki]);
-                    final String codecName = parquetInstructions.getCodecName(keyColumnNames[ki]);
-                    if (codecName != null) {
-                        builder.addColumnCodec(keyColumnNames[ki], codecName,
-                                parquetInstructions.getCodecArgs(keyColumnNames[ki]));
-                    }
                 }
             }
             keyNamingInstructions = builder.build();
         }
-        // The keys must have the types of the columns they index, so read each key column as its column is read --
-        // perhaps widened, or a LIST as a vector -- which inference from the index file alone may not see
+        // Each index table column holding a key, mapped to the column it indexes. A data index table names its key
+        // columns after those columns; a legacy grouping table stores its one key column under its own name, beside
+        // position columns that are not keys.
+        final Map<String, String> keyColumnNameByIndexColumnName = new HashMap<>(keyColumnNames.length);
+        if (indexFileMetaData.dataIndexInfo != null) {
+            for (final String keyColumnName : keyColumnNames) {
+                keyColumnNameByIndexColumnName.put(keyColumnName, keyColumnName);
+            }
+        } else {
+            keyColumnNameByIndexColumnName.put(GROUPING_KEY_COLUMN_NAME, keyColumnNames[0]);
+        }
         final ParquetTableLocationKey indexKey =
                 new ParquetTableLocationKey(indexFileMetaData.fileURI, 0, null, keyNamingInstructions);
         final io.deephaven.base.Pair<List<ColumnDefinition<?>>, ParquetInstructions> indexSchema =
@@ -729,24 +732,28 @@ public class ParquetTableLocation extends AbstractTableLocation {
                         indexKey.getFileReader().getSchema(),
                         indexKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                         keyNamingInstructions);
+        // The keys must have the types of the columns they index, so read each key column as its column is read: with
+        // its type -- perhaps widened, or a LIST as a vector, which inference from the index file alone may not see --
+        // and with its codec, if it is read with one, over the footer's, which inference installs
         final TableDefinition definition = parquetInstructions.getTableDefinition().orElse(null);
-        final Set<String> keyColumns = Set.of(keyColumnNames);
+        final ParquetInstructions.Builder indexReadBuilder = new ParquetInstructions.Builder(indexSchema.getSecond());
         final List<ColumnDefinition<?>> indexColumns = new ArrayList<>(indexSchema.getFirst().size());
         for (final ColumnDefinition<?> indexColumn : indexSchema.getFirst()) {
-            // A data index table names its key columns after the columns they index; a legacy grouping table stores
-            // its one key column under its own name, beside position columns that are not keys
-            final String keyColumnName = indexFileMetaData.dataIndexInfo != null
-                    ? keyColumns.contains(indexColumn.getName()) ? indexColumn.getName() : null
-                    : GROUPING_KEY_COLUMN_NAME.equals(indexColumn.getName()) ? keyColumnNames[0] : null;
+            final String keyColumnName = keyColumnNameByIndexColumnName.get(indexColumn.getName());
             final ColumnDefinition<?> keyColumn = definition == null || keyColumnName == null
                     ? null
                     : definition.getColumn(keyColumnName);
             indexColumns.add(keyColumn == null
                     ? indexColumn
                     : keyColumn.withNormal().withName(indexColumn.getName()));
+            final String codecName = keyColumnName == null ? null : parquetInstructions.getCodecName(keyColumnName);
+            if (codecName != null) {
+                indexReadBuilder.addColumnCodec(indexColumn.getName(), codecName,
+                        parquetInstructions.getCodecArgs(keyColumnName));
+            }
         }
         final Table indexTable = ParquetTools.readTable(indexFileMetaData.fileURI.toString(),
-                indexSchema.getSecond().withTableDefinition(TableDefinition.of(indexColumns)));
+                indexReadBuilder.setTableDefinition(TableDefinition.of(indexColumns)).build());
         if (indexFileMetaData.dataIndexInfo != null) {
             return indexTable;
         }

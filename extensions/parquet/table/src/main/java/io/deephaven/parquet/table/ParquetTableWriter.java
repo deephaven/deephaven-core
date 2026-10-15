@@ -179,10 +179,11 @@ public class ParquetTableWriter {
         // sorted, rather than ordered sets expressing multi-column sorts. Given that mismatch, we can only reflect
         // a single column sort in the metadata at this time.
         // Like the rest of the footer metadata, it is recorded by parquet column name, which is what a reader sees in
-        // the file whatever renames it applies. Every reader validates that name as a column name, so a parquet name
+        // the file whatever renames it applies. Only a column that is written has one; another column may be written
+        // under the name an unwritten one maps to. Every reader validates that name as a column name, so a parquet name
         // that is not one leaves the sort unrecorded.
         final List<SortColumn> sortedColumns = SortedColumnsAttribute.getSortedColumns(t);
-        if (!sortedColumns.isEmpty()) {
+        if (!sortedColumns.isEmpty() && definition.getColumn(sortedColumns.get(0).column().name()) != null) {
             final SortColumn sortedColumn = sortedColumns.get(0);
             final String parquetColumnName =
                     writeInstructions.getParquetColumnNameFromColumnNameOrDefault(sortedColumn.column().name());
