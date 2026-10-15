@@ -406,8 +406,14 @@ t1 = empty_table(0) if t.is_blink else None
         # gRPC runs an RPC's done callbacks on the thread that delivers results for that RPC's channel. A collection
         # there runs Session.__del__ on that thread, so an RPC from __del__ would wait for itself.
         collected = _Event()
+        test_thread = threading.current_thread()
+        ran_inline = []
 
         def collect(_future):
+            if threading.current_thread() is test_thread:
+                # The RPC finished before add_done_callback, which then ran this on the test thread. Try again.
+                ran_inline.append(True)
+                return
             gc.collect()
             collected.set()
 
@@ -419,10 +425,16 @@ t1 = empty_table(0) if t.is_blink else None
             stub = session.config_service._grpc_app_stub
             metadata = session.grpc_metadata
             del session
-            future = stub.GetConfigurationConstants.future(
-                config_pb2.ConfigurationConstantsRequest(), metadata=metadata
-            )
-            future.add_done_callback(collect)
+            for _ in range(10):
+                ran_inline.clear()
+                future = stub.GetConfigurationConstants.future(
+                    config_pb2.ConfigurationConstantsRequest(), metadata=metadata
+                )
+                future.add_done_callback(collect)
+                if not ran_inline:
+                    break  # the callback runs on the gRPC thread
+            else:
+                self.fail("every RPC finished before its done callback was added")
             self.assertTrue(
                 collected.wait(30), "the finalizer hung on the session's gRPC thread"
             )
