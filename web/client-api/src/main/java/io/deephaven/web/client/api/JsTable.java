@@ -1097,6 +1097,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     private Promise<JsTotalsTable> fetchTotals(Object config, JsProvider<ClientTableState> state) {
         JsTotalsTableConfig directive = getTotalsDirectiveFromOptionalConfig(config);
         ClientTableState[] lastGood = {null};
+
+        // A rebase that fails before the caller holds the totals table fails the request instead: nobody can listen
+        // for the event yet, and the totals would be behind the source.
+        String[] pendingFailure = {null};
+        boolean[] resolved = {false};
+
         final JsTableFetch totalsFactory = (callback, newState) -> {
             final ClientTableState target;
             // we know this will get called at least once, immediately, so lastGood will never be null
@@ -1201,6 +1207,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     wrapped.setState(nextState);
                     // the binding owns it now
                     nextState.unretain(totalsTable);
+                    // the totals match the source again, whatever an earlier rebase did
+                    pendingFailure[0] = null;
                     // The states the totals table was on are no longer reachable from it; let each one go once the
                     // table's current state settles, the way the batcher disposes of the states it walks past.
                     for (ClientTableState orphan : existing.reversed()) {
@@ -1222,6 +1230,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     });
                 }, error -> {
                     nextState.unretain(totalsTable);
+                    if (wrapped.isClosed() || isClosed() || source != state()) {
+                        // superseded by a newer source change, whose rebase decides; or no longer wanted
+                        return null;
+                    }
+                    if (!resolved[0]) {
+                        pendingFailure[0] = String.valueOf(error);
+                        return null;
+                    }
                     // The totals can no longer follow the source. Report it the way a table that fails on the server
                     // is reported; the totals keep their last good values until the source changes again.
                     wrapped.failureHandled(String.valueOf(error));
@@ -1233,16 +1249,26 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         wrapped.onClosed.add(() -> lastGood[0].unretain(directive));
         onClosed.add(remover::remove);
 
+        // Hands the totals table over, unless a rebase failed while the request was pending: those totals do not
+        // match the source, and the request fails with that rebase's reason instead.
+        final JsProvider<Promise<JsTotalsTable>> settle = () -> {
+            resolved[0] = true;
+            if (pendingFailure[0] != null) {
+                wrapped.close();
+                return Promise.reject(pendingFailure[0]);
+            }
+            return Promise.resolve(totalsTable);
+        };
         // The first fetch's rejection is only a failure if the wrapped table still holds this state. If a rebase
         // replaced it, that export was cancelled on purpose; the result is whichever state the table ends up on.
         return totals.refetch().then(
-                ignore -> Promise.resolve(totalsTable),
+                ignore -> settle.valueOf(),
                 error -> {
                     if (wrapped.state() == totals) {
                         wrapped.close();
                         return Promise.reject(error);
                     }
-                    return wrapped.whenRunning().then(ignore -> Promise.resolve(totalsTable));
+                    return wrapped.whenRunning().then(ignore -> settle.valueOf());
                 });
     }
 

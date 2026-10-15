@@ -41,7 +41,12 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
             .script("def slow(x) -> float:\n    time.sleep(0.4)\n    return float(x)")
             .script("slowTotals",
                     "empty_table(5).update_view([\"I = (double)i\", \"J = (double) i * i\", \"K = (double) i % 2\", \"S = slow(i)\"])"
-                            + ".with_attributes({'TotalsTable':'false,false,Sum;J=Min:Avg,K=Skip,;'})");
+                            + ".with_attributes({'TotalsTable':'false,false,Sum;J=Min:Avg,K=Skip,;'})")
+            // G is slow to fail when read. Client formulas may not call Python functions, so a test that wants a
+            // totals rebase to fail slowly points a summed column at G instead
+            .script("def slow_fail(x) -> float:\n    time.sleep(1.0)\n    raise Exception('slow failure')")
+            .script("rebaseRace",
+                    "empty_table(5).update_view([\"I = (double)i\", \"S = slow(i)\", \"F = (double)i\", \"G = slow_fail(i)\"])");
 
     // This will need to be updated to reflect values from JsTotalsTableConfig.knownAggTypes
     // These are the values calculated for each Agg for column I of the "hasTotals" table
@@ -209,6 +214,157 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                         .get(totals.findColumn("I")).<LongWrapper>cast().getWrapped() == 3,
                                 2501);
                     });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * Changes the source while the initial totals request is in flight, in a way that makes the rebase fail before that
+     * request resolves. The caller then holds a totals table that is behind its source; the failure must be delivered
+     * to a listener attached after the promise resolves, not lost to the console.
+     */
+    public void testRebaseFailsBeforeInitialTotalsFetchResolves() {
+        // on code that logs the failure instead of delivering it, the log must not end the test early
+        errorLogsDontFail();
+        JsTotalsTable[] holder = {null};
+        connect(tables)
+                .then(table("slowTotals"))
+                .then(table -> {
+                    delayTestFinish(10000);
+                    // sum the slow column so the first fetch takes a couple of seconds
+                    JsTotalsTableConfig config = new JsTotalsTableConfig();
+                    config.defaultOperation = JsAggregationOperation.SKIP;
+                    config.operationMap.set("I", Js.uncheckedCast(new JsString[] {toJsString("Sum")}));
+                    config.operationMap.set("S", Js.uncheckedCast(new JsString[] {toJsString("Sum")}));
+                    Promise<JsTotalsTable> totalsPromise = table.getTotalsTable(config);
+                    // retype both summed columns while that fetch is in flight; the rebased aggregate has nothing
+                    // left to sum, and the server refuses it before the first fetch resolves
+                    table.applyCustomColumns(JsArray.of(
+                            JsTable.CustomColumnArgUnionType.of("I = `x`"),
+                            JsTable.CustomColumnArgUnionType.of("S = `y`")));
+                    // the rebase failed before anyone could hold this table, so the totals would be behind the
+                    // source; the request must fail with the server's reason rather than hand those totals out
+                    return totalsPromise.then(
+                            totals -> Promise.reject("expected the totals request to fail, got " + totals),
+                            error -> {
+                                assertTrue("unexpected reason: " + error,
+                                        String.valueOf(error).contains("at least one aggregations"));
+                                assertTrue("failure was logged: " + describeErrorLogs(), errorLogsSeen.isEmpty());
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(table -> {
+                    // the source is unaffected; put its columns back and the same request succeeds. Going back to an
+                    // existing state needs no server round trip, so the event fires synchronously: listen first
+                    IThenable<JsTable> restored =
+                            waitForEvent(table, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, 2002).onInvoke(table);
+                    table.applyCustomColumns(new JsArray<>());
+                    return restored;
+                })
+                .then(table -> {
+                    JsTotalsTableConfig config = new JsTotalsTableConfig();
+                    config.defaultOperation = JsAggregationOperation.SKIP;
+                    config.operationMap.set("I", Js.uncheckedCast(new JsString[] {toJsString("Sum")}));
+                    config.operationMap.set("S", Js.uncheckedCast(new JsString[] {toJsString("Sum")}));
+                    return table.getTotalsTable(config).then(totals -> {
+                        holder[0] = totals;
+                        totals.setViewport(0, 100, null, null, null);
+                        return this.<ViewportData>waitForEventWhere(totals, JsTable.EVENT_UPDATED,
+                                e -> e.getDetail().getRows().length == 1 && e.getDetail().getRows().getAt(0)
+                                        .get(totals.findColumn("I")).asDouble() == 10.0,
+                                3001).then(ignored -> Promise.resolve(table));
+                    });
+                })
+                .then(table -> {
+                    assertTrue("no failure may be logged: " + describeErrorLogs(), errorLogsSeen.isEmpty());
+                    holder[0].close();
+                    return Promise.resolve(table);
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * A rebase that is still in flight when the source changes again is superseded; its failure is not the totals
+     * table's failure. Here the superseded rebase fails after the replacement has succeeded, with the totals table
+     * already in the caller's hands: no event and no log.
+     */
+    public void testSupersededRebaseFailureIsIgnored() {
+        errorLogsDontFail();
+        JsTotalsTable[] holder = {null};
+        List<Object> failures = new ArrayList<>();
+        connect(tables)
+                .then(table("rebaseRace"))
+                .then(table -> {
+                    delayTestFinish(10000);
+                    return table.getTotalsTable(sumOf("I", "F")).then(totals -> {
+                        holder[0] = totals;
+                        totals.addEventListener(JsTable.EVENT_REQUEST_FAILED, e -> failures.add(e.getDetail()));
+                        totals.setViewport(0, 100, null, null, null);
+                        return this.<ViewportData>waitForEventWhere(totals, JsTable.EVENT_UPDATED,
+                                sumsOf(totals, 10, 10), 2001).then(ignored -> Promise.resolve(table));
+                    });
+                })
+                .then(table -> {
+                    // make F slow to fail; the rebase that follows is in flight for about a second
+                    table.applyCustomColumns(JsArray.of(JsTable.CustomColumnArgUnionType.of("F = G")));
+                    return sourceCustomColumnsChanged(table, 2002);
+                })
+                .then(table -> {
+                    // supersede it with a change whose rebase succeeds at once
+                    table.applyCustomColumns(JsArray.of(JsTable.CustomColumnArgUnionType.of("F = (double) i * 2")));
+                    return this.<ViewportData>waitForEventWhere(holder[0], JsTable.EVENT_UPDATED,
+                            sumsOf(holder[0], 10, 20), 2003).then(ignored -> Promise.resolve(table));
+                })
+                // let the superseded rebase fail
+                .then(waitFor(1500))
+                .then(table -> {
+                    assertTrue("superseded failure reported: " + failures, failures.isEmpty());
+                    assertTrue("superseded failure logged: " + describeErrorLogs(), errorLogsSeen.isEmpty());
+                    assertTrue(holder[0].state().isRunning());
+                    holder[0].close();
+                    return Promise.resolve(table);
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * As {@link #testSupersededRebaseFailureIsIgnored()}, but everything happens while the initial totals request is
+     * still in flight. The request must resolve, since the rebase that counts succeeded, and nothing may be logged.
+     */
+    public void testSupersededRebaseFailureBeforeInitialTotalsFetchResolves() {
+        errorLogsDontFail();
+        JsTotalsTable[] holder = {null};
+        List<Object> failures = new ArrayList<>();
+        connect(tables)
+                .then(table("rebaseRace"))
+                .then(table -> {
+                    delayTestFinish(10000);
+                    // summing S keeps the first fetch in flight for about two seconds; F comes first so that the
+                    // failing rebase reads it, and fails, before it gets to S
+                    Promise<JsTotalsTable> totalsPromise = table.getTotalsTable(sumOf("F", "S", "I"));
+                    table.applyCustomColumns(JsArray.of(JsTable.CustomColumnArgUnionType.of("F = G")));
+                    return sourceCustomColumnsChanged(table, 2001)
+                            .then(ignored -> {
+                                // the failing rebase is in flight; supersede it
+                                table.applyCustomColumns(
+                                        JsArray.of(JsTable.CustomColumnArgUnionType.of("F = (double) i * 2")));
+                                return totalsPromise;
+                            })
+                            .then(totals -> {
+                                holder[0] = totals;
+                                totals.addEventListener(JsTable.EVENT_REQUEST_FAILED,
+                                        e -> failures.add(e.getDetail()));
+                                totals.setViewport(0, 100, null, null, null);
+                                return this.<ViewportData>waitForEventWhere(totals, JsTable.EVENT_UPDATED,
+                                        sumsOf(totals, 10, 20), 4001).then(ignored -> Promise.resolve(table));
+                            });
+                })
+                .then(waitFor(500))
+                .then(table -> {
+                    assertTrue("superseded failure reported: " + failures, failures.isEmpty());
+                    assertTrue("superseded failure logged: " + describeErrorLogs(), errorLogsSeen.isEmpty());
+                    holder[0].close();
+                    return Promise.resolve(table);
                 })
                 .then(this::finish).catch_(this::report);
     }
@@ -997,6 +1153,49 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
             return viewportData.getRows().getAt(0).get(totals.findColumn(column)).<LongWrapper>cast()
                     .getWrapped() == value;
         };
+    }
+
+    /** Resolves once the source's custom columns have changed; rejects with the reason if the change is refused. */
+    private Promise<JsTable> sourceCustomColumnsChanged(JsTable table, int timeout) {
+        return Promise.<Object>race(
+                waitForEvent(table, JsTable.EVENT_CUSTOMCOLUMNSCHANGED, timeout).onInvoke(table),
+                table.nextEvent(JsTable.EVENT_REQUEST_FAILED, (double) timeout)
+                        .then(e -> Promise.reject("source change refused: " + e.getDetail())))
+                .then(ignored -> Promise.resolve(table));
+    }
+
+    /** A config that sums the named columns and skips the rest. */
+    private JsTotalsTableConfig sumOf(String... columns) {
+        JsTotalsTableConfig config = new JsTotalsTableConfig();
+        config.defaultOperation = JsAggregationOperation.SKIP;
+        for (String column : columns) {
+            config.operationMap.set(column, Js.uncheckedCast(new JsString[] {toJsString("Sum")}));
+        }
+        return config;
+    }
+
+    /** Matches an update with one row whose I and F sums are the given values. */
+    private Predicate<Event<ViewportData>> sumsOf(JsTotalsTable totals, double i, double f) {
+        return e -> {
+            ViewportData data = e.getDetail();
+            if (data.getRows().length != 1) {
+                return false;
+            }
+            TableData.Row row = data.getRows().getAt(0);
+            return row.get(totals.findColumn("I")).asDouble() == i && row.get(totals.findColumn("F")).asDouble() == f;
+        };
+    }
+
+    private String describeErrorLogs() {
+        StringBuilder sb = new StringBuilder();
+        for (Object[] args : errorLogsSeen) {
+            sb.append('[');
+            for (Object arg : args) {
+                sb.append(arg).append(' ');
+            }
+            sb.append(']');
+        }
+        return sb.toString();
     }
 
     /**
