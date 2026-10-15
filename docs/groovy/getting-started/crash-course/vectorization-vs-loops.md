@@ -6,7 +6,7 @@ If you're accustomed to writing loops to transform data, **stop!** Deephaven wor
 
 ## The fundamental paradigm shift: recipes, not loops
 
-### How you might be thinking
+### How you might think
 
 In traditional programming, you tell the computer **exactly how** to process each element:
 
