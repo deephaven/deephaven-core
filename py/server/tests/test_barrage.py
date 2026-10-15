@@ -123,8 +123,8 @@ class BarrageTestCase(BaseTestCase):
             t.with_compression(CompressionType.ZSTD).attributes()["BarrageCompression"],
         )
         self.assertNotIn("BarrageCompression", t.attributes())
-        self.assertNotIn(
-            "BarrageCompression", compressed.with_compression([]).attributes()
+        self.assertEqual(
+            "", compressed.with_compression([]).attributes()["BarrageCompression"]
         )
 
         rollup = t.rollup(aggs=[agg.sum_("B")], by="ID").with_compression(

@@ -39,6 +39,7 @@ import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.ScopeTicketHelper;
+import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.arrow.ExchangeMarshallerModule;
@@ -115,6 +116,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 import static org.junit.Assert.*;
 
@@ -1691,6 +1693,15 @@ public abstract class FlightMessageRoundTripTest {
      */
     private List<String> fetchWithCompression(final Table table, final Set<String> acceptCompression)
             throws Exception {
+        return fetchWithCompression(table, UnaryOperator.identity(), table, acceptCompression);
+    }
+
+    /**
+     * Like {@link #fetchWithCompression(Table, Set)}, but has the client apply {@code clientOps} to {@code table}
+     * through the table service before fetching the result, which must equal {@code expected}.
+     */
+    private List<String> fetchWithCompression(final Table table, final UnaryOperator<TableSpec> clientOps,
+            final Table expected, final Set<String> acceptCompression) throws Exception {
         final String tableName = "compressionTestTable";
         ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
@@ -1709,7 +1720,8 @@ public abstract class FlightMessageRoundTripTest {
                 SessionImplConfig.from(SessionConfig.builder().build(), channel, clientScheduler));
                 final RootAllocator sessionAllocator = new RootAllocator();
                 final BarrageSession barrageSession = BarrageSession.of(session, sessionAllocator, channel);
-                final TableHandle handle = session.execute(TicketTable.fromQueryScopeField(tableName))) {
+                final TableHandle handle =
+                        session.execute(clientOps.apply(TicketTable.fromQueryScopeField(tableName)))) {
 
             long doGetRows = 0;
             try (final FlightStream stream = barrageSession.stream(handle)) {
@@ -1717,15 +1729,15 @@ public abstract class FlightMessageRoundTripTest {
                     doGetRows += stream.getRoot().getRowCount();
                 }
             }
-            assertEquals(table.size(), doGetRows);
+            assertEquals(expected.size(), doGetRows);
 
             final Table snapshot = barrageSession.snapshot(handle,
                     io.deephaven.extensions.barrage.BarrageSnapshotOptions.builder().build()).entireTable().get();
-            io.deephaven.engine.testutil.TstUtils.assertTableEquals(table, snapshot);
+            io.deephaven.engine.testutil.TstUtils.assertTableEquals(expected, snapshot);
 
             final Table subscribed = barrageSession.subscribe(handle,
                     io.deephaven.extensions.barrage.BarrageSubscriptionOptions.builder().build()).entireTable().get();
-            io.deephaven.engine.testutil.TstUtils.assertTableEquals(table, subscribed);
+            io.deephaven.engine.testutil.TstUtils.assertTableEquals(expected, subscribed);
         } finally {
             channel.shutdownNow();
             channel.awaitTermination(10, TimeUnit.SECONDS);
@@ -1769,6 +1781,18 @@ public abstract class FlightMessageRoundTripTest {
     public void testMalformedCompressionAttributeIsIgnored() throws Exception {
         assertEquals(expectedEncodings("identity"),
                 fetchWithCompression(compressionTestTable("zstd,lz4"), Set.of("gzip", "zstd", "snappy")));
+    }
+
+    @Test
+    public void testCompressionFollowsClientFiltersAndSorts() throws Exception {
+        final Table table = compressionTestTable("zstd");
+        // a client that filters and sorts before subscribing keeps the table's compression
+        assertEquals(expectedEncodings("zstd"), fetchWithCompression(table,
+                spec -> spec.where("I >= 25000").sort("S"), table.where("I >= 25000").sort("S"),
+                Set.of("gzip", "zstd")));
+        // a formula column computes new values, which the table's owner did not allow compressing
+        assertEquals(expectedEncodings("identity"), fetchWithCompression(table,
+                spec -> spec.view("I", "J = I * 2"), table.view("I", "J = I * 2"), Set.of("gzip", "zstd")));
     }
 
     /**

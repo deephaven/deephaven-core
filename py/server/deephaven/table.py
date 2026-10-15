@@ -1193,9 +1193,14 @@ class Table(JObjectWrapper):
         snapshots and subscriptions with the given compression types. When a client fetches the table, the server uses
         the first type in the list that the client accepts, and sends uncompressed data when none match.
 
-        This sets the table's "BarrageCompression" attribute, which tables derived from this one, for example by sorting
-        or filtering, do not inherit. For a rollup or tree table, call with_compression on the RollupTable or TreeTable
-        rather than on its source.
+        This sets the table's "BarrageCompression" attribute. Operations whose result holds only this table's values
+        keep it: filtering, sorting, reversing, flattening, dropping or renaming columns, partition_by constituents,
+        first_by and last_by. Operations that compute new values or bring in another table's data drop it, including
+        view, update_view, joins, rollups and trees; so do operations such as head, select and update. For a rollup or
+        tree table, call with_compression on the RollupTable or TreeTable rather than on its source. A table with no
+        attribute set uses the server's default compression types, from the BarrageCompression.defaultTypes property,
+        which is unset by default. An empty sequence sets the attribute to an empty list, so the table is never
+        compressed, even when the server has default compression types.
 
         Args:
             compression_types (Union[CompressionType, Sequence[CompressionType]]): the compression type, or types, to

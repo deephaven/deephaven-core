@@ -26,11 +26,11 @@ public final class BarrageCompressionAttribute {
      * Returns a copy of {@code grid} that allows the server to compress its Barrage snapshots and subscriptions with
      * {@code preference}. The server uses the first type in {@code preference} that the client accepts, and sends
      * uncompressed data when none match. Repeated types keep their first position. With no types, the result is never
-     * compressed.
+     * compressed, even when the server has default compression types.
      *
      * @param grid the table, rollup table or tree table to compress
      * @param preference the compression types to allow, most preferred first
-     * @return a copy of {@code grid} with its {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE} set, or removed if
+     * @return a copy of {@code grid} with its {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE} set, to an empty list if
      *         {@code preference} is empty
      */
     public static <T extends AttributeMap<T>> T withCompression(
@@ -44,15 +44,12 @@ public final class BarrageCompressionAttribute {
      *
      * @param grid the table, rollup table or tree table to compress
      * @param preference the compression types to allow, most preferred first
-     * @return a copy of {@code grid} with its {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE} set, or removed if
+     * @return a copy of {@code grid} with its {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE} set, to an empty list if
      *         {@code preference} is empty
      */
     public static <T extends AttributeMap<T>> T withCompression(
             @NotNull final T grid,
             @NotNull final List<CompressionType> preference) {
-        if (preference.isEmpty()) {
-            return grid.withoutAttributes(List.of(Table.BARRAGE_COMPRESSION_ATTRIBUTE));
-        }
         final String value = preference.stream()
                 .map(type -> Objects.requireNonNull(type, "type").encodingName())
                 .distinct()

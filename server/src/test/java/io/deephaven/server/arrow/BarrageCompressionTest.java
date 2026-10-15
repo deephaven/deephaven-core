@@ -77,6 +77,28 @@ public class BarrageCompressionTest {
     }
 
     @Test
+    public void serverDefaultAppliesWithoutAValidList() {
+        final List<String> defaults = List.of("snappy", "gzip");
+
+        // no attribute: the server's default
+        assertEquals(Optional.of("snappy"), apply(Set.of("gzip", "snappy"), TableTools.emptyTable(10), defaults));
+        assertEquals(Optional.of("gzip"), apply(Set.of("gzip"), TableTools.emptyTable(10), defaults));
+        // a malformed attribute is ignored, as if unset
+        final Table malformed =
+                TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,lz4"));
+        assertEquals(Optional.of("snappy"), apply(Set.of("zstd", "snappy"), malformed, defaults));
+        // the table's own list replaces the default
+        final Table zstd = BarrageCompressionAttribute.withCompression(TableTools.emptyTable(10), CompressionType.ZSTD);
+        assertEquals(Optional.of("zstd"), apply(Set.of("zstd", "snappy"), zstd, defaults));
+        assertEquals(Optional.empty(), apply(Set.of("gzip", "snappy"), zstd, defaults));
+        // an empty list opts out of the default
+        final Table never = BarrageCompressionAttribute.withCompression(TableTools.emptyTable(10));
+        assertEquals(Optional.empty(), apply(Set.of("gzip", "snappy"), never, defaults));
+        // an object without attributes is never compressed
+        assertEquals(Optional.empty(), apply(Set.of("gzip", "snappy"), null, defaults));
+    }
+
+    @Test
     public void onlyServerCallObserversAreCompressed() {
         final Table table = TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd"));
         final StreamObserver<InputStream> plain = new StreamObserver<>() {
@@ -128,6 +150,9 @@ public class BarrageCompressionTest {
                 HierarchicalTableView.makeFromHierarchicalTable(fromCompressedSource);
         assertNull(marshaller.attributesFor(sourceOnlyView).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
         assertEquals(Optional.empty(), apply(Set.of("gzip", "zstd"), marshaller.attributesFor(sourceOnlyView)));
+        // so the server's default applies to it
+        assertEquals(Optional.of("gzip"),
+                apply(Set.of("gzip", "zstd"), marshaller.attributesFor(sourceOnlyView), List.of("gzip")));
     }
 
     /**
@@ -138,6 +163,21 @@ public class BarrageCompressionTest {
             final io.deephaven.engine.table.AttributeMap<?> attributes) {
         final RecordingObserver observer = new RecordingObserver();
         final Optional<String> chosen = BarrageCompression.apply(observer, accepted, attributes, "test");
+        assertEquals(chosen.orElse(null), observer.compression);
+        return chosen;
+    }
+
+    /**
+     * Like {@link #apply(Set, io.deephaven.engine.table.AttributeMap)}, with {@code defaultAllowed} as the server's
+     * default compression types.
+     */
+    private static Optional<String> apply(
+            final Set<String> accepted,
+            final io.deephaven.engine.table.AttributeMap<?> attributes,
+            final List<String> defaultAllowed) {
+        final RecordingObserver observer = new RecordingObserver();
+        final Optional<String> chosen =
+                BarrageCompression.apply(observer, accepted, attributes, "test", defaultAllowed);
         assertEquals(chosen.orElse(null), observer.compression);
         return chosen;
     }

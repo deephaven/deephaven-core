@@ -233,13 +233,21 @@ public interface Table extends
      * A comma-separated, ordered list of compression types (any of {@code gzip}, {@code zstd} and {@code snappy}, e.g.
      * {@code "zstd,snappy,gzip"}) that allows compressing this table's Barrage snapshots and subscriptions. The server
      * uses the first listed type that the client accepts, as listed in its {@code grpc-accept-encoding} header, and
-     * sends uncompressed data when none match. Tables without this attribute are never compressed.
+     * sends uncompressed data when none match. Tables with no attribute set use the server's default list, from the
+     * {@code BarrageCompression.defaultTypes} property; the property is unset by default, so those tables are never
+     * compressed. An attribute set to an empty list means never compress, even when the server has a default list.
      * <p>
      * Prefer setting it with {@code io.deephaven.extensions.barrage.BarrageCompressionAttribute.withCompression}, which
      * takes {@code io.deephaven.grpc.compression.CompressionType} values. The server ignores a value it cannot parse,
-     * and logs a warning when a client fetches the table.
+     * using its default list instead, and logs a warning when a client fetches the table.
      * <p>
-     * The attribute is not copied to tables derived from this one, except by coalescing an uncoalesced source table.
+     * Operations whose result holds only this table's values keep the attribute: filtering, sorting, reversing,
+     * flattening, dropping or renaming columns, {@code partitionBy} constituents, {@code firstBy}, {@code lastBy},
+     * column previews and coalescing. Operations that compute new values or bring in another table's data drop it,
+     * including {@code view}, {@code updateView}, joins, {@code wouldMatch}, rollups and trees; so do operations that
+     * copy no attributes, such as {@code head}, {@code select} and {@code update}. Their results have no attribute set,
+     * so they use the server's default list, even when this table's attribute is an empty list. To compress a rollup or
+     * tree table, set the attribute on the rollup or tree table itself.
      */
     String BARRAGE_COMPRESSION_ATTRIBUTE = "BarrageCompression";
 

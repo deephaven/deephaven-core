@@ -162,7 +162,11 @@ t = emptyTable(1_000_000).update("X = ii", "Sym = `S` + (ii % 32)")
 tCompressed = BarrageCompressionAttribute.withCompression(t, CompressionType.ZSTD, CompressionType.GZIP)
 ```
 
-`withCompression` stores the list in the table's `BarrageCompression` attribute. Tables derived from it, for example by sorting or filtering, do not inherit the attribute, so they are sent uncompressed unless they allow compression themselves. For a rollup or tree table, pass the rollup or tree table to `withCompression` rather than its source.
+`withCompression` stores the list in the table's `BarrageCompression` attribute. Operations whose result holds only the table's values keep the attribute: filtering, sorting, reversing, flattening, dropping or renaming columns, `partitionBy` constituents, `firstBy` and `lastBy`. Operations that compute new values or bring in another table's data drop it, including `view`, `updateView`, joins, rollups and trees; so do operations such as `head`, `select` and `update`. Their results have no attribute set, so they are sent uncompressed unless the server has a server-wide list, described next. For a rollup or tree table, pass the rollup or tree table to `withCompression` rather than its source.
+
+To compress tables without changing the queries that create them, set a server-wide list of compression types, most preferred first, with the `BarrageCompression.defaultTypes` property, for example `-DBarrageCompression.defaultTypes=zstd,snappy`. The server uses the server-wide list for every table that has no `BarrageCompression` attribute set. Without the property, only tables with their own `BarrageCompression` attribute are compressed.
+
+With a server-wide list, compression is opt-out rather than opt-in. A table with its own `BarrageCompression` attribute uses its own list instead of the server-wide list. To exclude a table, call `withCompression` with no compression types. This sets the attribute to an empty list, which means "never compress". Operations keep or drop an empty list just as they do any other list. A table made by an operation that drops the attribute, such as a join or `view`, has no attribute set, so the server-wide list applies to it, even when its source was excluded.
 
 These are the compression types each client lists by default. A client that lists none always receives uncompressed data.
 
@@ -174,13 +178,13 @@ These are the compression types each client lists by default. A client that list
 
 Remote tables between servers are a separate case. A Deephaven server that fetches a table from another server, for example by resolving a [`dh://` URI](../use-uris.md), connects through the Java client that runs inside the server, so it lists the same compression types as the Java client.
 
-Choose the list based on what the server's CPU can afford. The following figures come from [`BarrageCompressionBenchmark`](https://github.com/deephaven/deephaven-core/blob/main/extensions/barrage/benchmark/src/main/java/io/deephaven/benchmark/barrage/BarrageCompressionBenchmark.java), a JMH benchmark in the Deephaven Core repository, run on a one-million-row table of mixed trade data. They were measured on one thread of an Apple M1 Max with JDK 21, and the speeds are megabytes of uncompressed data per second. Absolute speeds depend on the hardware and the data, so use them to compare the compression types rather than to predict throughput:
+Choose the list based on what the server's CPU can afford. The following figures come from [`BarrageCompressionBenchmark`](https://github.com/deephaven/deephaven-core/blob/main/extensions/barrage/benchmark/src/main/java/io/deephaven/benchmark/barrage/BarrageCompressionBenchmark.java), a JMH benchmark in the Deephaven Core repository, run on a one-million-row table of mixed trade data. They were measured with JDK 21 on one thread of an Apple M1 Max and of an Intel Core i9-14900KS, and the speeds are megabytes of uncompressed data per second. Absolute speeds depend on the hardware and the data, so use them to compare the compression types rather than to predict throughput:
 
-| Compression type | Size after compression | Compression speed | Decompression speed |
-| ---------------- | ---------------------- | ----------------- | ------------------- |
-| `zstd`           | 31% of the original    | about 380 MB/s    | about 970 MB/s      |
-| `gzip`           | 28% of the original    | about 17 MB/s     | about 390 MB/s      |
-| `snappy`         | 59% of the original    | about 800 MB/s    | about 1470 MB/s     |
+| Compression type | Size after compression | Compression speed (M1 Max / i9-14900KS) | Decompression speed (M1 Max / i9-14900KS) |
+| ---------------- | ---------------------- | --------------------------------------- | ----------------------------------------- |
+| `zstd`           | 31% of the original    | 380 / 600 MB/s                          | 970 / 1350 MB/s                           |
+| `gzip`           | 28% of the original    | 17 / 30 MB/s                            | 390 / 550 MB/s                            |
+| `snappy`         | 59% of the original    | 800 / 1100 MB/s                         | 1470 / 1380 MB/s                          |
 
 `zstd` suits most tables. `gzip` compresses slightly smaller but is about 20 times slower to compress, so list it last, and only when clients that cannot decode `zstd`, such as `pydeephaven`, should also receive compressed data. `snappy` is the fastest but saves the least, and it saves nothing on data that is already close to random.
 

@@ -21,7 +21,6 @@ import static io.deephaven.grpc.compression.CompressionType.GZIP;
 import static io.deephaven.grpc.compression.CompressionType.SNAPPY;
 import static io.deephaven.grpc.compression.CompressionType.ZSTD;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
@@ -44,11 +43,12 @@ public class BarrageCompressionAttributeTest {
     }
 
     @Test
-    public void noTypesRemovesTheAttribute() {
+    public void noTypesSetsAnEmptyList() {
         final Table compressed = withCompression(TableTools.emptyTable(10), ZSTD);
 
-        assertFalse(withCompression(compressed).hasAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
-        assertFalse(withCompression(compressed, List.of()).hasAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        // an empty list, rather than no attribute, so that the server's default compression types do not apply
+        assertEquals("", withCompression(compressed).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertEquals("", withCompression(compressed, List.of()).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
         assertEquals("zstd", compressed.getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
     }
 

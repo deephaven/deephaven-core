@@ -3,8 +3,10 @@
 //
 package io.deephaven.server.arrow;
 
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.AttributeMap;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.grpc.compression.CompressionCodecs;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -19,17 +21,31 @@ import java.util.Set;
 
 /**
  * Chooses the compression type for a Barrage response from the table's {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE
- * allowed list} and the compression types the client accepts.
+ * allowed list}, or the server's {@link #DEFAULT_TYPES_PROPERTY default list}, and the compression types the client
+ * accepts.
  */
 public final class BarrageCompression {
     private static final Logger log = LoggerFactory.getLogger(BarrageCompression.class);
+
+    /**
+     * The compression types the server allows for a {@link Table} or {@link HierarchicalTable} that does not set
+     * {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE}, as an ordered, comma-separated list in the attribute's format, such
+     * as {@code zstd,snappy}. Unset by default, so such tables are never compressed. The server ignores a value it
+     * cannot parse, and logs a warning.
+     */
+    public static final String DEFAULT_TYPES_PROPERTY = "BarrageCompression.defaultTypes";
+
+    private static final List<String> DEFAULT_ALLOWED =
+            parseOrWarn(Configuration.getInstance().getStringWithDefault(DEFAULT_TYPES_PROPERTY, ""),
+                    DEFAULT_TYPES_PROPERTY, List.of());
 
     private BarrageCompression() {}
 
     /**
      * Sets the compression of {@code responseObserver} to the first type in {@code attributes}' allowed list that the
-     * client accepts. Leaves the response uncompressed when the table has no list, nothing matches, the list is
-     * malformed, or the observer cannot be compressed. Must be called before the first response message is sent.
+     * client accepts, using the server's {@link #DEFAULT_TYPES_PROPERTY default list} when the object does not set one
+     * or sets one that cannot be parsed. Leaves the response uncompressed when the object has no attributes, nothing
+     * matches, or the observer cannot be compressed. Must be called before the first response message is sent.
      *
      * @param responseObserver the raw gRPC response observer for the call
      * @param accepted the compression types the client accepts, from {@link ClientAcceptCompressionInterceptor}
@@ -42,22 +58,29 @@ public final class BarrageCompression {
             @NotNull final Set<String> accepted,
             @Nullable final AttributeMap<?> attributes,
             @NotNull final String logName) {
+        return apply(responseObserver, accepted, attributes, logName, DEFAULT_ALLOWED);
+    }
+
+    /**
+     * Like {@link #apply(StreamObserver, Set, AttributeMap, String)}, with the default list given rather than
+     * configured.
+     *
+     * @param defaultAllowed the compression types to allow when {@code attributes} does not set a valid list
+     */
+    static Optional<String> apply(
+            @NotNull final StreamObserver<?> responseObserver,
+            @NotNull final Set<String> accepted,
+            @Nullable final AttributeMap<?> attributes,
+            @NotNull final String logName,
+            @NotNull final List<String> defaultAllowed) {
         if (attributes == null) {
             return Optional.empty();
         }
         final Object value = attributes.getAttribute(Table.BARRAGE_COMPRESSION_ATTRIBUTE);
-        if (value == null) {
-            return Optional.empty();
-        }
-
-        final List<String> allowed;
-        try {
-            allowed = CompressionCodecs.parseList(value.toString());
-        } catch (final IllegalArgumentException e) {
-            log.warn().append("Ignoring ").append(Table.BARRAGE_COMPRESSION_ATTRIBUTE).append(" on ").append(logName)
-                    .append(": ").append(e.getMessage()).endl();
-            return Optional.empty();
-        }
+        final List<String> allowed = value == null
+                ? defaultAllowed
+                : parseOrWarn(value.toString(), Table.BARRAGE_COMPRESSION_ATTRIBUTE + " on " + logName,
+                        defaultAllowed);
 
         final Optional<String> chosen = CompressionCodecs.choose(allowed, accepted);
         if (chosen.isEmpty()) {
@@ -82,5 +105,21 @@ public final class BarrageCompression {
             return Optional.empty();
         }
         return chosen;
+    }
+
+    /**
+     * @return {@code list} parsed with {@link CompressionCodecs#parseList(String)}, or {@code fallback}, after logging
+     *         a warning that names {@code description}, if it cannot be parsed
+     */
+    private static List<String> parseOrWarn(
+            @NotNull final String list,
+            @NotNull final String description,
+            @NotNull final List<String> fallback) {
+        try {
+            return CompressionCodecs.parseList(list);
+        } catch (final IllegalArgumentException e) {
+            log.warn().append("Ignoring ").append(description).append(": ").append(e.getMessage()).endl();
+            return fallback;
+        }
     }
 }

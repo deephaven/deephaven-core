@@ -64,7 +64,7 @@ def _j_with_compression(
     given compression types. Backs the with_compression methods in deephaven.table, which cannot import this module
     when they are defined, because this module imports deephaven.table."""
     if compression_types is None:
-        # to_sequence would turn None into an empty sequence, which removes compression
+        # to_sequence would turn None into an empty sequence, which disables compression
         raise TypeError("expected a CompressionType or a sequence of them, not None")
     types = to_sequence(compression_types)
     for t in types:
