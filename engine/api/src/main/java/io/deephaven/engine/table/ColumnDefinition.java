@@ -331,8 +331,9 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
      *
      * @param name the column name
      * @param vectorType the Vector type
-     * @param componentType the element type: any reference type for {@link ObjectVector}, or the primitive type for a
-     *        primitive Vector; or {@code null} for the default, which is {@link Object} for {@link ObjectVector}
+     * @param componentType the element type: any reference type but {@link Void} for {@link ObjectVector}, or the
+     *        primitive type for a primitive Vector; or {@code null} for the default, which is {@link Object} for
+     *        {@link ObjectVector}
      * @return the column definition
      * @throws IllegalArgumentException if {@code vectorType} is not a recognized Vector type, or {@code componentType}
      *         is not valid for it
@@ -396,10 +397,10 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
      * {@code Number[]}. Other data types have no component type unless one is given.
      *
      * @param name the column name
-     * @param dataType the data type; may not be {@code void} or {@link Void}
+     * @param dataType the data type; may not be {@code void} or {@link Void}, nor an array of {@link Void}
      * @param componentType the element type for array and {@link Vector} data types: for arrays, the array's component
      *        type or a more specific one; for {@link ObjectVector}, any reference type; for primitive Vectors, their
-     *        primitive type. Or {@code null} to infer it
+     *        primitive type. Never {@code void} or {@link Void}, nor an array of them. Or {@code null} to infer it
      * @param columnType the column type
      * @return the column definition
      * @throws IllegalArgumentException if {@code dataType} is not a valid column data type, or {@code componentType} is
@@ -540,13 +541,18 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
      * Array and {@link Vector} data types require a {@link #getComponentType() component type}: for arrays, the array's
      * component type or a more specific one; for Vectors, a type assignable to the Vector's
      * {@link #baseComponentTypeForVector(Class) base component type}, which allows any reference type as the element
-     * type of an {@link ObjectVector}, and only the matching primitive type for a primitive Vector.
+     * type of an {@link ObjectVector}, and only the matching primitive type for a primitive Vector. No component type
+     * may be {@code void} or {@link Void}, or an array of them, whatever the data type.
      */
     @Nullable
     private static String componentTypeError(
             @NotNull final String name,
             @NotNull final Class<?> dataType,
             @Nullable final Class<?> componentType) {
+        if (componentType != null && isVoidElementType(componentType)) {
+            return "Invalid component type " + componentType.getTypeName() + " for column " + name
+                    + ": void and Void are not valid element types";
+        }
         final Class<?> requiredComponentType;
         final String kind;
         if (dataType.isArray()) {
@@ -577,6 +583,17 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
                     + " data type " + dataType.getTypeName();
         }
         return null;
+    }
+
+    /**
+     * Whether {@code type} is {@code void} or {@link Void}, or an array (of any depth) whose innermost element type is.
+     * Neither can hold any values but {@code null}, so neither is a valid element type for a column.
+     */
+    private static boolean isVoidElementType(@NotNull Class<?> type) {
+        while (type.isArray()) {
+            type = type.getComponentType();
+        }
+        return type == void.class || type == Void.class;
     }
 
     /**

@@ -21,6 +21,7 @@ import io.deephaven.vector.LongVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.Vector;
+import org.assertj.core.api.ThrowableAssert;
 import org.junit.Test;
 
 import java.time.Instant;
@@ -422,6 +423,37 @@ public class ColumnDefinitionConstructionTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Invalid component type int for column " + CN + " with Vector data type "
                         + ObjectVector.class.getTypeName());
+    }
+
+    @Test
+    public void voidElementTypes() {
+        // void and Void cannot be element types, whatever the data type: an ObjectVector<Void> or a Void[] can hold
+        // nothing but null, just like a Void column
+        checkVoidElementType(() -> ColumnDefinition.fromGenericType(CN, ObjectVector.class, Void.class));
+        checkVoidElementType(() -> ColumnDefinition.ofVector(CN, ObjectVector.class, Void.class));
+        checkVoidElementType(() -> ColumnDefinition.ofInt(CN).withDataType(ObjectVector.class, Void.class));
+        checkVoidElementType(() -> ColumnDefinition.fromGenericType(CN, ObjectVector.class, void.class));
+        checkVoidElementType(() -> ColumnDefinition.fromGenericType(CN, Object[].class, Void.class));
+        // Arrays of Void, as data types (with their inferred component types) or as component types
+        checkVoidElementType(() -> ColumnDefinition.fromGenericType(CN, Void[].class));
+        checkVoidElementType(() -> ColumnDefinition.fromGenericType(CN, Void[][].class));
+        checkVoidElementType(() -> ColumnDefinition.fromGenericType(CN, Object[].class, Void[].class));
+        checkVoidElementType(() -> ColumnDefinition.fromGenericType(CN, ObjectVector.class, Void[].class));
+        checkVoidElementType(() -> ColumnDefinition.of(CN, Type.ofCustom(Void.class).arrayType()));
+        // Even data types that otherwise accept any component type
+        checkVoidElementType(() -> ColumnDefinition.fromGenericType(CN, List.class, Void.class));
+
+        // Other reference types remain valid element types
+        assertThat(ColumnDefinition.ofVector(CN, ObjectVector.class, Integer.class).getComponentType())
+                .isEqualTo(Integer.class);
+        assertThat(ColumnDefinition.fromGenericType(CN, Object[].class, Object[].class).getComponentType())
+                .isEqualTo(Object[].class);
+    }
+
+    private static void checkVoidElementType(final ThrowableAssert.ThrowingCallable construct) {
+        assertThatThrownBy(construct)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("void and Void are not valid element types");
     }
 
     @Test
