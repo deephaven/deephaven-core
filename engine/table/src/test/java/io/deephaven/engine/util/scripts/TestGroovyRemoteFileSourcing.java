@@ -149,6 +149,29 @@ public class TestGroovyRemoteFileSourcing {
                 (String) t.getColumnSource("SourceViaClass").get(0));
     }
 
+    /**
+     * After a remote-source reset, a formula referencing a class defined in the console must resolve the same class the
+     * console defined, which lives in the refreshed shell's class loader.
+     */
+    @Test
+    public void testSessionClassInFormulaAfterReset() {
+        remoteSources.put(PATH_REMOTE_ONLY, REMOTE_ONLY_SOURCE);
+        // A dirty declaration resets the shell and the query compiler before this evaluation
+        RemoteFileSourceClassLoader.getInstance().declareRemoteSources(
+                provider, List.of(PATH_REMOTE_ONLY), true);
+
+        final ScriptSession.Changes c = session.evaluateScript("class Foo {}\n" +
+                "t = emptyTable(1).update(\"Y = new io.deephaven.dynamic.Foo()\")\n" +
+                // The column type comes from the formula parser, so check the instance the compiled formula created
+                "sameClass = t.getColumnSource(\"Y\").get(0).getClass() == Foo");
+        c.throwIfError();
+
+        final Table t = session.getQueryScope().readParamValue("t");
+        assertEquals("io.deephaven.dynamic.Foo", t.getColumnSource("Y").getType().getName());
+        assertTrue("Formula should instantiate the console-defined Foo, not another copy of it",
+                session.getQueryScope().<Boolean>readParamValue("sameClass"));
+    }
+
     @Test
     public void testServerClassWorks() {
         evaluateAndAssertHelper(

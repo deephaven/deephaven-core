@@ -370,8 +370,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
         // Replace the QueryCompiler and the context classloader together. The compiler loads each compiled class in a
         // child of the context classloader, so leaving a stale loader here would let formulas resolve stale Groovy
-        // classes even though the shell itself was refreshed.
-        final QueryCompiler freshCompiler = QueryCompilerImpl.create(classCacheDirectory, scriptClassLoader);
+        // classes even though the shell itself was refreshed. The compiler is given no explicit parent, matching the
+        // session's original compiler: one would take precedence over the context classloader, and only the shell's
+        // own loader can see classes defined in the console.
+        final QueryCompiler freshCompiler = QueryCompilerImpl.create(classCacheDirectory);
         executionContext = executionContext
                 .withQueryCompiler(freshCompiler)
                 .withClassLoader(groovyShell.getClassLoader());
