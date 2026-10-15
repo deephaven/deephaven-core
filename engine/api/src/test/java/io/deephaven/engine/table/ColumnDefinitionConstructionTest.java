@@ -89,12 +89,54 @@ public class ColumnDefinitionConstructionTest {
 
     @Test
     public void booleanArray() {
+        // Array component types are never normalized: unlike a boolean column, whose data type is Boolean, a boolean[]
+        // column keeps its primitive boolean elements
         checkNativeArray(Type.booleanType().arrayType());
+        assertThat(ColumnDefinition.fromGenericType(CN, boolean[].class).getComponentType()).isEqualTo(boolean.class);
     }
 
     @Test
     public void boxedBooleanArray() {
         checkNativeArray(Type.booleanType().boxedType().arrayType());
+    }
+
+    @Test
+    public void boxedByteArray() {
+        checkNativeArray(Type.byteType().boxedType().arrayType());
+    }
+
+    @Test
+    public void boxedCharArray() {
+        checkNativeArray(Type.charType().boxedType().arrayType());
+    }
+
+    @Test
+    public void boxedShortArray() {
+        checkNativeArray(Type.shortType().boxedType().arrayType());
+    }
+
+    @Test
+    public void boxedIntArray() {
+        // Array data types are never normalized either: Integer[] stays Integer[], with component type Integer
+        checkNativeArray(Type.intType().boxedType().arrayType());
+        final ColumnDefinition<Integer[]> integers = ColumnDefinition.fromGenericType(CN, Integer[].class);
+        assertThat(integers.getDataType()).isEqualTo(Integer[].class);
+        assertThat(integers.getComponentType()).isEqualTo(Integer.class);
+    }
+
+    @Test
+    public void boxedLongArray() {
+        checkNativeArray(Type.longType().boxedType().arrayType());
+    }
+
+    @Test
+    public void boxedFloatArray() {
+        checkNativeArray(Type.floatType().boxedType().arrayType());
+    }
+
+    @Test
+    public void boxedDoubleArray() {
+        checkNativeArray(Type.doubleType().boxedType().arrayType());
     }
 
     @Test
@@ -384,7 +426,12 @@ public class ColumnDefinitionConstructionTest {
 
     @Test
     public void invalidArrayComponentTypes() {
+        // A primitive array's component type is its primitive type, and a boxed array's is its boxed type: neither
+        // accepts the other, as primitive and boxed classes are not assignable to each other
         checkInvalidComponentType(int[].class, Integer.class, "array");
+        checkInvalidComponentType(Integer[].class, int.class, "array");
+        checkInvalidComponentType(boolean[].class, Boolean.class, "array");
+        checkInvalidComponentType(Boolean[].class, boolean.class, "array");
         checkInvalidComponentType(int[].class, long.class, "array");
         checkInvalidComponentType(Instant[].class, String.class, "array");
         // A wider component type than the array's is invalid
