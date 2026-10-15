@@ -23,6 +23,7 @@ import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SoftRecyclerWindows;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
@@ -285,6 +286,20 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
 
     public String getName() {
         return name;
+    }
+
+    /**
+     * Report the start of an update cycle, so that the windows the {@link io.deephaven.util.SoftRecycler recyclers}
+     * shrink on span it; the DEFAULT graph also ends their window here once it has lasted long enough. This reads no
+     * clock.
+     *
+     * @param startNanos when the cycle started, as already read from {@link System#nanoTime()}
+     */
+    void reportCycleStartToRecyclers(final long startNanos) {
+        SoftRecyclerWindows.reportCycleStart(name, startNanos);
+        if (DEFAULT_UPDATE_GRAPH_NAME.equals(name)) {
+            SoftRecyclerWindows.endWindowIfElapsed(startNanos);
+        }
     }
 
     public UpdateGraph getUpdateGraph() {
@@ -1090,6 +1105,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
                 return false;
             }
         }
+        SoftRecyclerWindows.forgetGraph(name);
         graph.stop();
         return true;
     }

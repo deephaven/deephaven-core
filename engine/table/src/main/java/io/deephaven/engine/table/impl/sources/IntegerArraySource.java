@@ -42,7 +42,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
 public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
         implements MutableColumnSourceGetDefaults.ForInt /* MIXIN_IMPLS */ {
     private static final SoftRecycler<int[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.INT_RECYCLER_CAPACITY,
-            () -> new int[BLOCK_SIZE], null);
+            ArrayColumnSourceConfiguration.INT_RECYCLER_MAXIMUM_CAPACITY, () -> new int[BLOCK_SIZE], null);
 
     private int[][] blocks;
     private transient int[][] prevBlocks;

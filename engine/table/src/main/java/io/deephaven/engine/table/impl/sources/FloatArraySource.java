@@ -42,7 +42,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
 public class FloatArraySource extends ArraySourceHelper<Float, float[]>
         implements MutableColumnSourceGetDefaults.ForFloat /* MIXIN_IMPLS */ {
     private static final SoftRecycler<float[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY,
-            () -> new float[BLOCK_SIZE], null);
+            ArrayColumnSourceConfiguration.FLOAT_RECYCLER_MAXIMUM_CAPACITY, () -> new float[BLOCK_SIZE], null);
 
     private float[][] blocks;
     private transient float[][] prevBlocks;

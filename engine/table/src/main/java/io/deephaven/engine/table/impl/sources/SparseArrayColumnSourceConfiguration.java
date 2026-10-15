@@ -83,8 +83,113 @@ public abstract class SparseArrayColumnSourceConfiguration {
     public static final int IN_USE_RECYCLER_CAPACITY0 =
             getRecyclerCapacity("inuse.0", getDefaultInUseRecyclerCapacity0());
 
+    private static final String RECYCLER_MAXIMUM_CAPACITY_PROPERTY = "sparsearray.recycler.maximumCapacity.";
+    /**
+     * The most items a recycler grows to hold if not specified by type. Unlimited by default, since the recycled items
+     * are soft references, which the garbage collector reclaims under memory pressure.
+     */
+    public static final int DEFAULT_RECYCLER_MAXIMUM_CAPACITY =
+            getRecyclerMaximumCapacity("default", Integer.MAX_VALUE, 0);
+
+    // The 'MAXIMUM_CAPACITY' options set the type-specific maximum capacity of the recycler for arrays of that type,
+    // and
+    // the default maximum for its other levels.
+    public static final int BOOLEAN_RECYCLER_MAXIMUM_CAPACITY =
+            getRecyclerMaximumCapacity("boolean", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, BOOLEAN_RECYCLER_CAPACITY);
+    public static final int BYTE_RECYCLER_MAXIMUM_CAPACITY =
+            getRecyclerMaximumCapacity("byte", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, BYTE_RECYCLER_CAPACITY);
+    public static final int CHAR_RECYCLER_MAXIMUM_CAPACITY =
+            getRecyclerMaximumCapacity("char", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, CHAR_RECYCLER_CAPACITY);
+    public static final int DOUBLE_RECYCLER_MAXIMUM_CAPACITY =
+            getRecyclerMaximumCapacity("double", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, DOUBLE_RECYCLER_CAPACITY);
+    public static final int FLOAT_RECYCLER_MAXIMUM_CAPACITY =
+            getRecyclerMaximumCapacity("float", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, FLOAT_RECYCLER_CAPACITY);
+    public static final int INT_RECYCLER_MAXIMUM_CAPACITY =
+            getRecyclerMaximumCapacity("int", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, INT_RECYCLER_CAPACITY);
+    public static final int OBJECT_RECYCLER_MAXIMUM_CAPACITY =
+            getRecyclerMaximumCapacity("object", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, OBJECT_RECYCLER_CAPACITY);
+    public static final int SHORT_RECYCLER_MAXIMUM_CAPACITY =
+            getRecyclerMaximumCapacity("short", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, SHORT_RECYCLER_CAPACITY);
+    public static final int LONG_RECYCLER_MAXIMUM_CAPACITY =
+            getRecyclerMaximumCapacity("long", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, LONG_RECYCLER_CAPACITY);
+
+    public static final int BOOLEAN_RECYCLER_MAXIMUM_CAPACITY2 =
+            getRecyclerMaximumCapacity("boolean.2", BOOLEAN_RECYCLER_MAXIMUM_CAPACITY, BOOLEAN_RECYCLER_CAPACITY2);
+    public static final int BYTE_RECYCLER_MAXIMUM_CAPACITY2 =
+            getRecyclerMaximumCapacity("byte.2", BYTE_RECYCLER_MAXIMUM_CAPACITY, BYTE_RECYCLER_CAPACITY2);
+    public static final int CHAR_RECYCLER_MAXIMUM_CAPACITY2 =
+            getRecyclerMaximumCapacity("char.2", CHAR_RECYCLER_MAXIMUM_CAPACITY, CHAR_RECYCLER_CAPACITY2);
+    public static final int DOUBLE_RECYCLER_MAXIMUM_CAPACITY2 =
+            getRecyclerMaximumCapacity("double.2", DOUBLE_RECYCLER_MAXIMUM_CAPACITY, DOUBLE_RECYCLER_CAPACITY2);
+    public static final int FLOAT_RECYCLER_MAXIMUM_CAPACITY2 =
+            getRecyclerMaximumCapacity("float.2", FLOAT_RECYCLER_MAXIMUM_CAPACITY, FLOAT_RECYCLER_CAPACITY2);
+    public static final int INT_RECYCLER_MAXIMUM_CAPACITY2 =
+            getRecyclerMaximumCapacity("int.2", INT_RECYCLER_MAXIMUM_CAPACITY, INT_RECYCLER_CAPACITY2);
+    public static final int OBJECT_RECYCLER_MAXIMUM_CAPACITY2 =
+            getRecyclerMaximumCapacity("object.2", OBJECT_RECYCLER_MAXIMUM_CAPACITY, OBJECT_RECYCLER_CAPACITY2);
+    public static final int SHORT_RECYCLER_MAXIMUM_CAPACITY2 =
+            getRecyclerMaximumCapacity("short.2", SHORT_RECYCLER_MAXIMUM_CAPACITY, SHORT_RECYCLER_CAPACITY2);
+    public static final int LONG_RECYCLER_MAXIMUM_CAPACITY2 =
+            getRecyclerMaximumCapacity("long.2", LONG_RECYCLER_MAXIMUM_CAPACITY, LONG_RECYCLER_CAPACITY2);
+
+    public static final int BOOLEAN_RECYCLER_MAXIMUM_CAPACITY1 =
+            getRecyclerMaximumCapacity("boolean.1", BOOLEAN_RECYCLER_MAXIMUM_CAPACITY, BOOLEAN_RECYCLER_CAPACITY1);
+    public static final int BYTE_RECYCLER_MAXIMUM_CAPACITY1 =
+            getRecyclerMaximumCapacity("byte.1", BYTE_RECYCLER_MAXIMUM_CAPACITY, BYTE_RECYCLER_CAPACITY1);
+    public static final int CHAR_RECYCLER_MAXIMUM_CAPACITY1 =
+            getRecyclerMaximumCapacity("char.1", CHAR_RECYCLER_MAXIMUM_CAPACITY, CHAR_RECYCLER_CAPACITY1);
+    public static final int DOUBLE_RECYCLER_MAXIMUM_CAPACITY1 =
+            getRecyclerMaximumCapacity("double.1", DOUBLE_RECYCLER_MAXIMUM_CAPACITY, DOUBLE_RECYCLER_CAPACITY1);
+    public static final int FLOAT_RECYCLER_MAXIMUM_CAPACITY1 =
+            getRecyclerMaximumCapacity("float.1", FLOAT_RECYCLER_MAXIMUM_CAPACITY, FLOAT_RECYCLER_CAPACITY1);
+    public static final int INT_RECYCLER_MAXIMUM_CAPACITY1 =
+            getRecyclerMaximumCapacity("int.1", INT_RECYCLER_MAXIMUM_CAPACITY, INT_RECYCLER_CAPACITY1);
+    public static final int OBJECT_RECYCLER_MAXIMUM_CAPACITY1 =
+            getRecyclerMaximumCapacity("object.1", OBJECT_RECYCLER_MAXIMUM_CAPACITY, OBJECT_RECYCLER_CAPACITY1);
+    public static final int SHORT_RECYCLER_MAXIMUM_CAPACITY1 =
+            getRecyclerMaximumCapacity("short.1", SHORT_RECYCLER_MAXIMUM_CAPACITY, SHORT_RECYCLER_CAPACITY1);
+    public static final int LONG_RECYCLER_MAXIMUM_CAPACITY1 =
+            getRecyclerMaximumCapacity("long.1", LONG_RECYCLER_MAXIMUM_CAPACITY, LONG_RECYCLER_CAPACITY1);
+
+    public static final int BOOLEAN_RECYCLER_MAXIMUM_CAPACITY0 =
+            getRecyclerMaximumCapacity("boolean.0", BOOLEAN_RECYCLER_MAXIMUM_CAPACITY, BOOLEAN_RECYCLER_CAPACITY0);
+    public static final int BYTE_RECYCLER_MAXIMUM_CAPACITY0 =
+            getRecyclerMaximumCapacity("byte.0", BYTE_RECYCLER_MAXIMUM_CAPACITY, BYTE_RECYCLER_CAPACITY0);
+    public static final int CHAR_RECYCLER_MAXIMUM_CAPACITY0 =
+            getRecyclerMaximumCapacity("char.0", CHAR_RECYCLER_MAXIMUM_CAPACITY, CHAR_RECYCLER_CAPACITY0);
+    public static final int DOUBLE_RECYCLER_MAXIMUM_CAPACITY0 =
+            getRecyclerMaximumCapacity("double.0", DOUBLE_RECYCLER_MAXIMUM_CAPACITY, DOUBLE_RECYCLER_CAPACITY0);
+    public static final int FLOAT_RECYCLER_MAXIMUM_CAPACITY0 =
+            getRecyclerMaximumCapacity("float.0", FLOAT_RECYCLER_MAXIMUM_CAPACITY, FLOAT_RECYCLER_CAPACITY0);
+    public static final int INT_RECYCLER_MAXIMUM_CAPACITY0 =
+            getRecyclerMaximumCapacity("int.0", INT_RECYCLER_MAXIMUM_CAPACITY, INT_RECYCLER_CAPACITY0);
+    public static final int OBJECT_RECYCLER_MAXIMUM_CAPACITY0 =
+            getRecyclerMaximumCapacity("object.0", OBJECT_RECYCLER_MAXIMUM_CAPACITY, OBJECT_RECYCLER_CAPACITY0);
+    public static final int SHORT_RECYCLER_MAXIMUM_CAPACITY0 =
+            getRecyclerMaximumCapacity("short.0", SHORT_RECYCLER_MAXIMUM_CAPACITY, SHORT_RECYCLER_CAPACITY0);
+    public static final int LONG_RECYCLER_MAXIMUM_CAPACITY0 =
+            getRecyclerMaximumCapacity("long.0", LONG_RECYCLER_MAXIMUM_CAPACITY, LONG_RECYCLER_CAPACITY0);
+
+    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY =
+            getRecyclerMaximumCapacity("inuse", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, IN_USE_RECYCLER_CAPACITY);
+    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY2 =
+            getRecyclerMaximumCapacity("inuse.2", IN_USE_RECYCLER_MAXIMUM_CAPACITY, IN_USE_RECYCLER_CAPACITY2);
+    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY1 =
+            getRecyclerMaximumCapacity("inuse.1", IN_USE_RECYCLER_MAXIMUM_CAPACITY, IN_USE_RECYCLER_CAPACITY1);
+    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY0 =
+            getRecyclerMaximumCapacity("inuse.0", IN_USE_RECYCLER_MAXIMUM_CAPACITY, IN_USE_RECYCLER_CAPACITY0);
+
     private static int getRecyclerCapacity(final String thisType, final int defaultValue) {
         return Configuration.getInstance().getIntegerWithDefault(RECYCLER_CAPACITY_PROPERTY + thisType, defaultValue);
+    }
+
+    /**
+     * @return the configured maximum capacity for {@code thisType}, but never less than {@code capacity}, the capacity
+     *         its recycler starts with
+     */
+    private static int getRecyclerMaximumCapacity(final String thisType, final int defaultValue, final int capacity) {
+        return Math.max(capacity, Configuration.getInstance()
+                .getIntegerWithDefault(RECYCLER_MAXIMUM_CAPACITY_PROPERTY + thisType, defaultValue));
     }
 
     private static int getDefaultInUseRecyclerCapacity2() {

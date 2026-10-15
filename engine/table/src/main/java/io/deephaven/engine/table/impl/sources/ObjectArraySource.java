@@ -27,6 +27,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
     @SuppressWarnings("rawtypes")
     private static final SoftRecycler recycler =
             new SoftRecycler<>(ArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,
+                    ArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY,
                     () -> new Object[BLOCK_SIZE], (item) -> Arrays.fill(item, null));
     transient private T[][] prevBlocks;
     private T[][] blocks;

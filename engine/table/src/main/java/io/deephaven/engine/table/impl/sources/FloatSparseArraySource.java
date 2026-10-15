@@ -51,15 +51,19 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
     // region recyclers
     private static final SoftRecycler<float[]> recycler =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY,
+                    SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_MAXIMUM_CAPACITY,
                     () -> new float[BLOCK_SIZE], null);
     private static final SoftRecycler<float[][]> recycler2 =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY2,
+                    SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_MAXIMUM_CAPACITY2,
                     () -> new float[BLOCK2_SIZE][], null);
     private static final SoftRecycler<FloatOneOrN.Block2[]> recycler1 =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY1,
+                    SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_MAXIMUM_CAPACITY1,
                     () -> new FloatOneOrN.Block2[BLOCK1_SIZE], null);
     private static final SoftRecycler<FloatOneOrN.Block1[]> recycler0 =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_CAPACITY0,
+                    SparseArrayColumnSourceConfiguration.FLOAT_RECYCLER_MAXIMUM_CAPACITY0,
                     () -> new FloatOneOrN.Block1[BLOCK0_SIZE], null);
     // endregion recyclers
 

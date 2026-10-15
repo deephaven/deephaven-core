@@ -1512,12 +1512,16 @@ public class ReplicateSourcesAndChunks {
 
         lines = replaceRegion(lines, "recyclers", Arrays.asList(
                 "    private static final SoftRecycler recycler = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,",
+                "            SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY,",
                 "            () -> new Object[BLOCK_SIZE], block -> Arrays.fill(block, null)); // we'll hold onto previous values, fix that",
                 "    private static final SoftRecycler recycler2 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY2,",
+                "            SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY2,",
                 "            () -> new Object[BLOCK2_SIZE][], null);",
                 "    private static final SoftRecycler recycler1 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY1,",
+                "            SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY1,",
                 "            () -> new ObjectOneOrN.Block2[BLOCK1_SIZE], null);",
                 "    private static final SoftRecycler recycler0 = new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY0,",
+                "            SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_MAXIMUM_CAPACITY0,",
                 "            () -> new ObjectOneOrN.Block1[BLOCK0_SIZE], null);"));
 
         lines = replaceRegion(lines, "constructor", Arrays.asList(
