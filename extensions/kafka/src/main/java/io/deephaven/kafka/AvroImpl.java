@@ -487,7 +487,8 @@ class AvroImpl {
             case LONG: {
                 final LogicalType logicalType = getEffectiveLogicalType(fieldName, fieldSchema);
                 if (LogicalTypes.timestampMicros().equals(logicalType) ||
-                        LogicalTypes.timestampMillis().equals(logicalType)) {
+                        LogicalTypes.timestampMillis().equals(logicalType) ||
+                        LogicalTypes.timestampNanos().equals(logicalType)) {
                     columnsOut.add(ColumnDefinition.ofTime(mappedNameForColumn));
                 } else {
                     columnsOut.add(ColumnDefinition.ofLong(mappedNameForColumn));
@@ -557,7 +558,8 @@ class AvroImpl {
                     case LONG:
                         final LogicalType logicalType = getEffectiveLogicalType(fieldName, elementTypeSchema);
                         if (LogicalTypes.timestampMicros().equals(logicalType) ||
-                                LogicalTypes.timestampMillis().equals(logicalType)) {
+                                LogicalTypes.timestampMillis().equals(logicalType) ||
+                                LogicalTypes.timestampNanos().equals(logicalType)) {
                             columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, Instant[].class));
                         } else {
                             columnsOut.add(ColumnDefinition.of(mappedNameForColumn, Type.longType().arrayType()));
