@@ -811,11 +811,12 @@ public class MinMaxFromStatisticsTest {
     /**
      * As epoch nanoseconds, MILLIS and MICROS statistics convert exactly up to the limit the reader enforces and
      * saturate beyond it, so the other extreme still bounds the row group. After the range either extreme saturates to
-     * {@code Long.MAX_VALUE}. Before it, a minimum saturates to {@code Long.MIN_VALUE} and a maximum to
-     * {@code MIN_LONG}, straddling the true value, which Deephaven would order between them.
+     * {@code Long.MAX_VALUE}. Before it, a minimum saturates to {@code NULL_LONG} and a maximum to {@code MIN_LONG},
+     * straddling the true value, which Deephaven would order between them.
      */
     @Test
     public void timestampStatisticsAsNanosSaturateBeyondTheNanosRange() {
+        final long nullLong = QueryConstants.NULL_LONG;
         final long minLong = QueryConstants.MIN_LONG;
         // {statistic, expected epoch nanoseconds as a minimum, expected epoch nanoseconds as a maximum}
         final long[][] millisCases = {
@@ -825,11 +826,11 @@ public class MinMaxFromStatisticsTest {
                 {MAX_CONVERTIBLE_MILLIS, MAX_CONVERTIBLE_MILLIS * 1_000_000L, MAX_CONVERTIBLE_MILLIS * 1_000_000L},
                 {-MAX_CONVERTIBLE_MILLIS, -MAX_CONVERTIBLE_MILLIS * 1_000_000L, -MAX_CONVERTIBLE_MILLIS * 1_000_000L},
                 {MAX_CONVERTIBLE_MILLIS + 1, Long.MAX_VALUE, Long.MAX_VALUE},
-                {-MAX_CONVERTIBLE_MILLIS - 1, Long.MIN_VALUE, minLong},
+                {-MAX_CONVERTIBLE_MILLIS - 1, nullLong, minLong},
                 {SENTINEL_9999_MILLIS, Long.MAX_VALUE, Long.MAX_VALUE},
-                {YEAR_1_MILLIS, Long.MIN_VALUE, minLong},
+                {YEAR_1_MILLIS, nullLong, minLong},
                 {Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE},
-                {Long.MIN_VALUE, Long.MIN_VALUE, minLong},
+                {Long.MIN_VALUE, nullLong, minLong},
         };
         assertInstantNanos(LogicalTypeAnnotation.TimeUnit.MILLIS, millisCases);
 
@@ -840,11 +841,11 @@ public class MinMaxFromStatisticsTest {
                 {MAX_CONVERTIBLE_MICROS, MAX_CONVERTIBLE_MICROS * 1_000L, MAX_CONVERTIBLE_MICROS * 1_000L},
                 {-MAX_CONVERTIBLE_MICROS, -MAX_CONVERTIBLE_MICROS * 1_000L, -MAX_CONVERTIBLE_MICROS * 1_000L},
                 {MAX_CONVERTIBLE_MICROS + 1, Long.MAX_VALUE, Long.MAX_VALUE},
-                {-MAX_CONVERTIBLE_MICROS - 1, Long.MIN_VALUE, minLong},
+                {-MAX_CONVERTIBLE_MICROS - 1, nullLong, minLong},
                 {SENTINEL_9999_MILLIS * 1_000L, Long.MAX_VALUE, Long.MAX_VALUE},
-                {YEAR_1_MILLIS * 1_000L, Long.MIN_VALUE, minLong},
+                {YEAR_1_MILLIS * 1_000L, nullLong, minLong},
                 {Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE},
-                {Long.MIN_VALUE, Long.MIN_VALUE, minLong},
+                {Long.MIN_VALUE, nullLong, minLong},
         };
         assertInstantNanos(LogicalTypeAnnotation.TimeUnit.MICROS, microsCases);
     }

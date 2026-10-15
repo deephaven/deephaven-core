@@ -441,6 +441,9 @@ final class MinMaxFromStatistics {
      * converts straight to an {@link Instant}, never by way of epoch nanoseconds: {@link Instant} covers every value a
      * MILLIS or MICROS statistic can hold, whereas epoch nanoseconds stop short of the year 2262 and would reject, for
      * example, the common {@code 9999-12-31} sentinel.
+     *
+     * @return {@code true} if {@code statistics} are for a UTC TIMESTAMP column and both setters were called;
+     *         {@code false}, calling neither, otherwise
      */
     static boolean getMinMaxForInstants(
             @NotNull final Statistics<?> statistics,
@@ -458,8 +461,8 @@ final class MinMaxFromStatistics {
                 maxSetter.accept(Instant.ofEpochMilli(maxLong));
                 return true;
             case MICROS:
-                minSetter.accept(epochMicrosToInstant(minLong));
-                maxSetter.accept(epochMicrosToInstant(maxLong));
+                minSetter.accept(ParquetPushdownUtils.epochMicrosToInstant(minLong));
+                maxSetter.accept(ParquetPushdownUtils.epochMicrosToInstant(maxLong));
                 return true;
             case NANOS:
                 minSetter.accept(ParquetPushdownUtils.epochNanosToInstant(minLong));
@@ -470,28 +473,19 @@ final class MinMaxFromStatistics {
     }
 
     /**
-     * Attempts to retrieve the minimum and maximum values for instants from the given {@code statistics}, as epoch
-     * nanoseconds -- the representation Deephaven stores an {@link Instant} column in.
+     * Retrieves the minimum and maximum of a UTC TIMESTAMP column's {@code statistics} as epoch nanoseconds, the form
+     * Deephaven stores an {@link Instant} in.
      * <p>
-     * NANOS statistics are already epoch nanoseconds and pass through unchanged; going by way of an {@link Instant}
-     * would fail for the top of the {@code long} range, which {@link DateTimeUtils#epochNanos} cannot convert back.
-     * <p>
-     * MILLIS and MICROS statistics beyond the range of epoch nanoseconds (roughly the years 1677 to 2262) saturate
-     * instead of failing, so the other extreme goes on pruning. A saturated extreme is not a value the row group holds,
-     * so it is chosen such that wherever it compares differently from the true value, the row group is kept rather than
-     * excluded.
-     * <ul>
-     * <li>After the range, either extreme becomes {@link Long#MAX_VALUE}. It compares just as the true value would with
-     * everything but itself, and no match value can name it: {@link DateTimeUtils#epochNanos} rejects the
-     * {@link Instant} it stands for, and {@link InstantPushdownHandler} declines a value that {@code epochNanos} wraps
-     * around to it from far before 1677.</li>
-     * <li>Before the range, no single value will do. Deephaven orders null below every value, so the true value lies
-     * above {@code NULL_LONG} and below {@link QueryConstants#MIN_LONG}, two adjacent {@code long}s. A minimum becomes
-     * {@code NULL_LONG} ({@link Long#MIN_VALUE}) and a maximum {@code MIN_LONG}, straddling it, so a row group of such
-     * values never looks like nothing but nulls, like a single value, or like it holds nothing before {@code MIN_LONG}.
-     * The price is that an is-null filter cannot exclude a row group whose minimum is before the range; it reads it
-     * instead, and the reader rejects the value.</li>
-     * </ul>
+     * NANOS statistics pass through unchanged. MILLIS and MICROS statistics outside the epoch-nanosecond range (roughly
+     * 1677 to 2262) saturate instead, so that a row group is never wrongly excluded. After the range, a statistic
+     * saturates to {@link Long#MAX_VALUE}. Before it, no {@code long} can hold the statistic, but Deephaven would sort
+     * it above null and below {@code MIN_LONG}, the earliest instant it can represent. So a minimum saturates to
+     * {@code NULL_LONG} and a maximum to {@code MIN_LONG}: a row group entirely before 1677 reads as
+     * {@code [NULL_LONG, MIN_LONG]}, which brackets its values. As a result, an is-null filter cannot exclude a row
+     * group whose minimum is before 1677.
+     *
+     * @return {@code true} if {@code statistics} are for a UTC TIMESTAMP column and both setters were called;
+     *         {@code false}, calling neither, otherwise
      */
     static boolean getMinMaxForInstantNanos(
             @NotNull final Statistics<?> statistics,
@@ -521,16 +515,18 @@ final class MinMaxFromStatistics {
             default:
                 return false;
         }
-        // A statistic too early for epoch nanoseconds (before 1677) has no long of its own: as a minimum it becomes
-        // NULL_LONG and as a maximum MIN_LONG, the two longs either side of where Deephaven would order it. See above.
-        minSetter.accept(saturatingToNanos(minLong, maxConvertible, nanosPerUnit, Long.MIN_VALUE));
+        // Saturate values outside the nanosecond range. After it (past 2262), min and max both become Long.MAX_VALUE.
+        // Before it (before 1677), the min becomes NULL_LONG and the max MIN_LONG: Deephaven orders such a value
+        // between those two adjacent longs. A max of Long.MAX_VALUE would also be safe, but a row group of only
+        // pre-1677 values could then never be excluded.
+        minSetter.accept(saturatingToNanos(minLong, maxConvertible, nanosPerUnit, QueryConstants.NULL_LONG));
         maxSetter.accept(saturatingToNanos(maxLong, maxConvertible, nanosPerUnit, QueryConstants.MIN_LONG));
         return true;
     }
 
     /**
-     * The unit of a TIMESTAMP column adjusted to UTC -- the columns read as {@link Instant} -- or {@code null} for any
-     * other column.
+     * @return the unit of a UTC TIMESTAMP column (the columns read as {@link Instant}), or {@code null} for any other
+     *         column
      */
     private static LogicalTypeAnnotation.TimeUnit utcTimestampUnit(@NotNull final Statistics<?> statistics) {
         final LogicalTypeAnnotation logicalType = statistics.type().getLogicalTypeAnnotation();
@@ -545,22 +541,24 @@ final class MinMaxFromStatistics {
         return null;
     }
 
-    private static Instant epochMicrosToInstant(final long micros) {
-        return Instant.ofEpochSecond(Math.floorDiv(micros, 1_000_000L), Math.floorMod(micros, 1_000_000L) * 1_000L);
-    }
-
     /**
-     * {@code value * nanosPerUnit}; or, beyond {@code maxConvertible} -- the same limit the reader's materializers
-     * enforce -- {@link Long#MAX_VALUE} above and {@code belowRange} below. See {@link #getMinMaxForInstantNanos} for
-     * what {@code belowRange} must be for each extreme.
+     * Converts {@code value} to epoch nanoseconds, saturating where that would overflow.
+     *
+     * @param value a timestamp in the column's unit
+     * @param maxConvertible the largest magnitude that converts without overflow, the same limit the reader enforces
+     * @param nanosPerUnit nanoseconds per unit of {@code value}
+     * @param valueBelowRange the result for a {@code value} before the range: {@code NULL_LONG} for a minimum,
+     *        {@code MIN_LONG} for a maximum
+     * @return {@code value} in epoch nanoseconds; {@link Long#MAX_VALUE} if it is after the range, or
+     *         {@code valueBelowRange} if it is before it
      */
     private static long saturatingToNanos(
-            final long value, final long maxConvertible, final long nanosPerUnit, final long belowRange) {
+            final long value, final long maxConvertible, final long nanosPerUnit, final long valueBelowRange) {
         if (value > maxConvertible) {
             return Long.MAX_VALUE;
         }
         if (value < -maxConvertible) {
-            return belowRange;
+            return valueBelowRange;
         }
         return value * nanosPerUnit;
     }
