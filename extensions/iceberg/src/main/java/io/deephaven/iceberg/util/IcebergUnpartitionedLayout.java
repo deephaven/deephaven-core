@@ -15,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
-import java.util.Set;
 
 final class IcebergUnpartitionedLayout extends IcebergBaseLayout {
 
@@ -23,9 +22,8 @@ final class IcebergUnpartitionedLayout extends IcebergBaseLayout {
             @NotNull IcebergTableAdapter tableAdapter,
             @NotNull ParquetInstructions parquetInstructions,
             @NotNull SeekableChannelsProvider seekableChannelsProvider,
-            @Nullable Snapshot snapshot,
-            @NotNull Set<String> ignoreSortedColumns) {
-        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot, ignoreSortedColumns);
+            @Nullable Snapshot snapshot) {
+        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot);
     }
 
     @Override

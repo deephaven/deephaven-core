@@ -26,7 +26,6 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 final class IcebergPartitionedLayout extends IcebergBaseLayout {
 
@@ -47,9 +46,8 @@ final class IcebergPartitionedLayout extends IcebergBaseLayout {
             @NotNull ParquetInstructions parquetInstructions,
             @NotNull SeekableChannelsProvider seekableChannelsProvider,
             @Nullable Snapshot snapshot,
-            @NotNull Resolver resolver,
-            @NotNull Set<String> ignoreSortedColumns) {
-        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot, ignoreSortedColumns);
+            @NotNull Resolver resolver) {
+        super(tableAdapter, parquetInstructions, seekableChannelsProvider, snapshot);
         this.partitionFields = resolver.partitionFieldMap();
         // This sort of check should be redundant; the resolver should be doing all these checks itself. This is an
         // extra layer of safety though, co-located closer to the where the usage actually occurs.
