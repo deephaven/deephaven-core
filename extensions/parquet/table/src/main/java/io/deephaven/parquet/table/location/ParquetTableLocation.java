@@ -280,7 +280,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                         // reports the error
                         continue;
                     }
-                    if (columnPath.size() == 1
+                    if (readsWholeColumn(columnPath)
                             && parquetToDeephaven.putIfAbsent(columnPath.get(0), column.getName()) != null) {
                         readByMany.add(columnPath.get(0));
                     }
@@ -311,14 +311,34 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
+     * Whether {@code columnPath} reads one whole top-level column of this file: the column itself, or its only leaf, as
+     * for a LIST column such as a vector, rather than one field of a column with several. Requires initialization.
+     */
+    private boolean readsWholeColumn(@NotNull final List<String> columnPath) {
+        if (columnPath.isEmpty() || !parquetSchema.containsField(columnPath.get(0))) {
+            return false;
+        }
+        Type type = parquetSchema.getType(columnPath.get(0));
+        for (final String fieldName : columnPath.subList(1, columnPath.size())) {
+            if (type.isPrimitive()
+                    || type.asGroupType().getFieldCount() != 1
+                    || !type.asGroupType().getType(0).getName().equals(fieldName)) {
+                return false;
+            }
+            type = type.asGroupType().getType(0);
+        }
+        return true;
+    }
+
+    /**
      * Returns the name of the top-level parquet column that the Deephaven column {@code columnName} reads, or
-     * {@code null} if it does not read exactly one top-level column of this file. Requires initialization.
+     * {@code null} if it does not read exactly one whole top-level column of this file. Requires initialization.
      */
     @Nullable
     private String toParquetColumnName(@NotNull final String columnName) {
         final List<String> columnPath = getColumnPathInternal(columnName,
                 readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName));
-        if (columnPath.size() != 1 || !parquetSchema.containsField(columnPath.get(0))) {
+        if (!readsWholeColumn(columnPath)) {
             return null;
         }
         final String parquetColumnName = columnPath.get(0);
@@ -664,7 +684,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final ParquetInstructions parquetInstructions,
             @NotNull final String[] parquetKeyColumnNames,
             @NotNull final String[] keyColumnNames) {
-        final ParquetInstructions indexReadInstructions = parquetInstructions.getColumnResolverFactory().isEmpty()
+        final boolean resolved = parquetInstructions.getColumnResolverFactory().isPresent();
+        final ParquetInstructions indexReadInstructions = !resolved
                 ? parquetInstructions.withTableDefinitionAndLayout(null,
                         ParquetInstructions.ParquetFileLayout.SINGLE_FILE)
                 : new ParquetInstructions.Builder(parquetInstructions)
@@ -674,14 +695,21 @@ public class ParquetTableLocation extends AbstractTableLocation {
                         .build();
         final Table indexTable = ParquetTools.readTable(indexFileMetaData.fileURI.toString(), indexReadInstructions);
         if (indexFileMetaData.dataIndexInfo != null) {
-            // Name any key column the read did not rename with its Deephaven name
+            if (!resolved) {
+                // The read applied the renames, which named the key columns with their Deephaven names
+                return indexTable;
+            }
+            // Read without the resolver, the key columns have their parquet names. Rename them all at once: a resolver
+            // can swap two names, so a key column may already have another key column's Deephaven name.
             final List<Pair> renames = new ArrayList<>();
             for (int ki = 0; ki < keyColumnNames.length; ++ki) {
-                if (!indexTable.hasColumns(keyColumnNames[ki]) && indexTable.hasColumns(parquetKeyColumnNames[ki])) {
+                if (!parquetKeyColumnNames[ki].equals(keyColumnNames[ki])) {
                     renames.add(Pair.of(ColumnName.of(parquetKeyColumnNames[ki]), ColumnName.of(keyColumnNames[ki])));
                 }
             }
-            return renames.isEmpty() ? indexTable : indexTable.renameColumns(renames);
+            // Rename the coalesced table: a source table defers a rename as a view, which applies the pairs one after
+            // another and so cannot swap two names
+            return renames.isEmpty() ? indexTable : indexTable.coalesce().renameColumns(renames);
         }
         Assert.neqNull(indexFileMetaData.groupingColumnInfo, "indexFileMetaData.groupingColumnInfo");
         if (indexTable.hasColumns(

@@ -17,6 +17,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.metadata.RowGroupInfo;
+import io.deephaven.vector.IntVector;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.junit.Rule;
 import org.junit.Test;
@@ -305,6 +306,37 @@ public class ParquetMetadataKeyingTest {
         assertFilterMatchesOracle(fromDisk, "B = `c1`");
     }
 
+    /**
+     * A vector column is a parquet LIST, read through the path to its only leaf rather than by its name alone; it is
+     * still one whole column, so an index on it is found, with or without a column resolver.
+     */
+    @Test
+    public void dataIndexOnVectorColumn() {
+        final String dest = path("vectorIndexed.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(100).update("V = new io.deephaven.vector.IntVectorDirect((int) (ii % 3), 7)",
+                        "C = (int) ii"),
+                dest,
+                ParquetInstructions.builder().addIndexColumns("V").build());
+
+        final Table fromDisk = ParquetTools.readTable(dest);
+        assertTrue(DataIndexer.hasDataIndex(fromDisk, "V"));
+        assertEquals(3, DataIndexer.getDataIndex(fromDisk, "V").table().size());
+
+        final ParquetColumnResolverMap resolver = ParquetColumnResolverMap.builder()
+                .putMap("W", List.of("V", "list", "element"))
+                .putMap("C", List.of("C"))
+                .build();
+        final Table resolved = ParquetTools.readTable(dest, ParquetInstructions.builder()
+                .setTableDefinition(TableDefinition.of(
+                        ColumnDefinition.fromGenericType("W", IntVector.class, int.class),
+                        ColumnDefinition.ofInt("C")))
+                .setColumnResolverFactory((tableKey, tableLocationKey) -> resolver)
+                .build());
+        assertTrue(DataIndexer.hasDataIndex(resolved, "W"));
+        assertEquals(3, DataIndexer.getDataIndex(resolved, "W").table().size());
+    }
+
     // endregion data indexes
 
     // region column resolvers
@@ -375,6 +407,30 @@ public class ParquetMetadataKeyingTest {
         assertTrue(SortedColumnsAttribute.getSortedColumns(fromDisk.coalesce()).isEmpty());
         assertFalse(DataIndexer.hasDataIndex(fromDisk, "C"));
         assertFilterMatchesOracle(fromDisk, "C >= 50");
+    }
+
+    /**
+     * The index table is read without the resolver, so its key columns carry their parquet names. Here the resolver
+     * swaps them -- Deephaven {@code B} reads parquet {@code C} and Deephaven {@code C} reads parquet {@code B} -- so
+     * each key column already holds the other's Deephaven name, and both renames must still happen, together.
+     */
+    @Test
+    public void compositeDataIndexWithColumnResolverSwap() {
+        final String dest = path("compositeIndexed.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(100).update("B = `b` + (ii % 5)", "C = `c` + (ii % 7)"),
+                dest,
+                ParquetInstructions.builder().addIndexColumns("B", "C").build());
+        final Table fromDisk = ParquetTools.readTable(dest, resolving(
+                TableDefinition.of(ColumnDefinition.ofString("B"), ColumnDefinition.ofString("C")),
+                "B", "C", "C", "B"));
+        assertTrue(DataIndexer.hasDataIndex(fromDisk, "B", "C"));
+        // Built in memory, so it has no data index; select() would carry the one under test
+        final Table expected = TableTools.emptyTable(100).update("B = `c` + (ii % 7)", "C = `b` + (ii % 5)");
+        final Table expectedKeys = expected.selectDistinct("B", "C").sort("B", "C");
+        assertTableEquals(expectedKeys,
+                DataIndexer.getDataIndex(fromDisk, "B", "C").table().view("B", "C").sort("B", "C"));
+        assertTableEquals(expectedKeys, fromDisk.selectDistinct("B", "C").sort("B", "C"));
     }
 
     /**
