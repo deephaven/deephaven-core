@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
@@ -46,10 +47,16 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
  * Column definition for all Deephaven columns.
+ *
+ * <p>
+ * Every column definition has a valid column name: each factory method throws
+ * {@link NameValidator.InvalidNameException} (an {@link IllegalArgumentException}) if the name is not, as determined by
+ * {@link NameValidator#validateColumnName(String)}.
  */
 public class ColumnDefinition<TYPE> implements LogOutputAppendable {
 
@@ -68,106 +75,304 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         Partitioning
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} boolean column definition, with data type {@link Boolean}.
+     *
+     * @param name the column name
+     * @return the column definition
+     */
     public static ColumnDefinition<Boolean> ofBoolean(@NotNull final String name) {
-        return new ColumnDefinition<>(name, Boolean.class);
+        return create(name, Boolean.class);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} byte column definition, with data type {@code byte}.
+     *
+     * @param name the column name
+     * @return the column definition
+     */
     public static ColumnDefinition<Byte> ofByte(@NotNull final String name) {
-        return new ColumnDefinition<>(name, byte.class);
+        return create(name, byte.class);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} char column definition, with data type {@code char}.
+     *
+     * @param name the column name
+     * @return the column definition
+     */
     public static ColumnDefinition<Character> ofChar(@NotNull final String name) {
-        return new ColumnDefinition<>(name, char.class);
+        return create(name, char.class);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} short column definition, with data type {@code short}.
+     *
+     * @param name the column name
+     * @return the column definition
+     */
     public static ColumnDefinition<Short> ofShort(@NotNull final String name) {
-        return new ColumnDefinition<>(name, short.class);
+        return create(name, short.class);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} int column definition, with data type {@code int}.
+     *
+     * @param name the column name
+     * @return the column definition
+     */
     public static ColumnDefinition<Integer> ofInt(@NotNull final String name) {
-        return new ColumnDefinition<>(name, int.class);
+        return create(name, int.class);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} long column definition, with data type {@code long}.
+     *
+     * @param name the column name
+     * @return the column definition
+     */
     public static ColumnDefinition<Long> ofLong(@NotNull final String name) {
-        return new ColumnDefinition<>(name, long.class);
+        return create(name, long.class);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} float column definition, with data type {@code float}.
+     *
+     * @param name the column name
+     * @return the column definition
+     */
     public static ColumnDefinition<Float> ofFloat(@NotNull final String name) {
-        return new ColumnDefinition<>(name, float.class);
+        return create(name, float.class);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} double column definition, with data type {@code double}.
+     *
+     * @param name the column name
+     * @return the column definition
+     */
     public static ColumnDefinition<Double> ofDouble(@NotNull final String name) {
-        return new ColumnDefinition<>(name, double.class);
+        return create(name, double.class);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} string column definition, with data type {@link String}.
+     *
+     * @param name the column name
+     * @return the column definition
+     */
     public static ColumnDefinition<String> ofString(@NotNull final String name) {
-        return new ColumnDefinition<>(name, String.class);
+        return create(name, String.class);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} timestamp column definition, with data type {@link Instant}.
+     *
+     * @param name the column name
+     * @return the column definition
+     */
     public static ColumnDefinition<Instant> ofTime(@NotNull final String name) {
-        return new ColumnDefinition<>(name, Instant.class);
+        return create(name, Instant.class);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} time-of-day column definition, with data type {@link LocalTime}.
+     *
+     * @param name the column name
+     * @return the column definition
+     */
     public static ColumnDefinition<LocalTime> ofLocalTime(@NotNull final String name) {
-        return new ColumnDefinition<>(name, LocalTime.class);
+        return create(name, LocalTime.class);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} date column definition, with data type {@link LocalDate}.
+     *
+     * @param name the column name
+     * @return the column definition
+     */
     public static ColumnDefinition<LocalDate> ofLocalDate(@NotNull final String name) {
-        return new ColumnDefinition<>(name, LocalDate.class);
+        return create(name, LocalDate.class);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} duration column definition, with data type {@link Duration}.
+     *
+     * @param name the column name
+     * @return the column definition
+     */
     public static ColumnDefinition<Duration> ofDuration(@NotNull final String name) {
-        return new ColumnDefinition<>(name, Duration.class);
+        return create(name, Duration.class);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} column definition for a qst {@link Type}. The data type is:
+     * <ul>
+     * <li>for {@link PrimitiveType primitive types}, the primitive type, except {@link Boolean} for
+     * {@link BooleanType};</li>
+     * <li>for {@link BoxedType boxed types}, the same as for the corresponding primitive type;</li>
+     * <li>for other {@link GenericType generic types}, the type's class, with the array or {@link Vector} component
+     * type as the component type for {@link ArrayType array types}.</li>
+     * </ul>
+     *
+     * @param name the column name
+     * @param type the type
+     * @return the column definition
+     * @throws IllegalArgumentException if {@code type} is a {@link CustomType} for {@code void} or {@link Void}
+     */
     public static ColumnDefinition<?> of(String name, Type<?> type) {
         return type.walk(new Adapter(name));
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} column definition for a qst {@link PrimitiveType}. The data type is
+     * the primitive type, except {@link Boolean} for {@link BooleanType}.
+     *
+     * @param name the column name
+     * @param type the type
+     * @return the column definition
+     */
     public static ColumnDefinition<?> of(String name, PrimitiveType<?> type) {
         return type.walk((PrimitiveType.Visitor<ColumnDefinition<?>>) new Adapter(name));
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} column definition for a qst {@link GenericType}. The data type is the
+     * same as for the corresponding primitive type for {@link BoxedType boxed types}, and otherwise the type's class,
+     * with the array or {@link Vector} component type as the component type for {@link ArrayType array types}.
+     *
+     * @param name the column name
+     * @param type the type
+     * @return the column definition
+     * @throws IllegalArgumentException if {@code type} is a {@link CustomType} for {@code void} or {@link Void}
+     */
     public static ColumnDefinition<?> of(String name, GenericType<?> type) {
         return type.walk((GenericType.Visitor<ColumnDefinition<?>>) new Adapter(name));
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} column definition for a qst {@link ArrayType}: a native array or
+     * {@link Vector} type. The data type is the type's class, and the component type is the type's component type.
+     *
+     * @param name the column name
+     * @param type the type
+     * @return the column definition
+     */
     public static <T> ColumnDefinition<T> of(String name, ArrayType<T, ?> type) {
         return type.walk(new ArrayAdapter<>(name));
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} column definition for a qst {@link PrimitiveVectorType}, such as
+     * {@link IntVector}. The data type is the Vector type, and the component type is its primitive component type.
+     *
+     * @param name the column name
+     * @param type the type
+     * @return the column definition
+     */
     public static <T> ColumnDefinition<T> of(String name, PrimitiveVectorType<T, ?> type) {
-        return new ColumnDefinition<>(name, type.clazz(), type.componentType().clazz(), ColumnType.Normal);
+        return create(name, type.clazz(), type.componentType().clazz(), ColumnType.Normal);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} column definition for a qst {@link GenericVectorType}, an
+     * {@link ObjectVector} of a generic type. The data type is {@link ObjectVector}, and the {@link #getComponentType()
+     * component type} is the class of the type's component type, which supplies the element type that
+     * {@link ObjectVector} only expresses through generics: {@code ObjectVector<Number>} has component type
+     * {@link Number}, making it the Vector equivalent of {@code Number[]}.
+     *
+     * @param name the column name
+     * @param type the type
+     * @return the column definition
+     */
     public static <T> ColumnDefinition<T> of(String name, GenericVectorType<T, ?> type) {
-        return new ColumnDefinition<>(name, type.clazz(), type.componentType().clazz(), ColumnType.Normal);
+        return create(name, type.clazz(), type.componentType().clazz(), ColumnType.Normal);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} column definition for a qst {@link NativeArrayType}. The data type is
+     * the array type, and the component type is the class of its component type.
+     *
+     * @param name the column name
+     * @param type the type
+     * @return the column definition
+     */
     public static <T> ColumnDefinition<T> of(String name, NativeArrayType<T, ?> type) {
-        return new ColumnDefinition<>(name, type.clazz(), type.componentType().clazz(), ColumnType.Normal);
+        return create(name, type.clazz(), type.componentType().clazz(), ColumnType.Normal);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} {@link Vector} column definition. The data type is {@code vectorType},
+     * and the {@link #getComponentType() component type} is its element type: the primitive type for primitive Vectors,
+     * such as {@code int} for {@link IntVector} (the Vector equivalent of {@code int[]}); and {@link Object} for
+     * {@link ObjectVector}, making it {@code ObjectVector<Object>}, the Vector equivalent of {@code Object[]}. To give
+     * an {@link ObjectVector} a more specific element type, use {@link #ofVector(String, Class, Class)}.
+     *
+     * @param name the column name
+     * @param vectorType the Vector type
+     * @return the column definition
+     * @throws IllegalArgumentException if {@code vectorType} is not a recognized Vector type
+     */
     public static <T extends Vector<?>> ColumnDefinition<T> ofVector(
             @NotNull final String name,
             @NotNull final Class<T> vectorType) {
-        return new ColumnDefinition<>(name, vectorType, baseComponentTypeForVector(vectorType), ColumnType.Normal);
+        return create(name, vectorType, baseComponentTypeForVector(vectorType), ColumnType.Normal);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} {@link Vector} column definition. The data type is {@code vectorType},
+     * and the {@link #getComponentType() component type} is its element type.
+     *
+     * <p>
+     * {@link ObjectVector} expresses its element type only through generics, so {@code componentType} supplies it:
+     * {@code ofVector(name, ObjectVector.class, Number.class)} describes {@code ObjectVector<Number>}, the Vector
+     * equivalent of {@code Number[]}. Primitive Vectors fix their element type, so for them {@code componentType} must
+     * be that primitive type, such as {@code int} for {@link IntVector}.
+     *
+     * @param name the column name
+     * @param vectorType the Vector type
+     * @param componentType the element type: any reference type but {@link Void} for {@link ObjectVector}, or the
+     *        primitive type for a primitive Vector; or {@code null} for the default, which is {@link Object} for
+     *        {@link ObjectVector}
+     * @return the column definition
+     * @throws IllegalArgumentException if {@code vectorType} is not a recognized Vector type, or {@code componentType}
+     *         is not valid for it
+     */
     public static <T extends Vector<?>> ColumnDefinition<T> ofVector(
             @NotNull final String name,
             @NotNull final Class<T> vectorType,
             @Nullable final Class<?> componentType) {
-        return new ColumnDefinition<>(name, vectorType,
-                checkAndMaybeInferVectorComponentType(vectorType, componentType), ColumnType.Normal);
+        return create(name, vectorType, inferComponentType(vectorType, componentType), ColumnType.Normal);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} column definition for an arbitrary data type, inferring the component
+     * type. Equivalent to {@code fromGenericType(name, dataType, null, ColumnType.Normal)}; see
+     * {@link #fromGenericType(String, Class, Class, ColumnType)} for how the data and component types are determined.
+     *
+     * @param name the column name
+     * @param dataType the data type
+     * @return the column definition
+     * @throws IllegalArgumentException if {@code dataType} is not a valid column data type
+     */
     public static <T> ColumnDefinition<T> fromGenericType(
             @NotNull final String name,
             @NotNull final Class<T> dataType) {
         return fromGenericType(name, dataType, null);
     }
 
+    /**
+     * Creates a {@link ColumnType#Normal normal} column definition for an arbitrary data type. Equivalent to
+     * {@code fromGenericType(name, dataType, componentType, ColumnType.Normal)}; see
+     * {@link #fromGenericType(String, Class, Class, ColumnType)} for how the data and component types are determined.
+     *
+     * @param name the column name
+     * @param dataType the data type
+     * @param componentType the component type, for array and {@link Vector} data types; inferred when {@code null}
+     * @return the column definition
+     * @throws IllegalArgumentException if {@code dataType} is not a valid column data type, or {@code componentType} is
+     *         not valid for {@code dataType}
+     */
     public static <T> ColumnDefinition<T> fromGenericType(
             @NotNull final String name,
             @NotNull final Class<T> dataType,
@@ -175,19 +380,107 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         return fromGenericType(name, dataType, componentType, ColumnType.Normal);
     }
 
+    /**
+     * Creates a column definition for an arbitrary data type.
+     *
+     * <p>
+     * Like column sources, column definitions use {@link Boolean} for boolean columns and the primitive type for other
+     * primitive columns, so {@code dataType} is normalized: {@code boolean} becomes {@link Boolean}, and the other
+     * boxed primitive types become their primitive types. Other data types are used as is.
+     *
+     * <p>
+     * For array and {@link Vector} data types, the {@link #getComponentType() component type} is the element type. When
+     * {@code componentType} is {@code null}, it is inferred: the array's component type for array data types; the
+     * primitive type for primitive Vectors, such as {@code int} for {@link IntVector}; and {@link Object} for
+     * {@link ObjectVector}. Since {@link ObjectVector} expresses its element type only through generics, give
+     * {@code componentType} to describe, for example, {@code ObjectVector<Number>}, the Vector equivalent of
+     * {@code Number[]}. Other data types have no component type unless one is given.
+     *
+     * @param name the column name
+     * @param dataType the data type; may not be {@code void} or {@link Void}, nor an array of {@link Void}
+     * @param componentType the element type for array and {@link Vector} data types: for arrays, the array's component
+     *        type or a more specific one; for {@link ObjectVector}, any reference type; for primitive Vectors, their
+     *        primitive type. Never {@code void} or {@link Void}, nor an array of them. Or {@code null} to infer it
+     * @param columnType the column type
+     * @return the column definition
+     * @throws IllegalArgumentException if {@code dataType} is not a valid column data type, or {@code componentType} is
+     *         not valid for {@code dataType}
+     */
     public static <T> ColumnDefinition<T> fromGenericType(
             @NotNull final String name,
             @NotNull final Class<T> dataType,
             @Nullable final Class<?> componentType,
             @NotNull final ColumnType columnType) {
-        return new ColumnDefinition<>(
-                name, dataType, checkAndMaybeInferComponentType(dataType, componentType), columnType);
+        final Class<T> normalizedDataType = normalizeDataType(Objects.requireNonNull(dataType));
+        return create(name, normalizedDataType, inferComponentType(normalizedDataType, componentType), columnType);
+    }
+
+    /**
+     * Boxed primitive types, mapped to their primitive types. Column definitions use the primitive type rather than the
+     * boxed type; {@link Boolean} is not included, as it is the data type for boolean columns.
+     */
+    private static final Map<Class<?>, Class<?>> BOXED_PRIMITIVE_TYPES = Map.of(
+            Byte.class, byte.class,
+            Character.class, char.class,
+            Short.class, short.class,
+            Integer.class, int.class,
+            Long.class, long.class,
+            Float.class, float.class,
+            Double.class, double.class);
+
+    /**
+     * Describes why {@code dataType} is not a valid column data type, or returns {@code null} if it is valid.
+     * {@code void} and {@link Void} are never valid. Boolean columns use {@link Boolean} rather than {@code boolean},
+     * and the other primitive columns use their primitive type rather than its boxed type.
+     */
+    @Nullable
+    private static String dataTypeError(@NotNull final String name, @NotNull final Class<?> dataType) {
+        if (dataType == void.class || dataType == Void.class) {
+            return "Invalid data type " + dataType.getTypeName() + " for column " + name + ": not a valid column type";
+        }
+        if (dataType == boolean.class) {
+            return "Invalid data type boolean for column " + name + ": use " + Boolean.class.getName();
+        }
+        final Class<?> primitiveType = BOXED_PRIMITIVE_TYPES.get(dataType);
+        if (primitiveType != null) {
+            return "Invalid data type " + dataType.getTypeName() + " for column " + name + ": use " + primitiveType;
+        }
+        return null;
+    }
+
+    /**
+     * Normalizes {@code dataType} to the type column definitions use for it: {@link Boolean} for {@code boolean}, and
+     * the primitive type for the other boxed primitive types. Other types are returned unchanged.
+     */
+    private static <T> Class<T> normalizeDataType(@NotNull final Class<T> dataType) {
+        if (dataType == boolean.class) {
+            // noinspection unchecked
+            return (Class<T>) Boolean.class;
+        }
+        final Class<?> primitiveType = BOXED_PRIMITIVE_TYPES.get(dataType);
+        // noinspection unchecked
+        return primitiveType != null ? (Class<T>) primitiveType : dataType;
     }
 
     /**
      * Base component type class for each {@link Vector} type.
+     *
+     * @throws IllegalArgumentException if {@code vectorType} is not a recognized Vector type
      */
     private static Class<?> baseComponentTypeForVector(@NotNull final Class<? extends Vector<?>> vectorType) {
+        final Class<?> baseComponentType = findBaseComponentTypeForVector(vectorType);
+        if (baseComponentType == null) {
+            throw new IllegalArgumentException("Unrecognized Vector type " + vectorType.getTypeName());
+        }
+        return baseComponentType;
+    }
+
+    /**
+     * Base component type class for each {@link Vector} type, or {@code null} if {@code vectorType} is not a recognized
+     * Vector type.
+     */
+    @Nullable
+    private static Class<?> findBaseComponentTypeForVector(@NotNull final Class<? extends Vector<?>> vectorType) {
         if (CharVector.class.isAssignableFrom(vectorType)) {
             return char.class;
         }
@@ -212,55 +505,114 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         if (ObjectVector.class.isAssignableFrom(vectorType)) {
             return Object.class;
         }
-        throw new IllegalArgumentException("Unrecognized Vector type " + vectorType);
+        return null;
     }
 
-    private static Class<?> checkAndMaybeInferComponentType(
-            @NotNull final Class<?> dataType, @Nullable final Class<?> inputComponentType) {
+    /**
+     * Infers the component type for {@code dataType} when {@code componentType} is not given: the array component type
+     * for arrays, and the {@link #baseComponentTypeForVector(Class) base component type} for {@link Vector Vectors}
+     * (the primitive type for primitive Vectors, and {@link Object} for {@link ObjectVector}, making it
+     * {@code ObjectVector<Object>}). This does not check that a given {@code componentType} is valid;
+     * {@link #create(String, Class, Class, ColumnType)} does.
+     */
+    @Nullable
+    private static Class<?> inferComponentType(
+            @NotNull final Class<?> dataType,
+            @Nullable final Class<?> componentType) {
+        if (componentType != null) {
+            return componentType;
+        }
         if (dataType.isArray()) {
-            final Class<?> arrayComponentType = dataType.getComponentType();
-            if (inputComponentType == null) {
-                return arrayComponentType;
-            }
-            if (!arrayComponentType.isAssignableFrom(inputComponentType)) {
-                throw new IllegalArgumentException(
-                        "Invalid component type " + inputComponentType + " for array data type " + dataType);
-            }
-            return inputComponentType;
+            return dataType.getComponentType();
         }
         if (Vector.class.isAssignableFrom(dataType)) {
-            // noinspection unchecked
-            return checkAndMaybeInferVectorComponentType((Class<? extends Vector<?>>) dataType, inputComponentType);
-        }
-        // Note: some testing currently depends on being able to create Collection + componentType definitions:
-        // io.deephaven.server.jetty.BarrageChunkFactoryTest.testNotAListDestinationPropagation
-        // if (inputComponentType != null) {
-        // throw new IllegalArgumentException(String.format(
-        // "Invalid componentType %s for non-array, non-Vector dataType %s", inputComponentType, dataType));
-        // }
-        // return null;
-        return inputComponentType;
-    }
-
-    private static Class<?> checkAndMaybeInferVectorComponentType(
-            @NotNull final Class<? extends Vector<?>> dataType,
-            @Nullable final Class<?> inputComponentType) {
-        final Class<?> vectorComponentType = baseComponentTypeForVector(dataType);
-        if (inputComponentType == null) {
             /*
              * TODO (https://github.com/deephaven/deephaven-core/issues/817): Allow formula results returning Vector to
-             * know component type if (Vector.class.isAssignableFrom(dataType)) { throw new
-             * IllegalArgumentException("Missing required component type for Vector data type " + dataType); }
+             * know component type, and then require it rather than inferring it.
              */
-            return vectorComponentType;
+            // noinspection unchecked
+            return baseComponentTypeForVector((Class<? extends Vector<?>>) dataType);
         }
-        if (!vectorComponentType.isAssignableFrom(inputComponentType)) {
-            throw new IllegalArgumentException(
-                    "Invalid component type " + inputComponentType + " for Vector data type " + dataType);
-        }
-        return inputComponentType;
+        return null;
     }
 
+    /**
+     * Describes why {@code componentType} is not valid for {@code dataType}, or returns {@code null} if it is valid.
+     * Array and {@link Vector} data types require a {@link #getComponentType() component type}: for arrays, the array's
+     * component type or a more specific one; for Vectors, a type assignable to the Vector's
+     * {@link #baseComponentTypeForVector(Class) base component type}, which allows any reference type as the element
+     * type of an {@link ObjectVector}, and only the matching primitive type for a primitive Vector. No component type
+     * may be {@code void} or {@link Void}, or an array of them, whatever the data type.
+     */
+    @Nullable
+    private static String componentTypeError(
+            @NotNull final String name,
+            @NotNull final Class<?> dataType,
+            @Nullable final Class<?> componentType) {
+        if (componentType != null && isVoidElementType(componentType)) {
+            return "Invalid component type " + componentType.getTypeName() + " for column " + name
+                    + ": void and Void are not valid element types";
+        }
+        final Class<?> requiredComponentType;
+        final String kind;
+        if (dataType.isArray()) {
+            requiredComponentType = dataType.getComponentType();
+            kind = "array";
+        } else if (Vector.class.isAssignableFrom(dataType)) {
+            // noinspection unchecked
+            requiredComponentType = findBaseComponentTypeForVector((Class<? extends Vector<?>>) dataType);
+            if (requiredComponentType == null) {
+                return "Unrecognized Vector type " + dataType.getTypeName() + " for column " + name;
+            }
+            kind = "Vector";
+        } else {
+            // Note: some testing currently depends on being able to create Collection + componentType definitions:
+            // io.deephaven.server.jetty.BarrageChunkFactoryTest.testNotAListDestinationPropagation
+            // if (componentType != null) {
+            // return String.format(
+            // "Invalid componentType %s for non-array, non-Vector dataType %s", componentType, dataType);
+            // }
+            return null;
+        }
+        if (componentType == null) {
+            return "Missing component type for column " + name + " with " + kind + " data type "
+                    + dataType.getTypeName();
+        }
+        if (!requiredComponentType.isAssignableFrom(componentType)) {
+            return "Invalid component type " + componentType.getTypeName() + " for column " + name + " with " + kind
+                    + " data type " + dataType.getTypeName();
+        }
+        return null;
+    }
+
+    /**
+     * Whether {@code type} is {@code void} or {@link Void}, or an array (of any depth) whose innermost element type is.
+     * Neither can hold any values but {@code null}, so neither is a valid element type for a column.
+     */
+    private static boolean isVoidElementType(@NotNull Class<?> type) {
+        while (type.isArray()) {
+            type = type.getComponentType();
+        }
+        return type == void.class || type == Void.class;
+    }
+
+    /**
+     * Throws an {@link IllegalArgumentException} with {@code error}, if there is one.
+     */
+    private static void checkArgument(@Nullable final String error) {
+        if (error != null) {
+            throw new IllegalArgumentException(error);
+        }
+    }
+
+    /**
+     * Creates a {@link ColumnType#Normal normal} column definition from a qst {@link ColumnHeader}. The name is the
+     * header's name, and the data type is determined from the header's type as by {@link #of(String, Type)}.
+     *
+     * @param header the column header
+     * @return the column definition
+     * @throws IllegalArgumentException if the header's type is a {@link CustomType} for {@code void} or {@link Void}
+     */
     public static ColumnDefinition<?> from(ColumnHeader<?> header) {
         return header.componentType().walk(new Adapter(header.name()));
     }
@@ -362,7 +714,9 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
 
         @Override
         public ColumnDefinition<?> visit(CustomType<?> customType) {
-            return fromGenericType(name, customType.clazz());
+            // CustomType excludes primitive, boxed, array, and Vector types, so the class needs no normalization or
+            // component type; it may still be void or Void, which are not static types, and create rejects those.
+            return create(name, customType.clazz());
         }
     }
 
@@ -402,19 +756,53 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     @NotNull
     private final ColumnType columnType;
 
-    private ColumnDefinition(@NotNull final String name, @NotNull final Class<TYPE> dataType) {
-        this(name, dataType, null, ColumnType.Normal);
+    /**
+     * Creates a {@link ColumnType#Normal normal} column definition with no component type, after checking that it is
+     * valid. See {@link #create(String, Class, Class, ColumnType)}.
+     */
+    private static <T> ColumnDefinition<T> create(@NotNull final String name, @NotNull final Class<T> dataType) {
+        return create(name, dataType, null, ColumnType.Normal);
     }
 
+    /**
+     * Creates a column definition, after checking that it is valid: that {@code name} is a valid column name, that
+     * {@code dataType} is a valid column data type, and that {@code componentType} is valid for {@code dataType}. Any
+     * normalization or inference of the types must already have been done.
+     *
+     * <p>
+     * All construction paths that take arguments from callers go through this method. Only paths that already know the
+     * result is valid, such as {@link #withPartitioning()}, call the constructor directly, so that they need not repeat
+     * the checks.
+     *
+     * @throws NameValidator.InvalidNameException if {@code name} is not a valid column name
+     * @throws IllegalArgumentException if {@code dataType} or {@code componentType} is not valid
+     */
+    private static <T> ColumnDefinition<T> create(
+            @NotNull final String name,
+            @NotNull final Class<T> dataType,
+            @Nullable final Class<?> componentType,
+            @NotNull final ColumnType columnType) {
+        NameValidator.validateColumnName(Objects.requireNonNull(name, "Column names cannot be null"));
+        Objects.requireNonNull(dataType);
+        Objects.requireNonNull(columnType);
+        checkArgument(dataTypeError(name, dataType));
+        checkArgument(componentTypeError(name, dataType, componentType));
+        return new ColumnDefinition<>(name, dataType, componentType, columnType);
+    }
+
+    /**
+     * Constructs a column definition without any checks. Callers must already know that the result is valid; use
+     * {@link #create(String, Class, Class, ColumnType)} otherwise.
+     */
     private ColumnDefinition(
             @NotNull final String name,
             @NotNull final Class<TYPE> dataType,
             @Nullable final Class<?> componentType,
             @NotNull final ColumnType columnType) {
-        this.name = Objects.requireNonNull(name, "Column names cannot be null");
-        this.dataType = Objects.requireNonNull(dataType);
+        this.name = name;
+        this.dataType = dataType;
         this.componentType = componentType;
-        this.columnType = Objects.requireNonNull(columnType);
+        this.columnType = columnType;
     }
 
     @NotNull
@@ -427,6 +815,23 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         return dataType;
     }
 
+    /**
+     * The component type: for array and {@link Vector} data types, the type of the elements.
+     *
+     * <p>
+     * A native array type already carries its element type, so for an array data type the component type is the array's
+     * component type ({@code Number} for {@code Number[]}), or a more specific type that all elements are known to have
+     * ({@code Integer} for a {@code Number[]} holding only {@code Integer}s). Primitive Vectors likewise fix their
+     * element type: the component type of an {@link IntVector} column is {@code int}, as for {@code int[]}.
+     * {@link ObjectVector}, however, expresses its element type only through generics, so the component type supplies
+     * it: an {@link ObjectVector} column with component type {@code Number} is an {@code ObjectVector<Number>}, the
+     * Vector equivalent of {@code Number[]}, not an {@code Object[]}-like column with a narrower component type.
+     *
+     * <p>
+     * Other data types have no component type, unless one was given when creating the definition.
+     *
+     * @return the component type, or {@code null} if there is none
+     */
     @Nullable
     public Class<?> getComponentType() {
         return componentType;
@@ -465,7 +870,7 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     }
 
     public ColumnDefinition<?> withName(@NotNull final String newName) {
-        return newName.equals(name) ? this : new ColumnDefinition<>(newName, dataType, componentType, columnType);
+        return newName.equals(name) ? this : create(newName, dataType, componentType, columnType);
     }
 
     public boolean isPartitioning() {
