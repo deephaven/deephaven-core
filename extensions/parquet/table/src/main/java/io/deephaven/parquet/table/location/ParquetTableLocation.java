@@ -671,7 +671,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * @param parquetInstructions The instructions for reading the table. The index table is written with the parquet
      *        column names of the table it indexes, so reading it with the same renames names its key columns with the
      *        Deephaven column names. A column resolver describes the indexed table's files, not the index table's, so
-     *        it is not used; the key columns are renamed instead.
+     *        it is not used; the key columns are renamed from the names the read gives them instead.
      * @param parquetKeyColumnNames The parquet names of the key columns
      * @param keyColumnNames The Deephaven names of the key columns
      *
@@ -685,26 +685,42 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final String[] parquetKeyColumnNames,
             @NotNull final String[] keyColumnNames) {
         final boolean resolved = parquetInstructions.getColumnResolverFactory().isPresent();
-        final ParquetInstructions indexReadInstructions = !resolved
-                ? parquetInstructions.withTableDefinitionAndLayout(null,
-                        ParquetInstructions.ParquetFileLayout.SINGLE_FILE)
-                : new ParquetInstructions.Builder(parquetInstructions)
-                        .setColumnResolverFactory(null)
-                        .setTableDefinition(null)
-                        .setFileLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)
-                        .build();
+        final ParquetInstructions indexReadInstructions;
+        if (!resolved) {
+            indexReadInstructions = parquetInstructions.withTableDefinitionAndLayout(null,
+                    ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
+        } else {
+            // Without the resolver, the read still applies any name mappings, and legalizes a name that is not a column
+            // name. Infer the definition here, as the read would, so the names it gives the key columns are known.
+            final ParquetInstructions unresolved = new ParquetInstructions.Builder(parquetInstructions)
+                    .setColumnResolverFactory(null)
+                    .setTableDefinition(null)
+                    .setFileLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)
+                    .build();
+            final ParquetTableLocationKey indexKey =
+                    new ParquetTableLocationKey(indexFileMetaData.fileURI, 0, null, unresolved);
+            final io.deephaven.base.Pair<List<ColumnDefinition<?>>, ParquetInstructions> indexSchema =
+                    ParquetSchemaReader.convertSchema(
+                            indexKey.getFileReader().getSchema(),
+                            indexKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
+                            unresolved);
+            indexReadInstructions =
+                    indexSchema.getSecond().withTableDefinition(TableDefinition.of(indexSchema.getFirst()));
+        }
         final Table indexTable = ParquetTools.readTable(indexFileMetaData.fileURI.toString(), indexReadInstructions);
         if (indexFileMetaData.dataIndexInfo != null) {
             if (!resolved) {
                 // The read applied the renames, which named the key columns with their Deephaven names
                 return indexTable;
             }
-            // Read without the resolver, the key columns have their parquet names. Rename them all at once: a resolver
-            // can swap two names, so a key column may already have another key column's Deephaven name.
+            // Rename the key columns from the names the read gave them, all at once: a resolver can swap two names, so
+            // a key column may have been read under another key column's Deephaven name.
             final List<Pair> renames = new ArrayList<>();
             for (int ki = 0; ki < keyColumnNames.length; ++ki) {
-                if (!parquetKeyColumnNames[ki].equals(keyColumnNames[ki])) {
-                    renames.add(Pair.of(ColumnName.of(parquetKeyColumnNames[ki]), ColumnName.of(keyColumnNames[ki])));
+                final String readName =
+                        indexReadInstructions.getColumnNameFromParquetColumnNameOrDefault(parquetKeyColumnNames[ki]);
+                if (!readName.equals(keyColumnNames[ki])) {
+                    renames.add(Pair.of(ColumnName.of(readName), ColumnName.of(keyColumnNames[ki])));
                 }
             }
             // Rename the coalesced table: a source table defers a rename as a view, which applies the pairs one after

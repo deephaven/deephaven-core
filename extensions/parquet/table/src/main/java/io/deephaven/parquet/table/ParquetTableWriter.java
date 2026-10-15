@@ -5,6 +5,7 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -143,9 +144,12 @@ public class ParquetTableWriter {
                             .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
                     final Table indexTable = dataIndex.table().sort(info.indexColumnNames.toArray(new String[0]));
                     // Like the rest of the footer metadata, sorting columns are recorded by parquet column name; the
-                    // index table is written with the same column names as the table it indexes.
+                    // index table is written with the same column names as the table it indexes. Every reader
+                    // validates a sorting column's name as a column name, and the sort is a prefix, so it ends at the
+                    // first name that is not one.
                     final TableInfo.Builder indexTableInfoBuilder = TableInfo.builder().addSortingColumns(
                             Arrays.stream(info.parquetColumnNames)
+                                    .takeWhile(NameValidator::isValidColumnName)
                                     .map(cn -> SortColumnInfo.of(cn, SortColumnInfo.SortDirection.Ascending))
                                     .toArray(SortColumnInfo[]::new));
 
@@ -175,16 +179,18 @@ public class ParquetTableWriter {
         // sorted, rather than ordered sets expressing multi-column sorts. Given that mismatch, we can only reflect
         // a single column sort in the metadata at this time.
         // Like the rest of the footer metadata, it is recorded by parquet column name, which is what a reader sees in
-        // the
-        // file whatever renames it applies.
+        // the file whatever renames it applies. Every reader validates that name as a column name, so a parquet name
+        // that is not one leaves the sort unrecorded.
         final List<SortColumn> sortedColumns = SortedColumnsAttribute.getSortedColumns(t);
         if (!sortedColumns.isEmpty()) {
             final SortColumn sortedColumn = sortedColumns.get(0);
-            tableInfoBuilder.addSortingColumns(SortColumnInfo.of(
-                    writeInstructions.getParquetColumnNameFromColumnNameOrDefault(sortedColumn.column().name()),
-                    sortedColumn.isAscending()
-                            ? SortColumnInfo.SortDirection.Ascending
-                            : SortColumnInfo.SortDirection.Descending));
+            final String parquetColumnName =
+                    writeInstructions.getParquetColumnNameFromColumnNameOrDefault(sortedColumn.column().name());
+            if (NameValidator.isValidColumnName(parquetColumnName)) {
+                tableInfoBuilder.addSortingColumns(SortColumnInfo.of(parquetColumnName, sortedColumn.isAscending()
+                        ? SortColumnInfo.SortDirection.Ascending
+                        : SortColumnInfo.SortDirection.Descending));
+            }
         }
         final long numBytes = write(t, definition, writeInstructions, dest, destOutputStream, incomingMeta,
                 tableInfoBuilder, metadataFileWriter, computedCache);

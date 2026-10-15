@@ -259,6 +259,20 @@ public class ParquetMetadataKeyingTest {
         assertFilterMatchesOracle(fromDisk, "Y >= 500");
     }
 
+    /**
+     * The metadata records a sort column by its parquet name, and every reader validates it as a Deephaven column name,
+     * so a sorted column renamed on write to a parquet name that is not one is written without its sortedness.
+     */
+    @Test
+    public void sortednessWithWriteRenameToNonColumnName() {
+        final ParquetInstructions renamed = ParquetInstructions.builder()
+                .addColumnNameMapping("x col", "X")
+                .build();
+        final Table fromDisk = ParquetTools.readTable(writeSortedTable(renamed), renamed);
+        assertEquals(Optional.empty(), sortOrder(fromDisk, "X"));
+        assertFilterMatchesOracle(fromDisk, "X >= 500");
+    }
+
     // endregion sortedness
 
     // region data indexes
@@ -304,6 +318,34 @@ public class ParquetMetadataKeyingTest {
         assertFalse(DataIndexer.hasDataIndex(fromDisk, "B"));
         assertFilterMatchesOracle(fromDisk, "A = `b1`");
         assertFilterMatchesOracle(fromDisk, "B = `c1`");
+    }
+
+    /** {@link #writeIndexedTable()}, with {@code B} written as parquet {@code b col}, not a valid Deephaven name. */
+    private String writeIndexedTableUnderNonColumnName() {
+        final String dest = path("indexedNonColumnName.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(500).update("B = `b` + (ii % 5)", "C = `c` + (ii % 7)"),
+                dest,
+                ParquetInstructions.builder().addColumnNameMapping("b col", "B").addIndexColumns("B").build());
+        return dest;
+    }
+
+    /**
+     * An index on a column written under a parquet name that is not a valid Deephaven column name is written, and is
+     * found whether the read maps that name back or legalizes it.
+     */
+    @Test
+    public void dataIndexWithWriteRenameToNonColumnName() {
+        final String dest = writeIndexedTableUnderNonColumnName();
+        final Table mapped = ParquetTools.readTable(dest, ParquetInstructions.builder()
+                .addColumnNameMapping("b col", "B")
+                .build());
+        assertTrue(DataIndexer.hasDataIndex(mapped, "B"));
+        assertFilterMatchesOracle(mapped, "B = `b1`");
+
+        final Table legalized = ParquetTools.readTable(dest);
+        assertTrue(DataIndexer.hasDataIndex(legalized, "b_col"));
+        assertFilterMatchesOracle(legalized, "b_col = `b1`");
     }
 
     /**
@@ -431,6 +473,47 @@ public class ParquetMetadataKeyingTest {
         assertTableEquals(expectedKeys,
                 DataIndexer.getDataIndex(fromDisk, "B", "C").table().view("B", "C").sort("B", "C"));
         assertTableEquals(expectedKeys, fromDisk.selectDistinct("B", "C").sort("B", "C"));
+    }
+
+    /**
+     * A name mapping alongside a resolver does not change what a Deephaven column reads, since resolution wins, but the
+     * index table, read without the resolver, still applies it: here it already names the key column {@code Sym}.
+     */
+    @Test
+    public void dataIndexWithColumnResolverAndNameMapping() {
+        final ParquetColumnResolverMap resolver = ParquetColumnResolverMap.builder()
+                .putMap("Sym", List.of("B"))
+                .putMap("C", List.of("C"))
+                .build();
+        final Table fromDisk = ParquetTools.readTable(writeSortedIndexedTable(), ParquetInstructions.builder()
+                .setTableDefinition(TableDefinition.of(ColumnDefinition.ofString("Sym"), ColumnDefinition.ofInt("C")))
+                .setColumnResolverFactory((tableKey, tableLocationKey) -> resolver)
+                .addColumnNameMapping("B", "Sym")
+                .build());
+        assertTrue(DataIndexer.hasDataIndex(fromDisk, "Sym"));
+        assertEquals(10, DataIndexer.getDataIndex(fromDisk, "Sym").table().size());
+        assertFilterMatchesOracle(fromDisk, "Sym = `b3`");
+    }
+
+    /**
+     * The index table, read without the resolver, legalizes a parquet name that is not a valid Deephaven column name;
+     * its key column is renamed from that legalized name.
+     */
+    @Test
+    public void dataIndexWithColumnResolverOnNonColumnName() {
+        final ParquetColumnResolverMap resolver = ParquetColumnResolverMap.builder()
+                .putMap("Sym", List.of("b col"))
+                .putMap("C", List.of("C"))
+                .build();
+        final Table fromDisk = ParquetTools.readTable(writeIndexedTableUnderNonColumnName(), ParquetInstructions
+                .builder()
+                .setTableDefinition(
+                        TableDefinition.of(ColumnDefinition.ofString("Sym"), ColumnDefinition.ofString("C")))
+                .setColumnResolverFactory((tableKey, tableLocationKey) -> resolver)
+                .build());
+        assertTrue(DataIndexer.hasDataIndex(fromDisk, "Sym"));
+        assertEquals(5, DataIndexer.getDataIndex(fromDisk, "Sym").table().size());
+        assertFilterMatchesOracle(fromDisk, "Sym = `b3`");
     }
 
     /**
