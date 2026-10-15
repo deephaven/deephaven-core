@@ -209,8 +209,17 @@ public class ArrowToTableConverter {
             throw new IllegalStateException("Conversion cannot be completed twice");
         }
         // All record batches have been decoded; the retained dictionary value chunks are no longer needed.
-        dictionaryRegistry.close();
+        releaseDictionaries();
         completed = true;
+    }
+
+    /**
+     * Releases the dictionary values decoded so far. {@link #onCompleted()} calls this; call it directly when a
+     * conversion is abandoned before it completes. Calling it more than once is harmless.
+     */
+    @ScriptApi
+    public synchronized void releaseDictionaries() {
+        dictionaryRegistry.close();
     }
 
     protected void configureWithSchema(final Schema schema) {
