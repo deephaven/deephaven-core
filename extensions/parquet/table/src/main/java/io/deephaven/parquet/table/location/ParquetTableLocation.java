@@ -401,14 +401,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
     /**
      * Translates the Deephaven names of data index key columns to the parquet names the metadata records them under, or
      * returns {@code null} if any of them cannot be. A key column named like the index table's row set column cannot be
-     * told apart from it, so it has no index. Requires initialization.
+     * told apart from it, and two that read the same parquet column translate to a name no index's key columns repeat,
+     * so neither has an index. Requires initialization.
      */
     @Nullable
     private String[] toIndexParquetColumnNames(@NotNull final String[] columnNames) {
         final String[] parquetColumnNames = new String[columnNames.length];
+        final Set<String> distinctParquetColumnNames = new HashSet<>(columnNames.length);
         for (int ci = 0; ci < columnNames.length; ++ci) {
             if (INDEX_ROW_SET_COLUMN_NAME.equals(columnNames[ci])
-                    || (parquetColumnNames[ci] = toIndexParquetColumnName(columnNames[ci])) == null) {
+                    || (parquetColumnNames[ci] = toIndexParquetColumnName(columnNames[ci])) == null
+                    || !distinctParquetColumnNames.add(parquetColumnNames[ci])) {
                 return null;
             }
         }
@@ -673,10 +676,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
      *
      * @param parentFileURI The path to the base table
      * @param indexFileMetaData Index file metadata
-     * @param parquetInstructions The instructions for reading the table. The index table is written with the parquet
-     *        column names of the table it indexes, so reading it with the same renames names its key columns with the
-     *        Deephaven column names. A column resolver describes the indexed table's files, not the index table's, so
-     *        it is not used; the key columns are renamed from the names the read gives them instead.
+     * @param parquetInstructions The instructions for reading the indexed table. The index table is written with the
+     *        parquet column names of the table it indexes, and is read so that its key columns have the names and types
+     *        of the columns they index.
      * @param parquetKeyColumnNames The parquet names of the key columns
      * @param keyColumnNames The Deephaven names of the key columns
      *
@@ -689,64 +691,53 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final ParquetInstructions parquetInstructions,
             @NotNull final String[] parquetKeyColumnNames,
             @NotNull final String[] keyColumnNames) {
-        final boolean resolved = parquetInstructions.getColumnResolverFactory().isPresent();
-        final ParquetInstructions indexReadInstructions;
-        if (!resolved) {
-            indexReadInstructions = parquetInstructions.withTableDefinitionAndLayout(null,
+        final ParquetInstructions keyNamingInstructions;
+        if (parquetInstructions.getColumnResolverFactory().isEmpty()) {
+            // The same renames name the index table's key columns with their Deephaven names
+            keyNamingInstructions = parquetInstructions.withTableDefinitionAndLayout(null,
                     ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
         } else {
-            // Without the resolver, the read still applies any name mappings, and legalizes a name that is not a column
-            // name. Infer the definition here, as the read would, so the names it gives the key columns are known.
-            final ParquetInstructions unresolved = new ParquetInstructions.Builder(parquetInstructions)
-                    .setColumnResolverFactory(null)
-                    .setTableDefinition(null)
-                    .setFileLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)
-                    .build();
-            final ParquetTableLocationKey indexKey =
-                    new ParquetTableLocationKey(indexFileMetaData.fileURI, 0, null, unresolved);
-            final io.deephaven.base.Pair<List<ColumnDefinition<?>>, ParquetInstructions> indexSchema =
-                    ParquetSchemaReader.convertSchema(
-                            indexKey.getFileReader().getSchema(),
-                            indexKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
-                            unresolved);
-            final ParquetInstructions inferred = indexSchema.getSecond();
-            // The keys must have the types of the columns they index, so read each key column as its column is read:
-            // perhaps widened, or a LIST as a vector, which inference from the index file alone may not see
-            final TableDefinition definition = parquetInstructions.getTableDefinition().orElseThrow();
-            final Map<String, String> keyColumnNameByReadName = new HashMap<>(keyColumnNames.length);
+            // A column resolver describes the indexed table's files, not the index table's, and resolution wins over
+            // any name mapping alongside it. So map each key column's parquet name to its Deephaven name instead, with
+            // the codec its column is read with. A resolver can swap two names; the mappings apply together.
+            final ParquetInstructions.Builder builder = ParquetInstructions.builder()
+                    .setFileLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
+            final Object specialInstructions = parquetInstructions.getSpecialInstructions();
+            if (specialInstructions != null) {
+                builder.setSpecialInstructions(specialInstructions);
+            }
             for (int ki = 0; ki < keyColumnNames.length; ++ki) {
-                keyColumnNameByReadName.put(
-                        inferred.getColumnNameFromParquetColumnNameOrDefault(parquetKeyColumnNames[ki]),
-                        keyColumnNames[ki]);
-            }
-            final List<ColumnDefinition<?>> indexColumns = new ArrayList<>(indexSchema.getFirst().size());
-            for (final ColumnDefinition<?> indexColumn : indexSchema.getFirst()) {
-                final String keyColumnName = keyColumnNameByReadName.get(indexColumn.getName());
-                indexColumns.add(keyColumnName == null
-                        ? indexColumn
-                        : definition.getColumn(keyColumnName).withNormal().withName(indexColumn.getName()));
-            }
-            indexReadInstructions = inferred.withTableDefinition(TableDefinition.of(indexColumns));
-        }
-        final Table indexTable = ParquetTools.readTable(indexFileMetaData.fileURI.toString(), indexReadInstructions);
-        if (indexFileMetaData.dataIndexInfo != null) {
-            if (!resolved) {
-                // The read applied the renames, which named the key columns with their Deephaven names
-                return indexTable;
-            }
-            // Rename the key columns from the names the read gave them, all at once: a resolver can swap two names, so
-            // a key column may have been read under another key column's Deephaven name.
-            final List<Pair> renames = new ArrayList<>();
-            for (int ki = 0; ki < keyColumnNames.length; ++ki) {
-                final String readName =
-                        indexReadInstructions.getColumnNameFromParquetColumnNameOrDefault(parquetKeyColumnNames[ki]);
-                if (!readName.equals(keyColumnNames[ki])) {
-                    renames.add(Pair.of(ColumnName.of(readName), ColumnName.of(keyColumnNames[ki])));
+                builder.addColumnNameMapping(parquetKeyColumnNames[ki], keyColumnNames[ki]);
+                final String codecName = parquetInstructions.getCodecName(keyColumnNames[ki]);
+                if (codecName != null) {
+                    builder.addColumnCodec(keyColumnNames[ki], codecName,
+                            parquetInstructions.getCodecArgs(keyColumnNames[ki]));
                 }
             }
-            // Rename the coalesced table: a source table defers a rename as a view, which applies the pairs one after
-            // another and so cannot swap two names
-            return renames.isEmpty() ? indexTable : indexTable.coalesce().renameColumns(renames);
+            keyNamingInstructions = builder.build();
+        }
+        // The keys must have the types of the columns they index, so read each key column as its column is read --
+        // perhaps widened, or a LIST as a vector -- which inference from the index file alone may not see
+        final ParquetTableLocationKey indexKey =
+                new ParquetTableLocationKey(indexFileMetaData.fileURI, 0, null, keyNamingInstructions);
+        final io.deephaven.base.Pair<List<ColumnDefinition<?>>, ParquetInstructions> indexSchema =
+                ParquetSchemaReader.convertSchema(
+                        indexKey.getFileReader().getSchema(),
+                        indexKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
+                        keyNamingInstructions);
+        final TableDefinition definition = parquetInstructions.getTableDefinition().orElse(null);
+        final Set<String> keyColumns = Set.of(keyColumnNames);
+        final List<ColumnDefinition<?>> indexColumns = new ArrayList<>(indexSchema.getFirst().size());
+        for (final ColumnDefinition<?> indexColumn : indexSchema.getFirst()) {
+            final ColumnDefinition<?> keyColumn = definition == null || !keyColumns.contains(indexColumn.getName())
+                    ? null
+                    : definition.getColumn(indexColumn.getName());
+            indexColumns.add(keyColumn == null ? indexColumn : keyColumn.withNormal());
+        }
+        final Table indexTable = ParquetTools.readTable(indexFileMetaData.fileURI.toString(),
+                indexSchema.getSecond().withTableDefinition(TableDefinition.of(indexColumns)));
+        if (indexFileMetaData.dataIndexInfo != null) {
+            return indexTable;
         }
         Assert.neqNull(indexFileMetaData.groupingColumnInfo, "indexFileMetaData.groupingColumnInfo");
         if (indexTable.hasColumns(

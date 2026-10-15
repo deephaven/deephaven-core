@@ -325,6 +325,37 @@ public class ParquetMetadataKeyingTest {
         assertFilterMatchesOracle(fromDisk, "B = `c1`");
     }
 
+    /** An int column {@code B}, with a data index on it. */
+    private String writeIntIndexedTable() {
+        final String dest = path("intIndexed.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(100).update("B = (int) (ii % 5)", "C = (int) ii"),
+                dest,
+                ParquetInstructions.builder().addIndexColumns("B").build());
+        return dest;
+    }
+
+    /** Two string columns, with a composite data index on {@code (B, C)}. */
+    private String writeCompositeIndexedTable() {
+        final String dest = path("compositeIndexed.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(100).update("B = `b` + (ii % 5)", "C = `c` + (ii % 7)"),
+                dest,
+                ParquetInstructions.builder().addIndexColumns("B", "C").build());
+        return dest;
+    }
+
+    /** A read may declare a parquet INT32 as a long; the index is read the same way, so its keys are longs too. */
+    @Test
+    public void dataIndexWithReadRenameWidening() {
+        final Table fromDisk = ParquetTools.readTable(writeIntIndexedTable(), ParquetInstructions.builder()
+                .addColumnNameMapping("B", "Sym")
+                .setTableDefinition(TableDefinition.of(ColumnDefinition.ofLong("Sym"), ColumnDefinition.ofInt("C")))
+                .build());
+        assertEquals(long.class, indexKeyType(fromDisk, "Sym"));
+        assertFilterMatchesOracle(fromDisk, "Sym = 3");
+    }
+
     /** {@link #writeIndexedTable()}, with {@code B} written as parquet {@code b col}, not a valid Deephaven name. */
     private String writeIndexedTableUnderNonColumnName() {
         final String dest = path("indexedNonColumnName.parquet");
@@ -480,12 +511,7 @@ public class ParquetMetadataKeyingTest {
      */
     @Test
     public void compositeDataIndexWithColumnResolverSwap() {
-        final String dest = path("compositeIndexed.parquet");
-        ParquetTools.writeTable(
-                TableTools.emptyTable(100).update("B = `b` + (ii % 5)", "C = `c` + (ii % 7)"),
-                dest,
-                ParquetInstructions.builder().addIndexColumns("B", "C").build());
-        final Table fromDisk = ParquetTools.readTable(dest, resolving(
+        final Table fromDisk = ParquetTools.readTable(writeCompositeIndexedTable(), resolving(
                 TableDefinition.of(ColumnDefinition.ofString("B"), ColumnDefinition.ofString("C")),
                 "B", "C", "C", "B"));
         assertTrue(DataIndexer.hasDataIndex(fromDisk, "B", "C"));
@@ -541,16 +567,29 @@ public class ParquetMetadataKeyingTest {
     /** A resolver may read a parquet INT32 as a long; the index is read the same way, so its keys are longs too. */
     @Test
     public void dataIndexWithColumnResolverWidening() {
-        final String dest = path("intIndexed.parquet");
-        ParquetTools.writeTable(
-                TableTools.emptyTable(100).update("B = (int) (ii % 5)", "C = (int) ii"),
-                dest,
-                ParquetInstructions.builder().addIndexColumns("B").build());
-        final Table fromDisk = ParquetTools.readTable(dest, resolving(
+        final Table fromDisk = ParquetTools.readTable(writeIntIndexedTable(), resolving(
                 TableDefinition.of(ColumnDefinition.ofLong("Sym"), ColumnDefinition.ofInt("C")),
                 "Sym", "B", "C", "C"));
         assertEquals(long.class, indexKeyType(fromDisk, "Sym"));
         assertFilterMatchesOracle(fromDisk, "Sym = 3");
+    }
+
+    /**
+     * Two Deephaven columns reading one parquet column translate to that parquet name twice, which names no composite
+     * index's key columns, so a composite index with as many key columns is not taken for theirs.
+     */
+    @Test
+    public void compositeDataIndexForColumnReadTwice() {
+        final String dest = writeCompositeIndexedTable();
+        final ParquetInstructions instructions = resolving(
+                TableDefinition.of(ColumnDefinition.ofString("Sym"), ColumnDefinition.ofString("Sym2")),
+                "Sym", "B", "Sym2", "B");
+        final ParquetTableLocation location = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(new File(dest).toURI(), 0, null, instructions),
+                instructions);
+        assertFalse(location.hasDataIndex("Sym", "Sym2"));
+        assertThrows(TableDataException.class, () -> location.loadDataIndex("Sym", "Sym2"));
     }
 
     /** A key column named like the index table's row set column can't be told apart from it, so it has no index. */
