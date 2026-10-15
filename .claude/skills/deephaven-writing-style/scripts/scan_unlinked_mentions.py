@@ -28,6 +28,7 @@ def prose_lines(lines):
     return out
 def norm(label): return re.sub(r"\s+"," ",label.strip()).lower()
 LABEL=r"\[(?:[^\[\]\n]|\n(?!\s*\n))*\]"     # a link label: no nested brackets, no blank line
+DEST=r"\((?:[^()\n]|\([^()\n]*\)|\n(?!\s*\n))*\)"   # a destination; allows one level of parentheses, as in Javadoc signatures
 def protect_code(text):
     """Hide brackets and parentheses inside inline code spans so they cannot start or end a link."""
     tr=str.maketrans("[]()","\x01\x02\x03\x04")
@@ -39,7 +40,7 @@ def mask_links(text):
     text=protect_code(text)
     labels={norm(m.group(1)) for m in re.finditer(r"(?m)^[ \t>]*\[((?:[^\]\n])+)\]:[ \t]*\S",text)}
     text=re.sub(r"(?m)^[ \t>]*\[[^\]\n]+\]:[ \t]*\S.*$",keep,text)                  # reference definitions
-    text=re.sub(LABEL+r"\((?:[^()\n]|\n(?!\s*\n))*\)",keep,text)                        # inline links
+    text=re.sub(LABEL+DEST,keep,text)                                                     # inline links
     text=re.sub(LABEL+r"\[[^\[\]\n]*\]",keep,text)                                      # [text][ref] and [text][]
     def shortcut(m): return keep(m) if norm(m.group(1)[1:-1]) in labels else m.group(0)
     text=re.sub("("+LABEL+r")(?![\[(:])",shortcut,text)                                    # shortcut [label]
