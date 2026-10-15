@@ -67,11 +67,12 @@ public class JsRemoteFileSourceService extends HasEventHandling {
 
     private static final String GROOVY_CONSOLE_TYPE = "groovy";
 
-    // Expression evaluated on the server to obtain the plugin's marker object
-    private static final String MARKER_EXPRESSION = "io.deephaven.remotefilesource.RemoteFileSourcePlugin.getMarker()";
+    // Expression evaluated on the server to obtain the object that connects to the plugin. Must match
+    // RemoteFileSourcePlugin.INSTANCE on the server.
+    private static final String INSTANCE_EXPRESSION = "io.deephaven.remotefilesource.RemoteFileSourcePlugin.INSTANCE";
 
-    // Prefix for the transient scope variable the instantiation script assigns the marker to
-    private static final String MARKER_VARIABLE_PREFIX = "__deephaven_remote_file_source_";
+    // Prefix for the transient scope variable the instantiation script assigns the plugin instance to
+    private static final String INSTANCE_VARIABLE_PREFIX = "__deephaven_remote_file_source_";
 
     // Timeout for setRemoteSources requests (in milliseconds)
     private static final int SET_REMOTE_SOURCES_TIMEOUT_MS = 30000; // 30 seconds
@@ -110,9 +111,9 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      * Fetches a RemoteFileSource plugin instance from the server and establishes a message stream connection.
      *
      * <p>
-     * There is no dedicated RPC for this: the plugin's marker object is obtained by running an instantiation script in
-     * a Groovy console session and exporting the variable it assigns. Running code on the worker requires permission to
-     * write to it, so a caller without that permission cannot open a connection.
+     * There is no dedicated RPC for this: the plugin's instance object is obtained by running an instantiation script
+     * in a Groovy console session and exporting the variable it assigns. Running code on the worker requires permission
+     * to write to it, so a caller without that permission cannot open a connection.
      *
      * @param ide the IDE connection used to run the instantiation script
      * @param connection the worker connection to use for communication
@@ -120,10 +121,10 @@ public class JsRemoteFileSourceService extends HasEventHandling {
      */
     @JsIgnore
     public static Promise<JsRemoteFileSourceService> fetchPlugin(IdeConnection ide, WorkerConnection connection) {
-        return fetchMarkerWidget(ide, connection).then(widget -> {
+        return fetchInstanceWidget(ide, connection).then(widget -> {
             JsRemoteFileSourceService service = new JsRemoteFileSourceService(widget);
             return service.connect().catch_(error -> {
-                // Closing the widget releases the marker export, which nothing else holds once the connect fails
+                // Closing the widget releases the instance export, which nothing else holds once the connect fails
                 widget.close();
                 return Promise.reject(error);
             });
@@ -131,14 +132,14 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Exports the plugin's marker object as a widget by evaluating an instantiation script in a temporary Groovy
+     * Exports the plugin's instance object as a widget by evaluating an instantiation script in a temporary Groovy
      * console session. The console session is closed whether or not the export succeeds.
      *
      * @param ide the IDE connection used to start the console session
-     * @param connection the worker connection to export the marker through
-     * @return a promise that resolves to an unconnected widget for the marker
+     * @param connection the worker connection to export the instance through
+     * @return a promise that resolves to an unconnected widget for the instance
      */
-    private static Promise<JsWidget> fetchMarkerWidget(IdeConnection ide, WorkerConnection connection) {
+    private static Promise<JsWidget> fetchInstanceWidget(IdeConnection ide, WorkerConnection connection) {
         return ide.getConsoleTypes().then(types -> {
             if (!types.includes(GROOVY_CONSOLE_TYPE)) {
                 return Promise.reject("Remote file sourcing requires a " + GROOVY_CONSOLE_TYPE
@@ -146,47 +147,47 @@ public class JsRemoteFileSourceService extends HasEventHandling {
             }
 
             return ide.startSession(GROOVY_CONSOLE_TYPE)
-                    .then(session -> fetchMarkerWidget(session, connection).finally_(session::close));
+                    .then(session -> fetchInstanceWidget(session, connection).finally_(session::close));
         });
     }
 
     /**
-     * Runs the instantiation script in the given console session and exports the marker it produces.
+     * Runs the instantiation script in the given console session and exports the instance it assigns.
      *
      * <p>
-     * The script assigns the marker to a uniquely named scope variable. Once the export has settled, the variable is
+     * The script assigns the instance to a uniquely named scope variable. Once the export has settled, the variable is
      * removed again, including when the script or the export fails, so that it does not linger in the worker's scope.
      *
      * @param session a started Groovy console session
-     * @param connection the worker connection to export the marker through
-     * @return a promise that resolves to an unconnected widget for the marker
+     * @param connection the worker connection to export the instance through
+     * @return a promise that resolves to an unconnected widget for the instance
      */
-    private static Promise<JsWidget> fetchMarkerWidget(IdeSession session, WorkerConnection connection) {
-        final String variableName = newMarkerVariableName();
+    private static Promise<JsWidget> fetchInstanceWidget(IdeSession session, WorkerConnection connection) {
+        final String variableName = newInstanceVariableName();
 
-        final Promise<JsWidget> fetched = session.runCode(variableName + " = " + MARKER_EXPRESSION)
+        final Promise<JsWidget> fetched = session.runCode(variableName + " = " + INSTANCE_EXPRESSION)
                 .then(result -> {
                     if (result.getError() != null) {
                         return Promise.reject(result.getError());
                     }
 
-                    final JsVariableDefinition marker = result.getChanges().getCreated()
+                    final JsVariableDefinition instance = result.getChanges().getCreated()
                             .find((definition, index, array) -> variableName.equals(definition.getTitle()));
-                    if (marker == null) {
+                    if (instance == null) {
                         return Promise.reject("Instantiation script did not create " + variableName);
                     }
                     // The server types the variable by the plugin that claims it, so this also checks that the plugin
                     // is installed
-                    if (!PLUGIN_NAME.equals(marker.getType())) {
+                    if (!PLUGIN_NAME.equals(instance.getType())) {
                         return Promise.reject("Expected " + variableName + " to have type " + PLUGIN_NAME
-                                + ", but it has type " + marker.getType());
+                                + ", but it has type " + instance.getType());
                     }
 
                     // Resolves only once the variable has been exported, so it can then be removed safely
-                    return connection.getWidget(marker);
+                    return connection.getWidget(instance);
                 });
 
-        // The export holds its own reference to the marker, so the variable is removed once the export has settled.
+        // The export holds its own reference to the instance, so the variable is removed once the export has settled.
         // A failure to remove it is not a failure to export, so it does not change the outcome.
         final Function<Object, Promise<JsWidget>> removeVariable =
                 ignored -> session.runCode("binding.variables.remove('" + variableName + "')")
@@ -195,13 +196,13 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Creates a randomized scope variable name for the marker. Every client shares the worker's scope, so a fixed name
-     * would let one fetch remove the variable before a concurrent fetch had exported it.
+     * Creates a randomized scope variable name for the instance. Every client shares the worker's scope, so a fixed
+     * name would let one fetch remove the variable before a concurrent fetch had exported it.
      *
      * @return a new variable name, valid as a Groovy identifier
      */
-    private static String newMarkerVariableName() {
-        return MARKER_VARIABLE_PREFIX + Long.toHexString((long) (Math.random() * Long.MAX_VALUE));
+    private static String newInstanceVariableName() {
+        return INSTANCE_VARIABLE_PREFIX + Long.toHexString((long) (Math.random() * Long.MAX_VALUE));
     }
 
     /**
