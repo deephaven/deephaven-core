@@ -4,6 +4,8 @@ title: SortOrderProvider
 
 The `SortOrderProvider` class specifies the sort order to use when writing data to an Iceberg table from Deephaven. It allows users to select the sort order by sort order ID, use the default sort order of the table, specify unsorted data, or configure error handling for unmapped columns.
 
+Deephaven sorts the data it writes by that sort order, but the data files it writes declare no sort order, because Deephaven orders strings and floating-point values differently than the Iceberg specification does.
+
 ## Constructors
 
 A `SortOrderProvider` is constructed using one of the following class methods:
@@ -20,7 +22,7 @@ SortOrderProvider.unsorted()
 - `use_table_default`: Uses the table's default sort order.
 - `unsorted`: Specifies that data should be written without any sort order.
 - `with_fail_on_unmapped`: Determines if an existing `SortOrderProvider` will fail or not if any columns in the sort order are not present in the data to be written.
-- `with_id`: Returns a new sort order provider that uses the existing provider to determine the columns to sort on, but writes a provided sort order ID to the Iceberg table.
+- `with_id`: Returns a new sort order provider that uses the existing provider to determine the columns to sort on, but with a provided sort order ID. Since data files declare no sort order, the ID is checked but not written.
 
 ## Parameters
 

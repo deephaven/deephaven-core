@@ -115,11 +115,6 @@ public class IcebergTableWriter {
     private final OutputFileFactory outputFileFactory;
 
     /**
-     * The sort order to write down for new data files.
-     */
-    private final SortOrder sortOrderToWrite;
-
-    /**
      * The names of columns on which the tables will be sorted before writing to Iceberg.
      */
     private final Collection<SortColumn> sortColumnNames;
@@ -179,9 +174,8 @@ public class IcebergTableWriter {
                 ((SortOrderProviderInternal.SortOrderProviderImpl) tableWriterOptions.sortOrderProvider());
         sortColumnNames =
                 computeSortColumns(sortOrderProvider.getSortOrderToUse(table), sortOrderProvider.failOnUnmapped());
-        final SortOrder providedSortOrderToWrite = sortOrderProvider.getSortOrderToWrite(table);
-        // A sort order that cannot be applied leaves the data unsorted, so it must not be declared for the data files
-        sortOrderToWrite = sortColumnNames.isEmpty() ? SortOrder.unsorted() : providedSortOrderToWrite;
+        // Validates the provider's sort order ID, though data files declare no sort order; see dataFilesFromParquet
+        sortOrderProvider.getSortOrderToWrite(table);
 
         final String uriScheme = tableAdapter.locationUri().getScheme();
         this.specialInstructions = tableWriterOptions.dataInstructions()
@@ -698,7 +692,9 @@ public class IcebergTableWriter {
                     .withFormat(FileFormat.PARQUET)
                     .withRecordCount(completedWrite.numRows())
                     .withFileSizeInBytes(completedWrite.numBytes())
-                    .withSortOrder(sortOrderToWrite);
+                    // Deephaven sorts with its own comparisons, which differ from the Iceberg specification's for
+                    // strings and floating point values, so a declared sort order might not be one the data follows
+                    .withSortOrder(SortOrder.unsorted());
             if (partitionSpec.isPartitioned()) {
                 dataFileBuilder.withPartition(partitionDataList.get(idx));
             }

@@ -7,6 +7,9 @@ import org.apache.iceberg.SortOrder;
 
 /**
  * A specification for providing {@link org.apache.iceberg.SortOrder} while writing to an iceberg table.
+ * <p>
+ * Deephaven sorts new data by the provided sort order, but the data files it writes declare no sort order: it sorts
+ * with its own comparisons, which differ from the Iceberg specification's for strings and floating point values.
  */
 public interface SortOrderProvider {
 
@@ -44,14 +47,14 @@ public interface SortOrderProvider {
     }
 
     /**
-     * Returns a sort order provider that uses the current provider to determine the columns to sort on, but writes a
-     * different sort order ID to the Iceberg table. Note that the sort order returned by the caller must
+     * Returns a sort order provider that uses the current provider to determine the columns to sort on, but with a
+     * different sort order ID. Note that the sort order returned by the caller must
      * {@link SortOrder#satisfies(SortOrder) satisfy} the sort order corresponding to the provided sort order ID.
      * <p>
-     * For example, this provider might sort by columns {A, B, C}, but the ID written to Iceberg corresponds to a sort
-     * order with columns {A, B}.
+     * For example, this provider might sort by columns {A, B, C}, but the ID corresponds to a sort order with columns
+     * {A, B}. Since data files declare no sort order, the ID is checked but not written.
      *
-     * @param sortOrderId the sort order ID to write to the iceberg table
+     * @param sortOrderId the sort order ID
      */
     SortOrderProvider withId(final int sortOrderId);
 
@@ -60,8 +63,7 @@ public interface SortOrderProvider {
      * written. By default, all providers fail if the sort order cannot be applied.
      *
      * @param failOnUnmapped whether to fail if the sort order cannot be applied to the tables being written. If
-     *        {@code false} and the sort order cannot be applied, the tables will be written without sorting, and the
-     *        data files will declare no sort order.
+     *        {@code false} and the sort order cannot be applied, the tables will be written without sorting.
      */
     SortOrderProvider withFailOnUnmapped(boolean failOnUnmapped);
 }

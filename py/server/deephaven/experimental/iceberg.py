@@ -320,6 +320,9 @@ class SortOrderProvider(JObjectWrapper):
     about sort order can be found in the `Iceberg spec <https://iceberg.apache.org/spec/#sorting>`_
     Users can specify the sort order in multiple ways, such as by providing a sort ID or using the table's default sort
     order. This class consists of factory methods to create different sort order providers.
+
+    Deephaven sorts new data by the provided sort order, but the data files it writes declare no sort order: it sorts
+    with its own comparisons, which differ from the Iceberg specification's for strings and floating point values.
     """
 
     j_object_type = _JSortOrderProvider
@@ -373,13 +376,13 @@ class SortOrderProvider(JObjectWrapper):
 
     def with_id(self, sort_order_id: int) -> SortOrderProvider:
         """
-        Returns a sort order provider that uses the current provider to determine the columns to sort on, but writes a
-        different sort order ID to the Iceberg table.
-        For example, this provider might sort by columns {A, B, C}, but the ID written to Iceberg corresponds to a sort
-        order with columns {A, B}.
+        Returns a sort order provider that uses the current provider to determine the columns to sort on, but with a
+        different sort order ID.
+        For example, this provider might sort by columns {A, B, C}, but the ID corresponds to a sort order with columns
+        {A, B}. Since data files declare no sort order, the ID is checked but not written.
 
         Args:
-            sort_order_id (int): the sort order ID to write to the Iceberg table.
+            sort_order_id (int): the sort order ID.
 
         Returns:
             the `SortOrderProvider` object.
@@ -393,8 +396,7 @@ class SortOrderProvider(JObjectWrapper):
 
         Args:
             fail_on_unmapped: whether to fail if the sort order cannot be applied to the tables being written. If
-                `False` and the sort order cannot be applied, the tables will be written without sorting, and the data
-                files will declare no sort order.
+                `False` and the sort order cannot be applied, the tables will be written without sorting.
 
         Returns:
             the `SortOrderProvider` object.

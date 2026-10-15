@@ -20,10 +20,10 @@ class SortOrderProviderInternal {
         SortOrder getSortOrderToUse(@NotNull Table table);
 
         /**
-         * Returns the sort order to write down to the iceberg table when appending new data. This may be different from
-         * the {@code getSortOrderToUse(table)} as this sort order may be customized. But
-         * {@link #getSortOrderToUse(Table)} should always {@link SortOrder#satisfies(SortOrder) satisfy} this sort
-         * order.
+         * Returns the sort order that new data files would declare, which is validated although data files declare no
+         * sort order. This may be different from the {@code getSortOrderToUse(table)} as this sort order may be
+         * customized. But {@link #getSortOrderToUse(Table)} should always {@link SortOrder#satisfies(SortOrder)
+         * satisfy} this sort order.
          */
         @NotNull
         default SortOrder getSortOrderToWrite(@NotNull final Table table) {
