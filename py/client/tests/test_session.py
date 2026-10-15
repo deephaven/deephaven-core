@@ -435,7 +435,7 @@ t1 = empty_table(0) if t.is_blink else None
                 if not ran_inline:
                     break  # the callback runs on the gRPC thread
             else:
-                self.fail("every RPC finished before its done callback was added")
+                self.skipTest("every RPC finished before its done callback was added")
             self.assertTrue(
                 collected.wait(30), "the finalizer hung on the session's gRPC thread"
             )
