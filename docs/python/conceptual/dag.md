@@ -1,5 +1,5 @@
 ---
-title: Deephaven’s live Directed-Acyclic-Graph (DAG)
+title: Deephaven's live directed acyclic graph (DAG)
 ---
 
 <div className="comment-title">
@@ -10,98 +10,113 @@ Representing queries as DAGs allows efficient, real-time updates
 
 A directed acyclic graph (DAG) is a conceptual representation of a series of activities. The graph depicts the order of each activity as a set of nodes connected by lines (edges) that illustrate the flow from one activity to another.
 
-DAGs are useful for representing many different types of flows, including data processing flows. They make it easy to clearly visualize and organize the order of steps associated for these jobs, particularly large-scale processing flows. In Deephaven, DAGs are used to organize the flow of real-time data through queries.
+DAGs are useful for representing many different types of flows, including data processing flows. They make the order of steps in a processing flow easy to see and organize, especially in large-scale flows. Deephaven uses DAGs to organize the flow of real-time data through queries.
 
 ## Why DAGs for real-time data?
 
-Deephaven's DAG-based execution model provides significant advantages for real-time data processing:
+Traditional batch processing typically reprocesses an entire dataset even when only a small portion changes. Deephaven's DAG-based execution model avoids that and provides significant advantages for real-time data processing:
 
-- **Incremental updates**: Only recompute what changes, not entire tables. If one row updates, only that row is recomputed.
-- **Automatic dependency tracking**: The engine knows exactly which tables depend on which sources, eliminating manual orchestration.
-- **Efficient resource usage**: Static portions of the DAG never recompute, and unchanged data flows through without processing.
-- **Clear data lineage**: The graph structure makes it easy to trace how data flows from sources to results.
-- **Natural parallelization**: Independent branches of the DAG can be processed concurrently.
-
-This is fundamentally different from traditional batch processing, where entire datasets are typically reprocessed even when only small portions change.
+- **Incremental updates**: Operations process only the rows affected by a change, not entire tables. See [Incremental updates](#incremental-updates).
+- **Automatic dependency tracking**: The engine tracks which tables depend on each source table (a table where data enters the graph), so you never have to tell it which tables to recompute or in what order. See [Update graph cycles](#update-graph-cycles).
+- **Efficient resource usage**: Portions of the DAG whose inputs never change never recompute. See [Incremental updates](#incremental-updates).
+- **Clear data lineage**: The graph structure makes it easy to trace how data flows from sources to results. See [Query as a graph](#query-as-a-graph).
+- **Natural parallelization**: The engine can process independent branches of the DAG concurrently. See [Parallelizing query updates](./query-engine/parallelization.md#parallelizing-query-updates).
 
 ## Query as a graph
 
-Deephaven’s query syntax is very natural and readable. Under the hood, queries are converted into directed acyclic graphs (DAGs) for efficient real-time processing. Let’s look at an example to understand DAGs.
+Deephaven's query syntax is natural and readable: a query reads like a sequence of table operations. Under the hood, the engine converts each query into a DAG for efficient real-time processing. Let's look at an example to understand DAGs.
 
 ```python order=t1,t2,t3 test-set=dag-example
 from deephaven import time_table
 
-t1 = time_table("PT1S").update(formulas=["Label=(ii%2)"])
+t1 = time_table("PT1S").update(formulas=["Label = (ii % 2)"])
 t2 = t1.last_by(by=["Label"])
-t3 = t1.natural_join(table=t2, on=["Label"], joins=["T2=Timestamp"])
+t3 = t1.natural_join(table=t2, on=["Label"], joins=["T2 = Timestamp"])
 ```
 
-Here, table `t1` is a real-time table with two columns: `Timestamp` and `Label`. A new row is appended every second, and `Label` alternates between zero and one. Table `t2` contains the most recent row for each Label value, and `t3` joins the most recent `Timestamp` for a `Label`, from `t2`, onto `t1`.
+Here, table `t1` is a real-time table with two columns, `Timestamp` and `Label`. The [time table](../reference/table-operations/create/timeTable.md) adds a new row every second, and `Label` alternates between zero and one. Table `t2` uses [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md) to hold the most recent row for each `Label` value. Table `t3` uses [`natural_join`](../reference/table-operations/join/natural-join.md) to take the most recent `Timestamp` for each `Label` from `t2` and add it to `t1`.
 
 Represented as a DAG, this query looks like:
 
 <Svg src='../assets/conceptual/dag-updated.svg' style={{height: 'auto', maxWidth: '900px'}} />
 
-Here you can see each part of the query as connected components - aka a "graph". The graph starts with the data sources; in this case, a [time table](../reference/table-operations/create/timeTable.md). In real time, data flows from the data sources through the graph, dynamically updating the tables. Because this data flow is in one direction, the graph has no loops. This is where the "directed acyclic" part of the DAG name comes from.
+Here you can see each part of the query as a set of connected components, which together form a graph. Each node in the graph is a table produced by one operation, and each edge points from a table to a table computed from it. The graph starts with a source table, which is a table where data enters the graph. In this query, the source table is a [time table](../reference/table-operations/create/timeTable.md). In real time, data flows in one direction, from the source tables through the graph, dynamically updating the tables. A table can only be built from tables that already exist, so no table can depend on itself, and the graph has no loops. This is where the "directed acyclic" part of the DAG name comes from.
 
-The variables `t1`, `t2`, and `t3` are simply references to tables within the DAG. These variables allow the tables to be displayed, as well as used in further query operations. If a table is not associated with a variable, it is still part of the DAG, but it is not accessible to users.
+The variables `t1`, `t2`, and `t3` are references to tables within the DAG. You use them to display the tables and to build further queries on them. Some tables have no variable of their own, such as the [`time_table`](../reference/table-operations/create/timeTable.md) result that `t1` is built on. Such a table stays in the DAG as long as a table you reference depends on it, but you cannot access it directly. Garbage collection removes a table that nothing references, as the next section shows.
 
 ### Garbage collection and the DAG
 
-Tables that are not used in the calculation of any variables are garbage collected and removed from the DAG. This automatic cleanup keeps memory usage efficient. For example:
+When no variable references a table and no table still in use depends on it, the JVM can garbage collect it. This automatic cleanup frees the table's memory and removes it from the DAG, which keeps memory usage efficient. For example:
 
-```python order=t3
-# Original DAG has three tables: t1 -> t2 -> t3
+```python order=null test-set=dag-example
+# The DAG has three named tables: t2 depends on t1, and t3 depends on both
 t3 = None  # Remove reference to the join result
 
-# Now the DAG only has two tables: t1 -> t2
-# The natural_join operation is removed because nothing references it
+# Now the DAG has two named tables: t2 depends on t1
+# The natural_join result is removed once the JVM garbage collects it
 ```
 
-When `t3` is set to `None`, there are no references to the result of the [`natural_join`](../reference/table-operations/join/natural-join.md), so that table and its associated computations are removed from the DAG. However, `t1` and `t2` remain because they still have active references.
+When you set `t3` to `None`, nothing references the result of the [`natural_join`](../reference/table-operations/join/natural-join.md), so that table becomes eligible for garbage collection. Once the JVM collects it, the table and its associated computations are removed from the DAG. However, `t1` and `t2` remain because they still have active references.
 
 <Svg src='../assets/conceptual/dag-garbage-collection.svg' style={{height: 'auto', maxWidth: '900px'}} />
 
-If you later need to recreate `t3`, you can simply rerun the join operation:
+If you later need `t3` again, rerun the [`natural_join`](../reference/table-operations/join/natural-join.md):
 
 ```python order=t3 test-set=dag-example
-# Recreate the join - this adds it back to the DAG
-t3 = t1.natural_join(table=t2, on=["Label"], joins=["T2=Timestamp"])
+# Recreate the join, which adds it back to the DAG
+t3 = t1.natural_join(table=t2, on=["Label"], joins=["T2 = Timestamp"])
 ```
 
-## Smart engine
+## Incremental updates
 
-The Deephaven query engine is smart. When data flows through the DAG, instead of recomputing entire tables, only necessary changes are recomputed. For example, if only one row changes, only one row is recomputed. If 11 rows change, only 11 rows are recomputed. If you use static data tables, large sections of the DAG may never recompute. This is one reason Deephaven is so fast and scalable.
+The Deephaven query engine is smart. When data flows through the DAG, it does not recompute entire tables. Each operation processes only the rows affected by a change, so a one-row change usually costs far less than a full recompute. How many rows are affected depends on the operation. For example, a change to one row on the right side of a [join](../how-to-guides/joins-exact-relational.md) updates every matching row on the left side.
 
-### Update Graph (UG) cycles
+The engine tells each dependent table what changed by sending it an update notification. An update notification lists the rows that were added, removed, or modified, the rows that shifted to a new position, and which columns the modifications touched. A table whose inputs never change receives no update notifications, so the static portions of a query never recompute. This is one reason Deephaven is so fast and scalable.
 
-When processing real-time data changes, Deephaven batches the changes together at a configurable interval (defaulting to 1000 ms). All of the changes within a batch are processed together. These processing events are called Periodic Update Graph (UG) cycles, and the update notifications propagated through the DAG indicate which rows have been added, modified, deleted, or reindexed (reordered).
+### Update graph cycles
 
-Here's how a UG cycle works:
+Deephaven groups real-time data changes and processes each group in one update graph cycle. The update graph is the engine component that runs the DAG and its cycles. By default, the engine aims to start a cycle every 1000 ms, but a cycle can take longer when there is more work than fits in that interval. To change the interval, see [Periodic update graph configuration](./periodic-update-graph-configuration.md).
 
-1. **Collect changes**: All modifications to source tables during the cycle period are collected.
+Here's how an update graph cycle works:
+
+1. **Collect changes**: The engine collects every change made to source tables since the previous cycle.
 2. **Propagate updates**: Changes flow through the DAG in topological order (sources first, then dependents).
-3. **Batch processing**: Each table processes all its input changes in one operation.
-4. **Notification**: UI and listeners are notified once all updates complete.
+3. **Process each table once**: Each table processes all its input changes for the cycle in one operation.
+4. **Run listeners**: After each table finishes updating, its [listeners](#custom-listeners) (code that runs when a table changes) run in the same order as step 2 (sources first, then dependents).
+5. **Show results**: The UI shows a consistent result once the cycle completes.
 
-For example, in our earlier query, if `t1` receives 5 new rows in one cycle:
+For example, take the query from [Query as a graph](#query-as-a-graph), where `t2` holds the most recent row of `t1` for each `Label`, and `t3` uses [`natural_join`](../reference/table-operations/join/natural-join.md) to join `t2` onto `t1`. Suppose the previous cycle ran long, so about 5 seconds pass and `t1` receives 5 new rows in one cycle:
 
 - `t1` processes 5 additions and notifies `t2` and `t3`.
-- `t2` (the `last_by`) processes updates for affected labels.
-- `t3` (the `natural_join`) incorporates both sets of changes.
+- `t2` (the [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md)) updates the rows for the affected `Label` values.
+- `t3` (the [`natural_join`](../reference/table-operations/join/natural-join.md)) incorporates both sets of changes. It adds the 5 new rows, and because `t2` changed, it also modifies every existing row whose `Label` matches a changed `t2` row.
 - All three tables update simultaneously from the user's perspective.
 
 <Svg src='../assets/conceptual/dag-ug-cycle.svg' style={{height: 'auto', maxWidth: '1000px'}} />
 
 You can learn more about these update notifications in our concept guide on [the table update model](./table-update-model.md).
 
+## Performance and update cycles
+
+Thinking in terms of DAGs, [update graph cycles](#update-graph-cycles), and update notifications helps explain the real-time performance of a Deephaven query. Each source table change creates a cascade of changes. The engine must process that cascade before the next update graph cycle can begin. Some source table changes trigger many update notifications, many changed rows, or slow operations. The engine may then be unable to finish the updates before the next cycle is due. The next cycle starts late, and the query becomes less responsive.
+
+Deephaven's performance analysis tools help you dig into an unresponsive query and locate the operations that slow down update graph cycles. To find and fix slow operations, see:
+
+- [Performance tables](../how-to-guides/performance/performance-tables.md): The update performance log ([`update_performance_log`](/core/pydoc/code/deephaven.perfmon.html#deephaven.perfmon.update_performance_log)) shows how much time each operation spends processing updates. It sums that time over each reporting interval, which spans many update graph cycles. The update performance ancestors log ([`update_performance_ancestors_log`](/core/pydoc/code/deephaven.perfmon.html#deephaven.perfmon.update_performance_ancestors_log)) shows which upstream operations feed each operation.
+- [Reduce update frequency](../how-to-guides/performance/reduce-update-frequency.md): Use [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md) with a slower trigger table to update a result periodically instead of on every change.
+- [Track processing time and measure latency](../how-to-guides/performance/track-processing-time.md): Record when Deephaven processes row modifications to measure end-to-end latency.
+
+## Extending the DAG
+
+The engine builds the DAG from your table operations. You can also add your own code to the DAG as a [listener](../how-to-guides/table-listeners-python.md), and you can share tables between the DAGs on different Deephaven servers.
+
 ### Custom listeners
 
-Most users never interact directly with update notifications, but it is possible to write custom listeners, which execute code when a table changes. Custom listeners are non-table components of the DAG, which listen to table update notifications.
+Most users never work with update notifications directly, but you can write a custom listener, which is code that runs when a table changes. A listener is a node in the DAG, but it is not a table. It receives the update notifications of the table it listens to and produces no table of its own. For a full explanation, see [Listen to ticking tables](../how-to-guides/table-listeners-python.md).
 
 Here's a practical example of a custom listener that monitors disk usage:
 
-```python ticking-table order=disk_monitor,critical_alerts
+```python ticking-table order=null
 from deephaven import time_table
 from deephaven.table_listener import listen
 
@@ -119,9 +134,6 @@ critical_alerts = disk_monitor.where("DiskUsagePct > 90")
 
 # Custom listener that "sends an alert" when disk usage is critical
 def handle_alert(update, is_replay):
-    if is_replay:
-        return  # Skip historical data
-
     added = update.added()
     for server, usage in zip(added["Server"], added["DiskUsagePct"]):
         print(f"ALERT: {server} disk usage at {usage:.1f}%")
@@ -132,91 +144,22 @@ def handle_alert(update, is_replay):
 handle = listen(critical_alerts, handle_alert)
 ```
 
-In this example, whenever a new row appears in `critical_alerts` (indicating a server exceeds 90% disk usage), the custom listener executes and could send notifications to your monitoring system.
+In this example, a new row in `critical_alerts` means a server's disk usage exceeds 90%. Each time one appears, the listener prints an alert. In production, it could send the alert to your monitoring system instead.
 
-### Cross-query sharing
+### Sharing tables across servers
 
-DAGs are not limited to one query or even one host. Preemptive tables allow tables and update notifications to be shared between queries. You may have `Query1` perform a difficult or secret calculation. `Query2` can use the shared results of `Query1` without having to recompute and without being able to see the secret sauce that went into Query1's calculation.
+DAGs are not limited to one server. A Deephaven server can use a [URI](../how-to-guides/use-uris.md) to subscribe to a table on another server. The subscription uses the [Barrage](./what-is-barrage.md) protocol, so the downstream server receives the table's updates as they happen and does not recompute them. For example, you may have one server perform a difficult or secret calculation. Another server can use the shared results without recomputing them. Because it receives only the table's data, not the query code that produced it, it never sees the secret sauce that went into the calculation.
 
-This distributed DAG capability enables efficient reuse of expensive computations across multiple query sessions, reducing redundant processing and improving overall system performance.
-
-## Performance analysis
-
-Thinking in terms of DAGs, UG cycles, and update notifications can be insightful when trying to understand the real-time performance of a Deephaven query. Each source table change creates a cascade of changes, which must be processed before the next UG cycle can begin. If the source table changes trigger many update notifications, many changed rows, or slow-to-compute operations, it may be impossible to calculate all of the necessary updates before the next UG cycle is expected to begin — delaying the start of the next UG cycle, and decreasing query responsiveness.
-
-### Identifying bottlenecks
-
-Deephaven's performance analysis tools help you dig into an unresponsive query to locate which operations are causing slow UG cycles. Use the performance tables, such as the update performance log from `deephaven.perfmon.update_performance_log`, to see how much time each operation spends processing updates in each reporting interval. The update performance ancestors log, from `update_performance_ancestors_log`, shows which upstream operations feed each one. See [Performance tables](../how-to-guides/performance/performance-tables.md) and [Track processing time](../how-to-guides/performance/track-processing-time.md) for details.
-
-The following query totals the update-processing time for each operation in the update performance log and lists the slowest operations first:
-
-```python ticking-table order=slowest_ops
-from deephaven.perfmon import update_performance_log
-
-upl = update_performance_log()
-
-# Total time each operation has spent processing updates, slowest first
-slowest_ops = (
-    upl.view(
-        [
-            "EntryId",
-            "EntryDescription",
-            "UsageMillis = UsageNanos / 1000000.0",
-            "InvocationCount",
-        ]
-    )
-    .sum_by(["EntryId", "EntryDescription"])
-    .sort_descending("UsageMillis")
-)
-```
-
-At the end of each reporting interval, the log adds a row for each operation that did significant update work during that interval. Operations that did very little work share one combined row. The table is empty until the first interval ends, and `slowest_ops` updates as your queries run.
-
-Common performance bottlenecks include:
-
-- **Large joins**: Joining tables with millions of rows on each update.
-- **Complex formulas**: Expensive calculations that run on every changed row.
-- **Cascading updates**: One small change triggering updates across many dependent tables.
-- **Unnecessary computations**: Operations on data that doesn't actually change.
-
-### Optimization strategies
-
-Once you understand what operations are slow, you can optimize your query:
-
-- **Use [`snapshot_when`](../reference/table-operations/snapshot/snapshot-when.md)**: Update results periodically by snapshotting on a slower trigger table instead of on every change. See [Reduce update frequency](../how-to-guides/performance/reduce-update-frequency.md).
-- **Restructure dependencies**: Break long dependency chains into parallel branches.
-- **Pre-aggregate data**: Move expensive aggregations upstream in the DAG.
-- **Filter early**: Apply `where` clauses before expensive operations.
-
-For example, instead of:
-
-```python ticking-table order=null
-from deephaven import time_table
-from deephaven import agg
-
-live_data = time_table("PT1S").update(["Group = ii % 3", "ExpensiveCalc = ii * 2"])
-
-# Updates the aggregation every time live_data updates
-result = live_data.agg_by([agg.sum_("ExpensiveCalc")], by=["Group"])
-```
-
-Consider:
-
-```python ticking-table order=result test-set=optimization-example
-from deephaven import time_table
-from deephaven import agg
-
-live_data = time_table("PT1S").update(["Group = ii % 3", "ExpensiveCalc = ii * 2"])
-
-# Optimized: snapshot_when updates the aggregation every 10 seconds
-trigger = time_table("PT10S").rename_columns(["TriggerTimestamp = Timestamp"])
-result = live_data.snapshot_when(trigger).agg_by(
-    [agg.sum_("ExpensiveCalc")], by=["Group"]
-)
-```
+This lets several servers reuse an expensive computation instead of each repeating it.
 
 ## Related documentation
 
 - [Create a time table](../how-to-guides/time-table.md)
 - [Core API design](./deephaven-core-api.md)
 - [Table update model](./table-update-model.md)
+- [Periodic update graph configuration](./periodic-update-graph-configuration.md)
+- [Listen to ticking tables](../how-to-guides/table-listeners-python.md)
+- [Use URIs to share tables](../how-to-guides/use-uris.md)
+- [What is Barrage?](./what-is-barrage.md)
+- [Performance tables](../how-to-guides/performance/performance-tables.md)
+- [Reduce update frequency](../how-to-guides/performance/reduce-update-frequency.md)
