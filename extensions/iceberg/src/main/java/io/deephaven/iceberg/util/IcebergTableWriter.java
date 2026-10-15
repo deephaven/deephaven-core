@@ -179,7 +179,9 @@ public class IcebergTableWriter {
                 ((SortOrderProviderInternal.SortOrderProviderImpl) tableWriterOptions.sortOrderProvider());
         sortColumnNames =
                 computeSortColumns(sortOrderProvider.getSortOrderToUse(table), sortOrderProvider.failOnUnmapped());
-        sortOrderToWrite = sortOrderProvider.getSortOrderToWrite(table);
+        final SortOrder providedSortOrderToWrite = sortOrderProvider.getSortOrderToWrite(table);
+        // A sort order that cannot be applied leaves the data unsorted, so it must not be declared for the data files
+        sortOrderToWrite = sortColumnNames.isEmpty() ? SortOrder.unsorted() : providedSortOrderToWrite;
 
         final String uriScheme = tableAdapter.locationUri().getScheme();
         this.specialInstructions = tableWriterOptions.dataInstructions()

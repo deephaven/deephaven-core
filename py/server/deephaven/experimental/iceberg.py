@@ -403,7 +403,8 @@ class SortOrderProvider(JObjectWrapper):
 
         Args:
             fail_on_unmapped: whether to fail if the sort order cannot be applied to the tables being written. If
-                `False` and the sort order cannot be applied, the tables will be written without sorting.
+                `False` and the sort order cannot be applied, the tables will be written without sorting, and the data
+                files will declare no sort order.
 
         Returns:
             the `SortOrderProvider` object.

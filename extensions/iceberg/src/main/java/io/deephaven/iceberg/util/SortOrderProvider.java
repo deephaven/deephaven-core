@@ -60,7 +60,8 @@ public interface SortOrderProvider {
      * written. By default, all providers fail if the sort order cannot be applied.
      *
      * @param failOnUnmapped whether to fail if the sort order cannot be applied to the tables being written. If
-     *        {@code false} and the sort order cannot be applied, the tables will be written without sorting.
+     *        {@code false} and the sort order cannot be applied, the tables will be written without sorting, and the
+     *        data files will declare no sort order.
      */
     SortOrderProvider withFailOnUnmapped(boolean failOnUnmapped);
 }
