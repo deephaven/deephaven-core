@@ -692,26 +692,30 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final String[] parquetKeyColumnNames,
             @NotNull final String[] keyColumnNames) {
         final ParquetInstructions keyNamingInstructions;
-        if (parquetInstructions.getColumnResolverFactory().isEmpty()) {
-            // The same renames name the index table's key columns with their Deephaven names
+        if (indexFileMetaData.dataIndexInfo != null && parquetInstructions.getColumnResolverFactory().isEmpty()) {
+            // The same renames name a data index table's key columns with their Deephaven names
             keyNamingInstructions = parquetInstructions.withTableDefinitionAndLayout(null,
                     ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
         } else {
-            // A column resolver describes the indexed table's files, not the index table's, and resolution wins over
-            // any name mapping alongside it. So map each key column's parquet name to its Deephaven name instead, with
-            // the codec its column is read with. A resolver can swap two names; the mappings apply together.
+            // The indexed table's renames don't describe a legacy grouping table, whose columns have fixed names. A
+            // column resolver describes the indexed table's files, not the index table's, and resolution wins over any
+            // name mapping alongside it; so map each data index key column's parquet name to its Deephaven name
+            // instead, with the codec its column is read with. A resolver can swap two names; the mappings apply
+            // together.
             final ParquetInstructions.Builder builder = ParquetInstructions.builder()
                     .setFileLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
             final Object specialInstructions = parquetInstructions.getSpecialInstructions();
             if (specialInstructions != null) {
                 builder.setSpecialInstructions(specialInstructions);
             }
-            for (int ki = 0; ki < keyColumnNames.length; ++ki) {
-                builder.addColumnNameMapping(parquetKeyColumnNames[ki], keyColumnNames[ki]);
-                final String codecName = parquetInstructions.getCodecName(keyColumnNames[ki]);
-                if (codecName != null) {
-                    builder.addColumnCodec(keyColumnNames[ki], codecName,
-                            parquetInstructions.getCodecArgs(keyColumnNames[ki]));
+            if (indexFileMetaData.dataIndexInfo != null) {
+                for (int ki = 0; ki < keyColumnNames.length; ++ki) {
+                    builder.addColumnNameMapping(parquetKeyColumnNames[ki], keyColumnNames[ki]);
+                    final String codecName = parquetInstructions.getCodecName(keyColumnNames[ki]);
+                    if (codecName != null) {
+                        builder.addColumnCodec(keyColumnNames[ki], codecName,
+                                parquetInstructions.getCodecArgs(keyColumnNames[ki]));
+                    }
                 }
             }
             keyNamingInstructions = builder.build();
@@ -729,10 +733,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final Set<String> keyColumns = Set.of(keyColumnNames);
         final List<ColumnDefinition<?>> indexColumns = new ArrayList<>(indexSchema.getFirst().size());
         for (final ColumnDefinition<?> indexColumn : indexSchema.getFirst()) {
-            final ColumnDefinition<?> keyColumn = definition == null || !keyColumns.contains(indexColumn.getName())
+            // A data index table names its key columns after the columns they index; a legacy grouping table stores
+            // its one key column under its own name, beside position columns that are not keys
+            final String keyColumnName = indexFileMetaData.dataIndexInfo != null
+                    ? keyColumns.contains(indexColumn.getName()) ? indexColumn.getName() : null
+                    : GROUPING_KEY_COLUMN_NAME.equals(indexColumn.getName()) ? keyColumnNames[0] : null;
+            final ColumnDefinition<?> keyColumn = definition == null || keyColumnName == null
                     ? null
-                    : definition.getColumn(indexColumn.getName());
-            indexColumns.add(keyColumn == null ? indexColumn : keyColumn.withNormal());
+                    : definition.getColumn(keyColumnName);
+            indexColumns.add(keyColumn == null
+                    ? indexColumn
+                    : keyColumn.withNormal().withName(indexColumn.getName()));
         }
         final Table indexTable = ParquetTools.readTable(indexFileMetaData.fileURI.toString(),
                 indexSchema.getSecond().withTableDefinition(TableDefinition.of(indexColumns)));
@@ -743,9 +754,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
         if (indexTable.hasColumns(
                 GROUPING_KEY_COLUMN_NAME, GROUPING_BEGIN_POS_COLUMN_NAME, GROUPING_END_POS_COLUMN_NAME)) {
             // Legacy grouping tables are written with a key, start position, and end position. We must convert the
-            // ranges to RowSets.
-            return indexTable.view(List.of(
-                    new SourceColumn(GROUPING_KEY_COLUMN_NAME, keyColumnNames[0]),
+            // ranges to RowSets. That comes first: a view's columns apply in order, and the key column may be named
+            // like a position column.
+            return indexTable.updateView(List.of(
                     // Using this lets us avoid a compilation or boxing, but does force us to do single-cell access
                     // rather than using chunks.
                     new MultiSourceFunctionalColumn<>(
@@ -759,7 +770,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
                                 return endPos <= beginPos
                                         ? RowSetFactory.empty()
                                         : RowSetFactory.fromRange(beginPos, endPos - 1);
-                            })));
+                            })))
+                    .view(List.of(
+                            new SourceColumn(GROUPING_KEY_COLUMN_NAME, keyColumnNames[0]),
+                            new SourceColumn(INDEX_ROW_SET_COLUMN_NAME)));
         } else {
             throw new TableDataException(String.format(
                     "Index table %s for table %s was not in the expected format. Expected columns [%s] but encountered [%s]",

@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -345,6 +346,44 @@ public class ParquetMetadataKeyingTest {
         return dest;
     }
 
+    /** A BigInteger column, written as a decimal with codec metadata, with a data index on it. */
+    private String writeBigIntegerIndexedTable() {
+        final String dest = path("bigIntegerIndexed.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(100).update("B = java.math.BigInteger.valueOf(ii % 5)", "C = (int) ii"),
+                dest,
+                ParquetInstructions.builder().addIndexColumns("B").build());
+        return dest;
+    }
+
+    /**
+     * The footer records a column's type metadata, such as the codec that reads a decimal back as a BigInteger, by
+     * parquet name, so a read that renames the column finds it under that name.
+     */
+    @Test
+    public void codecColumnWithReadRename() {
+        final Table fromDisk = ParquetTools.readTable(writeBigIntegerIndexedTable(), ParquetInstructions.builder()
+                .addColumnNameMapping("B", "Sym")
+                .build());
+        assertEquals(BigInteger.class, fromDisk.getDefinition().getColumn("Sym").getDataType());
+        assertEquals(BigInteger.class, indexKeyType(fromDisk, "Sym"));
+        assertTableEquals(TableTools.emptyTable(100).update("Sym = java.math.BigInteger.valueOf(ii % 5)"),
+                fromDisk.view("Sym"));
+    }
+
+    /** The footer's vector type entry is recorded by parquet name too, so a renamed vector column is read as one. */
+    @Test
+    public void vectorColumnWithReadRename() {
+        final String dest = path("vector.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(10).update("V = new io.deephaven.vector.IntVectorDirect((int) ii)"),
+                dest);
+        final Table fromDisk = ParquetTools.readTable(dest, ParquetInstructions.builder()
+                .addColumnNameMapping("V", "W")
+                .build());
+        assertEquals(IntVector.class, fromDisk.getDefinition().getColumn("W").getDataType());
+    }
+
     /** A read may declare a parquet INT32 as a long; the index is read the same way, so its keys are longs too. */
     @Test
     public void dataIndexWithReadRenameWidening() {
@@ -430,6 +469,33 @@ public class ParquetMetadataKeyingTest {
     private static Class<?> indexKeyType(final Table table, final String keyColumnName) {
         return DataIndexer.getDataIndex(table, keyColumnName).table().getDefinition().getColumn(keyColumnName)
                 .getDataType();
+    }
+
+    private static String legacyGroupingFile() {
+        return ParquetMetadataKeyingTest.class.getResource("/ParquetDataWithLegacyGroupingInfo.parquet").getFile();
+    }
+
+    /** A legacy grouping sidecar stores its key as {@code dh_key}, which is read as the indexed column is: widened. */
+    @Test
+    public void legacyGroupingWithReadRenameWidening() {
+        final Table fromDisk = ParquetTools.readTable(legacyGroupingFile(), ParquetInstructions.builder()
+                .addColumnNameMapping("gcol", "Sym")
+                .setTableDefinition(TableDefinition.of(ColumnDefinition.ofLong("Sym")))
+                .build());
+        assertEquals(long.class, indexKeyType(fromDisk, "Sym"));
+        assertEquals(500, DataIndexer.getDataIndex(fromDisk, "Sym").table().size());
+        assertFilterMatchesOracle(fromDisk, "Sym = 3");
+    }
+
+    /** The sidecar's position columns keep their own types when the indexed column is named like one of them. */
+    @Test
+    public void legacyGroupingForColumnNamedLikePosition() {
+        final Table fromDisk = ParquetTools.readTable(legacyGroupingFile(), ParquetInstructions.builder()
+                .addColumnNameMapping("gcol", "dh_begin_pos")
+                .setTableDefinition(TableDefinition.of(ColumnDefinition.ofInt("dh_begin_pos")))
+                .build());
+        assertEquals(500, DataIndexer.getDataIndex(fromDisk, "dh_begin_pos").table().size());
+        assertFilterMatchesOracle(fromDisk, "dh_begin_pos = 3");
     }
 
     // endregion data indexes
@@ -590,6 +656,18 @@ public class ParquetMetadataKeyingTest {
                 instructions);
         assertFalse(location.hasDataIndex("Sym", "Sym2"));
         assertThrows(TableDataException.class, () -> location.loadDataIndex("Sym", "Sym2"));
+    }
+
+    /** A resolved key column whose codec metadata the footer records by its parquet name keeps it in the index. */
+    @Test
+    public void dataIndexWithColumnResolverOnCodecColumn() {
+        final Table fromDisk = ParquetTools.readTable(writeBigIntegerIndexedTable(), resolving(
+                TableDefinition.of(ColumnDefinition.fromGenericType("Sym", BigInteger.class),
+                        ColumnDefinition.ofInt("C")),
+                "Sym", "B", "C", "C"));
+        assertEquals(BigInteger.class, indexKeyType(fromDisk, "Sym"));
+        assertTableEquals(TableTools.emptyTable(5).update("Sym = java.math.BigInteger.valueOf(ii)"),
+                DataIndexer.getDataIndex(fromDisk, "Sym").table().view("Sym").sort("Sym"));
     }
 
     /** A key column named like the index table's row set column can't be told apart from it, so it has no index. */
