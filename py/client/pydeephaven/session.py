@@ -246,7 +246,7 @@ class Session:
             threading.RLock()
         )  # for thread-safety when accessing/changing session global state
         self._services_lock = threading.Lock()  # for lazy initialization of services
-        # Before anything that can raise: close() uses it, and __del__ calls close() on a partly built session.
+        # Before anything that can raise: close() and __del__ use it, and __del__ runs on a partly built session too.
         self._release_queue: queue.SimpleQueue[_SessionJob] = queue.SimpleQueue()
         self._release_thread: Optional[threading.Thread] = None
         self._last_export_ticket_number: int = 0
@@ -321,11 +321,14 @@ class Session:
         self.close()
 
     def __del__(self) -> None:
-        # No RPC during interpreter shutdown: gRPC's threads have stopped, so the call would never finish. The server
-        # expires the session on its own.
+        # Stop the release thread, but make no RPC. The garbage collector can run this on any thread, including the
+        # gRPC thread that delivers this session's RPC results. An RPC there waits forever for a result that only the
+        # blocked thread can deliver. The server expires the abandoned session on its own.
+        # During interpreter shutdown the release thread is a daemon that dies anyway, and module globals such as
+        # _STOP may already be cleared.
         if sys.is_finalizing():
             return
-        self.close()
+        self._release_queue.put(_STOP)
 
     def update_metadata(
         self, metadata: Iterable[tuple[str, Union[str, bytes]]]

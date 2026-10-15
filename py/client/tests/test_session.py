@@ -15,6 +15,7 @@ import pandas as pd
 import pyarrow as pa
 from pyarrow import csv
 
+from deephaven_core.proto import config_pb2, config_pb2_grpc
 from pydeephaven import DHError, Session
 from pydeephaven.session import _SessionJob
 from pydeephaven.table import Table
@@ -397,6 +398,47 @@ t1 = empty_table(0) if t.is_blink else None
                 self.assertTrue(
                     collected.wait(30), "the finalizer hung on the refresh thread"
                 )
+        finally:
+            gc.enable()
+        self.assertIsNone(session_ref(), "the collection did not free the session")
+
+    def test_session_collected_on_its_grpc_thread_does_not_hang(self):
+        # gRPC runs an RPC's done callbacks on the thread that delivers results for that RPC's channel. A collection
+        # there runs Session.__del__ on that thread, so an RPC from __del__ would wait for itself.
+        collected = _Event()
+        test_thread = threading.current_thread()
+        ran_inline = []
+
+        def collect(_future):
+            if threading.current_thread() is test_thread:
+                # The RPC finished before add_done_callback, which then ran this on the test thread. Try again.
+                ran_inline.append(True)
+                return
+            gc.collect()
+            collected.set()
+
+        gc.disable()  # only the collection in the callback may free the session
+        try:
+            # No token refresh thread, which holds the session for a moment when it starts.
+            session = Session(never_timeout=False)
+            session.cycle = session  # only the garbage collector frees a cycle
+            session_ref = weakref.ref(session)
+            stub = config_pb2_grpc.ConfigServiceStub(session.grpc_channel)
+            metadata = session.grpc_metadata
+            del session
+            for _ in range(10):
+                ran_inline.clear()
+                future = stub.GetConfigurationConstants.future(
+                    config_pb2.ConfigurationConstantsRequest(), metadata=metadata
+                )
+                future.add_done_callback(collect)
+                if not ran_inline:
+                    break  # the callback runs on the gRPC thread
+            else:
+                self.skipTest("every RPC finished before its done callback was added")
+            self.assertTrue(
+                collected.wait(30), "the finalizer hung on the session's gRPC thread"
+            )
         finally:
             gc.enable()
         self.assertIsNone(session_ref(), "the collection did not free the session")
