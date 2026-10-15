@@ -148,31 +148,33 @@ class MultiJoinTestCase(BaseTestCase):
             multi_join(mj_input, on=["key1=a", "key2=b"])
         self.assertIn("on parameter is not permitted", str(cm.exception))
 
-        session = Session()
-        t = (
-            session.time_table("PT00:00:00.001")
-            .update(
-                [
-                    "a = i",
-                    "b = i*i % 13",
-                    "c1 = i * 13 % 23",
-                    "d1 = a + b",
-                    "e1 = a - b",
-                ]
+        with Session() as session:
+            t = (
+                session.time_table("PT00:00:00.001")
+                .update(
+                    [
+                        "a = i",
+                        "b = i*i % 13",
+                        "c1 = i * 13 % 23",
+                        "d1 = a + b",
+                        "e1 = a - b",
+                    ]
+                )
+                .drop_columns(["Timestamp"])
             )
-            .drop_columns(["Timestamp"])
-        )
 
-        # Assert the exception is raised when to-be-joined tables are not from the same session.
-        mj_input = [
-            MultiJoinInput(
-                table=self.ticking_tableA, on=["key1=a", "key2=b"], joins=["c1", "e1"]
-            ),
-            MultiJoinInput(table=t, on=["key1=a", "key2=b"], joins=["d2"]),
-        ]
-        with self.assertRaises(DHError) as cm:
-            multi_join(mj_input)
-        self.assertIn("all tables must be from the same session", str(cm.exception))
+            # Assert the exception is raised when to-be-joined tables are not from the same session.
+            mj_input = [
+                MultiJoinInput(
+                    table=self.ticking_tableA,
+                    on=["key1=a", "key2=b"],
+                    joins=["c1", "e1"],
+                ),
+                MultiJoinInput(table=t, on=["key1=a", "key2=b"], joins=["d2"]),
+            ]
+            with self.assertRaises(DHError) as cm:
+                multi_join(mj_input)
+            self.assertIn("all tables must be from the same session", str(cm.exception))
 
 
 if __name__ == "__main__":

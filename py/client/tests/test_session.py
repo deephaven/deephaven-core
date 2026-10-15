@@ -15,6 +15,7 @@ import pandas as pd
 import pyarrow as pa
 from pyarrow import csv
 
+from deephaven_core.proto import config_pb2
 from pydeephaven import DHError, Session
 from pydeephaven.session import _SessionJob
 from pydeephaven.table import Table
@@ -397,6 +398,34 @@ t1 = empty_table(0) if t.is_blink else None
                 self.assertTrue(
                     collected.wait(30), "the finalizer hung on the refresh thread"
                 )
+        finally:
+            gc.enable()
+        self.assertIsNone(session_ref(), "the collection did not free the session")
+
+    def test_session_collected_on_its_grpc_thread_does_not_hang(self):
+        # gRPC runs an RPC's done callbacks on the thread that delivers results for that RPC's channel. A collection
+        # there runs Session.__del__ on that thread, so an RPC from __del__ would wait for itself.
+        collected = _Event()
+
+        def collect(_future):
+            gc.collect()
+            collected.set()
+
+        gc.disable()  # only the collection in the callback may free the session
+        try:
+            session = Session()
+            session.cycle = session  # only the garbage collector frees a cycle
+            session_ref = weakref.ref(session)
+            stub = session.config_service._grpc_app_stub
+            metadata = session.grpc_metadata
+            del session
+            future = stub.GetConfigurationConstants.future(
+                config_pb2.ConfigurationConstantsRequest(), metadata=metadata
+            )
+            future.add_done_callback(collect)
+            self.assertTrue(
+                collected.wait(30), "the finalizer hung on the session's gRPC thread"
+            )
         finally:
             gc.enable()
         self.assertIsNone(session_ref(), "the collection did not free the session")
