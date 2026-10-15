@@ -32,20 +32,17 @@ import jsinterop.base.Js;
  * Behaves like a {@link JsTable dh.Table}, but doesn't expose all of its API for changing the internal state. Instead,
  * state is driven by the upstream table - when its handle changes, this table listens and updates its own handle
  * accordingly.
- *
- * Additionally, this is automatically subscribed to its one and only row, across all columns.
- *
+ * <p>
  * A new config is returned any time it is accessed. This is to:
- *
  * <ol>
  * <li>Prevent accidental mutation.</li>
  * <li>Allow it to be used as a template when fetching a new totals table or changing the totals table in use.</li>
  * </ol>
  *
- * This class has limited methods found on {@link JsTable dh.Table}. Instances of this type always have a size of one
+ * This class has limited methods found on {@link JsTable dh.Table}. Instances of this type usually have a size of one
  * when no {@link JsTotalsTableConfig#groupBy groupBy} is set on the config, but may potentially contain as few as zero
- * rows, or as many as the parent table if each row gets its own group.
- *
+ * rows if the parent table was empty, or as many as the parent table if each row gets its own group.
+ * <p>
  * When using the {@link JsTotalsTableConfig#groupBy groupBy} feature, it may be desirable to also provide a row to the
  * user with all values across all rows. To achieve this, request the same Totals Table again, but remove the
  * {@link JsTotalsTableConfig#groupBy groupBy} setting.

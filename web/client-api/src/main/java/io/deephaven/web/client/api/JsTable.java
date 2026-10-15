@@ -1192,7 +1192,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 // own the state while it is fetched; a state nobody owns can be swept by any release check
                 nextState.retain(totalsTable);
                 nextState.refetch().then(ready -> {
-                    if (wrapped.isClosed() || source != state()) {
+                    if (wrapped.isClosed() || isClosed() || source != state()) {
                         // superseded by a newer source change, or no longer wanted; nothing else holds it
                         nextState.unretain(totalsTable);
                         return null;
@@ -1206,14 +1206,20 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                         return null;
                     }
                     // The totals table has its own filter, sort or columns; re-apply them on top of the new state.
+                    // If that fails, the batcher has already rolled the table back to the rebased totals and fired
+                    // EVENT_REQUEST_FAILED; either way, put the viewport back on whichever state the table is on.
                     return wrapped.batch(b -> b.setConfig(existing)).then(ignored -> {
+                        totalsTable.refreshViewport();
+                        return null;
+                    }, failure -> {
                         totalsTable.refreshViewport();
                         return null;
                     });
                 }, error -> {
                     nextState.unretain(totalsTable);
-                    // The totals can no longer follow the source; say so rather than keep showing stale totals.
-                    wrapped.fireEvent(EVENT_REQUEST_FAILED, JsPropertyMap.of("errorMessage", String.valueOf(error)));
+                    // The totals can no longer follow the source. Report it the way a table that fails on the server
+                    // is reported; the totals keep their last good values until the source changes again.
+                    wrapped.failureHandled(String.valueOf(error));
                     return null;
                 });
             }, JsRunnable.doNothing());

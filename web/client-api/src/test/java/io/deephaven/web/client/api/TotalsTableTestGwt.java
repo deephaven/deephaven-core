@@ -12,6 +12,7 @@ import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
+import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
@@ -268,6 +269,52 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     /**
+     * Closes the source table while a rebase of the totals is in flight. The rebase must be dropped: its state is
+     * released rather than left retained, and the totals table stays usable on the totals it already had.
+     */
+    public void testCloseSourceWhileRebaseFetchPending() {
+        JsTotalsTable[] holder = {null};
+        connect(tables)
+                .then(table("slowTotals"))
+                .then(table -> {
+                    delayTestFinish(10000);
+                    return table.getTotalsTable(null).then(totals -> {
+                        holder[0] = totals;
+                        totals.setViewport(0, 100, null, null, null);
+                        return this.<ViewportData>waitForEventWhere(totals, JsTable.EVENT_UPDATED,
+                                e -> e.getDetail().getRows().length == 1 && e.getDetail().getRows().getAt(0)
+                                        .get(totals.findColumn("I")).asDouble() == 10.0,
+                                5000).then(ignored -> Promise.resolve(table));
+                    });
+                })
+                .then(table -> {
+                    table.applyFilter(new FilterCondition[] {
+                            table.findColumn("K").filter().eq(FilterValue.ofNumber(0.0))
+                    });
+                    return waitForEvent(table, JsTable.EVENT_FILTERCHANGED, 2001).onInvoke(table);
+                })
+                .then(table -> {
+                    // the filtered state is running, so the slow rebase aggregate is now in flight; close the source
+                    table.close();
+                    return Promise.resolve(table);
+                })
+                .then(waitFor(2500))
+                .then(table -> {
+                    // the rebased state was only ever owned by the totals table's retainer; a rebase that was dropped
+                    // cleanly has let go of it
+                    for (ClientTableState state : holder[0].getConnection().getCache().getAllStates()) {
+                        assertFalse("rebased state still retained by the totals table: " + state,
+                                state.hasRetainer(holder[0]));
+                    }
+                    assertFalse(holder[0].isClosed());
+                    assertEquals(1, holder[0].getSize(), DELTA);
+                    holder[0].close();
+                    return Promise.resolve(table);
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
      * Closes the source table while the initial totals request is still pending. The totals table must still resolve,
      * on the source state it retained.
      */
@@ -374,8 +421,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                         assertFalse("totals still have the removed column",
                                 "X".equals(holder[0].getColumns().getAt(i).getName()));
                     }
-                    // a fresh viewport shows totals of the current source
-                    holder[0].setViewport(0, 100, null, null, null);
+                    // and the viewport comes back on its own, showing totals of the current source
                     return waitForEvent(holder[0], JsTable.EVENT_UPDATED, checkTotals(holder[0], 5, 6., 0., "after"),
                             2004).then(ignored -> Promise.resolve(table));
                 })
@@ -548,7 +594,6 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
-    // TODO: https://deephaven.atlassian.net/browse/DH-11196
     /**
      * Filters each totals table on its own, then changes the source filter. The rebased totals must have the totals
      * table's own filter re-applied, and the grand totals, whose source is unchanged, must keep theirs.
