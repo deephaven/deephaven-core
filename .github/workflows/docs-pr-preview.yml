@@ -14,7 +14,9 @@ on:
     branches: [main, 'rc/**']
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # pull_request_target runs in the context of the base branch, so github.ref is the same for every PR.
+  # Key the group on the PR number so a new run cancels only an earlier run of the same PR.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:

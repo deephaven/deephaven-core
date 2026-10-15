@@ -83,7 +83,7 @@ If you are working with a REST catalog backed by S3 storage, you can use the mor
 from deephaven.experimental import iceberg
 
 rest_adapter = iceberg.adapter_s3_rest(
-    name="minio-iceberg",
+    name="rustfs-iceberg",
     catalog_uri=catalog_uri,
     warehouse_location=warehouse_location,
     region_name=aws_region,

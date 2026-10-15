@@ -1227,7 +1227,8 @@ public class SortHelpers {
 
     /**
      * Fold the performance of a scheduler's off-thread tasks into the enclosing operation's performance entry, so that
-     * parallel sort work is attributed to the sort.
+     * parallel sort work is attributed to the sort. On an {@link OperationInitializerJobScheduler} this waits for every
+     * job submitted, which the callers rely on: they release what the jobs use only after calling this.
      */
     public static void accumulateSchedulerPerformance(final JobScheduler jobScheduler) {
         final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();

@@ -10,7 +10,7 @@ import picocli.CommandLine.TypeConversionException;
 
 import java.nio.charset.StandardCharsets;
 
-class TypedTicketConverter implements ITypeConverter<TypedTicket> {
+public class TypedTicketConverter implements ITypeConverter<TypedTicket> {
 
     @Override
     public TypedTicket convert(String value) {

@@ -3,20 +3,26 @@
 //
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.TableListener;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
 import io.deephaven.engine.table.impl.util.compact.CompactKernel;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,7 +32,15 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
- * Iterative average operator.
+ * Percentile operator backed by two {@link SegmentedSortedMultiSet SSMs} per destination: the low set holds the values
+ * at or below the percentile, and the high set holds the rest.
+ * <p>
+ * Values are not inserted into or removed from the SSMs as each chunk arrives. Instead, each destination stages the
+ * values added to it and the values removed from it (a modification stages its previous value as a removal and its new
+ * value as an addition). When the initial state or a cycle's updates are propagated, each touched destination compacts
+ * its staged values into sorted, counted runs, nets the removals against the additions so that a value both removed and
+ * added touches neither SSM, applies one pivoted removal and one pivoted insertion, and then sets its result. Every
+ * destination that receives values reports a modification, whether or not its percentile changes.
  */
 public class SsmChunkedPercentileOperator implements IterativeChunkedAggregationOperator {
     private static final int NODE_SIZE =
@@ -39,10 +53,24 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
     private final ObjectArraySource<SegmentedSortedMultiSet> ssms;
     private final String name;
     private final CompactKernel compactAndCountKernel;
+    private final NetChangeKernel netChangeKernel;
     private final Supplier<SegmentedSortedMultiSet> ssmFactory;
-    private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final ChunkType chunkType;
     private final PercentileTypeHelper percentileTypeHelper;
+
+    /**
+     * The values added to each destination since its staged values were last applied, or null if there are none.
+     */
+    private final ObjectArraySource<WritableChunk<Values>> stagedAdds;
+    /**
+     * The values removed from each destination since its staged values were last applied, or null if there are none.
+     */
+    private final ObjectArraySource<WritableChunk<Values>> stagedRemoves;
+    /**
+     * The destinations with staged values, in the order they were first staged.
+     */
+    private final IntegerArraySource touchedDestinations = new IntegerArraySource();
+    private int touchedCount;
 
     /**
      * @param type the data type of the values
@@ -91,8 +119,12 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             externalResult = internalResult;
         }
         compactAndCountKernel = CompactKernel.makeCompact(chunkType, equalsConsistent);
+        netChangeKernel = NetChangeKernel.make(chunkType);
         ssmFactory = SegmentedSortedMultiSet.makeFactory(chunkType, NODE_SIZE, type, equalsConsistent);
-        removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(NODE_SIZE);
+        // noinspection unchecked,rawtypes
+        stagedAdds = new ObjectArraySource<>((Class) WritableChunk.class);
+        // noinspection unchecked,rawtypes
+        stagedRemoves = new ObjectArraySource<>((Class) WritableChunk.class);
         percentileTypeHelper = makeTypeHelper(chunkType, type, percentile, averageEvenlyDivided, internalResult);
     }
 
@@ -180,34 +212,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
-        final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
-
-        context.valueCopy.setSize(values.size());
-        // noinspection unchecked
-        context.valueCopy.copyFromChunk((Chunk) values, 0, 0, values.size());
-
-        context.lengthCopy.setSize(length.size());
-        context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
-
-        // Count NaN, but not NULL values
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy,
-                false, true);
-
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int runLength = context.lengthCopy.get(ii);
-            if (runLength == 0) {
-                continue;
-            }
-            final int startPosition = startPositions.get(ii);
-            final long destination = destinations.get(startPosition);
-
-            final SegmentedSortedMultiSet ssmLo = ssmLoForSlot(destination);
-            final SegmentedSortedMultiSet ssmHi = ssmHiForSlot(destination);
-
-            pivotedInsertion(context, ssmLo, ssmHi, startPosition, runLength, context.valueCopy, context.counts);
-
-            stateModified.set(ii, percentileTypeHelper.setResult(ssmLo, ssmHi, destination));
-        }
+        stageRuns(stagedAdds, values, destinations, startPositions, length, stateModified);
     }
 
     @Override
@@ -215,45 +220,192 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
-        final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
+        stageRuns(stagedRemoves, values, destinations, startPositions, length, stateModified);
+    }
 
-        context.valueCopy.setSize(values.size());
-        // noinspection unchecked
-        context.valueCopy.copyFromChunk((Chunk) values, 0, 0, values.size());
+    @Override
+    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues,
+            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
+        stageRuns(stagedRemoves, preValues, destinations, startPositions, length, stateModified);
+        stageRuns(stagedAdds, postValues, destinations, startPositions, length, stateModified);
+    }
 
-        context.lengthCopy.setSize(length.size());
-        context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
+    @Override
+    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+        return stage(stagedAdds, (int) destination, values, 0, values.size());
+    }
 
-        // Count NaN, but not NULL values
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy,
-                false, true);
+    @Override
+    public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+        return stage(stagedRemoves, (int) destination, values, 0, values.size());
+    }
 
-        final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
+    @Override
+    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues,
+            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+        final boolean removed = stage(stagedRemoves, (int) destination, preValues, 0, preValues.size());
+        final boolean added = stage(stagedAdds, (int) destination, postValues, 0, postValues.size());
+        return removed || added;
+    }
+
+    private void stageRuns(final ObjectArraySource<WritableChunk<Values>> staged, final Chunk<? extends Values> values,
+            final IntChunk<RowKeys> destinations, final IntChunk<ChunkPositions> startPositions,
+            final IntChunk<ChunkLengths> length, final WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int runLength = context.lengthCopy.get(ii);
-            if (runLength == 0) {
-                continue;
-            }
             final int startPosition = startPositions.get(ii);
-            final long destination = destinations.get(startPosition);
-
-            final SegmentedSortedMultiSet ssmLo = ssmLoForSlot(destination);
-            final SegmentedSortedMultiSet ssmHi = ssmHiForSlot(destination);
-            pivotedRemoval(context, removeContext, startPosition, runLength, ssmLo, ssmHi, context.valueCopy,
-                    context.counts);
-
-            final boolean modified = percentileTypeHelper.setResult(ssmLo, ssmHi, destination);
-            if (ssmLo.size() == 0) {
-                clearSsm(destination, 0);
-            }
-            if (ssmHi.size() == 0) {
-                clearSsm(destination, 1);
-            }
-            stateModified.set(ii, modified);
+            stateModified.set(ii,
+                    stage(staged, destinations.get(startPosition), values, startPosition, length.get(ii)));
         }
     }
 
-    private void pivotedRemoval(SsmMinMaxContext context, SegmentedSortedMultiSet.RemoveContext removeContext,
+    /**
+     * Append {@code values[start, start + length)} to the staged chunk for {@code destination}.
+     *
+     * @return true if any values were staged
+     */
+    private boolean stage(final ObjectArraySource<WritableChunk<Values>> staged, final int destination,
+            final Chunk<? extends Values> values, final int start, final int length) {
+        if (length == 0) {
+            return false;
+        }
+        WritableChunk<Values> chunk = staged.getUnsafe(destination);
+        if (chunk == null) {
+            if (stagedAdds.getUnsafe(destination) == null && stagedRemoves.getUnsafe(destination) == null) {
+                touchedDestinations.getAndSetUnsafe(touchedCount++, destination);
+            }
+            chunk = chunkType.makeWritableChunk(length);
+            chunk.setSize(0);
+            staged.getAndSetUnsafe(destination, chunk);
+        } else if (chunk.capacity() - chunk.size() < length) {
+            final long required = (long) chunk.size() + length;
+            if (required > ArrayUtil.MAX_ARRAY_SIZE) {
+                // Staged removals are values present before this cycle, so a destination may be applied early; it
+                // remains in touchedDestinations for the values staged after it
+                applyStaged(destination);
+                chunk = chunkType.makeWritableChunk(length);
+                chunk.setSize(0);
+                staged.getAndSetUnsafe(destination, chunk);
+            } else {
+                final WritableChunk<Values> grown = chunkType.makeWritableChunk(
+                        (int) Math.min(ArrayUtil.MAX_ARRAY_SIZE, Math.max(required, 2L * chunk.capacity())));
+                grown.copyFromChunk(chunk, 0, 0, chunk.size());
+                grown.setSize(chunk.size());
+                chunk.close();
+                chunk = grown;
+                staged.getAndSetUnsafe(destination, chunk);
+            }
+        }
+        final int size = chunk.size();
+        chunk.setSize(size + length);
+        chunk.copyFromChunk(values, start, size, length);
+        return true;
+    }
+
+    @Override
+    public void propagateInitialState(@NotNull final QueryTable resultTable, int startingDestinationsCount) {
+        applyAllStaged();
+    }
+
+    @Override
+    public void propagateUpdates(@NotNull final TableUpdate downstream, @NotNull final RowSet newDestinations) {
+        applyAllStaged();
+    }
+
+    @Override
+    public void propagateFailure(@NotNull final Throwable originalException,
+            @NotNull final TableListener.Entry sourceEntry) {
+        for (int ti = 0; ti < touchedCount; ++ti) {
+            final int destination = touchedDestinations.getUnsafe(ti);
+            closeStaged(stagedAdds, destination);
+            closeStaged(stagedRemoves, destination);
+        }
+        touchedCount = 0;
+    }
+
+    private static void closeStaged(final ObjectArraySource<WritableChunk<Values>> staged, final int destination) {
+        final WritableChunk<Values> chunk = staged.getAndSetUnsafe(destination, null);
+        if (chunk != null) {
+            chunk.close();
+        }
+    }
+
+    private void applyAllStaged() {
+        if (touchedCount == 0) {
+            return;
+        }
+        try (final ApplyContext context = new ApplyContext(chunkType)) {
+            for (int ti = 0; ti < touchedCount; ++ti) {
+                applyStaged(context, touchedDestinations.getUnsafe(ti));
+            }
+        }
+        touchedCount = 0;
+    }
+
+    /**
+     * Apply the staged values of one destination outside of {@link #applyAllStaged()}; the destination stays in
+     * {@link #touchedDestinations}, and is applied again with any values staged later.
+     */
+    private void applyStaged(final int destination) {
+        try (final ApplyContext context = new ApplyContext(chunkType)) {
+            applyStaged(context, destination);
+        }
+    }
+
+    private void applyStaged(final ApplyContext context, final int destination) {
+        final WritableChunk<Values> removes = stagedRemoves.getAndSetUnsafe(destination, null);
+        final WritableChunk<Values> adds = stagedAdds.getAndSetUnsafe(destination, null);
+        if (removes == null && adds == null) {
+            return;
+        }
+
+        final SegmentedSortedMultiSet ssmLo = ssmLoForSlot(destination);
+        final SegmentedSortedMultiSet ssmHi = ssmHiForSlot(destination);
+        try {
+            // Count NaN, but not NULL values
+            final WritableIntChunk<ChunkLengths> removeCounts =
+                    removes == null ? null : context.removeCounts(removes.size());
+            if (removes != null) {
+                compactAndCountKernel.compactAndCount(removes, removeCounts, false, true);
+            }
+            final WritableIntChunk<ChunkLengths> addCounts = adds == null ? null : context.addCounts(adds.size());
+            if (adds != null) {
+                compactAndCountKernel.compactAndCount(adds, addCounts, false, true);
+            }
+            if (removes != null && adds != null) {
+                netChangeKernel.net(removes, removeCounts, adds, addCounts);
+            }
+
+            if (removes != null && removes.size() > 0) {
+                pivotedRemoval(context, context.removeContext, 0, removes.size(), ssmLo, ssmHi, removes,
+                        removeCounts);
+            }
+            if (adds != null && adds.size() > 0) {
+                pivotedInsertion(context, ssmLo, ssmHi, 0, adds.size(), adds, addCounts);
+            }
+        } finally {
+            SafeCloseable.closeAll(removes, adds);
+        }
+
+        if (ssmLo.size() == 0 && ssmHi.size() == 0) {
+            clearSsm(destination, 0);
+            clearSsm(destination, 1);
+            percentileTypeHelper.setResultNull(destination);
+            return;
+        }
+        percentileTypeHelper.setResult(ssmLo, ssmHi, destination);
+        if (ssmLo.size() == 0) {
+            clearSsm(destination, 0);
+        }
+        if (ssmHi.size() == 0) {
+            clearSsm(destination, 1);
+        }
+    }
+
+    private void pivotedRemoval(ApplyContext context, SegmentedSortedMultiSet.RemoveContext removeContext,
             int startPosition, int runLength, SegmentedSortedMultiSet ssmLo, SegmentedSortedMultiSet ssmHi,
             WritableChunk<? extends Values> valueCopy, WritableIntChunk<ChunkLengths> counts) {
         // We have no choice but to split this chunk, and furthermore to make sure that we do not remove more
@@ -292,7 +444,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         }
     }
 
-    private void pivotedInsertion(SsmMinMaxContext context, SegmentedSortedMultiSet ssmLo,
+    private void pivotedInsertion(ApplyContext context, SegmentedSortedMultiSet ssmLo,
             SegmentedSortedMultiSet ssmHi, int startPosition, int runLength, WritableChunk<? extends Values> valueCopy,
             WritableIntChunk<ChunkLengths> counts) {
         final int loPivot;
@@ -316,170 +468,6 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             final WritableIntChunk<ChunkLengths> hiCountSlice =
                     context.countResettable.resetFromChunk(counts, startPosition + loPivot, runLength - loPivot);
             ssmHi.insert(hiValueSlice, hiCountSlice);
-        }
-    }
-
-
-    @Override
-    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues,
-            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys,
-            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
-        final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
-
-        context.valueCopy.setSize(preValues.size());
-        // noinspection unchecked
-        context.valueCopy.copyFromChunk((Chunk) preValues, 0, 0, preValues.size());
-
-        context.lengthCopy.setSize(length.size());
-        context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
-
-        // Count NaN, but not NULL values
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy,
-                false, true);
-
-        final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
-        context.ssmsToMaybeClear.fillWithValue(0, destinations.size(), false);
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int runLength = context.lengthCopy.get(ii);
-            if (runLength == 0) {
-                continue;
-            }
-            final int startPosition = startPositions.get(ii);
-            final long destination = destinations.get(startPosition);
-
-            final SegmentedSortedMultiSet ssmLo = ssmLoForSlot(destination);
-            final SegmentedSortedMultiSet ssmHi = ssmHiForSlot(destination);
-
-            pivotedRemoval(context, removeContext, startPosition, runLength, ssmLo, ssmHi, context.valueCopy,
-                    context.counts);
-            if (ssmLo.size() == 0 && ssmHi.size() == 0) {
-                context.ssmsToMaybeClear.set(ii, true);
-            }
-        }
-
-        context.valueCopy.setSize(postValues.size());
-        // noinspection unchecked
-        context.valueCopy.copyFromChunk((Chunk) postValues, 0, 0, postValues.size());
-
-        context.lengthCopy.setSize(length.size());
-        context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
-
-        // Count NaN, but not NULL values
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy,
-                false, true);
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int runLength = context.lengthCopy.get(ii);
-            final int startPosition = startPositions.get(ii);
-            final long destination = destinations.get(startPosition);
-            if (runLength == 0) {
-                if (context.ssmsToMaybeClear.get(ii)) {
-                    // we may have deleted this position on the last round, really get rid of it
-                    clearSsm(destination, 0);
-                    clearSsm(destination, 1);
-                    stateModified.set(ii, percentileTypeHelper.setResultNull(destination));
-                } else {
-                    stateModified.set(ii, percentileTypeHelper.setResult(ssmLoForSlot(destination),
-                            ssmHiForSlot(destination), destination));
-                }
-                continue;
-            }
-
-            final SegmentedSortedMultiSet ssmLo = ssmLoForSlot(destination);
-            final SegmentedSortedMultiSet ssmHi = ssmHiForSlot(destination);
-
-            pivotedInsertion(context, ssmLo, ssmHi, startPosition, runLength, context.valueCopy, context.counts);
-
-            stateModified.set(ii, percentileTypeHelper.setResult(ssmLo, ssmHi, destination));
-        }
-    }
-
-    @Override
-    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        final SsmMinMaxContext context = (SsmMinMaxContext) singletonContext;
-
-        context.valueCopy.setSize(values.size());
-        // noinspection unchecked
-        context.valueCopy.copyFromChunk((Chunk) values, 0, 0, values.size());
-        // Count NaN, but not NULL values
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, false, true);
-        final SegmentedSortedMultiSet ssmLo = ssmLoForSlot(destination);
-        final SegmentedSortedMultiSet ssmHi = ssmHiForSlot(destination);
-        if (context.valueCopy.size() > 0) {
-            pivotedInsertion(context, ssmLo, ssmHi, 0, context.valueCopy.size(), context.valueCopy, context.counts);
-        }
-        return percentileTypeHelper.setResult(ssmLo, ssmHi, destination);
-    }
-
-    @Override
-    public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        final SsmMinMaxContext context = (SsmMinMaxContext) singletonContext;
-
-        context.valueCopy.setSize(values.size());
-        // noinspection unchecked
-        context.valueCopy.copyFromChunk((Chunk) values, 0, 0, values.size());
-        // Count NaN, but not NULL values
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, false, true);
-        if (context.valueCopy.size() == 0) {
-            return false;
-        }
-        final SegmentedSortedMultiSet ssmLo = ssmLoForSlot(destination);
-        final SegmentedSortedMultiSet ssmHi = ssmHiForSlot(destination);
-
-        pivotedRemoval(context, context.removeContext, 0, context.valueCopy.size(), ssmLo, ssmHi, context.valueCopy,
-                context.counts);
-        final boolean modified = percentileTypeHelper.setResult(ssmLo, ssmHi, destination);
-        if (ssmLo.size() == 0) {
-            clearSsm(destination, 0);
-        }
-        if (ssmHi.size() == 0) {
-            clearSsm(destination, 1);
-        }
-        return modified;
-    }
-
-    @Override
-    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues,
-            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
-        final SsmMinMaxContext context = (SsmMinMaxContext) singletonContext;
-
-        context.valueCopy.setSize(preValues.size());
-        // noinspection unchecked
-        context.valueCopy.copyFromChunk((Chunk) preValues, 0, 0, preValues.size());
-        // Count NaN, but not NULL values
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, false, true);
-        SegmentedSortedMultiSet ssmLo = null;
-        SegmentedSortedMultiSet ssmHi = null;
-        if (context.valueCopy.size() > 0) {
-            ssmLo = ssmLoForSlot(destination);
-            ssmHi = ssmHiForSlot(destination);
-
-            pivotedRemoval(context, context.removeContext, 0, context.valueCopy.size(), ssmLo, ssmHi, context.valueCopy,
-                    context.counts);
-        }
-
-        context.valueCopy.setSize(postValues.size());
-        // noinspection unchecked
-        context.valueCopy.copyFromChunk((Chunk) postValues, 0, 0, postValues.size());
-        // Count NaN, but not NULL values
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, false, true);
-        if (context.valueCopy.size() > 0) {
-            if (ssmLo == null) {
-                ssmLo = ssmLoForSlot(destination);
-                ssmHi = ssmHiForSlot(destination);
-            }
-            pivotedInsertion(context, ssmLo, ssmHi, 0, context.valueCopy.size(), context.valueCopy, context.counts);
-            return percentileTypeHelper.setResult(ssmLo, ssmHi, destination);
-        } else if (ssmLo != null && ssmLo.size() == 0 && ssmHi.size() == 0) {
-            clearSsm(destination, 0);
-            clearSsm(destination, 1);
-            return percentileTypeHelper.setResultNull(destination);
-        } else if (ssmLo == null) {
-            return false;
-        } else {
-            return percentileTypeHelper.setResult(ssmLo, ssmHi, destination);
         }
     }
 
@@ -509,6 +497,9 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
     public void ensureCapacity(long tableSize) {
         internalResult.ensureCapacity(tableSize);
         ssms.ensureCapacity(tableSize * 2);
+        stagedAdds.ensureCapacity(tableSize);
+        stagedRemoves.ensureCapacity(tableSize);
+        touchedDestinations.ensureCapacity(tableSize);
     }
 
     @Override
@@ -521,55 +512,52 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         internalResult.startTrackingPrevValues();
     }
 
-    @Override
-    public BucketedContext makeBucketedContext(int size) {
-        return new BucketSsmMinMaxContext(chunkType, size);
-    }
-
-    @Override
-    public SingletonContext makeSingletonContext(int size) {
-        return new SsmMinMaxContext(chunkType, size);
-    }
-
-    private static class SsmMinMaxContext implements SingletonContext {
+    /**
+     * Scratch state for applying staged values, shared by every destination applied together.
+     */
+    private static class ApplyContext implements SafeCloseable {
         final SegmentedSortedMultiSet.RemoveContext removeContext =
                 SegmentedSortedMultiSet.makeRemoveContext(NODE_SIZE);
-        final WritableChunk<? extends Values> valueCopy;
-        final WritableIntChunk<ChunkLengths> counts;
         final ResettableWritableChunk<Values> valueResettable;
         final ResettableWritableIntChunk<ChunkLengths> countResettable;
+        private WritableIntChunk<ChunkLengths> removeCounts;
+        private WritableIntChunk<ChunkLengths> addCounts;
 
-        private SsmMinMaxContext(ChunkType chunkType, int size) {
-            valueCopy = chunkType.makeWritableChunk(size);
-            counts = WritableIntChunk.makeWritableChunk(size);
+        private ApplyContext(ChunkType chunkType) {
             valueResettable = chunkType.makeResettableWritableChunk();
             countResettable = ResettableWritableIntChunk.makeResettableChunk();
         }
 
+        WritableIntChunk<ChunkLengths> removeCounts(final int size) {
+            return removeCounts = sized(removeCounts, size);
+        }
+
+        WritableIntChunk<ChunkLengths> addCounts(final int size) {
+            return addCounts = sized(addCounts, size);
+        }
+
+        private static WritableIntChunk<ChunkLengths> sized(final WritableIntChunk<ChunkLengths> counts,
+                final int size) {
+            if (counts != null && counts.capacity() >= size) {
+                counts.setSize(size);
+                return counts;
+            }
+            if (counts != null) {
+                counts.close();
+            }
+            return WritableIntChunk.makeWritableChunk(size);
+        }
+
         @Override
         public void close() {
-            valueCopy.close();
-            counts.close();
             valueResettable.close();
             countResettable.close();
-        }
-    }
-
-    private static class BucketSsmMinMaxContext extends SsmMinMaxContext implements BucketedContext {
-        final WritableIntChunk<ChunkLengths> lengthCopy;
-        final WritableBooleanChunk ssmsToMaybeClear;
-
-        private BucketSsmMinMaxContext(ChunkType chunkType, int size) {
-            super(chunkType, size);
-            lengthCopy = WritableIntChunk.makeWritableChunk(size);
-            ssmsToMaybeClear = WritableBooleanChunk.makeWritableChunk(size);
-        }
-
-        @Override
-        public void close() {
-            super.close();
-            lengthCopy.close();
-            ssmsToMaybeClear.close();
+            if (removeCounts != null) {
+                removeCounts.close();
+            }
+            if (addCounts != null) {
+                addCounts.close();
+            }
         }
     }
 }
