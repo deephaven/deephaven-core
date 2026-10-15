@@ -2,16 +2,20 @@
 title: Configure your Deephaven instance
 ---
 
-This page shows how to take your Deephaven instance beyond the defaults: secure it, choose a different image, add Python packages, give it more memory, and keep it up to date. The Docker examples build on the command you ran in [Get started](./get-started.md). If you installed with pip, the last section shows how to do the same tasks.
+This page shows how to take your Deephaven instance beyond the defaults: set up authentication, choose a different image, add Python packages, give it more memory, and keep it up to date. The Docker examples build on the command you ran in [Get started](./get-started.md). If you installed with pip, the last section shows how to do the same tasks.
 
-## Secure your instance
+## Authentication
 
 Keeping your real-time data secure is one of Deephaven's top priorities. By default, Deephaven uses [pre-shared key (PSK) authentication](../../how-to-guides/authentication/auth-psk.md). In [Get started](./get-started.md), you set the key with the `-Dauthentication.psk` flag in the `docker run` command.
 
 - With the flag, your key stays the same across server restarts.
 - Without the flag, Deephaven generates a new random key each time the server starts.
 
-For enhanced security, choose a long, hard-to-guess key rather than the placeholder `YOUR_PASSWORD_HERE`.
+For enhanced security, replace the placeholder `YOUR_PASSWORD_HERE` in the `-Dauthentication.psk` flag with your own long, hard-to-guess key:
+
+```bash skip-test
+docker run --rm --name deephaven -p 10000:10000 -v "$(pwd)/data:/data" --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE ghcr.io/deephaven/server:latest
+```
 
 In both cases, Deephaven prints the key in the server logs on startup, so you can find it there if you forget it. With the Get started command, the logs print in the terminal where you ran `docker run`. The key appears in a line like this one from a Docker Compose log:
 

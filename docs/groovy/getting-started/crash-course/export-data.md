@@ -18,6 +18,9 @@ Data I/O is mission-critical for any real-time data analysis platform. Deephaven
 
 Deephaven can [read CSV](../../how-to-guides/data-import-export/csv-import.md) files that exist locally or remotely.
 
+> [!TIP]
+> To import a CSV without writing code, use **Upload Table from File** in the Console Options menu (⋮). See [Upload a table from a file](../../how-to-guides/user-interface/upload-table-from-file.md).
+
 This example reads a local CSV file.
 
 ```groovy test-set=1 order=iris
@@ -39,9 +42,6 @@ Just to show that it's there, the code below reads the new file back.
 ```groovy test-set=1 order=irisNew
 irisNew = readCsv("/data/irisNew.csv")
 ```
-
-> [!TIP]
-> To import a CSV without writing code, use **Upload Table from File** in the Console Options menu (⋮). See [Upload a table from a file](../../how-to-guides/user-interface/upload-table-from-file.md).
 
 ## Parquet
 
