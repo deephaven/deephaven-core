@@ -12,7 +12,7 @@ name: Nightly Python Versions CI
 
 on:
   schedule:
-    # 3AM EST == 7AM UTC, an hour after Nightly Check CI
+    # 2AM EST == 7AM UTC
     - cron: '0 7 * * *'
   workflow_dispatch:
   push:
@@ -146,3 +146,23 @@ jobs:
             **/*_pid*.log
             **/core.*
           if-no-files-found: ignore
+
+  slack-failure:
+    # One alert per run, whichever jobs failed. A failed build skips every test job, so a per-test-job alert would miss
+    # it. Uses the same Slack workflow as Nightly Check CI.
+    needs: [build, test]
+    if: ${{ failure() && github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Slack Nightly Failure
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          webhook-type: webhook-trigger
+          # Fail the step if the alert cannot be delivered; the default hides it.
+          errors: true
+          payload: |
+            {
+              "slack_message": "Nightly Python versions failure @ ${{ github.ref_name }} ${{ github.sha }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
