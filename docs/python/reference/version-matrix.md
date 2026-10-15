@@ -12,8 +12,10 @@ A :white_check_mark: indicates that the Deephaven version supports the Python ve
 | ----------------- | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
 | 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
 | 41.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
-| 42.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
-| 43.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| 42.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
+| 43.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+
+Python 3.9 reached its end of life in October 2025. Deephaven Community Core may keep working with a Python version after its end of life, but Deephaven does not officially support it.
 
 Free-threaded Python is the build of Python that runs without the global interpreter lock (GIL). Deephaven does not support the experimental free-threaded build of Python 3.13.
 
