@@ -1,0 +1,65 @@
+/*
+ * Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+ */
+syntax = "proto3";
+
+// Internal (non-RPC) representation of io.deephaven.engine.table.TableDefinition, as persisted by
+// io.deephaven.engine.table.proto.TableDefinitionProtos.
+package io.deephaven.engine.table.proto;
+
+option java_multiple_files = true;
+option java_package = "io.deephaven.engine.table.proto.gen";
+
+// The top-level message of a persisted table definition file. Exactly one alternative must be set; new
+// representations may be added to the oneof in the future.
+message PersistedTableDefinitionProto {
+  oneof definition {
+    TableDefinitionProto table_definition = 1;
+  }
+}
+
+message TableDefinitionProto {
+  // The columns, in table order. Column names must be unique.
+  repeated ColumnDefinitionProto columns = 1;
+}
+
+message ColumnDefinitionProto {
+  string name = 1;
+
+  // Required.
+  JavaClassProto data_type = 2;
+
+  // Present if and only if the column has a component type (for example, array and Vector columns).
+  JavaClassProto component_type = 3;
+
+  ColumnTypeProto column_type = 4;
+}
+
+enum ColumnTypeProto {
+  COLUMN_TYPE_UNSPECIFIED = 0;
+  COLUMN_TYPE_NORMAL = 1;
+  COLUMN_TYPE_PARTITIONING = 2;
+}
+
+message JavaClassProto {
+  oneof kind {
+    PrimitiveTypeProto primitive = 1;
+
+    // The binary name of a non-primitive class, as returned by java.lang.Class#getName(); for example,
+    // "java.lang.String", "[I" or "[Ljava.time.Instant;".
+    string class_name = 2;
+  }
+}
+
+enum PrimitiveTypeProto {
+  PRIMITIVE_TYPE_UNSPECIFIED = 0;
+  PRIMITIVE_TYPE_BOOLEAN = 1;
+  PRIMITIVE_TYPE_BYTE = 2;
+  PRIMITIVE_TYPE_CHAR = 3;
+  PRIMITIVE_TYPE_SHORT = 4;
+  PRIMITIVE_TYPE_INT = 5;
+  PRIMITIVE_TYPE_LONG = 6;
+  PRIMITIVE_TYPE_FLOAT = 7;
+  PRIMITIVE_TYPE_DOUBLE = 8;
+  PRIMITIVE_TYPE_VOID = 9;
+}
