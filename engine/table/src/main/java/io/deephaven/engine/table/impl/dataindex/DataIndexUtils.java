@@ -120,7 +120,7 @@ public class DataIndexUtils {
      * @param rowKeys Receives the result row key of each lookup key; its size is set to the number of keys
      * @param usePrev Whether to look up the keys in previous space
      */
-    public static void boxedApply(
+    public static void lookupRowKeysBoxed(
             @NotNull final DataIndex.RowKeyLookup lookup,
             @NotNull final Chunk<? extends Values>[] keyChunks,
             @NotNull final WritableLongChunk<RowKeys> rowKeys,

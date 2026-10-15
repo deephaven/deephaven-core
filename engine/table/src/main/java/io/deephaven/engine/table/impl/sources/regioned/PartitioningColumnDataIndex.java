@@ -352,7 +352,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
                     @NotNull final Chunk<? extends Values>[] keyChunks,
                     @NotNull final WritableLongChunk<RowKeys> rowKeys,
                     final boolean usePrev) {
-                DataIndexUtils.boxedApply(this, keyChunks, rowKeys, usePrev);
+                DataIndexUtils.lookupRowKeysBoxed(this, keyChunks, rowKeys, usePrev);
             }
         };
     }

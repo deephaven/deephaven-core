@@ -51,8 +51,8 @@ public interface DataIndex extends BasicDataIndex {
          * have at least one key column, whose chunk gives the number of keys.
          * <p>
          * Implementations that cannot search a chunk of keys at once may delegate to
-         * {@code io.deephaven.engine.table.impl.dataindex.DataIndexUtils.boxedApply}, which boxes each key and calls
-         * {@link #apply(Object, boolean)}.
+         * {@code io.deephaven.engine.table.impl.dataindex.DataIndexUtils.lookupRowKeysBoxed}, which boxes each key and
+         * calls {@link #apply(Object, boolean)}.
          *
          * @param keyChunks The lookup keys, one chunk per key column, at least one, all the same size
          * @param rowKeys Receives the result row key of each lookup key, or {@link RowSequence#NULL_ROW_KEY} for a key
