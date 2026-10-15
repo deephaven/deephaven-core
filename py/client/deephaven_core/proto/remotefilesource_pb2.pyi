@@ -6,7 +6,6 @@ Copyright (c) 2016-2025 Deephaven Data Labs and Patent Pending
 """
 
 from collections import abc as _abc
-from deephaven_core.proto import ticket_pb2 as _ticket_pb2
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf.internal import containers as _containers
@@ -193,29 +192,3 @@ class SetRemoteSourcesResponse(_message.Message):
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___SetRemoteSourcesResponse: _TypeAlias = SetRemoteSourcesResponse  # noqa: Y015
-
-@_typing.final
-class RemoteFileSourcePluginFetchRequest(_message.Message):
-    """Fetch the remote file source plugin into the specified ticket (Flight command, not MessageStream)"""
-
-    DESCRIPTOR: _descriptor.Descriptor
-
-    RESULT_ID_FIELD_NUMBER: _builtins.int
-    PLUGIN_NAME_FIELD_NUMBER: _builtins.int
-    plugin_name: _builtins.str
-    """The plugin name to create the PluginMarker for."""
-    @_builtins.property
-    def result_id(self) -> _ticket_pb2.Ticket: ...
-    def __init__(
-        self,
-        *,
-        result_id: _ticket_pb2.Ticket | None = ...,
-        plugin_name: _builtins.str = ...,
-    ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _typing.Literal["result_id", b"result_id"]  # noqa: Y015
-    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["plugin_name", b"plugin_name", "result_id", b"result_id"]  # noqa: Y015
-    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    def WhichOneof(self, oneof_group: _Never) -> None: ...
-
-Global___RemoteFileSourcePluginFetchRequest: _TypeAlias = RemoteFileSourcePluginFetchRequest  # noqa: Y015

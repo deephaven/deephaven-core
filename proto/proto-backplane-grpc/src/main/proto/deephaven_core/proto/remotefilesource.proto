@@ -9,8 +9,6 @@ option java_multiple_files = true;
 option optimize_for = SPEED;
 option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/remotefilesource";
 
-import "deephaven_core/proto/ticket.proto";
-
 // Server → Client: Requests sent from server to client via MessageStream
 message RemoteFileSourceServerMessage {
   // Unique identifier for this request, used to correlate the response
@@ -72,10 +70,3 @@ message SetRemoteSourcesRequest {
 message SetRemoteSourcesResponse {
 }
 
-// Fetch the remote file source plugin into the specified ticket (Flight command, not MessageStream)
-message RemoteFileSourcePluginFetchRequest {
-  io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
-
-  // The plugin name to create the PluginMarker for.
-  string plugin_name = 2;
-}

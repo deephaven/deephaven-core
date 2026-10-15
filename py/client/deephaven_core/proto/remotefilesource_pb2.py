@@ -22,10 +22,9 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
-from deephaven_core.proto import ticket_pb2 as deephaven__core_dot_proto_dot_ticket__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n+deephaven_core/proto/remotefilesource.proto\x12!io.deephaven.proto.backplane.grpc\x1a!deephaven_core/proto/ticket.proto\"\xfa\x01\n\x1dRemoteFileSourceServerMessage\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12V\n\x0cmeta_request\x18\x02 \x01(\x0b\x32>.io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaRequestH\x00\x12\x62\n\x1bset_remote_sources_response\x18\x03 \x01(\x0b\x32;.io.deephaven.proto.backplane.grpc.SetRemoteSourcesResponseH\x00\x42\t\n\x07request\"\xf2\x01\n\x1dRemoteFileSourceClientMessage\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12X\n\rmeta_response\x18\x02 \x01(\x0b\x32?.io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaResponseH\x00\x12X\n\x12set_remote_sources\x18\x03 \x01(\x0b\x32:.io.deephaven.proto.backplane.grpc.SetRemoteSourcesRequestH\x00\x42\t\n\x07request\"4\n\x1bRemoteFileSourceMetaRequest\x12\x15\n\rresource_name\x18\x01 \x01(\t\"M\n\x1cRemoteFileSourceMetaResponse\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\x0c\x12\r\n\x05\x66ound\x18\x02 \x01(\x08\x12\r\n\x05\x65rror\x18\x03 \x01(\t\"C\n\x17SetRemoteSourcesRequest\x12\x16\n\x0eresource_paths\x18\x01 \x03(\t\x12\x10\n\x08is_dirty\x18\x02 \x01(\x08\"\x1a\n\x18SetRemoteSourcesResponse\"w\n\"RemoteFileSourcePluginFetchRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x13\n\x0bplugin_name\x18\x02 \x01(\tBLH\x01P\x01ZFgithub.com/deephaven/deephaven-core/go/internal/proto/remotefilesourceb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n+deephaven_core/proto/remotefilesource.proto\x12!io.deephaven.proto.backplane.grpc\"\xfa\x01\n\x1dRemoteFileSourceServerMessage\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12V\n\x0cmeta_request\x18\x02 \x01(\x0b\x32>.io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaRequestH\x00\x12\x62\n\x1bset_remote_sources_response\x18\x03 \x01(\x0b\x32;.io.deephaven.proto.backplane.grpc.SetRemoteSourcesResponseH\x00\x42\t\n\x07request\"\xf2\x01\n\x1dRemoteFileSourceClientMessage\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12X\n\rmeta_response\x18\x02 \x01(\x0b\x32?.io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaResponseH\x00\x12X\n\x12set_remote_sources\x18\x03 \x01(\x0b\x32:.io.deephaven.proto.backplane.grpc.SetRemoteSourcesRequestH\x00\x42\t\n\x07request\"4\n\x1bRemoteFileSourceMetaRequest\x12\x15\n\rresource_name\x18\x01 \x01(\t\"M\n\x1cRemoteFileSourceMetaResponse\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\x0c\x12\r\n\x05\x66ound\x18\x02 \x01(\x08\x12\r\n\x05\x65rror\x18\x03 \x01(\t\"C\n\x17SetRemoteSourcesRequest\x12\x16\n\x0eresource_paths\x18\x01 \x03(\t\x12\x10\n\x08is_dirty\x18\x02 \x01(\x08\"\x1a\n\x18SetRemoteSourcesResponseBLH\x01P\x01ZFgithub.com/deephaven/deephaven-core/go/internal/proto/remotefilesourceb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,18 +32,16 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'deephaven_core.proto.remote
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'H\001P\001ZFgithub.com/deephaven/deephaven-core/go/internal/proto/remotefilesource'
-  _globals['_REMOTEFILESOURCESERVERMESSAGE']._serialized_start=118
-  _globals['_REMOTEFILESOURCESERVERMESSAGE']._serialized_end=368
-  _globals['_REMOTEFILESOURCECLIENTMESSAGE']._serialized_start=371
-  _globals['_REMOTEFILESOURCECLIENTMESSAGE']._serialized_end=613
-  _globals['_REMOTEFILESOURCEMETAREQUEST']._serialized_start=615
-  _globals['_REMOTEFILESOURCEMETAREQUEST']._serialized_end=667
-  _globals['_REMOTEFILESOURCEMETARESPONSE']._serialized_start=669
-  _globals['_REMOTEFILESOURCEMETARESPONSE']._serialized_end=746
-  _globals['_SETREMOTESOURCESREQUEST']._serialized_start=748
-  _globals['_SETREMOTESOURCESREQUEST']._serialized_end=815
-  _globals['_SETREMOTESOURCESRESPONSE']._serialized_start=817
-  _globals['_SETREMOTESOURCESRESPONSE']._serialized_end=843
-  _globals['_REMOTEFILESOURCEPLUGINFETCHREQUEST']._serialized_start=845
-  _globals['_REMOTEFILESOURCEPLUGINFETCHREQUEST']._serialized_end=964
+  _globals['_REMOTEFILESOURCESERVERMESSAGE']._serialized_start=83
+  _globals['_REMOTEFILESOURCESERVERMESSAGE']._serialized_end=333
+  _globals['_REMOTEFILESOURCECLIENTMESSAGE']._serialized_start=336
+  _globals['_REMOTEFILESOURCECLIENTMESSAGE']._serialized_end=578
+  _globals['_REMOTEFILESOURCEMETAREQUEST']._serialized_start=580
+  _globals['_REMOTEFILESOURCEMETAREQUEST']._serialized_end=632
+  _globals['_REMOTEFILESOURCEMETARESPONSE']._serialized_start=634
+  _globals['_REMOTEFILESOURCEMETARESPONSE']._serialized_end=711
+  _globals['_SETREMOTESOURCESREQUEST']._serialized_start=713
+  _globals['_SETREMOTESOURCESREQUEST']._serialized_end=780
+  _globals['_SETREMOTESOURCESRESPONSE']._serialized_start=782
+  _globals['_SETREMOTESOURCESRESPONSE']._serialized_end=808
 # @@protoc_insertion_point(module_scope)

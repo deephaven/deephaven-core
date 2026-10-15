@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api.remotefilesource;
 
-import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -14,20 +13,19 @@ import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceClientMessage;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaRequest;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceMetaResponse;
-import io.deephaven.proto.backplane.grpc.RemoteFileSourcePluginFetchRequest;
 import io.deephaven.proto.backplane.grpc.RemoteFileSourceServerMessage;
 import io.deephaven.proto.backplane.grpc.SetRemoteSourcesRequest;
-import io.deephaven.proto.backplane.grpc.Ticket;
-import io.deephaven.proto.backplane.grpc.TypedTicket;
-import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.event.EventFn;
 import io.deephaven.web.client.api.WorkerConnection;
+import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.shared.fu.RemoverFn;
 import io.deephaven.web.client.api.widget.WidgetMessageDetails;
 import io.deephaven.web.client.fu.LazyPromise;
+import io.deephaven.web.client.ide.IdeConnection;
+import io.deephaven.web.client.ide.IdeSession;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
@@ -35,7 +33,6 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
-import org.apache.arrow.flight.impl.Flight;
 import org.gwtproject.nio.TypedArrayHelper;
 import org.jetbrains.annotations.NotNull;
 
@@ -45,6 +42,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 
 /**
@@ -67,10 +65,13 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     // Plugin name must match RemoteFileSourcePlugin.name() on the server
     private static final String PLUGIN_NAME = "DeephavenRemoteFileSourcePlugin";
 
-    // Type URL for the Any-wrapped plugin fetch command. Built explicitly rather than with Any.pack(), which needs
-    // protobuf descriptors that aren't available once this code is compiled to JS.
-    private static final String PLUGIN_FETCH_REQUEST_TYPE_URL =
-            "type.googleapis.com/io.deephaven.proto.backplane.grpc.RemoteFileSourcePluginFetchRequest";
+    private static final String GROOVY_CONSOLE_TYPE = "groovy";
+
+    // Expression evaluated on the server to obtain the plugin's marker object
+    private static final String MARKER_EXPRESSION = "io.deephaven.remotefilesource.RemoteFileSourcePlugin.getMarker()";
+
+    // Prefix for the transient scope variable the instantiation script assigns the marker to
+    private static final String MARKER_VARIABLE_PREFIX = "__deephaven_remote_file_source_";
 
     // Timeout for setRemoteSources requests (in milliseconds)
     private static final int SET_REMOTE_SOURCES_TIMEOUT_MS = 30000; // 30 seconds
@@ -106,70 +107,101 @@ public class JsRemoteFileSourceService extends HasEventHandling {
     }
 
     /**
-     * Fetches the FlightInfo for the plugin fetch command.
-     *
-     * @param connection the worker connection to use
-     * @return a promise that resolves to the FlightInfo for the plugin fetch
-     */
-    private static Promise<Flight.FlightInfo> fetchPluginFlightInfo(WorkerConnection connection) {
-        // Create the fetch request, with a new export ticket for the result
-        RemoteFileSourcePluginFetchRequest fetchRequest = RemoteFileSourcePluginFetchRequest.newBuilder()
-                .setResultId(connection.getTickets().newExportTicket())
-                .setPluginName(PLUGIN_NAME)
-                .build();
-
-        // Wrap in google.protobuf.Any with the proper typeUrl
-        Any anyWrappedRequest = Any.newBuilder()
-                .setTypeUrl(PLUGIN_FETCH_REQUEST_TYPE_URL)
-                .setValue(fetchRequest.toByteString())
-                .build();
-
-        // Create a FlightDescriptor with the command
-        Flight.FlightDescriptor descriptor = Flight.FlightDescriptor.newBuilder()
-                .setType(Flight.FlightDescriptor.DescriptorType.CMD)
-                .setCmd(anyWrappedRequest.toByteString())
-                .build();
-
-        // Send the getFlightInfo request
-        return Callbacks.grpcUnaryPromise(
-                c -> connection.flightServiceClient().getFlightInfo(descriptor, c));
-    }
-
-    /**
      * Fetches a RemoteFileSource plugin instance from the server and establishes a message stream connection.
      *
+     * <p>
+     * There is no dedicated RPC for this: the plugin's marker object is obtained by running an instantiation script in
+     * a Groovy console session and exporting the variable it assigns. Running code on the worker requires permission to
+     * write to it, so a caller without that permission cannot open a connection.
+     *
+     * @param ide the IDE connection used to run the instantiation script
      * @param connection the worker connection to use for communication
      * @return a promise that resolves to a RemoteFileSourceService instance with an active message stream
      */
     @JsIgnore
-    public static Promise<JsRemoteFileSourceService> fetchPlugin(WorkerConnection connection) {
-        return fetchPluginFlightInfo(connection)
-                .then(flightInfo -> {
-                    // The first endpoint contains the ticket for the plugin instance.
-                    // This is the standard Flight pattern: we passed resultTicket in the request,
-                    // the server exported the service to that ticket, and returned a FlightInfo
-                    // with an endpoint containing that same ticket for us to use.
-                    if (flightInfo.getEndpointCount() > 0) {
-                        // Convert the Arrow Flight ticket from the endpoint to a Deephaven ticket
-                        Ticket dhTicket = Ticket.newBuilder()
-                                .setTicket(flightInfo.getEndpoint(0).getTicket().getTicket())
-                                .build();
+    public static Promise<JsRemoteFileSourceService> fetchPlugin(IdeConnection ide, WorkerConnection connection) {
+        return fetchMarkerWidget(ide, connection).then(widget -> {
+            JsRemoteFileSourceService service = new JsRemoteFileSourceService(widget);
+            return service.connect().catch_(error -> {
+                // Closing the widget releases the marker export, which nothing else holds once the connect fails
+                widget.close();
+                return Promise.reject(error);
+            });
+        });
+    }
 
-                        // Create a TypedTicket for the plugin instance
-                        // The type must match RemoteFileSourcePlugin.name()
-                        TypedTicket typedTicket = TypedTicket.newBuilder()
-                                .setTicket(dhTicket)
-                                .setType(PLUGIN_NAME)
-                                .build();
+    /**
+     * Exports the plugin's marker object as a widget by evaluating an instantiation script in a temporary Groovy
+     * console session. The console session is closed whether or not the export succeeds.
+     *
+     * @param ide the IDE connection used to start the console session
+     * @param connection the worker connection to export the marker through
+     * @return a promise that resolves to an unconnected widget for the marker
+     */
+    private static Promise<JsWidget> fetchMarkerWidget(IdeConnection ide, WorkerConnection connection) {
+        return ide.getConsoleTypes().then(types -> {
+            if (!types.includes(GROOVY_CONSOLE_TYPE)) {
+                return Promise.reject("Remote file sourcing requires a " + GROOVY_CONSOLE_TYPE
+                        + " console session, but the server supports " + types.join(", "));
+            }
 
-                        JsWidget widget = new JsWidget(connection, typedTicket);
+            return ide.startSession(GROOVY_CONSOLE_TYPE)
+                    .then(session -> fetchMarkerWidget(session, connection).finally_(session::close));
+        });
+    }
 
-                        JsRemoteFileSourceService service = new JsRemoteFileSourceService(widget);
-                        return service.connect();
-                    } else {
-                        return Promise.reject("No endpoints returned from " + PLUGIN_NAME + " plugin fetch");
+    /**
+     * Runs the instantiation script in the given console session and exports the marker it produces.
+     *
+     * <p>
+     * The script assigns the marker to a uniquely named scope variable. Once the export has settled, the variable is
+     * removed again, including when the script or the export fails, so that it does not linger in the worker's scope.
+     *
+     * @param session a started Groovy console session
+     * @param connection the worker connection to export the marker through
+     * @return a promise that resolves to an unconnected widget for the marker
+     */
+    private static Promise<JsWidget> fetchMarkerWidget(IdeSession session, WorkerConnection connection) {
+        final String variableName = newMarkerVariableName();
+
+        final Promise<JsWidget> fetched = session.runCode(variableName + " = " + MARKER_EXPRESSION)
+                .then(result -> {
+                    if (result.getError() != null) {
+                        return Promise.reject(result.getError());
                     }
+
+                    final JsVariableDefinition marker = result.getChanges().getCreated()
+                            .find((definition, index, array) -> variableName.equals(definition.getTitle()));
+                    if (marker == null) {
+                        return Promise.reject("Instantiation script did not create " + variableName);
+                    }
+                    // The server types the variable by the plugin that claims it, so this also checks that the plugin
+                    // is installed
+                    if (!PLUGIN_NAME.equals(marker.getType())) {
+                        return Promise.reject("Expected " + variableName + " to have type " + PLUGIN_NAME
+                                + ", but it has type " + marker.getType());
+                    }
+
+                    // Resolves only once the variable has been exported, so it can then be removed safely
+                    return connection.getWidget(marker);
                 });
+
+        // The export holds its own reference to the marker, so the variable is removed once the export has settled.
+        // A failure to remove it is not a failure to export, so it does not change the outcome.
+        final Function<Object, Promise<JsWidget>> removeVariable =
+                ignored -> session.runCode("binding.variables.remove('" + variableName + "')")
+                        .then(removed -> fetched, removeError -> fetched);
+        return fetched.then(removeVariable::apply, removeVariable::apply);
+    }
+
+    /**
+     * Creates a randomized scope variable name for the marker. Every client shares the worker's scope, so a fixed name
+     * would let one fetch remove the variable before a concurrent fetch had exported it.
+     *
+     * @return a new variable name, valid as a Groovy identifier
+     */
+    private static String newMarkerVariableName() {
+        return MARKER_VARIABLE_PREFIX + Long.toHexString((long) (Math.random() * Long.MAX_VALUE));
     }
 
     /**

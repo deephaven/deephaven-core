@@ -226,7 +226,7 @@ public class CoreClient extends HasEventHandling {
     public Promise<JsRemoteFileSourceService> getRemoteFileSourceService() {
         if (remoteFileSourceServicePromise == null) {
             final Promise<JsRemoteFileSourceService> pending =
-                    JsRemoteFileSourceService.fetchPlugin(ideConnection.connection.get());
+                    JsRemoteFileSourceService.fetchPlugin(ideConnection, ideConnection.connection.get());
             remoteFileSourceServicePromise = pending;
             pending.then(service -> {
                 service.setClosedHandler(() -> forgetRemoteFileSourceService(pending));
