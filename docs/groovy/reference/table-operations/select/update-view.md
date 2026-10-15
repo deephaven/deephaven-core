@@ -2,22 +2,27 @@
 title: updateView
 ---
 
-The `updateView` method creates a new table containing a new, formula column for each argument.
+The `updateView` method creates a new table containing a new formula column for each argument.
 
-When using `updateView`, the new columns are not stored in memory. Rather, a formula is stored that is used to recalculate each cell every time it is accessed.
+A formula column is [not stored in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand). Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
 
 > [!NOTE]
-> The syntax for the `updateView`, [`update`](./update.md), and [`lazyUpdate`](./lazy-update.md) methods is identical, as is the resulting table. `updateView` is recommended when:
+> `updateView`, [`update`](./update.md), and [`lazyUpdate`](./lazy-update.md) take the same arguments: [formula strings](../../../how-to-guides/formulas.md) or a collection of [`Selectable`](../../query-language/types/Selectable.md) objects. `updateView` throws an exception for a [`Selectable`](../../query-language/types/Selectable.md) that respects [Barriers](../../../conceptual/query-engine/parallelization.md#barriers), and, with the default settings, for one that runs serially. All three methods return a table with all the source columns plus the new columns. `updateView` stores formulas and recalculates cells on access, while [`update`](./update.md) stores the new columns in memory.
+>
+> `updateView` fits best when:
 >
 > 1. the formula is fast to compute,
 > 2. only a small portion of the data is being accessed,
 > 3. cells are accessed very few times, or
 > 4. memory usage must be minimized.
 >
-> For other cases, consider using `select`, `view`, `update`, or `lazyUpdate`. These methods have different memory and computation expenses.
+> [`select`](./select.md), [`view`](./view.md), [`update`](./update.md), and [`lazyUpdate`](./lazy-update.md) differ from `updateView` in memory and computation costs.
 
 > [!CAUTION]
-> When using [`view`](./view.md) or `updateView`, non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods should use [`select`](./select.md) or [`update`](./update.md) instead.
+> When using [`view`](./view.md) or `updateView`, non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods belong in [`select`](./select.md) or [`update`](./update.md) instead.
+
+> [!CAUTION]
+> [`view`](./view.md) and `updateView` do not support [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) or respecting [Barriers](../../../conceptual/query-engine/parallelization.md#barriers). These operations compute results lazily, when cells are accessed, so rows can be evaluated in any order, at any time, and by any thread. This makes ordering guarantees meaningless. A formula that requires serial evaluation or must wait for another operation belongs in [`select`](./select.md) or [`update`](./update.md) instead.
 
 ## Syntax
 
@@ -35,7 +40,7 @@ Formulas to compute columns in the new table; e.g., `"X = A * sqrt(B)"`.
 </Param>
 <Param name="columns" type="Collection<? extends Selectable>">
 
-Formulas to compute columns in the new table; e.g., `"X = A * sqrt(B)"`.
+One [`Selectable`](../../query-language/types/Selectable.md) for each column to compute in the new table. A [`Selectable`](../../query-language/types/Selectable.md) pairs a formula with concurrency controls such as [`withSerial`](../../query-language/types/Selectable.md#withserial). `updateView` throws an exception for a [`Selectable`](../../query-language/types/Selectable.md) that respects [Barriers](../../../conceptual/query-engine/parallelization.md#barriers), and, with the default settings, for one that runs serially.
 
 </Param>
 </ParamTable>
@@ -78,7 +83,14 @@ irisWhereVirginica = iris.updateView(List.of(Selectable.of(ColumnName.of("IsVirg
 
 ## Related documentation
 
-- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
 - [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
+- [Create a new table](../../../how-to-guides/new-and-empty-table.md#newtable)
+- [Formulas](../../../how-to-guides/formulas.md)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Selectable](../../query-language/types/Selectable.md)
+- [select](./select.md)
+- [view](./view.md)
+- [update](./update.md)
+- [lazyUpdate](./lazy-update.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#updateView(java.lang.String...))

@@ -4,20 +4,25 @@ title: update_view
 
 The `update_view` method creates a new table containing a new formula column for each argument.
 
-When using `update_view`, the new columns are not stored in memory. Rather, a formula is stored that is used to recalculate each cell every time it is accessed.
+A formula column is [not stored in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand). Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
 
 > [!NOTE]
-> The syntax for the `update_view`, [`update`](./update.md), and [`lazy_update`](./lazy-update.md) methods is identical, as is the resulting table. `update_view` is recommended when:
+> `update_view` and [`lazy_update`](./lazy-update.md) accept only [formula strings](../../../how-to-guides/formulas.md). [`update`](./update.md) accepts [formula strings](../../../how-to-guides/formulas.md) and [`Selectable`](../../query-language/types/Selectable.md) objects. All three methods return a table with all the source columns plus the new columns. `update_view` stores formulas and recalculates cells on access, while [`update`](./update.md) stores the new columns in memory.
+>
+> `update_view` fits best when:
 >
 > 1. the formula is fast to compute,
 > 2. only a small portion of the data is being accessed,
 > 3. cells are accessed very few times, or
 > 4. memory usage must be minimized.
 >
-> For other cases, consider using `select`, `view`, `update`, or `lazy_update`. These methods have different memory and computation expenses.
+> [`select`](./select.md), [`view`](./view.md), [`update`](./update.md), and [`lazy_update`](./lazy-update.md) differ from `update_view` in memory and computation costs.
 
 > [!CAUTION]
-> When using [`view`](./view.md) or `update_view`, non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods should use [`select`](./select.md) or [`update`](./update.md) instead.
+> When using [`view`](./view.md) or `update_view`, non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods belong in [`select`](./select.md) or [`update`](./update.md) instead.
+
+> [!CAUTION]
+> [`view`](./view.md) and `update_view` do not support [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) or respecting [Barriers](../../../conceptual/query-engine/parallelization.md#barriers). These operations compute results lazily, when cells are accessed, so rows can be evaluated in any order, at any time, and by any thread. This makes ordering guarantees meaningless. A formula that requires serial evaluation or must wait for another operation belongs in [`select`](./select.md) or [`update`](./update.md) instead.
 
 ## Syntax
 
@@ -60,7 +65,15 @@ result = source.update_view(formulas=["X = B", "Y = sqrt(C)"])
 
 ## Related documentation
 
+- [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
+- [Formulas](../../../how-to-guides/formulas.md)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Selectable](../../query-language/types/Selectable.md)
+- [select](./select.md)
+- [view](./view.md)
+- [update](./update.md)
+- [lazy_update](./lazy-update.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#updateView(java.lang.String...))
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.update_view)
