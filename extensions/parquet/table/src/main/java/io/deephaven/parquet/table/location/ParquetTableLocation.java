@@ -400,13 +400,15 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     /**
      * Translates the Deephaven names of data index key columns to the parquet names the metadata records them under, or
-     * returns {@code null} if any of them cannot be. Requires initialization.
+     * returns {@code null} if any of them cannot be. A key column named like the index table's row set column cannot be
+     * told apart from it, so it has no index. Requires initialization.
      */
     @Nullable
     private String[] toIndexParquetColumnNames(@NotNull final String[] columnNames) {
         final String[] parquetColumnNames = new String[columnNames.length];
         for (int ci = 0; ci < columnNames.length; ++ci) {
-            if ((parquetColumnNames[ci] = toIndexParquetColumnName(columnNames[ci])) == null) {
+            if (INDEX_ROW_SET_COLUMN_NAME.equals(columnNames[ci])
+                    || (parquetColumnNames[ci] = toIndexParquetColumnName(columnNames[ci])) == null) {
                 return null;
             }
         }
@@ -415,16 +417,19 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     /**
      * Translates the parquet names of data index key columns, as the metadata records them, to Deephaven column names,
-     * or returns {@code null} if any of them cannot be. Requires initialization.
+     * or returns {@code null} if any of them cannot be, as {@link #toIndexParquetColumnNames(String[])} does. Requires
+     * initialization.
      */
     @Nullable
     private String[] toIndexColumnNames(@NotNull final Collection<String> parquetColumnNames) {
         final String[] columnNames = new String[parquetColumnNames.size()];
         int ci = 0;
         for (final String parquetColumnName : parquetColumnNames) {
-            if ((columnNames[ci++] = toIndexColumnName(parquetColumnName)) == null) {
+            final String columnName = toIndexColumnName(parquetColumnName);
+            if (columnName == null || INDEX_ROW_SET_COLUMN_NAME.equals(columnName)) {
                 return null;
             }
+            columnNames[ci++] = columnName;
         }
         return columnNames;
     }
@@ -704,8 +709,24 @@ public class ParquetTableLocation extends AbstractTableLocation {
                             indexKey.getFileReader().getSchema(),
                             indexKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                             unresolved);
-            indexReadInstructions =
-                    indexSchema.getSecond().withTableDefinition(TableDefinition.of(indexSchema.getFirst()));
+            final ParquetInstructions inferred = indexSchema.getSecond();
+            // The keys must have the types of the columns they index, so read each key column as its column is read:
+            // perhaps widened, or a LIST as a vector, which inference from the index file alone may not see
+            final TableDefinition definition = parquetInstructions.getTableDefinition().orElseThrow();
+            final Map<String, String> keyColumnNameByReadName = new HashMap<>(keyColumnNames.length);
+            for (int ki = 0; ki < keyColumnNames.length; ++ki) {
+                keyColumnNameByReadName.put(
+                        inferred.getColumnNameFromParquetColumnNameOrDefault(parquetKeyColumnNames[ki]),
+                        keyColumnNames[ki]);
+            }
+            final List<ColumnDefinition<?>> indexColumns = new ArrayList<>(indexSchema.getFirst().size());
+            for (final ColumnDefinition<?> indexColumn : indexSchema.getFirst()) {
+                final String keyColumnName = keyColumnNameByReadName.get(indexColumn.getName());
+                indexColumns.add(keyColumnName == null
+                        ? indexColumn
+                        : definition.getColumn(keyColumnName).withNormal().withName(indexColumn.getName()));
+            }
+            indexReadInstructions = inferred.withTableDefinition(TableDefinition.of(indexColumns));
         }
         final Table indexTable = ParquetTools.readTable(indexFileMetaData.fileURI.toString(), indexReadInstructions);
         if (indexFileMetaData.dataIndexInfo != null) {

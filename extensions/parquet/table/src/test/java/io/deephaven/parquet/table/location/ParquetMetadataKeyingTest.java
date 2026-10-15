@@ -7,6 +7,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -15,6 +16,7 @@ import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.parquet.table.ParquetTableWriter;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.metadata.RowGroupInfo;
 import io.deephaven.vector.IntVector;
@@ -49,8 +51,11 @@ public class ParquetMetadataKeyingTest {
     public final TemporaryFolder tempDir = new TemporaryFolder();
 
     private static void assertFilterMatchesOracle(final Table fromDisk, final String filter) {
-        // select() materializes into memory, so the expected side runs no pushdown at all
-        final Table oracle = fromDisk.select();
+        // select() materializes into memory, so the expected side runs no pushdown at all. It keeps the RowSet, and
+        // with it any data index already loaded from the file, so the oracle gets a fresh RowSet without one.
+        final Table materialized = fromDisk.select();
+        final Table oracle =
+                new QueryTable(materialized.getRowSet().copy().toTracking(), materialized.getColumnSourceMap());
         assertTableEquals(oracle.where(filter).coalesce(), fromDisk.where(filter).coalesce());
     }
 
@@ -369,14 +374,31 @@ public class ParquetMetadataKeyingTest {
                 .putMap("W", List.of("V", "list", "element"))
                 .putMap("C", List.of("C"))
                 .build();
+        final TableDefinition resolvedDefinition = TableDefinition.of(
+                ColumnDefinition.fromGenericType("W", IntVector.class, int.class),
+                ColumnDefinition.ofInt("C"));
         final Table resolved = ParquetTools.readTable(dest, ParquetInstructions.builder()
-                .setTableDefinition(TableDefinition.of(
-                        ColumnDefinition.fromGenericType("W", IntVector.class, int.class),
-                        ColumnDefinition.ofInt("C")))
+                .setTableDefinition(resolvedDefinition)
                 .setColumnResolverFactory((tableKey, tableLocationKey) -> resolver)
                 .build());
         assertTrue(DataIndexer.hasDataIndex(resolved, "W"));
         assertEquals(3, DataIndexer.getDataIndex(resolved, "W").table().size());
+        assertEquals(IntVector.class, indexKeyType(resolved, "W"));
+
+        // The mapping hides the vector's footer type entry from the index read, which must still read the key as the
+        // vector the column reads
+        final Table mapped = ParquetTools.readTable(dest, ParquetInstructions.builder()
+                .setTableDefinition(resolvedDefinition)
+                .setColumnResolverFactory((tableKey, tableLocationKey) -> resolver)
+                .addColumnNameMapping("V", "W")
+                .build());
+        assertEquals(3, DataIndexer.getDataIndex(mapped, "W").table().size());
+        assertEquals(IntVector.class, indexKeyType(mapped, "W"));
+    }
+
+    private static Class<?> indexKeyType(final Table table, final String keyColumnName) {
+        return DataIndexer.getDataIndex(table, keyColumnName).table().getDefinition().getColumn(keyColumnName)
+                .getDataType();
     }
 
     // endregion data indexes
@@ -514,6 +536,32 @@ public class ParquetMetadataKeyingTest {
         assertTrue(DataIndexer.hasDataIndex(fromDisk, "Sym"));
         assertEquals(5, DataIndexer.getDataIndex(fromDisk, "Sym").table().size());
         assertFilterMatchesOracle(fromDisk, "Sym = `b3`");
+    }
+
+    /** A resolver may read a parquet INT32 as a long; the index is read the same way, so its keys are longs too. */
+    @Test
+    public void dataIndexWithColumnResolverWidening() {
+        final String dest = path("intIndexed.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(100).update("B = (int) (ii % 5)", "C = (int) ii"),
+                dest,
+                ParquetInstructions.builder().addIndexColumns("B").build());
+        final Table fromDisk = ParquetTools.readTable(dest, resolving(
+                TableDefinition.of(ColumnDefinition.ofLong("Sym"), ColumnDefinition.ofInt("C")),
+                "Sym", "B", "C", "C"));
+        assertEquals(long.class, indexKeyType(fromDisk, "Sym"));
+        assertFilterMatchesOracle(fromDisk, "Sym = 3");
+    }
+
+    /** A key column named like the index table's row set column can't be told apart from it, so it has no index. */
+    @Test
+    public void dataIndexForColumnNamedLikeRowSet() {
+        final String rowSetName = ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME;
+        final Table fromDisk = ParquetTools.readTable(writeSortedIndexedTable(), resolving(
+                TableDefinition.of(ColumnDefinition.ofString(rowSetName), ColumnDefinition.ofInt("C")),
+                rowSetName, "B", "C", "C"));
+        assertFalse(DataIndexer.hasDataIndex(fromDisk, rowSetName));
+        assertFilterMatchesOracle(fromDisk, rowSetName + " = `b3`");
     }
 
     /**
