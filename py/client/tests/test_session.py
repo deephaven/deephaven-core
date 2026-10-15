@@ -419,7 +419,8 @@ t1 = empty_table(0) if t.is_blink else None
 
         gc.disable()  # only the collection in the callback may free the session
         try:
-            session = Session()
+            # No token refresh thread, which holds the session for a moment when it starts.
+            session = Session(never_timeout=False)
             session.cycle = session  # only the garbage collector frees a cycle
             session_ref = weakref.ref(session)
             stub = session.config_service._grpc_app_stub
