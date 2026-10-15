@@ -15,7 +15,7 @@ import pandas as pd
 import pyarrow as pa
 from pyarrow import csv
 
-from deephaven_core.proto import config_pb2
+from deephaven_core.proto import config_pb2, config_pb2_grpc
 from pydeephaven import DHError, Session
 from pydeephaven.session import _SessionJob
 from pydeephaven.table import Table
@@ -423,7 +423,7 @@ t1 = empty_table(0) if t.is_blink else None
             session = Session(never_timeout=False)
             session.cycle = session  # only the garbage collector frees a cycle
             session_ref = weakref.ref(session)
-            stub = session.config_service._grpc_app_stub
+            stub = config_pb2_grpc.ConfigServiceStub(session.grpc_channel)
             metadata = session.grpc_metadata
             del session
             for _ in range(10):

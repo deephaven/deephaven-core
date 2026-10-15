@@ -10,6 +10,7 @@ import base64
 import logging
 import os
 import queue
+import sys
 import threading
 import time
 import weakref
@@ -323,6 +324,10 @@ class Session:
         # Stop the release thread, but make no RPC. The garbage collector can run this on any thread, including the
         # gRPC thread that delivers this session's RPC results. An RPC there waits forever for a result that only the
         # blocked thread can deliver. The server expires the abandoned session on its own.
+        # During interpreter shutdown the release thread is a daemon that dies anyway, and module globals such as
+        # _STOP may already be cleared.
+        if sys.is_finalizing():
+            return
         self._release_queue.put(_STOP)
 
     def update_metadata(
