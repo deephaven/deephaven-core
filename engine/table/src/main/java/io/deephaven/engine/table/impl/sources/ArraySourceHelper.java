@@ -160,7 +160,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
             if (onlyAllocated != null && onlyAllocated[ii] == null) {
                 continue;
             }
-            blocks[ii] = allocateBlock(BLOCK_SIZE, nullFilled);
+            blocks[ii] = allocateBlock(nullFilled);
             if (markFresh) {
                 prevBlocks[ii] = sharedFreshPrevBlock(BLOCK_SIZE, nullFilled);
                 prevInUse[ii] = FRESH_IN_USE;
@@ -352,11 +352,10 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     }
 
     /**
-     * @param size the size of the block
      * @param nullFilled whether to fill the block with the element type's null, rather than its default
-     * @return a newly allocated block
+     * @return a block of {@link #BLOCK_SIZE} elements, all null or all the default
      */
-    abstract UArray allocateBlock(int size, boolean nullFilled);
+    abstract UArray allocateBlock(boolean nullFilled);
 
     abstract void resetBlocks(UArray[] newBlocks, UArray[] newPrev);
 

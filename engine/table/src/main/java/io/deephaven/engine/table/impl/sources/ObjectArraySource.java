@@ -188,9 +188,11 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
     }
 
     @Override
-    final T[] allocateBlock(final int size, final boolean nullFilled) {
-        // an object block is null-filled either way
-        return takeBlock(size);
+    final T[] allocateBlock(final boolean nullFilled) {
+        // an object block is null-filled either way; a recycled previous-value block may still hold references
+        final T[] block = getRecycler().borrowItem();
+        Arrays.fill(block, null);
+        return block;
     }
 
     /** The previous values of blocks allocated during the current update cycle, all null; never written. */
@@ -203,20 +205,6 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
         }
         // noinspection unchecked
         return (T[]) FRESH_PREV_BLOCK;
-    }
-
-    /**
-     * @return a block of {@code size} null elements, from the recycler when it is a whole block
-     */
-    private T[] takeBlock(final int size) {
-        if (size != BLOCK_SIZE) {
-            // noinspection unchecked
-            return (T[]) new Object[size];
-        }
-        // a recycled previous-value block may still hold references
-        final T[] block = getRecycler().borrowItem();
-        Arrays.fill(block, null);
-        return block;
     }
 
     @Override

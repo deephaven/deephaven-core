@@ -245,9 +245,9 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
     }
 
     @Override
-    final byte[] allocateBlock(final int size, final boolean nullFilled) {
+    final byte[] allocateBlock(final boolean nullFilled) {
         // a recycled block holds arbitrary values, so it is filled either way
-        final byte[] newBlock = takeBlock(size);
+        final byte[] newBlock = recycler.borrowItem();
         Arrays.fill(newBlock, nullFilled ? NULL_BYTE : (byte) 0);
         return newBlock;
     }
@@ -269,13 +269,6 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
             throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
         }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    /**
-     * @return a block of {@code size} elements with arbitrary contents, from the recycler when it is a whole block
-     */
-    private static byte[] takeBlock(final int size) {
-        return size == BLOCK_SIZE ? recycler.borrowItem() : new byte[size];
     }
 
     @Override

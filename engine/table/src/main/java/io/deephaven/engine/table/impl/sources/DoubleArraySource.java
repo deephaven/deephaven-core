@@ -245,9 +245,9 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
     }
 
     @Override
-    final double[] allocateBlock(final int size, final boolean nullFilled) {
+    final double[] allocateBlock(final boolean nullFilled) {
         // a recycled block holds arbitrary values, so it is filled either way
-        final double[] newBlock = takeBlock(size);
+        final double[] newBlock = recycler.borrowItem();
         Arrays.fill(newBlock, nullFilled ? NULL_DOUBLE : (double) 0);
         return newBlock;
     }
@@ -269,13 +269,6 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
             throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
         }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    /**
-     * @return a block of {@code size} elements with arbitrary contents, from the recycler when it is a whole block
-     */
-    private static double[] takeBlock(final int size) {
-        return size == BLOCK_SIZE ? recycler.borrowItem() : new double[size];
     }
 
     @Override

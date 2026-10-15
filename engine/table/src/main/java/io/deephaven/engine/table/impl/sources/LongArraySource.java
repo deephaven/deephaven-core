@@ -268,9 +268,9 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
     }
 
     @Override
-    final long[] allocateBlock(final int size, final boolean nullFilled) {
+    final long[] allocateBlock(final boolean nullFilled) {
         // a recycled block holds arbitrary values, so it is filled either way
-        final long[] newBlock = takeBlock(size);
+        final long[] newBlock = recycler.borrowItem();
         Arrays.fill(newBlock, nullFilled ? NULL_LONG : (long) 0);
         return newBlock;
     }
@@ -292,13 +292,6 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
             throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
         }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    /**
-     * @return a block of {@code size} elements with arbitrary contents, from the recycler when it is a whole block
-     */
-    private static long[] takeBlock(final int size) {
-        return size == BLOCK_SIZE ? recycler.borrowItem() : new long[size];
     }
 
     @Override

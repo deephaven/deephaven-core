@@ -245,9 +245,9 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
     }
 
     @Override
-    final int[] allocateBlock(final int size, final boolean nullFilled) {
+    final int[] allocateBlock(final boolean nullFilled) {
         // a recycled block holds arbitrary values, so it is filled either way
-        final int[] newBlock = takeBlock(size);
+        final int[] newBlock = recycler.borrowItem();
         Arrays.fill(newBlock, nullFilled ? NULL_INT : (int) 0);
         return newBlock;
     }
@@ -269,13 +269,6 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
             throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
         }
         return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
-    }
-
-    /**
-     * @return a block of {@code size} elements with arbitrary contents, from the recycler when it is a whole block
-     */
-    private static int[] takeBlock(final int size) {
-        return size == BLOCK_SIZE ? recycler.borrowItem() : new int[size];
     }
 
     @Override
