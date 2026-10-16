@@ -3,7 +3,6 @@
 //
 package io.deephaven.parquet.table.pagestore;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
@@ -199,22 +198,6 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
     long pageRowCount(final int pageNum) {
         final long nextFirstRow = pageNum + 1 < numPages ? offsetIndex.getFirstRowIndex(pageNum + 1) : numRows();
         return nextFirstRow - offsetIndex.getFirstRowIndex(pageNum);
-    }
-
-    @Override
-    @NotNull
-    public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, final long rowKey) {
-        // We don't really use chunk capacity in our FillContext. In practice, however, this method is only invoked with
-        // a null FillContext for single-element "get" methods.
-        try (final FillContext allocatedFillContext = fillContext != null ? null : makeFillContext(1, null)) {
-            final FillContext fillContextToUse = fillContext != null ? fillContext : allocatedFillContext;
-            final int pageNum = pageNumContaining(fillContextToUse, rowKey & mask());
-            final ChunkPage<ATTR> cachedPage = getCachedPage(pageNum);
-            return cachedPage != null ? cachedPage : getPage(innerFillContext(fillContextToUse), pageNum);
-        } catch (final RuntimeException e) {
-            throw new UncheckedDeephavenException("Failed to read parquet page data for row: " + rowKey + ", column: " +
-                    columnChunkReader.columnName() + ", uri: " + columnChunkReader.getURI(), e);
-        }
     }
 
     @Override

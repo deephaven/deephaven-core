@@ -60,7 +60,7 @@ import static org.junit.Assert.assertTrue;
  * Sparse reads must return exactly what whole-page materialization returns.
  * <p>
  * Tests that assert a read is served from what an earlier read cached pin the cache with
- * {@link PageCache#pinTouchedPages()}. The cache holds pages softly, so a GC between the reads that clears soft
+ * {@link PageCache#pinCreatedPages()}. The cache holds pages softly, so a GC between the reads that clears soft
  * references would make the later read decode again and fail the assertion.
  */
 public class SparsePageReadTest {
@@ -222,7 +222,7 @@ public class SparsePageReadTest {
     public void testCachedPagesAreReused() {
         final String path = writeTestTable();
         final Table source = ParquetTools.readTable(path);
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages()) {
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages()) {
             final Table dense = dense(() -> source.select());
             final long before = ColumnChunkPageStore.sparseFillCount();
             assertTableEquals(dense.where(FILTERS[0]), source.where(FILTERS[0]));
@@ -272,7 +272,7 @@ public class SparsePageReadTest {
         final String filter = "ii < 4000 && ii % 13 == 0";
         final Table expected = dense(() -> ParquetTools.readTable(path).where(filter).select());
         final Table filtered = ParquetTools.readTable(path).where(filter);
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages()) {
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages()) {
             assertPass("first", expected, filtered, Reads.DECODE);
             assertPass("second", expected, filtered, Reads.HIT);
         }
@@ -289,7 +289,7 @@ public class SparsePageReadTest {
                 ParquetInstructions.builder().setRowGroupInfo(RowGroupInfo.maxRows(30_000)).build());
         final Table expected = dense(() -> ParquetTools.readTable(path).where(FILTERS[0]).select());
         final Table filtered = ParquetTools.readTable(path).where(FILTERS[0]);
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages()) {
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages()) {
             assertPass("first", expected, filtered, Reads.DECODE);
             assertPass("second", expected, filtered, Reads.HIT);
         }
@@ -315,7 +315,7 @@ public class SparsePageReadTest {
             builder.appendKey(ii);
         }
         try (final RowSet rows = builder.build();
-                final SafeCloseable ignored = PageCache.pinTouchedPages()) {
+                final SafeCloseable ignored = PageCache.pinCreatedPages()) {
             final long valueBytes = Long.BYTES * rows.size();
             final long denseAllocated = dense(() -> allocatedByFills(ParquetTools.readTable(path).getColumnSource("L"),
                     rows));
@@ -348,7 +348,7 @@ public class SparsePageReadTest {
     @Test
     public void testCachedPageFillsAllocateAsWithoutSparseReads() {
         final String path = writeTestTable();
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages();
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages();
                 final RowSet row = RowSetFactory.fromKeys(5)) {
             final ColumnSource<?> sparse = ParquetTools.readTable(path).getColumnSource("L");
             final ColumnSource<?> withoutSparse = dense(() -> ParquetTools.readTable(path).coalesce())
@@ -417,7 +417,7 @@ public class SparsePageReadTest {
         final Table expected = dense(() -> ParquetTools.readTable(path).where(FILTERS[0]).select());
         ColumnChunkPageStore.setSparseMissesBeforeFullCaching(1);
         final Table filtered = ParquetTools.readTable(path).where(FILTERS[0]);
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages()) {
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages()) {
             assertPass("first", expected, filtered, Reads.DECODE);
             assertPass("second", expected, filtered, Reads.HIT);
             assertPass("third", expected, filtered, Reads.HIT);
@@ -431,7 +431,7 @@ public class SparsePageReadTest {
     public void testSubsetReadsHit() {
         final String path = writeTestTable();
         final Table source = ParquetTools.readTable(path);
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages()) {
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages()) {
             // Decodes and caches every 13th row.
             assertPass("superset", dense(() -> ParquetTools.readTable(path).where("ii % 13 == 0").select()),
                     source.where("ii % 13 == 0"), Reads.DECODE);
@@ -454,7 +454,7 @@ public class SparsePageReadTest {
         final Table source = ParquetTools.readTable(path);
         final String[] filters = {"ii % 26 == 0", "ii % 26 == 13", "ii % 13 == 0"};
         final Reads[] reads = {Reads.DECODE, Reads.DECODE, Reads.HIT};
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages()) {
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages()) {
             assertPasses(path, source, filters, reads);
         }
     }
@@ -480,7 +480,7 @@ public class SparsePageReadTest {
                 "ii % 100 >= 95 || ii % 100 < 18",
         };
         final Reads[] reads = {Reads.DECODE, Reads.DECODE, Reads.DECODE, Reads.HIT, Reads.HIT};
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages()) {
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages()) {
             assertPasses(path, source, filters, reads);
         }
     }
@@ -501,7 +501,7 @@ public class SparsePageReadTest {
         // the published rows and its own, so none may promote the page, and the merged values exceed the cutoff.
         final long oldMinimumParallelSelectRows = QueryTable.MINIMUM_PARALLEL_SELECT_ROWS;
         QueryTable.MINIMUM_PARALLEL_SELECT_ROWS = Long.MAX_VALUE;
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages()) {
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages()) {
             assertPass("first", expected, source.where(first), Reads.DECODE);
             final String second = "ii % 26 == 13";
             assertPass("second", dense(() -> ParquetTools.readTable(path).where(second).select()),
@@ -522,7 +522,7 @@ public class SparsePageReadTest {
         final Table source = ParquetTools.readTable(path);
         final String[] filters = {"ii % 39 == 0", "ii % 39 == 13", "ii % 39 == 26", "ii % 39 == 0"};
         final Reads[] reads = {Reads.DECODE, Reads.DECODE, Reads.DENSE, Reads.DENSE};
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages()) {
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages()) {
             assertPasses(path, source, filters, reads);
         }
     }
@@ -537,7 +537,7 @@ public class SparsePageReadTest {
         ColumnChunkPageStore.setSparseMissesBeforeFullCaching(2);
         final Table expected = dense(() -> ParquetTools.readTable(path).where(FILTERS[0]).select());
         final Table filtered = ParquetTools.readTable(path).where(FILTERS[0]);
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages()) {
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages()) {
             assertPass("first", expected, filtered, Reads.DECODE);
             for (int pass = 2; pass <= 4; ++pass) {
                 PageCache.evictPinnedPages();
@@ -555,7 +555,7 @@ public class SparsePageReadTest {
     public void testForwardScrollMisses() {
         final String path = writeTestTable();
         final Table expected = dense(() -> ParquetTools.readTable(path).select());
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages();
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages();
                 final RowSet rows = expected.where("ii % 13 == 0").getRowSet().copy()) {
             final ColumnSource<?> expectedSource = expected.getColumnSource("L");
             final long[] neverPromoted =
@@ -583,7 +583,7 @@ public class SparsePageReadTest {
         final Table expected = dense(() -> ParquetTools.readTable(path).select());
         final ColumnSource<?> expectedSource = expected.getColumnSource("L");
         final ColumnSource<?> actual = ParquetTools.readTable(path).getColumnSource("L");
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages();
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages();
                 final RowSet cached = expected.where("ii % 13 == 0").getRowSet().copy();
                 final RowSet single = expected.where("ii % 1300 == 0").getRowSet().copy()) {
             assertTrue("decodes", fillSteps(expectedSource, actual, cached, cached.intSize())[0] > 0);
@@ -604,7 +604,7 @@ public class SparsePageReadTest {
         ColumnChunkPageStore.setSparseMissesBeforeFullCaching(1);
         final ColumnSource<?> expectedSource = expected.getColumnSource("L");
         final ColumnSource<?> actual = ParquetTools.readTable(path).getColumnSource("L");
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages();
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages();
                 final RowSet rows = expected.where("ii % 13 == 0").getRowSet().copy();
                 final RowSet behind = expected.where("ii % 13 == 1").getRowSet().copy()) {
             // A single fill: one miss per page.
@@ -697,7 +697,7 @@ public class SparsePageReadTest {
         final String path = writeTestTable();
         final Table expected = dense(() -> ParquetTools.readTable(path).select());
         final Table actual = ParquetTools.readTable(path);
-        try (final SafeCloseable ignored = PageCache.pinTouchedPages();
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages();
                 final RowSet allRows = assertConcurrentReadersMatchDense(expected, actual)) {
             final long before = ColumnChunkPageStore.sparseFillCount();
             for (final String column : expected.getDefinition().getColumnNamesArray()) {

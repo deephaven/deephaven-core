@@ -64,7 +64,8 @@ public interface ToPage<ATTR extends Any, RESULT> {
 
     /**
      * Like {@link #getResult}, but for only the requested rows; see {@link SparsePageCursor#materialize}. The result
-     * must be accepted by {@link #convertResult}.
+     * must be accepted by {@link #convertResult}, so an implementation that overrides {@link #getResult} must override
+     * this too.
      */
     default Object getSparseResult(SparsePageCursor cursor, LongChunk<?> rowRanges, int rowCount)
             throws IOException {

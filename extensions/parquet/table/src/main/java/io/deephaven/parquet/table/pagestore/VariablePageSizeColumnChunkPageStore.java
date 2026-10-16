@@ -3,7 +3,6 @@
 //
 package io.deephaven.parquet.table.pagestore;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
@@ -147,30 +146,6 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
 
         pageCache.touch(page);
         return page.getPage();
-    }
-
-    @Override
-    @NotNull
-    public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, final long rowKey) {
-        try {
-            return getPageContainingImpl(fillContext, rowKey);
-        } catch (final RuntimeException e) {
-            throw new UncheckedDeephavenException("Failed to read parquet page data for row: " + rowKey + ", column: " +
-                    columnChunkReader.columnName() + ", uri: " + columnChunkReader.getURI(), e);
-        }
-    }
-
-    @NotNull
-    private ChunkPage<ATTR> getPageContainingImpl(@Nullable final FillContext fillContext, final long rowKey) {
-        final int pageNum = pageNumContaining(fillContext, rowKey & mask());
-        final ChunkPage<ATTR> cachedPage = getCachedPage(pageNum);
-        if (cachedPage != null) {
-            return cachedPage;
-        }
-        // Use the latest channel context while reading the page, or create (and close) a new one
-        try (final ContextHolder holder = ensureContext(fillContext)) {
-            return getPage(holder.get(), pageNum);
-        }
     }
 
     @Override

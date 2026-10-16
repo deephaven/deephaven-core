@@ -28,7 +28,7 @@ public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.Intr
      */
     private static final WeakReference<?> NULL_PAGE = new WeakReference<>(null);
 
-    /** Strong references to every page touched while pinned; {@code null} when not pinned. */
+    /** Strong references to every page created while pinned; {@code null} when not pinned. Only used for testing. */
     private static volatile Set<IntrusivePage<?>> pinned;
 
     /**
@@ -48,6 +48,7 @@ public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.Intr
 
         public IntrusivePage(ChunkPage<ATTR> page) {
             this.page = page;
+            pin(this);
         }
 
         /**
@@ -55,6 +56,7 @@ public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.Intr
          */
         protected IntrusivePage() {
             this.page = null;
+            pin(this);
         }
 
         public ChunkPage<ATTR> getPage() {
@@ -71,23 +73,24 @@ public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.Intr
         super(IntrusiveSoftLRU.Node.Adapter.getInstance(), initialCapacity, maxCapacity);
     }
 
-    @Override
-    public void touch(@NotNull final IntrusivePage<ATTR> page) {
+    /**
+     * At creation rather than on {@link #touch}, which runs on every single-row read.
+     */
+    private static void pin(@NotNull final IntrusivePage<?> page) {
         final Set<IntrusivePage<?>> localPinned = pinned;
         if (localPinned != null) {
             localPinned.add(page);
         }
-        super.touch(page);
     }
 
     /**
-     * Keep every page touched in any page cache strongly reachable until the result is closed, so that a GC can't clear
-     * them between reads that a test expects to share. Process-wide and not reentrant.
+     * Keep every page created for any page cache strongly reachable until the result is closed, so that a GC can't
+     * clear them between reads that a test expects to share. Process-wide and not reentrant.
      *
      * @return Closing it unpins the pages
      */
     @TestUseOnly
-    static SafeCloseable pinTouchedPages() {
+    static SafeCloseable pinCreatedPages() {
         pinned = ConcurrentHashMap.newKeySet();
         return () -> pinned = null;
     }

@@ -65,10 +65,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             .getDoubleForClassWithDefault(ColumnChunkPageStore.class, "sparseReadMaxDensity", 0.125);
 
     /**
-     * The number of sparse misses of a page, each a fill that opens the page to decode rows its cached sparse values
-     * lack, after which the page is materialized and cached whole. Each open decompresses the whole page, so a viewport
-     * scrolling in file order without a hint, whose steps each reopen the page, misses too. Evicting the page's sparse
-     * values restarts its count.
+     * Sparse misses of a page (fills that reopen it for rows its cached sparse values lack) after which it is
+     * materialized and cached whole. Evicting its sparse values restarts the count.
      */
     private static volatile int sparseMissesBeforeFullCaching = Configuration.getInstance()
             .getIntegerForClassWithDefault(ColumnChunkPageStore.class, "sparseMissesBeforeFullCaching", 2);
@@ -312,6 +310,32 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
      */
     @NotNull
     abstract ChunkPage<ATTR> getPage(@NotNull SeekableChannelContext channelContext, int pageNum);
+
+    @Override
+    @NotNull
+    public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, final long rowKey) {
+        // Single-element gets pass a null context; a cached page needs none, so don't make one per get.
+        try {
+            final int pageNum = pageNumContaining(fillContext, rowKey & mask());
+            final ChunkPage<ATTR> cachedPage = getCachedPage(pageNum);
+            if (cachedPage != null) {
+                return cachedPage;
+            }
+            // Use the latest channel context while reading the page, or create (and close) a new one
+            final ChunkPage<ATTR> page;
+            try (final ContextHolder holder = ensureContext(fillContext)) {
+                page = getPage(holder.get(), pageNum);
+            }
+            if (sparseState(pageNum).pageRef != null) {
+                // The whole page supersedes any sparse values; drop them as readPage does, once the page is cached.
+                dropSparse(pageNum);
+            }
+            return page;
+        } catch (final RuntimeException e) {
+            throw new UncheckedDeephavenException("Failed to read parquet page data for row: " + rowKey + ", column: " +
+                    columnChunkReader.columnName() + ", uri: " + columnChunkReader.getURI(), e);
+        }
+    }
 
     /**
      * @return The reader for page {@code pageNum}, to read it sparsely rather than materialize it
@@ -582,11 +606,9 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             final boolean isFirstPage,
             final boolean fillContinues,
             final double maxDensity) throws IOException {
-        // Callers fill in chunks, so a page may be split across fills. Measure density only over the part of the page
-        // this fill can see: other fills may request the rows before its first key, if this is the first page it
-        // touches, and the rows after its last key, if it ends on this page. A short contiguous run therefore looks
-        // dense, and its page is cached whole, unless its cached sparse values already cover it; telling it apart needs
-        // the request's full extent.
+        // A page may be split across fills, so measure density over the part this fill can see: other fills may request
+        // the rows before its first key (on its first page) and after its last key (on its last). A short contiguous
+        // run therefore looks dense and is cached whole.
         final long spanFirstKey = isFirstPage ? pageRows.firstRowKey() : pageFirstKey;
         final long spanLastKey = fillContinues ? pageFirstKey + pageRowCount(pageNum) - 1 : pageRows.lastRowKey();
         final boolean dense = pageRows.size() > maxDensity * (spanLastKey - spanFirstKey + 1);
