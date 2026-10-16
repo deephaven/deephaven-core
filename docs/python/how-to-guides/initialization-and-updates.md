@@ -241,7 +241,7 @@ To export each snapshot to pandas, attach a [listener](./table-listeners-python.
 
 When you use [table listeners](./table-listeners-python.md), the [`TableUpdate`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate) object gives you safe, consistent access to changed data:
 
-```python ticking-table order=null
+```python ticking-table order=null reset
 from deephaven import time_table
 from deephaven.table_listener import listen
 
@@ -273,7 +273,7 @@ A listener that keeps state, such as a running total, usually needs to start fro
 
 When setting up a listener with [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen), use [`do_replay=True`](./table-listeners-python.md#replay-data) to receive the table's existing data as the first update:
 
-```python ticking-table order=null
+```python ticking-table order=null reset
 from deephaven import time_table
 from deephaven.table_listener import listen
 import datetime
@@ -306,7 +306,7 @@ handle = listen(source, listener.on_update, do_replay=True)
 
 When initialization needs whole-table logic, take a [`snapshot`](../reference/table-operations/snapshot/snapshot.md) first, then attach a listener for ongoing updates. Because the script holds the [exclusive lock](../conceptual/query-engine/engine-locking.md#exclusive-lock), no update cycle runs between the snapshot and the [`listen`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.listen) call, so the listener doesn't miss any rows:
 
-```python ticking-table order=null
+```python ticking-table order=null reset
 from deephaven import time_table
 from deephaven.table_listener import listen
 import deephaven.pandas as dhpd
@@ -416,7 +416,7 @@ handle = listen(source, bad_listener)
 
 **Do instead:** Within a listener, access only the table you are listening to and the tables you declare as [dependencies](./table-listeners-python.md#dependent-tables):
 
-```python ticking-table order=null
+```python ticking-table order=null reset
 from deephaven import time_table
 from deephaven.table_listener import listen
 

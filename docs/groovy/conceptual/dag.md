@@ -69,7 +69,7 @@ t3 = t1.naturalJoin(t2, "Label", "T2 = Timestamp")
 
 The Deephaven query engine is smart. When data flows through the DAG, it does not recompute entire tables. Each operation processes only the rows affected by a change, so a one-row change usually costs far less than a full recompute. How many rows are affected depends on the operation. For example, a change to one row on the right side of a [join](../how-to-guides/joins-exact-relational.md) updates every matching row on the left side.
 
-The engine tells each dependent table what changed by sending it an update notification. An update notification lists the rows that were added, removed, or modified, the rows that shifted to a new position, and which columns the modifications touched. A table whose inputs never change receives no update notifications, so the static portions of a query never recompute. This is one reason Deephaven is so fast and scalable.
+The engine tells each dependent table what changed by sending it an update notification. An update notification lists the rows that were added, removed, or modified, the rows whose row keys shifted, and which columns the modifications touched. A table whose inputs never change receives no update notifications, so the static portions of a query never recompute. This is one reason Deephaven is so fast and scalable.
 
 ### Update graph cycles
 
@@ -80,7 +80,7 @@ Here's how an update graph cycle works:
 1. **Collect changes**: The engine collects every change made to source tables since the previous cycle.
 2. **Propagate updates**: Changes flow through the DAG in topological order (sources first, then dependents).
 3. **Process each table once**: Each table processes all its input changes for the cycle in one operation.
-4. **Run listeners**: After each table finishes updating, its [listeners](#custom-listeners) (code that runs when a table changes) run in the same order as step 2 (sources first, then dependents).
+4. **Run listeners**: A [listener](#custom-listeners) (code that runs when a table changes) runs once its table, and any tables it declares as dependencies, have finished updating for the cycle. Listeners do not run in one fixed global order, and listeners on independent tables can run at the same time.
 5. **Show results**: The UI shows a consistent result once the cycle completes.
 
 For example, take the query from [Query as a graph](#query-as-a-graph), where `t2` holds the most recent row of `t1` for each `Label`, and `t3` uses [`naturalJoin`](../reference/table-operations/join/natural-join.md) to join `t2` onto `t1`. Suppose the previous cycle ran long, so about 5 seconds pass and `t1` receives 5 new rows in one cycle:

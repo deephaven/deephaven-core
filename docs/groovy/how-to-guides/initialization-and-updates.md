@@ -83,7 +83,7 @@ periodicSnapshot = source.snapshotWhen(trigger)
 
 For reacting to changes, use [table listeners](./table-listeners-groovy.md):
 
-```groovy ticking-table order=null
+```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 
