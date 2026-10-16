@@ -303,6 +303,8 @@ source_from_iceberg_partitioned = source_adapter_partitioned.table()
 
 You can specify custom instructions when creating an [`IcebergReadInstructions`](../../reference/iceberg/iceberg-read-instructions.md) instance. Each subsection below covers a different custom instruction that can be passed in when reading Iceberg tables.
 
+`IcebergReadInstructions` does not set the table definition or column names. To control either, pass an [`UnboundResolver`](../../reference/iceberg/unbound-resolver.md) to `load_table`, as shown in [Load an Iceberg table into Deephaven](#load-an-iceberg-table-into-deephaven). In the `column_instructions` argument of `UnboundResolver`, an `int` value maps a Deephaven column to an Iceberg schema field ID, and a `str` value maps it to a schema field name, such as `{"PickupTime": "tpep_pickup_datetime"}`.
+
 #### Refreshing Iceberg tables
 
 Deephaven also supports refreshing Iceberg tables. The [`IcebergUpdateMode`](../../reference/iceberg/iceberg-update-mode.md) class specifies three different supported update modes:
@@ -331,41 +333,6 @@ auto_refresh_instructions_60s = iceberg.IcebergReadInstructions(
 # Automatically refreshing every 30 seconds
 auto_refresh_instructions_30s = iceberg.IcebergReadInstructions(
     update_mode=auto_refresh_mode_30s
-)
-```
-
-#### Table definition
-
-You can specify the resultant table definition when building [`IcebergReadInstructions`](../../reference/iceberg/iceberg-read-instructions.md). This is useful when Deephaven cannot automatically infer the correct data types for an Iceberg table. The following code block defines a custom table definition to use when reading from Iceberg:
-
-```python order=null
-from deephaven.experimental import iceberg
-from deephaven import dtypes as dht
-
-def_instructions = iceberg.IcebergReadInstructions(
-    table_definition={
-        "ID": dht.long,
-        "Timestamp": dht.Instant,
-        "Operation": dht.string,
-        "Summary": dht.string,
-    }
-)
-```
-
-#### Column renames
-
-You can rename columns when reading from Iceberg as well:
-
-```python order=null
-from deephaven.experimental import iceberg
-
-iceberg_instructions_renames = iceberg.IcebergReadInstructions(
-    column_renames={
-        "tpep_pickup_datetime": "PickupTime",
-        "tpep_dropoff_datetime": "DropoffTime",
-        "passenger_count": "NumPassengers",
-        "trip_distance": "Distance",
-    },
 )
 ```
 

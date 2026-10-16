@@ -89,7 +89,7 @@ A `TableDataServiceBackend` is the interface that must be implemented to provide
 - `table_locations`: Fetch the locations of a table.
 - `table_location_size`: Fetch the size of a table location.
 - `column_values`: Fetch column values.
-- `susbcribe_to_table_locations`: Subscribe to existing and future table locations.
+- `subscribe_to_table_locations`: Subscribe to existing and future table locations.
 - `subscribe_to_table_location_size`: Subscribe to existing and future table location sizes.
 
 The following code blocks contain example implementations of a `TableDataServiceBackend`, named `TestBackend`, and `TestTable`, a custom table implementation used by the backend. The backend implements all six required methods, along with some additional methods to add tables and locations to the backend.
@@ -233,8 +233,8 @@ class TestBackend(TableDataServiceBackend):
             failure_cb(f"{table_key} does not exist")
             return
 
-        for key, location in self.tables[table_key].locations:
-            location_cb([key, location.partitioning_values])
+        for key, location in self.tables[table_key].locations.items():
+            location_cb(key, location.partitioning_values)
         success_cb()
 
     def table_location_size(
@@ -551,8 +551,8 @@ class TestBackend(TableDataServiceBackend):
             failure_cb(f"{table_key} does not exist")
             return
 
-        for key, location in self.tables[table_key].locations:
-            location_cb([key, location.partitioning_values])
+        for key, location in self.tables[table_key].locations.items():
+            location_cb(key, location.partitioning_values)
         success_cb()
 
     def table_location_size(

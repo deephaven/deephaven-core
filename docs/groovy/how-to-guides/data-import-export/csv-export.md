@@ -76,7 +76,24 @@ import static io.deephaven.csv.CsvTools.writeCsv
 writeCsv(sourceWithNulls, "/data/TrigFunctionsWithNulls.csv")
 ```
 
-![The newly written CSV file](../../assets/how-to/TrigFunctions_basicWithNulls.png)
+By default, `writeCsv` writes null values as empty fields. The first lines of `TrigFunctionsWithNulls.csv` are:
+
+```text
+X,SinX,CosX,TanX
+0.0,,1.0,0.0
+0.1,0.09983341664682815,0.9950041652780258,0.10033467208545055
+0.2,,0.9800665778412416,0.2027100355086725
+0.30000000000000004,0.2955202066613396,0.955336489125606,0.3093362496096233
+0.4,,0.9210609940028851,0.4227932187381618
+```
+
+To write nulls as `(null)` instead, pass `false` for the `nullsAsEmpty` argument:
+
+```groovy test-set=2
+import static io.deephaven.csv.CsvTools.writeCsv
+
+writeCsv(sourceWithNulls, "/data/TrigFunctionsWithNullStrings.csv", false)
+```
 
 ### Column selection
 

@@ -44,10 +44,12 @@ With the necessary package(s) installed, a SQL query can create a table via any 
 from deephaven.dbc import read_sql
 import os
 
-my_query = "SELECT t_ts as Timestamp, CAST(t_id AS text) as Id, " +
-    "CAST(t_instrument as text) as Instrument, " +
-    "t_exchange as Exchange, t_price as Price, t_size as Size " +
-    "FROM CRYPTO TRADES"
+my_query = (
+    "SELECT t_ts as Timestamp, CAST(t_id AS text) as Id, "
+    "CAST(t_instrument as text) as Instrument, "
+    "t_exchange as Exchange, t_price as Price, t_size as Size "
+    "FROM crypto_trades"
+)
 
 username = os.environ["POSTGRES_USERNAME"]
 password = os.environ["POSTGRES_PASSWORD"]
@@ -61,6 +63,8 @@ crypto_trades = read_sql(conn=sql_uri, query=my_query, driver="connectorx")
 
 ### odbc.read_cursor
 
+This example requires the PostgreSQL ODBC driver to be installed and registered with the ODBC driver manager. The `Driver` value in the connection string must match the registered driver name (`PostgreSQL Unicode` in this example). `turbodbc.connect` takes an ODBC connection string rather than a PostgreSQL URI.
+
 ```python skip-test
 from deephaven.dbc import odbc as dhodbc
 import turbodbc, os
@@ -70,14 +74,16 @@ password = os.environ["POSTGRES_PASSWORD"]
 url = os.environ["POSTGRES_URL"]
 port = os.environ["POSTGRES_PORT"]
 
-sql_query = "SELECT t_ts as Timestamp, CAST(t_id AS text) as Id, " +
-    "CAST(t_instrument as text) as Instrument, " +
-    "t_exchange as Exchange, t_price as Price, t_size as Size " +
-    "FROM CRYPTO TRADES"
+sql_query = (
+    "SELECT t_ts as Timestamp, CAST(t_id AS text) as Id, "
+    "CAST(t_instrument as text) as Instrument, "
+    "t_exchange as Exchange, t_price as Price, t_size as Size "
+    "FROM crypto_trades"
+)
 
-uri = f"postgresql://{url}:{port}/postgres?user={username}&password={password}"
+connection_string = f"Driver={{PostgreSQL Unicode}};Server={url};Port={port};Database=postgres;Uid={username};Pwd={password};"
 
-with turbodbc.connect(connection_string=uri) as conn:
+with turbodbc.connect(connection_string=connection_string) as conn:
     with conn.cursor() as cursor:
         cursor.execute(sql_query)
         crypto_trades = dhodbc.read_cursor(cursor)
@@ -95,10 +101,12 @@ password = os.environ["POSTGRES_PASSWORD"]
 url = os.environ["POSTGRES_URL"]
 port = os.environ["POSTGRES_PORT"]
 
-sql_query = "SELECT t_ts as Timestamp, CAST(t_id AS text) as Id, " +
-    "CAST(t_instrument as text) as Instrument, " +
-    "t_exchange as Exchange, t_price as Price, t_size as Size " +
-    "FROM CRYPTO TRADES"
+sql_query = (
+    "SELECT t_ts as Timestamp, CAST(t_id AS text) as Id, "
+    "CAST(t_instrument as text) as Instrument, "
+    "t_exchange as Exchange, t_price as Price, t_size as Size "
+    "FROM crypto_trades"
+)
 
 uri = f"postgresql://{url}:{port}/postgres?user={username}&password={password}"
 

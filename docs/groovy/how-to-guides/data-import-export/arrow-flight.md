@@ -9,8 +9,6 @@ title: Arrow Flight and Deephaven
 - Maps have very limited support as Deephaven Column Sources cannot keep track of key or value types.
 - No support for large types such as LargeUtf8, LargeBinary, LargeList, and LargeListView (requires simulating 64-bit arrays).
 - No support for structs.
-- No support for run-end encoding.
-- No support for dictionary encoding.
 - No support for Utf8View or BinaryView.
 
 ## Arrow Type Support Matrix
@@ -42,6 +40,8 @@ Deephaven supports a wide range of Arrow types. The following table summarizes t
 | `Null`                                | `Object`                                                                        | —                                                                              | Best when coupled with a Union or when [specifying the Deephaven type to use](#set-the-flight-schema).                                                                                       |
 | `Map`                                 | `LinkedHashMap`                                                                 | —                                                                              | Map types require that the [Arrow schema to be specified](#set-the-flight-schema). Cells are accumulated into `LinkedHashMap`s; it's not possible to pick another collector at this time.    |
 | `List` / `ListView` / `FixedSizeList` | `T[]` - a native Java array of the inner field                                  | Supports conversion to Deephaven internal `Vector` types such as `LongVector`. | Note that the `deephaven:componentType` metadata key must be set to the inner type. Fixed-size list wire formats will be truncated and/or null-padded to match the data as best as possible. |
+| `RunEndEncoded`                       | Default type of the values child                                                | —                                                                              | The column type comes from the values child; the `run_ends` child is only an index.                                                                                                          |
+| Dictionary-encoded fields             | Default type of the dictionary value type                                       | —                                                                              | Applies to any field that carries a `DictionaryEncoding`.                                                                                                                                    |
 
 ### Integral Coercion
 
@@ -81,15 +81,18 @@ See [uploading a table](#upload-a-table) for an example of setting the schema me
 
 ### Round-Tripping
 
-Any table uploaded to Deephaven via a DoPut places the Flight Schema in a table attribute key of `BarrageSchema` (aka `io.deephaven.engine.Table.BARRAGE_SCHEMA_ATTRIBUTE`). This is convenient as it allows you to upload a table and then download the table using exactly the same wire format.
+Any table uploaded to Deephaven via a DoPut places the Flight Schema in a table attribute key of `BarrageSchema` (aka `io.deephaven.engine.table.Table.BARRAGE_SCHEMA_ATTRIBUTE`). This is convenient as it allows you to upload a table and then download the table using exactly the same wire format.
 
-However, any table operations performed on the uploaded table will drop the schema metadata, even for column types that are completely preserved. Be sure to attach the modified schema if you want to preserve the original wire types.
+Most table operations drop this attribute, even for column types that are completely preserved. Filters (such as [`where`](../../reference/table-operations/filter/where.md)), [`sort`](../../reference/table-operations/sort/sort.md), [`reverse`](../../reference/table-operations/sort/reverse.md), [`flatten`](../../reference/table-operations/create/flatten.md), [`firstBy`](../../reference/table-operations/group-and-aggregate/firstBy.md), and [`lastBy`](../../reference/table-operations/group-and-aggregate/lastBy.md) keep it, and so do the constituent tables of a [`partitionBy`](../../reference/table-operations/group-and-aggregate/partitionBy.md). Re-attach the schema after any other operation if you want to preserve the original wire types.
 
 ### Exporting
 
-You can specify the wire-type schema to use when exporting a table to a Flight client. Simply place the Schema POJO in the table's attributes with the key `BarrageSchema` (aka `io.deephaven.engine.Table.BARRAGE_SCHEMA_ATTRIBUTE`). This will override the default schema that would be generated from the table's column types.
+You can specify the wire-type schema to use when exporting a table to a Flight client. Simply place the Schema POJO in the table's attributes with the key `BarrageSchema` (aka `io.deephaven.engine.table.Table.BARRAGE_SCHEMA_ATTRIBUTE`). This will override the default schema that would be generated from the table's column types.
 
 Consider using [`BarrageUtil#schemaFromTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/util/BarrageUtil.html#schemaFromTable(io.deephaven.engine.table.Table)) to generate the default schema and then modify it as needed.
+
+> [!NOTE]
+> Deephaven has no default writer from a `long` column to an Arrow `Duration` field. Exporting the table in the following example requires the custom `long`-to-`Duration` writer registered in [Custom mappings](#custom-mappings).
 
 Here is an example that fetches the default schema and then changes the wire type from `Int(64, signed)` to `Duration(ms)` for the column (for export):
 
@@ -217,6 +220,7 @@ import org.apache.arrow.flight.FlightClient
 import org.apache.arrow.flight.HeaderCallOption
 import org.apache.arrow.flight.Location
 import org.apache.arrow.flight.client.ClientCookieMiddleware
+import org.apache.arrow.memory.RootAllocator
 
 allocator = new RootAllocator()
 client = FlightClient.builder()
@@ -224,14 +228,13 @@ client = FlightClient.builder()
         .location(Location.forGrpcInsecure("localhost", 10000))
         .intercept(new ClientCookieMiddleware.Factory())
         .build();
-{
-    CallHeaders headers = new FlightCallHeaders()
-    headers.insert("Authorization", "Anonymous")
-    // pre-shared key authentication would look like this:
-    // headers.insert("Authorization", "io.deephaven.authentication.psk.PskAuthenticationHandler $PRE_SHARED_KEY_VALUE$")
-    headers.insert("x-deephaven-auth-cookie-request", "true")
-    client.handshake(new HeaderCallOption(headers))
-}
+
+CallHeaders headers = new FlightCallHeaders()
+headers.insert("Authorization", "Anonymous")
+// pre-shared key authentication would look like this:
+// headers.insert("Authorization", "io.deephaven.authentication.psk.PskAuthenticationHandler $PRE_SHARED_KEY_VALUE$")
+headers.insert("x-deephaven-auth-cookie-request", "true")
+client.handshake(new HeaderCallOption(headers))
 ```
 
 > [!WARNING]
@@ -326,11 +329,12 @@ We can see that the uploaded column data is represented in nanoseconds, as expec
 
 ### Download the table
 
-Normally, you would need to set the `BaseTable.BARRAGE_SCHEMA` table attribute to configure the custom schema for the download. However, Deephaven associates the uploaded schema with a table and uses it for the download as long as we're downloading an unmodified instance of the table. Being able to round-trip from a client without setting the custom export schema is a quality-of-life feature of Deephaven.
+Normally, you would need to set the `Table.BARRAGE_SCHEMA_ATTRIBUTE` table attribute to configure the custom schema for the download. However, Deephaven associates the uploaded schema with a table and uses it for the download as long as we're downloading the uploaded table, or a table derived from it by an operation that keeps the attribute (see [Round-tripping](#round-tripping)). Being able to round-trip from a client without setting the custom export schema is a quality-of-life feature of Deephaven.
 
 ```groovy skip-test
 import org.apache.arrow.flight.FlightStream
 import org.apache.arrow.flight.Ticket
+import java.nio.charset.StandardCharsets
 
 Ticket ticket = new Ticket("s/uploaded_table".getBytes(StandardCharsets.UTF_8));
 try (final FlightStream stream = client.getStream(ticket)) {
