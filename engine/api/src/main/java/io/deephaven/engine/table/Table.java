@@ -239,7 +239,7 @@ public interface Table extends
      * <p>
      * Prefer setting it with {@code io.deephaven.extensions.barrage.BarrageCompressionAttribute.withCompression}, which
      * takes {@code io.deephaven.grpc.compression.CompressionType} values. The server ignores a value it cannot parse,
-     * using its default list instead, and logs a warning when a client fetches the table.
+     * using its default list instead, and logs a warning the first time a client fetches a table with that value.
      * <p>
      * Operations whose result holds only this table's values keep the attribute: filtering, sorting, reversing,
      * flattening, dropping or renaming columns, {@code partitionBy} constituents, {@code firstBy}, {@code lastBy},

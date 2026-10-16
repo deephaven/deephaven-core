@@ -71,7 +71,7 @@ public class BarrageCompressionTest {
         final Table malformed =
                 TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,lz4"));
         assertEquals(Optional.empty(), apply(Set.of("gzip", "zstd"), malformed));
-        // parsed, and so logged, even for a client that accepts nothing
+        // parsed even for a client that accepts nothing; not logged again, since the first fetch logged this value
         assertEquals(Optional.empty(), apply(Set.of(), malformed));
         assertEquals(Optional.empty(), apply(Set.of("gzip", "zstd"), null));
     }

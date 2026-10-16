@@ -18,6 +18,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Chooses the compression type for a Barrage response from the table's {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE
@@ -26,6 +27,12 @@ import java.util.Set;
  */
 public final class BarrageCompression {
     private static final Logger log = LoggerFactory.getLogger(BarrageCompression.class);
+
+    /**
+     * The malformed lists already logged, so that a bad value is logged once rather than on every fetch of every table
+     * that carries it. Declared before {@link #DEFAULT_ALLOWED}, whose initializer may add to it.
+     */
+    private static final Set<String> ALREADY_LOGGED_LIST = ConcurrentHashMap.newKeySet();
 
     /**
      * The compression types the server allows for a {@link Table} or {@link HierarchicalTable} that does not set
@@ -108,8 +115,8 @@ public final class BarrageCompression {
     }
 
     /**
-     * @return {@code list} parsed with {@link CompressionCodecs#parseList(String)}, or {@code fallback}, after logging
-     *         a warning that names {@code description}, if it cannot be parsed
+     * @return {@code list} parsed with {@link CompressionCodecs#parseList(String)}, or {@code fallback} if it cannot be
+     *         parsed; the first time a given {@code list} fails, logs a warning that names {@code description}
      */
     private static List<String> parseOrWarn(
             @NotNull final String list,
@@ -118,7 +125,10 @@ public final class BarrageCompression {
         try {
             return CompressionCodecs.parseList(list);
         } catch (final IllegalArgumentException e) {
-            log.warn().append("Ignoring ").append(description).append(": ").append(e.getMessage()).endl();
+            if (ALREADY_LOGGED_LIST.add(list)) {
+                log.warn().append("Ignoring ").append(description).append(": ").append(e.getMessage())
+                        .append("; this value will not be logged again").endl();
+            }
             return fallback;
         }
     }
