@@ -60,7 +60,11 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             .getIntegerForClassWithDefault(ParquetColumnLocation.class, "maxPageCacheSize", 8192);
 
     private final String columnName;
-    private final String parquetColumnName;
+    /**
+     * The name of the top-level parquet column this column reads, from the path the location's column resolver finds;
+     * set when the readers are.
+     */
+    private String parquetColumnName;
 
     private volatile boolean readersInitialized;
     private final Object readersLock;
@@ -95,15 +99,13 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
      * Construct a new {@link ParquetColumnLocation} for the specified {@link ParquetTableLocation} and column name.
      *
      * @param tableLocation The table location enclosing this column location
-     * @param parquetColumnName The Parquet file column name
+     * @param columnName The Deephaven column name
      */
     ParquetColumnLocation(
             @NotNull final ParquetTableLocation tableLocation,
-            @NotNull final String columnName,
-            @NotNull final String parquetColumnName) {
+            @NotNull final String columnName) {
         super(tableLocation, columnName);
         this.columnName = columnName;
-        this.parquetColumnName = parquetColumnName;
         this.readersInitialized = false;
         this.readersLock = new Object();
         this.pagesInitialized = false;
@@ -118,7 +120,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             if (readersInitialized) {
                 return;
             }
-            final List<String> columnPath = tl().getColumnPath(columnName, parquetColumnName);
+            final List<String> columnPath = tl().getColumnPath(columnName);
             if (columnPath.isEmpty()) {
                 // Short circuit when we know the column won't be found, saves us from needing to prematurely initialize
                 // row group readers.
@@ -127,6 +129,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 readersInitialized = true;
                 return;
             }
+            // The footer's type information, such as a codec, is recorded under this name
+            parquetColumnName = columnPath.get(0);
             final ColumnChunkReader[] columnChunkReaders = Arrays.stream(tl().getRowGroupReaders())
                     .map(rgr -> rgr.getColumnChunk(columnName, columnPath))
                     .toArray(ColumnChunkReader[]::new);

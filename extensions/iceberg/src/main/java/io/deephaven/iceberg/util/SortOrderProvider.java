@@ -9,7 +9,8 @@ import org.apache.iceberg.SortOrder;
  * A specification for providing {@link org.apache.iceberg.SortOrder} while writing to an iceberg table.
  * <p>
  * Deephaven sorts new data by the provided sort order, but the data files it writes declare no sort order: it sorts
- * with its own comparisons, which differ from the Iceberg specification's for strings and floating point values.
+ * with its own comparisons, which differ from the Iceberg specification's for strings and floating point values, and
+ * records the leading sort column in its own metadata in each data file instead.
  */
 public interface SortOrderProvider {
 

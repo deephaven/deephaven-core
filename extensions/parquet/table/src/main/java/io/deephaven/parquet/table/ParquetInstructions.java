@@ -938,6 +938,13 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             writeRowGroupStatistics = readOnlyParquetInstructions.writeRowGroupStatistics();
         }
 
+        /**
+         * Maps a parquet column name to the Deephaven column name it is read and written under. When reading with a
+         * {@link #setColumnResolverFactory(ParquetColumnResolver.Factory) column resolver}, the mapping is ignored.
+         *
+         * @param parquetColumnName the parquet column name
+         * @param columnName the Deephaven column name
+         */
         public Builder addColumnNameMapping(final String parquetColumnName, final String columnName) {
             final ColumnInstructions ci = getOrCreateColumnInstructions(columnName);
             ci.setParquetColumnName(parquetColumnName);
@@ -1209,6 +1216,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * resolution logic based on the table key and table location key. When set,
          * {@link #setTableDefinition(TableDefinition)} must also be set. As such, the factory is <i>not</i> used for
          * inference purposes.
+         *
+         * <p>
+         * A column resolver is the alternative to {@link #addColumnNameMapping(String, String) column name mappings}:
+         * when one is set, reads find every column, and all of a file's metadata, through the resolver, and any column
+         * name mappings are ignored. Per-column instructions keyed by Deephaven column name, such as codecs, still
+         * apply.
          *
          * <p>
          * This is not typically set by end-users.

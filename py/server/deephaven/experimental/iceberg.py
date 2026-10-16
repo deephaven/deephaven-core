@@ -322,7 +322,8 @@ class SortOrderProvider(JObjectWrapper):
     order. This class consists of factory methods to create different sort order providers.
 
     Deephaven sorts new data by the provided sort order, but the data files it writes declare no sort order: it sorts
-    with its own comparisons, which differ from the Iceberg specification's for strings and floating point values.
+    with its own comparisons, which differ from the Iceberg specification's for strings and floating point values, and
+    records the leading sort column in its own metadata in each data file instead.
     """
 
     j_object_type = _JSortOrderProvider

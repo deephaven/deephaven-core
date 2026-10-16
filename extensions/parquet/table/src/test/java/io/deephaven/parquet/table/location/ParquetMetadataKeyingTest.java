@@ -19,6 +19,7 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTableWriter;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.metadata.RowGroupInfo;
+import io.deephaven.util.codec.BigDecimalCodec;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
 import io.deephaven.util.codec.UTF8StringAsByteArrayCodec;
 import io.deephaven.vector.IntVector;
@@ -28,6 +29,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
@@ -282,6 +284,21 @@ public class ParquetMetadataKeyingTest {
     }
 
     /**
+     * Parquet {@code Y} (unsorted) is read as Deephaven {@code X}, which hides parquet {@code X} (sorted): no column
+     * reads it. The file's sortedness describes parquet {@code X}, so no column is sorted.
+     */
+    @Test
+    public void sortednessOfHiddenColumn() {
+        final Table fromDisk = ParquetTools.readTable(writeSortedTable(ParquetInstructions.EMPTY),
+                ParquetInstructions.builder()
+                        .addColumnNameMapping("Y", "X")
+                        .setTableDefinition(TableDefinition.of(ColumnDefinition.ofInt("X")))
+                        .build());
+        assertEquals(Optional.empty(), sortOrder(fromDisk, "X"));
+        assertFilterMatchesOracle(fromDisk, "X >= 500");
+    }
+
+    /**
      * The sorted column {@code X} is not written, and the column that is, {@code Y}, has the parquet name {@code X}
      * would have had; the file must not claim {@code Y} is sorted.
      */
@@ -439,6 +456,20 @@ public class ParquetMetadataKeyingTest {
         final Table legalized = ParquetTools.readTable(dest);
         assertTrue(DataIndexer.hasDataIndex(legalized, "b_col"));
         assertFilterMatchesOracle(legalized, "b_col = `b1`");
+    }
+
+    /**
+     * Parquet {@code C} is read as Deephaven {@code B}, which hides parquet {@code B}, the indexed column: no column
+     * reads it, so no column has its index.
+     */
+    @Test
+    public void dataIndexOfHiddenColumn() {
+        final Table fromDisk = ParquetTools.readTable(writeIndexedTable(), ParquetInstructions.builder()
+                .addColumnNameMapping("C", "B")
+                .setTableDefinition(TableDefinition.of(ColumnDefinition.ofString("B")))
+                .build());
+        assertFalse(DataIndexer.hasDataIndex(fromDisk, "B"));
+        assertFilterMatchesOracle(fromDisk, "B = `c1`");
     }
 
     /**
@@ -608,8 +639,8 @@ public class ParquetMetadataKeyingTest {
     }
 
     /**
-     * A name mapping alongside a resolver does not change what a Deephaven column reads, since resolution wins, but the
-     * index table, read without the resolver, still applies it: here it already names the key column {@code Sym}.
+     * A column resolver is the alternative to name mappings, and with one, the mappings are ignored: here one would
+     * read parquet {@code B} as {@code Sym}, but the resolver already does, for the index table as for the data.
      */
     @Test
     public void dataIndexWithColumnResolverAndNameMapping() {
@@ -720,6 +751,35 @@ public class ParquetMetadataKeyingTest {
         final Table indexTable = location.loadDataIndex("Sym").table().select();
         assertEquals(10, indexTable.size());
         assertTrue(indexTable.getColumnSource("Sym").get(indexTable.getRowSet().firstRowKey()) instanceof byte[]);
+    }
+
+    /**
+     * Each column is decoded with the codec the footer records for the parquet column it reads, found under that
+     * column's parquet name rather than its Deephaven name. Two columns written with codecs of different scales are
+     * read through a resolver under other names, then swapped.
+     */
+    @Test
+    public void codecColumnsWithColumnResolver() {
+        final String dest = path("codecs.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(10).update(
+                        "P = java.math.BigDecimal.valueOf(ii, 1)", "Q = java.math.BigDecimal.valueOf(ii * 7, 4)"),
+                dest,
+                ParquetInstructions.builder()
+                        .addColumnCodec("P", BigDecimalCodec.class.getName(), "20,1")
+                        .addColumnCodec("Q", BigDecimalCodec.class.getName(), "20,4")
+                        .build());
+        // Read without a resolver, each column is decoded with its own codec
+        final Table plain = ParquetTools.readTable(dest).select();
+        final ColumnDefinition<BigDecimal> d1 = ColumnDefinition.fromGenericType("D1", BigDecimal.class);
+        final ColumnDefinition<BigDecimal> d2 = ColumnDefinition.fromGenericType("D2", BigDecimal.class);
+        assertTableEquals(plain.renameColumns("D1 = P", "D2 = Q"),
+                ParquetTools.readTable(dest, resolving(TableDefinition.of(d1, d2), "D1", "P", "D2", "Q")));
+
+        final ColumnDefinition<BigDecimal> p = ColumnDefinition.fromGenericType("P", BigDecimal.class);
+        final ColumnDefinition<BigDecimal> q = ColumnDefinition.fromGenericType("Q", BigDecimal.class);
+        assertTableEquals(plain.renameColumns("P = Q", "Q = P").view("P", "Q"),
+                ParquetTools.readTable(dest, resolving(TableDefinition.of(p, q), "P", "Q", "Q", "P")));
     }
 
     /** A key column named like the index table's row set column can't be told apart from it, so it has no index. */
