@@ -14,7 +14,6 @@ import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.base.Js;
-import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -125,6 +124,38 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                         return waitForEvent(totals, JsTable.EVENT_UPDATED,
                                                 checkTotals(totals, 5, 6.0, 0., "a2"), 2509);
                                     })
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * Requests the totals in the same turn as a source filter, before the filtered state is running. The totals must
+     * end up reflecting the filter, even though the filter's state change fired before the totals could listen for it.
+     */
+    public void testTotalsRequestedWhileFilterPending() {
+        long[] lastCount = {-1};
+        connect(tables)
+                .then(table("hasTotals"))
+                .then(table -> {
+                    delayTestFinish(8000);
+                    table.applyFilter(new FilterCondition[] {
+                            table.findColumn("K").filter().eq(FilterValue.ofNumber(0.0))
+                    });
+                    return table.getTotalsTable(null).then(totals -> {
+                        totals.<TableData>addEventListener(JsTable.EVENT_UPDATED, e -> {
+                            TableData data = e.getDetail();
+                            if (data.getRows().length == 1) {
+                                lastCount[0] = data.getRows().getAt(0).get(totals.findColumn("I"))
+                                        .<LongWrapper>cast().getWrapped();
+                            }
+                        });
+                        totals.setViewport(0, 100, null, null, null);
+                        // K == 0 keeps rows 0, 2 and 4; an interim update with all five rows is acceptable
+                        return this.<ViewportData>waitForEventWhere(totals, JsTable.EVENT_UPDATED,
+                                singleRowWith(totals, "I", 3), 3001)
+                                .then(ok -> Promise.resolve(table), err -> Promise.reject(
+                                        "totals never reflected the pending filter; last count seen " + lastCount[0]));
                     });
                 })
                 .then(this::finish).catch_(this::report);
@@ -315,8 +346,8 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     return this.<ViewportData>waitForEventWhere(holder[0], JsTable.EVENT_UPDATED,
                             sumsOf(holder[0], 10, 20), 2003).then(ignored -> Promise.resolve(table));
                 })
-                // let the superseded rebase fail
-                .then(waitFor(1500))
+                // the superseded rebase holds its state until it fails; wait for that rather than guess at the time
+                .then(table -> waitForNoRetainedState(holder[0], 4000).then(ignored -> Promise.resolve(table)))
                 .then(table -> {
                     assertTrue("superseded failure reported: " + failures, failures.isEmpty());
                     assertTrue("superseded failure logged: " + describeErrorLogs(), errorLogsSeen.isEmpty());
@@ -359,7 +390,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                         sumsOf(totals, 10, 20), 4001).then(ignored -> Promise.resolve(table));
                             });
                 })
-                .then(waitFor(500))
+                .then(table -> waitForNoRetainedState(holder[0], 4000).then(ignored -> Promise.resolve(table)))
                 .then(table -> {
                     assertTrue("superseded failure reported: " + failures, failures.isEmpty());
                     assertTrue("superseded failure logged: " + describeErrorLogs(), errorLogsSeen.isEmpty());
@@ -454,14 +485,10 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     table.close();
                     return Promise.resolve(table);
                 })
-                .then(waitFor(2500))
+                // the rebased state was only ever owned by the totals table's retainer; a rebase that was dropped
+                // cleanly has let go of it
+                .then(table -> waitForNoRetainedState(holder[0], 4000).then(ignored -> Promise.resolve(table)))
                 .then(table -> {
-                    // the rebased state was only ever owned by the totals table's retainer; a rebase that was dropped
-                    // cleanly has let go of it
-                    for (ClientTableState state : holder[0].getConnection().getCache().getAllStates()) {
-                        assertFalse("rebased state still retained by the totals table: " + state,
-                                state.hasRetainer(holder[0]));
-                    }
                     assertFalse(holder[0].isClosed());
                     assertEquals(1, holder[0].getSize(), DELTA);
                     holder[0].close();
@@ -697,6 +724,44 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     /**
+     * Requests totals of a table that is already closed. The request must be rejected without creating anything: no
+     * client state, no export.
+     */
+    public void testTotalsOfClosedTableRejects() {
+        int[] statesBefore = {0};
+        connect(tables)
+                .then(table("hasTotals"))
+                .then(table -> {
+                    delayTestFinish(6000);
+                    table.close();
+                    return Promise.resolve(table);
+                })
+                // let the closed table's own states be released before counting
+                .then(waitFor(100))
+                .then(table -> {
+                    statesBefore[0] = countStates(table);
+                    return table.getTotalsTable(sumOf("I")).then(
+                            totals -> Promise.reject("expected the totals request to fail, got " + totals),
+                            error -> {
+                                assertTrue("unexpected reason: " + error, String.valueOf(error).contains("closed"));
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(table -> table.getTotalsTable(null).then(
+                        totals -> Promise.reject("expected the totals request to fail, got " + totals),
+                        error -> {
+                            assertTrue("unexpected reason: " + error, String.valueOf(error).contains("closed"));
+                            return Promise.resolve(table);
+                        }))
+                .then(waitFor(100))
+                .then(table -> {
+                    assertEquals("a rejected request must leave no state behind", statesBefore[0], countStates(table));
+                    return Promise.resolve(table);
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
      * Changes the source table and closes it before the totals table's deferred rebase can run. The totals table must
      * stay usable on its last good state, and nothing may throw.
      */
@@ -890,8 +955,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     // Now refilter the original table. The totals table is rebased with its own filter re-applied,
                     // which now removes nothing; the grand totals ignore the source filter and keep theirs.
                     totalTables[0].addEventListener(JsTable.EVENT_REQUEST_FAILED, e -> report(
-                            "Totals table request failed: "
-                                    + Js.<JsPropertyMap<Object>>uncheckedCast(e.getDetail()).get("errorMessage")));
+                            "Totals table request failed: " + e.getDetail()));
                     table.applyFilter(new FilterCondition[] {
                             table.findColumn("J").filter().notEq(FilterValue.ofNumber(9.0))
                     });
@@ -1153,6 +1217,32 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
             return viewportData.getRows().getAt(0).get(totals.findColumn(column)).<LongWrapper>cast()
                     .getWrapped() == value;
         };
+    }
+
+    private int countStates(JsTable table) {
+        int count = 0;
+        for (ClientTableState ignored : table.getConnection().getCache().getAllStates()) {
+            count++;
+        }
+        return count;
+    }
+
+    /** The cached states the totals table retains: a rebase in flight holds its state this way until it settles. */
+    private List<ClientTableState> statesRetainedBy(JsTotalsTable totals) {
+        List<ClientTableState> retained = new ArrayList<>();
+        for (ClientTableState state : totals.getConnection().getCache().getAllStates()) {
+            if (state.hasRetainer(totals)) {
+                retained.add(state);
+            }
+        }
+        return retained;
+    }
+
+    /** Resolves once no rebase is in flight for the totals table; rejects naming the states still held. */
+    private IThenable<JsTotalsTable> waitForNoRetainedState(JsTotalsTable totals, int timeout) {
+        return this.<JsTotalsTable>waitFor(() -> statesRetainedBy(totals).isEmpty(), 50, timeout, totals)
+                .then(ok -> Promise.resolve(ok), err -> Promise.reject(
+                        "rebased state still retained by the totals table: " + statesRetainedBy(totals)));
     }
 
     /** Resolves once the source's custom columns have changed; rejects with the reason if the change is refused. */

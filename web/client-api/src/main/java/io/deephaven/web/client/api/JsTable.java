@@ -1095,6 +1095,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     private Promise<JsTotalsTable> fetchTotals(Object config, JsProvider<ClientTableState> state) {
+        if (isClosed()) {
+            // nothing to total, and nothing to build before finding that out
+            return Promise.reject("Table already closed, cannot be used again");
+        }
         JsTotalsTableConfig directive = getTotalsDirectiveFromOptionalConfig(config);
         ClientTableState[] lastGood = {null};
 
@@ -1175,13 +1179,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         final JsTable wrapped = new JsTable(workerConnection, totals);
         final JsTotalsTable totalsTable = new JsTotalsTable(wrapped, directive.serialize(), directive.groupBy);
 
-        final RemoverFn remover = addEventListener(INTERNAL_EVENT_STATECHANGED, e -> {
-            // The state change fires before the server has produced the new state, and the
-            // totals factory reads lastVisibleState(), which would still resolve to the old
-            // state's rollback. Wait until the new state is running before rebasing. A state
-            // that is no longer current by then is skipped, as is a source the totals are
-            // already built from, so a burst of state changes rebases at most once.
-            final ClientTableState source = state();
+        // The state change fires before the server has produced the new state, and the
+        // totals factory reads lastVisibleState(), which would still resolve to the old
+        // state's rollback. Wait until the new state is running before rebasing. A state
+        // that is no longer current by then is skipped, as is a source the totals are
+        // already built from, so a burst of state changes rebases at most once.
+        final JsConsumer<ClientTableState> rebaseWhenRunning = source -> {
             source.onRunning(running -> {
                 if (wrapped.isClosed() || isClosed() || source != state()) {
                     return;
@@ -1244,7 +1247,13 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     return null;
                 });
             }, JsRunnable.doNothing());
-        });
+        };
+        final RemoverFn remover = addEventListener(INTERNAL_EVENT_STATECHANGED, e -> rebaseWhenRunning.apply(state()));
+        if (!state().isRunning()) {
+            // A change already in flight fired its state change before this listener existed. The first fetch builds
+            // from the running state behind it; rebase onto the pending one once it runs, as any later change would.
+            rebaseWhenRunning.apply(state());
+        }
         wrapped.onClosed.add(remover::remove);
         wrapped.onClosed.add(() -> lastGood[0].unretain(directive));
         onClosed.add(remover::remove);
