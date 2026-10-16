@@ -2,359 +2,132 @@
 title: Extract data with a Java client
 ---
 
-This guide will show you how to connect to a Deephaven instance with a Java client, and use it to extract data and tables.
-
-While Deephaven Community Core provides a rich set of features directly through its Web IDE, it also excels at delivering the value of that analysis to other external systems.
-
-We can easily imagine Deephaven providing market analysis data to an external trading engine, or analysed sensor data to a powerplant control system.
-
-We will show you how to construct a simple system that: monitors weather data (sourced from [NOAA](https://www.weather.gov/documentation/services-web-api)), performs some analysis, provides the results to a Java application that controls what cities are monitored, and displays results, all with live ticking data.
-
-![Multiple weather data tables displayed in the Deephaven IDE](../assets/tutorials/java-client/overview_dh.png)
+This guide shows you how to connect to a Deephaven server with a Java client, subscribe to a ticking table (a table whose rows update as new data arrives), and run code on the server from the client. The example simulates weather readings for a set of cities on the server and displays the latest reading for each city in a Java application.
 
 ## Prerequisites
 
-- Clone the [Deephaven Community repository](https://github.com/deephaven/deephaven-core).
-- [Build and run Deephaven](../getting-started/docker-install.md).
-- Create a valid [Google Geolocation API key](https://developers.google.com/maps/documentation/geolocation/overview).
+- [Run Deephaven](../getting-started/docker-install.md).
+- Set up a Java project that depends on `io.deephaven:deephaven-java-client-barrage-dagger`, which includes the [Barrage](../conceptual/what-is-barrage.md), [Arrow Flight](https://arrow.apache.org/docs/format/Flight.html), and session client libraries used below.
+- Run the client JVM with `--add-opens=java.base/java.nio=ALL-UNNAMED`, which Arrow needs on Java 16 and later. With Deephaven 43.0 and later on Java 25 and later, also pass `-Dio.netty.noUnsafe=false`. See [JVM configuration](/core/groovy/docs/how-to-guides/java-client-input-tables/#jvm-configuration).
+- Optionally, clone the [Deephaven Community repository](https://github.com/deephaven/deephaven-core) to run the complete client examples described in [The Java client](#the-java-client).
 
 ## The application
 
-The application is broken up into three major parts:
+The application has two parts:
 
-- The first part creates the Deephaven table where weather data will be recorded, and then creates several derived tables that will analyze the data to produce some simple statistics. Each of these tables will be visited in more detail in the following sections.
-- The second part is a handful of simple Python methods that will extract position and weather data from the Google Geolocation API and NOAA's weather data API and record it. It also provides a method for the external java application to add more cities to be monitored.
-- The final part is a very simple Java application that connects to the Deephaven worker and pulls the ticking results to be displayed. It also provides some simple functionality to add more cities to be monitored, demonstrating that complex Client/Server applications can be built directly with Deephaven.
+- **The Python weather server**: a Deephaven script that creates a ticking table of simulated weather readings for a set of cities and derives a table that holds the latest reading for each city. The script also defines a Python function that lets the Java client add more cities to watch.
+- **The Java client**: a simple Java application that connects to the Deephaven server and displays the ticking results. It can also ask the server to watch more cities.
 
-## Running the Python weather server
+The following sections walk through each part. The server script is complete and runnable. The complete Java client isn't published, so this guide shows the parts of its code that connect to the server, subscribe to the table, listen for updates, and run code on the server.
 
-At this point, you should have a running Deephaven IDE. You first need to configure and run the Python Weather Server script. This is broken down into three major segments.
+## Run the Python weather server
 
-1. Import the libraries needed into the worker.
-
-```python skip-test
-import random
-import time
-import json
-import os
-
-from dataclasses import dataclass
-from datetime import datetime
-from math import cos, asin, sqrt, pi
-from threading import Lock
-from threading import Thread
-
-from deephaven import *
-from deephaven import DynamicTableWriter, dtypes as dht
-from deephaven import agg
-from deephaven.time import epoch_millis_to_instant
-
-os.system("pip install requests")
-import requests
-```
-
-> [!NOTE]
-> Note that the 'requests' library, which is used to do simple GET calls, is not part of the default Deephaven Python image, so it is imported directly into the running session. See [How to install Python packages](../how-to-guides/install-and-use-python-packages.md) for more details.
-
-2. Create the [DynamicTableWriter](../how-to-guides/table-publisher.md#dynamictablewriter) that will be used to ingest ticking data.
+With Deephaven running, open the Deephaven IDE and run the following weather server script.
 
 ```python skip-test
-# First, let's create a table to manage the relevant cities to monitor
-dynamic_table_writer_columns = {
-    "Timestamp": dht.DateTime,
-    "State": dht.string,
-    "City": dht.string,
-    "Temp": dht.float64,
-    "Humidity": dht.float64,
-}
-table_writer = DynamicTableWriter(dynamic_table_writer_columns)
+from deephaven import input_table, new_table, time_table
+from deephaven import dtypes as dht
+from deephaven.column import string_col
 
-current_data = table_writer.table
-```
+# An input table that holds the cities to watch, one row per city
+cities = input_table(col_defs={"City": dht.string}, key_cols="City")
 
-This simply creates a table with five columns to which the application will record weather measurements.
-
-| Column    | Type     |
-| --------- | -------- |
-| Timestamp | DateTime |
-| State     | String   |
-| City      | String   |
-| Temp      | double   |
-| Humidity  | double   |
-
-3. Perform some simple data analysis.
-
-```python skip-test
-from deephaven import agg
-
-# Bin the data by 30 minute and 1 hour intervals using the "lowerBin" feature
-binned_data = current_data.update_view(formulas=["bin30M=lowerBin(Timestamp, 30 * MINUTE)", "bin1Hr=lowerBin(Timestamp, 1 *HOUR)"])
-
-# Compute Min/Max/Average for Temperature and Humidity,
-# grouping the data first, by the State, City, and 30 minute time bin of each measurement
-# This also pulls forward the 1 hour time bin value column using the "First" aggregation
-agg_list30 = [
-    agg.min_(cols=["Min30Temp=Temp", "Min30Humid=Humidity"]),
-    agg.max_(cols=["Max30Temp=Temp", "Max30Humid=Humidity"]),
-    agg.avg(cols=["Avg30Temp=Temp", "Avg30Humid=Humidity"]),
-    agg.first(cols=["bin1Hr"])
-]
-
-binned_stats30 = binned_data.agg_by(agg_list30, by=["State", "City", "bin30M"])
-
-# Next, Compute Min/Max/Average, grouping, instead, by the State, City, and hourly time bins
-agg_list60 = [
-    agg.min_(cols=["Min60Temp=Temp", "Min60Humid=Humidity"]),
-    agg.max_(cols=["Max60Temp=Temp", "Max60Humid=Humidity"]),
-    agg.avg(cols=["Avg60Temp=Temp", "Avg60Humid=Humidity"])
-]
-
-binned_stats60 = binned_data.agg_by(agg_list60, by=["State", "City", "bin1Hr"])
-
-# Ideally,  these would be viewed in a single aggregated table
-# this will join the two tables together using the State, City, and Hourly time bin
-combined_stats = binned_stats30.natural_join(binned_stats60, "State,City,bin1Hr");
-
-# Finally, create a table of the last relevant value of each location, by City and State,
-# discarding the time bin columns
-# For bonus points, it also joins back on the current weather measurement
-# for each location to produce a table that contains
-# the min/max/average temperature and humidity for the most recent 30 minutes, and 1 hour,
-# as well as the current values.
-last_city_by_state = combined_stats.last_by(by=["State", "City"])\
-    .drop_columns(cols=["bin30M", "bin1Hr"])\
-    .natural_join(table=current_data.last_by(by=["State", on=["City"])], joins=["State,City"])\
-    .move_columns_up(cols=["Timestamp", "State", "City", "Temp", "Humidity"])
-```
-
-4. Create a data structure for collecting information on each location to use to fetch weather data.
-
-   > [!NOTE]
-   > In the code below, be sure to insert your Google Geolocation API key into the `API_KEY` variable.
-
-```python skip-test
-@dataclass
-class Location:
-    city: str = None
-    state: str = None
-    lat: float = -999
-    lon: float = -999
-
-    last_obs_time: datetime = None
-
-    observationStation: str = None
-    forecastStation: str = None
-
-    def __hash__(self):
-        return hash((self.city, self.state))
-
-
-API_KEY = "YOUR_API_KEY"
-CITY_LOCK = Lock()
-trackedCities = set()
-```
-
-5. Add the code that fetches weather data.
-
-<details>
-    <summary>`FetchWeatherData.py`</summary>
-
-```python skip-test
-# Borrowed from https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula
-def distance(lat1, lon1, lat2, lon2):
-    p = pi / 180
-    a = (
-        0.5
-        - cos((lat2 - lat1) * p) / 2
-        + cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2
+# Every second, record a simulated reading for each watched city
+readings = (
+    time_table("PT1s")
+    .tail(1)
+    .join(cities)
+    .update(
+        [
+            "Temp = 60 + 20 * Math.sin(epochSeconds(Timestamp) / 30.0 + City.hashCode())",
+            "Humidity = 50 + 30 * Math.cos(epochSeconds(Timestamp) / 45.0 + City.hashCode())",
+        ]
     )
-    return 12742 * asin(sqrt(a))  # 2*R*asin...
+)
+
+# Keep the latest reading for each city
+latest_by_city = readings.last_by("City")
 
 
-# Locate the Lat/Lon of a particular city state
-def geoLocate(cityName) -> Location:
-    if len(cityName) <= 0:
-        raise ValueError("Place name must be present")
-
-    # First go figure out Lat/Lon so we can pass that to NOAA and locate a station
-    geoResp = requests.get(
-        "https://maps.googleapis.com/maps/api/geocode/json",
-        params={"address": cityName, "key": API_KEY},
-    )
-    if geoResp.status_code != 200:
-        raise ValueError(
-            cityName + " is not a valid place -> " + geoJson["error_message"]
-        )
-    geoJson = geoResp.json()
-
-    # Process the response JSON and look for the City and State (typically locality and administrative_area_level_1)
-    localCity = localState = ""
-    resultsEl = geoJson["results"][0]
-    if resultsEl is None:
-        raise ValueError(
-            "Cannot determine location of " + cityName + " no valid results"
-        )
-
-    comps = resultsEl["address_components"]
-    if comps is None:
-        raise ValueError("Cannot determine location of " + cityName + " no components")
-
-    for val in comps:
-        if "locality" in val["types"]:
-            localCity = val["long_name"]
-        if "administrative_area_level_1" in val["types"]:
-            localState = val["long_name"]
-
-    if localCity is None or localState is None:
-        raise ValueError("Unable to determine city and state for " + cityName)
-
-    geom = resultsEl["geometry"]
-    if geom is None:
-        raise ValueError("Unable to determine lat/lon for " + cityName)
-
-    loc = geom["location"]
-    if loc is None:
-        raise ValueError("Unable to determine lat/lon for " + cityName)
-
-    print(
-        "Located "
-        + localState
-        + ", "
-        + localCity
-        + " at ["
-        + str(loc["lat"])
-        + ", "
-        + str(loc["lng"])
-        + "]"
-    )
-    return Location(city=localCity, state=localState, lat=loc["lat"], lon=loc["lng"])
-
-
-# We have to poke NOAA's APIs so that we can find
-# 1) the "Point" 2) the Observation station and 3) the Forecast station.
-# Once we collect this data, we can construct an appropriate API call
-# to fetch current / forecasted weather data.
-def discoverWeather(loc):
-    # First, convert the Lat/lon into a point
-    pointJson = requests.get(
-        "https://api.weather.gov/points/" + str(loc.lat) + "%2C" + str(loc.lon)
-    ).json()
-
-    # Next, use that point to locate the Grid location, which tells us the station URLs
-    loc.forecastStation = pointJson["properties"]["forecast"]
-    observationUrl = pointJson["properties"]["observationStations"]
-
-    # Finally, locate the station to use for observations and build a URL we can just call
-    stationJson = requests.get(observationUrl).json()
-
-    # Sift through the set of features and locate the closest one as the crow flies
-    # and use that as the observation station.
-    closestFeature = None
-    closestDistance = 99999999999
-    for feature in stationJson["features"]:
-        featurePoint = feature["geometry"]["coordinates"]
-        # Note that NOAA's coordinates are lon,lat -NOT- lat,lon :(
-        dist = distance(loc.lat, loc.lon, featurePoint[1], featurePoint[0])
-        # print("Station " + feature['properties']['name'] + " at distance " + str(dist))
-        if closestFeature is None or dist < closestDistance:
-            closestFeature = feature
-            closestDistance = dist
-
-    loc.observationStation = (
-        "https://api.weather.gov/stations/"
-        + closestFeature["properties"]["stationIdentifier"]
-        + "/observations/latest"
-    )
-
-
-def updateObservation(lc):
-    obs_json = requests.get(lc.observationStation).json()
-
-    # TODO:  Actual error checking
-    time = datetime.fromisoformat(obs_json["properties"]["timestamp"])
-
-    if lc.last_obs_time is None or lc.last_obs_time < time:
-        lc.last_obs_time = time
-        temp = obs_json["properties"]["temperature"]["value"]
-        humid = obs_json["properties"]["relativeHumidity"]["value"]
-        print("Updated " + str(lc) + " at " + str(time))
-        table_writer.write_row(
-            epoch_millis_to_instant((int)(time.timestamp() * 1000)),
-            lc.state,
-            lc.city,
-            temp,
-            humid,
-        )
-
-
-# A simple method to add a city to the set of cities to watch
-def beginWatch(cityName):
-    loc = geoLocate(cityName)
-
-    # Don't do anything further if we're already watching this location
-    if loc in trackedCities:
-        return
-
-    discoverWeather(loc)
-    if loc.observationStation is None:
-        raise ValueError("Could not locate observation URL for " + cityName)
-
-    with CITY_LOCK:
-        trackedCities.add(loc)
-        updateObservation(loc)
-
-
-def periodicFetchRealData():
-    while True:
-        for lc in trackedCities:
-            updateObservation(lc)
-        time.sleep(60)
-
-
-monitorThread = Thread(target=periodicFetchRealData)
-monitorThread.start()
+# Add a city to the set of watched cities
+def begin_watch(city):
+    cities.add(new_table([string_col("City", [city])]))
 ```
 
-</details>
+The script defines the following:
 
-The Python code above is compressed for brevity, but essentially contains four methods:
+- `cities` is a keyed [input table](./input-tables.md) that holds the cities to watch. `City` is its key column, so adding a city that's already in the table replaces that city's row instead of adding a second one.
+- `readings` is the ticking table of weather readings. [`time_table`](../reference/table-operations/create/timeTable.md) adds a row with a `Timestamp` every second, [`tail(1)`](../reference/table-operations/filter/tail.md) keeps only the newest of those rows, [`join`](../reference/table-operations/join/join.md) pairs that timestamp with every watched city, and [`update`](../reference/table-operations/select/update.md) computes simulated `Temp` and `Humidity` values from the timestamp and the city name.
+- `latest_by_city` uses [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md) to keep the latest reading for each city. The Java client subscribes to this table.
+- `begin_watch` adds a city to `cities`. The Java client calls this function.
 
-- A method to turn a Location name into a position using Google Geolocation.
-- A method to discover the NOAA Weather API Endpoints for the position.
-- A method to fetch the current weather observation for the position.
-- A thread that fetches the current weather for all requested cities every 1 minute.
-
-At this point, you have a completely functional Deephaven application that is ready to start providing data to another client.
+At this point, the weather server is ready to provide data to the Java client. The script watches no cities until something calls `begin_watch`. The Java client does that, and you can also call it in the IDE, for example with `begin_watch("Denver")`.
 
 ## The Java client
 
-The final, and most interesting part of this example, is the Java client. It is an extremely simple Java Swing UI that has the ability to connect to the Deephaven worker and fetch the final `LastByCityState` statistics table. It also demonstrates the ability to communicate with the worker by requesting additional cities to be tracked.
-
-The client code can be found in the repository in the `java-client/weather-server-example` directory. Build this and run the `WeatherDash` class to bring up the UI.
+The Java client is a Swing UI that subscribes to the server's `latest_by_city` table and calls `begin_watch` to add cities.
 
 ![The Java client UI](../assets/tutorials/java-client/java-app.png)
 
-Enter the address of your Deephaven IDE and click **Connect**. Then type an address in the **Location** text box and click **Add**.
+In the finished application, the user enters the server's host and port, such as `localhost:10000`, in the **Host** text box and clicks **Connect**. Next, the user types a city name, such as `Denver`, in the **Location** text box and clicks **Add**. The UI then displays the latest simulated reading for that city, and the reading updates every second.
 
-You will now see live weather data for the city you entered.
+For complete, runnable clients, see the examples in the repository's [`java-client/barrage-examples`](https://github.com/deephaven/deephaven-core/tree/main/java-client/barrage-examples) directory, such as [`SubscribeTable`](https://github.com/deephaven/deephaven-core/blob/main/java-client/barrage-examples/src/main/java/io/deephaven/client/examples/SubscribeTable.java).
 
-![The Java client UI, now displaying live weather data for the city the user entered](../assets/tutorials/java-client/java-app-data.png)
+The Deephaven Java client can get table data from the server in two ways:
 
-## How it works
+- A lightweight API that fetches [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) data streams, for when you want your data in Arrow Flight format. For examples, see the repository's [`java-client/flight-examples`](https://github.com/deephaven/deephaven-core/tree/main/java-client/flight-examples) directory.
+- Table subscriptions and snapshots over the [Barrage](../conceptual/what-is-barrage.md) streaming protocol. A subscription delivers a server table to the client as a local, ticking Deephaven table, and a snapshot delivers it as a local static table.
 
-The Deephaven Java Client provides two major features to users:
+The [Arrow Flight guide](./data-import-export/arrow-flight.md) lists the Arrow types Deephaven supports.
 
-- It provides a lightweight API that fetches [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) data streams for users to work with. If you're familiar with Arrow Flight, and this is the format you want, then you can use this directly.
-- It also provides the ability to transform the Arrow data stream directly into a local, ticking, Deephaven Table! Many users will want to use the power of Deephaven tables directly.
+This guide uses table subscriptions to get data, and a console session to run code on the server.
 
-> [!NOTE]
-> The Java Client code makes extensive use of the `Builder` pattern to make object construction more expressive and natural.
+The snippets in the following sections use these variables from the application:
 
-The first part is to create a `ManagedChannel`. This is the root connection between your application and the Deephaven worker.
+- `host` is the server's host and port, such as `localhost:10000`.
+- `plaintext` is `true` when the server doesn't use TLS.
+- `psk` is the server's [pre-shared key (PSK)](./authentication/auth-psk.md), which the server prints in its startup log.
+- `flightScheduler` is a [`ScheduledExecutorService`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/ScheduledExecutorService.html), such as one created with `Executors.newScheduledThreadPool(4)`. It runs the client's background work, including refreshing the session token.
+- `city` is the city name the user typed.
+- `log` is the application's logger, a Deephaven [`Logger`](/core/javadoc/io/deephaven/io/logger/Logger.html). Substitute your application's own logger.
+- `managedChannel`, `bufferAllocator`, and `barrageSession` are fields of type `ManagedChannel`, `BufferAllocator`, and `BarrageSession`, which the snippets below assign.
+
+They also use these imports:
+
+```java
+import io.deephaven.client.impl.BarrageSession;
+import io.deephaven.client.impl.BarrageSessionFactory;
+import io.deephaven.client.impl.BarrageSubscription;
+import io.deephaven.client.impl.ConsoleSession;
+import io.deephaven.client.impl.DaggerDeephavenBarrageRoot;
+import io.deephaven.client.impl.TableHandle;
+import io.deephaven.client.impl.script.Changes;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.qst.table.TicketTable;
+import io.deephaven.util.SafeCloseable;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.memory.RootAllocator;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+```
+
+### Connect to the server
+
+The first step is to create a [`ManagedChannel`](https://grpc.github.io/grpc-java/javadoc/io/grpc/ManagedChannel.html), the root connection between your application and the Deephaven server. The Java client creates most objects with builders. Here, the code configures a [`ManagedChannelBuilder`](https://grpc.github.io/grpc-java/javadoc/io/grpc/ManagedChannelBuilder.html) and then calls `build`.
 
 ```java
 final ManagedChannelBuilder<?> channelBuilder = ManagedChannelBuilder.forTarget(host);
-if (plaintext || "localhost:10000".equals(host)) {
+if (plaintext) {
     channelBuilder.usePlaintext();
 } else {
     channelBuilder.useTransportSecurity();
@@ -363,118 +136,143 @@ if (plaintext || "localhost:10000".equals(host)) {
 managedChannel = channelBuilder.build();
 ```
 
-Once you have a channel to the worker, we need to create a `FlightSession`. This class layers the Deephaven logic on top of the raw channel to the worker.
+Once you have a channel to the server, create a [`BarrageSession`](/core/javadoc/io/deephaven/client/impl/BarrageSession.html). `BarrageSession` extends [`FlightSession`](/core/javadoc/io/deephaven/client/impl/FlightSession.html) and adds table subscriptions and snapshots. `FlightSession` adds Arrow Flight data transfer to a Deephaven session.
+
+By default, a Deephaven server requires a PSK. Pass it with `authenticationTypeAndValue`, prefixed by the name of the PSK authentication handler.
 
 ```java
-final BufferAllocator bufferAllocator = new RootAllocator();
-final FlightSessionFactory flightSessionFactory =
-        DaggerDeephavenFlightRoot.create().factoryBuilder()
+bufferAllocator = new RootAllocator();
+final BarrageSessionFactory barrageSessionFactory =
+        DaggerDeephavenBarrageRoot.create().factoryBuilder()
                 .managedChannel(managedChannel)
                 .scheduler(flightScheduler)
                 .allocator(bufferAllocator)
+                .authenticationTypeAndValue("io.deephaven.authentication.psk.PskAuthenticationHandler " + psk)
                 .build();
 
-flightSession = flightSessionFactory.newFlightSession();
+barrageSession = barrageSessionFactory.newBarrageSession();
 ```
 
-> [!WARNING]
-> The Deephaven Java-API is still an alpha library. In future versions, the method described below to convert the [Arrow Flight](https://arrow.apache.org/) Stream into a Deephaven table will be dramatically simplified.
->
-> This example has packaged this code into the class `BarrageSupport` to separate this complexity.
+Instead of building the channel yourself, you can create the session from a [`BarrageSessionFactoryConfig`](/core/javadoc/io/deephaven/client/impl/BarrageSessionFactoryConfig.html), as the [`SubscribeTable`](https://github.com/deephaven/deephaven-core/blob/main/java-client/barrage-examples/src/main/java/io/deephaven/client/examples/SubscribeTable.java) example does.
 
-Now, we will create the `BarrageSupport` instance and fetch the `LastByCityState` from the worker.
+### Subscribe to the table
 
-> [!NOTE]
-> This is where the magic happens! In step 3, we defined a query-scope variable named `LastByCityState`. To reference in a remote client, we convert it into a Flight Ticket simply by prefixing `s/`. Any tables that are exposed in the query scope can be accessed as easily as that.
+The server script stores the result table in a [query scope](./query-scope.md) variable named `latest_by_city`. A remote client asks for a server table with a Flight ticket, which identifies one table stream. To build the ticket for a query scope variable, prefix the variable name with `s/`, as in `s/latest_by_city`. A client can fetch any table in the query scope the same way.
+
+The subscription produces a local Deephaven table that the Deephaven engine inside the client process maintains. Before it subscribes, the client creates two objects:
+
+- An [update graph](../conceptual/dag.md), which delivers each update to the local table and its listeners.
+- An [execution context](../conceptual/execution-context.md), which gives the subscribing thread access to that update graph.
+
+The code also opens a [liveness scope](../conceptual/liveness-scope-concept.md), which holds the subscription and the subscribed table. Closing the scope releases them, and the server stops spending memory and CPU time on the subscription. Keep the scope open for as long as you read from or listen to the table, and close it when you finish, as the `try`-with-resources block below does.
+
+To subscribe, the application does three things:
+
+1. Calls [`TicketTable.fromQueryScopeField`](/core/javadoc/io/deephaven/qst/table/TicketTable.html) to build the `s/` ticket from the variable name, and asks the server for a [`TableHandle`](/core/javadoc/io/deephaven/client/impl/TableHandle.html) for that ticket.
+2. Calls [`subscribe`](/core/javadoc/io/deephaven/client/impl/BarrageSession.html) on the `BarrageSession` to subscribe to that handle.
+3. Calls [`entireTable`](/core/javadoc/io/deephaven/client/impl/BarrageSubscription.html), which returns a [`Future`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/Future.html). The `Future` completes with the subscribed [`Table`](/core/javadoc/io/deephaven/engine/table/Table.html) once all of its rows arrive.
 
 ```java
-support = new BarrageSupport(managedChannel, flightSession);
-statsTable = support.fetchSubscribedTable("s/LastByCityState");
+// The subscribed table is a client-side engine table, so the client needs an update graph and an execution context
+final PeriodicUpdateGraph updateGraph = PeriodicUpdateGraph.newBuilder("DEFAULT").existingOrBuild();
+final ExecutionContext executionContext = ExecutionContext.newBuilder()
+        .markSystemic()
+        .emptyQueryScope()
+        .newQueryLibrary()
+        .setUpdateGraph(updateGraph)
+        .build();
+
+final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder().build();
+
+try (final SafeCloseable ignoredContext = executionContext.open();
+        final SafeCloseable ignoredScope = LivenessScopeStack.open();
+        final TableHandle handle = barrageSession.session()
+                .of(TicketTable.fromQueryScopeField("latest_by_city"))) {
+    final BarrageSubscription subscription = barrageSession.subscribe(handle, options);
+    final Table latestTable = subscription.entireTable().get();
+
+    // Read from or listen to latestTable here
+}
 ```
 
-At this point, the variable `statsTable` is now a live, ticking, local instance of the table created in the Python script. This application simply displays the contents of that table directly, but a more sophisticated app could use this table data in any way it likes.
+Inside the `try` block, `latestTable` is a local copy of the server's `latest_by_city` table, and it updates as the server's data changes. Use it only inside the block: when the block exits, the liveness scope closes and releases the table. This application displays the table directly. Other applications can filter, join, or aggregate it like any other Deephaven table.
 
-## Bidirectional communication
+The steps above are adapted from the [`SubscribeTable`](https://github.com/deephaven/deephaven-core/blob/main/java-client/barrage-examples/src/main/java/io/deephaven/client/examples/SubscribeTable.java) example.
 
-One of the other exciting features of the Java client is the ability to communicate directly with the worker. This communication can be as sophisticated as creating even more specific derived tables using the same natural query language that is so powerful in the Deephaven Web IDE.
+### Listen to the table
 
-This example gives the user the ability to add cities to the set of monitored locations.
+Once the client has a local ticking table, such as `latestTable` from [Subscribe to the table](#subscribe-to-the-table), it can process the table's data. You can read the data from the table directly. You can also add a listener to the table so that the application responds to each update. The [Groovy table listeners guide](/core/groovy/docs/how-to-guides/table-listeners-groovy/) covers the Java listener API used below.
+
+Read the table or add the listener inside the `try` block that opened the liveness scope, and keep that block open for as long as the listener should receive updates. The [`SubscribeTable`](https://github.com/deephaven/deephaven-core/blob/main/java-client/barrage-examples/src/main/java/io/deephaven/client/examples/SubscribeTable.java) example does this by waiting on a [`CountDownLatch`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/concurrent/CountDownLatch.html) inside the block until it has received the number of updates it asked for. When the block exits, the scope closes and releases the subscription and the table, and the listener stops receiving updates.
 
 ```java
-try (final ConsoleSession console = flightSession.session().console("python").get()) {
-    final Changes c = console.executeCode("beginWatch(\"" + escapeString(place) + "\")");
-    if (c.errorMessage().isPresent()) {
-        log.error().append("Error adding " + place + ": " + c.errorMessage().get())
-    } else {
-        log.info().append("Added " + place);
+final InstrumentedTableUpdateListenerAdapter listener = new InstrumentedTableUpdateListenerAdapter(latestTable, false) {
+    @Override
+    public void onUpdate(TableUpdate upstream) {
+        // Process the update as needed. The TableUpdate describes:
+        // 1) What rows have been added
+        // 2) What rows have been removed
+        // 3) What rows have been modified
+        // 4) What rows have been structurally shifted in address space, but without changes to column data
+        // 5) What columns were affected by the changes
     }
-} catch (ExecutionException | InterruptedException | TimeoutException e) {
+};
+latestTable.addUpdateListener(listener);
+
+// ... keep the try block open for as long as you need updates, then:
+latestTable.removeUpdateListener(listener);
+```
+
+The `false` argument tells [`InstrumentedTableUpdateListenerAdapter`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html) not to keep its own reference to the listener, so the code must keep the listener reachable itself. Being in scope isn't enough, because the JVM can collect a local variable that the code no longer uses. The final `removeUpdateListener` call uses `listener` at the end, which keeps it reachable until then, as the `SubscribeTable` example does. Without it, the JVM can garbage collect the listener, and the listener stops receiving updates.
+
+### Run code on the server
+
+The Java client can also run code on the server through a [`ConsoleSession`](/core/javadoc/io/deephaven/client/impl/ConsoleSession.html). For example, the client can create more derived tables with the same query language you use in the Deephaven IDE.
+
+This example lets the user add cities to the set of watched cities.
+
+```java
+try (final ConsoleSession console = barrageSession.session().console("python").get()) {
+    final Changes c = console.executeCode("begin_watch(\"" + escapeString(city) + "\")");
+    if (c.errorMessage().isPresent()) {
+        log.error().append("Error adding " + city + ": " + c.errorMessage().get()).endl();
+    } else {
+        log.info().append("Added " + city).endl();
+    }
+} catch (InterruptedException e) {
+    // Restore the interrupt so the calling code can see it
+    Thread.currentThread().interrupt();
+} catch (ExecutionException | TimeoutException e) {
     e.printStackTrace();
 }
 ```
 
-This simply sends a Python command to the server (`beginWatch(place)`) and checks for an error response. The server returns a `Changes` object, which allows the application to determine what has changed in the scope of the worker (for example, tables being created or variables being changed).
+This code sends the server a Python call to `begin_watch` that passes the escaped city name. It then checks the response for an error. The console type, `"python"`, must match the server's scripting language. The server returns a [`Changes`](/core/javadoc/io/deephaven/client/impl/script/Changes.html) object, which tells the application what changed in the server's scope, such as which tables and variables the command created or updated.
 
 > [!WARNING]
-> This example embeds a user string into a command. Be extremely careful to escape quotes and other special characters within the string to prevent script injection attacks.
+> This example embeds a user string into a command. `escapeString` stands for a helper that you write to escape quotes and other special characters within the string. Without it, a user can inject arbitrary code into the command that the server runs.
 
-## Listening to Deephaven tables
+To send data from the client without running code on the server, use [input tables](/core/groovy/docs/how-to-guides/java-client-input-tables/).
 
-The last piece of the puzzle is to process the data from the table. You can, of course, directly read the data from the table. You can also "listen" to the table, which allows the application to respond to ticking changes in the table.
+### Close the connection
 
-```java
-table.addUpdateListener(listener = new InstrumentedShiftAwareListenerAdapter(table, false) {
-    @Override
-    public void onUpdate(Update upstream) {
-        // Process the update as needed,  the Update class contains Index instances that describe
-        // 1) What rows have been added
-        // 2) What rows have been removed
-        // 3) What rows have been modified
-        // 4) What rows have been structurally shifed in address space,  but without changes to column data
-        // 5) What columns were affected by the changes
-    }
-});
-```
-
-## Table subscription deep dive
-
-As mentioned above, creating a subscribed, local Deephaven table will be easier in upcoming releases. However, below we discuss briefly what the example does.
-
-First, the application needs to "export" a table from the server. This is done by requesting a `TableHandle` from the server, and then retrieving the `Ticket` object from it. The `Ticket` can be thought of simply as a unique identifier for a particular table stream.
+When the application finishes, close the session and release the objects it used. Closing the `BarrageSession` doesn't shut down the channel, so shut down the channel and the scheduler separately, and then close the allocator:
 
 ```java
-final TableHandle handle = session.session().ticket(tableName);
-final Export tableExport = handle.export();
-final Ticket tableTicket = tableExport.ticket();
+// Ask the server to close the session, wait for it to acknowledge, then close the client side
+try {
+    barrageSession.session().closeFuture().get(5, TimeUnit.SECONDS);
+} finally {
+    // Release the client-side resources even if the server doesn't acknowledge in time
+    barrageSession.close();
+    managedChannel.shutdownNow();
+    flightScheduler.shutdownNow();
+    bufferAllocator.close();
+}
 ```
-
-Next, it must fetch the Schema of the Flight Stream. This tells the Deephaven libraries how to interpret the bytes from the Flight stream and convert them into Rows and Columns of a table. From this schema, this creates a `TableDefinition` and finally a `BarrageTable`, which is the core of the client side Deephaven table implementation.
-
-```java
-final Schema schema = session.getSchema(tableExport);
-final TableDefinition definition = BarrageSchemaUtil.schemaToTableDefinition(schema);
-
-final BitSet columnsToSubscribe = new BitSet();
-columnsToSubscribe.set(0, definition.getColumns().length);
-
-final BarrageTable resultTable = BarrageTable.make(definition, false);
-```
-
-Finally, we create a subscription to the server, which effectively tells the server what rows and columns the application requires, and starts the stream of data from the server.
-
-```java
-final BarrageClientSubscription resultSub = new BarrageClientSubscription(
-    ExportTicketHelper.toReadableString(tableTicket, "exportTable"),
-    channel, BarrageClientSubscription.makeRequest(tableTicket, null, columnsToSubscribe),
-    new BarrageStreamReader(), resultTable);
-```
-
-With that final step, the Deephaven Table is subscribed, and will receive live updates from the server as data changes. Client code can then further listen to that table to handle changes as required.
-
-> [!CAUTION]
-> When your app is done using tables that were fetched, be sure to call `resultSub.close()` to release any resources that are being held. Without this, the server believes the table is still active and will continue to consume memory and CPU time.
 
 ## Related documentation
 
 - [Arrow Flight](./data-import-export/arrow-flight.md)
 - [Servers and clients](../conceptual/client-server-model.md)
+- [Java client input tables](/core/groovy/docs/how-to-guides/java-client-input-tables/)
