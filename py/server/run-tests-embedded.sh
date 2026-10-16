@@ -56,7 +56,10 @@ export DEEPHAVEN_VERSION
 
 rm -rf "${BUILD}" "${RESULTS}"
 mkdir -p "${BUILD}" "${RESULTS}" "${BUILD}/data" "${BUILD}/cache"
-uv venv --quiet --python "${PY_VERSION}" "${VENV}"
+# --managed-python makes uv use its own Python build, which it downloads at the newest patch release it knows. Without
+# it, uv takes any matching Python already installed, which can be many patch releases old.
+uv venv --quiet --managed-python --python "${PY_VERSION}" "${VENV}"
+"${VENV}/bin/python" -VV
 # --reinstall-package rebuilds the local packages on every run. Without it, uv can reuse a cached build of older source,
 # because the package version does not change between edits.
 uv pip install --quiet --python "${VENV}/bin/python" --reinstall-package deephaven-core --reinstall-package pydeephaven \
