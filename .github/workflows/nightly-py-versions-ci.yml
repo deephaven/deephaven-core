@@ -1,0 +1,169 @@
+name: Nightly Python Versions CI
+
+# Runs the py/server and py/client tests on every supported Python version. The Docker-based suites in check cover only
+# the Python in the Docker images. These run the same tests without Docker, so each version needs only Python and a JDK.
+# - The server suite starts its JVM from the deephaven-server wheel.
+# - The client suite tests against the server-jetty distribution, which has the start script and jars of the server
+#   Docker image. Java hosts Python from the job's venv.
+# The Python packages install from source.
+#
+# Floor: python_requires in py/server/setup.py. Ceiling: the newest Python that every dependency has a wheel for. jpy
+# has none for 3.15 yet. The free-threaded 3.14t build runs with the GIL off.
+
+on:
+  schedule:
+    # 2AM EST == 7AM UTC
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+  push:
+    branches: [ 'nightly/**', 'py-versions/**' ]
+
+jobs:
+  build:
+    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
+
+      - name: Setup JDKs
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: 'temurin'
+          java-version: |
+            21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Setup gradle properties
+        run: |
+          .github/scripts/gradle-properties.sh 21 >> gradle.properties
+          cat gradle.properties
+
+      - name: Build the deephaven-server wheel, the server distribution and the test classes
+        # The server tests load a few Java test classes: CalendarInit from engine-time, and MyObject and
+        # PythonTimeComponentsTest from Integrations.
+        run: ./gradlew --scan :py-embedded-server:assemble :server-jetty-app:distTar :Integrations:testClasses :engine-time:testClasses
+
+      - name: Upload the build outputs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: py-versions-build
+          path: |
+            py/embedded-server/build/wheel/*.whl
+            server/jetty-app/build/distributions/server-jetty-*.tar
+            Integrations/build/classes/java/test/
+            engine/time/build/classes/java/test/
+          retention-days: 1
+
+  test:
+    name: test (${{ matrix.suite }}, Python ${{ matrix.python-version }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.14t is the free-threaded build. 3.13t is left out: grpcio and numba have no 3.13t wheels.
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14', '3.14t']
+        suite: ['server', 'client']
+    runs-on: ubuntu-24.04
+    # A normal run takes under 10 minutes. The first 3.14t run also compiles grpcio, about 17 minutes. Without a limit a
+    # hung test runs for GitHub's default of 6 hours.
+    timeout-minutes: 45
+    env:
+      DEEPHAVEN_MAXMEM: 2G
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
+
+      - name: Download the build outputs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: py-versions-build
+
+      - name: Unpack the server distribution
+        if: ${{ matrix.suite == 'client' }}
+        # py/client/run-tests-embedded.sh expects it where ./gradlew :server-jetty-app:installDist puts it.
+        run: |
+          mkdir -p server/jetty-app/build/install/server-jetty
+          tar -xf server/jetty-app/build/distributions/server-jetty-*.tar --strip-components=1 -C server/jetty-app/build/install/server-jetty
+
+      - name: Setup JDKs
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: 'temurin'
+          java-version: |
+            21
+
+      - name: Setup uv
+        # .github/scripts/py-versions-test.sh uses uv to download the Python version and create the venv.
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          # grpcio has no Linux wheel for 3.14t, so uv compiles it, which takes about 17 minutes. The cache keeps the
+          # built wheel for later runs.
+          enable-cache: true
+          cache-dependency-glob: 'py/*/setup.py'
+          cache-suffix: ${{ matrix.suite }}-${{ matrix.python-version }}
+
+      - name: Install Graphviz
+        if: ${{ matrix.suite == 'server' }}
+        # tests/test_perfmon.py renders an SVG through graphviz-java. Without the dot binary it needs the GraalJS jars,
+        # which are on the Integrations test classpath but not in the deephaven-server wheel.
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends graphviz
+
+      - name: Start Kafka and Postgres
+        if: ${{ matrix.suite == 'server' }}
+        # The Kafka and database tests reach these services by the host names "redpanda" and "postgres".
+        run: |
+          echo "127.0.0.1 redpanda postgres" | sudo tee -a /etc/hosts
+          docker compose -f Integrations/docker-compose.yml up -d --wait
+
+      - name: Run tests
+        # The script makes a venv, installs the packages, then calls py/<suite>/run-tests-embedded.sh, which developers
+        # run in their own venv, see py/server/TESTING.md. On the older Pythons, uv picks older numpy, pandas, pyarrow and
+        # numba releases, because the newest ones dropped those Pythons.
+        run: .github/scripts/py-versions-test.sh ${{ matrix.suite }} ${{ matrix.python-version }}
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: nightly-py-versions-${{ matrix.suite }}-py${{ matrix.python-version }}-ci-results
+          path: py/${{ matrix.suite }}/build/test-results/test-embedded/**
+
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: nightly-py-versions-${{ matrix.suite }}-py${{ matrix.python-version }}-ci-jvm-err
+          path: |
+            **/*_pid*.log
+            **/core.*
+          if-no-files-found: ignore
+
+  slack-failure:
+    # One alert per run, whichever jobs failed. A failed build skips every test job, so a per-test-job alert would miss
+    # it. Uses the same Slack workflow as Nightly Check CI.
+    needs: [build, test]
+    if: ${{ failure() && github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Slack Nightly Failure
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          webhook-type: webhook-trigger
+          # Fail the step if the alert cannot be delivered; the default hides it.
+          errors: true
+          payload: |
+            {
+              "slack_message": "Nightly Python versions failure @ ${{ github.ref_name }} ${{ github.sha }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}

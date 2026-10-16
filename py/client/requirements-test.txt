@@ -1,0 +1,8 @@
+# Python packages the tests in tests/ need beyond pydeephaven and deephaven-core. run-tests-embedded.sh installs any
+# that are missing. Versions are left open, so the tests run against the latest releases.
+unittest-xml-reporting
+# tests/test_flightsql.py
+flightsql-dbapi
+adbc-driver-flightsql
+# The server-side script in tests/test_console.py imports numba, as the server Docker image has it.
+numba

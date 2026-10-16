@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+#
+# Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+#
+
+# Runs the tests in tests/ in the active venv, against the server-jetty distribution instead of the server Docker
+# image. The distribution has the same start script and jars as the image. Java is the main program and hosts Python
+# from the same venv, so the server and the client both run on that venv's Python.
+#
+# usage: run-tests-embedded.sh [test ...]
+#   test  optional unittest names, for example tests.test_session. Default: all of tests/.
+#
+# Before the first run:
+#   1. Build the server distribution: ./gradlew :server-jetty-app:installDist
+#   2. Activate a venv that has pydeephaven and deephaven-core. py/server/TESTING.md shows how to make one.
+# The script installs any package from requirements-test.txt that the venv lacks. It never changes the packages the
+# venv already has. It needs uv.
+#
+# See py/server/TESTING.md for details.
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+CLIENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "${CLIENT_DIR}/../.." && pwd)"
+PORT=10000
+SERVER_DIST="${ROOT}/server/jetty-app/build/install/server-jetty"
+
+if ! command -v uv > /dev/null; then
+    echo "This script needs uv. See https://docs.astral.sh/uv/getting-started/installation/" >&2
+    exit 1
+fi
+if [[ -z "${VIRTUAL_ENV:-}" || ! -x "${VIRTUAL_ENV}/bin/python" ]]; then
+    echo "Activate a venv first. See py/server/TESTING.md." >&2
+    exit 1
+fi
+PYTHON="${VIRTUAL_ENV}/bin/python"
+# Look the packages up without importing them. Importing deephaven needs a running JVM.
+if ! "${PYTHON}" -c "import importlib.util, sys; sys.exit(not all(importlib.util.find_spec(m) for m in ('deephaven', 'pydeephaven')))"; then
+    echo "The venv ${VIRTUAL_ENV} needs pydeephaven and deephaven-core. See py/server/TESTING.md." >&2
+    exit 1
+fi
+if [[ ! -x "${SERVER_DIST}/bin/start" ]]; then
+    echo "Missing the server distribution in ${SERVER_DIST}. Run: ./gradlew :server-jetty-app:installDist" >&2
+    exit 1
+fi
+
+# The Python version, such as 3.12 or 3.14t for a free-threaded build. It names the build and report folders.
+PY_LABEL="$("${PYTHON}" -c 'import sys, sysconfig; print(f"{sys.version_info[0]}.{sys.version_info[1]}" + ("t" if sysconfig.get_config_var("Py_GIL_DISABLED") else ""))')"
+BUILD="${CLIENT_DIR}/build/test-embedded/${PY_LABEL}"
+WORK="${BUILD}/work"
+RESULTS="${CLIENT_DIR}/build/test-results/test-embedded/${PY_LABEL}"
+rm -rf "${BUILD}" "${RESULTS}"
+mkdir -p "${BUILD}/data" "${BUILD}/cache" "${BUILD}/config" "${WORK}" "${RESULTS}"
+"${PYTHON}" -VV
+
+# Install the test dependencies the venv lacks. The packages it already has are passed as constraints, so an install
+# never upgrades or downgrades them. A package that cannot install, for example one with no wheel for this Python, is
+# skipped. The tests that need it then skip or fail on their own.
+uv pip freeze --python "${PYTHON}" > "${BUILD}/before.txt"
+grep -E '^[A-Za-z0-9._-]+==' "${BUILD}/before.txt" > "${BUILD}/constraints.txt" || true
+while IFS= read -r req; do
+    req="${req%%#*}"
+    [[ -z "${req// /}" ]] && continue
+    uv pip install --quiet --python "${PYTHON}" -c "${BUILD}/constraints.txt" "${req}" \
+        || echo "Could not install ${req}. The tests that need it will skip or fail."
+done < "${CLIENT_DIR}/requirements-test.txt"
+uv pip freeze --python "${PYTHON}" | grep -v -x -F -f "${BUILD}/before.txt" | sed 's/^/Installed test dependency: /' || true
+
+if [[ "${PY_LABEL}" == *t ]]; then
+    # grpcio, which pydeephaven uses, has not declared itself free-thread safe. Importing it turns the GIL back on,
+    # unless PYTHON_GIL=0 keeps it off.
+    export PYTHON_GIL=0
+fi
+
+# Start the server with the settings of the Docker-based testPyClient task: anonymous and PSK logins, PSK "deephaven".
+# Anonymous logins are on, so it listens on 127.0.0.1 only. The start script finds Python through VIRTUAL_ENV. The
+# server reads its directories from DEEPHAVEN_*_DIR, as in the Docker image.
+# Start it from the build directory. Python puts the working directory first on sys.path, and the repository root has a
+# coverage/ folder that shadows the coverage package numba imports.
+cd "${BUILD}"
+DEEPHAVEN_DATA_DIR="${BUILD}/data" DEEPHAVEN_CACHE_DIR="${BUILD}/cache" DEEPHAVEN_CONFIG_DIR="${BUILD}/config" \
+    START_OPTS="-Xmx1g -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler,io.deephaven.authentication.psk.PskAuthenticationHandler -Dauthentication.psk=deephaven -DSystemicObjectTracker.enabled=true -Dhttp.host=127.0.0.1 -Dhttp.port=${PORT}" \
+    "${SERVER_DIST}/bin/start" > "${RESULTS}/server.log" 2>&1 &
+SERVER_PID=$!
+# Wait for the server to exit too, so the port is free when this script returns.
+trap 'kill "${SERVER_PID}" 2>/dev/null || true; wait "${SERVER_PID}" 2>/dev/null || true' EXIT
+
+for _ in $(seq 1 120); do
+    if grep -q "Server started on port ${PORT}" "${RESULTS}/server.log"; then
+        break
+    fi
+    if ! kill -0 "${SERVER_PID}" 2>/dev/null; then
+        echo "The server exited. See ${RESULTS}/server.log." >&2
+        exit 1
+    fi
+    sleep 1
+done
+if ! grep -q "Server started on port ${PORT}" "${RESULTS}/server.log"; then
+    echo "The server did not start within 120 seconds. See ${RESULTS}/server.log." >&2
+    exit 1
+fi
+
+# Point the tests at this server, whatever DH_HOST and DH_PORT the calling shell has.
+export DH_HOST=127.0.0.1 DH_PORT="${PORT}"
+
+# Run from a copy of the tests, so files they write do not land in the source tree.
+cp -R "${CLIENT_DIR}/tests" "${WORK}/"
+cd "${WORK}"
+if [[ $# -gt 0 ]]; then
+    "${PYTHON}" -m xmlrunner "$@" -v -o "${RESULTS}"
+else
+    "${PYTHON}" -m xmlrunner discover tests -v -o "${RESULTS}"
+fi

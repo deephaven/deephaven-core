@@ -3,6 +3,8 @@
 #
 
 import inspect
+import sys
+import unittest
 from typing import Callable
 
 from docstring_parser import parse
@@ -69,6 +71,8 @@ class DocstringParser(BaseTestCase):
             expected_result,
         )
 
+    # The "str | int" annotations below are Python 3.10 syntax. Python 3.9 raises TypeError when it evaluates them.
+    @unittest.skipIf(sys.version_info < (3, 10), "uses Python 3.10 union type syntax")
     def test_args(self):
         def args(has_docs, has_type: str | int,   *positional, has_default=1, has_type_default: str | int = 1,  **keyword):  # novermin
             """
