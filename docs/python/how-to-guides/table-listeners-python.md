@@ -205,6 +205,9 @@ To see the previous values for modified rows, use:
 - [`modified_prev`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev)
 - [`modified_prev_chunks`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev_chunks)
 
+> [!WARNING]
+> `modified_prev` reads previous values at the modified rows' current row keys. If the same update also shifts those rows, as a sorted table can, `modified_prev` returns values from other rows. See [Removed or modified values](../conceptual/table-update-model.md#removed-or-modified-values).
+
 The following example listens to modified rows during each update cycle. It prints the current and previous values of the modified rows for the `X` column.
 
 ```python ticking-table order=null reset
@@ -302,7 +305,7 @@ Timer(6, start_listener, args=[handle]).start()
 When code running outside the Deephaven console creates a ticking table and adds a listener, the table may update between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
 
 > [!NOTE]
-> Code run in the Deephaven console is already protected — consecutive lines in the console cannot have updates slip between them. This section applies to code running on other threads, such as timer callbacks or background workers.
+> Code in a single console command is already protected. The console holds the update graph's exclusive lock while the command runs, so no update can slip between its lines. Updates can run between separate commands. This section applies to code running on other threads, such as timer callbacks or background workers.
 
 The [Update Graph](../conceptual/table-update-model.md) coordinates all table updates in Deephaven. By holding a lock while creating the table _and_ adding the listener, you ensure no updates occur in between.
 

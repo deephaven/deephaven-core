@@ -24,15 +24,15 @@ and is not safe to refresh. Note that some usages, such as on an append-only tab
 
 The following table summarizes when each variable is safe to use:
 
-| Variable                                     | Safe on                    | Throws error on      |
-| -------------------------------------------- | -------------------------- | -------------------- |
-| `i`, `ii`                                    | static, append-only, blink | add-only, ticking    |
-| `k`                                          | static, add-only, blink    | append-only, ticking |
-| Simple constant offset (`Column_[i-1]`)      | all tables                 | —                    |
-| Complex array expressions (`Column_[(i)-1]`) | static, blink              | any refreshing table |
+| Variable                                     | Safe on                              | Throws error on            |
+| -------------------------------------------- | ------------------------------------ | -------------------------- |
+| `i`, `ii`                                    | static, append-only, blink           | add-only, ticking          |
+| `k`                                          | static, append-only, add-only, blink | other refreshing tables    |
+| Simple constant offset (`Column_[i-1]`)      | all tables                           | —                          |
+| Complex array expressions (`Column_[(i)-1]`) | static, blink                        | any other refreshing table |
 
 > [!NOTE]
-> The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables.
+> The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and throw an error on refreshing tables other than blink tables.
 
 For refreshing tables where you need more complex positional access, see [Alternatives for refreshing tables](#alternatives-for-refreshing-tables) below.
 

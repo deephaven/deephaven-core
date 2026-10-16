@@ -16,7 +16,7 @@ DAGs are useful for representing many different types of flows, including data p
 
 Traditional batch processing typically reprocesses an entire dataset even when only a small portion changes. Deephaven's DAG-based execution model avoids that and provides significant advantages for real-time data processing:
 
-- **Incremental updates**: Operations process only the rows affected by a change, not entire tables. See [Incremental updates](#incremental-updates).
+- **Incremental updates**: Most operations process only the rows a change affects, not entire tables. See [Incremental updates](#incremental-updates).
 - **Automatic dependency tracking**: The engine tracks which tables depend on each source table (a table where data enters the graph), so you never have to tell it which tables to recompute or in what order. See [Update graph cycles](#update-graph-cycles).
 - **Efficient resource usage**: Portions of the DAG whose inputs never change never recompute. See [Incremental updates](#incremental-updates).
 - **Clear data lineage**: The graph structure makes it easy to trace how data flows from sources to results. See [Query as a graph](#query-as-a-graph).
@@ -24,7 +24,7 @@ Traditional batch processing typically reprocesses an entire dataset even when o
 
 ## Query as a graph
 
-Deephaven's query syntax is natural and readable: a query reads like a sequence of table operations. Under the hood, the engine converts each query into a DAG for efficient real-time processing. Let's look at an example to understand DAGs.
+Deephaven's query syntax is natural and readable: a query reads like a sequence of table operations. Under the hood, each table operation adds a node to a DAG, which the engine uses for efficient real-time processing. Let's look at an example to understand DAGs.
 
 ```python order=t1,t2,t3 test-set=dag-example
 from deephaven import time_table
@@ -40,7 +40,9 @@ Represented as a DAG, this query looks like:
 
 <Svg src='../assets/conceptual/dag-updated.svg' style={{height: 'auto', maxWidth: '900px'}} />
 
-Here you can see each part of the query as a set of connected components, which together form a graph. Each node in the graph is a table produced by one operation, and each edge points from a table to a table computed from it. The graph starts with a source table, which is a table where data enters the graph. In this query, the source table is a [time table](../reference/table-operations/create/timeTable.md). In real time, data flows in one direction, from the source tables through the graph, dynamically updating the tables. A table can only be built from tables that already exist, so no table can depend on itself, and the graph has no loops. This is where the "directed acyclic" part of the DAG name comes from.
+Here you can see each part of the query as a set of connected components, which together form a graph. Each node in this graph is a table produced by one operation, and each edge points from a table to a table computed from it. The graph starts with a source table, which is a table where data enters the graph. In this query, the source table is a [time table](../reference/table-operations/create/timeTable.md). In real time, data flows in one direction, from the source tables through the graph, dynamically updating the tables.
+
+A table can only be built from tables that already exist, so no table can depend on itself, and the graph has no loops. This is where the "directed acyclic" part of the DAG name comes from.
 
 The variables `t1`, `t2`, and `t3` are references to tables within the DAG. You use them to display the tables and to build further queries on them. Some tables have no variable of their own, such as the [`time_table`](../reference/table-operations/create/timeTable.md) result that `t1` is built on. Such a table stays in the DAG as long as a table you reference depends on it, but you cannot access it directly. Garbage collection removes a table that nothing references, as the next section shows.
 
@@ -83,14 +85,16 @@ Here's how an update graph cycle works:
 2. **Propagate updates**: Changes flow through the DAG in topological order (sources first, then dependents).
 3. **Process each table once**: Each table processes all its input changes for the cycle in one operation.
 4. **Run listeners**: A [listener](#custom-listeners) (code that runs when a table changes) runs once its table, and any tables it declares as dependencies, have finished updating for the cycle. Listeners do not run in one fixed global order, and listeners on independent tables can run at the same time.
-5. **Show results**: The UI shows a consistent result once the cycle completes.
+5. **Finish the cycle**: The cycle ends once every table has processed its changes, so all tables reflect the same source changes.
+
+Steps 2 to 4 repeat table by table in dependency order, so different parts of the DAG can be at different steps at the same time.
 
 For example, take the query from [Query as a graph](#query-as-a-graph), where `t2` holds the most recent row of `t1` for each `Label`, and `t3` uses [`natural_join`](../reference/table-operations/join/natural-join.md) to join `t2` onto `t1`. Suppose the previous cycle ran long, so about 5 seconds pass and `t1` receives 5 new rows in one cycle:
 
 - `t1` processes 5 additions and notifies `t2` and `t3`.
 - `t2` (the [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md)) updates the rows for the affected `Label` values.
 - `t3` (the [`natural_join`](../reference/table-operations/join/natural-join.md)) incorporates both sets of changes. It adds the 5 new rows, and because `t2` changed, it also modifies every existing row whose `Label` matches a changed `t2` row.
-- All three tables update simultaneously from the user's perspective.
+- When the cycle completes, all three tables reflect the same 5 new rows.
 
 <Svg src='../assets/conceptual/dag-ug-cycle.svg' style={{height: 'auto', maxWidth: '1000px'}} />
 

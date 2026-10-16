@@ -37,7 +37,7 @@ Deephaven table columns support a rich type system built on Java's type system. 
       <td scope="row"><a href="#string-type">String</a></td>
       <td><code>String</code></td>
       <td>✅</td>
-      <td>⚠️ (repeated values share memory only when they are the same object, such as string literals)</td>
+      <td>⚠️ Each distinct <code>String</code> object takes its own memory. Repeated string literals share one object.</td>
       <td>Text data, identifiers, categories</td>
     </tr>
     <tr>
@@ -152,7 +152,7 @@ t5 = empty_table(3).update(
         "MixedIntLong = IntValue + LongValue",
         # int * double promotes to double
         "MixedIntDouble = IntValue * 3.14",
-        # In query strings, / promotes to double: 7 / 2 = 3.5
+        # In query strings, / promotes to double
         "DoubleDiv = 7 / 2",  # Result: 3.5
         # Cast to int for truncating integer division
         "IntDiv = (int)(7 / 2)",  # Result: 3
@@ -176,7 +176,7 @@ t6 = empty_table(5).update(
 
 #### Char type
 
-The `char` type represents a single 16-bit Unicode character:
+The `char` type holds a single 16-bit UTF-16 code unit, the same as a Java `char`:
 
 ```python test-set=column-types order=t7
 from deephaven import empty_table
@@ -208,7 +208,7 @@ t8 = empty_table(5).update(
 
 #### String operations
 
-Values in a `String` column are `java.lang.String` objects, so you can call standard Java `String` methods on them in query strings:
+Values in a [`String`](../reference/query-language/types/strings.md) column are `java.lang.String` objects, so you can call standard Java `String` methods on them in query strings:
 
 ```python test-set=column-types order=t9
 from deephaven import empty_table
@@ -228,7 +228,10 @@ t9 = empty_table(3).update(
 
 #### Strings and memory
 
-Each value in a `String` column refers to a `String` object, so a column's memory use depends on how many separate objects it holds. Deephaven doesn't deduplicate (intern) strings that formulas build at runtime. A formula that builds strings, such as by concatenation, creates a new `String` object for each row, even when values repeat. A string literal in a formula, such as `` `Active` `` in the example below, is one object shared across rows. A low-cardinality column has few distinct values. When those values come from a few string literals, the column stores only a few objects. A column of computed IDs stores one object per row.
+Each value in a `String` column refers to a [`String`](../reference/query-language/types/strings.md) object, so a column's memory use depends on how many separate objects it holds. Deephaven doesn't deduplicate (intern) strings that formulas build at runtime:
+
+- A formula that builds strings, such as by concatenation, creates a new `String` object for each row, even when values repeat. A column of computed IDs stores one object per row.
+- A string literal in a formula, such as `` `Active` `` in the example below, is one object shared across rows. A low-cardinality column (one with few distinct values) built from a few string literals stores only a few objects.
 
 ```python test-set=column-types order=t10,t11
 from deephaven import empty_table
@@ -266,7 +269,7 @@ t12 = empty_table(5).update(
 
 ### Temporal types
 
-Deephaven provides robust support for the date and time types in the following table, all from Java's [`java.time`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/package-summary.html) package, and Deephaven's [built-in time functions](./time-in-deephaven.md) operate on them, making these types a natural fit for time-series data and temporal analysis. In memory, [`Instant`](../reference/query-language/types/date-time.md) columns are stored compactly as nanosecond `long` values. The other temporal types are stored as objects.
+Deephaven provides robust support for the date and time types in the following table. All of them come from Java's [`java.time`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/package-summary.html) package, and Deephaven's [built-in time functions](./time-in-deephaven.md) operate on them, which makes them a natural fit for time-series data and temporal analysis. In memory, [`Instant`](../reference/query-language/types/date-time.md) columns are stored compactly as nanosecond `long` values. The other temporal types are stored as objects.
 
 #### Temporal type reference
 
@@ -321,7 +324,7 @@ t14 = empty_table(3).update(
 ```
 
 > [!IMPORTANT]
-> Always be explicit about time zones when converting between `Instant` and zone-aware types. Implicit conversions can lead to subtle bugs, especially around daylight saving time transitions.
+> Always pass an explicit time zone when you convert an `Instant` to a zone-aware or local type. The same `Instant` has a different local date and hour in each time zone, and daylight saving time transitions shift local clock times, so an assumed zone gives subtly wrong results.
 
 #### Working with LocalDate and LocalTime
 
@@ -347,7 +350,7 @@ For specialized use cases, object and array columns provide flexibility beyond p
 
 ### Object types
 
-Common [object types](../reference/query-language/types/objects.md) include [`BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html), [`BigInteger`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigInteger.html), and custom classes. `String` and every temporal type except `Instant` are stored as Java objects too, so the considerations below apply to them as well. This section covers the remaining object types.
+Common [object types](../reference/query-language/types/objects.md) include [`BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html), [`BigInteger`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigInteger.html), and custom classes. `String` and every temporal type except [`Instant`](../reference/query-language/types/date-time.md) are stored as Java objects too, so the considerations below apply to them as well. This section covers the remaining object types.
 
 #### Object column considerations
 
@@ -583,7 +586,7 @@ from deephaven import empty_table
 left = empty_table(5).update("Key = (int)i")
 right = empty_table(5).update("Key = (long)i")
 
-# This would fail - int vs long mismatch
+# This fails with a MismatchedJoinKeyException: "Mismatched join types ... int != long"
 # t_join = left.natural_join(right, on="Key")
 ```
 

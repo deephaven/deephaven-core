@@ -212,7 +212,7 @@ Most applications that require the use of a table listener do so for the entiret
 When code running outside the Deephaven console creates a ticking table and adds a listener, the table may update between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
 
 > [!NOTE]
-> Code run in the Deephaven console is already protected — consecutive lines in the console cannot have updates slip between them. This section applies to code running on other threads, such as timer callbacks or background workers.
+> Code in a single console command is already protected. The console holds the update graph's exclusive lock while the command runs, so no update can slip between its lines. Updates can run between separate commands. This section applies to code running on other threads, such as timer callbacks or background workers.
 
 The [Update Graph](../conceptual/table-update-model.md) coordinates all table updates in Deephaven. By holding a lock while creating the table _and_ adding the listener, you ensure that no updates occur in between — your listener captures every update from the start.
 

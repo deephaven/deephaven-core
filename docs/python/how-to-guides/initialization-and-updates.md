@@ -15,13 +15,13 @@ This guide explains:
 
 Before reading this guide, you should understand:
 
-- [How to create and use tables](./new-and-empty-table.md)
+- [Create static tables](./new-and-empty-table.md)
 - [Table types](../conceptual/table-types.md) (static vs refreshing)
 - Basic [table operations](./use-select-view-update.md)
 
 For details on how Deephaven processes updates internally, see [Incremental update model](../conceptual/table-update-model.md).
 
-## The surprise: a new ticking table starts empty
+## The surprise: a table from an external source starts empty
 
 Consider this code:
 
@@ -29,7 +29,7 @@ Consider this code:
 from deephaven import kafka_consumer
 import deephaven.pandas as dhpd
 
-# This LOOKS like it reads the first trade, but the table is still empty here!
+# This LOOKS like it reads a price, but the table is still empty here!
 trades = kafka_consumer.consume(...)  # Create ticking table
 first_price = dhpd.to_pandas(trades.first_by("Symbol"))["Price"][0]  # Get first price
 print(f"First price: {first_price}")
@@ -37,11 +37,11 @@ print(f"First price: {first_price}")
 
 In standard Python, this would work fine — create the data source, then read from it. But with a [Kafka consumer](./data-import-export/kafka-stream.md), or any other external source whose data arrives only in later update cycles, the table is **empty** when you try to read from it. The data hasn't arrived yet, and it can't arrive while your script is running unless the script waits for it with [`await_update`](../reference/table-operations/table-listeners/await-update.md), as [Update cycles and the exclusive lock](#update-cycles-and-the-exclusive-lock) explains.
 
-This is the core issue: **Deephaven table operations define relationships that the engine keeps up to date as data arrives. They don't run once over data that already exists.**
+This is the core issue: **Deephaven table operations define relationships that the engine keeps up to date as data arrives. They don't run just once over the data that exists when you create them.**
 
 ## Two phases: initialization and updates
 
-Deephaven execution has two distinct phases:
+Deephaven execution has two distinct phases: initialization and real-time updates.
 
 ### Phase 1: Initialization
 
@@ -85,7 +85,7 @@ Here's a quick summary of the patterns. Details follow in the sections below.
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
 | Use table operations — let the engine handle consistency.                                                                                                                            | Pull values into Python variables when a table operation can compute the result.       |
 | Wait for data with [`await_update`](../reference/table-operations/table-listeners/await-update.md) before extracting.                                                                | Extract data right after creating a ticking table, assuming the data is already there. |
-| Use [listeners](./table-listeners-python.md) for reacting to updates, and declare every other table they read as a [dependency](./table-listeners-python.md#dependent-tables).       | Access tables other than the source or declared dependencies inside listeners.         |
+| Use [listeners](./table-listeners-python.md) for reacting to updates, and declare every other table they read as a [dependency](./table-listeners-python.md#dependent-tables).       | Access ticking tables other than the source or declared dependencies inside listeners. |
 | Compare before/after values within one update with [`modified_prev`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev).             | Mix data from different update cycles.                                                 |
 | Take the [shared lock](../conceptual/query-engine/engine-locking.md#shared-lock) only for quick extractions, then process outside it.                                                | Hold the update graph lock during long computations.                                   |
 | Initialize state with [`do_replay=True`](./table-listeners-python.md#replay-data) or with a [`snapshot`](../reference/table-operations/snapshot/snapshot.md) taken before listening. | Start a stateful listener without the table's existing rows.                           |
@@ -100,7 +100,7 @@ Here's a quick summary of the patterns. Details follow in the sections below.
 | Aggregate ticking data with custom Python logic | Built-in aggregations with [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md) or [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) where they cover the logic; otherwise, call [Python functions](./python-functions.md) in formulas.                                    |
 | Initialize ML model from table state            | [`do_replay=True`](./table-listeners-python.md#replay-data) in listener, or [`snapshot`](../reference/table-operations/snapshot/snapshot.md) before listening.                                                                                                                                                           |
 | Join ticking data with an external database     | Take a [`snapshot`](../reference/table-operations/snapshot/snapshot.md) of the ticking table, then join in Python.                                                                                                                                                                                                       |
-| Debug why data looks inconsistent               | Check whether your own threads read several tables without holding one shared lock around all the reads. Check whether listeners read tables they don't declare as dependencies. Add logging to confirm which cycle each read sees.                                                                                      |
+| Debug why data looks inconsistent               | Check whether your own threads read several tables without holding one shared lock around all the reads. Check whether listeners read tables they don't declare as dependencies. Log the row counts each read sees.                                                                                                      |
 
 ## Waiting for data: the `await_update` pattern
 
@@ -150,7 +150,7 @@ first_ts_py = dhpd.to_pandas(first_ts).iloc[0, 0]
 
 ### When not to use `await_update`
 
-- **In listeners** — Listeners already receive data when it's ready.
+- **In listeners** — Listeners already receive data when it's ready, and calling `await_update` from a listener stalls the update cycle the listener runs in.
 - **For continuous processing** — Use table operations or listeners instead.
 - **In the console** — Console code runs interactively. Wait for data to arrive, then run the next command.
 
@@ -383,7 +383,7 @@ thread = threading.Thread(target=extract_data_safely)
 thread.start()
 ```
 
-The thread reuses the script's [execution context](../conceptual/execution-context.md), because threads you start don't have one.
+The thread reuses the script's [execution context](../conceptual/execution-context.md), because a thread you start doesn't inherit it.
 
 The thread can't take the shared lock until the script finishes and releases the exclusive lock. Don't call `thread.join` in the same script, or the script hangs.
 
@@ -414,7 +414,7 @@ handle = listen(source, bad_listener)
 - The engine doesn't guarantee that other tables have finished updating for the current cycle.
 - You may see partial or stale data from other tables.
 
-**Do instead:** Within a listener, access only the table you are listening to and the tables you declare as [dependencies](./table-listeners-python.md#dependent-tables):
+**Do instead:** Within a listener, read only the table you are listening to, the ticking tables you declare as [dependencies](./table-listeners-python.md#dependent-tables), and static tables:
 
 ```python ticking-table order=null reset
 from deephaven import time_table
@@ -429,7 +429,9 @@ derived = source.update("Y = X * 2")
 
 def good_listener(update, is_replay):
     # Safe to READ from dependencies
-    print(f"Source update: {update.added()}, filtered rows: {filtered.size}")
+    print(
+        f"Source update: {update.added()}, filtered rows: {filtered.size}, derived rows: {derived.size}"
+    )
 
 
 # Add derived tables as dependencies
@@ -459,7 +461,7 @@ class BadListener:
 
 **Do instead:** Choose one of these approaches:
 
-- For a before/after comparison, compare the previous and current values of modified rows within the same update. [`modified_prev`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev) returns the previous values of the modified rows.
+- For a before/after comparison, compare the previous and current values of modified rows within the same update. [`modified_prev`](/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev) returns the previous values of the modified rows. If the update also shifts those rows, `modified_prev` can return values from the wrong rows; see [Removed or modified values](../conceptual/table-update-model.md#removed-or-modified-values).
 - To carry information to the next cycle, store only computed results. Don't store raw row data.
 
 ### Don't hold locks longer than necessary

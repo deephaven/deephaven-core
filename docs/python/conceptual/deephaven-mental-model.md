@@ -58,7 +58,7 @@ Because a table is a recipe rather than a container, you can't modify it in plac
 
 Deephaven tables come in two flavors:
 
-- **Static tables**: Data that doesn't change. Loaded from files, created with [`empty_table`](../reference/table-operations/create/emptyTable.md) or [`new_table`](../reference/table-operations/create/newTable.md), or [snapshots](../reference/table-operations/snapshot/snapshot.md) of live data.
+- **Static tables**: Data that doesn't change. Usually loaded from files, created with [`empty_table`](../reference/table-operations/create/emptyTable.md) or [`new_table`](../reference/table-operations/create/newTable.md), or [snapshots](../reference/table-operations/snapshot/snapshot.md) of live data.
 - **Live tables**: Data that updates continuously. Deephaven also calls these refreshing tables. Created with [`time_table`](../reference/table-operations/create/timeTable.md) or connected to [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md) and other real-time sources.
 
 ```python ticking-table order=null
@@ -90,7 +90,7 @@ This has important implications:
 - **Java methods are available**: Use `Math.sqrt` rather than `math.sqrt`, and `String` methods like `toUpperCase` rather than Python string methods.
 - **Python variables are available**: The engine resolves local and global variables from your script through the [query scope](../how-to-guides/query-scope.md).
 - **Python functions are callable**: Formulas can call Python functions, at a performance cost described in [Calling Python from formulas](#calling-python-from-formulas).
-- **Engine-native formulas run fast**: The engine compiles built-in expressions to Java and reads their input columns in bulk chunks, so each row costs a compiled Java call rather than a call into Python.
+- **Engine-native formulas run fast**: Formulas that use only operators, Java methods, and Deephaven's built-in functions are engine-native. The engine compiles them to Java and reads their input columns in bulk chunks, so each row costs a compiled Java call rather than a call into Python.
 
 > [!TIP]
 > Query strings use Java-style syntax:
@@ -128,7 +128,7 @@ A call is eligible when:
 
 The call in this example is eligible. A call that doesn't meet these conditions falls back to one Python call per row. Both kinds of call are slower than engine-native formulas, so prefer engine-native formulas for performance-critical code.
 
-## Formulas must be stateless
+## Write stateless formulas
 
 The engine doesn't promise to evaluate rows in order, or one at a time. This is the most common surprise for new users. Consider this code:
 
@@ -155,7 +155,7 @@ You might expect `Value` to be `[1, 2, 3, 4, 5]`, but nothing guarantees it. Two
 
 On a small static table like this one, the values usually come back in order. Also, a formula that calls a Python function, like this one, runs in parallel only on a [free-threaded Python build](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where).
 
-**The rule:** Formulas should be _stateless_. The result for row N should depend only on the input values for row N, not on what happened when processing other rows. Immutable Python variables, such as configuration values, are fine. Mutable state and order-dependent logic are not.
+**The rule:** Formulas should be _stateless_. The result for row N should depend only on the input values for row N, not on what happened when processing other rows. Immutable Python variables, such as configuration values, are fine. Shared mutable state, such as a counter that every row updates, and logic that depends on the order rows are processed in are not.
 
 ### Replacing counters with row positions
 
@@ -405,6 +405,7 @@ Deephaven reads data from files, streams, and your own code, and writes results 
 | Sink        | How to use                                                                                      |
 | ----------- | ----------------------------------------------------------------------------------------------- |
 | **Parquet** | [`deephaven.parquet.write`](../reference/data-import-export/Parquet/writeTable.md)              |
+| **CSV**     | [`deephaven.csv.write`](../reference/data-import-export/CSV/writeCsv.md)                        |
 | **Kafka**   | [`deephaven.stream.kafka.producer.produce`](../reference/data-import-export/Kafka/produce.md)   |
 | **Python**  | [`to_pandas`](../reference/pandas/to-pandas.md) or [`to_numpy`](../reference/numpy/to-numpy.md) |
 
@@ -413,7 +414,7 @@ Deephaven reads data from files, streams, and your own code, and writes results 
 Deephaven runs as a server. Multiple [clients](./client-server-model.md#client-apis) can connect simultaneously:
 
 - **Web UI**: For interactive work in the built-in console and grids
-- **Python client** (`pydeephaven`): For Python applications outside the server
+- **Python client** ([`pydeephaven`](../getting-started/pyclient-quickstart.md)): For Python applications outside the server
 - **JavaScript client**: For web applications
 - **Java/C++/R/Go clients**: For integrations in those languages
 

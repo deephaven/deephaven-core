@@ -46,7 +46,7 @@ doubled = source.update("Y = X * 2")
 
 Deephaven tables come in two flavors:
 
-- **Static tables**: Data that doesn't change. Loaded from files, created with [`emptyTable`](../reference/table-operations/create/emptyTable.md) or [`newTable`](../reference/table-operations/create/newTable.md), or [snapshots](../reference/table-operations/snapshot/snapshot.md) of live data.
+- **Static tables**: Data that doesn't change. Usually loaded from files, created with [`emptyTable`](../reference/table-operations/create/emptyTable.md) or [`newTable`](../reference/table-operations/create/newTable.md), or [snapshots](../reference/table-operations/snapshot/snapshot.md) of live data.
 - **Live tables**: Data that updates continuously. Deephaven also calls these refreshing tables. Created with [`timeTable`](../reference/table-operations/create/timeTable.md) or connected to [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md) and other real-time sources.
 
 ```groovy ticking-table order=null
@@ -74,7 +74,7 @@ This has important implications:
 - **Java methods are available**: Use `Math.sqrt`, `String` methods like `toUpperCase`, and other Java standard library methods.
 - **Groovy variables are available**: Script variables assigned without `def` are available inside formulas through the [query scope](../how-to-guides/query-scope.md).
 - **Groovy closures are callable**: Formulas can call [closures](../how-to-guides/groovy-closures.md), at a performance cost described in [Calling Groovy from formulas](#calling-groovy-from-formulas).
-- **Engine-native formulas run fast**: The engine compiles built-in expressions to Java and reads their input columns in bulk chunks, so each row costs a compiled Java call rather than a closure call.
+- **Engine-native formulas run fast**: Formulas that use only operators, Java methods, and Deephaven's built-in functions are engine-native. The engine compiles them to Java and reads their input columns in bulk chunks, so each row costs a compiled Java call rather than a closure call.
 
 > [!TIP]
 > Query strings use Java-style syntax:
@@ -89,7 +89,7 @@ This has important implications:
 
 You can call [Groovy closures](../how-to-guides/groovy-closures.md) from formulas:
 
-```groovy syntax
+```groovy order=result
 myCalculation = { x -> x * x + 1 }
 
 result = emptyTable(10).update("Y = (int)myCalculation(i)")
@@ -97,7 +97,7 @@ result = emptyTable(10).update("Y = (int)myCalculation(i)")
 
 The engine calls a [closure](../how-to-guides/groovy-closures.md) once per row, which is slower than engine-native formulas. For performance-critical code, prefer engine-native formulas.
 
-## Formulas must be stateless
+## Write stateless formulas
 
 The engine doesn't promise to evaluate rows in order, or one at a time. This is the most common surprise for new users. Consider this code:
 
@@ -120,7 +120,7 @@ You might expect `Value` to be `[1, 2, 3, 4, 5]`, but nothing guarantees it. Two
 
 On a small static table like this one, the values usually come back in order.
 
-**The rule:** Formulas should be _stateless_. The result for row N should depend only on the input values for row N, not on what happened when processing other rows. Immutable variables, such as configuration values, are fine. Mutable state and order-dependent logic are not.
+**The rule:** Formulas should be _stateless_. The result for row N should depend only on the input values for row N, not on what happened when processing other rows. Immutable variables, such as configuration values, are fine. Shared mutable state, such as a counter that every row updates, and logic that depends on the order rows are processed in are not.
 
 ### Replacing counters with row positions
 
@@ -327,6 +327,7 @@ Deephaven reads data from files, streams, and your own code, and writes results 
 | Sink        | How to use                                                                                 |
 | ----------- | ------------------------------------------------------------------------------------------ |
 | **Parquet** | [`ParquetTools.writeTable`](../reference/data-import-export/Parquet/writeTable.md)         |
+| **CSV**     | [`CsvTools.writeCsv`](../reference/data-import-export/CSV/writeCsv.md)                     |
 | **Kafka**   | [`KafkaTools.produceFromTable`](../reference/data-import-export/Kafka/produceFromTable.md) |
 
 ### Client-server architecture
@@ -334,7 +335,7 @@ Deephaven reads data from files, streams, and your own code, and writes results 
 Deephaven runs as a server. Multiple [clients](./client-server-model.md#client-apis) can connect simultaneously:
 
 - **Web UI**: For interactive work in the built-in console and grids
-- **Python client** (`pydeephaven`): For Python applications outside the server
+- **Python client** ([`pydeephaven`](./client-server-model.md#client-apis)): For Python applications outside the server
 - **JavaScript client**: For web applications
 - **Java/C++/R/Go clients**: For integrations in those languages
 

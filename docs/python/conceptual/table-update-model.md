@@ -22,7 +22,7 @@ This page explains how that system works:
 
 - How Deephaven combines streams and tables.
 - How Deephaven describes each table update as adds, removes, modifies, modified columns, and shifts.
-- How Deephaven processes updates at scale while letting you read consistent data.
+- How Deephaven processes updates at scale, lets you read consistent data, and moves updates between processes.
 
 ## Deephaven's approach
 
@@ -80,7 +80,7 @@ Deephaven's table update model uses an **update notification** data structure wi
 - [modified column set](#modified-columns): which columns those changes touched
 - [row shift data](#shifts): ranges of existing row keys that moved to new keys
 
-Two supporting subsections sit among these. [Sparse row sets](#sparse-row-sets) follows Adds and shows that a row set can contain gaps. [Removed or modified values](#removed-or-modified-values) follows Shifts and explains how listeners read the values a cell held before the update. [Scaling table update processing](#scaling-table-update-processing) then covers parallel processing, safe concurrent data access, and multi-process pipelines.
+Along the way, [Sparse row sets](#sparse-row-sets) shows that a row set can contain gaps, and [Removed or modified values](#removed-or-modified-values) explains how listeners read the value a cell held before the update.
 
 ### Adds
 
@@ -212,7 +212,9 @@ Instead, Deephaven's table update model communicates **row shift data**, moving 
 
 The row redirection that maps `SortedKVTable`'s row set onto `KVTable`'s row set also changes, to `(0→0, 1→1, 2→3, 3→2)`. That redirection change is not part of the update notification that `SortedKVTable` sends downstream.
 
-It's worth noting that the allocation of row keys, the actual row shift data communicated, and any kind of row redirections are details left up to the implementation of each table operation. The real [sort](../reference/table-operations/sort/sort.md) operation, for example, allocates row keys more cleverly than the naive allocation above. The update model imposes certain correctness and consistency constraints, but does not dictate any other limitations. To illustrate this, consider that the row set for `SortedKVTable` need not start from 0. Had we started from a higher row key, it would have allowed for a negative shift delta while remaining perfectly correct.
+It's worth noting that the allocation of row keys, the actual row shift data communicated, and any kind of row redirections are details left up to the implementation of each table operation. The real [sort](../reference/table-operations/sort/sort.md) operation, for example, allocates row keys more cleverly than the naive allocation above. The update model imposes certain correctness and consistency constraints, but does not dictate any other limitations.
+
+To illustrate this, consider that the row set for `SortedKVTable` need not start from 0. Had we started from a higher row key, it would have allowed for a negative shift delta while remaining perfectly correct.
 
 ### Removed or modified values
 
@@ -232,11 +234,11 @@ Sum′ = Sum
 
 For all cells, the previous value is the value as of the beginning of the current update cycle. Unchanged cells therefore have the same previous and current value.
 
-To provide this capability, every Deephaven column source must be able to provide the previous values of removed or modified cells, and must recognize which cells are unchanged. Likewise, a table's row set can report its previous state: the row keys it held at the start of the cycle.
+To provide this capability, every Deephaven column source must be able to provide the previous values of removed or modified cells, and must return the current value as the previous value of any unchanged cell. Likewise, a table's row set can report its previous state: the row keys it held at the start of the cycle.
 
 This requirement holds only during the cycle's _updating_ phase, when the engine propagates changes through the DAG. At the end of the cycle, the engine releases the data structures that hold previous values. Outside the updating phase, previous values are identical to current values, so they carry no change information.
 
-In Python, a [listener](../how-to-guides/table-listeners-python.md) receives a [`TableUpdate`](https://deephaven.io/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate) object. [`modified_prev`](https://deephaven.io/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev) reads previous values at the modified rows' current row keys. Previous values are keyed by each row's key before this cycle's [shifts](#shifts), so if the same update also shifts the modified rows, `modified_prev` can return values from the wrong rows. The example below is reliable only for tables whose updates don't shift modified rows:
+In Python, a [listener](../how-to-guides/table-listeners-python.md) receives a [`TableUpdate`](https://deephaven.io/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate) object. [`modified_prev`](https://deephaven.io/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev) reads previous values at the modified rows' current row keys. Previous values are keyed by each row's key before this cycle's [shifts](#shifts), so if the same update also shifts the modified rows, `modified_prev` can return values from the wrong rows. The example below is reliable only for tables whose updates don't shift modified rows, such as an append-only table or a `last_by` result. A sorted table is one that can shift them:
 
 ```python syntax
 from deephaven.table_listener import listen
@@ -253,7 +255,7 @@ def on_update(update, is_replay):
         print(f"Change in Value for modified rows: {deltas}")
 
 
-# my_table is a refreshing table with a Value column whose updates don't shift modified rows
+# my_table is a refreshing table with a Value column, such as a last_by result (no shifts)
 handle = listen(my_table, on_update)
 ```
 
@@ -273,7 +275,7 @@ Each table within the [DAG](./dag.md) produces at most one update notification f
 - The work scheduler runs notifications on a thread pool, so it can process several at once when more than one is ready.
 - Some operations, such as [`update`](../reference/table-operations/select/update.md), [`select`](../reference/table-operations/select/select.md), and [`where`](../reference/table-operations/filter/where.md), can also split the work of a single notification across that pool.
 
-Some tables have multiple parents, such as the results of a [join](../how-to-guides/joins-exact-relational.md) or a [merge](../reference/table-operations/merge/merge.md). To give each such table a single consistent update, the engine uses a [`MergedListener`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html). Its work can't run until all parents are _satisfied_. A parent is satisfied when either of these is true:
+Some tables have multiple refreshing parents, such as the results of a [join](../how-to-guides/joins-exact-relational.md) or a [merge](../reference/table-operations/merge/merge.md) of ticking tables. To give each such table a single consistent update, the engine uses a [`MergedListener`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html). Its work can't run until all parents are _satisfied_. A parent is satisfied when either of these is true:
 
 - It has delivered its update for this cycle.
 - The engine can prove it won't send one this cycle.
@@ -290,7 +292,7 @@ Reading everything above, you might reasonably wonder: if Deephaven processes ta
    - Schedule a special terminal notification, which runs after all other notifications in the cycle, once the logical clock has returned to idle but while the engine still holds the exclusive lock. This is ideal for post-update maintenance.
 3. **Read concurrently with an optimistic snapshot.** Read data concurrently with update processing, then retry or fall back to a lock if the read can't be proven consistent. The rest of this section explains how this works.
 
-The first two approaches block or delay update processing while they run, which slows how quickly real-time results appear. The third strategy, on the other hand, gains concurrency in exchange for giving up a guarantee of success.
+The first two approaches block or delay update processing while they run, which slows how quickly real-time results appear. The third strategy, on the other hand, gains concurrency in exchange for giving up a guarantee that any one attempt succeeds.
 
 Recall that the logical clock is always in one of two phases, _updating_ or _idle_. It also counts cycles with a _step_ number. External code can read the phase and step together, atomically, without a lock. Each table also records the last step on which it finished its update.
 
@@ -307,7 +309,7 @@ None of these consistent data access mechanisms obviates the need to use good en
 
 ### Multi-process data pipelines
 
-Deephaven also provides mechanisms for moving table data consistently between processes. Our [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) implementation uses custom metadata to implement a protocol we call [Barrage](https://github.com/deephaven/barrage). Barrage communicates table updates over a language-agnostic gRPC API, using the model described in [Describing table updates](#describing-table-updates). Our [Apache Kafka](./kafka-basic-terms.md) integration allows for streaming data ingestion and publication via one of the most popular distributed event streaming platforms in the world.
+Deephaven also provides mechanisms for moving table data consistently between processes. Our [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) implementation uses custom metadata to implement a protocol we call [Barrage](./what-is-barrage.md). Barrage communicates table updates over a language-agnostic gRPC API, using the model described in [Describing table updates](#describing-table-updates). Our [Apache Kafka](./kafka-basic-terms.md) integration allows for streaming data ingestion and publication via one of the most popular distributed event streaming platforms in the world.
 
 Together with the Deephaven query engine, or with external publishers and subscribers that understand Apache Arrow Flight and Barrage or Apache Kafka, these mechanisms let you build a multi-process DAG with remote links from publisher to subscriber. Each remote link is a simple primitive that processes data consistently and asynchronously. The building blocks are in place for a wide variety of real-time, data-driven applications.
 
@@ -321,6 +323,7 @@ The update model described above is a cornerstone of Deephaven's data engine. It
 - [Directed acyclic graph (DAG)](./dag.md)
 - [Kafka basic terminology](./kafka-basic-terms.md)
 - [Deephaven Barrage](/barrage/docs)
+- [What is Barrage?](./what-is-barrage.md)
 - [Table listeners](../how-to-guides/table-listeners-python.md)
 - [Initialization and updates](../how-to-guides/initialization-and-updates.md)
 - [Multithreading: synchronization, locks, and snapshots](./query-engine/engine-locking.md)

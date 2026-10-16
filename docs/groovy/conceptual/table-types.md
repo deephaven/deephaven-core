@@ -12,7 +12,7 @@ This guide discusses the unique properties of each of Deephaven's table types. T
   <thead>
     <tr>
       <th>Table type</th>
-      <th>Index-based ops, special variables</th>
+      <th>Index-based ops (<code>i</code>, <code>ii</code>)</th>
       <th>Row key variable <code>k</code></th>
       <th>Consistent inter-cycle row ordering</th>
       <th>Bounded memory usage</th>
@@ -73,7 +73,7 @@ This guide discusses the unique properties of each of Deephaven's table types. T
 
 ✅ means yes, ❌ means no, and 🚫 means the column doesn't apply to that table type. The columns mean the following:
 
-- **Index-based ops, special variables**: Formulas can use the row-position [special variables](../reference/query-language/variables/special-variables.md) `i` and `ii` and get stable results.
+- **Index-based ops (`i`, `ii`)**: Formulas can use the row-position [special variables](../reference/query-language/variables/special-variables.md) `i` and `ii` and get stable results.
 - **Row key variable `k`**: Formulas can use the special variable `k`, which holds a row's [row key](../reference/community-questions/shifts.md#key-terms), without throwing an error.
 - **Consistent inter-cycle row ordering**: Rows keep their order of arrival from one [update cycle](./table-update-model.md) to the next.
 - **Bounded memory usage**: The table can't grow without bound as new data arrives.
@@ -91,9 +91,9 @@ Because static tables do not update, they have the following characteristics:
 2. Row keys never change either. The special variable `k` gives a row's [row key](../reference/community-questions/shifts.md#key-terms), a stable internal address for the row rather than its position.
 3. A static table never reprocesses a row, so [`select`](../reference/table-operations/select/select.md) and [`update`](../reference/table-operations/select/update.md) evaluate each formula once per row. [`view`](../reference/table-operations/select/view.md) and [`updateView`](../reference/table-operations/select/update-view.md) instead evaluate a formula each time a cell is read.
 
-Even on a static table, the engine assumes formulas are stateless by default and can evaluate them in parallel, so mark a formula that reads or modifies external state with [`withSerial`](../reference/query-language/types/ConcurrencyControl.md#withserial). For more about stateful operations, see [Parallelization](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where).
+Even on a static table, the engine assumes by default that formulas are stateless, which means they don't depend on mutable outside state or on the order in which rows are evaluated. It can therefore evaluate them in parallel. Mark a formula that changes shared state, or that depends on row order, with [`withSerial`](../reference/query-language/types/ConcurrencyControl.md#withserial). When formulas in more than one column share state, they also need barriers. See [Parallelization](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where).
 
-Create a static table by reading from a static data source, such as [CSV](../how-to-guides/data-import-export/csv-import.md), [Iceberg](../how-to-guides/data-import-export/iceberg.md), or [Parquet](../how-to-guides/data-import-export/parquet-import.md), or with a table creation function such as [`newTable`](../how-to-guides/new-and-empty-table.md#newtable) or [`emptyTable`](../how-to-guides/new-and-empty-table.md#emptytable). This example uses `emptyTable` to construct a static table:
+Reading [CSV](../how-to-guides/data-import-export/csv-import.md), [Iceberg](../how-to-guides/data-import-export/iceberg.md), or [Parquet](../how-to-guides/data-import-export/parquet-import.md) data produces a static table by default. You can also create one with a table creation function such as [`newTable`](../how-to-guides/new-and-empty-table.md#newtable) or [`emptyTable`](../how-to-guides/new-and-empty-table.md#emptytable). This example uses `emptyTable` to construct a static table:
 
 ```groovy test-set=1 order=t
 // create a static table with 10 rows and 2 columns
@@ -134,8 +134,8 @@ Most streaming Deephaven tables are "standard" tables. Deephaven applies changes
 
 These properties have some important consequences:
 
-1. Formulas that use the [special variables](../reference/query-language/variables/special-variables.md) `i` and `ii` would return values that change between update cycles, so by default Deephaven throws an error when a formula or filter on a standard table uses `i`, `ii`, `k`, or most [column array](../how-to-guides/work-with-arrays.md) expressions. A formula that uses `k` throws an error because the engine allows `k` only on add-only and blink tables, and a standard table can remove rows or shift them to new row keys.
-2. Stateful operations read or modify external state. On a streaming table, the engine recomputes a formula whenever it reprocesses a row, such as a modified row in a later update cycle, so a stateful formula can return a different value for the same row or change that state more than once. Deephaven can't detect stateful operations, so it doesn't throw an error for them the way it does for `i` and `ii`. Avoid them on standard tables.
+1. Formulas that use the [special variables](../reference/query-language/variables/special-variables.md) `i` and `ii` would return values that change between update cycles, so by default Deephaven throws an error when a formula on a standard table uses `i`, `ii`, `k`, or most [column array](../how-to-guides/work-with-arrays.md) expressions. A formula that uses `k` throws an error because the engine allows `k` only on add-only and blink tables, and a standard table can remove rows or shift them to new row keys.
+2. Stateful operations change state outside the row, such as a counter, or depend on the order in which rows are evaluated. On a streaming table, the engine recomputes a formula whenever it reprocesses a row, such as a modified row in a later update cycle, so a stateful formula can return a different value for the same row or change that state more than once. Deephaven can't detect stateful operations, so it doesn't throw an error for them the way it does for `i` and `ii`. Avoid them on standard tables.
 3. The rows in standard tables are not guaranteed to maintain their original order of arrival. Operations should not assume anything about the order of data in a standard table.
 4. Standard tables may eventually result in out-of-memory errors in data-intensive applications.
 
@@ -171,12 +171,12 @@ Add-only tables are relaxed versions of append-only tables. They have the follow
 
 These properties yield the following consequences:
 
-1. Formulas that use the [special variables](../reference/query-language/variables/special-variables.md) `i` and `ii` would return values that change between update cycles, so by default Deephaven throws an error when a formula or filter on an add-only table uses `i`, `ii`, or most [column array](../how-to-guides/work-with-arrays.md) expressions. The row key variable `k` is still allowed, because existing row keys never change.
+1. Formulas that use the [special variables](../reference/query-language/variables/special-variables.md) `i` and `ii` would return values that change between update cycles, so by default Deephaven throws an error when a formula on an add-only table uses `i`, `ii`, or most [column array](../how-to-guides/work-with-arrays.md) expressions. The row key variable `k` is still allowed, because existing row keys never change.
 2. Deephaven can't detect [stateful operations](#standard-streaming-tables), so avoid them on add-only tables.
 3. The rows in add-only tables are not guaranteed to maintain their original order of arrival. Operations should not assume anything about the order of data in an add-only table.
 4. Add-only tables may eventually result in out-of-memory errors in data-intensive applications.
 
-Every append-only table, such as a non-blink [time table](../how-to-guides/time-table.md), is also add-only. Add-only tables still allow formulas that use the row key `k`. You can also convert any refreshing add-only table to a blink table. See [Create a blink table from an add-only table](#create-a-blink-table-from-an-add-only-table).
+Every append-only table, such as a non-blink [time table](../how-to-guides/time-table.md), is also add-only. You can also convert any refreshing add-only table to a blink table. See [Create a blink table from an add-only table](#create-a-blink-table-from-an-add-only-table).
 
 An add that requires a shift is _not_ an add-only operation. For example, the result of [`merge`](../reference/table-operations/merge/merge.md) is not always add-only. `merge` reserves a range of row keys for each source table. When a streaming source other than the last one outgrows its range, the rows from the tables after it shift to new row keys.
 
@@ -219,7 +219,7 @@ Most operations on blink tables behave exactly as they do on other tables and pr
 
 ### Specialized semantics for blink tables
 
-[Aggregation operations](../how-to-guides/dedicated-aggregations.md) such as [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) and [`countBy`](../reference/table-operations/group-and-aggregate/countBy.md) use specialized semantics on blink tables. The result aggregates every row the blink table has delivered since you created the aggregation, not only the current cycle's rows. For example, a [`sumBy`](../reference/table-operations/group-and-aggregate/sumBy.md) on a blink table holds each group's sum over all rows seen since the `sumBy` started. You can therefore aggregate over the full history of a stream while using far less memory than holding the whole stream in an in-memory table.
+[Aggregation operations](../how-to-guides/dedicated-aggregations.md) such as [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) and [`countBy`](../reference/table-operations/group-and-aggregate/countBy.md) use specialized semantics on blink tables. The result aggregates every row the blink table has delivered since you created the aggregation, not only the current cycle's rows. For example, a [`sumBy`](../reference/table-operations/group-and-aggregate/sumBy.md) on a blink table holds each group's sum over all rows seen since the `sumBy` started. For aggregations that keep a fixed amount of state per group, such as sums and counts, you can therefore aggregate over the full history of a stream while using far less memory than holding the whole stream in an in-memory table.
 
 Here is an example that demonstrates a blink table's specialized aggregation semantics:
 
@@ -296,7 +296,7 @@ tAppendOnly = BlinkTableTools.blinkToAppendOnly(t)
 
 ### Create a blink table from an add-only table
 
-Use [`AddOnlyToBlinkTableAdapter.toBlink`](../reference/table-operations/create/addOnlyToBlink.md) to convert an add-only table to a blink table. The conversion helps when the upstream add-only table is not fully in memory, or when you want [blink table aggregation semantics](#specialized-semantics-for-blink-tables). If the upstream table is already fully in memory, the operation succeeds but increases memory usage instead of reducing it.
+Use [`AddOnlyToBlinkTableAdapter.toBlink`](../reference/table-operations/create/addOnlyToBlink.md) to convert an add-only table to a blink table. The conversion helps when the upstream add-only table is not fully in memory, or when you want [blink table aggregation semantics](#specialized-semantics-for-blink-tables). If the upstream table already holds all its rows in memory, the conversion doesn't reduce memory use, because the upstream table still keeps every row.
 
 The following example converts an append-only time table to a blink table:
 
@@ -323,7 +323,7 @@ tBlink = AddOnlyToBlinkTableAdapter.toBlink(t)
 
 These properties have the following consequences:
 
-1. Formulas that use the [special variables](../reference/query-language/variables/special-variables.md) `i` and `ii` would return values that change between update cycles, so by default Deephaven throws an error when a formula or filter on a ring table uses `i`, `ii`, or most [column array](../how-to-guides/work-with-arrays.md) expressions. A formula that uses `k` also throws an error, because the engine allows `k` only on add-only and blink tables, and a ring table removes rows.
+1. Formulas that use the [special variables](../reference/query-language/variables/special-variables.md) `i` and `ii` would return values that change between update cycles, so by default Deephaven throws an error when a formula on a ring table uses `i`, `ii`, or most [column array](../how-to-guides/work-with-arrays.md) expressions. A formula that uses `k` also throws an error, because the engine allows `k` only on add-only and blink tables, and a ring table removes rows.
 2. Deephaven can't detect [stateful operations](#standard-streaming-tables), so avoid them on ring tables.
 3. The rows in ring tables maintain their original order of arrival.
 4. Ring tables _do not_ grow without bound and are strictly limited to a maximum number of rows. Once the table reaches that limit, it removes the oldest rows from memory.
@@ -352,7 +352,7 @@ tRing = RingTableTools.of(t, 5)
 > [!CAUTION]
 > Creating a ring table from an append-only table does not give the memory savings that ring tables are useful for.
 
-You can also create ring tables from append-only tables with [`RingTableTools.of`](../reference/table-operations/create/ringTable.md). This is a less common use case, because it loses the memory savings that ring tables usually afford. The append-only table upstream keeps every row, so it can grow until it eats up all available memory. The downstream ring table only _appears_ to save memory, and is effectively a [`tail`](../reference/table-operations/filter/tail.md) of that table.
+You can also create ring tables from append-only tables with [`RingTableTools.of`](../reference/table-operations/create/ringTable.md). The append-only table upstream keeps every row, so it can grow until it eats up all available memory. The downstream ring table only _appears_ to save memory, and is effectively a [`tail`](../reference/table-operations/filter/tail.md) of that table.
 
 This example creates a ring table with a 5-row capacity from an append-only time table:
 
@@ -389,8 +389,6 @@ tRingWithInitial = RingTableTools.of(t, 10)
 To disable this behavior, set `initialize` to `false`:
 
 ```groovy test-set=5 ticking-table order=null
-import io.deephaven.engine.table.impl.sources.ring.RingTableTools
-
 tRingWithoutInitial = RingTableTools.of(t, 10, false)
 ```
 
