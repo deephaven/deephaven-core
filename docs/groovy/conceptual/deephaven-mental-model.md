@@ -12,7 +12,7 @@ Deephaven works differently from SQL databases and from Java collections, and so
 
 This guide isn't a deep technical dive. For that, see [Deephaven's design](./deephaven-design.md). Instead, this guide builds the mental model you need to work productively with Deephaven from day one. The second half of the page puts that model to work: common query patterns, what you can build on the engine, and a quick reference.
 
-![How Deephaven works: Tables are recipes, not data copies — updates flow automatically](../assets/conceptual/mental-model/mental-model-overview-static.png)
+<Svg src='../assets/conceptual/mental-model/mental-model-overview.svg' style={{height: 'auto', maxWidth: '1000px'}} />
 
 _For hands-on learning, see the [Crash course](../getting-started/crash-course/overview.md)._
 
