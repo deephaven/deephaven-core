@@ -64,7 +64,7 @@ Deephaven table columns support a rich type system built on Java's type system. 
   </tbody>
 </table>
 
-The rest of this guide explores each of these column types, their properties, and how to use them effectively in your tables.
+The rest of this guide explores each of these column types, their properties, and how to use them effectively in your tables. To see how Python and NumPy types map to these Java types, and how type hints and casts set a column's type, see [Data types in Deephaven and Python](../how-to-guides/data-types.md).
 
 ## Type fundamentals
 
@@ -136,6 +136,8 @@ t3 = t2.where("!isNull(WithNulls)")
 # Alternatively, compare with null constant
 t4 = t2.where("WithNulls != NULL_INT")
 ```
+
+`float` and `double` columns can also hold [`NaN`](../reference/query-language/types/NaNs.md), which is a different value from null.
 
 #### Type promotion and arithmetic
 
@@ -635,7 +637,7 @@ sorted_with_nulls = t28.sort("NullableInt")
 
 - **Integers**: Use the smallest type that fits your range (`byte` < `short` < `int` < `long`).
 - **Decimals**: Use `double` for most cases, [`BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html) only when exact precision is required.
-- **Timestamps**: Use [`Instant`](../reference/query-language/types/date-time.md) for UTC timestamps and [`ZonedDateTime`](../reference/query-language/types/date-time.md) when time zones matter.
+- **Timestamps**: Use [`Instant`](../reference/query-language/types/date-time.md) to store points in time, and pass a time zone to functions such as [`toLocalDate`](../reference/query-language/query-library/auto-imported/time.md) or [`hourOfDay`](../reference/query-language/query-library/auto-imported/time.md) when you need local values. Use [`ZonedDateTime`](../reference/query-language/types/date-time.md) columns only when each value must carry its own time zone.
 - **Text**: Use [`String`](../reference/query-language/types/strings.md) for text data. Store low-cardinality categories as `String` values or small integer codes.
 - **Arrays**: Use arrays when each row needs multiple related values. Use separate columns instead if you query individual elements often.
 

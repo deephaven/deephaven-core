@@ -240,11 +240,13 @@ This requirement holds only during the cycle's _updating_ phase, when the engine
 
 In Groovy, a [listener](../how-to-guides/table-listeners-groovy.md) receives a [`TableUpdate`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html) that describes which row keys changed. Read previous values from the table's column sources with [`getPrev`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/ElementSource.html#getPrev(long)) methods. Previous values are keyed by each row's key before this cycle's [shifts](#shifts), so the example uses [`forAllModified`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#forAllModified(java.util.function.BiConsumer)), which pairs each modified row's pre-shift key with its current key:
 
-```groovy syntax
+```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 
-// myTable is any refreshing table with a Value column
+// A lastBy result modifies its one row each cycle
+myTable = timeTable("PT1s").update("Value = i").lastBy()
+
 listener = new InstrumentedTableUpdateListenerAdapter(myTable, false) {
     @Override
     public void onUpdate(TableUpdate update) {

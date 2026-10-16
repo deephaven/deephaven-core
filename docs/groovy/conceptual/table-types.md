@@ -135,7 +135,7 @@ Most streaming Deephaven tables are "standard" tables. Deephaven applies changes
 These properties have some important consequences:
 
 1. Formulas that use the [special variables](../reference/query-language/variables/special-variables.md) `i` and `ii` would return values that change between update cycles, so by default Deephaven throws an error when a formula on a standard table uses `i`, `ii`, `k`, or most [column array](../how-to-guides/work-with-arrays.md) expressions. A formula that uses `k` throws an error because the engine allows `k` only on add-only and blink tables, and a standard table can remove rows or shift them to new row keys.
-2. Stateful operations change state outside the row, such as a counter, or depend on the order in which rows are evaluated. On a streaming table, the engine recomputes a formula whenever it reprocesses a row, such as a modified row in a later update cycle, so a stateful formula can return a different value for the same row or change that state more than once. Deephaven can't detect stateful operations, so it doesn't throw an error for them the way it does for `i` and `ii`. Avoid them on standard tables.
+2. Stateful operations change state outside the row, such as a counter, or depend on the order in which rows are evaluated. Deephaven can't detect them, so it doesn't throw an error for them the way it does for `i` and `ii`. On every table type, mark a stateful formula with [`withSerial`](../reference/query-language/types/ConcurrencyControl.md#withserial), as on a [static table](#static-tables). A standard table adds a further problem: the engine recomputes a formula whenever it reprocesses a modified row in a later update cycle, so a stateful formula can return a different value for the same row or change that state more than once. Avoid stateful formulas on standard tables.
 3. The rows in standard tables are not guaranteed to maintain their original order of arrival. Operations should not assume anything about the order of data in a standard table.
 4. Standard tables may eventually result in out-of-memory errors in data-intensive applications.
 
@@ -153,7 +153,7 @@ These properties yield the following consequences:
 
 1. Append-only tables guarantee that old rows do not change, move, or disappear, so operations using the [special variables](../reference/query-language/variables/special-variables.md) `i`, `ii`, and `k` are allowed and yield stable values for existing rows.
 2. By default, most [column array](../how-to-guides/work-with-arrays.md) expressions still throw an error on append-only tables. Simple constant offsets such as `X_[i-1]` are the exception.
-3. Deephaven can't detect [stateful operations](#standard-streaming-tables), so avoid them on append-only tables.
+3. Rows are never modified, so the engine never recomputes a formula because a row changed. Mark a [stateful formula](#standard-streaming-tables) with [`withSerial`](../reference/query-language/types/ConcurrencyControl.md#withserial), as on a static table.
 4. The rows in append-only tables are guaranteed to maintain their original order of arrival.
 5. Append-only tables may eventually result in out-of-memory errors in data-intensive applications.
 
@@ -172,7 +172,7 @@ Add-only tables are relaxed versions of append-only tables. They have the follow
 These properties yield the following consequences:
 
 1. Formulas that use the [special variables](../reference/query-language/variables/special-variables.md) `i` and `ii` would return values that change between update cycles, so by default Deephaven throws an error when a formula on an add-only table uses `i`, `ii`, or most [column array](../how-to-guides/work-with-arrays.md) expressions. The row key variable `k` is still allowed, because existing row keys never change.
-2. Deephaven can't detect [stateful operations](#standard-streaming-tables), so avoid them on add-only tables.
+2. Existing rows are never modified, so the engine never recomputes a formula because a row changed. Mark a [stateful formula](#standard-streaming-tables) with [`withSerial`](../reference/query-language/types/ConcurrencyControl.md#withserial), as on a static table.
 3. The rows in add-only tables are not guaranteed to maintain their original order of arrival. Operations should not assume anything about the order of data in an add-only table.
 4. Add-only tables may eventually result in out-of-memory errors in data-intensive applications.
 
@@ -191,7 +191,7 @@ Blink tables keep only the set of rows received during the current update cycle.
 These properties have the following consequences:
 
 1. Blink tables see a brand new world at every update cycle. Because a blink table contains only the current cycle's rows, formulas that use the [special variables](../reference/query-language/variables/special-variables.md) `i`, `ii`, and `k`, or [column arrays](../how-to-guides/work-with-arrays.md), are allowed. The engine evaluates them over only those rows.
-2. Deephaven can't detect [stateful operations](#standard-streaming-tables), so avoid them on blink tables.
+2. Rows are never modified, and each row lasts only one update cycle, so the engine never recomputes a formula because a row changed. Mark a [stateful formula](#standard-streaming-tables) with [`withSerial`](../reference/query-language/types/ConcurrencyControl.md#withserial), as on a static table.
 3. The entire table changes every update cycle, so preserving row order from cycle to cycle is irrelevant.
 4. Blink tables can only cause memory problems if a single update cycle delivers more data than fits in available RAM. This is unusual, but not impossible.
 
@@ -324,7 +324,7 @@ tBlink = AddOnlyToBlinkTableAdapter.toBlink(t)
 These properties have the following consequences:
 
 1. Formulas that use the [special variables](../reference/query-language/variables/special-variables.md) `i` and `ii` would return values that change between update cycles, so by default Deephaven throws an error when a formula on a ring table uses `i`, `ii`, or most [column array](../how-to-guides/work-with-arrays.md) expressions. A formula that uses `k` also throws an error, because the engine allows `k` only on add-only and blink tables, and a ring table removes rows.
-2. Deephaven can't detect [stateful operations](#standard-streaming-tables), so avoid them on ring tables.
+2. Retained rows are never modified, so the engine never recomputes a formula because a row changed. Mark a [stateful formula](#standard-streaming-tables) with [`withSerial`](../reference/query-language/types/ConcurrencyControl.md#withserial), as on a static table.
 3. The rows in ring tables maintain their original order of arrival.
 4. Ring tables _do not_ grow without bound and are strictly limited to a maximum number of rows. Once the table reaches that limit, it removes the oldest rows from memory.
 

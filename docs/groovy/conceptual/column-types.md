@@ -129,6 +129,8 @@ t3 = t2.where("!isNull(WithNulls)")
 t4 = t2.where("WithNulls != NULL_INT")
 ```
 
+`float` and `double` columns can also hold [`NaN`](../reference/query-language/types/NaNs.md), which is a different value from null.
+
 #### Type promotion and arithmetic
 
 When you do arithmetic with mixed numeric types, Deephaven follows Java's type promotion rules for most operators. Division is different. In query strings, dividing one integer value by another with `/` returns a `double`. In Java, `int / int` truncates instead. To get integer truncation, cast the result explicitly:
@@ -544,7 +546,7 @@ sortedWithNulls = t28.sort("NullableInt")
 
 - **Integers**: Use the smallest type that fits your range (`byte` < `short` < `int` < `long`).
 - **Decimals**: Use `double` for most cases, [`BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html) only when exact precision is required.
-- **Timestamps**: Use [`Instant`](../reference/query-language/types/date-time.md) for UTC timestamps and [`ZonedDateTime`](../reference/query-language/types/date-time.md) when time zones matter.
+- **Timestamps**: Use [`Instant`](../reference/query-language/types/date-time.md) to store points in time, and pass a time zone to functions such as [`toLocalDate`](../reference/time/datetime/toLocalDate.md) or [`hourOfDay`](../reference/time/datetime/hourOfDay.md) when you need local values. Use [`ZonedDateTime`](../reference/query-language/types/date-time.md) columns only when each value must carry its own time zone.
 - **Text**: Use [`String`](../reference/query-language/types/strings.md) for text data. Store low-cardinality categories as `String` values or small integer codes.
 - **Arrays**: Use arrays when each row needs multiple related values. Use separate columns instead if you query individual elements often.
 

@@ -238,9 +238,10 @@ To provide this capability, every Deephaven column source must be able to provid
 
 This requirement holds only during the cycle's _updating_ phase, when the engine propagates changes through the DAG. At the end of the cycle, the engine releases the data structures that hold previous values. Outside the updating phase, previous values are identical to current values, so they carry no change information.
 
-In Python, a [listener](../how-to-guides/table-listeners-python.md) receives a [`TableUpdate`](https://deephaven.io/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate) object. [`modified_prev`](https://deephaven.io/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev) reads previous values at the modified rows' current row keys. Previous values are keyed by each row's key before this cycle's [shifts](#shifts), so if the same update also shifts the modified rows, `modified_prev` can return values from the wrong rows. The example below is reliable only for tables whose updates don't shift modified rows, such as an append-only table or a `last_by` result. A sorted table is one that can shift them:
+In Python, a [listener](../how-to-guides/table-listeners-python.md) receives a [`TableUpdate`](https://deephaven.io/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate) object. [`modified_prev`](https://deephaven.io/core/pydoc/code/deephaven.table_listener.html#deephaven.table_listener.TableUpdate.modified_prev) reads previous values at the modified rows' current row keys. Previous values are keyed by each row's key before this cycle's [shifts](#shifts), so if the same update also shifts the modified rows, as a sorted table's update can, `modified_prev` can return values from the wrong rows. The example below listens to a [`last_by`](../reference/table-operations/group-and-aggregate/lastBy.md) result, which modifies its rows without shifting them:
 
-```python syntax
+```python ticking-table order=null reset
+from deephaven import time_table
 from deephaven.table_listener import listen
 
 
@@ -250,12 +251,13 @@ def on_update(update, is_replay):
     modified_prev_data = update.modified_prev(cols="Value")
 
     # Example: compute change in values
-    if len(modified_data["Value"]) > 0:
+    if modified_data and len(modified_data["Value"]) > 0:
         deltas = modified_data["Value"] - modified_prev_data["Value"]
         print(f"Change in Value for modified rows: {deltas}")
 
 
-# my_table is a refreshing table with a Value column, such as a last_by result (no shifts)
+# A last_by result modifies its one row each cycle and never shifts it
+my_table = time_table("PT1s").update("Value = i").last_by()
 handle = listen(my_table, on_update)
 ```
 

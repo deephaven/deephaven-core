@@ -60,6 +60,8 @@ t3 = None  # Remove reference to the join result
 
 When you set `t3` to `None`, nothing references the result of the [`natural_join`](../reference/table-operations/join/natural-join.md), so that table becomes eligible for garbage collection. Once the JVM collects it, the table and its associated computations are removed from the DAG. However, `t1` and `t2` remain because they still have active references.
 
+A [liveness scope](./liveness-scope-concept.md) lets you release tables as soon as you are done with them, without waiting for JVM garbage collection.
+
 <Svg src='../assets/conceptual/dag-garbage-collection.svg' style={{height: 'auto', maxWidth: '900px'}} />
 
 If you later need `t3` again, rerun the [`natural_join`](../reference/table-operations/join/natural-join.md):
@@ -152,7 +154,7 @@ In this example, a new row in `critical_alerts` means a server's disk usage exce
 
 ### Sharing tables across servers
 
-DAGs are not limited to one server. A Deephaven server can use a [URI](../how-to-guides/use-uris.md) to subscribe to a table on another server. The subscription uses the [Barrage](./what-is-barrage.md) protocol, so the downstream server receives the table's updates as they happen and does not recompute them. For example, you may have one server perform a difficult or secret calculation. Another server can use the shared results without recomputing them. Because it receives only the table's data, not the query code that produced it, it never sees the secret sauce that went into the calculation.
+DAGs are not limited to one server. A Deephaven server can use a [URI](../how-to-guides/use-uris.md) to subscribe to a table on another server. The subscription uses the [Barrage](./what-is-barrage.md) protocol, so the downstream server receives the table's updates as they happen and does not recompute them. For example, you may have one server perform a difficult or secret calculation, and another server use the shared results. Because it receives only the table's data, not the query code that produced it, it never sees the secret sauce that went into the calculation.
 
 This lets several servers reuse an expensive computation instead of each repeating it.
 
@@ -161,6 +163,7 @@ This lets several servers reuse an expensive computation instead of each repeati
 - [Create a time table](../how-to-guides/time-table.md)
 - [Core API design](./deephaven-core-api.md)
 - [Table update model](./table-update-model.md)
+- [Liveness scopes](./liveness-scope-concept.md)
 - [Periodic update graph configuration](./periodic-update-graph-configuration.md)
 - [Listen to ticking tables](../how-to-guides/table-listeners-python.md)
 - [Use URIs to share tables](../how-to-guides/use-uris.md)

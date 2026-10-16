@@ -34,7 +34,7 @@ doubled = source.update("Y = X * 2")
 
 `ii` is a built-in [special variable](../reference/query-language/variables/special-variables.md) that holds each row's position as a `long`, so `X` numbers the rows. The special variable `i` holds the same position as an `int`.
 
-`filtered` holds the rows of `source` that currently satisfy `X > 2`, and `doubled` adds a `Y` column to every row of `source`. Both tables update automatically as new rows arrive in `source`, without you rerunning any code.
+`filtered` holds the rows of `source` that currently satisfy `X > 2`, and `doubled` adds a `Y` column to every row of `source`. Both tables update automatically as new rows arrive in `source`.
 
 **Why this matters:**
 

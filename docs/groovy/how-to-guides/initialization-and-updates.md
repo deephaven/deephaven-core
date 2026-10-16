@@ -4,6 +4,8 @@ title: Initialization and updates
 
 Deephaven runs your script in two phases: initialization and real-time updates. Ticking tables, which update as new data arrives, behave differently in each phase. This guide explains the two phases and covers safe patterns for reading ticking tables from your script, from listeners, and from threads you start yourself.
 
+**Deephaven table operations define relationships that the engine keeps up to date as data arrives. They don't run just once over the data that exists when you create them.** That's what makes Deephaven code different from an ordinary Groovy script, and it's why a value you read right after you create a table from an external source may not be there yet.
+
 ## How Deephaven executes your script
 
 Deephaven execution has two phases:
