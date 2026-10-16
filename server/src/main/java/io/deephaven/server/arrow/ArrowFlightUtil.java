@@ -131,14 +131,14 @@ public class ArrowFlightUtil {
                         final StreamObserver<BarrageMessageWriter.MessageView> listener =
                                 new MessageViewAdapter(observer);
 
-                        // push the schema to the listener
-                        listener.onNext(streamGeneratorFactory.getSchemaView(
-                                fbb -> BarrageUtil.makeTableSchemaPayload(fbb, BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS,
-                                        table)));
+                        // push the schema to the listener; the snapshot is written with this same schema
+                        final org.apache.arrow.vector.types.pojo.Schema schema =
+                                BarrageUtil.schemaFromTable(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, table);
+                        listener.onNext(streamGeneratorFactory.getSchemaView(schema::getSchema));
 
                         // shared code between `DoGet` and `BarrageSnapshotRequest`
                         BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
-                                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, listener, metrics);
+                                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, schema, listener, metrics);
                     });
         }
     }
@@ -156,6 +156,11 @@ public class ArrowFlightUtil {
         private SessionState.ExportBuilder<Table> resultExportBuilder;
         private Flight.FlightDescriptor flightDescriptor;
         private Schema schema;
+        /**
+         * Set when the stream is abandoned: its session expired, or a message failed. The decoded dictionaries have
+         * been released then, and later messages are ignored.
+         */
+        private boolean abandoned;
 
         public DoPutObserver(
                 final SessionState session,
@@ -173,9 +178,31 @@ public class ArrowFlightUtil {
             }
         }
 
-        // this is the entry point for client-streams
+        // this is the entry point for client-streams; synchronized against close(), which session expiration calls from
+        // another thread
         @Override
-        public void onNext(final InputStream request) {
+        public synchronized void onNext(final InputStream request) {
+            if (abandoned) {
+                return;
+            }
+            try {
+                processMessage(request);
+            } catch (final RuntimeException err) {
+                // gRPC closes the call when onNext throws, and calls neither onError nor onCompleted afterwards, so
+                // clean up as onError does before the error propagates, and ignore any later message
+                abandoned = true;
+                failStream(err);
+                throw err;
+            }
+        }
+
+        /** Releases the decoded dictionaries and ignores any later message. Callers hold this observer's monitor. */
+        private void abandon() {
+            abandoned = true;
+            releaseDictionaries();
+        }
+
+        private void processMessage(final InputStream request) {
             final MessageInfo mi;
             try {
                 mi = BarrageProtoUtil.parseProtoMessage(request);
@@ -233,7 +260,9 @@ public class ArrowFlightUtil {
 
             final int numColumns = resultTable.getColumnSources().size();
             final BarrageMessage msg = createBarrageMessage(mi, numColumns);
-            msg.rowsAdded = RowSetFactory.fromRange(totalRowsRead, totalRowsRead + msg.length - 1);
+            msg.rowsAdded = msg.length == 0
+                    ? RowSetFactory.empty()
+                    : RowSetFactory.fromRange(totalRowsRead, totalRowsRead + msg.length - 1);
             msg.rowsIncluded = msg.rowsAdded.copy();
             msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
             totalRowsRead += msg.length;
@@ -244,6 +273,7 @@ public class ArrowFlightUtil {
         }
 
         private void onCancel() {
+            releaseDictionaries();
             if (resultTable != null) {
                 resultTable.dropReference();
                 resultTable = null;
@@ -262,6 +292,14 @@ public class ArrowFlightUtil {
         @Override
         public void onError(final Throwable t) {
             // ok; we're done then
+            failStream(t);
+        }
+
+        /**
+         * Releases what this stream holds, and fails its export with {@code t}, which propagates to the observer.
+         */
+        private void failStream(final Throwable t) {
+            releaseDictionaries();
             if (resultTable != null) {
                 resultTable.dropReference();
                 resultTable = null;
@@ -279,6 +317,8 @@ public class ArrowFlightUtil {
 
         @Override
         public void onCompleted() {
+            // the client sends no more batches, so no more dictionary-encoded columns are decoded
+            releaseDictionaries();
             if (resultExportBuilder == null) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Result flight descriptor never provided");
@@ -320,6 +360,12 @@ public class ArrowFlightUtil {
         public void close() {
             // close() is intended to be invoked only though session expiration
             GrpcUtil.safelyError(observer, Code.UNAUTHENTICATED, "Session expired");
+            // Once the call is closed, gRPC calls none of onError, onCancel or onCompleted, so release the decoded
+            // dictionaries here. Holding the monitor waits out a message being decoded, and abandoning the stream stops
+            // a later message from decoding more.
+            synchronized (this) {
+                abandon();
+            }
         }
     }
 
