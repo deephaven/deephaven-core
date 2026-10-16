@@ -92,8 +92,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     /**
      * The Deephaven metadata in the file footer. It names columns by their parquet names -- the names in the file's
-     * schema -- which differ from the Deephaven names whenever the read renames or resolves columns; translate with the
-     * {@link #resolver} before crossing that boundary.
+     * schema -- which differ from the Deephaven names whenever the reader renames or resolves columns; translate with
+     * the {@link #resolver} before crossing that boundary.
      */
     private TableInfo tableInfo;
     /** Keyed by parquet column name. */
@@ -166,7 +166,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     parquetColumnNameToPath.put(path[0], path);
                 }
             }
-            resolver = new ParquetTableLocationColumnResolver(readInstructions, parquetSchema, parquetColumnNameToPath,
+            resolver = new ParquetTableLocationColumnResolver(
+                    readInstructions,
+                    parquetSchema,
+                    parquetColumnNameToPath,
                     readInstructions.getColumnResolverFactory()
                             .map(factory -> factory.of(getTableKey(), tableLocationKey))
                             .orElse(null),
@@ -495,24 +498,24 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final ParquetTableLocation.IndexFileMetadata indexFileMetaData,
             @NotNull final String[] keyColumnNames) {
         final boolean isDataIndex = indexFileMetaData.dataIndexInfo != null;
-        final TableDefinition definition = readInstructions.getTableDefinition().orElse(null);
         final ParquetInstructions indexReadInstructions;
-        if (definition == null) {
-            // A location built without a definition has no column resolver, which requires one; infer the index table's
-            // definition, with the same renames
+        if (readInstructions.getTableDefinition().isEmpty()) {
+            // A location built without a definition has no column resolver from its instructions, which requires one;
+            // infer the index table's definition, with the same renames as the parent table
             indexReadInstructions = readInstructions.withTableDefinitionAndLayout(null,
                     ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
         } else {
             // Each key column is read with the definition of the column it indexes, so the keys have that column's type
             final TableDefinition indexDefinition = isDataIndex
-                    ? dataIndexTableDefinition(definition, keyColumnNames)
-                    : groupingTableDefinition(definition, keyColumnNames[0]);
+                    ? resolver.dataIndexDefinition(keyColumnNames)
+                    : resolver.groupingDefinition(keyColumnNames[0]);
             if (indexDefinition == null) {
                 // A key column the definition lacks cannot be given its column's type
                 return null;
             }
-            // Find the index table's columns with a column resolver derived from this file's, which ignores any renames
-            // these instructions carry
+            // Find the index table's columns with a column resolver: for a data index, one derived from the parent
+            // table's, and for a legacy grouping table, one for its fixed column names. Either ignores any renames the
+            // parent's instructions carry.
             final ParquetInstructions.Builder builder = new ParquetInstructions.Builder(readInstructions);
             final ParquetColumnResolver indexColumnResolver;
             if (isDataIndex) {
@@ -574,44 +577,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
                         new SourceColumn(INDEX_ROW_SET_COLUMN_NAME)));
     }
 
-    /**
-     * The definition to read a data index table with: its key columns, as the indexed table defines them, and its row
-     * set column. Returns {@code null} if the indexed table does not define a key column.
-     */
-    @Nullable
-    private static TableDefinition dataIndexTableDefinition(
-            @NotNull final TableDefinition definition,
-            @NotNull final String[] keyColumnNames) {
-        final List<ColumnDefinition<?>> columns = new ArrayList<>(keyColumnNames.length + 1);
-        for (final String keyColumnName : keyColumnNames) {
-            final ColumnDefinition<?> keyColumn = definition.getColumn(keyColumnName);
-            if (keyColumn == null) {
-                return null;
-            }
-            columns.add(keyColumn.withNormal());
-        }
-        columns.add(ColumnDefinition.fromGenericType(INDEX_ROW_SET_COLUMN_NAME, RowSet.class));
-        return TableDefinition.of(columns);
-    }
-
-    /**
-     * The definition to read a legacy grouping table with: its key column, under its fixed name but as the indexed
-     * table defines the column it indexes, and its start and end positions. Returns {@code null} if the indexed table
-     * does not define the key column.
-     */
-    @Nullable
-    private static TableDefinition groupingTableDefinition(
-            @NotNull final TableDefinition definition,
-            @NotNull final String keyColumnName) {
-        final ColumnDefinition<?> keyColumn = definition.getColumn(keyColumnName);
-        return keyColumn == null
-                ? null
-                : TableDefinition.of(
-                        keyColumn.withNormal().withName(GROUPING_KEY_COLUMN_NAME),
-                        ColumnDefinition.ofLong(GROUPING_BEGIN_POS_COLUMN_NAME),
-                        ColumnDefinition.ofLong(GROUPING_END_POS_COLUMN_NAME));
-    }
-
     // endregion Indexing
 
     // region Pushdown Filtering
@@ -653,20 +618,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     @Override
     public List<RegionedPushdownAction> supportedActions() {
         return supportedActions;
-    }
-
-    /**
-     * Checks whether any row group of the column might have a dictionary the dictionary action can use. This is judged
-     * from metadata alone, so that estimating does not read dictionaries, and it considers every row group, since a
-     * writer can fall back from dictionary encoding in some row groups but not others. The action itself reads the
-     * dictionaries, and keeps a row group's rows as "maybe" when it has none.
-     *
-     * @param columnName The Deephaven name of the column
-     * @param columnDefinition The definition of the column (required to access dictionary chunk suppliers)
-     * @return {@code false} if no row group has a usable dictionary, {@code true} if one might
-     */
-    private boolean mayHaveDictionaryPages(final String columnName, final ColumnDefinition<?> columnDefinition) {
-        return ((ParquetColumnLocation<?>) getColumnLocation(columnName)).mayHaveDictionaryPages(columnDefinition);
     }
 
     public static class EstimateContext implements RegionedPushdownAction.EstimateContext {
@@ -734,7 +685,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         } else if (action == IN_MEMORY_DATA_INDEX) {
             isApplicable = hasCachedDataIndex(estimateCtx.columnNames);
         } else if (action == PARQUET_DICTIONARY) {
-            isApplicable = mayHaveDictionaryPages(estimateCtx.columnNames[0], filterCtx.columnDefinitions().get(0));
+            isApplicable = ((ParquetColumnLocation<?>) getColumnLocation(estimateCtx.columnNames[0]))
+                    .mayHaveDictionaryPages(filterCtx.columnDefinitions().get(0));
         } else if (action == DEFERRED_DATA_INDEX) {
             isApplicable = hasDataIndex(estimateCtx.columnNames);
         } else {
@@ -827,7 +779,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return pushdownDataIndex(selection, filter, filterCtx.filterColumnToManagerColumnName(), dataIndex, input);
         }
         if (action == PARQUET_DICTIONARY) {
-            if (!mayHaveDictionaryPages(actionCtx.columnNames[0], filterCtx.columnDefinitions().get(0))) {
+            if (!((ParquetColumnLocation<?>) getColumnLocation(actionCtx.columnNames[0]))
+                    .mayHaveDictionaryPages(filterCtx.columnDefinitions().get(0))) {
                 return input.copy();
             }
             return pushdownFilterDictionary(selection, filterCtx, actionCtx.columnNames, input);

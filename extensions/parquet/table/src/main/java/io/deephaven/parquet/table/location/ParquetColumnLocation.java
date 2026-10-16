@@ -315,9 +315,10 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     }
 
     /**
-     * Whether any row group of this column might have a dictionary that this column's type can use, judged from
-     * metadata alone, without reading any dictionary. {@code false} means none has one; {@code true} means reading the
-     * dictionaries is needed to know.
+     * Whether any row group of this column might have a dictionary that this column's type can use. This is judged from
+     * metadata alone, so that estimating a dictionary pushdown does not read dictionaries, and it considers every row
+     * group, since a writer can fall back from dictionary encoding in some row groups but not others. {@code false}
+     * means none has one; {@code true} means reading the dictionaries is needed to know.
      *
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
      * @return Whether any row group might have a usable dictionary

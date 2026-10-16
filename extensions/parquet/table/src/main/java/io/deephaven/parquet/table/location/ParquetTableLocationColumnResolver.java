@@ -5,6 +5,7 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -167,6 +168,47 @@ final class ParquetTableLocationColumnResolver implements ParquetColumnResolver 
                             : List.of(parquetKeyColumnNames[ki]));
         }
         return builder.putMap(INDEX_ROW_SET_COLUMN_NAME, List.of(INDEX_ROW_SET_COLUMN_NAME)).build();
+    }
+
+    /**
+     * Returns the definition to read the table of a data index on the Deephaven columns {@code keyColumnNames} with:
+     * each key column as the table definition defines it, so the keys have that column's type, and the row set column.
+     * Returns {@code null} if there is no table definition, or it does not define a key column.
+     */
+    @Nullable
+    TableDefinition dataIndexDefinition(@NotNull final String... keyColumnNames) {
+        final TableDefinition definition = readInstructions.getTableDefinition().orElse(null);
+        if (definition == null) {
+            return null;
+        }
+        final List<ColumnDefinition<?>> columns = new ArrayList<>(keyColumnNames.length + 1);
+        for (final String keyColumnName : keyColumnNames) {
+            final ColumnDefinition<?> keyColumn = definition.getColumn(keyColumnName);
+            if (keyColumn == null) {
+                return null;
+            }
+            columns.add(keyColumn.withNormal());
+        }
+        columns.add(ColumnDefinition.fromGenericType(INDEX_ROW_SET_COLUMN_NAME, RowSet.class));
+        return TableDefinition.of(columns);
+    }
+
+    /**
+     * Returns the definition to read a legacy grouping table with: its key column, under its fixed name but as the
+     * table definition defines the column {@code keyColumnName} it indexes, and its start and end positions. Returns
+     * {@code null} if there is no table definition, or it does not define the key column.
+     */
+    @Nullable
+    TableDefinition groupingDefinition(@NotNull final String keyColumnName) {
+        final ColumnDefinition<?> keyColumn = readInstructions.getTableDefinition()
+                .map(definition -> definition.getColumn(keyColumnName))
+                .orElse(null);
+        return keyColumn == null
+                ? null
+                : TableDefinition.of(
+                        keyColumn.withNormal().withName(GROUPING_KEY_COLUMN_NAME),
+                        ColumnDefinition.ofLong(GROUPING_BEGIN_POS_COLUMN_NAME),
+                        ColumnDefinition.ofLong(GROUPING_END_POS_COLUMN_NAME));
     }
 
     /**
