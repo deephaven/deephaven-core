@@ -6,8 +6,8 @@ This guide focuses on using filters within [query strings](./query-string-overvi
 
 - [`where`](../reference/table-operations/filter/where.md)
 - [`where_one_of`](../reference/table-operations/filter/where-one-of.md)
-- [`where_in`](../reference/table-operations/filter/where-in.md)
-- [`where_not_in`](../reference/table-operations/filter/where-not-in.md)
+
+The related [`where_in`](../reference/table-operations/filter/where-in.md) and [`where_not_in`](../reference/table-operations/filter/where-not-in.md) operations do not take filter expressions. Instead, they keep rows based on whether their values match values in another table.
 
 Additionally, filters can be used in [partitioned table](./partitioned-tables.md) operations.
 
@@ -193,25 +193,15 @@ Filters can be combined [conjunctively](#conjunctive) or [disjunctively](#disjun
 
 Conjunctive filters return only rows that match _all_ of the specified filters. There are two ways to conjunctively combine filters:
 
-- Pass a single query string with multiple filters separated by the `&&` operator into one of the following table operations:
-  - [`where`](../reference/table-operations/filter/where.md)
-  - [`where_in`](../reference/table-operations/filter/where-in.md)
-  - [`where_not_in`](../reference/table-operations/filter/where-not-in.md)
-- Pass multiple query strings into one of the following table operations:
-  - [`where`](../reference/table-operations/filter/where.md)
-  - [`where_in`](../reference/table-operations/filter/where-in.md)
-  - [`where_not_in`](../reference/table-operations/filter/where-not-in.md)
+- Pass a single query string with multiple filters separated by the `&&` operator to [`where`](../reference/table-operations/filter/where.md).
+- Pass multiple query strings to [`where`](../reference/table-operations/filter/where.md).
 
 ### Disjunctive
 
 Disjunctive filters return only rows that match _any_ of the specified filters. There are two ways to disjunctively combine filters:
 
-- Pass a single query string with multiple filters separated by the `||` operator into one of the following table operations:
-  - [`where`](../reference/table-operations/filter/where.md)
-  - [`where_in`](../reference/table-operations/filter/where-in.md)
-  - [`where_not_in`](../reference/table-operations/filter/where-not-in.md)
-- Pass multiple query strings into the following table operation:
-  - [`where_one_of`](../reference/table-operations/filter/where-one-of.md)
+- Pass a single query string with multiple filters separated by the `||` operator to [`where`](../reference/table-operations/filter/where.md).
+- Pass multiple query strings to [`where_one_of`](../reference/table-operations/filter/where-one-of.md).
 
 ## Filter performance
 

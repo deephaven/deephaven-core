@@ -61,7 +61,7 @@ sourceMeta = source.meta()
 ## Related documentation
 
 - [Query scope](./query-scope.md)
-- [Python functions in query strings](./groovy-closures.md)
+- [Groovy closures in query strings](./groovy-closures.md)
 - [Groovy classes and objects in query strings](./groovy-classes.md)
 - [`emptyTable`](../reference/table-operations/create/emptyTable.md)
 - [`update`](../reference/table-operations/select/update.md)

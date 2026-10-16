@@ -44,8 +44,8 @@ sine = { Double X -> Math.sin(X) }
 source = emptyTable(100).update("X = 0.1 * ii", "Y = sine(X)")
 ```
 
-> [!IMPORTANT]
-> Always define the expected argument types when defining a closure that will be called from the query language. This allows errors to be caught at compile time rather than at runtime, and often improves performance. For instance, if we define the `sine` function above as `sine = { X -> Math.sin(X) }`, omitting the `Double` specification, the query will take 285 milliseconds to complete instead of 7.
+> [!TIP]
+> Declare the expected argument types when defining a closure that query strings call. This documents the input the closure expects. For instance, the `sine` closure above declares its argument as `Double X` rather than just `X`.
 
 > [!NOTE]
 > Closures used in query strings should perform null checks on their arguments, e.g., with `isNull`. If null values are not handled, closures may yield undesirable results when nulls are encountered.
@@ -121,7 +121,7 @@ We can add the whole `groovyscripts` folder to our classpath by adding the `EXTR
 ```yml
 services:
   deephaven:
-    image: ghcr.io/deephaven/server:latest
+    image: ghcr.io/deephaven/server-slim:latest
     ports:
       - 10000:10000
     volumes:

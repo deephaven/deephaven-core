@@ -40,7 +40,7 @@ source = empty_table(1).update(
 source_meta = source.meta_table
 ```
 
-Type casting [Python variables in query strings](./python-variables.md) has limitations. Unlike Python, where basic data types have arbitrary precision, Java primitives have fixed precision. You cannot cast a value to a type with smaller precision. For example, the following query fails with an error:
+Type casting [Python variables in query strings](./python-variables.md) has limitations. Numeric Python variables reach the query string as boxed Java objects. For example, a Python `float` becomes a `java.lang.Double`. Java only allows a boxed value to be cast to its own primitive type or a wider one, so the following query fails with an error:
 
 ```python should-fail
 from deephaven import empty_table
@@ -60,7 +60,7 @@ source_meta = source.meta_table
 Value: table update operation failed. : Incompatible types; java.lang.Double cannot be converted to float
 ```
 
-The Python `float` type corresponds most closely to the Java `double` type in terms of precision. When a Python `float` is used in a query string, Deephaven treats it as a boxed `java.lang.Double` object until it's written to the table. Since the Deephaven engine lacks complete type information about variable `a`, it cannot safely downcast it from a `double` to the lower-precision `float` type.
+To get a `float` column, unbox the value to `double` first, then narrow it: `(float)(double)a`.
 
 ### Python functions
 

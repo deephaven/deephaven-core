@@ -47,7 +47,7 @@ The expression `x ? (y ? 1 : 2) : 3` evaluates as follows:
 
 Consider a home builder with a budget of $3.50/board-foot to purchase hardwood lumber. The builder would like to know what types of wood are within their budget. Nested ternary operators can create `yes` and `no` values based on whether or not a type of wood meets this requirement.
 
-In this example, the `Possible` column evaluates to `yes` only if the wood is both hardwood and the price is less than $3.50. Otherwise, the wood is not offered as a possibility for the customer.
+In this example, the `Possible` column evaluates to `yes` only if the wood is both hardwood and the price is less than or equal to $3.50. Otherwise, the wood is not offered as a possibility for the customer.
 
 ```groovy test-set=1 order=woods,result
 woods = newTable(

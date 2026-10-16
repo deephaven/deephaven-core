@@ -33,11 +33,9 @@ Additionally, formulas can be used in [partitioned table](./partitioned-tables.m
 
 The LHS of a formula contains only the name of the column that will be created or overwritten if the column name is already present. It must be a valid column name, which means it must follow these rules:
 
-- Start with a letter (`A-Z` or `a-z`) or an underscore (`_`).
-- Cannot contain any spaces.
-- Cannot contain any special characters (e.g., `@`, `#`, `$`, `%`, etc.).
-- Cannot contain any arithmetic characters (`+`, `-`, `=`, etc.).
-- Cannot equal any [reserved keywords](https://docs.oracle.com/javase/tutorial/java/nutsandbolts/_keywords.html).
+- It must be a valid [Java identifier](https://docs.oracle.com/javase/specs/jls/se17/html/jls-3.html#jls-3.8). Most column names start with a letter, an underscore (`_`), or a dollar sign (`$`) and contain only letters, digits, underscores, and dollar signs, but Java identifiers can also use other Unicode letters, digits, and currency symbols. A column name cannot contain spaces, other special characters such as `@`, `#`, or `%`, or arithmetic characters such as `+`, `-`, or `=`.
+- It cannot be a Java [reserved keyword](https://docs.oracle.com/javase/tutorial/java/nutsandbolts/_keywords.html) or literal (`true`, `false`, `null`).
+- It cannot be one of the query-language reserved names `i`, `ii`, `k`, `in`, or `not`.
 
 Generally speaking, Deephaven recommends using `PascalCase` (upper [camel case](https://en.wikipedia.org/wiki/Camel_case)) naming convention for column names.
 
@@ -74,9 +72,10 @@ Fahrenheit = (Celsius * 9 / 5) + 32
 You may recognize this formula — it calculates the temperature in Fahrenheit given a temperature in Celsius. Going from left to right, the formula can be broken down as follows:
 
 - `Fahrenheit` is the name of the resultant column.
+- `=` is the assignment operator.
 - `(` and `)` are parentheses used to group operations.
-- `=` is the equality operator.
 - `Celsius` is the name of another column.
+- `*` is the multiplication operator.
 - `9` is a numeric literal.
 - `/` is the division operator.
 - `5` is another numeric literal.
