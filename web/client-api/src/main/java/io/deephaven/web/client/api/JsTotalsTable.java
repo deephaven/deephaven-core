@@ -32,7 +32,9 @@ import jsinterop.base.Js;
  * Behaves like a {@link JsTable dh.Table}, but doesn't expose all of its API for changing the internal state. Instead,
  * state is driven by the upstream table - when its handle changes, this table listens and rebuilds its totals from the
  * new state. If that rebuild fails, a <b>requestfailed</b> event fires with the failure message as its detail, and this
- * table keeps the totals it last built until the upstream table changes again.
+ * table keeps the totals it last built until the upstream table changes again. If the rebuild succeeds but a filter,
+ * sort or custom column set on this table cannot be re-applied to it, the <b>requestfailed</b> event is the one any
+ * {@link JsTable dh.Table} fires for a rejected change, and this table shows the rebuilt totals without that change.
  * <p>
  * A new config is returned any time it is accessed. This is to:
  * <ol>
@@ -75,10 +77,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
     }
 
     /**
-     * Re-applies the most recently set viewport options, if any.
+     * Re-applies the most recently set viewport options, if any. Does nothing once this table is closed, since a rebase
+     * that was in flight when it closed may still call this.
      */
     public void refreshViewport() {
-        if (firstRow != null && lastRow != null) {
+        if (firstRow != null && lastRow != null && !wrappedTable.isClosed()) {
             setViewport(firstRow, lastRow, Js.uncheckedCast(columns), updateIntervalMs, null);
         }
     }

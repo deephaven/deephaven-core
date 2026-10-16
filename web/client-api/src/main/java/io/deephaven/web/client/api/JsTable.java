@@ -1100,6 +1100,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             return Promise.reject("Table already closed, cannot be used again");
         }
         JsTotalsTableConfig directive = getTotalsDirectiveFromOptionalConfig(config);
+        // Retains the source state the totals are built from. One token per totals table, never the config object:
+        // a caller may pass the same config to several requests, and each must hold the source on its own.
+        final Object sourceRetainer = new Object() {
+            @Override
+            public String toString() {
+                return "totals source retainer for " + directive;
+            }
+        };
         ClientTableState[] lastGood = {null};
 
         // A rebase that fails before the caller holds the totals table fails the request instead: nobody can listen
@@ -1117,9 +1125,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 target = state.valueOf();
                 // make sure we are only retained by one state at a time
                 // TODO: refactor subscription system to handle non-JsTable subscriptions w/ same one:one semantics,
-                target.retain(directive);
+                target.retain(sourceRetainer);
                 if (lastGood[0] != null && lastGood[0] != target) {
-                    lastGood[0].unretain(directive);
+                    lastGood[0].unretain(sourceRetainer);
                 }
                 lastGood[0] = target;
             }
@@ -1255,7 +1263,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             rebaseWhenRunning.apply(state());
         }
         wrapped.onClosed.add(remover::remove);
-        wrapped.onClosed.add(() -> lastGood[0].unretain(directive));
+        wrapped.onClosed.add(() -> lastGood[0].unretain(sourceRetainer));
         onClosed.add(remover::remove);
 
         // Hands the totals table over, unless a rebase failed while the request was pending: those totals do not
@@ -1284,6 +1292,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * Resolves once this table is on a running state, following it through any states that are replaced before they
      * run, and rejects if the state it holds fails.
+     * <p>
+     * Written for the wrapped table of a totals table, whose state is only ever replaced by an already-running one, and
+     * only before the totals promise resolves. It has not been exercised beyond that: for a state that stops running
+     * between the check and the callback it neither resolves nor rejects, and it assumes the table is open.
      */
     private Promise<Void> whenRunning() {
         return new Promise<>((resolve, reject) -> state().onRunning(
