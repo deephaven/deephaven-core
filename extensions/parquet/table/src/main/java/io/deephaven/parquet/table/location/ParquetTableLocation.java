@@ -524,14 +524,24 @@ public class ParquetTableLocation extends AbstractTableLocation {
                         new ParquetTableLocationKey(indexFileMetaData.fileURI, 0, null, readInstructions)
                                 .getFileReader().getSchema(),
                         keyColumnNames);
+                // A parent column read from the row set column's parquet name is not a column of the index table, so
+                // the parent's mapping for that parquet name doesn't apply; the row set column is read as dh_row_set
+                final String mappedFrom = readInstructions.getColumnNameFromParquetColumnName(rowSetParquetColumnName);
+                if (mappedFrom != null && !Arrays.asList(keyColumnNames).contains(mappedFrom)) {
+                    builder.removeColumnInstructions(mappedFrom);
+                }
                 if (!INDEX_ROW_SET_COLUMN_NAME.equals(rowSetParquetColumnName)) {
-                    // A parent column read from a parquet column with that name is not a column of the index table
-                    final String mappedFrom =
-                            readInstructions.getColumnNameFromParquetColumnName(rowSetParquetColumnName);
+                    builder.addColumnNameMapping(rowSetParquetColumnName, INDEX_ROW_SET_COLUMN_NAME);
+                }
+            } else {
+                // Likewise, the grouping table's columns have fixed parquet names, which the parent's mappings for
+                // those parquet names don't apply to
+                for (final String parquetColumnName : List.of(
+                        GROUPING_KEY_COLUMN_NAME, GROUPING_BEGIN_POS_COLUMN_NAME, GROUPING_END_POS_COLUMN_NAME)) {
+                    final String mappedFrom = readInstructions.getColumnNameFromParquetColumnName(parquetColumnName);
                     if (mappedFrom != null) {
                         builder.removeColumnInstructions(mappedFrom);
                     }
-                    builder.addColumnNameMapping(rowSetParquetColumnName, INDEX_ROW_SET_COLUMN_NAME);
                 }
             }
             indexReadInstructions = builder.build();

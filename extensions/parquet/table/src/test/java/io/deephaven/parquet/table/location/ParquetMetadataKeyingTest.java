@@ -1071,6 +1071,45 @@ public class ParquetMetadataKeyingTest {
     }
 
     /**
+     * A location built without a definition, whose instructions read the parquet name {@code dh_row_set} as a non-key
+     * column: the index table's row set column, which has that parquet name, is still read as {@code dh_row_set}.
+     */
+    @Test
+    public void dataIndexWithColumnNamedLikeRowSetRenamedWithoutDefinition() {
+        final String dest = path("columnNamedLikeRowSet.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(500).update("B = `b` + (ii % 5)", ROW_SET + " = `r` + ii"),
+                dest,
+                ParquetInstructions.builder().addIndexColumns("B").build());
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .addColumnNameMapping(ROW_SET, "Rows")
+                .build();
+        final ParquetTableLocation location = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(new File(dest).toURI(), 0, null, instructions),
+                instructions);
+        assertEquals(500, indexedRowCount(location.loadDataIndex("B")));
+    }
+
+    /**
+     * A location built without a definition, whose instructions read the parquet name {@code dh_key} as another column:
+     * the legacy grouping table's key column, which has that parquet name, is still its key column.
+     */
+    @Test
+    public void legacyGroupingWithFixedNameRenamedWithoutDefinition() {
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .addColumnNameMapping(ParquetTableWriter.GROUPING_KEY_COLUMN_NAME, "Other")
+                .build();
+        final ParquetTableLocation location = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(new File(legacyGroupingFile()).toURI(), 0, null, instructions),
+                instructions);
+        final BasicDataIndex dataIndex = location.loadDataIndex("gcol");
+        assertEquals(500, dataIndex.table().size());
+        assertEquals(2_000, indexedRowCount(dataIndex));
+    }
+
+    /**
      * Earlier writers applied that rename to the index table's row set column too, writing the row set column as
      * parquet {@code StoredRows}; the row set column of such an index file is the only column that is not a key.
      */
