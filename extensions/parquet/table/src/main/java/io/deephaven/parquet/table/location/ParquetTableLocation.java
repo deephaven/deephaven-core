@@ -519,18 +519,23 @@ public class ParquetTableLocation extends AbstractTableLocation {
             // Find the index table's columns with a column resolver: for a data index, one derived from the parent
             // table's, and for a legacy grouping table, one for its fixed column names. Either ignores any renames the
             // parent's instructions carry.
+            // Codecs are named by Deephaven column. A key column decodes with the codec of the column it indexes; the
+            // index table's own columns -- the row set column, and a grouping table's position columns -- decode with
+            // the codecs the index file's footer records, so a null codec name clears any codec the parent's
+            // instructions register for another column with the same name.
             final ParquetInstructions.Builder builder = new ParquetInstructions.Builder(readInstructions);
             final ParquetColumnResolver indexColumnResolver;
             if (isDataIndex) {
                 indexColumnResolver = Objects.requireNonNull(resolver.forDataIndex(keyColumnNames));
+                // The key columns have the Deephaven names of the columns they index, so their codecs carry over
+                builder.addColumnCodec(INDEX_ROW_SET_COLUMN_NAME, null);
             } else {
                 indexColumnResolver = ParquetTableLocationColumnResolver.FOR_GROUPING;
-                // Codecs are named by Deephaven column, and the key column is not named after the column it indexes
-                final String codecName = readInstructions.getCodecName(keyColumnNames[0]);
-                if (codecName != null) {
-                    builder.addColumnCodec(GROUPING_KEY_COLUMN_NAME, codecName,
-                            readInstructions.getCodecArgs(keyColumnNames[0]));
-                }
+                // The key column is not named after the column it indexes, so its codec is copied to the key's name
+                builder.addColumnCodec(GROUPING_KEY_COLUMN_NAME, readInstructions.getCodecName(keyColumnNames[0]),
+                        readInstructions.getCodecArgs(keyColumnNames[0]));
+                builder.addColumnCodec(GROUPING_BEGIN_POS_COLUMN_NAME, null);
+                builder.addColumnCodec(GROUPING_END_POS_COLUMN_NAME, null);
             }
             indexReadInstructions = builder
                     .setColumnResolverFactory((tableKey, tableLocationKey) -> indexColumnResolver)

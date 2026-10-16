@@ -110,7 +110,7 @@ final class ParquetTableLocationColumnResolver implements ParquetColumnResolver 
         if (renamesLeaveAlone(parquetColumnName)) {
             // The only possible reader is the Deephaven column with the same name
             final String columnName = parquetColumnName;
-            return isDefined(columnName) && readsWholeColumn(of(columnName).orElse(List.of())) ? columnName : null;
+            return readsFile(columnName) && readsWholeColumn(of(columnName).orElse(List.of())) ? columnName : null;
         }
         return metadataNames().deephavenByParquet.get(parquetColumnName);
     }
@@ -251,29 +251,40 @@ final class ParquetTableLocationColumnResolver implements ParquetColumnResolver 
     /**
      * For a name the renames leave alone, whether it names a data index key column, by the same rules as
      * {@link #metadataNames()}: a whole column of the file, read by the Deephaven column with that name, or a
-     * partitioning column, which the file does not have, but not the index table's row set column.
+     * partitioning column, which the file does not have, but not the index table's row set column. A file column that
+     * has a partitioning column's name is not a key: the partitioning column's values come from the location, not from
+     * that file column.
      */
     private boolean isIndexKey(@NotNull final String name) {
         if (INDEX_ROW_SET_COLUMN_NAME.equals(name)) {
             return false;
         }
         if (schema.containsField(name)) {
-            return isDefined(name) && readsWholeColumn(of(name).orElse(List.of()));
+            return readsFile(name) && readsWholeColumn(of(name).orElse(List.of()));
         }
-        return partitionKeys.contains(name) || readInstructions.getTableDefinition()
-                .map(definition -> definition.getColumn(name))
-                .filter(ColumnDefinition::isPartitioning)
-                .isPresent();
+        return isPartitioning(name);
     }
 
     /**
      * Whether the Deephaven column {@code columnName} may read the file: it is in the table definition, or there is no
-     * definition, as for a location built without one.
+     * definition, as for a location built without one, and it is not a partitioning column, whose values come from the
+     * location rather than the file.
      */
-    private boolean isDefined(@NotNull final String columnName) {
-        return readInstructions.getTableDefinition()
+    private boolean readsFile(@NotNull final String columnName) {
+        return !isPartitioning(columnName) && readInstructions.getTableDefinition()
                 .map(definition -> definition.getColumn(columnName) != null)
                 .orElse(true);
+    }
+
+    /**
+     * Whether the Deephaven column {@code columnName} is a partitioning column: one of the location's partition keys,
+     * or a partitioning column of the table definition.
+     */
+    private boolean isPartitioning(@NotNull final String columnName) {
+        return partitionKeys.contains(columnName) || readInstructions.getTableDefinition()
+                .map(definition -> definition.getColumn(columnName))
+                .filter(ColumnDefinition::isPartitioning)
+                .isPresent();
     }
 
     /**
@@ -291,11 +302,16 @@ final class ParquetTableLocationColumnResolver implements ParquetColumnResolver 
                 return local;
             }
             // Each top-level parquet column, mapped to the Deephaven column that reads it whole. A parquet column read
-            // by more than one Deephaven column is left out: each still reads it, but none can be identified as the one
-            // its metadata describes, so none gets its sortedness or indexes.
+            // by more than one Deephaven column is left out: each of those Deephaven columns still reads the parquet
+            // column, but none can be identified as the Deephaven column its metadata describes, so none gets its
+            // sortedness or indexes. Partitioning columns read nothing from the file, even when a rename maps a
+            // partitioning column's name to a file column.
             final Map<String, String> deephavenByParquet = new HashMap<>();
             final Set<String> readByMany = new HashSet<>();
             for (final String columnName : candidateColumnNames()) {
+                if (!readsFile(columnName)) {
+                    continue;
+                }
                 final List<String> columnPath;
                 try {
                     columnPath = of(columnName).orElse(List.of());

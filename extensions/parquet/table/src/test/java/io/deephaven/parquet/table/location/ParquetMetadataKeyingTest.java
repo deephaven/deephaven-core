@@ -810,6 +810,30 @@ public class ParquetMetadataKeyingTest {
     }
 
     /**
+     * Codecs are registered by Deephaven column name. Here the read registers parquet {@code C}'s codec under the name
+     * {@code C} is read as, as inference would, and that name is also the name of the index table's row set column; the
+     * row set column must still decode with the codec the index file's footer records.
+     */
+    @Test
+    public void dataIndexWithCodecColumnNamedLikeRowSet() {
+        final String rowSetName = ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME;
+        final String dest = path("codecNamedLikeRowSet.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(100).update("B = `b` + (ii % 5)", "C = `c` + ii"),
+                dest,
+                ParquetInstructions.builder()
+                        .addColumnCodec("C", UTF8StringAsByteArrayCodec.class.getName())
+                        .addIndexColumns("B")
+                        .build());
+        final Table fromDisk = ParquetTools.readTable(dest, ParquetInstructions.builder()
+                .addColumnNameMapping("C", rowSetName)
+                .addColumnCodec(rowSetName, UTF8StringAsByteArrayCodec.class.getName())
+                .build());
+        assertEquals(5, DataIndexer.getDataIndex(fromDisk, "B").table().select().size());
+        assertFilterMatchesOracle(fromDisk, "B = `b1`");
+    }
+
+    /**
      * Each column is decoded with the codec the footer records for the parquet column it reads, found under that
      * column's parquet name rather than its Deephaven name. Two columns written with codecs of different scales are
      * read through a resolver under other names, then swapped.
@@ -937,6 +961,45 @@ public class ParquetMetadataKeyingTest {
                         ColumnDefinition.ofInt("C")),
                 "Sym", "pb", "C", "C"));
         assertPartitionedCompositeIndex(fromDisk, "Sym");
+    }
+
+    /**
+     * A rename that gives a file column the name of a partitioning column doesn't make the partitioning column read
+     * that file column: partitioning {@code P}'s values still come from the location. The file's composite index on
+     * parquet {@code B} and {@code C} is therefore not an index on {@code P} and {@code C}.
+     */
+    @Test
+    public void compositeDataIndexForFileColumnRenamedLikePartitioningColumn() {
+        final String dest = path("renamedLikePartitioning");
+        ParquetTools.writeKeyValuePartitionedTable(
+                TableTools.emptyTable(300)
+                        .update("P = (int) (ii % 3)", "B = (int) (10 + ii % 5)", "C = `c` + (ii % 7)")
+                        .partitionBy("P"),
+                dest,
+                ParquetInstructions.builder().addIndexColumns("B", "C").build());
+        final Table fromDisk = ParquetTools.readTable(dest, ParquetInstructions.builder()
+                .addColumnNameMapping("B", "P")
+                .build());
+        assertTrue(fromDisk.getDefinition().getColumn("P").isPartitioning());
+        assertFalse(DataIndexer.hasDataIndex(fromDisk, "P", "C"));
+        assertFilterMatchesOracle(fromDisk, "P = 1 && C = `c2`");
+    }
+
+    /**
+     * A file column with a partitioning column's name is not what the partitioning column reads, so the file's index on
+     * that file column is not an index on the partitioning column.
+     */
+    @Test
+    public void compositeDataIndexForFileColumnNamedLikePartitioningColumn() {
+        final String dest = path("namedLikePartitioning");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(100).update("P = (int) (ii % 3)", "C = `c` + (ii % 7)"),
+                new File(dest, "P=5/data.parquet").getPath(),
+                ParquetInstructions.builder().addIndexColumns("P", "C").build());
+        final Table fromDisk = ParquetTools.readTable(dest);
+        assertTrue(fromDisk.getDefinition().getColumn("P").isPartitioning());
+        assertFalse(DataIndexer.hasDataIndex(fromDisk, "P", "C"));
+        assertFilterMatchesOracle(fromDisk, "P = 5 && C = `c2`");
     }
 
     // endregion partitioning columns
