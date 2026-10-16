@@ -8,7 +8,7 @@ import org.apache.iceberg.SortOrder;
 /**
  * A specification for providing {@link org.apache.iceberg.SortOrder} while writing to an iceberg table.
  * <p>
- * Deephaven sorts new data by the provided sort order and records the sort, by its leading column, in its own metadata
+ * Deephaven sorts new data by the provided sort order and records only the sort's leading column, in its own metadata
  * in each data file. It does not declare the sort order in the Iceberg metadata, since it sorts with its own
  * comparisons, which differ from the Iceberg specification's for strings and floating point values.
  */

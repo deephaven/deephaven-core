@@ -10,6 +10,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
@@ -36,7 +37,7 @@ import static io.deephaven.parquet.table.ParquetTableWriter.INDEX_ROW_SET_COLUMN
 
 /**
  * The one column resolver for the file of a {@link ParquetTableLocation}. It finds each Deephaven column with the
- * instructions' column resolver, if the instruction provides one, or else by their renames, whose default is the
+ * instructions' column resolver, if the instructions provide one, or else by their renames, whose default is the
  * identity. A column resolver is the alternative to renames; with one, the renames are ignored.
  * <p>
  * It also translates the file's metadata, which names parquet columns, to the Deephaven columns that read them. A
@@ -107,17 +108,17 @@ final class ParquetTableLocationColumnResolver implements ParquetColumnResolver 
     @Nullable
     String findDeephavenColumnName(@NotNull final String parquetColumnName) {
         if (renamesLeaveAlone(parquetColumnName)) {
-            return isDefined(parquetColumnName) && readsWholeColumn(of(parquetColumnName).orElse(List.of()))
-                    ? parquetColumnName
-                    : null;
+            // The only possible reader is the Deephaven column with the same name
+            final String columnName = parquetColumnName;
+            return isDefined(columnName) && readsWholeColumn(of(columnName).orElse(List.of())) ? columnName : null;
         }
         return metadataNames().deephavenByParquet.get(parquetColumnName);
     }
 
     /**
-     * Translates the file's sort columns, which name parquet columns, to Deephaven column names. A sort is only
-     * meaningful as a prefix -- each column is sorted within runs of the columns before it -- so translation stops at
-     * the first column that cannot be identified.
+     * Translates the file's sort columns, which name parquet columns, to sort columns that name the Deephaven columns
+     * reading them. A sort is only meaningful as a prefix -- each column is sorted within runs of the columns before it
+     * -- so translation stops at the first column that cannot be identified.
      * <p>
      * The sortedness itself is trusted rather than verified, as
      * {@link io.deephaven.engine.table.impl.SortedColumnsAttribute} documents. What this guards is the identity of the
@@ -127,14 +128,14 @@ final class ParquetTableLocationColumnResolver implements ParquetColumnResolver 
      * names, so that the recorded name belongs to the other column.
      */
     @NotNull
-    List<SortColumn> translateToDeephavenSortColumns(@NotNull final List<SortColumn> fileSortColumns) {
-        final List<SortColumn> sortColumns = new ArrayList<>(fileSortColumns.size());
-        for (final SortColumn fileSortColumn : fileSortColumns) {
-            final String columnName = findDeephavenColumnName(fileSortColumn.column().name());
+    List<SortColumn> translateToDeephavenSortColumns(@NotNull final List<SortColumnInfo> parquetSortColumns) {
+        final List<SortColumn> sortColumns = new ArrayList<>(parquetSortColumns.size());
+        for (final SortColumnInfo parquetSortColumn : parquetSortColumns) {
+            final String columnName = findDeephavenColumnName(parquetSortColumn.columnName());
             if (columnName == null) {
                 break;
             }
-            sortColumns.add(fileSortColumn.order() == SortColumn.Order.ASCENDING
+            sortColumns.add(parquetSortColumn.sortDirection() == SortColumnInfo.SortDirection.Ascending
                     ? SortColumn.asc(ColumnName.of(columnName))
                     : SortColumn.desc(ColumnName.of(columnName)));
         }
@@ -335,7 +336,7 @@ final class ParquetTableLocationColumnResolver implements ParquetColumnResolver 
 
     /**
      * The Deephaven columns that may read this file: those of the table definition or, for a location built without
-     * one, those the renames name the file's top-level columns.
+     * one, the names the renames give the file's top-level columns.
      */
     @NotNull
     private Collection<String> candidateColumnNames() {

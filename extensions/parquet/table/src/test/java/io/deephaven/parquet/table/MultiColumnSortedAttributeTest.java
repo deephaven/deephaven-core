@@ -7,21 +7,21 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
+import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.util.SafeCloseable;
-import org.junit.After;
-import org.junit.Before;
+import io.deephaven.parquet.table.location.ParquetTableLocation;
+import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.math.BigDecimal;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -47,33 +47,41 @@ import static org.junit.Assert.assertEquals;
  */
 public class MultiColumnSortedAttributeTest {
 
-    private static final String ROOT_FILENAME = MultiColumnSortedAttributeTest.class.getName() + "_root";
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
-    private ExecutionContext executionContext;
-    private SafeCloseable executionContextCloseable;
-    private File rootFile;
-    private boolean savedMemoize;
+    @Rule
+    public final TemporaryFolder tempDir = new TemporaryFolder();
 
-    @Before
-    public void setUp() {
-        executionContext = TestExecutionContext.createForUnitTests();
-        executionContextCloseable = executionContext.open();
-        savedMemoize = QueryTable.setMemoizeResults(false);
-        rootFile = new File(ROOT_FILENAME);
-        if (rootFile.exists()) {
-            FileUtils.deleteRecursively(rootFile);
-        }
-        // noinspection ResultOfMethodCallIgnored
-        rootFile.mkdirs();
+    private String path(final String name) {
+        return new File(tempDir.getRoot(), name + ".parquet").getPath();
     }
 
-    @After
-    public void tearDown() {
-        QueryTable.setMemoizeResults(savedMemoize);
-        if (rootFile != null) {
-            FileUtils.deleteRecursively(rootFile);
+    /**
+     * Runs {@code test} with the data-index action engaged however small the table. {@code pushdownDataIndex} returns
+     * early unless the maybe-set is larger than {@code indexSize / DATA_INDEX_FOR_WHERE_THRESHOLD}, so the default
+     * threshold hides the bug on a small table; raising it is what the fuzz case's toggle profile did.
+     */
+    private static void withDataIndexPushdown(final Runnable test) {
+        final double savedThreshold = QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD;
+        QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD = Double.MAX_VALUE;
+        try {
+            test.run();
+        } finally {
+            QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD = savedThreshold;
         }
-        executionContextCloseable.close();
+    }
+
+    /**
+     * Returns the sorted columns the engine publishes for the index table that {@code dest}'s data index on
+     * {@code keyColumnNames} reads, from a file whose footer records the sort of each of its key columns.
+     */
+    private static List<SortColumn> publishedSortOfIndexTable(final String dest, final String... keyColumnNames) {
+        final ParquetTableLocation location = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(new File(dest).toURI(), 0, null, ParquetInstructions.EMPTY),
+                ParquetInstructions.EMPTY);
+        return SortedColumnsAttribute.getSortedColumns(location.loadDataIndex(keyColumnNames).table().coalesce());
     }
 
     /**
@@ -81,8 +89,8 @@ public class MultiColumnSortedAttributeTest {
      * within ties of {@code A}. That is what a multi-column sort produces, and what makes the false claim about
      * {@code B} observable.
      */
-    private Table writeWithCompositeIndex(final String name) {
-        final String dest = Path.of(rootFile.getPath(), name + ".parquet").toString();
+    private String writeWithCompositeIndex(final String name) {
+        final String dest = path(name);
         final Table source = TableTools.newTable(
                 TableTools.col("A",
                         LocalDate.parse("1900-01-01"), LocalDate.parse("1900-03-01"),
@@ -93,9 +101,18 @@ public class MultiColumnSortedAttributeTest {
                         new BigDecimal("9.19012"), new BigDecimal("3004.23000"), new BigDecimal("8.09598"),
                         new BigDecimal("116031.00000"), new BigDecimal("55.56580"), new BigDecimal("89.85440"),
                         new BigDecimal("689.79600")));
-        ParquetTools.writeTable(source, dest,
-                new ParquetInstructions.Builder().addIndexColumns("A", "B").build());
-        return ParquetTools.readTable(dest);
+        ParquetTools.writeTable(source, dest, ParquetInstructions.builder().addIndexColumns("A", "B").build());
+        return dest;
+    }
+
+    /**
+     * The composite index table is written {@code sort(A, B)} and records both columns as sorted, but only {@code A},
+     * its leading column, is published as sorted.
+     */
+    @Test
+    public void compositeIndexTablePublishesOnlyItsLeadingColumn() {
+        assertEquals(List.of(SortColumn.asc(ColumnName.of("A"))),
+                publishedSortOfIndexTable(writeWithCompositeIndex("composite_sort"), "A", "B"));
     }
 
     /**
@@ -105,20 +122,11 @@ public class MultiColumnSortedAttributeTest {
      */
     @Test
     public void disjunctionOverACompositeDataIndex() {
-        // pushdownDataIndex returns early unless the maybe-set is larger than
-        // indexSize / DATA_INDEX_FOR_WHERE_THRESHOLD, so the default threshold hides this on a small table. Raising
-        // it makes the data-index action engage, which is what the fuzz case's toggle profile did.
-        final double savedThreshold = QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD;
-        try {
-            QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD = Double.MAX_VALUE;
-            disjunctionOverACompositeDataIndexImpl();
-        } finally {
-            QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD = savedThreshold;
-        }
+        withDataIndexPushdown(this::disjunctionOverACompositeDataIndexImpl);
     }
 
     private void disjunctionOverACompositeDataIndexImpl() {
-        final Table disk = writeWithCompositeIndex("composite");
+        final Table disk = ParquetTools.readTable(writeWithCompositeIndex("composite"));
         ExecutionContext.getContext().getQueryScope().putParam("bound", new BigDecimal("55.5658"));
         ExecutionContext.getContext().getQueryScope().putParam("key", LocalDate.parse("1970-01-01"));
         final Filter filter = Filter.or(RawString.of("B >= bound"), RawString.of("A != key"));
@@ -131,35 +139,25 @@ public class MultiColumnSortedAttributeTest {
     /** Each disjunct alone was always correct; keep them covered so a regression is localized. */
     @Test
     public void eachDisjunctAloneOverACompositeDataIndex() {
-        final double savedThreshold = QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD;
-        QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD = Double.MAX_VALUE;
-        try {
-            eachDisjunctAloneImpl();
-        } finally {
-            QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD = savedThreshold;
-        }
+        withDataIndexPushdown(this::eachDisjunctAloneImpl);
     }
 
     private void eachDisjunctAloneImpl() {
-        final Table disk = writeWithCompositeIndex("composite_parts");
+        final Table disk = ParquetTools.readTable(writeWithCompositeIndex("composite_parts"));
         ExecutionContext.getContext().getQueryScope().putParam("bound", new BigDecimal("55.5658"));
         ExecutionContext.getContext().getQueryScope().putParam("key", LocalDate.parse("1970-01-01"));
         assertEquals(5, disk.where(RawString.of("B >= bound")).size());
         assertEquals(5, disk.where(RawString.of("A != key")).size());
     }
 
-    /** A single-column data index is genuinely sorted, so its claim must survive. */
+    /** A single-column data index table is genuinely sorted by its key, so its claim must survive. */
     @Test
     public void singleColumnIndexKeepsItsClaim() {
-        final String dest = Path.of(rootFile.getPath(), "single.parquet").toString();
+        final String dest = path("single");
         ParquetTools.writeTable(TableTools.newTable(
-                TableTools.intCol("A", 3, 1, 2),
-                TableTools.intCol("B", 30, 10, 20)).sort("A"), dest,
-                new ParquetInstructions.Builder().addIndexColumns("A").build());
-        final Table disk = ParquetTools.readTable(dest);
-        assertEquals(List.of(SortColumn.asc(ColumnName.of("A"))),
-                SortedColumnsAttribute.getSortedColumns(disk.coalesce()));
-        assertEquals(2, disk.where("A >= 2").size());
-        assertEquals(2, disk.select().where("A >= 2").size());
+                TableTools.intCol("A", 3, 1, 2, 1),
+                TableTools.intCol("B", 30, 10, 20, 15)), dest,
+                ParquetInstructions.builder().addIndexColumns("A").build());
+        assertEquals(List.of(SortColumn.asc(ColumnName.of("A"))), publishedSortOfIndexTable(dest, "A"));
     }
 }

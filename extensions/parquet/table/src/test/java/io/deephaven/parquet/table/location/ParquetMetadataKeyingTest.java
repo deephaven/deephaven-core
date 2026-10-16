@@ -42,10 +42,12 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Parquet file metadata -- row-group statistics, sortedness and data indexes -- must be looked up in the key space it
- * was written in: global row-group indices for {@code _metadata} layouts, and parquet column names rather than
- * Deephaven column names whenever renames are in play. Each test compares a pushdown-capable read against an in-memory
- * {@code select()} of the same data, which runs no pushdown and consults no file metadata.
+ * Parquet file metadata -- row-group statistics, dictionaries, sortedness, data indexes and the footer's column type
+ * entries, such as codecs -- must be looked up in the key space it was written in: global row-group indices for
+ * {@code _metadata} layouts, and parquet column names rather than Deephaven column names whenever renames or a column
+ * resolver are in play. Most tests compare a pushdown-capable read against an in-memory {@code select()} of the same
+ * data, which runs no pushdown and consults no file metadata; the rest check the metadata a read finds, or the values
+ * and types it reads, directly.
  */
 public class ParquetMetadataKeyingTest {
 
@@ -137,7 +139,7 @@ public class ParquetMetadataKeyingTest {
      * {@code B}.
      */
     @Test
-    public void dictionaryWithRenameSwap() {
+    public void dictionaryWithReadRenameShift() {
         final Table fromDisk = ParquetTools.readTable(writeDictionaryTable(), ParquetInstructions.builder()
                 .addColumnNameMapping("B", "A")
                 .addColumnNameMapping("C", "B")
@@ -148,8 +150,24 @@ public class ParquetMetadataKeyingTest {
         assertFilterMatchesOracle(fromDisk, "A in `b1`, `b3`");
     }
 
+    /**
+     * Parquet {@code B} is read as Deephaven {@code C} and parquet {@code C} as Deephaven {@code B}. A filter on
+     * {@code C} must consult the dictionary of parquet {@code B}, not that of parquet {@code C}.
+     */
     @Test
-    public void dictionaryWithRename() {
+    public void dictionaryWithReadRenameSwap() {
+        final Table fromDisk = ParquetTools.readTable(writeDictionaryTable(), ParquetInstructions.builder()
+                .addColumnNameMapping("B", "C")
+                .addColumnNameMapping("C", "B")
+                .build());
+        assertEquals(100, fromDisk.select().where("C = `b1`").size());
+        assertFilterMatchesOracle(fromDisk, "C = `b1`");
+        assertFilterMatchesOracle(fromDisk, "B = `c1`");
+        assertFilterMatchesOracle(fromDisk, "C in `b1`, `b3`");
+    }
+
+    @Test
+    public void dictionaryWithReadRename() {
         final Table fromDisk = ParquetTools.readTable(writeDictionaryTable(), ParquetInstructions.builder()
                 .addColumnNameMapping("B", "Sym")
                 .build());
@@ -157,8 +175,9 @@ public class ParquetMetadataKeyingTest {
     }
 
     /**
-     * With a column resolver there is no fallback that treats a Deephaven name as a parquet name, so a parquet name
-     * passed where a Deephaven name is expected resolves to a nonexistent column.
+     * With a column resolver there is no fallback that treats a Deephaven name as a parquet name, so asking the
+     * location for the filter's column by its parquet name, {@code B}, rather than its Deephaven name, {@code Sym},
+     * would find no column at all.
      */
     @Test
     public void dictionaryWithColumnResolver() {
@@ -299,8 +318,8 @@ public class ParquetMetadataKeyingTest {
     }
 
     /**
-     * The sorted column {@code X} is not written, and the column that is, {@code Y}, has the parquet name {@code X}
-     * would have had; the file must not claim {@code Y} is sorted.
+     * Deephaven {@code X}, which is sorted, maps to parquet {@code Y} but is not written; Deephaven {@code Y}, which is
+     * not sorted, is written as parquet {@code Y}. The file must not record parquet {@code Y} as sorted.
      */
     @Test
     public void sortednessOfColumnNotWritten() {
@@ -350,7 +369,7 @@ public class ParquetMetadataKeyingTest {
      * parquet {@code B} belongs to Deephaven {@code A}; Deephaven {@code B} has none.
      */
     @Test
-    public void dataIndexWithReadRenameSwap() {
+    public void dataIndexWithReadRenameShift() {
         final Table fromDisk = ParquetTools.readTable(writeIndexedTable(), ParquetInstructions.builder()
                 .addColumnNameMapping("B", "A")
                 .addColumnNameMapping("C", "B")
@@ -358,6 +377,25 @@ public class ParquetMetadataKeyingTest {
         assertTrue(DataIndexer.hasDataIndex(fromDisk, "A"));
         assertFalse(DataIndexer.hasDataIndex(fromDisk, "B"));
         assertFilterMatchesOracle(fromDisk, "A = `b1`");
+        assertFilterMatchesOracle(fromDisk, "B = `c1`");
+    }
+
+    /**
+     * Parquet {@code B} is read as Deephaven {@code C} and parquet {@code C} as Deephaven {@code B}. The index on
+     * parquet {@code B} belongs to Deephaven {@code C}, and its keys are parquet {@code B}'s values; Deephaven
+     * {@code B} has none.
+     */
+    @Test
+    public void dataIndexWithReadRenameSwap() {
+        final Table fromDisk = ParquetTools.readTable(writeIndexedTable(), ParquetInstructions.builder()
+                .addColumnNameMapping("B", "C")
+                .addColumnNameMapping("C", "B")
+                .build());
+        assertTrue(DataIndexer.hasDataIndex(fromDisk, "C"));
+        assertFalse(DataIndexer.hasDataIndex(fromDisk, "B"));
+        assertTableEquals(TableTools.emptyTable(5).update("C = `b` + ii"),
+                DataIndexer.getDataIndex(fromDisk, "C").table().view("C").sort("C"));
+        assertFilterMatchesOracle(fromDisk, "C = `b1`");
         assertFilterMatchesOracle(fromDisk, "B = `c1`");
     }
 
@@ -504,8 +542,8 @@ public class ParquetMetadataKeyingTest {
         assertEquals(3, DataIndexer.getDataIndex(resolved, "W").table().size());
         assertEquals(IntVector.class, indexKeyType(resolved, "W"));
 
-        // The mapping hides the vector's footer type entry from the index read, which must still read the key as the
-        // vector the column reads
+        // A name mapping alongside the resolver is ignored, for the index read as for the data, so the key is still
+        // read as the vector the column reads
         final Table mapped = ParquetTools.readTable(dest, ParquetInstructions.builder()
                 .setTableDefinition(resolvedDefinition)
                 .setColumnResolverFactory((tableKey, tableLocationKey) -> resolver)
@@ -545,6 +583,21 @@ public class ParquetMetadataKeyingTest {
                 .build());
         assertEquals(500, DataIndexer.getDataIndex(fromDisk, "dh_begin_pos").table().size());
         assertFilterMatchesOracle(fromDisk, "dh_begin_pos = 3");
+    }
+
+    /**
+     * With a column resolver, the grouping sidecar of the parquet column a Deephaven column reads is that column's
+     * index, and its {@code dh_key} is read as that column is: widened.
+     */
+    @Test
+    public void legacyGroupingWithColumnResolver() {
+        final Table fromDisk = ParquetTools.readTable(legacyGroupingFile(), resolving(
+                TableDefinition.of(ColumnDefinition.ofLong("Sym")),
+                "Sym", "gcol"));
+        assertTrue(DataIndexer.hasDataIndex(fromDisk, "Sym"));
+        assertEquals(long.class, indexKeyType(fromDisk, "Sym"));
+        assertEquals(500, DataIndexer.getDataIndex(fromDisk, "Sym").table().size());
+        assertFilterMatchesOracle(fromDisk, "Sym = 3");
     }
 
     // endregion data indexes
@@ -620,9 +673,10 @@ public class ParquetMetadataKeyingTest {
     }
 
     /**
-     * The index table is read without the resolver, so its key columns carry their parquet names. Here the resolver
-     * swaps them -- Deephaven {@code B} reads parquet {@code C} and Deephaven {@code C} reads parquet {@code B} -- so
-     * each key column already holds the other's Deephaven name, and both renames must still happen, together.
+     * The index table is read through a resolver derived from the location's, which finds each key column where the
+     * column it indexes is. Here the location's resolver swaps them -- Deephaven {@code B} reads parquet {@code C} and
+     * Deephaven {@code C} reads parquet {@code B} -- so the index table's parquet {@code C} is read as its key column
+     * {@code B}, and its parquet {@code B} as {@code C}.
      */
     @Test
     public void compositeDataIndexWithColumnResolverSwap() {
@@ -640,7 +694,8 @@ public class ParquetMetadataKeyingTest {
 
     /**
      * A column resolver is the alternative to name mappings, and with one, the mappings are ignored: here one would
-     * read parquet {@code B} as {@code Sym}, but the resolver already does, for the index table as for the data.
+     * read parquet {@code C} as {@code Sym}, but the resolver reads parquet {@code B} as {@code Sym}, for the
+     * sortedness and the index table as for the data.
      */
     @Test
     public void dataIndexWithColumnResolverAndNameMapping() {
@@ -651,16 +706,17 @@ public class ParquetMetadataKeyingTest {
         final Table fromDisk = ParquetTools.readTable(writeSortedIndexedTable(), ParquetInstructions.builder()
                 .setTableDefinition(TableDefinition.of(ColumnDefinition.ofString("Sym"), ColumnDefinition.ofInt("C")))
                 .setColumnResolverFactory((tableKey, tableLocationKey) -> resolver)
-                .addColumnNameMapping("B", "Sym")
+                .addColumnNameMapping("C", "Sym")
                 .build());
+        assertEquals(Optional.of(SortingOrder.Ascending), sortOrder(fromDisk, "Sym"));
         assertTrue(DataIndexer.hasDataIndex(fromDisk, "Sym"));
         assertEquals(10, DataIndexer.getDataIndex(fromDisk, "Sym").table().size());
         assertFilterMatchesOracle(fromDisk, "Sym = `b3`");
     }
 
     /**
-     * The index table, read without the resolver, legalizes a parquet name that is not a valid Deephaven column name;
-     * its key column is renamed from that legalized name.
+     * The index table is read through a resolver derived from the location's, which finds the key column under its
+     * parquet name, {@code b col}, though that is not a valid Deephaven column name; nothing is legalized.
      */
     @Test
     public void dataIndexWithColumnResolverOnNonColumnName() {
@@ -690,8 +746,8 @@ public class ParquetMetadataKeyingTest {
     }
 
     /**
-     * Two Deephaven columns reading one parquet column translate to that parquet name twice, which names no composite
-     * index's key columns, so a composite index with as many key columns is not taken for theirs.
+     * Two Deephaven columns reading one parquet column can't be told apart, so neither translates to a parquet name,
+     * and a composite index with as many key columns is not taken for theirs.
      */
     @Test
     public void compositeDataIndexForColumnReadTwice() {
@@ -720,8 +776,8 @@ public class ParquetMetadataKeyingTest {
     }
 
     /**
-     * Inference installs the footer's codec for each column; a key column read with another codec, here a string column
-     * written as bytes and read as raw bytes, is read with that one in the index too.
+     * A key column read with an explicit codec, here a string column written as bytes and read as raw bytes, is read
+     * with that codec in the index too, since the index table is read with the indexed table's instructions.
      */
     @Test
     public void dataIndexWithColumnResolverAndExplicitCodec() {
@@ -795,7 +851,7 @@ public class ParquetMetadataKeyingTest {
 
     /**
      * The location's data index methods take Deephaven column names; a name that reads no column of the file has no
-     * index.
+     * index. The location has no definition, so the index table's definition is inferred, under the same renames.
      */
     @Test
     public void dataIndexForUntranslatableColumn() {
@@ -808,6 +864,9 @@ public class ParquetMetadataKeyingTest {
                 new ParquetTableLocationKey(new File(dest).toURI(), 0, null, instructions),
                 instructions);
         assertTrue(location.hasDataIndex("A"));
+        final Table indexTable = location.loadDataIndex("A").table();
+        assertTrue(indexTable.hasColumns("A"));
+        assertEquals(10, indexTable.size());
         // Deephaven B does not exist: parquet B is read as A
         assertFalse(location.hasDataIndex("B"));
         assertThrows(TableDataException.class, () -> location.loadDataIndex("B"));
@@ -816,4 +875,69 @@ public class ParquetMetadataKeyingTest {
     }
 
     // endregion column resolvers
+
+    // region partitioning columns
+
+    /**
+     * A table partitioned by {@code P}, with a composite data index on {@code (P, B)}. The index metadata records the
+     * partitioning column, which the files do not have, under its parquet name like the rest.
+     */
+    private String writePartitionedCompositeIndexedTable(final ParquetInstructions renames) {
+        final String dest = path("partitionedCompositeIndexed");
+        ParquetTools.writeKeyValuePartitionedTable(
+                TableTools.emptyTable(300)
+                        .update("P = (int) (ii % 3)", "B = `b` + (ii % 5)", "C = (int) ii")
+                        .partitionBy("P"),
+                dest,
+                new ParquetInstructions.Builder(renames).addIndexColumns("P", "B").build());
+        return dest;
+    }
+
+    private static void assertPartitionedCompositeIndex(final Table fromDisk, final String keyColumnName) {
+        assertTrue(DataIndexer.hasDataIndex(fromDisk, "P", keyColumnName));
+        final Table expectedKeys = TableTools.emptyTable(300)
+                .update("P = (int) (ii % 3)", keyColumnName + " = `b` + (ii % 5)")
+                .selectDistinct("P", keyColumnName)
+                .sort("P", keyColumnName);
+        assertTableEquals(expectedKeys, DataIndexer.getDataIndex(fromDisk, "P", keyColumnName).table()
+                .view("P", keyColumnName).sort("P", keyColumnName));
+        assertFilterMatchesOracle(fromDisk, "P = 1 && " + keyColumnName + " = `b2`");
+    }
+
+    /**
+     * Both index key columns are renamed on write and on read: partitioning {@code P} to parquet {@code pp}, which only
+     * the index metadata records, and {@code B} to parquet {@code pb}, which is read as {@code Sym}.
+     */
+    @Test
+    public void compositeDataIndexOnPartitioningColumnWithRenames() {
+        final String dest = writePartitionedCompositeIndexedTable(ParquetInstructions.builder()
+                .addColumnNameMapping("pp", "P")
+                .addColumnNameMapping("pb", "B")
+                .build());
+        final Table fromDisk = ParquetTools.readTable(dest, ParquetInstructions.builder()
+                .addColumnNameMapping("pp", "P")
+                .addColumnNameMapping("pb", "Sym")
+                .build());
+        assertPartitionedCompositeIndex(fromDisk, "Sym");
+    }
+
+    /**
+     * With a column resolver, which ignores renames, a partitioning key column is recorded under its own name, and the
+     * other key column is found through the resolver.
+     */
+    @Test
+    public void compositeDataIndexOnPartitioningColumnWithColumnResolver() {
+        final String dest = writePartitionedCompositeIndexedTable(ParquetInstructions.builder()
+                .addColumnNameMapping("pb", "B")
+                .build());
+        final Table fromDisk = ParquetTools.readTable(dest, resolving(
+                TableDefinition.of(
+                        ColumnDefinition.ofInt("P").withPartitioning(),
+                        ColumnDefinition.ofString("Sym"),
+                        ColumnDefinition.ofInt("C")),
+                "Sym", "pb", "C", "C"));
+        assertPartitionedCompositeIndex(fromDisk, "Sym");
+    }
+
+    // endregion partitioning columns
 }

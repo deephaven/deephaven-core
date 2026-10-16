@@ -939,7 +939,9 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         /**
-         * Maps a parquet column name to the Deephaven column name it is read and written under. When reading with a
+         * Maps a parquet column name to a Deephaven column name: reads read parquet column {@code parquetColumnName} as
+         * Deephaven column {@code columnName}, and writes write Deephaven column {@code columnName} as parquet column
+         * {@code parquetColumnName}. When reading with a
          * {@link #setColumnResolverFactory(ParquetColumnResolver.Factory) column resolver}, the mapping is ignored.
          *
          * @param parquetColumnName the parquet column name

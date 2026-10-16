@@ -64,7 +64,7 @@ public class ParquetTableWriter {
      */
     static class IndexWritingInfo {
         /**
-         * Names of the indexing key columns
+         * Deephaven names of the indexing key columns
          */
         final List<String> indexColumnNames;
         /**
@@ -144,13 +144,15 @@ public class ParquetTableWriter {
                             .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
                     final Table indexTable = dataIndex.table().sort(info.indexColumnNames.toArray(new String[0]));
                     // Like the rest of the footer metadata, sorting columns are recorded by parquet column name; the
-                    // index table is written with the same column names as the table it indexes. Every reader
-                    // validates a sorting column's name as a column name, and the sort is a prefix, so it ends at the
-                    // first name that is not one.
+                    // index table is written with the same parquet column names as the file it indexes, since it is
+                    // written with the same instructions. SortColumnInfo requires each name to be a valid Deephaven
+                    // column name, both here and wherever the footer is read, and the sort is a prefix, so it ends at
+                    // the first parquet name that is not a valid Deephaven column name.
                     final TableInfo.Builder indexTableInfoBuilder = TableInfo.builder().addSortingColumns(
                             Arrays.stream(info.parquetColumnNames)
                                     .takeWhile(NameValidator::isValidColumnName)
-                                    .map(cn -> SortColumnInfo.of(cn, SortColumnInfo.SortDirection.Ascending))
+                                    .map(parquetColumnName -> SortColumnInfo.of(parquetColumnName,
+                                            SortColumnInfo.SortDirection.Ascending))
                                     .toArray(SortColumnInfo[]::new));
 
                     tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
@@ -179,9 +181,10 @@ public class ParquetTableWriter {
         // sorted, rather than ordered sets expressing multi-column sorts. Given that mismatch, we can only reflect
         // a single column sort in the metadata at this time.
         // Like the rest of the footer metadata, it is recorded by parquet column name, which is what a reader sees in
-        // the file whatever renames it applies. Only a column that is written has one; another column may be written
-        // under the name an unwritten one maps to. Every reader validates that name as a column name, so a parquet name
-        // that is not one leaves the sort unrecorded.
+        // the file whatever renames it applies. Only a column that is written has a parquet column name; another column
+        // may be written under the parquet name an unwritten column maps to. SortColumnInfo requires that parquet name
+        // to be a valid Deephaven column name, both here and wherever the footer is read, so a parquet name that is not
+        // a valid Deephaven column name leaves the sort unrecorded.
         final List<SortColumn> sortedColumns = SortedColumnsAttribute.getSortedColumns(t);
         if (!sortedColumns.isEmpty() && definition.getColumn(sortedColumns.get(0).column().name()) != null) {
             final SortColumn sortedColumn = sortedColumns.get(0);

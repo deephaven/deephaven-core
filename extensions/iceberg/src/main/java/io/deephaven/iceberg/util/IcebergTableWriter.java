@@ -174,8 +174,9 @@ public class IcebergTableWriter {
                 ((SortOrderProviderInternal.SortOrderProviderImpl) tableWriterOptions.sortOrderProvider());
         sortColumnNames =
                 computeSortColumns(sortOrderProvider.getSortOrderToUse(table), sortOrderProvider.failOnUnmapped());
-        // Validates the provider's sort order ID, though data files declare no sort order; see dataFilesFromParquet
-        sortOrderProvider.getSortOrderToWrite(table);
+        // Data files declare no sort order (see dataFilesFromParquet), but the provider's sort order ID is still
+        // checked
+        sortOrderProvider.validateSortOrder(table);
 
         final String uriScheme = tableAdapter.locationUri().getScheme();
         this.specialInstructions = tableWriterOptions.dataInstructions()

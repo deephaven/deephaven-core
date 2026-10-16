@@ -60,17 +60,18 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             .getIntegerForClassWithDefault(ParquetColumnLocation.class, "maxPageCacheSize", 8192);
 
     private final String columnName;
-    /**
-     * The name of the top-level parquet column this column reads, from the path the location's column resolver finds;
-     * set when the readers are.
-     */
-    private String parquetColumnName;
 
     private volatile boolean readersInitialized;
     private final Object readersLock;
 
     // Access to following variables must be guarded by initializeReaders()
     // -----------------------------------------------------------------------
+    /**
+     * The name of the top-level parquet column this column reads, from the path the location's column resolver finds,
+     * or {@code null} if this column reads no parquet column.
+     */
+    private String parquetColumnName;
+
     /**
      * Factory object needed for deferred initialization of the remaining fields. We delay initializing this field
      * itself till we need to read the column data. The number of entries in this array will match the number of row

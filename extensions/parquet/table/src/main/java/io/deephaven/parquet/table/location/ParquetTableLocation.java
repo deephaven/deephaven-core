@@ -43,7 +43,6 @@ import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
-import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.util.SafeCloseable;
@@ -100,8 +99,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private Map<String, GroupingColumnInfo> groupingColumns;
     /** Keyed by parquet column name. */
     private Map<String, ColumnTypeInfo> columnTypes;
-    /** In Deephaven column names; see {@link #getSortedColumns()}. */
-    private volatile List<SortColumn> sortingColumns;
 
     private ParquetFileReader parquetFileReader;
     private ParquetMetadata parquetMetadata;
@@ -115,6 +112,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
     // -----------------------------------------------------------------------
 
     private volatile RowGroupReader[] rowGroupReaders;
+
+    /**
+     * The file's sort columns, translated to Deephaven column names on first use; see {@link #getSortedColumns()}.
+     */
+    private volatile List<SortColumn> sortingColumns;
 
     public ParquetTableLocation(@NotNull final TableKey tableKey,
             @NotNull final ParquetTableLocationKey tableLocationKey,
@@ -160,16 +162,16 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
             parquetSchema = parquetFileReader.getSchema();
 
-            final Map<String, String[]> parquetColumnNameToPath = new HashMap<>();
+            final Map<String, String[]> pathsByParquetColumnName = new HashMap<>();
             for (String[] path : ParquetSchemaUtil.paths(parquetSchema)) {
                 if (path.length > 1) {
-                    parquetColumnNameToPath.put(path[0], path);
+                    pathsByParquetColumnName.put(path[0], path);
                 }
             }
             resolver = new ParquetTableLocationColumnResolver(
                     readInstructions,
                     parquetSchema,
-                    parquetColumnNameToPath,
+                    pathsByParquetColumnName,
                     readInstructions.getColumnResolverFactory()
                             .map(factory -> factory.of(getTableKey(), tableLocationKey))
                             .orElse(null),
@@ -256,9 +258,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if ((local = sortingColumns) != null) {
                 return local;
             }
-            return sortingColumns =
-                    resolver.translateToDeephavenSortColumns(
-                            SortColumnInfo.sortColumns(tableInfo.sortingColumns()));
+            return sortingColumns = resolver.translateToDeephavenSortColumns(tableInfo.sortingColumns());
         }
     }
 
@@ -281,10 +281,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
         initialize();
         // In the future, we could make this more granular so that the resolver can be constructed without calling
         // initialize first.
-        return getColumnPathInternal(columnName);
-    }
-
-    private List<String> getColumnPathInternal(@NotNull final String columnName) {
         // empty list will result in exists=false
         return resolver.of(columnName).orElse(List.of());
     }
@@ -327,7 +323,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 .forEach(dataIndexColumns::add);
         // Add grouping columns to the list
         groupingColumns.keySet().stream()
-                .map(colName -> resolver.findIndexDeephavenColumnNames(List.of(colName)))
+                .map(parquetColumnName -> resolver.findIndexDeephavenColumnNames(List.of(parquetColumnName)))
                 .filter(Objects::nonNull)
                 .forEach(dataIndexColumns::add);
         return dataIndexColumns;
@@ -350,21 +346,21 @@ public class ParquetTableLocation extends AbstractTableLocation {
             return false;
         }
         // The metadata names parquet columns
-        final String[] parquetColumns = resolver.findIndexParquetColumnNames(Arrays.asList(columns));
-        if (parquetColumns == null) {
+        final String[] parquetColumnNames = resolver.findIndexParquetColumnNames(Arrays.asList(columns));
+        if (parquetColumnNames == null) {
             return false;
         }
         // Check if the column name matches any of the grouping columns
-        if (parquetColumns.length == 1 && groupingColumns.containsKey(parquetColumns[0])) {
+        if (parquetColumnNames.length == 1 && groupingColumns.containsKey(parquetColumnNames[0])) {
             // Validate the index file exists (without loading and parsing it)
-            final IndexFileMetadata metadata = getIndexFileMetadata(getParquetKey().getURI(), parquetColumns);
+            final IndexFileMetadata metadata = getIndexFileMetadata(getParquetKey().getURI(), parquetColumnNames);
             return metadata != null && parquetFileExists(metadata.fileURI);
         }
         // Check if the column names match any of the data indexes
         for (final DataIndexInfo dataIndex : tableInfo.dataIndexes()) {
-            if (dataIndex.matchesColumns(parquetColumns)) {
+            if (dataIndex.matchesColumns(parquetColumnNames)) {
                 // Validate the index file exists (without loading and parsing it)
-                final IndexFileMetadata metadata = getIndexFileMetadata(getParquetKey().getURI(), parquetColumns);
+                final IndexFileMetadata metadata = getIndexFileMetadata(getParquetKey().getURI(), parquetColumnNames);
                 return metadata != null && parquetFileExists(metadata.fileURI);
             }
         }
@@ -381,10 +377,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
     public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
         initialize();
         // The metadata names parquet columns
-        final String[] parquetColumns = resolver.findIndexParquetColumnNames(Arrays.asList(columns));
-        final IndexFileMetadata indexFileMetaData = parquetColumns == null
+        final String[] parquetColumnNames = resolver.findIndexParquetColumnNames(Arrays.asList(columns));
+        final IndexFileMetadata indexFileMetaData = parquetColumnNames == null
                 ? null
-                : getIndexFileMetadata(getParquetKey().getURI(), parquetColumns);
+                : getIndexFileMetadata(getParquetKey().getURI(), parquetColumnNames);
         if (indexFileMetaData == null) {
             throw new TableDataException(
                     String.format(
@@ -448,13 +444,20 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
     }
 
+    /**
+     * Returns the metadata of the index file the footer declares for the given key columns, or {@code null} if it
+     * declares none.
+     *
+     * @param parentFileURI The path to the base table
+     * @param parquetKeyColumnNames The parquet names of the key columns, as the footer records them
+     */
     @Nullable
     private IndexFileMetadata getIndexFileMetadata(
             @NotNull final URI parentFileURI,
-            @NotNull final String... keyColumnNames) {
-        if (keyColumnNames.length == 1) {
+            @NotNull final String... parquetKeyColumnNames) {
+        if (parquetKeyColumnNames.length == 1) {
             // If there's only one key column, there might be (legacy) grouping info
-            final GroupingColumnInfo groupingColumnInfo = groupingColumns.get(keyColumnNames[0]);
+            final GroupingColumnInfo groupingColumnInfo = groupingColumns.get(parquetKeyColumnNames[0]);
             if (groupingColumnInfo != null) {
                 return new IndexFileMetadata(
                         makeRelativeURI(parentFileURI, groupingColumnInfo.groupingTablePath()),
@@ -466,7 +469,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // Either there are more than 1 key columns, or there was no grouping info, so lets see if there was a
         // DataIndex.
         final DataIndexInfo dataIndexInfo = tableInfo.dataIndexes().stream()
-                .filter(item -> item.matchesColumns(keyColumnNames))
+                .filter(item -> item.matchesColumns(parquetKeyColumnNames))
                 .findFirst()
                 .orElse(null);
 
@@ -500,8 +503,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final boolean isDataIndex = indexFileMetaData.dataIndexInfo != null;
         final ParquetInstructions indexReadInstructions;
         if (readInstructions.getTableDefinition().isEmpty()) {
-            // A location built without a definition has no column resolver from its instructions, which requires one;
-            // infer the index table's definition, with the same renames as the parent table
+            // A location built without a definition can't have a column resolver in its instructions, since setting one
+            // requires a definition. Infer the index table's definition, with the same renames as the parent table.
             indexReadInstructions = readInstructions.withTableDefinitionAndLayout(null,
                     ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
         } else {
@@ -626,7 +629,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
 
         private final ResolveState resolveState;
-        /** The Deephaven names of the filter's columns. */
+        /**
+         * The table definition's names for the filter's columns, which the filter itself may name differently; see
+         * {@link RegionedPushdownFilterContext#filterColumnToManagerColumnName()}.
+         */
         private final String[] columnNames;
 
         private EstimateContext(
@@ -703,7 +709,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
 
         private final ResolveState resolveState;
-        /** The Deephaven names of the filter's columns. */
+        /**
+         * The table definition's names for the filter's columns, which the filter itself may name differently; see
+         * {@link RegionedPushdownFilterContext#filterColumnToManagerColumnName()}.
+         */
         private final String[] columnNames;
         /** The indices of the filter's columns in the file schema's leaf columns, for finding their statistics. */
         private final List<Integer> columnIndices;
@@ -797,12 +806,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * A helper class to hold a filter column's Deephaven name and the index of the parquet column it reads.
+     * A helper class to hold a filter column's name in the table definition and the index of the parquet column it
+     * reads.
      */
     private static class ResolvedColumnInfo {
         /**
-         * The Deephaven column name, which is what {@link #getColumnLocation}, the data index methods and the other
-         * {@link TableLocation} APIs expect.
+         * The column's name in the table definition, which is what {@link #getColumnLocation}, the data index methods
+         * and the other {@link TableLocation} APIs expect.
          */
         final String columnName;
         final int columnIndex;
@@ -825,12 +835,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
         if (columnPath.size() != 1) {
             return false;
         }
-        final String columnNameInSchema = columnPath.get(0);
-        if (!parquetSchema.containsField(columnNameInSchema)) {
+        final String parquetColumnName = columnPath.get(0);
+        if (!parquetSchema.containsField(parquetColumnName)) {
             // Column not found in the schema
             return false;
         }
-        final Type parquetType = parquetSchema.getType(columnNameInSchema);
+        final Type parquetType = parquetSchema.getType(parquetColumnName);
         if (!parquetType.isPrimitive()) {
             // Cannot push down filters on group types
             return false;
@@ -850,7 +860,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
         // Should not have a codec defined in the instructions or footer metadata
         final String codecFromInstructions = readInstructions.getCodecName(colNameFromDef);
-        final ColumnTypeInfo columnTypeInfo = getColumnTypes().get(columnNameInSchema);
+        final ColumnTypeInfo columnTypeInfo = getColumnTypes().get(parquetColumnName);
         final Object codec = codecFromInstructions != null ? codecFromInstructions
                 : columnTypeInfo == null ? null : columnTypeInfo.codec().orElse(null);
         if (codec != null) {
@@ -864,15 +874,16 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * Returns the index of {@code columnName} in {@code parquetColumnPaths}, or {@link OptionalInt#empty()} if the
-     * column is absent. This index is used to find the statistics for a column when pushing down filters.
+     * Returns the index of the top-level parquet column {@code parquetColumnName} in {@code parquetColumnPaths}, or
+     * {@link OptionalInt#empty()} if the column is absent. This index is used to find the statistics for a column when
+     * pushing down filters.
      */
     private static OptionalInt findColumnIndex(
-            @NotNull final String columnName,
+            @NotNull final String parquetColumnName,
             @NotNull final List<String[]> parquetColumnPaths) {
         for (int i = 0; i < parquetColumnPaths.size(); ++i) {
             final String[] path = parquetColumnPaths.get(i);
-            if (path.length == 1 && path[0].equals(columnName)) {
+            if (path.length == 1 && path[0].equals(parquetColumnName)) {
                 return OptionalInt.of(i);
             }
         }
@@ -883,7 +894,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * Attempts to resolve all columns referenced by {@code filter} against the Parquet schema.
      *
      * @param filter The filter containing the columns to resolve
-     * @param renameMap A map of column names to their renamed versions (if applicable)
+     * @param renameMap A map from the filter's column names to the table definition's names for them; a name it lacks
+     *        is the same in both
      * @return {@code Optional.empty()} if <b>any</b> column cannot be resolved, otherwise an {@code Optional}
      *         containing the fully resolved list.
      */
@@ -900,9 +912,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 return Optional.empty();
             }
 
-            // Assuming a non-nested column, the first element of the column path is the column name
-            final String columnNameFromSchema = columnPath.get(0);
-            final OptionalInt columnIndex = findColumnIndex(columnNameFromSchema, pathsFromSchema);
+            // Assuming a non-nested column, the first element of the column path is the parquet column name
+            final String parquetColumnName = columnPath.get(0);
+            final OptionalInt columnIndex = findColumnIndex(parquetColumnName, pathsFromSchema);
             if (columnIndex.isEmpty()) {
                 // Column not found in the schema
                 return Optional.empty();
@@ -1217,8 +1229,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 if (CancellationException.isCancellation(e)) {
                     throw e;
                 }
-                // Filtering the index fails when the read instructions changed the indexed column's type, since the
-                // index is read with the types it was written with (DH-19443). Leave every row to the filter itself.
+                // The index's key columns are read as the columns they index, renames and type conversions included,
+                // but filtering the index can still fail, for instance when its file can't be read as the indexed
+                // column's type. Leave every row to the filter itself.
                 log.warn().append("Skipping data index pushdown for filter ").append(String.valueOf(filter))
                         .append(": ").append(String.valueOf(e)).endl();
                 return result.copy();

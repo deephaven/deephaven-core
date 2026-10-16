@@ -65,7 +65,8 @@ class ColumnChunkReaderImplTest {
 
     @Test
     void dictionaryPageOffsetMeansMaybe() {
-        assertThat(mayHaveDictionaryPage(columnMeta(4L, Encoding.PLAIN, Encoding.RLE_DICTIONARY))).isTrue();
+        // The offset alone is enough, whatever the encodings say
+        assertThat(mayHaveDictionaryPage(columnMeta(4L, Encoding.PLAIN, Encoding.RLE))).isTrue();
     }
 
     @Test
@@ -73,6 +74,11 @@ class ColumnChunkReaderImplTest {
         // Some writers leave the dictionary page offset unset even though there is a dictionary page
         assertThat(mayHaveDictionaryPage(columnMeta(null, Encoding.RLE, Encoding.RLE_DICTIONARY))).isTrue();
         assertThat(mayHaveDictionaryPage(columnMeta(null, Encoding.PLAIN_DICTIONARY))).isTrue();
+    }
+
+    @Test
+    void missingEncodingsMeansMaybe() {
+        assertThat(mayHaveDictionaryPage(new ColumnMetaData())).isTrue();
     }
 
     @Test
