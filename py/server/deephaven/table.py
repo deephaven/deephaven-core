@@ -47,6 +47,8 @@ from deephaven.updateby import UpdateByOperation
 if TYPE_CHECKING:
     from typing_extensions import TypeAlias  # novermin  # noqa
 
+    from deephaven.barrage import CompressionType
+
 # Table
 _JTable = jpy.get_type("io.deephaven.engine.table.Table")
 _JAttributeMap = jpy.get_type("io.deephaven.engine.table.AttributeMap")
@@ -484,6 +486,39 @@ class RollupTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "with_node_operations on RollupTable failed.") from e
 
+    def with_compression(
+        self, compression_types: Union[CompressionType, Sequence[CompressionType]]
+    ) -> RollupTable:
+        """Returns a new RollupTable that allows the server to compress its Barrage snapshots and subscriptions with
+        the given compression types. See :meth:`Table.with_compression`. The compression of the rollup's source table
+        is not used.
+
+        Args:
+            compression_types (Union[CompressionType, Sequence[CompressionType]]): the compression type, or types, to
+                allow, most preferred first; an empty sequence returns a RollupTable that is never compressed
+
+        Returns:
+            a new RollupTable
+
+        Raises:
+            DHError
+        """
+        try:
+            # deferred, because deephaven.barrage imports this module
+            from deephaven.barrage import _j_with_compression
+
+            return RollupTable(
+                j_rollup_table=jpy.cast(
+                    _j_with_compression(self.j_rollup_table, compression_types),
+                    _JRollupTable,
+                ),
+                include_constituents=self.include_constituents,
+                aggs=self.aggs,
+                by=self.by,
+            )
+        except Exception as e:
+            raise DHError(e, "with_compression on RollupTable failed.") from e
+
     def with_filters(
         self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]
     ) -> RollupTable:
@@ -615,6 +650,38 @@ class TreeTable(JObjectWrapper):
             )
         except Exception as e:
             raise DHError(e, "with_node_operations on TreeTable failed.") from e
+
+    def with_compression(
+        self, compression_types: Union[CompressionType, Sequence[CompressionType]]
+    ) -> TreeTable:
+        """Returns a new TreeTable that allows the server to compress its Barrage snapshots and subscriptions with the
+        given compression types. See :meth:`Table.with_compression`. The compression of the tree's source table is not
+        used.
+
+        Args:
+            compression_types (Union[CompressionType, Sequence[CompressionType]]): the compression type, or types, to
+                allow, most preferred first; an empty sequence returns a TreeTable that is never compressed
+
+        Returns:
+            a new TreeTable
+
+        Raises:
+            DHError
+        """
+        try:
+            # deferred, because deephaven.barrage imports this module
+            from deephaven.barrage import _j_with_compression
+
+            return TreeTable(
+                j_tree_table=jpy.cast(
+                    _j_with_compression(self.j_tree_table, compression_types),
+                    _JTreeTable,
+                ),
+                id_col=self.id_col,
+                parent_col=self.parent_col,
+            )
+        except Exception as e:
+            raise DHError(e, "with_compression on TreeTable failed.") from e
 
     def with_filters(
         self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]
@@ -1118,6 +1185,41 @@ class Table(JObjectWrapper):
             )
         except Exception as e:
             raise DHError(e, "failed to create a table without attributes.") from e
+
+    def with_compression(
+        self, compression_types: Union[CompressionType, Sequence[CompressionType]]
+    ) -> Table:
+        """Returns a new Table that shares the data of this table and allows the server to compress its Barrage
+        snapshots and subscriptions with the given compression types. When a client fetches the table, the server uses
+        the first type in the list that the client accepts, and sends uncompressed data when none match.
+
+        This sets the table's "BarrageCompression" attribute. Operations whose result holds only this table's values
+        keep it: filtering, sorting, reversing, flattening, dropping or renaming columns, partition_by constituents,
+        first_by and last_by. Operations that compute new values or bring in another table's data drop it, including
+        view, update_view, joins, rollups and trees; so do operations such as head, select and update. For a rollup or
+        tree table, call with_compression on the RollupTable or TreeTable rather than on its source. A table with no
+        attribute set uses the server's default compression types, from the BarrageCompression.defaultTypes property,
+        which is unset by default. An empty sequence sets the attribute to an empty list, so the table is never
+        compressed, even when the server has default compression types.
+
+        Args:
+            compression_types (Union[CompressionType, Sequence[CompressionType]]): the compression type, or types, to
+                allow, most preferred first, from :class:`deephaven.barrage.CompressionType`; an empty sequence returns
+                a table that is never compressed
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            # deferred, because deephaven.barrage imports this module
+            from deephaven.barrage import _j_with_compression
+
+            return Table(j_table=_j_with_compression(self.j_table, compression_types))
+        except Exception as e:
+            raise DHError(e, "failed to create a table with compression.") from e
 
     def with_keys(self, cols: Union[str, Sequence[str]]) -> Table:
         """Returns a new Table that shares the underlying data and schema with this table and has the specified

@@ -6,6 +6,7 @@ package io.deephaven.server.arrow;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.table.AttributeMap;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
@@ -62,6 +63,18 @@ public interface ExchangeMarshaller {
      * @return true if this marshaller should be used, false to use the remainder of the marshaller chain
      */
     boolean accept(Object export);
+
+    /**
+     * The attributes that control how responses for {@code export} are sent, in particular its
+     * {@link io.deephaven.engine.table.Table#BARRAGE_COMPRESSION_ATTRIBUTE allowed compression}.
+     *
+     * @param export an object this marshaller {@link #accept(Object) accepts}
+     * @return the attributes for {@code export}, or null if it has none
+     */
+    @Nullable
+    default AttributeMap<?> attributesFor(final Object export) {
+        return export instanceof AttributeMap ? (AttributeMap<?>) export : null;
+    }
 
     /**
      * Processes a snapshot request using the provided parameters.

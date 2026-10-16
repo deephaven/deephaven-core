@@ -153,6 +153,50 @@ Each time the server propagates an update to a table's subscribers, it writes ea
 > [!NOTE]
 > `PropagateNanos` measures the elapsed time of one propagation phase: writing one message to the subscribers it goes to. An update can take several phases, such as a snapshot for new subscribers and a delta for the others, and each records its own sample. With parallel writes a phase can take much less than the sum of its writes' `WriteNanos`. A single subscriber's write still runs on one thread.
 
+## Compress Barrage data
+
+By default, the server sends Barrage snapshots and subscriptions uncompressed. To let it compress a table's data, call the table's [`with_compression`](https://deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Table.with_compression) method with the compression types the server may use, in order of preference: `CompressionType.ZSTD`, `CompressionType.GZIP`, or `CompressionType.SNAPPY`. A gRPC client may list the compression types it can decode in its `grpc-accept-encoding` request header. When a client fetches the table, the server uses the first type in the table's list that the client also lists, and sends uncompressed data when none match or the client lists none.
+
+```python order=null
+from deephaven import empty_table
+from deephaven.barrage import CompressionType
+
+t = empty_table(1_000_000).update(["X = ii", "Sym = `S` + (ii % 32)"])
+t_compressed = t.with_compression([CompressionType.ZSTD, CompressionType.GZIP])
+```
+
+`with_compression` stores the list in the table's `BarrageCompression` attribute. Operations whose result holds only the table's values keep the attribute: filtering, sorting, reversing, flattening, dropping or renaming columns, `partition_by` constituents, `first_by` and `last_by`. Operations that compute new values or bring in another table's data drop it, including `view`, `update_view`, joins, rollups and trees; so do operations such as `head`, `select` and `update`. Their results have no attribute set, so they are sent uncompressed unless the server has a server-wide list, described next. For a rollup or tree table, call `with_compression` on the rollup or tree table rather than on its source.
+
+To compress tables without changing the queries that create them, set a server-wide list of compression types, most preferred first, with the `BarrageCompression.defaultTypes` property, for example `-DBarrageCompression.defaultTypes=zstd,snappy`. The server uses the server-wide list for every table that has no `BarrageCompression` attribute set. Without the property, only tables with their own `BarrageCompression` attribute are compressed.
+
+With a server-wide list, compression is opt-out rather than opt-in. A table with its own `BarrageCompression` attribute uses its own list instead of the server-wide list. To exclude a table, call `with_compression([])`. This sets the attribute to an empty list, which means "never compress". Operations keep or drop an empty list just as they do any other list. A table made by an operation that drops the attribute, such as a join or `view`, has no attribute set, so the server-wide list applies to it, even when its source was excluded.
+
+These are the compression types each client lists by default. A client that lists none always receives uncompressed data.
+
+| Client                                     | Compression types listed                              |
+| ------------------------------------------ | ----------------------------------------------------- |
+| Java client                                | `gzip`, `zstd`, `snappy`                              |
+| Python (`pydeephaven`), C++, and R clients | `gzip` (and `deflate`, which the server does not use) |
+| Web UI and JavaScript API, Go client       | None, so data is always sent uncompressed             |
+
+Remote tables between servers are a separate case. A Deephaven server that fetches a table from another server, with [`barrage_session`](https://deephaven.io/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session) or by resolving a [`dh://` URI](../use-uris.md), connects through the Java client that runs inside the server, even though the query that fetches the table is written in Python. So it lists the same compression types as the Java client, not the ones `pydeephaven` lists.
+
+Choose the list based on what the server's CPU can afford. The following figures come from [`BarrageCompressionBenchmark`](https://github.com/deephaven/deephaven-core/blob/main/extensions/barrage/benchmark/src/main/java/io/deephaven/benchmark/barrage/BarrageCompressionBenchmark.java), a JMH benchmark in the Deephaven Core repository, run on a one-million-row table of mixed trade data. They were measured with JDK 21 on one thread of an Apple M1 Max and of an Intel Core i9-14900KS, and the speeds are megabytes of uncompressed data per second. Absolute speeds depend on the hardware and the data, so use them to compare the compression types rather than to predict throughput:
+
+| Compression type | Size after compression | Compression speed (M1 Max / i9-14900KS) | Decompression speed (M1 Max / i9-14900KS) |
+| ---------------- | ---------------------- | --------------------------------------- | ----------------------------------------- |
+| `zstd`           | 31% of the original    | 380 / 600 MB/s                          | 970 / 1350 MB/s                           |
+| `gzip`           | 28% of the original    | 17 / 30 MB/s                            | 390 / 550 MB/s                            |
+| `snappy`         | 59% of the original    | 800 / 1100 MB/s                         | 1470 / 1380 MB/s                          |
+
+`zstd` suits most tables. `gzip` compresses slightly smaller but is about 20 times slower to compress, so list it last, and only when clients that cannot decode `zstd`, such as `pydeephaven`, should also receive compressed data. `snappy` is the fastest but saves the least, and it saves nothing on data that is already close to random.
+
+To narrow the compression types a client lists, use the setting for that client. An empty list asks for uncompressed data.
+
+- A Java client: `ClientConfig.builder().acceptCompression(...)`.
+- A remote table fetched with [`barrage_session`](https://deephaven.io/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session): its `accept_compression` argument.
+- A remote table fetched by resolving a `dh://` URI: the `-DBarrageTableResolver.acceptCompression` property on the fetching server, for example `-DBarrageTableResolver.acceptCompression=zstd`.
+
 ## Additional Barrage configuration
 
 The following properties control other aspects of Barrage behavior:
