@@ -9,6 +9,10 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.base.FileUtils;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ObjectChunkHasher;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.ExecutionContext;
@@ -24,6 +28,7 @@ import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -4685,6 +4690,55 @@ public class QueryTableAggregationTest {
                 table.notifyListeners(added, removed, i());
             });
             assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
+        }
+    }
+
+    @Test
+    public void testRowLookupAfterReclaimingAKey() {
+        // A reclaiming aggregation leaves a tombstone in the hash table for a removed key: neither form of lookup
+        // finds the key, and once it returns, both find it at its new row key.
+        final QueryTable table = testRefreshingTable(i(0, 1, 2).toTracking(),
+                stringCol("Key", "A", "B", "C"), longCol("x", 1, 2, 3));
+        final QueryTable aggregated = table.aggNoMemo(AggregationProcessor.forAggregation(List.of(AggSum("x"))),
+                false, null, ColumnName.from("Key"), StateReclaimMode.releaseBlocks(1));
+        final AggregationRowLookup lookup = AggregationProcessor.getRowLookup(aggregated);
+        assertRowLookup(aggregated, lookup, "A", "B", "C", "D");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(1));
+            table.notifyListeners(i(), i(1), i());
+        });
+        assertRowLookup(aggregated, lookup, "A", "B", "C", "D");
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(3), stringCol("Key", "B"), longCol("x", 4));
+            table.notifyListeners(i(3), i(), i());
+        });
+        assertEquals(3L, aggregated.getRowSet().lastRowKey());
+        assertRowLookup(aggregated, lookup, "A", "B", "C", "D");
+    }
+
+    /**
+     * Both forms of {@code lookup} find each of {@code keys} at its row key in {@code aggregated}, or report it unknown
+     * if {@code aggregated} has no row for it.
+     */
+    private static void assertRowLookup(final Table aggregated, final AggregationRowLookup lookup,
+            final String... keys) {
+        final Map<String, Long> rowKeysByKey = new HashMap<>();
+        final ColumnSource<String> keySource = aggregated.getColumnSource("Key", String.class);
+        aggregated.getRowSet().forAllRowKeys(rowKey -> rowKeysByKey.put(keySource.get(rowKey), rowKey));
+        try (final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.makeWritableChunk(keys.length)) {
+            // noinspection unchecked
+            final Chunk<? extends Values>[] keyChunks = new Chunk[] {ObjectChunk.chunkWrap(keys)};
+            lookup.get(keyChunks, rowKeys);
+            assertEquals(keys.length, rowKeys.size());
+            for (int ii = 0; ii < keys.length; ++ii) {
+                final long expected =
+                        rowKeysByKey.getOrDefault(keys[ii], (long) AggregationRowLookup.DEFAULT_UNKNOWN_ROW);
+                assertEquals(keys[ii], expected, rowKeys.get(ii));
+                assertEquals(keys[ii], expected, lookup.get(keys[ii]));
+            }
         }
     }
 
