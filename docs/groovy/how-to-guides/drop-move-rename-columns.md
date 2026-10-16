@@ -49,7 +49,7 @@ resultDropTwoCols = source.dropColumns("TestGrade", "HomeworkGrade")
 
 ### `view`
 
-[`view`](../reference/table-operations/select/view.md) removes any columns not given as input that are present in the source table. If [`view`](../reference/table-operations/select/view.md) is not given any input, it returns a table the same as the source table but with all formula columns.
+[`view`](../reference/table-operations/select/view.md) removes any columns not given as input that are present in the source table. Columns given by name reuse the source table's data, while columns defined by a formula (such as `Total = TestGrade + HomeworkGrade`) become formula columns.
 
 > [!IMPORTANT]
 > Formula columns initially store only the formulas used to create columnar data. Values are calculated on the fly as needed.
