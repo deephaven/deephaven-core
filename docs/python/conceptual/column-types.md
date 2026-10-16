@@ -2,7 +2,7 @@
 title: Deephaven's column types
 ---
 
-Deephaven tables store data in strongly-typed columns. Each column in a table must have a specific type that determines what values it can hold, how much memory it uses, and how operations behave on that column's data. Understanding column types is essential for designing efficient table schemas, writing correct queries, and optimizing performance. This guide covers the column types available in Deephaven tables, how to choose the right type for your data, and how types behave in table operations.
+Deephaven tables store data in strongly typed columns. Each column in a table must have a specific type that determines what values it can hold, how much memory it uses, and how operations behave on that column's data. Understanding column types is essential for designing efficient table schemas, writing correct queries, and optimizing performance. This guide covers the column types available in Deephaven tables, how to convert between them, how types behave in table operations, and how to choose the right type for your data.
 
 ## Column type overview
 
@@ -22,30 +22,30 @@ Deephaven table columns support a rich type system built on Java's type system. 
     <tr>
       <td scope="row"><a href="#primitive-numeric-types">Primitive numeric</a></td>
       <td><code>byte</code>, <code>short</code>, <code>int</code>, <code>long</code>, <code>float</code>, <code>double</code></td>
-      <td>✅ (special null values)</td>
+      <td>✅ (<a href="#null-values-for-primitives">sentinel null values</a>)</td>
       <td>✅</td>
       <td>Numeric calculations, counters, measurements</td>
     </tr>
     <tr>
-      <td scope="row"><a href="#primitive-boolean-and-char">Primitive boolean/char</a></td>
-      <td><code>boolean</code>, <code>char</code></td>
-      <td>✅ (special null values)</td>
+      <td scope="row"><a href="#boolean-and-char">Boolean/char</a></td>
+      <td><code>Boolean</code>, <code>char</code></td>
+      <td>✅ <code>char</code> uses a sentinel null value. <code>Boolean</code> uses Java <code>null</code>.</td>
       <td>✅</td>
       <td>Flags, single characters</td>
-    </tr>
-    <tr>
-      <td scope="row"><a href="#time-and-dates">Temporal</a></td>
-      <td><code>Instant</code>, <code>ZonedDateTime</code>, <code>LocalDate</code>, <code>LocalTime</code></td>
-      <td>✅</td>
-      <td>✅</td>
-      <td>Timestamps, dates, times, durations</td>
     </tr>
     <tr>
       <td scope="row"><a href="#string-type">String</a></td>
       <td><code>String</code></td>
       <td>✅</td>
-      <td>⚠️ (depends on cardinality)</td>
+      <td>⚠️ Each distinct <code>String</code> object takes its own memory. Repeated string literals share one object.</td>
       <td>Text data, identifiers, categories</td>
+    </tr>
+    <tr>
+      <td scope="row"><a href="#temporal-types">Temporal</a></td>
+      <td><code>Instant</code>, <code>ZonedDateTime</code>, <code>LocalDate</code>, <code>LocalTime</code>, <code>Duration</code></td>
+      <td>✅</td>
+      <td>⚠️ <code>Instant</code> is stored as a <code>long</code>. Other temporal types are stored as objects.</td>
+      <td>Timestamps, dates, times, durations</td>
     </tr>
     <tr>
       <td scope="row"><a href="#object-types">Object</a></td>
@@ -58,34 +58,41 @@ Deephaven table columns support a rich type system built on Java's type system. 
       <td scope="row"><a href="#array-types">Array</a></td>
       <td><code>int[]</code>, <code>double[]</code>, <code>String[]</code></td>
       <td>✅ (array itself or elements)</td>
-      <td>⚠️</td>
-      <td>Lists of values, vectors, time series</td>
+      <td>⚠️ Each array is a separate Java object. Primitive arrays store their elements as raw values.</td>
+      <td>Lists of values, time series</td>
     </tr>
   </tbody>
 </table>
 
-The rest of this guide explores each of these column types, their properties, and how to use them effectively in your tables.
+The rest of this guide explores each of these column types, their properties, and how to use them effectively in your tables. To see how Python and NumPy types map to these Java types, and how type hints and casts set a column's type, see [Data types in Deephaven and Python](../how-to-guides/data-types.md).
 
 ## Type fundamentals
 
-Understanding the fundamental types — numeric primitives, booleans, characters, and strings — is essential for working effectively with Deephaven tables.
+Numeric primitives, booleans, characters, strings, and temporal (date and time) values are the types most columns use, so understanding them is essential for working effectively with Deephaven tables.
+
+> [!NOTE]
+> In query strings, string literals go inside backticks, like `` `Hello` ``, and `char` literals go inside single quotes, like `'A'`. Backticks work the same way as double quotes in Java. See [String and char literals](../how-to-guides/string-char-literals.md) for details.
 
 ### Primitive numeric types
 
-Primitive numeric types are the most memory-efficient and performant types in Deephaven. They map directly to Java primitives and are stored unboxed in memory.
+Primitive numeric types are the most memory-efficient and performant types in Deephaven. They map directly to Java primitives, so each value is stored as a raw number rather than as a separate Java object.
 
 #### Numeric type reference
 
-| Type     | Size   | Range                             | Null value    | Example use case                           |
-| -------- | ------ | --------------------------------- | ------------- | ------------------------------------------ |
-| `byte`   | 8-bit  | -128 to 127                       | `NULL_BYTE`   | Small integers, status codes               |
-| `short`  | 16-bit | -32,768 to 32,767                 | `NULL_SHORT`  | Medium integers, year values               |
-| `int`    | 32-bit | -2³¹ to 2³¹-1                     | `NULL_INT`    | Standard integers, counters                |
-| `long`   | 64-bit | -2⁶³ to 2⁶³-1                     | `NULL_LONG`   | Large integers, IDs, nanosecond timestamps |
-| `float`  | 32-bit | ~±3.4×10³⁸ (7 digits precision)   | `NULL_FLOAT`  | Approximate decimals, measurements         |
-| `double` | 64-bit | ~±1.7×10³⁰⁸ (15 digits precision) | `NULL_DOUBLE` | High-precision decimals, financial data    |
+| Type     | Size   | Range                                     | Null value    | Example use case                                   |
+| -------- | ------ | ----------------------------------------- | ------------- | -------------------------------------------------- |
+| `byte`   | 8-bit  | -127 to 127                               | `NULL_BYTE`   | Small integers, status codes                       |
+| `short`  | 16-bit | -32,767 to 32,767                         | `NULL_SHORT`  | Medium integers, year values                       |
+| `int`    | 32-bit | -2³¹+1 to 2³¹-1                           | `NULL_INT`    | Standard integers, counters                        |
+| `long`   | 64-bit | -2⁶³+1 to 2⁶³-1                           | `NULL_LONG`   | Large integers, IDs, nanosecond timestamps         |
+| `float`  | 32-bit | ~±3.4×10³⁸ (about 7 significant digits)   | `NULL_FLOAT`  | Approximate decimals, measurements                 |
+| `double` | 64-bit | ~±1.7×10³⁰⁸ (about 15 significant digits) | `NULL_DOUBLE` | General-purpose decimals, measurements, statistics |
+
+Deephaven reserves the minimum value of each integer type as that type's null value, so the integer ranges above exclude it. For `float` and `double`, the null value is the most negative finite value (`-Float.MAX_VALUE` and `-Double.MAX_VALUE`).
 
 #### Creating numeric columns
+
+The examples on this page build values from the [special variables](../reference/query-language/variables/special-variables.md) `i` and `ii`, which hold each row's index as an `int` and a `long`. `LongCol` uses `ii` because `i * 1000000000` would overflow an `int`.
 
 ```python test-set=column-types order=t1
 from deephaven import empty_table
@@ -96,7 +103,7 @@ t1 = empty_table(5).update(
         "ByteCol = (byte)(i % 100)",
         "ShortCol = (short)(i * 1000)",
         "IntCol = (int)(i * 1000000)",
-        "LongCol = (long)(i * 1000000000)",
+        "LongCol = (long)(ii * 1000000000)",
         "FloatCol = (float)(i * 1.5)",
         "DoubleCol = i * 3.14159",
     ]
@@ -105,11 +112,10 @@ t1 = empty_table(5).update(
 
 #### Null values for primitives
 
-Unlike Java primitives, Deephaven's primitive columns can represent null values using special sentinel values:
+Java primitives can't be null, so Deephaven reserves one value of each numeric primitive type, and of `char`, to represent null. The numeric types use the values described above, and `char` uses `Character.MAX_VALUE`. These reserved values are called sentinel null values. Each type's sentinel has a named [null constant](../how-to-guides/built-in-constants.md#null-constants), such as `NULL_INT` and `NULL_DOUBLE`:
 
 ```python test-set=column-types order=t2
 from deephaven import empty_table
-from deephaven.constants import NULL_INT, NULL_DOUBLE
 
 # Create columns with null values
 t2 = empty_table(5).update(
@@ -121,9 +127,9 @@ t2 = empty_table(5).update(
 )
 ```
 
-You can check for nulls using `isNull` or comparison with the null constant:
+You can check for nulls with [`isNull`](../reference/query-language/types/nulls.md) or by comparing with the null constant:
 
-```python test-set=column-types order=t3
+```python test-set=column-types order=t3,t4
 # Filter for non-null values
 t3 = t2.where("!isNull(WithNulls)")
 
@@ -131,9 +137,11 @@ t3 = t2.where("!isNull(WithNulls)")
 t4 = t2.where("WithNulls != NULL_INT")
 ```
 
+`float` and `double` columns can also hold [`NaN`](../reference/query-language/types/NaNs.md), which is a different value from null.
+
 #### Type promotion and arithmetic
 
-When performing arithmetic with mixed numeric types, Deephaven follows Java's type promotion rules. Note that DQL promotes the `/` operator to `double` regardless of operand types — unlike Java, where `int / int` truncates. Cast the result explicitly to get integer truncation:
+When you do arithmetic with mixed numeric types, Deephaven follows Java's type promotion rules for most operators. Division is different. In query strings, dividing one integer value by another with `/` returns a `double`. In Java, `int / int` truncates instead. To get integer truncation, cast the result explicitly:
 
 ```python test-set=column-types order=t5
 from deephaven import empty_table
@@ -146,7 +154,7 @@ t5 = empty_table(3).update(
         "MixedIntLong = IntValue + LongValue",
         # int * double promotes to double
         "MixedIntDouble = IntValue * 3.14",
-        # DQL promotes / to double: 7 / 2 = 3.5
+        # In query strings, / promotes to double
         "DoubleDiv = 7 / 2",  # Result: 3.5
         # Cast to int for truncating integer division
         "IntDiv = (int)(7 / 2)",  # Result: 3
@@ -154,21 +162,23 @@ t5 = empty_table(3).update(
 )
 ```
 
-### Primitive boolean and char
+### Boolean and char
 
 #### Boolean type
 
-The `boolean` type represents true/false values:
+The `Boolean` type represents true/false values. Boolean columns have the data type `java.lang.Boolean`. Their null value is Java `null`, and the [null constant](../how-to-guides/built-in-constants.md#null-constants) `NULL_BOOLEAN` refers to the same value. Deephaven stores their values compactly as bytes, so they don't carry the per-value cost of the [object types](#object-types). Comparison expressions produce `Boolean` columns:
 
 ```python test-set=column-types order=t6
 from deephaven import empty_table
 
-t6 = empty_table(5).update(["Value = i", "IsEven = i % 2 == 0", "IsPositive = i > 2"])
+t6 = empty_table(5).update(
+    ["Value = i", "IsEven = i % 2 == 0", "IsGreaterThanTwo = i > 2"]
+)
 ```
 
 #### Char type
 
-The `char` type represents a single 16-bit Unicode character:
+The `char` type holds a single 16-bit UTF-16 code unit, the same as a Java `char`:
 
 ```python test-set=column-types order=t7
 from deephaven import empty_table
@@ -177,129 +187,21 @@ t7 = empty_table(5).update(["Index = i", "Letter = (char)('A' + i)"])
 ```
 
 > [!NOTE]
-> `char` is distinct from `String`. A `char` column holds single characters, while a `String` column holds character sequences.
+> `char` is distinct from [`String`](../reference/query-language/types/strings.md). A `char` column holds single characters, while a `String` column holds character sequences.
 
-## Time and dates
+### String type
 
-Deephaven provides robust support for date and time types, all based on Java 8's `java.time` package. These types are optimized for efficient storage and time-based operations, making them ideal for time-series data and temporal analysis.
+The [`String`](../reference/query-language/types/strings.md) type stores text data.
 
-### Temporal type reference
-
-| Type            | Description               | Null support | Example value                                 |
-| --------------- | ------------------------- | ------------ | --------------------------------------------- |
-| `Instant`       | Point in time (UTC)       | ✅           | `2025-01-15T10:30:45.123456789Z`              |
-| `ZonedDateTime` | Date-time with time zone  | ✅           | `2025-01-15T10:30:45-05:00[America/New_York]` |
-| `LocalDate`     | Date without time or zone | ✅           | `2025-01-15`                                  |
-| `LocalTime`     | Time without date or zone | ✅           | `10:30:45.123`                                |
-| `LocalDateTime` | Date-time without zone    | ✅           | `2025-01-15T10:30:45`                         |
-| `Duration`      | Time-based duration       | ✅           | `PT5H30M` (5 hours, 30 minutes)               |
-| `Period`        | Date-based period         | ✅           | `P1Y2M3D` (1 year, 2 months, 3 days)          |
-
-### Working with Instant
-
-`Instant` is the most commonly used temporal type, representing an instantaneous point on the timeline in UTC:
+#### Creating string columns
 
 ```python test-set=column-types order=t8
 from deephaven import empty_table
 
 t8 = empty_table(5).update(
     [
-        "Timestamp = now() + i * SECOND",
-        "HoursLater = Timestamp + 5 * HOUR",
-        "DaysBefore = Timestamp - 2 * DAY",
-    ]
-)
-```
-
-### Working with ZonedDateTime
-
-Use `ZonedDateTime` when time zone information is important:
-
-```python test-set=column-types order=t9
-from deephaven import empty_table
-
-t9 = empty_table(3).update(
-    [
-        "UTC = now()",
-        "NewYork = toZonedDateTime(UTC, timeZone(`America/New_York`))",
-        "Tokyo = toZonedDateTime(UTC, timeZone(`Asia/Tokyo`))",
-        "HourOfDay = hourOfDay(NewYork, false)",
-    ]
-)
-```
-
-### Working with LocalDate and LocalTime
-
-`LocalDate` and `LocalTime` are useful for date-only or time-only operations:
-
-```python test-set=column-types order=t10
-from deephaven import empty_table
-
-t10 = empty_table(5).update(
-    [
-        "Timestamp = now() + i * DAY",
-        "DateOnly = toLocalDate(Timestamp, timeZone(`America/New_York`))",
-        "TimeOnly = toLocalTime(Timestamp, timeZone(`America/New_York`))",
-        "DayOfWeekValue = dayOfWeekValue(DateOnly)",
-        "IsWeekend = DayOfWeekValue == 6 || DayOfWeekValue == 7",
-    ]
-)
-```
-
-### Temporal arithmetic
-
-Deephaven provides constants and functions for temporal calculations:
-
-```python test-set=column-types order=t11
-from deephaven import empty_table
-
-t11 = empty_table(3).update(
-    [
-        "Now = now()",
-        # Duration constants: SECOND, MINUTE, HOUR, DAY, WEEK
-        "OneMinuteLater = Now + 1 * MINUTE",
-        "TwoHoursEarlier = Now - 2 * HOUR",
-        "ThreeDaysLater = Now + 3 * DAY",
-        # Calculate differences
-        "TimeDiff = Now - (Now - 5 * HOUR)",
-    ]
-)
-```
-
-### Time zone considerations
-
-> [!IMPORTANT]
-> Always be explicit about time zones when converting between `Instant` and zone-aware types. Implicit conversions can lead to subtle bugs, especially around daylight saving time transitions.
-
-```python test-set=column-types order=t12
-from deephaven import empty_table
-
-t12 = empty_table(2).update(
-    [
-        "UTC_Time = now()",
-        # Explicit time zone conversion
-        "NY_Time = toZonedDateTime(UTC_Time, timeZone(`America/New_York`))",
-        "London_Time = toZonedDateTime(UTC_Time, timeZone(`Europe/London`))",
-        # Extract components with time zone awareness
-        "NY_Hour = hourOfDay(UTC_Time, timeZone(`America/New_York`), false)",
-        "London_Hour = hourOfDay(UTC_Time, timeZone(`Europe/London`), false)",
-    ]
-)
-```
-
-### String type
-
-The `String` type stores text data. Deephaven automatically interns strings to optimize memory usage for low-cardinality string columns.
-
-#### Creating string columns
-
-```python test-set=column-types order=t13
-from deephaven import empty_table
-
-t13 = empty_table(5).update(
-    [
         "Index = i",
-        "Letter = `A` + i",  # String concatenation
+        "Label = `A` + i",  # String concatenation
         "Formatted = `` + i + ` items`",
         "Conditional = i % 2 == 0 ? `Even` : `Odd`",
     ]
@@ -308,12 +210,12 @@ t13 = empty_table(5).update(
 
 #### String operations
 
-String columns in Deephaven are `java.lang.String` objects, which means you can use standard Java String methods directly:
+Values in a [`String`](../reference/query-language/types/strings.md) column are `java.lang.String` objects, so you can call standard Java `String` methods on them in query strings:
 
-```python test-set=column-types order=t14
+```python test-set=column-types order=t9
 from deephaven import empty_table
 
-t14 = empty_table(3).update(
+t9 = empty_table(3).update(
     [
         "Text = i == 0 ? `Hello World` : (i == 1 ? `DEEPHAVEN` : `  spaces  `)",
         "Length = Text.length()",
@@ -326,20 +228,23 @@ t14 = empty_table(3).update(
 )
 ```
 
-#### String interning and memory
+#### Strings and memory
 
-Deephaven automatically interns strings, which means identical string values share the same memory location. This is very efficient for low-cardinality columns (like categories or symbols) but less beneficial for high-cardinality data (like unique IDs or free-form text).
+Each value in a `String` column refers to a [`String`](../reference/query-language/types/strings.md) object, so a column's memory use depends on how many separate objects it holds. Deephaven doesn't deduplicate (intern) strings that formulas build at runtime:
 
-```python test-set=column-types order=t15
+- A formula that builds strings, such as by concatenation, creates a new `String` object for each row, even when values repeat. A column of computed IDs stores one object per row.
+- A string literal in a formula, such as `` `Active` `` in the example below, is one object shared across rows. A low-cardinality column (one with few distinct values) built from a few string literals stores only a few objects.
+
+```python test-set=column-types order=t10,t11
 from deephaven import empty_table
 
-# Low cardinality: memory efficient (only 3 unique strings stored)
-t15 = empty_table(1000).update(
+# Low cardinality: only 3 distinct values
+t10 = empty_table(1000).update(
     ["Status = i % 3 == 0 ? `Active` : (i % 3 == 1 ? `Pending` : `Closed`)"]
 )
 
-# High cardinality: less efficient (many unique strings)
-t16 = empty_table(1000).update(
+# High cardinality: many distinct values
+t11 = empty_table(1000).update(
     [
         "UniqueId = `ID-` + i"  # 1000 unique strings
     ]
@@ -348,54 +253,143 @@ t16 = empty_table(1000).update(
 
 #### Null strings
 
-Strings can be null, which is different from empty strings:
+A null string is different from an empty string:
 
-```python test-set=column-types order=t17
+```python test-set=column-types order=t12
 from deephaven import empty_table
 
-t17 = empty_table(5).update(
+t12 = empty_table(5).update(
     [
         "Index = i",
         "WithNull = i % 2 == 0 ? `Valid` : (String)null",
         "EmptyString = i % 2 == 0 ? `Valid` : ``",
         "IsNull = isNull(WithNull)",
-        "IsEmpty = WithNull == ``",  # This checks for empty, not null
+        "IsEmpty = EmptyString == ``",  # This checks for empty, not null
+    ]
+)
+```
+
+### Temporal types
+
+Deephaven provides robust support for the date and time types in the following table. All of them come from Java's [`java.time`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/package-summary.html) package, and Deephaven's [built-in time functions](./time-in-deephaven.md) operate on them, which makes them a natural fit for time-series data and temporal analysis. In memory, [`Instant`](../reference/query-language/types/date-time.md) columns are stored compactly as nanosecond `long` values. The other temporal types are stored as objects.
+
+#### Temporal type reference
+
+| Type                                                              | Description               | Null support | Example value                                 |
+| ----------------------------------------------------------------- | ------------------------- | ------------ | --------------------------------------------- |
+| [`Instant`](../reference/query-language/types/date-time.md)       | Point in time (UTC)       | ✅           | `2025-01-15T10:30:45.123456789Z`              |
+| [`ZonedDateTime`](../reference/query-language/types/date-time.md) | Date-time with time zone  | ✅           | `2025-01-15T10:30:45-05:00[America/New_York]` |
+| `LocalDate`                                                       | Date without time or zone | ✅           | `2025-01-15`                                  |
+| `LocalTime`                                                       | Time without date or zone | ✅           | `10:30:45.123`                                |
+| `LocalDateTime`                                                   | Date-time without zone    | ✅           | `2025-01-15T10:30:45`                         |
+| [`Duration`](../reference/query-language/types/durations.md)      | Time-based duration       | ✅           | `PT5H30M` (5 hours, 30 minutes)               |
+| [`Period`](../reference/query-language/types/periods.md)          | Date-based period         | ✅           | `P1Y2M3D` (1 year, 2 months, 3 days)          |
+
+#### Working with Instant
+
+[`Instant`](../reference/query-language/types/date-time.md) is the most commonly used temporal type, representing an instantaneous point on the timeline in UTC. Adding or subtracting a number of nanoseconds shifts an `Instant`, so you can use the [built-in nanosecond constants](../how-to-guides/built-in-constants.md#date-time-constants) `SECOND`, `MINUTE`, `HOUR`, `DAY`, and `WEEK`. Subtracting one `Instant` from another gives the difference in nanoseconds, and functions such as [`diffMinutes`](../reference/query-language/query-library/auto-imported/time.md) return it in other units:
+
+```python test-set=column-types order=t13
+from deephaven import empty_table
+
+t13 = empty_table(3).update(
+    [
+        "Now = now()",
+        "OneMinuteLater = Now + 1 * MINUTE",
+        "TwoHoursEarlier = Now - 2 * HOUR",
+        "ThreeDaysLater = Now + 3 * DAY",
+        # Difference between two Instants, in nanoseconds (long)
+        "TimeDiff = Now - (Now - 5 * HOUR)",
+        # Difference between two Instants, in minutes (double)
+        "MinutesBetween = diffMinutes(TwoHoursEarlier, Now)",
+    ]
+)
+```
+
+#### Working with ZonedDateTime
+
+Use [`ZonedDateTime`](../reference/query-language/types/date-time.md) when time zone information is important:
+
+```python test-set=column-types order=t14
+from deephaven import empty_table
+
+t14 = empty_table(3).update(
+    [
+        "UTC = now()",
+        "NewYork = toZonedDateTime(UTC, timeZone(`America/New_York`))",
+        "Tokyo = toZonedDateTime(UTC, timeZone(`Asia/Tokyo`))",
+        # true = local clock hour, correct across daylight saving time changes
+        "HourOfDay = hourOfDay(NewYork, true)",
+        "HourOfDayFromInstant = hourOfDay(UTC, timeZone(`America/New_York`), true)",
+    ]
+)
+```
+
+> [!IMPORTANT]
+> Always pass an explicit time zone when you convert an `Instant` to a zone-aware or local type. The same `Instant` has a different local date and hour in each time zone, and daylight saving time transitions shift local clock times, so an assumed zone gives subtly wrong results.
+
+#### Working with LocalDate and LocalTime
+
+`LocalDate` and `LocalTime` are useful for date-only or time-only operations:
+
+```python test-set=column-types order=t15
+from deephaven import empty_table
+
+t15 = empty_table(5).update(
+    [
+        "Timestamp = now() + i * DAY",
+        "DateOnly = toLocalDate(Timestamp, timeZone(`America/New_York`))",
+        "TimeOnly = toLocalTime(Timestamp, timeZone(`America/New_York`))",
+        "DayOfWeekValue = dayOfWeekValue(DateOnly)",
+        "IsWeekend = DayOfWeekValue == 6 || DayOfWeekValue == 7",
     ]
 )
 ```
 
 ## Advanced types
 
-For specialized use cases, Deephaven supports object types and arrays that provide flexibility beyond primitive types.
+For specialized use cases, object and array columns provide flexibility beyond primitive types. Object columns hold any Java object, such as a [`BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html), and [array columns](../reference/query-language/types/arrays.md) hold several values in each row.
 
 ### Object types
 
-Object types can store any Java object. Common examples include `BigDecimal`, `BigInteger`, and custom classes.
+Common [object types](../reference/query-language/types/objects.md) include [`BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html), [`BigInteger`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigInteger.html), and custom classes. `String` and every temporal type except [`Instant`](../reference/query-language/types/date-time.md) are stored as Java objects too, so the considerations below apply to them as well. This section covers the remaining object types.
 
 #### Object column considerations
 
-- **Performance**: Object columns are slower than primitive columns due to boxing/unboxing overhead.
-- **Memory**: Objects require more memory (object header + data).
-- **Null handling**: Objects can be `null` (Java null, not a sentinel value).
-- **Use cases**: High-precision arithmetic (`BigDecimal`), custom data structures, complex types.
+- **Performance**: Object columns are slower than primitive columns because each value is a separate heap object accessed by reference, and operations on them can't use primitive-specialized code paths.
+- **Memory**: Objects use more memory than primitives because each value carries an object header in addition to its data.
+- **Null handling**: Objects can be Java `null` rather than a sentinel value.
 
-> [!NOTE]
-> For high-precision decimal arithmetic, use `java.math.BigDecimal` instead of `double` to avoid floating-point errors. However, `BigDecimal` operations are slower than primitive operations.
+#### Working with BigDecimal
+
+Use [`BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html) when you need exact decimal arithmetic that `double` can't provide. The following example creates a `BigDecimal` column and multiplies it by another `BigDecimal`. Because `BigDecimal` isn't imported into query strings by default, the formulas use its full class name:
+
+```python test-set=column-types order=t16
+from deephaven import empty_table
+
+t16 = empty_table(3).update(
+    [
+        "Quantity = i + 1",
+        "Price = new java.math.BigDecimal(`1.10`)",
+        "Total = Price.multiply(new java.math.BigDecimal(Quantity))",
+    ]
+)
+```
 
 ### Array types
 
-Array columns store arrays as values, allowing each cell to contain a list of items.
+[Array columns](../reference/query-language/types/arrays.md) store arrays as values, allowing each cell to contain a list of items. Operations such as [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md) produce Deephaven vector columns (for example, `IntVector`) rather than Java arrays. See [Arrays vs. vectors](./arrays-vs-vectors.md) for the differences.
 
 #### Creating array columns
 
-```python test-set=column-types order=t20
+```python test-set=column-types order=t17
 from deephaven import empty_table
 
-t20 = empty_table(3).update(
+t17 = empty_table(3).update(
     [
         "Index = i",
-        # Create arrays of primitives
-        "IntArray = new int[]{i, i+1, i+2}",
+        # Create arrays of primitives and of objects
+        "IntArray = new int[]{i, i + 1, i + 2}",
         "DoubleArray = new double[]{i * 1.5, i * 2.5, i * 3.5}",
         "StringArray = new String[]{`A` + i, `B` + i, `C` + i}",
     ]
@@ -406,8 +400,8 @@ t20 = empty_table(3).update(
 
 Access array elements and properties:
 
-```python test-set=column-types order=t21
-t21 = t20.update(
+```python test-set=column-types order=t18
+t18 = t17.update(
     [
         "ArrayLength = IntArray.length",
         "FirstElement = IntArray[0]",
@@ -419,31 +413,32 @@ t21 = t20.update(
 
 #### Array null handling
 
-Arrays themselves can be null, and array elements can also be null (for object arrays):
+Arrays themselves can be null. Elements of object arrays can be `null`, and elements of primitive arrays can hold the type's null value (for example, `NULL_INT`):
 
-```python test-set=column-types order=t22
+```python test-set=column-types order=t19
 from deephaven import empty_table
 
-t22 = empty_table(5).update(
+t19 = empty_table(5).update(
     [
         "Index = i",
         # Null array
-        "NullArray = i % 2 == 0 ? new int[]{i, i+1} : (int[])null",
+        "NullArray = i % 2 == 0 ? new int[]{i, i + 1} : (int[])null",
         "IsArrayNull = isNull(NullArray)",
-        # Array with null elements (only for object arrays)
+        # Arrays with null elements
         "StringArrayWithNulls = new String[]{i == 0 ? (String)null : `Value` + i}",
+        "IntArrayWithNulls = new int[]{i, NULL_INT}",
     ]
 )
 ```
 
 #### Array operations
 
-Deephaven provides functions for array manipulation:
+Deephaven's [built-in functions](../how-to-guides/built-in-functions.md), such as the [math functions](../reference/query-language/query-library/auto-imported/math.md) `sum`, `avg`, `min`, and `max`, operate on arrays:
 
-```python test-set=column-types order=t23
+```python test-set=column-types order=t20
 from deephaven import empty_table
 
-t23 = empty_table(3).update(
+t20 = empty_table(3).update(
     [
         "Values = new int[]{i, i * 2, i * 3, i * 4, i * 5}",
         "Sum = sum(Values)",
@@ -457,14 +452,21 @@ t23 = empty_table(3).update(
 
 ## Type conversions and casting
 
-### Explicit casting
+The most common ways a numeric or string value changes type are:
 
-Use explicit casts when you need to convert between numeric types:
+- **Widening**: A numeric value widens to a larger numeric type automatically in arithmetic, as described in [Type promotion and arithmetic](#type-promotion-and-arithmetic).
+- **Narrowing**: A numeric value narrows, for example from `double` to `int`, only with an explicit cast, and it can lose precision.
+- **Parsing**: A string never becomes a number automatically. Convert it with a parsing function such as [`parseInt`](../reference/query-language/query-library/auto-imported/parse.md), or with a constructor such as ``new java.math.BigDecimal(`1.10`)``.
+- **Formatting**: A number becomes a string when you concatenate it with a string or format it explicitly.
 
-```python test-set=column-types order=t24
+### Narrowing with explicit casts
+
+Narrowing conversions need an explicit cast. Casting a `double` to an integer type truncates the fractional part:
+
+```python test-set=column-types order=t21
 from deephaven import empty_table
 
-t24 = empty_table(5).update(
+t21 = empty_table(5).update(
     [
         "DoubleValue = i * 3.7",
         # Explicit casts to narrow types
@@ -481,10 +483,10 @@ t24 = empty_table(5).update(
 
 Convert strings to numeric types:
 
-```python test-set=column-types order=t25
+```python test-set=column-types order=t22
 from deephaven import empty_table
 
-t25 = empty_table(3).update(
+t22 = empty_table(3).update(
     [
         "StringNum = `` + (i * 100)",
         "AsInt = parseInt(StringNum)",
@@ -498,10 +500,10 @@ t25 = empty_table(3).update(
 
 Convert numbers to strings:
 
-```python test-set=column-types order=t26
+```python test-set=column-types order=t23
 from deephaven import empty_table
 
-t26 = empty_table(3).update(
+t23 = empty_table(3).update(
     [
         "Value = i * 1234.567",
         # Simple string conversion
@@ -514,31 +516,35 @@ t26 = empty_table(3).update(
 
 ### Handling conversion errors
 
-Always validate input before converting to avoid runtime errors. Use conditional logic to handle cases where conversion might fail:
+Parsing functions such as [`parseInt`](../reference/query-language/query-library/auto-imported/parse.md) return a null value for a null string, but throw a `NumberFormatException` for a string that isn't a valid number. Check the string before you parse it:
 
-```python test-set=column-types order=t27
+```python test-set=column-types order=t24
 from deephaven import empty_table
-from deephaven.constants import NULL_INT
 
-t27 = empty_table(5).update(
+t24 = empty_table(5).update(
     [
         "StringValue = i % 2 == 0 ? `` + i : `invalid`",
-        # Use conditional logic to handle values that can't be parsed
-        "SafeConversion = i % 2 == 0 ? parseInt(StringValue) : NULL_INT",
+        # Parse only strings of digits; use NULL_INT for the rest. Digit strings outside the int range still throw.
+        "SafeConversion = StringValue.matches(`-?[0-9]+`) ? parseInt(StringValue) : NULL_INT",
     ]
 )
 ```
 
 ## Using types effectively
 
-Understanding how types behave in table operations and following best practices ensures optimal performance and maintainability.
+Understanding how types behave in table operations helps you write queries that perform well and are easy to maintain. This section shows how column types affect [aggregations](../how-to-guides/combined-aggregations.md), [joins](../how-to-guides/joins-exact-relational.md), and [sorts](../reference/table-operations/sort/sort.md), then gives guidelines for choosing types, keeping queries type-safe, and keeping queries fast.
 
 ### Aggregations and types
 
-Different aggregation operations have type-specific behavior:
+An [aggregation's](../how-to-guides/combined-aggregations.md) output column doesn't always have its input column's type. The following [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md) example uses three aggregation operators:
 
-```python test-set=column-types order=t28
+- [`agg.sum_`](../reference/table-operations/group-and-aggregate/AggSum.md) returns a `long` for an `int` column and a `double` for a `double` column.
+- [`agg.avg`](../reference/table-operations/group-and-aggregate/AggAvg.md) returns a `double`.
+- [`agg.count_`](../reference/table-operations/group-and-aggregate/AggCount.md) returns a `long`.
+
+```python test-set=column-types order=t25
 from deephaven import empty_table
+from deephaven import agg
 
 source = empty_table(100).update(
     [
@@ -549,9 +555,7 @@ source = empty_table(100).update(
 )
 
 # Aggregations preserve or promote types
-from deephaven import agg
-
-t28 = source.agg_by(
+t25 = source.agg_by(
     [
         agg.sum_(["SumInt = IntValue"]),  # Returns long
         agg.sum_(["SumDouble = DoubleValue"]),  # Returns double
@@ -564,19 +568,19 @@ t28 = source.agg_by(
 
 ### Joins and type matching
 
-Joins require matching types in key columns:
+[Joins](../how-to-guides/joins-exact-relational.md) such as [`natural_join`](../reference/table-operations/join/natural-join.md) require matching types in key columns:
 
-```python test-set=column-types order=t29
+```python test-set=column-types order=t26
 from deephaven import empty_table
 
 left = empty_table(5).update(["IntKey = (int)i", "LeftValue = i * 10"])
 right = empty_table(5).update(["IntKey = (int)i", "RightValue = i * 100"])
 
 # This works - types match
-t29 = left.natural_join(right, on="IntKey")
+t26 = left.natural_join(right, on="IntKey")
 ```
 
-Type mismatches will cause errors:
+Type mismatches cause errors:
 
 ```python syntax
 from deephaven import empty_table
@@ -584,31 +588,30 @@ from deephaven import empty_table
 left = empty_table(5).update("Key = (int)i")
 right = empty_table(5).update("Key = (long)i")
 
-# This would fail - int vs long mismatch
+# This fails with a MismatchedJoinKeyException: "Mismatched join types ... int != long"
 # t_join = left.natural_join(right, on="Key")
 ```
 
 Cast to matching types when necessary:
 
-```python test-set=column-types order=t30
+```python test-set=column-types order=t27
 from deephaven import empty_table
 
 left = empty_table(5).update(["Key = (int)i", "LeftValue = i * 10"])
 right = empty_table(5).update(["LongKey = (long)i", "RightValue = i * 100"])
 
 # Cast to matching type
-t30 = left.update("LongKey = (long)Key").natural_join(right, on="LongKey")
+t27 = left.update("LongKey = (long)Key").natural_join(right, on="LongKey")
 ```
 
 ### Sorting and type behavior
 
-Sorting behavior varies by type:
+[Sorting](../reference/table-operations/sort/sort.md) orders each column by its type: numbers by value, strings lexicographically, and temporal values chronologically. In an ascending sort, null values come first:
 
-```python test-set=column-types order=t31
+```python test-set=column-types order=sorted_numeric,sorted_string,sorted_time,sorted_with_nulls,t28
 from deephaven import empty_table
-from deephaven.constants import NULL_INT
 
-t31 = empty_table(10).update(
+t28 = empty_table(10).update(
     [
         "Number = (int)(10 - i)",
         "Text = `` + (char)('Z' - i)",
@@ -618,49 +621,40 @@ t31 = empty_table(10).update(
 )
 
 # Numeric: ascending by value
-sorted_numeric = t31.sort("Number")
+sorted_numeric = t28.sort("Number")
 
 # String: lexicographic order
-sorted_string = t31.sort("Text")
+sorted_string = t28.sort("Text")
 
 # Temporal: chronological order
-sorted_time = t31.sort("Timestamp")
+sorted_time = t28.sort("Timestamp")
 
-# Nulls: appear first by default in ascending sort
-sorted_with_nulls = t31.sort("NullableInt")
+# Nulls: appear first in an ascending sort
+sorted_with_nulls = t28.sort("NullableInt")
 ```
 
-### Choose the right type
+### Choosing the right type
 
 - **Integers**: Use the smallest type that fits your range (`byte` < `short` < `int` < `long`).
-- **Decimals**: Use `double` for most cases, `BigDecimal` only when exact precision is required.
-- **Timestamps**: Use `Instant` for UTC timestamps, `ZonedDateTime` when time zones matter.
-- **Text**: Use `String` for text data. Consider enum patterns for low-cardinality categories.
-- **Arrays**: Use when each row needs multiple related values. Consider separate columns if querying individual elements frequently.
+- **Decimals**: Use `double` for most cases, [`BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html) only when exact precision is required.
+- **Timestamps**: Use [`Instant`](../reference/query-language/types/date-time.md) to store points in time, and pass a time zone to functions such as [`toLocalDate`](../reference/query-language/query-library/auto-imported/time.md) or [`hourOfDay`](../reference/query-language/query-library/auto-imported/time.md) when you need local values. Use [`ZonedDateTime`](../reference/query-language/types/date-time.md) columns only when each value must carry its own time zone.
+- **Text**: Use [`String`](../reference/query-language/types/strings.md) for text data. Store low-cardinality categories as `String` values or small integer codes.
+- **Arrays**: Use arrays when each row needs multiple related values. Use separate columns instead if you query individual elements often.
 
-### Optimize for memory
+### Type safety
 
-- Prefer primitive types over objects (e.g., `int` over `Integer`, `double` over `BigDecimal`).
-- Use appropriate numeric precision (don't use `long` when `int` suffices).
-- Be cautious with high-cardinality strings and object columns.
-- Consider string interning benefits for categorical data.
-
-### Ensure type safety
-
-- Always validate and handle nulls explicitly.
+- Handle nulls explicitly, for example with [`isNull`](../reference/query-language/types/nulls.md) or a comparison with the type's null constant.
 - Use explicit casts when converting between types to make intent clear.
-- Match types in join keys and comparisons.
+- Match types in [join](../how-to-guides/joins-exact-relational.md) keys. Comparisons between different numeric types work without a cast.
 - Test edge cases (nulls, extreme values, type boundaries).
 
 ### Performance considerations
 
-| Operation            | Fast                            | Slow                           |
-| -------------------- | ------------------------------- | ------------------------------ |
-| Primitive arithmetic | ✅ `int`, `long`, `double`      | ❌ `BigDecimal`                |
-| String operations    | ✅ Low-cardinality strings      | ❌ High-cardinality strings    |
-| Null checks          | ✅ Primitive nulls (`NULL_INT`) | ❌ Complex null checking logic |
-| Aggregations         | ✅ Numeric primitives           | ❌ Complex objects             |
-| Memory usage         | ✅ Primitives, interned strings | ❌ Objects, large arrays       |
+| Concern                                                   | Efficient                               | Less efficient                                                                                            |
+| --------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Arithmetic                                                | ✅ `int`, `long`, `double`              | ❌ [`BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html) |
+| [Aggregations](../how-to-guides/combined-aggregations.md) | ✅ Numeric primitives                   | ❌ Objects                                                                                                |
+| Memory usage                                              | ✅ Primitives, repeated string literals | ❌ Objects, large arrays                                                                                  |
 
 ## Related documentation
 

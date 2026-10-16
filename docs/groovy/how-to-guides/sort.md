@@ -20,7 +20,7 @@ resultSortDesc = source.sortDescending("Letter")
 
 Given a column name to order the data by, [`sort`](../reference/table-operations/sort/sort.md) returns a new table with the data sorted in ascending (A-Z) order, and [`sortDescending`](../reference/table-operations/sort/sort-descending.md) returns a new table with the data sorted in descending (Z-A) order.
 
-Deephaven typically sorts values by their _natural order_ with null values first. Deephaven's sort is _stable_, meaning that the order of two equal elements is not changed. For floating point values, nulls are first, followed by normal values, and finally, `NaN` values come last. Both positive zero and negative zero are treated as identical values, preserving the original order of two rows with a zero value. Arrays of primitives, Strings, BigDecimal, BigInteger, and [Comparable](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Comparable.html) values are sorted lexicographically.
+Deephaven typically sorts values by their _natural order_ with null values first. Deephaven's sort is _stable_, meaning that the order of two equal elements is not changed. For floating point values, nulls are first, followed by normal values, and finally, `NaN` values come last. Both positive zero and negative zero are treated as identical values, preserving the original order of two rows with a zero value. Array columns are sorted lexicographically, element by element, when their elements are primitives, Strings, BigDecimal, BigInteger, or other [Comparable](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Comparable.html) values.
 
 ## Sorting by multiple columns
 
