@@ -5,32 +5,32 @@ title: Create and use input tables
 > [!TIP]
 > This guide covers input tables created and used directly on the Deephaven server. To stream data from an external Python application using `pydeephaven`, see [Client input tables](./client-input-tables.md).
 
-Input tables allow users to enter new data into tables in two ways: programmatically, and manually through the UI.
+Input tables allow users to enter new data into tables in two ways: programmatically and manually through the UI.
 
-In the first case, data is added to a table with `add`, an input table-specific method similar to [`merge`](../reference/table-operations/merge/merge.md). In the second case, data is added to a table through the UI by clicking on cells and typing in the contents, similar to a spreadsheet program like [MS Excel](https://www.microsoft.com/en-us/microsoft-365/excel).
+In the first case, you add data with [`add`](../reference/table-operations/create/input-table.md#methods), an input table method similar to [`merge`](../reference/table-operations/merge/merge.md). In the second case, you click cells in the UI and type their contents, as in a spreadsheet program like [Microsoft Excel](https://www.microsoft.com/en-us/microsoft-365/excel).
 
 Input tables come in two flavors:
 
-- [append-only](../conceptual/table-types.md#specialization-1-append-only)
-  - An append-only input table puts any entered data at the bottom.
+- [append-only](#create-an-input-table)
+  - An append-only input table puts any entered data at the bottom. It is an [append-only table](../conceptual/table-types.md#specialization-1-append-only).
 - [keyed](#create-a-keyed-input-table)
-  - A keyed input table supports modification/deletion of contents, and allows access to rows by key.
+  - A keyed input table has one or more key columns whose values identify each row. You can replace or delete existing rows by key.
 
-We'll show you how to create and use both types in this guide.
+This guide shows how to create and use both types.
 
 ## Create an input table
 
-First, you need to import the `input_table` method from the `deephaven` module:
+First, you need to import the [`input_table`](../reference/table-operations/create/input-table.md) function from the `deephaven` module:
 
 ```python
 from deephaven import input_table
 ```
 
-An input table can be constructed from a pre-existing table _or_ a list of column definitions. In either case, one or more key columns can be specified, which turns the table from an append-only input table to a keyed input table.
+You can create an input table from a pre-existing table _or_ from a set of column definitions. In either case, specifying one or more key columns makes it a keyed input table instead of an append-only one. A key column holds values that identify each row, so no two rows share the same key value. With several key columns, no two rows share the same combination of values. The next two sections create append-only input tables, and [Create a keyed input table](#create-a-keyed-input-table) shows how to add key columns.
 
 ### From a pre-existing table
 
-Here, we will create an input table from a table that already exists in memory. In this case, we'll create one with [`empty_table`](../reference/table-operations/create/emptyTable.md).
+Here, we create an input table from a table that already exists in memory. The example creates that source table with [`empty_table`](../reference/table-operations/create/emptyTable.md).
 
 ```python order=result,source
 from deephaven import empty_table, input_table
@@ -40,9 +40,9 @@ source = empty_table(10).update(["X = i"])
 result = input_table(init_table=source)
 ```
 
-### From scratch
+### From column definitions
 
-Here, we will create an input table from a list of column definitions. Column definitions must be defined in a [dictionary](https://docs.python.org/3/tutorial/datastructures.html#dictionaries).
+Here, we create an input table from a set of column definitions. You can pass the column definitions as a [dictionary](https://docs.python.org/3/tutorial/datastructures.html#dictionaries) that maps column names to data types, a [`TableDefinition`](/core/pydoc/code/deephaven.table.html#deephaven.table.TableDefinition), or a list of [`ColumnDefinition`](/core/pydoc/code/deephaven.column.html#deephaven.column.ColumnDefinition) objects. The following example uses a dictionary.
 
 ```python order=result
 from deephaven import input_table
@@ -53,11 +53,11 @@ my_col_defs = {"Integers": dht.int32, "Doubles": dht.double, "Strings": dht.stri
 result = input_table(col_defs=my_col_defs)
 ```
 
-The resulting table is initially empty, and ready to receive data.
+The resulting table is initially empty and ready to receive data.
 
 ### Create a keyed input table
 
-In the previous two examples, no key column was specified when creating the input tables. If one or more key columns is specified, the table becomes a keyed table.
+By default, [`input_table`](../reference/table-operations/create/input-table.md) creates an append-only input table. To create a keyed input table instead, pass one or more key column names in the `key_cols` argument.
 
 Let's first specify one key column.
 
@@ -76,7 +76,7 @@ In the case of multiple key columns, specify them in a list.
 result = input_table(col_defs=my_col_defs, key_cols=["Integers", "Doubles"])
 ```
 
-When creating a keyed input table from a pre-existing table, the key column(s) must satisfy uniqueness criteria. Each row or combination of rows in the initial table must not have repeating values. Take, for instance, the following table:
+When you create a keyed input table from a pre-existing table, the input table keeps one row per key. If several rows of the initial table share a key, the input table keeps the values from the last of those rows. With multiple key columns, a key is a combination of values. Take, for instance, the following table:
 
 ```python test-set=2 order=source
 from deephaven import empty_table, input_table
@@ -91,15 +91,15 @@ source = empty_table(10).update(
 )
 ```
 
-A keyed input table _can_ be created from the `X` and `Y` columns, since they have no repeating values, and are thus unique:
+No two rows share the same combination of `X` and `Y` values, so a keyed input table with `X` and `Y` as key columns keeps all 10 rows:
 
 ```python test-set=2 order=input_source
 input_source = input_table(init_table=source, key_cols=["X", "Y"])
 ```
 
-A keyed input table _cannot_ be created from the `Sym` _or_ `Marker` columns, since they have repeating values and combinations, and are thus _not_ unique:
+`Sym` and `Marker` together take only four distinct combinations of values, so a keyed input table with `Sym` and `Marker` as key columns has four rows. Each row holds the values from the last source row with that combination:
 
-```python test-set=2 should-fail
+```python test-set=2 order=input_source
 input_source = input_table(init_table=source, key_cols=["Sym", "Marker"])
 ```
 
@@ -107,15 +107,15 @@ input_source = input_table(init_table=source, key_cols=["Sym", "Marker"])
 
 ### Programmatically
 
-You can add data to input tables in two ways:
+Two methods add data to an input table programmatically:
 
 - [`add`](../reference/table-operations/create/input-table.md#methods): Synchronous addition.
 - [`add_async`](../reference/table-operations/create/input-table.md#methods): Asynchronous addition.
 
-New data is added to the end of the input table. If the input table is keyed, the new data will overwrite any existing data with the same key.
+An append-only input table adds new rows to the end of the table. In a keyed input table, an added row whose key already exists replaces the existing row with that key, and the other added rows become new rows.
 
 > [!NOTE]
-> To programmatically add data to an input table, the table schemas (column definitions) must match. These column definitions comprise the names and data types of every column in the table.
+> To add data to an input table programmatically, the table you add must have the same column names and data types as the input table.
 
 ```python test-set=1 order=my_table,my_input_table
 from deephaven import empty_table, input_table
@@ -131,78 +131,68 @@ my_input_table = input_table(col_defs=column_defs)
 my_input_table.add(my_table)
 ```
 
-Data can also be added to an input table asynchronously. Asynchronous function calls in the same thread are queued and processed in order. However, ordering is not guaranteed across threads. The following code block asynchronously adds data to a keyed input table:
+[`add`](../reference/table-operations/create/input-table.md#methods) blocks until Deephaven finishes adding the data. To add data without blocking, use [`add_async`](../reference/table-operations/create/input-table.md#methods). It returns immediately and accepts optional `on_success` and `on_error` callbacks, which Deephaven calls when the queued addition succeeds or fails. If you don't pass `on_error`, Deephaven prints that error instead of raising it. Problems that Deephaven detects before it queues the addition, such as a table whose column names or types don't match the input table, still raise a [`DHError`](/core/pydoc/code/deephaven.dherror.html#deephaven.dherror.DHError) immediately.
 
-```python order=my_input_table
-from deephaven import empty_table, input_table
-from deephaven import dtypes as dht
-from string import ascii_uppercase
-from random import choice
+Deephaven processes asynchronous calls from the same thread in the order you make them, but it doesn't guarantee an order across threads. The following code block creates a keyed input table with the keys `A`, `B`, and `C`. It then asynchronously adds a row with a new key, `D`, and replaces the row with the existing key `A`:
 
+```python test-set=3 order=my_input_table
+from deephaven import new_table, input_table
+from deephaven.column import string_col, int_col
 
-def rand_key() -> str:
-    return choice(ascii_uppercase)
+my_input_table = input_table(
+    init_table=new_table(
+        [string_col("Key", ["A", "B", "C"]), int_col("Value", [1, 2, 3])]
+    ),
+    key_cols="Key",
+)
 
-
-def create_table(n_rows: int):
-    return empty_table(n_rows).update(["Key = rand_key()", "Value = randomInt(0, 100)"])
-
-
-column_defs = {"Key": dht.string, "Value": dht.int32}
-
-my_input_table = input_table(column_defs, key_cols="Key")
-
-my_input_table.add_async(create_table(5))
-my_input_table.add_async(create_table(4))
-my_input_table.add_async(create_table(3))
+my_input_table.add_async(
+    new_table([string_col("Key", ["D", "A"]), int_col("Value", [4, 10])])
+)
 ```
 
 ### Manually
 
-To manually add data to an input table, simply click on the cell in which you wish to enter data. Type the value into the cell, hit enter, and it will appear.
+To manually add data to an input table, click the cell in which you wish to enter data, type the value, and press **Enter**.
 
 ![A user manually adds values to an input table](../assets/how-to/input-tables/input-table-manual.gif)
 
-Note that with a keyed input table, you can edit existing rows; however, adding a new row will erase previous rows with the same key.
+In a keyed input table, you can edit existing rows. An append-only input table only lets you add new rows. In a keyed input table, adding a row whose key already exists replaces the existing row with that key.
 
-![Editing existing rows erases previous rows with the same key](../assets/how-to/python-keyed-input-table.gif)
+![Adding a row whose key already exists replaces the existing row with that key](../assets/how-to/python-keyed-input-table.gif)
 
 > [!IMPORTANT]
-> Added rows aren't final until you hit the **Commit** button. If you edit an existing row in a keyed input table, the result is immediate.
+> Added rows aren't final until you click the **Commit** button. If you edit an existing row in a keyed input table, the result is immediate.
 
 ![A user clicks on the 'Commit' button](../assets/how-to/input-tables/input-table-commit.gif)
 
 Here are some things to consider when manually entering data into an input table:
 
-- Manually entered data in a table will not be final until the **Commit** button at the bottom right of the console is clicked.
-- Data added manually to a table must be of the correct type for its column. For instance, attempting to add a string value to an int column will fail.
-- Entering data in between populated cells and hitting **Enter** will add the data to the bottom of the column.
+- Data added manually to a table must be of the correct type for its column. For instance, attempting to add a string value to an `int` column fails.
+- Entering data in between populated cells and pressing **Enter** adds the data to the bottom of the column.
 
 ## Delete data from a table
 
-Data can only be deleted from a keyed input table. To delete data from a keyed input table, use one of the following methods:
+You can delete data only from a keyed input table. Calling [`delete`](../reference/table-operations/create/input-table.md#methods) or [`delete_async`](../reference/table-operations/create/input-table.md#methods) on an append-only input table raises a [`DHError`](/core/pydoc/code/deephaven.dherror.html#deephaven.dherror.DHError). To delete data from a keyed input table, use one of the following methods:
 
 - [`delete`](../reference/table-operations/create/input-table.md#methods): Synchronous deletion.
 - [`delete_async`](../reference/table-operations/create/input-table.md#methods): Asynchronous deletion.
 
-To delete table data, supply only the key values of the rows you wish to delete. For instance, in the [previous section](#programmatically), we created a keyed input table where the key column is called `Key`. The following code deletes a row with the key value `A`:
+To delete table data, supply a table that contains only the key columns, with the key values of the rows you wish to delete. For instance, the asynchronous example in [Programmatically](#programmatically) creates a keyed input table whose key column is `Key`. The following code deletes the row with the key value `B`:
 
-```python skip-test
-my_input_table.delete(empty_table(1).update("Key = `A`"))
+```python test-set=3 order=null
+my_input_table.delete(new_table([string_col("Key", ["B"])]))
 ```
 
-The same applies for asynchronously deleting data from a keyed input table. The following code block asynchronously deletes a row with the key value `B`:
+To delete data asynchronously, use [`delete_async`](../reference/table-operations/create/input-table.md#methods). It accepts the same optional `on_success` and `on_error` callbacks as [`add_async`](../reference/table-operations/create/input-table.md#methods) and follows the same ordering rules. The following code block asynchronously deletes the row with the key value `C`:
 
-> [!NOTE]
-> Asynchronous functions calls in the same thread are queued and processed in order. However, ordering is not guaranteed across threads.
-
-```python skip-test
-my_input_table.delete_async(empty_table(1).update("Key = `B`"))
+```python test-set=3 order=null
+my_input_table.delete_async(new_table([string_col("Key", ["C"])]))
 ```
 
-## Clickable links
+## Enter clickable links in an input table
 
-Any string column in Deephaven can contain a clickable link — the string just has to be formatted correctly.
+Input tables are a convenient way to try out clickable links, because you can type links directly into their cells. Any string column in Deephaven can contain a clickable link if the string is formatted correctly. See [Add clickable links](./user-interface/add-clickable-links.md) for examples of strings that are and aren't displayed as links.
 
 ![An input table contains both valid and invalid links, with valid links underlined and highlighted in blue](../assets/how-to/ui/invalid_links.png)
 
@@ -316,3 +306,4 @@ string_list_validator = string_list_validating_input_table.make(
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [Deephaven Python dtypes](../reference/python/deephaven-python-types.md)
 - [Table types](../conceptual/table-types.md)
+- [Add clickable links](./user-interface/add-clickable-links.md)
