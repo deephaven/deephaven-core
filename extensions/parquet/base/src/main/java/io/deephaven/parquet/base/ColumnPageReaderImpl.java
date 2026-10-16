@@ -146,6 +146,70 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
+    @Override
+    public boolean supportsSparse() {
+        // The dense path rejects nested optional levels too.
+        return path.getMaxRepetitionLevel() == 0 && path.getMaxDefinitionLevel() <= 1;
+    }
+
+    @Override
+    public void openSparse(
+            @NotNull final SparsePageCursor cursor,
+            @NotNull final SeekableChannelContext channelContext) throws IOException {
+        if (!supportsSparse()) {
+            throw new UnsupportedOperationException(
+                    "Sparse read of a repeated or nested column: " + columnName + ", uri: " + uri);
+        }
+        cursor.release();
+        // The cursor outlives this read, so the page goes into its own buffers rather than the context's.
+        try (
+                final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
+                final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), uri);
+                final InputStream in = channelsProvider.getInputStream(
+                        ch.position(dataOffset), pageHeader.getCompressed_page_size())) {
+            final SeekableChannelContext context = holder.get();
+            final ByteBuffer bytes;
+            final RunLengthBitPackingHybridBufferDecoder dlDecoder;
+            final org.apache.parquet.format.Encoding encoding;
+            final int valueCount;
+            switch (pageHeader.type) {
+                case DATA_PAGE: {
+                    final DataPageHeader header = pageHeader.getData_page_header();
+                    final int uncompressedSize = pageHeader.getUncompressed_page_size();
+                    bytes = cursor.pageBuffer(uncompressedSize);
+                    readNBytes(readV1Unsafe(in, context), bytes.array(), bytes.arrayOffset(), uncompressedSize);
+                    // No repetition levels precede the definition levels, since the column is not repeated.
+                    dlDecoder = getDlDecoderPageV1(bytes);
+                    encoding = header.getEncoding();
+                    valueCount = header.getNum_values();
+                    break;
+                }
+                case DATA_PAGE_V2: {
+                    final DataPageHeaderV2 header = pageHeader.getData_page_header_v2();
+                    final DataPageV2Partial page = readV2Unsafe(in, context);
+                    dlDecoder = path.getMaxDefinitionLevel() > 0
+                            ? new RunLengthBitPackingHybridBufferDecoder(path.getMaxDefinitionLevel(),
+                                    cursor.copyLevels(page.definitionLevels))
+                            : null;
+                    bytes = cursor.pageBuffer(page.uncompressedSize);
+                    readNBytes(page.decompressedStream, bytes.array(), bytes.arrayOffset(), page.uncompressedSize);
+                    encoding = header.getEncoding();
+                    valueCount = header.getNum_values();
+                    break;
+                }
+                default:
+                    throw new IOException(String.format("Unexpected page of type %s of size %d", pageHeader.getType(),
+                            pageHeader.getCompressed_page_size()) + " for column: " + columnName + ", uri: " + uri);
+            }
+            final Encoding dataEncoding = getEncoding(encoding);
+            cursor.open(pageMaterializerFactory, getDataReader(dataEncoding, bytes, valueCount, context),
+                    dataEncoding.usesDictionary(), dlDecoder);
+        } catch (final IOException e) {
+            throw new ParquetDecodingException("Failed to sparsely read parquet page for column: " + columnName +
+                    ", uri: " + uri, e);
+        }
+    }
+
     /**
      * Callers must ensure resulting data page does not outlive the input stream.
      */
@@ -218,8 +282,18 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         final ByteBuffer definitionLevels =
                 getCachedBuffer(channelContext, DEFINITION_LEVELS_BUFFER_KEY, definitionLevelsLength);
         readNBytes(in, definitionLevels.array(), definitionLevels.arrayOffset(), definitionLevelsLength);
-        final InputStream decompressed = compressorAdapter.decompress(in, compressedSize, uncompressedSize,
-                getDecompressorHolder(channelContext));
+        final InputStream decompressed;
+        if (header.isIs_compressed()) {
+            decompressed = compressorAdapter.decompress(in, compressedSize, uncompressedSize,
+                    getDecompressorHolder(channelContext));
+        } else {
+            // A writer may store a page's values uncompressed, even in a compressed column chunk.
+            if (compressedSize != uncompressedSize) {
+                throw new IOException("Uncompressed DATA_PAGE_V2 values of " + compressedSize + " bytes, expected "
+                        + uncompressedSize + " for column: " + columnName + ", uri: " + uri);
+            }
+            decompressed = in;
+        }
         return new DataPageV2Partial(repetitionLevels, definitionLevels, decompressed, uncompressedSize);
     }
 

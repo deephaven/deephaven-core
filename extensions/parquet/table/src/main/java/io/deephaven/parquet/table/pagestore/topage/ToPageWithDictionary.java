@@ -9,10 +9,12 @@ import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
 import io.deephaven.parquet.base.DataWithOffsets;
+import io.deephaven.parquet.base.SparsePageCursor;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -72,6 +74,16 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
         final IntBuffer offsets = columnPageReader.readKeyValues(IntBuffer.wrap(keys), NULL_INT, channelContext);
 
         return offsets == null ? keys : new DataWithOffsets(offsets, keys);
+    }
+
+    @Override
+    @NotNull
+    public final Object getSparseResult(@NotNull final SparsePageCursor cursor,
+            @NotNull final LongChunk<?> rowRanges, final int rowCount) throws IOException {
+        if (!cursor.usesDictionary()) {
+            return ToPage.super.getSparseResult(cursor, rowRanges, rowCount);
+        }
+        return cursor.readKeyValues(NULL_INT, rowRanges, rowCount);
     }
 
     @Override
@@ -138,6 +150,12 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
                     @NotNull final SeekableChannelContext channelContext)
                     throws IOException {
                 return ToPageWithDictionary.this.getResult(columnPageReader, channelContext);
+            }
+
+            @Override
+            public Object getSparseResult(@NotNull final SparsePageCursor cursor,
+                    @NotNull final LongChunk<?> rowRanges, final int rowCount) throws IOException {
+                return ToPageWithDictionary.this.getSparseResult(cursor, rowRanges, rowCount);
             }
 
             @Override
