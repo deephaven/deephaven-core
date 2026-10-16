@@ -3,6 +3,8 @@
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -12,6 +14,8 @@ import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,19 +28,32 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static io.deephaven.parquet.table.ParquetTableWriter.GROUPING_BEGIN_POS_COLUMN_NAME;
+import static io.deephaven.parquet.table.ParquetTableWriter.GROUPING_END_POS_COLUMN_NAME;
+import static io.deephaven.parquet.table.ParquetTableWriter.GROUPING_KEY_COLUMN_NAME;
 import static io.deephaven.parquet.table.ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME;
 
 /**
  * The one column resolver for the file of a {@link ParquetTableLocation}. It finds each Deephaven column with the
- * instructions' column resolver, if they have one, or else by their renames, whose default is the identity. A column
- * resolver is the alternative to renames; with one, the renames are ignored.
+ * instructions' column resolver, if the instruction provides one, or else by their renames, whose default is the
+ * identity. A column resolver is the alternative to renames; with one, the renames are ignored.
  * <p>
- * It also translates the file's metadata, which names parquet columns, to the Deephaven columns that read them. A name
- * the renames leave alone has one possible reader, the Deephaven column with that name, so translating it is a check of
- * that column alone; with no renames and no column resolver, the common case, that is every name. Otherwise the reverse
- * direction is built from the forward one, on first use, since building it resolves every Deephaven column.
+ * It also translates the file's metadata, which names parquet columns, to the Deephaven columns that read them. A
+ * column name that is not renamed has only one possible reader, the Deephaven column with that name, so translating it
+ * is a check of that column alone; with no renames and no column resolver, the common case, that is every name.
+ * Otherwise the reverse direction is built from the forward one, on first use, since building it resolves every
+ * Deephaven column.
  */
 final class ParquetTableLocationColumnResolver implements ParquetColumnResolver {
+
+    /**
+     * A column resolver for a legacy grouping table, whose key and start and end positions have fixed names.
+     */
+    static final ParquetColumnResolver FOR_GROUPING = ParquetColumnResolverMap.builder()
+            .putMap(GROUPING_KEY_COLUMN_NAME, List.of(GROUPING_KEY_COLUMN_NAME))
+            .putMap(GROUPING_BEGIN_POS_COLUMN_NAME, List.of(GROUPING_BEGIN_POS_COLUMN_NAME))
+            .putMap(GROUPING_END_POS_COLUMN_NAME, List.of(GROUPING_END_POS_COLUMN_NAME))
+            .build();
 
     private final ParquetInstructions readInstructions;
     private final MessageType schema;
@@ -94,6 +111,62 @@ final class ParquetTableLocationColumnResolver implements ParquetColumnResolver 
                     : null;
         }
         return metadataNames().deephavenByParquet.get(parquetColumnName);
+    }
+
+    /**
+     * Translates the file's sort columns, which name parquet columns, to Deephaven column names. A sort is only
+     * meaningful as a prefix -- each column is sorted within runs of the columns before it -- so translation stops at
+     * the first column that cannot be identified.
+     * <p>
+     * The sortedness itself is trusted rather than verified, as
+     * {@link io.deephaven.engine.table.impl.SortedColumnsAttribute} documents. What this guards is the identity of the
+     * column. Files written before the writer recorded parquet column names recorded the Deephaven name at write time
+     * instead; the two agree unless the sorted column was renamed on write, in which case the name is normally absent
+     * from the file and the sort is dropped. The one case that cannot be detected is a write that swapped two column
+     * names, so that the recorded name belongs to the other column.
+     */
+    @NotNull
+    List<SortColumn> translateToDeephavenSortColumns(@NotNull final List<SortColumn> fileSortColumns) {
+        final List<SortColumn> sortColumns = new ArrayList<>(fileSortColumns.size());
+        for (final SortColumn fileSortColumn : fileSortColumns) {
+            final String columnName = findDeephavenColumnName(fileSortColumn.column().name());
+            if (columnName == null) {
+                break;
+            }
+            sortColumns.add(fileSortColumn.order() == SortColumn.Order.ASCENDING
+                    ? SortColumn.asc(ColumnName.of(columnName))
+                    : SortColumn.desc(ColumnName.of(columnName)));
+        }
+        return Collections.unmodifiableList(sortColumns);
+    }
+
+    /**
+     * Returns a column resolver for the table of a data index on the Deephaven columns {@code keyColumnNames}. A data
+     * index table is written with the parquet column names of the file it indexes, so each key column is at the path
+     * where this resolver finds the column it indexes, or, for a partitioning column, which this file does not have, at
+     * the top-level column the metadata records it under; the row set column has its own name. Returns {@code null} if
+     * any key column cannot be translated.
+     */
+    @Nullable
+    ParquetColumnResolver forDataIndex(@NotNull final String... keyColumnNames) {
+        final String[] parquetKeyColumnNames = findIndexParquetColumnNames(Arrays.asList(keyColumnNames));
+        if (parquetKeyColumnNames == null) {
+            return null;
+        }
+        final ParquetColumnResolverMap.Builder builder = ParquetColumnResolverMap.builder();
+        for (int ki = 0; ki < keyColumnNames.length; ++ki) {
+            List<String> columnPath;
+            try {
+                columnPath = of(keyColumnNames[ki]).orElse(List.of());
+            } catch (TableDataException e) {
+                columnPath = List.of();
+            }
+            builder.putMap(keyColumnNames[ki],
+                    !columnPath.isEmpty() && columnPath.get(0).equals(parquetKeyColumnNames[ki])
+                            ? columnPath
+                            : List.of(parquetKeyColumnNames[ki]));
+        }
+        return builder.putMap(INDEX_ROW_SET_COLUMN_NAME, List.of(INDEX_ROW_SET_COLUMN_NAME)).build();
     }
 
     /**

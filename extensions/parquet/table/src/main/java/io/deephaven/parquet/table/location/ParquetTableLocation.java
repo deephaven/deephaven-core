@@ -138,6 +138,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 // lock/unlock calls
                 parquetFileReader = tableLocationKey.getFileReader();
                 parquetMetadata = tableLocationKey.getMetadata();
+                // Region i reads row group rowGroupIndices[i], and every per-region structure -- region sizes,
+                // row group readers, statistics -- is built from this one array, so they agree. Regions follow the
+                // row groups' ordinals, their positions in the file, as they always have. A writer that leaves the
+                // ordinal unset leaves it 0 throughout, and the stable sort keeps the indices in their order.
                 final List<RowGroup> fileRowGroups = parquetFileReader.fileMetaData.getRow_groups();
                 rowGroupIndices = IntStream.of(tableLocationKey.getRowGroupIndices())
                         .boxed()
@@ -206,7 +210,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return regionParameters;
     }
 
-    public Map<String, ColumnTypeInfo> getColumnTypes() {
+    /**
+     * Returns the file's column type information, keyed by parquet column name: look a column up by the parquet column
+     * it reads, which may be read by more than one Deephaven column.
+     */
+    Map<String, ColumnTypeInfo> getColumnTypes() {
         initialize();
         return columnTypes;
     }
@@ -246,7 +254,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 return local;
             }
             return sortingColumns =
-                    maybeTranslateToDeephavenSortColumns(SortColumnInfo.sortColumns(tableInfo.sortingColumns()));
+                    resolver.translateToDeephavenSortColumns(
+                            SortColumnInfo.sortColumns(tableInfo.sortingColumns()));
         }
     }
 
@@ -270,33 +279,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // In the future, we could make this more granular so that the resolver can be constructed without calling
         // initialize first.
         return getColumnPathInternal(columnName);
-    }
-
-    /**
-     * Translates the file's sort columns, which name parquet columns, to Deephaven column names. A sort is only
-     * meaningful as a prefix -- each column is sorted within runs of the columns before it -- so translation stops at
-     * the first column that cannot be identified. Requires initialization.
-     * <p>
-     * The sortedness itself is trusted rather than verified, as
-     * {@link io.deephaven.engine.table.impl.SortedColumnsAttribute} documents. What this guards is the identity of the
-     * column. Files written before the writer recorded parquet column names recorded the Deephaven name at write time
-     * instead; the two agree unless the sorted column was renamed on write, in which case the name is normally absent
-     * from the file and the sort is dropped. The one case that cannot be detected is a write that swapped two column
-     * names, so that the recorded name belongs to the other column.
-     */
-    @NotNull
-    private List<SortColumn> maybeTranslateToDeephavenSortColumns(@NotNull final List<SortColumn> fileSortColumns) {
-        final List<SortColumn> sortColumns = new ArrayList<>(fileSortColumns.size());
-        for (final SortColumn fileSortColumn : fileSortColumns) {
-            final String columnName = resolver.findDeephavenColumnName(fileSortColumn.column().name());
-            if (columnName == null) {
-                break;
-            }
-            sortColumns.add(fileSortColumn.order() == SortColumn.Order.ASCENDING
-                    ? SortColumn.asc(ColumnName.of(columnName))
-                    : SortColumn.desc(ColumnName.of(columnName)));
-        }
-        return Collections.unmodifiableList(sortColumns);
     }
 
     private List<String> getColumnPathInternal(@NotNull final String columnName) {
@@ -408,7 +390,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
         // Create a new index from the parquet table
         final Table table =
-                readDataIndexTable(getParquetKey().getURI(), indexFileMetaData, parquetColumns, columns);
+                readDataIndexTable(getParquetKey().getURI(), indexFileMetaData, columns);
         if (table == null) {
             return null;
         }
@@ -503,7 +485,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
      *
      * @param parentFileURI The path to the base table
      * @param indexFileMetaData Index file metadata
-     * @param parquetKeyColumnNames The parquet names of the key columns
      * @param keyColumnNames The Deephaven names of the key columns
      *
      * @return The data index table for the specified key columns or {@code null} if none was found
@@ -512,39 +493,32 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private Table readDataIndexTable(
             @NotNull final URI parentFileURI,
             @NotNull final ParquetTableLocation.IndexFileMetadata indexFileMetaData,
-            @NotNull final String[] parquetKeyColumnNames,
             @NotNull final String[] keyColumnNames) {
         final boolean isDataIndex = indexFileMetaData.dataIndexInfo != null;
-        // Each key column is read with the definition of the column it indexes, so the keys have that column's type
-        final TableDefinition indexDefinition = readInstructions.getTableDefinition()
-                .map(definition -> isDataIndex
-                        ? dataIndexTableDefinition(definition, keyColumnNames)
-                        : groupingTableDefinition(definition, keyColumnNames[0]))
-                .orElse(null);
+        final TableDefinition definition = readInstructions.getTableDefinition().orElse(null);
         final ParquetInstructions indexReadInstructions;
-        if (indexDefinition == null) {
-            // Without the definitions of the columns it indexes, infer the index table's, with the same renames
+        if (definition == null) {
+            // A location built without a definition has no column resolver, which requires one; infer the index table's
+            // definition, with the same renames
             indexReadInstructions = readInstructions.withTableDefinitionAndLayout(null,
                     ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
         } else {
-            // Find the index table's columns with a column resolver of their own, which ignores any renames these
-            // instructions carry. A data index table is written with the indexed table's parquet column names, so each
-            // key column is where this file's resolver finds the column it indexes, or, for a partitioning column,
-            // which this file does not have, under the parquet name the metadata records. A legacy grouping table's
-            // columns have fixed names.
+            // Each key column is read with the definition of the column it indexes, so the keys have that column's type
+            final TableDefinition indexDefinition = isDataIndex
+                    ? dataIndexTableDefinition(definition, keyColumnNames)
+                    : groupingTableDefinition(definition, keyColumnNames[0]);
+            if (indexDefinition == null) {
+                // A key column the definition lacks cannot be given its column's type
+                return null;
+            }
+            // Find the index table's columns with a column resolver derived from this file's, which ignores any renames
+            // these instructions carry
             final ParquetInstructions.Builder builder = new ParquetInstructions.Builder(readInstructions);
-            final ParquetColumnResolverMap.Builder indexResolver = ParquetColumnResolverMap.builder();
+            final ParquetColumnResolver indexColumnResolver;
             if (isDataIndex) {
-                for (int ki = 0; ki < keyColumnNames.length; ++ki) {
-                    indexResolver.putMap(keyColumnNames[ki],
-                            keyColumnPath(keyColumnNames[ki], parquetKeyColumnNames[ki]));
-                }
-                indexResolver.putMap(INDEX_ROW_SET_COLUMN_NAME, List.of(INDEX_ROW_SET_COLUMN_NAME));
+                indexColumnResolver = Objects.requireNonNull(resolver.forDataIndex(keyColumnNames));
             } else {
-                indexResolver
-                        .putMap(GROUPING_KEY_COLUMN_NAME, List.of(GROUPING_KEY_COLUMN_NAME))
-                        .putMap(GROUPING_BEGIN_POS_COLUMN_NAME, List.of(GROUPING_BEGIN_POS_COLUMN_NAME))
-                        .putMap(GROUPING_END_POS_COLUMN_NAME, List.of(GROUPING_END_POS_COLUMN_NAME));
+                indexColumnResolver = ParquetTableLocationColumnResolver.FOR_GROUPING;
                 // Codecs are named by Deephaven column, and the key column is not named after the column it indexes
                 final String codecName = readInstructions.getCodecName(keyColumnNames[0]);
                 if (codecName != null) {
@@ -552,7 +526,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
                             readInstructions.getCodecArgs(keyColumnNames[0]));
                 }
             }
-            final ParquetColumnResolverMap indexColumnResolver = indexResolver.build();
             indexReadInstructions = builder
                     .setColumnResolverFactory((tableKey, tableLocationKey) -> indexColumnResolver)
                     .setTableDefinition(indexDefinition)
@@ -579,8 +552,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
         // Legacy grouping tables are written with a key, start position, and end position. We must convert the ranges
         // to RowSets. That comes first: a view's columns apply in order, and the key column may be named like a
-        // position
-        // column.
+        // position column.
         return ParquetTools.readTable(indexFileMetaData.fileURI.toString(), indexReadInstructions)
                 .updateView(List.of(
                         // Using this lets us avoid a compilation or boxing, but does force us to do single-cell access
@@ -603,26 +575,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * The path in a data index table to the key column for the Deephaven column {@code columnName}, whose parquet name
-     * the metadata records as {@code parquetColumnName}: the path this file's resolver finds the column at, or, for a
-     * column this file does not have, such as a partitioning column, the top-level column with that name.
-     */
-    @NotNull
-    private List<String> keyColumnPath(@NotNull final String columnName, @NotNull final String parquetColumnName) {
-        List<String> columnPath;
-        try {
-            columnPath = getColumnPathInternal(columnName);
-        } catch (TableDataException e) {
-            columnPath = List.of();
-        }
-        return !columnPath.isEmpty() && columnPath.get(0).equals(parquetColumnName)
-                ? columnPath
-                : List.of(parquetColumnName);
-    }
-
-    /**
      * The definition to read a data index table with: its key columns, as the indexed table defines them, and its row
-     * set column. Returns {@code null}, to infer it from the file instead, if the indexed table defines no such column.
+     * set column. Returns {@code null} if the indexed table does not define a key column.
      */
     @Nullable
     private static TableDefinition dataIndexTableDefinition(
@@ -642,8 +596,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
     /**
      * The definition to read a legacy grouping table with: its key column, under its fixed name but as the indexed
-     * table defines the column it indexes, and its start and end positions. Returns {@code null}, to infer it from the
-     * file instead, if the indexed table defines no such column.
+     * table defines the column it indexes, and its start and end positions. Returns {@code null} if the indexed table
+     * does not define the key column.
      */
     @Nullable
     private static TableDefinition groupingTableDefinition(

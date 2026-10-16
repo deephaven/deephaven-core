@@ -321,9 +321,9 @@ class SortOrderProvider(JObjectWrapper):
     Users can specify the sort order in multiple ways, such as by providing a sort ID or using the table's default sort
     order. This class consists of factory methods to create different sort order providers.
 
-    Deephaven sorts new data by the provided sort order, but the data files it writes declare no sort order: it sorts
-    with its own comparisons, which differ from the Iceberg specification's for strings and floating point values, and
-    records the leading sort column in its own metadata in each data file instead.
+    Deephaven sorts new data by the provided sort order and records the sort, by its leading column, in its own metadata
+    in each data file. It does not declare the sort order in the Iceberg metadata, since it sorts with its own
+    comparisons, which differ from the Iceberg specification's for strings and floating point values.
     """
 
     j_object_type = _JSortOrderProvider
@@ -380,7 +380,7 @@ class SortOrderProvider(JObjectWrapper):
         Returns a sort order provider that uses the current provider to determine the columns to sort on, but with a
         different sort order ID.
         For example, this provider might sort by columns {A, B, C}, but the ID corresponds to a sort order with columns
-        {A, B}. Since data files declare no sort order, the ID is checked but not written.
+        {A, B}. Since the sort order is not declared in the Iceberg metadata, the ID is checked but not written.
 
         Args:
             sort_order_id (int): the sort order ID.
