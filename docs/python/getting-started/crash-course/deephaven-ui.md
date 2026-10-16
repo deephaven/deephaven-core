@@ -4,22 +4,25 @@ title: deephaven.ui
 
 Now that you're more familiar with the table API and visualizing data, it's time to consider how to present your work. The [`deephaven.ui`](/core/ui/docs/) package provides a rich set of tools for building interactive user experiences that show off the tables, plots, and other widgets your queries created.
 
-## What is deephaven.ui?
+## What is `deephaven.ui`?
 
-[`deephaven.ui`](/core/ui/docs/) is a [React](https://react.dev/)-like framework for building user experiences in Python. No front-end development, JavaScript, or CSS experience is required to hit the ground running. Key features include:
+[`deephaven.ui`](/core/ui/docs/) is a [React](https://react.dev/)-like framework for building user experiences in Python. You don't need any front-end development, JavaScript, or CSS experience to hit the ground running. Key features include:
 
-- **Components**: Create user interfaces from components defined entirely with Python.
-- **Live dataframe integration**: Components are live dataframe aware and can use Deephaven tables as a data source.
-- **Reactive UI updates**: UI components automatically update when the underlying data changes.
-- **Declarative UI framework**: Describe the UI as a function of the data and let the framework handle the rest.
-- **Composability**: Combine and re-use components to build complex interfaces.
-- **Wide range of components**: From simple text fields to complex tables and plots, the library has a wide range of components to build your app.
+- **Components**: You build user interfaces from components defined entirely in Python.
+- **Live dataframe integration**: Components are live dataframe aware and use Deephaven tables as a data source, including [ticking tables](../../conceptual/table-types.md#standard-streaming-tables) that update as new data arrives.
+- **Reactive UI updates**: Components update automatically when a user interacts with them or when their source data changes.
+- **Declarative UI framework**: You describe the UI as a function of the data, and the framework renders it.
+- **Composability**: You combine and reuse components to build complex interfaces.
+- **Wide range of components**: The library includes everything from simple text fields to complex tables and plots.
 
-`deephaven.ui` exposes many [React Spectrum](https://react-spectrum.adobe.com/react-spectrum/index.html) components (Adobe's implementation of the [Spectrum design system](https://spectrum.adobe.com/)) to Python. If you're already familiar with React Spectrum, the component names and props are nearly identical — Python uses `snake_case` instead of `camelCase` (e.g., `on_press` instead of `onPress`, `default_value` instead of `defaultValue`).
+`deephaven.ui` exposes many [React Spectrum](https://react-spectrum.adobe.com/react-spectrum/index.html) components to Python. React Spectrum is Adobe's implementation of the [Spectrum design system](https://spectrum.adobe.com/). Component names and arguments generally match React Spectrum's, except that Python uses `snake_case` instead of `camelCase`. For example, `onPress` becomes `on_press`, and `defaultValue` becomes `default_value`.
+
+> [!NOTE]
+> `deephaven.ui` and [Deephaven Express](/core/plotly/docs/) are plugins, not part of the core `deephaven` Python package. The `ghcr.io/deephaven/server` Docker image used in this crash course includes both. If you installed Deephaven with pip, install them with `pip install deephaven-plugin-ui deephaven-plugin-plotly-express`. See [Install and use plugins](../../how-to-guides/install-use-plugins.md) for details.
 
 ## Components
 
-At the core of `deephaven.ui` are components, which are reusable building blocks for your user interface. Take, for instance, a simple heading:
+At the core of [`deephaven.ui`](/core/ui/docs/) are components, which are reusable building blocks for your user interface. Take, for instance, a simple [heading](/core/ui/docs/components/heading/):
 
 ```python test-set=1 order=null
 from deephaven import ui
@@ -29,7 +32,7 @@ hello_world = ui.heading("Hello World")
 
 ![Hello world](../../assets/tutorials/crash-course/dh-ui/hello_world.png)
 
-This component isn't very exciting. What about a component that handles events, such as a button click?
+This component isn't very exciting. What about a component that handles events, such as a [button](/core/ui/docs/components/button/) click?
 
 ```python test-set=1 order=null
 button = ui.button(
@@ -41,7 +44,11 @@ button = ui.button(
 
 ![Button click](../../assets/tutorials/crash-course/dh-ui/button_clicked.png)
 
-With `deephaven.ui`, you can decorate functions with `@ui.component` to define components that combine several elements and have custom behavior. The following example is a simple component that builds off the button example.
+In this example, the `on_press` handler takes the press event as an argument. If you don't need the event, the handler can take no arguments, as in the examples that follow.
+
+### Custom components
+
+With `deephaven.ui`, you can decorate functions with [`@ui.component`](/core/ui/docs/describing/your_first_component/) to define your own components that combine several built-in components and have custom behavior. The following example is a simple component that builds off the button example.
 
 ```python test-set=1 order=null
 @ui.component
@@ -59,7 +66,16 @@ foo_bar = ui_foo_bar()
 
 ![Better button click](../../assets/tutorials/crash-course/dh-ui/button_clicked_2.png)
 
-Simple enough. To make components more useful, `deephaven.ui` also offers the [`use_state`](/core/ui/docs/hooks/use_state/) hook, which allows you to manage state within components. For instance, you can track how many times a button has been clicked. Each component has its own state, as shown by clicking on `c1` and `c2` separately:
+### State and hooks
+
+To make components more useful, `deephaven.ui` offers [hooks](/core/ui/docs/hooks/overview/). A hook is a function whose name starts with `use_`, and you call it inside a component.
+
+The [`use_state`](/core/ui/docs/hooks/use_state/) hook manages state, a value the component keeps from one call of the component function to the next:
+
+- [`use_state`](/core/ui/docs/hooks/use_state/) returns the current value and a function that sets a new one.
+- When the state changes, `deephaven.ui` re-renders the component. It calls the component function again, so the UI shows the new value.
+
+For instance, you can count how many times someone clicks a button. Each instance of a component has its own state. Click `c1` and `c2` separately to see that each one keeps its own count:
 
 ```python test-set=1 order=null
 @ui.component
@@ -74,14 +90,16 @@ c2 = ui_counter()
 
 ![Buttons with state](../../assets/tutorials/crash-course/dh-ui/button_state.gif)
 
-Buttons are only one of the many components available in `deephaven.ui`. The following code shows off a few more components including a [picker](/core/ui/docs/components/picker/), [slider](/core/ui/docs/components/slider/), and [combo box](/core/ui/docs/components/combo_box/):
+### More components
+
+Headings and buttons are only two of the many components available in `deephaven.ui`, and you can combine any of them with custom components and state. The following code shows off a few more components, including a [picker](/core/ui/docs/components/picker/), a [combo box](/core/ui/docs/components/combo_box/), and a [slider](/core/ui/docs/components/slider/). It also uses [`ui.flex`](/core/ui/docs/components/flex/), which lays out its children in a row, or in a column with `direction="column"`:
 
 ```python order=null
 from deephaven import ui
 
 
 @ui.component
-def color_picker():
+def ui_color_picker():
     return ui.picker("Red", "Yellow", "Blue", "Green")
 
 
@@ -103,7 +121,7 @@ def ui_combo_box_basic():
     )
 
 
-pick_a_color = color_picker()
+pick_a_color = ui_color_picker()
 
 my_combo_box_basic = ui_combo_box_basic()
 
@@ -118,17 +136,17 @@ my_slider_label_example = ui.flex(
 
 ![Picker](../../assets/tutorials/crash-course/dh-ui/picker.png)
 
-![Sliders](../../assets/tutorials/crash-course/dh-ui/sliders.gif)
-
 ![Combo box](../../assets/tutorials/crash-course/dh-ui/combo_box.png)
+
+![Sliders](../../assets/tutorials/crash-course/dh-ui/sliders.gif)
 
 For a full list of available components, see the [Components overview](/core/ui/docs/components/overview/).
 
 ### Table-backed components
 
-Things get a lot more interesting when you source components from Deephaven tables. Components tick in lock-step with the underlying data if it's streaming.
+Things get a lot more interesting when you use Deephaven tables as the data source for components. When a source table is [ticking](../../conceptual/table-types.md#standard-streaming-tables), components built from it tick in lockstep with it. The examples in this section use a static CSV file to keep things simple, and the [Dashboards](#dashboards) section shows components fed by ticking data.
 
-Components can be passed tables as input to display data. Take the picker example above. What if you want to choose from the available values in a column of a table?
+You can pass a table to a component to display its data. Take the picker example above. What if you want to choose from the available values in a column of a table?
 
 ```python order=null
 from deephaven import read_csv
@@ -141,7 +159,7 @@ iris = read_csv(
 
 @ui.component
 def species_panel():
-    return ui.picker(iris.view("Class").select_distinct())
+    return ui.picker(iris.select_distinct("Class"))
 
 
 species_picker_panel = species_panel()
@@ -149,7 +167,18 @@ species_picker_panel = species_panel()
 
 ![Picker sourced from table](../../assets/tutorials/crash-course/dh-ui/picker_from_iris.png)
 
-You can take this a step further and use the selected value to filter a table. The following example stores the selected species in component state and uses it to produce a [Deephaven Express](/core/plotly/docs/) [heatmap](/core/plotly/docs/density_heatmap/) showing the joint density of sepal length and sepal width for that species:
+You can take this a step further and use the selected value to [filter](../../reference/table-operations/filter/where.md) a table. The following example:
+
+- Stores the selected species in component state, starting with `Iris-setosa`.
+- [Filters](../../reference/table-operations/filter/where.md) the table to that species.
+- Plots a [density heatmap](/core/plotly/docs/density_heatmap/) from [Deephaven Express](/core/plotly/docs/), which shows how many observations fall in each sepal length and sepal width bin.
+- Returns the picker and heatmap together in a [`ui.panel`](/core/ui/docs/components/panel/), a titled container that the [Dashboards](#dashboards) section builds on.
+
+The example also uses the [`use_memo`](/core/ui/docs/hooks/use_memo/) hook, which caches the result of a function and calls it again only when one of the listed dependencies changes. Because the component re-renders every time its state changes, the example uses `use_memo` three times:
+
+- To read the CSV file once, not on every re-render.
+- To compute the [distinct](../../reference/table-operations/select/select-distinct.md) species once.
+- To [filter](../../reference/table-operations/filter/where.md) the table again only when the selected species changes.
 
 ```python order=null
 from deephaven.plot import express as dx
@@ -159,7 +188,7 @@ from deephaven import ui
 
 @ui.component
 def species_explorer():
-    species, set_species = ui.use_state()
+    species, set_species = ui.use_state("Iris-setosa")
     iris = ui.use_memo(
         lambda: read_csv(
             "https://media.githubusercontent.com/media/deephaven/examples/refs/heads/main/Iris/csv/iris.csv"
@@ -193,9 +222,13 @@ species_explorer_panel = species_explorer()
 
 ## Dashboards
 
-Dashboards are collections of components arranged in a grid layout. These grids are arranged into rows and columns, allowing you to create simple and complex layouts depending on your application's needs. They are a great way to present data and visualizations in a single view.
+A [dashboard](/core/ui/docs/components/dashboard/) arranges panels into a layout. Dashboards are a great way to present data and visualizations in a single view. You build the layout from these elements:
 
-The following example creates a simple 2x2 dashboard with components that don't have much use. This shows how the grid layout of a dashboard is created programmatically.
+- [`ui.panel`](/core/ui/docs/components/panel/) is a titled container for a component, like the panel the species explorer above returns.
+- `ui.row` arranges panels side by side, and `ui.column` arranges them top to bottom. Rows and columns nest inside each other.
+- `ui.stack` groups panels as tabs.
+
+The following example creates a 2x2 dashboard of placeholder panels to show how you build a dashboard's grid layout in code.
 
 ```python order=null
 from deephaven import ui
@@ -210,7 +243,14 @@ my_dash = ui.dashboard(
 
 ![Basic dashboard](../../assets/tutorials/crash-course/dh-ui/dashboard_basic.png)
 
-Dashboard layouts can be customized to fit your needs. A simple 2x2 grid won't suffice for many applications. What if you need more rows, where each row has a different layout? The following example shows a more complex dashboard layout:
+A 2x2 grid doesn't suit many applications, but you can customize the layout to fit your needs. What if you need a header and footer around a row of panels of different widths? You size layout elements with percentages relative to their siblings:
+
+- A row takes an optional `height`.
+- A column takes an optional `width`.
+- A stack takes either one.
+- A panel doesn't take a size, so to size a single panel, wrap it in a `ui.stack`.
+
+The following example puts a header and footer above and below a row of three panels, and makes the middle one wider:
 
 ```python order=null
 from deephaven import ui
@@ -228,9 +268,11 @@ dash_custom_layout = ui.dashboard(
 )
 ```
 
-Obviously, dashboards are much more interesting when they contain components with real data, plots, widgets, and information.
+![Custom dashboard layout](../../assets/tutorials/crash-course/dh-ui/dashboard_level2.png)
 
-Dashboards combine multiple components into a single user experience. Dashboards are built with rows and columns of previously created components. Below is a full example that builds a dashboard with a table, a scatter plot, two histograms, and a Markdown panel describing the Iris dataset:
+Dashboards are much more interesting when their panels hold real data, plots, and widgets. The next example uses `dx.data.iris`, a [ticking](../../conceptual/table-types.md#standard-streaming-tables) version of the Iris dataset that ships with [Deephaven Express](/core/plotly/docs/). It adds simulated rows every second, so the table and plots in the dashboard update as new rows arrive. Its column names differ from those in the CSV file used above. For example, it has `SepalLength` instead of `SepalLengthCM`.
+
+The dashboard holds a table, a [scatter plot](/core/plotly/docs/scatter/), two [histograms](/core/plotly/docs/histogram/), and a [Markdown](/core/ui/docs/components/markdown/) panel describing the dataset. The example wraps the table in [`ui.table`](/core/ui/docs/components/table/), which adds display options such as row order and which columns appear first or are hidden:
 
 <!-- TODO: Unskip this test once the snapshots bug is fixed (related to dh-express) -->
 
@@ -265,11 +307,11 @@ about_markdown = ui.markdown(
 
 Explore the Iris dataset with **deephaven.ui**
 
-- The data powering this dashboard is simulated Iris data.
-- Charts are from Deephaven Plotly Express.
+- The data powering this dashboard is the Iris dataset, with simulated rows added every second.
+- Charts are from Deephaven Express.
 - Other components are from **deephaven.ui**.
 
-See the full documentation [here](/core/ui/docs/).
+See the full [deephaven.ui documentation](https://deephaven.io/core/ui/docs/).
 """
 )
 
@@ -289,4 +331,4 @@ iris_dashboard = ui.dashboard(
 
 ![Iris dashboard](../../assets/tutorials/crash-course/dh-ui/iris_dashboard.gif)
 
-This crash course page only scratches the surface of what you can do with `deephaven.ui`. For the full `deephaven.ui` documentation with detailed information on everything possible, see [deephaven.ui](/core/ui/docs/).
+This crash course page only scratches the surface of what you can do with `deephaven.ui`. For more components, hooks, and examples, see the [`deephaven.ui` documentation](/core/ui/docs/).
