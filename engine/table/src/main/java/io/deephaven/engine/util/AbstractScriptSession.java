@@ -69,7 +69,8 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     protected final File classCacheDirectory;
     private final ScriptSessionQueryScope queryScope;
 
-    protected final ExecutionContext executionContext;
+    // Not final so it can be updated with a fresh QueryCompiler when remote sources are detected
+    protected ExecutionContext executionContext;
 
     private S lastSnapshot;
 
@@ -95,6 +96,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         this.classCacheDirectory = classCacheDirectory;
 
         queryScope = new ScriptSessionQueryScope();
+
         final QueryCompiler compilerContext = QueryCompilerImpl.create(classCacheDirectory);
 
         executionContext = ExecutionContext.newBuilder()
@@ -107,6 +109,15 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 .setClassLoader(parentClassLoader)
                 .build();
     }
+
+    /**
+     * Hook for subclasses to replace {@link #executionContext} before it is opened for an evaluation. This runs before
+     * {@link #evaluateScript(String, String)} derives and opens the context, so a replacement classloader or
+     * {@link QueryCompiler} takes effect for this evaluation rather than the next one. An exception thrown here fails
+     * the evaluation the same way a script error does: it is reported in {@link Changes#error}, and the script is not
+     * run.
+     */
+    protected void prepareForEvaluation() {}
 
     @Override
     public void cleanup() {
@@ -162,6 +173,11 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 final SafeCloseable ignored = LivenessScopeStack.open(queryScope, false)) {
 
             try {
+                // Let subclasses replace executionContext before we derive and open it below, so that a fresh
+                // classloader / QueryCompiler applies to this evaluation instead of only taking effect on the next one.
+                // Inside the try, so a failure is reported like a script error and the script does not run.
+                prepareForEvaluation();
+
                 // Actually evaluate the script; use the enclosing auth context, since AbstractScriptSession's
                 // ExecutionContext never has a non-null AuthContext
                 executionContext.withAuthContext(ExecutionContext.getContext().getAuthContext())
