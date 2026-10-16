@@ -555,8 +555,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
                 indexColumnResolverFactory = (tableKey, indexLocationKey) -> Objects.requireNonNull(
                         resolver.forDataIndex(indexLocationKey.getFileReader().getSchema(), keyColumnNames));
             } else {
-                indexColumnResolverFactory =
-                        (tableKey, indexLocationKey) -> ParquetTableLocationColumnResolver.FOR_GROUPING;
+                // A key column with more than one level is found in the grouping file's schema
+                indexColumnResolverFactory = (tableKey, indexLocationKey) -> ParquetTableLocationColumnResolver
+                        .forGrouping(indexLocationKey.getFileReader().getSchema());
                 // The key column is not named after the column it indexes, so the parent's instructions for the indexed
                 // column are copied to the key column's name
                 final String keyCodecName = readInstructions.getCodecName(keyColumnNames[0]);

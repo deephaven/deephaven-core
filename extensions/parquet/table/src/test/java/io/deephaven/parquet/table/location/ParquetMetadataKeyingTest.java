@@ -596,6 +596,27 @@ public class ParquetMetadataKeyingTest {
     }
 
     /**
+     * A legacy grouping table's key column of a vector type is a parquet LIST, at the path to its only leaf. No fixture
+     * has a legacy grouping on a vector column, so a file in the grouping table's format is read here the way the
+     * location reads a grouping table: with a definition and the grouping resolver, which ignores renames.
+     */
+    @Test
+    public void legacyGroupingResolverOnVectorKey() {
+        final String dest = path("vectorGrouping.parquet");
+        final Table grouping = TableTools.emptyTable(3).update(
+                ParquetTableWriter.GROUPING_KEY_COLUMN_NAME + " = new io.deephaven.vector.IntVectorDirect((int) ii, 7)",
+                ParquetTableWriter.GROUPING_BEGIN_POS_COLUMN_NAME + " = ii * 10",
+                ParquetTableWriter.GROUPING_END_POS_COLUMN_NAME + " = ii * 10 + 10");
+        ParquetTools.writeTable(grouping, dest);
+        final Table fromDisk = ParquetTools.readTable(dest, ParquetInstructions.builder()
+                .setTableDefinition(grouping.getDefinition())
+                .setColumnResolverFactory((tableKey, tableLocationKey) -> ParquetTableLocationColumnResolver
+                        .forGrouping(tableLocationKey.getFileReader().getSchema()))
+                .build());
+        assertTableEquals(grouping, fromDisk);
+    }
+
+    /**
      * With a column resolver, the grouping sidecar of the parquet column a Deephaven column reads is that column's
      * index, and its {@code dh_key} is read as that column is: widened.
      */

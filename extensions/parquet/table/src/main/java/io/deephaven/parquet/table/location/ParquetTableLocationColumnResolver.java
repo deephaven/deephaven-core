@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.parquet.impl.ParquetSchemaUtil;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import org.apache.parquet.schema.MessageType;
@@ -49,13 +50,23 @@ import static io.deephaven.parquet.table.ParquetTableWriter.INDEX_ROW_SET_COLUMN
 final class ParquetTableLocationColumnResolver implements ParquetColumnResolver {
 
     /**
-     * A column resolver for a legacy grouping table, whose key and start and end positions have fixed names.
+     * Returns a column resolver for a legacy grouping table with the parquet schema {@code groupingSchema}, whose key
+     * and start and end positions have fixed names. A column with more than one level, such as a key column of an array
+     * or vector type, is at the path to its leaf.
      */
-    static final ParquetColumnResolver FOR_GROUPING = ParquetColumnResolverMap.builder()
-            .putMap(GROUPING_KEY_COLUMN_NAME, List.of(GROUPING_KEY_COLUMN_NAME))
-            .putMap(GROUPING_BEGIN_POS_COLUMN_NAME, List.of(GROUPING_BEGIN_POS_COLUMN_NAME))
-            .putMap(GROUPING_END_POS_COLUMN_NAME, List.of(GROUPING_END_POS_COLUMN_NAME))
-            .build();
+    @NotNull
+    static ParquetColumnResolver forGrouping(@NotNull final MessageType groupingSchema) {
+        final Map<String, List<String>> leafPathsByParquetColumnName = new HashMap<>();
+        for (final String[] leafPath : ParquetSchemaUtil.paths(groupingSchema)) {
+            leafPathsByParquetColumnName.putIfAbsent(leafPath[0], List.of(leafPath));
+        }
+        final ParquetColumnResolverMap.Builder builder = ParquetColumnResolverMap.builder();
+        for (final String columnName : List.of(
+                GROUPING_KEY_COLUMN_NAME, GROUPING_BEGIN_POS_COLUMN_NAME, GROUPING_END_POS_COLUMN_NAME)) {
+            builder.putMap(columnName, leafPathsByParquetColumnName.getOrDefault(columnName, List.of(columnName)));
+        }
+        return builder.build();
+    }
 
     private final ParquetInstructions readInstructions;
     private final MessageType schema;
