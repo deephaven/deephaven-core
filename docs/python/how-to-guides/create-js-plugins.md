@@ -285,7 +285,7 @@ Keep the following rules in mind:
 1. Build the JS: `npm install && npm run build` in `src/js/`.
 2. Install the Python package: `pip install -e ./path/to/my-plugin`. This runs `setup.py`, which copies the built bundle into the Python package.
 3. Start Deephaven — the plugin loads automatically.
-4. Iterate: edit JS code, rebuild, reinstall the Python package so it picks up the new bundle, and refresh the web UI.
+4. Iterate: edit the JS code, rebuild it, reinstall the Python package so it picks up the new bundle, restart the Deephaven server, and refresh the web UI. The server registers JS plugins only at startup, so it keeps serving the old bundle until you restart it.
 
 For faster iteration with hot module replacement, see the [deephaven-plugins development documentation](https://github.com/deephaven/deephaven-plugins#development).
 

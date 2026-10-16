@@ -39,11 +39,11 @@ import matplotlib.pyplot as plt
 x = [0, 2, 4, 6]
 y = [1, 3, 4, 8]
 m_figure, m_axes = plt.subplots()
-plt.plot(x, y)
-plt.xlabel("x values")
-plt.ylabel("y values")
-plt.title("plotted x and y values")
-plt.legend(["line 1"])
+m_axes.plot(x, y)
+m_axes.set_xlabel("x values")
+m_axes.set_ylabel("y values")
+m_axes.set_title("plotted x and y values")
+m_axes.legend(["line 1"])
 ```
 
 ![The above plot](../../assets/how-to/matplot/plot.png)
@@ -101,7 +101,7 @@ import matplotlib.pyplot as plt
 df = pd.read_csv("/data/auto_clean.csv")
 
 fig = plt.figure(figsize=(10, 10))
-ax = plt.axes(projection="3d")
+ax = fig.add_subplot(projection="3d")
 ax.scatter3D(
     df["length"],
     df["width"],
@@ -153,7 +153,7 @@ def z_function(x, y):
 
 
 tri_surf = plt.figure(figsize=(8, 8))
-ax = plt.axes(projection="3d")
+ax = tri_surf.add_subplot(projection="3d")
 x = df["peak-rpm"]
 y = df["city-mpg"]
 z = z_function(x, y)
@@ -449,7 +449,7 @@ def update_fig(data, update):
     sns.barplot(df, x="X", y="Y", ax=ax)
 
 
-# Create our animation. It will listen for updates on `tt` and call `update_fig` whenever there is an update
+# Create our animation. It will listen for updates on `tt_sorted_top` and call `update_fig` whenever there is an update
 bar_plot_ani = TableAnimation(fig, tt_sorted_top, update_fig)
 ```
 

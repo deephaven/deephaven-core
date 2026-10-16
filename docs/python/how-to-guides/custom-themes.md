@@ -254,7 +254,7 @@ We also mix in an alpha channel to create transparent colors for you via [color-
 The Deephaven design system is based on the [Adobe spectrum](https://opensource.adobe.com/spectrum-design-data/tokens/color-palette/) color system. It is set up to use a palette consisting of:
 
 - 11 shades of a "gray" palette used for background colors
-- 13 shades of each of the 12 colors in the "color" palette: Red, Orange, Yellow, Chartreuse, Celery, Green, Seafoam, Cyan, Blue, Indigo, Purple, Fuschia and Magenta
+- 14 shades (100-1400) of each of the 13 colors in the "color" palette: Red, Orange, Yellow, Chartreuse, Celery, Green, Seafoam, Cyan, Blue, Indigo, Purple, Fuchsia and Magenta
 
 You can create color palettes with shades for each color using tools like Adobe's [Leonardo](https://leonardocolor.io/theme.html) color tool (recommended), or [Coolors](https://coolors.co/gradient-palette/fae7d5-24211d?number=11). You may already have an existing brand guide at your company that gives you full palettes. Leonardo is a great tool for creating color ramps, and has an "Export as CSS" feature to get the HEX values for each color in the ramp.
 
@@ -266,7 +266,7 @@ The background colors are defined using a set of 11 colors, ranging from light t
 Our example theme used a background color inspired by the Financial Times site to create a palette using Leonardo. The example theme uses the following palette for the "gray" background colors:
 
 ```css
-// Background colors, labeled as gray but may be any suitable background color
+/* Background colors, labeled as gray but may be any suitable background color */
 --dh-color-gray-50: hsl(30, 100%, 99.22%);
 --dh-color-gray-75: hsl(30, 100%, 97.65%);
 --dh-color-gray-100: hsl(27.69, 100%, 94.9%);
@@ -288,7 +288,7 @@ Here is the full palette we used for our example theme:
 
 ### Use your palette for semantic colors
 
-Depending on how much you want to customize, you may choose to stop after just setting the palette and inherit the rest of the theme from the default theme. Or you may choose to override additional variables to customize the theme further. For example, we also override the `accent` variables used for things like buttons from `blue` to `seafoam`. `positive` and `negative` already default to `red` and `green` -- updating `red` and `green` palettes will change these variables. They could also be changed independently if you prefer a different color associated with positive or negative values or actions. Refer to the files labeled as "semantic" in the default theme for exposed variables.
+Depending on how much you want to customize, you may choose to stop after just setting the palette and inherit the rest of the theme from the default theme. Or you may choose to override additional variables to customize the theme further. For example, we also override the `accent` variables used for things like buttons from `blue` to `seafoam`. `positive` and `negative` already default to `green` and `red`, respectively — updating the `red` and `green` palettes will change these variables. They could also be changed independently if you prefer a different color associated with positive or negative values or actions. Refer to the files labeled as "semantic" in the default theme for exposed variables.
 
 ```css
 --dh-color-accent-100: var(--dh-color-seafoam-100);

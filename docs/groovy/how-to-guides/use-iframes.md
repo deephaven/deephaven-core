@@ -162,7 +162,7 @@ When embedding in IFrames, Deephaven can request color theme settings from the p
 
 ```html
 <iframe
-  src="http://localhost:10000/iframe/widget/?name=simple_ticking&theme=external-theme"
+  src="http://localhost:10000/iframe/widget/?name=sinTable&theme=external-theme"
 ></iframe>
 ```
 
@@ -170,7 +170,7 @@ You can optionally provide the `preloadTransparentTheme=true` query parameter to
 
 ```html
 <iframe
-  src="http://localhost:10000/iframe/widget/?name=simple_ticking&theme=external-theme&preloadTransparentTheme=true"
+  src="http://localhost:10000/iframe/widget/?name=sinTable&theme=external-theme&preloadTransparentTheme=true"
 ></iframe>
 ```
 
@@ -219,7 +219,7 @@ You can optionally provide the `preloadTransparentTheme=true` query parameter to
   </head>
   <body>
     <iframe
-      src="http://localhost:10000/iframe/widget/?name=simple_ticking&theme=external-theme&preloadTransparentTheme=true"
+      src="http://localhost:10000/iframe/widget/?name=sinTable&theme=external-theme&preloadTransparentTheme=true"
     ></iframe>
 
     <script>
@@ -337,7 +337,7 @@ The parent window can also explicitly set the theme by sending a `requestSetThem
   </head>
   <body>
     <iframe
-      src="http://localhost:10000/iframe/widget/?name=simple_ticking&theme=external-theme&preloadTransparentTheme=true"
+      src="http://localhost:10000/iframe/widget/?name=sinTable&theme=external-theme&preloadTransparentTheme=true"
     ></iframe>
     <button id="btnUpdateTheme" onclick="onUpdateTheme()">Toggle Theme</button>
 
