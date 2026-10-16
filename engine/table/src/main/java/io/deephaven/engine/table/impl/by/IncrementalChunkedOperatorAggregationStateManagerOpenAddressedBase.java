@@ -20,6 +20,7 @@ import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
@@ -435,6 +436,11 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     @Override
     public void startTrackingPrevValues() {}
+
+    @Override
+    public boolean canReclaim() {
+        return false;
+    }
 
     protected abstract void lookup(RowSequence rowSequence, Chunk[] sourceKeyChunks,
             WritableLongChunk<RowKeys> outputPositions);

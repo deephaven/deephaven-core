@@ -15,6 +15,7 @@ import java.util.Objects;
 
 import io.deephaven.util.compare.ObjectComparisons;
 
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
@@ -127,5 +128,13 @@ public class ObjectSsmBackedSource extends AbstractColumnSource<ObjectVector>
             }
             return true;
         });
+    }
+
+    public void shift(RowSetShiftData shiftData) {
+        underlying.shift(shiftData);
+    }
+
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        underlying.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
 }

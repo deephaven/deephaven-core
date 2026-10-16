@@ -121,4 +121,10 @@ abstract class BaseAddOnlyFirstOrLastChunkedOperator
     public boolean requiresRowKeys() {
         return true;
     }
+
+    @Override
+    public boolean canReclaimStates() {
+        // only used for add-only input, whose states never become empty, so there is nothing to reclaim
+        return false;
+    }
 }

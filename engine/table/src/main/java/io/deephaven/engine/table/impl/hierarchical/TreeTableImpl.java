@@ -15,6 +15,7 @@ import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.by.AggregationRowLookup;
+import io.deephaven.engine.table.impl.by.StateReclaimMode;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -292,7 +293,10 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     private static QueryTable computeSourceRowLookupTable(
             @NotNull final QueryTable source,
             @NotNull final ColumnName idColumn) {
-        return source.aggNoMemo(AggregationProcessor.forTreeSourceRowLookup(), false, null, List.of(idColumn));
+        // TreeSourceRowLookup reads a node's previous source row at the row the node has now, which is only correct if
+        // the node's state never moves, so the lookup keeps its states whatever aggregations are configured to do
+        return source.aggNoMemo(AggregationProcessor.forTreeSourceRowLookup(), false, null, List.of(idColumn),
+                StateReclaimMode.none());
     }
 
     @Override

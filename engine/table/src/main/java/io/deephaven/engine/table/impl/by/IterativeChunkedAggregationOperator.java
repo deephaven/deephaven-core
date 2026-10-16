@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -363,5 +364,38 @@ public interface IterativeChunkedAggregationOperator {
      * Context interface for singleton (that is, one aggregation state) operator updates.
      */
     interface SingletonContext extends SafeCloseable {
+    }
+
+    /**
+     * Whether this operator supports {@link #shift} and {@link #releaseBlocks}, so that an aggregation using it may
+     * remove the states of groups that empty. An operator that does not keeps a state for every group ever seen.
+     *
+     * @return true if this operator can reclaim states, false otherwise
+     */
+    default boolean canReclaimStates() {
+        return false;
+    }
+
+    /**
+     * Move this operator's per-state values to follow states whose output positions change. Only called when
+     * {@link #canReclaimStates()} is true.
+     *
+     * @param shiftData the moves, which keep the states in order
+     */
+    default void shift(RowSetShiftData shiftData) {
+        throw new UnsupportedOperationException(getClass().getSimpleName() + " cannot reclaim states");
+    }
+
+    /**
+     * Release the storage for every block of output positions that lies entirely within the given range. The positions
+     * belong to states that have been removed and will never be reused; this is called once the update cycle that
+     * removed them has completed, so their values, current or previous, will not be read again. Only called when
+     * {@link #canReclaimStates()} is true.
+     *
+     * @param firstOutputPosition the first output position of the range
+     * @param lastOutputPosition the last output position of the range, inclusive
+     */
+    default void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        throw new UnsupportedOperationException(getClass().getSimpleName() + " cannot reclaim states");
     }
 }
