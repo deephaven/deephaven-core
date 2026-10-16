@@ -36,19 +36,24 @@ public class ParquetInstructionsTest {
     }
 
     @Test
-    public void removeColumnNameMapping() {
+    public void removeColumnInstructions() {
         final ParquetInstructions source = ParquetInstructions.builder()
                 .addColumnNameMapping("pc", "C")
                 .addColumnCodec("C", "io.deephaven.util.codec.BigDecimalCodec", "20,1")
+                .setUnsignedLongTarget("C", ParquetInstructions.UnsignedLongTarget.LONG)
+                .addColumnCodec("D", "io.deephaven.util.codec.BigDecimalCodec", "20,4")
                 .build();
         final ParquetInstructions removed = new ParquetInstructions.Builder(source)
-                .removeColumnNameMapping("C")
+                .removeColumnInstructions("C")
                 .build();
         assertThat(removed.getParquetColumnNameFromColumnNameOrDefault("C")).isEqualTo("C");
         assertThat(removed.getColumnNameFromParquetColumnName("pc")).isNull();
-        assertThat(removed.getCodecName("C")).isEqualTo("io.deephaven.util.codec.BigDecimalCodec");
+        assertThat(removed.getCodecName("C")).isNull();
+        assertThat(removed.getUnsignedLongTarget("C")).isEmpty();
+        assertThat(removed.getCodecArgs("D")).isEqualTo("20,4");
         assertThat(source.getParquetColumnNameFromColumnNameOrDefault("C")).isEqualTo("pc");
         assertThat(source.getColumnNameFromParquetColumnName("pc")).isEqualTo("C");
+        assertThat(source.getCodecName("C")).isEqualTo("io.deephaven.util.codec.BigDecimalCodec");
     }
 
     @Test

@@ -149,10 +149,11 @@ final class ParquetTableLocationColumnResolver implements ParquetColumnResolver 
      * partitioning column, which this file does not have, at the top-level column the metadata records it under.
      * Returns {@code null} if any key column cannot be translated.
      * <p>
-     * The row set column is written as {@code dh_row_set}. Earlier versions of the writer applied the indexed table's
-     * renames to the row set column too: when the instructions renamed a column of the indexed table named
-     * {@code dh_row_set}, the row set column was written under that column's parquet name. In such a file, the row set
-     * column is the only top-level column that is not a key column.
+     * The row set column is written as {@code dh_row_set}, unless a key column is written under that name; see
+     * {@code ParquetTableWriter}. Earlier versions of the writer also applied the indexed table's renames to the row
+     * set column: when the instructions renamed a column of the indexed table named {@code dh_row_set}, the row set
+     * column was written under that column's parquet name. Under any other name, the row set column is the only
+     * top-level column that is not a key column.
      */
     @Nullable
     ParquetColumnResolver forDataIndex(
@@ -176,27 +177,44 @@ final class ParquetTableLocationColumnResolver implements ParquetColumnResolver 
                             : List.of(parquetKeyColumnNames[ki]));
         }
         return builder.putMap(INDEX_ROW_SET_COLUMN_NAME,
-                List.of(findRowSetParquetColumnName(indexSchema, parquetKeyColumnNames))).build();
+                List.of(rowSetParquetColumnName(indexSchema, parquetKeyColumnNames))).build();
+    }
+
+    /**
+     * Returns the parquet name of the row set column in the file, with the parquet schema {@code indexSchema}, of a
+     * data index on the Deephaven columns {@code keyColumnNames}; see {@link #forDataIndex(MessageType, String...)}.
+     * Returns {@code dh_row_set} if any key column cannot be translated.
+     */
+    @NotNull
+    String findRowSetParquetColumnName(
+            @NotNull final MessageType indexSchema,
+            @NotNull final String... keyColumnNames) {
+        final String[] parquetKeyColumnNames = findIndexParquetColumnNames(Arrays.asList(keyColumnNames));
+        return parquetKeyColumnNames == null
+                ? INDEX_ROW_SET_COLUMN_NAME
+                : rowSetParquetColumnName(indexSchema, parquetKeyColumnNames);
     }
 
     /**
      * Returns the parquet name of the row set column in a data index file with the parquet schema {@code indexSchema},
-     * whose key columns have the top-level parquet names {@code parquetKeyColumnNames}; see
-     * {@link #forDataIndex(MessageType, String...)}.
+     * whose key columns have the top-level parquet names {@code parquetKeyColumnNames}: {@code dh_row_set} if a column
+     * that is not a key column has that name, or else the only column that is not a key column, if there is exactly
+     * one. A key column may have the parquet name {@code dh_row_set}, when the indexed table's instructions map a key
+     * column to that name.
      */
     @NotNull
-    private static String findRowSetParquetColumnName(
+    private static String rowSetParquetColumnName(
             @NotNull final MessageType indexSchema,
             @NotNull final String[] parquetKeyColumnNames) {
-        if (indexSchema.containsField(INDEX_ROW_SET_COLUMN_NAME)) {
-            return INDEX_ROW_SET_COLUMN_NAME;
-        }
         final Set<String> parquetKeyColumnNameSet = new HashSet<>(Arrays.asList(parquetKeyColumnNames));
-        final List<String> otherParquetColumnNames = indexSchema.getFields().stream()
+        final List<String> nonKeyParquetColumnNames = indexSchema.getFields().stream()
                 .map(Type::getName)
                 .filter(parquetColumnName -> !parquetKeyColumnNameSet.contains(parquetColumnName))
                 .collect(Collectors.toList());
-        return otherParquetColumnNames.size() == 1 ? otherParquetColumnNames.get(0) : INDEX_ROW_SET_COLUMN_NAME;
+        if (nonKeyParquetColumnNames.contains(INDEX_ROW_SET_COLUMN_NAME) || nonKeyParquetColumnNames.size() != 1) {
+            return INDEX_ROW_SET_COLUMN_NAME;
+        }
+        return nonKeyParquetColumnNames.get(0);
     }
 
     /**

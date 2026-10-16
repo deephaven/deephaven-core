@@ -503,13 +503,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
-        /**
-         * Removes this column's parquet column name mapping, so that the column's parquet name is its own name.
-         */
-        void clearParquetColumnName() {
-            this.parquetColumnName = null;
-        }
-
         public String getCodecName() {
             return codecName;
         }
@@ -998,20 +991,19 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         /**
-         * Removes the parquet column name mapping of the Deephaven column {@code columnName}, if it has one, so that
-         * the column's parquet name is its own name.
+         * Removes every instruction for the Deephaven column {@code columnName}: its parquet column name mapping,
+         * codec, unsigned long target, field id and dictionary hint. Used for the columns of a data index or grouping
+         * table that are not key columns, which instructions copied from the indexed table must not affect.
          *
          * @param columnName the Deephaven column name
          */
-        Builder removeColumnNameMapping(final String columnName) {
+        @InternalUseOnly
+        public Builder removeColumnInstructions(final String columnName) {
             final ColumnInstructions ci =
-                    columnNameToInstructions == null ? null : columnNameToInstructions.get(columnName);
+                    columnNameToInstructions == null ? null : columnNameToInstructions.remove(columnName);
             if (ci != null && parquetColumnNameToInstructions != null
                     && parquetColumnNameToInstructions.get(ci.getParquetColumnName()) == ci) {
                 parquetColumnNameToInstructions.remove(ci.getParquetColumnName());
-            }
-            if (ci != null) {
-                ci.clearParquetColumnName();
             }
             return this;
         }

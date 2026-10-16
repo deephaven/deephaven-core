@@ -5,8 +5,8 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -916,7 +916,11 @@ public class ParquetMetadataKeyingTest {
 
     /** Returns the number of rows the data index on {@code keyColumnName} places under some key. */
     private static long indexedRowCount(final Table fromDisk, final String keyColumnName) {
-        final DataIndex dataIndex = DataIndexer.getDataIndex(fromDisk, keyColumnName);
+        return indexedRowCount(DataIndexer.getDataIndex(fromDisk, keyColumnName));
+    }
+
+    /** Returns the number of rows {@code dataIndex} places under some key. */
+    private static long indexedRowCount(final BasicDataIndex dataIndex) {
         long indexedRowCount = 0;
         try (final CloseableIterator<RowSet> rowSets =
                 ColumnVectors.ofObject(dataIndex.table(), dataIndex.rowSetColumnName(), RowSet.class).iterator()) {
@@ -941,6 +945,108 @@ public class ParquetMetadataKeyingTest {
         assertTrue(DataIndexer.hasDataIndex(fromDisk, "B"));
         assertEquals(500, indexedRowCount(fromDisk, "B"));
         assertFilterMatchesOracle(fromDisk, "B = `b1`");
+    }
+
+    /** Rewrites the index file of the data file {@code dest} with its columns renamed. */
+    private static void rewriteIndexFile(final String dest, final String... renames) {
+        final File indexFile = indexFile(dest);
+        final Table indexTable = ParquetTools.readTable(indexFile.getPath()).select();
+        ParquetTools.writeTable(indexTable.renameColumns(renames), indexFile.getPath());
+    }
+
+    private static final String ROW_SET = ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME;
+
+    /**
+     * Key column {@code B} written as parquet {@code dh_row_set}, and a non-key column named {@code dh_row_set} written
+     * as parquet {@code StoredRows}.
+     */
+    private static final ParquetInstructions KEY_WRITTEN_LIKE_ROW_SET = ParquetInstructions.builder()
+            .addColumnNameMapping(ROW_SET, "B")
+            .addColumnNameMapping("StoredRows", ROW_SET)
+            .build();
+
+    private String writeIndexedTableWithKeyWrittenLikeRowSet() {
+        final String dest = path("keyWrittenLikeRowSet.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(500).update("B = `b` + (ii % 5)", ROW_SET + " = `r` + ii"),
+                dest,
+                new ParquetInstructions.Builder(KEY_WRITTEN_LIKE_ROW_SET).addIndexColumns("B").build());
+        return dest;
+    }
+
+    /**
+     * When a key column is written under the parquet name {@code dh_row_set}, the row set column is written under
+     * another name, and a read with the same renames finds both.
+     */
+    @Test
+    public void dataIndexWithKeyColumnWrittenLikeRowSet() {
+        final String dest = writeIndexedTableWithKeyWrittenLikeRowSet();
+        final MessageType indexSchema = parquetSchema(indexFile(dest));
+        assertTrue(indexSchema.containsField(ROW_SET));
+        assertTrue(indexSchema.containsField(ROW_SET + "_1"));
+        final Table fromDisk = ParquetTools.readTable(dest, KEY_WRITTEN_LIKE_ROW_SET);
+        assertTrue(DataIndexer.hasDataIndex(fromDisk, "B"));
+        assertEquals(500, indexedRowCount(fromDisk, "B"));
+        assertFilterMatchesOracle(fromDisk, "B = `b1`");
+    }
+
+    /**
+     * Earlier writers wrote the same index file with the row set column as parquet {@code StoredRows}; its parquet
+     * {@code dh_row_set} column is the key column.
+     */
+    @Test
+    public void dataIndexWithKeyColumnWrittenLikeRowSetByEarlierWriters() {
+        final String dest = writeIndexedTableWithKeyWrittenLikeRowSet();
+        rewriteIndexFile(dest, "StoredRows = " + ROW_SET + "_1");
+        final Table fromDisk = ParquetTools.readTable(dest, KEY_WRITTEN_LIKE_ROW_SET);
+        assertTrue(DataIndexer.hasDataIndex(fromDisk, "B"));
+        assertEquals(500, indexedRowCount(fromDisk, "B"));
+        assertFilterMatchesOracle(fromDisk, "B = `b1`");
+    }
+
+    /**
+     * An unsigned long target registered for a non-key column named {@code dh_row_set} does not apply to the index
+     * table's row set column, which has that name.
+     */
+    @Test
+    public void dataIndexWithUnsignedLongTargetForColumnNamedLikeRowSet() {
+        final String dest = path("longNamedLikeRowSet.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(500).update("B = `b` + (ii % 5)", ROW_SET + " = ii"),
+                dest,
+                ParquetInstructions.builder().addIndexColumns("B").build());
+        final Table fromDisk = ParquetTools.readTable(dest, ParquetInstructions.builder()
+                .setUnsignedLongTarget(ROW_SET, ParquetInstructions.UnsignedLongTarget.LONG)
+                .build());
+        assertTrue(DataIndexer.hasDataIndex(fromDisk, "B"));
+        assertEquals(500, indexedRowCount(fromDisk, "B"));
+        assertFilterMatchesOracle(fromDisk, "B = `b1`");
+    }
+
+    /**
+     * A location built without a definition infers the index table's definition, and the parent's instructions for a
+     * non-key column named {@code dh_row_set} don't apply to the row set column, whichever parquet name it was written
+     * under.
+     */
+    @Test
+    public void dataIndexWithRenamedColumnNamedLikeRowSetWithoutDefinition() {
+        final String dest = writeIndexedTableWithRowSetNamedColumn();
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .addColumnNameMapping("StoredRows", ROW_SET)
+                .build();
+        final ParquetTableLocation location = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(new File(dest).toURI(), 0, null, instructions),
+                instructions);
+        assertEquals(500, indexedRowCount(location.loadDataIndex("B")));
+
+        // As earlier writers wrote it, with the row set column as parquet StoredRows
+        rewriteIndexFile(dest, "StoredRows = " + ROW_SET);
+        final ParquetTableLocation earlierLocation = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(new File(dest).toURI(), 0, null, instructions),
+                instructions);
+        assertEquals(500, indexedRowCount(earlierLocation.loadDataIndex("B")));
     }
 
     /**

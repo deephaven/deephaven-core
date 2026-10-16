@@ -501,12 +501,40 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final ParquetTableLocation.IndexFileMetadata indexFileMetaData,
             @NotNull final String[] keyColumnNames) {
         final boolean isDataIndex = indexFileMetaData.dataIndexInfo != null;
+        // The index table's own columns -- the row set column, and a grouping table's key and position columns -- are
+        // not columns of the parent table, so no instruction the parent's instructions carry for a column with the same
+        // Deephaven name applies to them; they decode with what the index file's footer records.
+        final ParquetInstructions.Builder builder = new ParquetInstructions.Builder(readInstructions)
+                .setFileLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
+        if (isDataIndex) {
+            builder.removeColumnInstructions(INDEX_ROW_SET_COLUMN_NAME);
+        } else {
+            builder.removeColumnInstructions(GROUPING_KEY_COLUMN_NAME)
+                    .removeColumnInstructions(GROUPING_BEGIN_POS_COLUMN_NAME)
+                    .removeColumnInstructions(GROUPING_END_POS_COLUMN_NAME);
+        }
         final ParquetInstructions indexReadInstructions;
         if (readInstructions.getTableDefinition().isEmpty()) {
-            // A location built without a definition can't have a column resolver in its instructions, since setting one
-            // requires a definition. Infer the index table's definition, with the same renames as the parent table.
-            indexReadInstructions = readInstructions.withTableDefinitionAndLayout(null,
-                    ParquetInstructions.ParquetFileLayout.SINGLE_FILE);
+            // A location built without a definition can't have a column resolver in its instructions, since setting a
+            // resolver requires a definition. Infer the index table's definition, with the same renames as the parent
+            // table for the key columns.
+            if (isDataIndex) {
+                // The row set column's parquet name is found in the index file's schema
+                final String rowSetParquetColumnName = resolver.findRowSetParquetColumnName(
+                        new ParquetTableLocationKey(indexFileMetaData.fileURI, 0, null, readInstructions)
+                                .getFileReader().getSchema(),
+                        keyColumnNames);
+                if (!INDEX_ROW_SET_COLUMN_NAME.equals(rowSetParquetColumnName)) {
+                    // A parent column read from a parquet column with that name is not a column of the index table
+                    final String mappedFrom =
+                            readInstructions.getColumnNameFromParquetColumnName(rowSetParquetColumnName);
+                    if (mappedFrom != null) {
+                        builder.removeColumnInstructions(mappedFrom);
+                    }
+                    builder.addColumnNameMapping(rowSetParquetColumnName, INDEX_ROW_SET_COLUMN_NAME);
+                }
+            }
+            indexReadInstructions = builder.build();
         } else {
             // Each key column is read with the definition of the column it indexes, so the keys have that column's type
             final TableDefinition indexDefinition = isDataIndex
@@ -519,31 +547,29 @@ public class ParquetTableLocation extends AbstractTableLocation {
             // Find the index table's columns with a column resolver: for a data index, a resolver derived from the
             // parent table's, and for a legacy grouping table, a resolver for the grouping table's fixed column names.
             // Either resolver ignores any renames the parent's instructions carry.
-            // Codecs are named by Deephaven column. A key column decodes with the codec of the column it indexes; the
-            // index table's own columns -- the row set column, and a grouping table's position columns -- decode with
-            // the codecs the index file's footer records, so a null codec name clears any codec the parent's
-            // instructions register for another column with the same name.
-            final ParquetInstructions.Builder builder = new ParquetInstructions.Builder(readInstructions);
             final ParquetColumnResolver.Factory indexColumnResolverFactory;
             if (isDataIndex) {
-                // The row set column's parquet name is found in the index file's schema
+                // The row set column's parquet name is found in the index file's schema. The key columns have the
+                // Deephaven names of the columns they index, so the parent's instructions for those columns, such as
+                // codecs, apply to the key columns as they are.
                 indexColumnResolverFactory = (tableKey, indexLocationKey) -> Objects.requireNonNull(
                         resolver.forDataIndex(indexLocationKey.getFileReader().getSchema(), keyColumnNames));
-                // The key columns have the Deephaven names of the columns they index, so their codecs carry over
-                builder.addColumnCodec(INDEX_ROW_SET_COLUMN_NAME, null);
             } else {
                 indexColumnResolverFactory =
                         (tableKey, indexLocationKey) -> ParquetTableLocationColumnResolver.FOR_GROUPING;
-                // The key column is not named after the column it indexes, so its codec is copied to the key's name
-                builder.addColumnCodec(GROUPING_KEY_COLUMN_NAME, readInstructions.getCodecName(keyColumnNames[0]),
-                        readInstructions.getCodecArgs(keyColumnNames[0]));
-                builder.addColumnCodec(GROUPING_BEGIN_POS_COLUMN_NAME, null);
-                builder.addColumnCodec(GROUPING_END_POS_COLUMN_NAME, null);
+                // The key column is not named after the column it indexes, so the parent's instructions for the indexed
+                // column are copied to the key column's name
+                final String keyCodecName = readInstructions.getCodecName(keyColumnNames[0]);
+                if (keyCodecName != null) {
+                    builder.addColumnCodec(GROUPING_KEY_COLUMN_NAME, keyCodecName,
+                            readInstructions.getCodecArgs(keyColumnNames[0]));
+                }
+                readInstructions.getUnsignedLongTarget(keyColumnNames[0])
+                        .ifPresent(target -> builder.setUnsignedLongTarget(GROUPING_KEY_COLUMN_NAME, target));
             }
             indexReadInstructions = builder
                     .setColumnResolverFactory(indexColumnResolverFactory)
                     .setTableDefinition(indexDefinition)
-                    .setFileLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)
                     .build();
         }
         if (isDataIndex) {

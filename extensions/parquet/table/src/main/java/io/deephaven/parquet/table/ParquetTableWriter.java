@@ -93,6 +93,33 @@ public class ParquetTableWriter {
     }
 
     /**
+     * Returns the parquet column name to write a data index table's row set column, the Deephaven column
+     * {@code rowSetColumnName}, under. That is {@value #INDEX_ROW_SET_COLUMN_NAME}, unless a key column is written
+     * under that parquet name or the instructions map another Deephaven column to it; then it is the first of
+     * {@code dh_row_set_1}, {@code dh_row_set_2} and so on that is free. A reader finds a row set column written under
+     * another parquet name as the only column of the index file that is not a key column.
+     *
+     * @param writeInstructions The instructions the index table is written with
+     * @param rowSetColumnName The Deephaven name of the index table's row set column
+     * @param parquetKeyColumnNames The parquet names the index table's key columns are written under
+     */
+    private static String chooseRowSetParquetColumnName(
+            @NotNull final ParquetInstructions writeInstructions,
+            @NotNull final String rowSetColumnName,
+            @NotNull final String[] parquetKeyColumnNames) {
+        final Set<String> parquetKeyColumnNameSet = new HashSet<>(Arrays.asList(parquetKeyColumnNames));
+        for (int suffix = 0;; ++suffix) {
+            final String candidate =
+                    suffix == 0 ? INDEX_ROW_SET_COLUMN_NAME : INDEX_ROW_SET_COLUMN_NAME + "_" + suffix;
+            final String mappedFrom = writeInstructions.getColumnNameFromParquetColumnName(candidate);
+            if (!parquetKeyColumnNameSet.contains(candidate)
+                    && (mappedFrom == null || mappedFrom.equals(rowSetColumnName))) {
+                return candidate;
+            }
+        }
+    }
+
+    /**
      * Writes a table in parquet format under a given path
      *
      * @param t The table to write
@@ -162,17 +189,16 @@ public class ParquetTableWriter {
                     final ParquetInstructions.Builder indexWIBuilder =
                             new ParquetInstructions.Builder(writeInstructions)
                                     .setRowGroupInfo(RowGroupInfo.singleGroup());
-                    final ParquetInstructions writeInstructionsForIndex;
-                    if (INDEX_ROW_SET_COLUMN_NAME.equals(dataIndex.rowSetColumnName())) {
-                        // The row set column keeps its reserved parquet name, even if the instructions map a column
-                        // of the indexed table that has the same Deephaven name to another parquet name
-                        writeInstructionsForIndex =
-                                indexWIBuilder.removeColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME).build();
-                    } else {
-                        writeInstructionsForIndex = indexWIBuilder
-                                .addColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME, dataIndex.rowSetColumnName())
-                                .build();
+                    // The row set column is not a column of the indexed table, so no instruction for a column of the
+                    // indexed table with the same Deephaven name applies to the row set column.
+                    final String rowSetColumnName = dataIndex.rowSetColumnName();
+                    final String rowSetParquetColumnName =
+                            chooseRowSetParquetColumnName(writeInstructions, rowSetColumnName, info.parquetColumnNames);
+                    indexWIBuilder.removeColumnInstructions(rowSetColumnName);
+                    if (!rowSetParquetColumnName.equals(rowSetColumnName)) {
+                        indexWIBuilder.addColumnNameMapping(rowSetParquetColumnName, rowSetColumnName);
                     }
+                    final ParquetInstructions writeInstructionsForIndex = indexWIBuilder.build();
                     write(indexTable, indexTable.getDefinition(), writeInstructionsForIndex, info.dest,
                             info.destOutputStream, Collections.emptyMap(), indexTableInfoBuilder,
                             NullParquetMetadataFileWriter.INSTANCE, computedCache);
