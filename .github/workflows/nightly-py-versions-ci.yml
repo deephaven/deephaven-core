@@ -101,7 +101,7 @@ jobs:
             21
 
       - name: Setup uv
-        # run-tests-embedded.sh uses uv to download the Python version and create the venv.
+        # .github/scripts/py-versions-test.sh uses uv to download the Python version and create the venv.
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           # grpcio has no Linux wheel for 3.14t, so uv compiles it, which takes about 17 minutes. The cache keeps the
@@ -126,9 +126,10 @@ jobs:
           docker compose -f Integrations/docker-compose.yml up -d --wait
 
       - name: Run tests
-        # ./gradlew :py-server:testEmbedded and :py-client:testEmbedded run the same scripts. On the older Pythons, uv picks
-        # older numpy, pandas, pyarrow and numba releases, because the newest ones dropped those Pythons.
-        run: py/${{ matrix.suite }}/run-tests-embedded.sh ${{ matrix.python-version }}
+        # The script makes a venv, installs the packages, then calls py/<suite>/run-tests-embedded.sh, which developers
+        # run in their own venv, see py/server/TESTING.md. On the older Pythons, uv picks older numpy, pandas, pyarrow and
+        # numba releases, because the newest ones dropped those Pythons.
+        run: .github/scripts/py-versions-test.sh ${{ matrix.suite }} ${{ matrix.python-version }}
 
       - name: Upload Test Results
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
