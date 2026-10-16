@@ -16,6 +16,41 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class ParquetInstructionsTest {
 
+    /** A builder copied from instructions owns its column instructions: changing them leaves the source unchanged. */
+    @Test
+    public void builderCopyLeavesSourceUnchanged() {
+        final ParquetInstructions source = ParquetInstructions.builder()
+                .addColumnNameMapping("pc", "C")
+                .addColumnCodec("C", "io.deephaven.util.codec.BigDecimalCodec", "20,1")
+                .build();
+        final ParquetInstructions copy = new ParquetInstructions.Builder(source)
+                .addColumnCodec("C", null)
+                .build();
+        assertThat(source.getCodecName("C")).isEqualTo("io.deephaven.util.codec.BigDecimalCodec");
+        assertThat(source.getCodecArgs("C")).isEqualTo("20,1");
+        assertThat(copy.getCodecName("C")).isNull();
+        assertThat(copy.getCodecArgs("C")).isNull();
+        // The copy keeps the column's mapping in both directions
+        assertThat(copy.getParquetColumnNameFromColumnNameOrDefault("C")).isEqualTo("pc");
+        assertThat(copy.getColumnNameFromParquetColumnName("pc")).isEqualTo("C");
+    }
+
+    @Test
+    public void removeColumnNameMapping() {
+        final ParquetInstructions source = ParquetInstructions.builder()
+                .addColumnNameMapping("pc", "C")
+                .addColumnCodec("C", "io.deephaven.util.codec.BigDecimalCodec", "20,1")
+                .build();
+        final ParquetInstructions removed = new ParquetInstructions.Builder(source)
+                .removeColumnNameMapping("C")
+                .build();
+        assertThat(removed.getParquetColumnNameFromColumnNameOrDefault("C")).isEqualTo("C");
+        assertThat(removed.getColumnNameFromParquetColumnName("pc")).isNull();
+        assertThat(removed.getCodecName("C")).isEqualTo("io.deephaven.util.codec.BigDecimalCodec");
+        assertThat(source.getParquetColumnNameFromColumnNameOrDefault("C")).isEqualTo("pc");
+        assertThat(source.getColumnNameFromParquetColumnName("pc")).isEqualTo("C");
+    }
+
     @Test
     public void empty() {
         assertThat(ParquetInstructions.EMPTY.getSpecialInstructions()).isNull();

@@ -143,14 +143,21 @@ final class ParquetTableLocationColumnResolver implements ParquetColumnResolver 
     }
 
     /**
-     * Returns a column resolver for the table of a data index on the Deephaven columns {@code keyColumnNames}. A data
-     * index table is written with the parquet column names of the file it indexes, so each key column is at the path
-     * where this resolver finds the column it indexes, or, for a partitioning column, which this file does not have, at
-     * the top-level column the metadata records it under; the row set column has its own name. Returns {@code null} if
-     * any key column cannot be translated.
+     * Returns a column resolver for the table of a data index on the Deephaven columns {@code keyColumnNames}, whose
+     * file has the parquet schema {@code indexSchema}. A data index table is written with the parquet column names of
+     * the file it indexes, so each key column is at the path where this resolver finds the column it indexes, or, for a
+     * partitioning column, which this file does not have, at the top-level column the metadata records it under.
+     * Returns {@code null} if any key column cannot be translated.
+     * <p>
+     * The row set column is written as {@code dh_row_set}. Earlier versions of the writer applied the indexed table's
+     * renames to the row set column too: when the instructions renamed a column of the indexed table named
+     * {@code dh_row_set}, the row set column was written under that column's parquet name. In such a file, the row set
+     * column is the only top-level column that is not a key column.
      */
     @Nullable
-    ParquetColumnResolver forDataIndex(@NotNull final String... keyColumnNames) {
+    ParquetColumnResolver forDataIndex(
+            @NotNull final MessageType indexSchema,
+            @NotNull final String... keyColumnNames) {
         final String[] parquetKeyColumnNames = findIndexParquetColumnNames(Arrays.asList(keyColumnNames));
         if (parquetKeyColumnNames == null) {
             return null;
@@ -168,7 +175,28 @@ final class ParquetTableLocationColumnResolver implements ParquetColumnResolver 
                             ? columnPath
                             : List.of(parquetKeyColumnNames[ki]));
         }
-        return builder.putMap(INDEX_ROW_SET_COLUMN_NAME, List.of(INDEX_ROW_SET_COLUMN_NAME)).build();
+        return builder.putMap(INDEX_ROW_SET_COLUMN_NAME,
+                List.of(findRowSetParquetColumnName(indexSchema, parquetKeyColumnNames))).build();
+    }
+
+    /**
+     * Returns the parquet name of the row set column in a data index file with the parquet schema {@code indexSchema},
+     * whose key columns have the top-level parquet names {@code parquetKeyColumnNames}; see
+     * {@link #forDataIndex(MessageType, String...)}.
+     */
+    @NotNull
+    private static String findRowSetParquetColumnName(
+            @NotNull final MessageType indexSchema,
+            @NotNull final String[] parquetKeyColumnNames) {
+        if (indexSchema.containsField(INDEX_ROW_SET_COLUMN_NAME)) {
+            return INDEX_ROW_SET_COLUMN_NAME;
+        }
+        final Set<String> parquetKeyColumnNameSet = new HashSet<>(Arrays.asList(parquetKeyColumnNames));
+        final List<String> otherParquetColumnNames = indexSchema.getFields().stream()
+                .map(Type::getName)
+                .filter(parquetColumnName -> !parquetKeyColumnNameSet.contains(parquetColumnName))
+                .collect(Collectors.toList());
+        return otherParquetColumnNames.size() == 1 ? otherParquetColumnNames.get(0) : INDEX_ROW_SET_COLUMN_NAME;
     }
 
     /**

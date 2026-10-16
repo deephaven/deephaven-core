@@ -164,7 +164,10 @@ public class ParquetTableWriter {
                                     .setRowGroupInfo(RowGroupInfo.singleGroup());
                     final ParquetInstructions writeInstructionsForIndex;
                     if (INDEX_ROW_SET_COLUMN_NAME.equals(dataIndex.rowSetColumnName())) {
-                        writeInstructionsForIndex = indexWIBuilder.build();
+                        // The row set column keeps its reserved parquet name, even if the instructions map a column
+                        // of the indexed table that has the same Deephaven name to another parquet name
+                        writeInstructionsForIndex =
+                                indexWIBuilder.removeColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME).build();
                     } else {
                         writeInstructionsForIndex = indexWIBuilder
                                 .addColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME, dataIndex.rowSetColumnName())

@@ -3,7 +3,10 @@
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -13,6 +16,7 @@ import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -24,16 +28,22 @@ import io.deephaven.util.codec.SimpleByteArrayCodec;
 import io.deephaven.util.codec.UTF8StringAsByteArrayCodec;
 import io.deephaven.vector.IntVector;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.schema.MessageType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static org.junit.Assert.assertEquals;
@@ -830,6 +840,130 @@ public class ParquetMetadataKeyingTest {
                 .addColumnCodec(rowSetName, UTF8StringAsByteArrayCodec.class.getName())
                 .build());
         assertEquals(5, DataIndexer.getDataIndex(fromDisk, "B").table().select().size());
+        assertFilterMatchesOracle(fromDisk, "B = `b1`");
+    }
+
+    /**
+     * Loading an index reads the index table with a copy of the location's instructions, changed for the index table's
+     * columns; the location's own instructions, and the columns read with them, are unchanged.
+     */
+    @Test
+    public void dataIndexLoadLeavesReadInstructionsUnchanged() {
+        final String rowSetName = ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME;
+        final String dest = path("codecNamedLikeRowSet.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(100).update("B = `b` + (ii % 5)", "C = `c` + ii"),
+                dest,
+                ParquetInstructions.builder()
+                        .addColumnCodec("C", UTF8StringAsByteArrayCodec.class.getName())
+                        .addIndexColumns("B")
+                        .build());
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setTableDefinition(TableDefinition.of(
+                        ColumnDefinition.ofString("B"),
+                        ColumnDefinition.fromGenericType(rowSetName, byte[].class, byte.class)))
+                .addColumnNameMapping("C", rowSetName)
+                .addColumnCodec(rowSetName, SimpleByteArrayCodec.class.getName())
+                .build();
+        final ParquetTableLocation location = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(new File(dest).toURI(), 0, null, instructions),
+                instructions);
+        assertEquals(5, location.loadDataIndex("B").table().select().size());
+        assertEquals(SimpleByteArrayCodec.class.getName(), instructions.getCodecName(rowSetName));
+        assertEquals("C", instructions.getParquetColumnNameFromColumnNameOrDefault(rowSetName));
+        final Table fromDisk = ParquetTools.readTable(dest, instructions);
+        assertTrue(fromDisk.getColumnSource(rowSetName).get(fromDisk.getRowSet().firstRowKey()) instanceof byte[]);
+    }
+
+    /**
+     * {@link #writeIndexedTable()}, with a non-key column named like the index table's row set column, written as
+     * parquet {@code StoredRows}.
+     */
+    private String writeIndexedTableWithRowSetNamedColumn() {
+        final String dest = path("rowSetNamedColumn.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(500).update("B = `b` + (ii % 5)",
+                        ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME + " = `r` + ii"),
+                dest,
+                ParquetInstructions.builder()
+                        .addColumnNameMapping("StoredRows", ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME)
+                        .addIndexColumns("B")
+                        .build());
+        return dest;
+    }
+
+    /** Returns the single data index file written for the data file {@code dest}. */
+    private static File indexFile(final String dest) {
+        final File dataFile = new File(dest);
+        final String dataFileName = dataFile.getName().replace(".parquet", "");
+        try (final Stream<Path> paths = Files.walk(dataFile.toPath().resolveSibling(".dh_metadata"))) {
+            final List<File> indexFiles = paths
+                    .filter(path -> path.getFileName().toString().endsWith("_" + dataFileName + ".parquet"))
+                    .map(Path::toFile)
+                    .collect(Collectors.toList());
+            assertEquals(1, indexFiles.size());
+            return indexFiles.get(0);
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static MessageType parquetSchema(final File file) {
+        return new ParquetTableLocationKey(file.toURI(), 0, null, ParquetInstructions.EMPTY).getFileReader()
+                .getSchema();
+    }
+
+    /** Returns the number of rows the data index on {@code keyColumnName} places under some key. */
+    private static long indexedRowCount(final Table fromDisk, final String keyColumnName) {
+        final DataIndex dataIndex = DataIndexer.getDataIndex(fromDisk, keyColumnName);
+        long indexedRowCount = 0;
+        try (final CloseableIterator<RowSet> rowSets =
+                ColumnVectors.ofObject(dataIndex.table(), dataIndex.rowSetColumnName(), RowSet.class).iterator()) {
+            while (rowSets.hasNext()) {
+                indexedRowCount += rowSets.next().size();
+            }
+        }
+        return indexedRowCount;
+    }
+
+    /**
+     * A write that renames a non-key column named like the index table's row set column leaves the row set column under
+     * its reserved parquet name, and a read with the same rename finds it.
+     */
+    @Test
+    public void dataIndexWithRenamedColumnNamedLikeRowSet() {
+        final String dest = writeIndexedTableWithRowSetNamedColumn();
+        assertTrue(parquetSchema(indexFile(dest)).containsField(ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME));
+        final Table fromDisk = ParquetTools.readTable(dest, ParquetInstructions.builder()
+                .addColumnNameMapping("StoredRows", ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME)
+                .build());
+        assertTrue(DataIndexer.hasDataIndex(fromDisk, "B"));
+        assertEquals(500, indexedRowCount(fromDisk, "B"));
+        assertFilterMatchesOracle(fromDisk, "B = `b1`");
+    }
+
+    /**
+     * Earlier writers applied that rename to the index table's row set column too, writing the row set column as
+     * parquet {@code StoredRows}; the row set column of such an index file is the only column that is not a key.
+     */
+    @Test
+    public void dataIndexWithRowSetColumnWrittenUnderRename() {
+        final String dest = writeIndexedTableWithRowSetNamedColumn();
+        // Rewrite the index file as earlier writers did
+        final File indexFile = indexFile(dest);
+        final Table indexTable = ParquetTools.readTable(indexFile.getPath()).select();
+        ParquetTools.writeTable(indexTable, indexFile.getPath(), ParquetInstructions.builder()
+                .addColumnNameMapping("StoredRows", ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME)
+                .build());
+        assertTrue(parquetSchema(indexFile).containsField("StoredRows"));
+        assertFalse(parquetSchema(indexFile).containsField(ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME));
+
+        final Table fromDisk = ParquetTools.readTable(dest, ParquetInstructions.builder()
+                .addColumnNameMapping("StoredRows", ParquetTableWriter.INDEX_ROW_SET_COLUMN_NAME)
+                .build());
+        assertTrue(DataIndexer.hasDataIndex(fromDisk, "B"));
+        assertEquals(500, indexedRowCount(fromDisk, "B"));
         assertFilterMatchesOracle(fromDisk, "B = `b1`");
     }
 
