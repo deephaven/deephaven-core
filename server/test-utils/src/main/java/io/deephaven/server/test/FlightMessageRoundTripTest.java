@@ -346,6 +346,27 @@ public abstract class FlightMessageRoundTripTest {
 
     protected abstract TestComponent component();
 
+    /**
+     * @return the compression types the server under test can compress responses and decompress requests with; by
+     *         default every supported type, as the Jetty server registers them all
+     */
+    protected Set<String> serverCompressionTypes() {
+        return Set.copyOf(CompressionCodecs.SUPPORTED);
+    }
+
+    /**
+     * @param candidates the types the table allows that the client accepts, in the table's order
+     * @return the first of {@code candidates} the server under test can compress with, else {@code identity}
+     */
+    private String sentEncoding(final String... candidates) {
+        for (final String candidate : candidates) {
+            if (serverCompressionTypes().contains(candidate)) {
+                return candidate;
+            }
+        }
+        return "identity";
+    }
+
     @After
     public void teardown() throws InterruptedException {
         component.scriptSessionProvider().get().cleanup();
@@ -1752,34 +1773,40 @@ public abstract class FlightMessageRoundTripTest {
                 : table.withAttributes(Map.of(Table.BARRAGE_COMPRESSION_ATTRIBUTE, allowedCompression));
     }
 
-    private static List<String> expectedEncodings(final String encoding) {
+    /**
+     * @param candidates the types the table allows that the client accepts, in the table's order
+     * @return the response encodings of a DoGet, a snapshot and a subscription
+     */
+    private List<String> expectedEncodings(final String... candidates) {
+        final String encoding = sentEncoding(candidates);
         return List.of("DoGet=" + encoding, "DoExchange=" + encoding, "DoExchange=" + encoding);
     }
 
     @Test
     public void testCompressionUsesFirstAllowedTypeTheClientAccepts() throws Exception {
         final Table table = compressionTestTable("zstd,snappy,gzip");
-        assertEquals(expectedEncodings("zstd"), fetchWithCompression(table, Set.of("gzip", "zstd", "snappy")));
-        assertEquals(expectedEncodings("snappy"), fetchWithCompression(table, Set.of("gzip", "snappy")));
+        assertEquals(expectedEncodings("zstd", "snappy", "gzip"),
+                fetchWithCompression(table, Set.of("gzip", "zstd", "snappy")));
+        assertEquals(expectedEncodings("snappy", "gzip"), fetchWithCompression(table, Set.of("gzip", "snappy")));
         assertEquals(expectedEncodings("gzip"), fetchWithCompression(table, Set.of("gzip")));
     }
 
     @Test
     public void testCompressionFallsBackToIdentity() throws Exception {
         // the client accepts nothing the table allows
-        assertEquals(expectedEncodings("identity"),
+        assertEquals(expectedEncodings(),
                 fetchWithCompression(compressionTestTable("zstd"), Set.of("gzip", "snappy")));
         // the client accepts nothing at all
-        assertEquals(expectedEncodings("identity"),
+        assertEquals(expectedEncodings(),
                 fetchWithCompression(compressionTestTable("zstd,gzip"), Set.of()));
         // the table does not allow compression
-        assertEquals(expectedEncodings("identity"),
+        assertEquals(expectedEncodings(),
                 fetchWithCompression(compressionTestTable(null), Set.of("gzip", "zstd", "snappy")));
     }
 
     @Test
     public void testMalformedCompressionAttributeIsIgnored() throws Exception {
-        assertEquals(expectedEncodings("identity"),
+        assertEquals(expectedEncodings(),
                 fetchWithCompression(compressionTestTable("zstd,lz4"), Set.of("gzip", "zstd", "snappy")));
     }
 
@@ -1791,7 +1818,7 @@ public abstract class FlightMessageRoundTripTest {
                 spec -> spec.where("I >= 25000").sort("S"), table.where("I >= 25000").sort("S"),
                 Set.of("gzip", "zstd")));
         // a formula column computes new values, which the table's owner did not allow compressing
-        assertEquals(expectedEncodings("identity"), fetchWithCompression(table,
+        assertEquals(expectedEncodings(), fetchWithCompression(table,
                 spec -> spec.view("I", "J = I * 2"), table.view("I", "J = I * 2"), Set.of("gzip", "zstd")));
     }
 
@@ -1895,7 +1922,14 @@ public abstract class FlightMessageRoundTripTest {
     public void testServerAcceptsCompressedRequests() throws Exception {
         final Table table = compressionTestTable(null);
         for (final String compression : CompressionCodecs.SUPPORTED) {
-            putWithRequestCompression(table, compression);
+            if (serverCompressionTypes().contains(compression)) {
+                putWithRequestCompression(table, compression);
+            } else {
+                // gRPC fails the call before Deephaven sees it: the server has no decompressor for this type
+                final FlightRuntimeException e = assertThrows(FlightRuntimeException.class,
+                        () -> putWithRequestCompression(table, compression));
+                assertEquals(compression, FlightStatusCode.UNIMPLEMENTED, e.status().code());
+            }
         }
     }
 
@@ -1946,7 +1980,8 @@ public abstract class FlightMessageRoundTripTest {
     @Test
     public void testRemoteTablesUseTheJavaClientDefaultCompression() throws Exception {
         // without -DBarrageTableResolver.acceptCompression, the resolver's sessions list every compression type
-        assertEquals(List.of("DoExchange=zstd"), resolveRemoteTable(compressionTestTable("zstd,gzip")));
+        assertEquals(List.of("DoExchange=" + sentEncoding("zstd", "gzip")),
+                resolveRemoteTable(compressionTestTable("zstd,gzip")));
     }
 
     // endregion gRPC message compression

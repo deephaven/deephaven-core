@@ -29,8 +29,10 @@ public final class BarrageCompression {
     private static final Logger log = LoggerFactory.getLogger(BarrageCompression.class);
 
     /**
-     * The malformed lists already logged, so that a bad value is logged once rather than on every fetch of every table
-     * that carries it. Declared before {@link #DEFAULT_ALLOWED}, whose initializer may add to it.
+     * The problems already logged, so that each is logged once rather than on every fetch: malformed lists, and the
+     * names of compression types this server has no compressor for (the Netty server registers only {@code gzip}). The
+     * two never collide, because a single supported name always parses. Declared before {@link #DEFAULT_ALLOWED}, whose
+     * initializer may add to it.
      */
     private static final Set<String> ALREADY_LOGGED_LIST = ConcurrentHashMap.newKeySet();
 
@@ -50,9 +52,10 @@ public final class BarrageCompression {
 
     /**
      * Sets the compression of {@code responseObserver} to the first type in {@code attributes}' allowed list that the
-     * client accepts, using the server's {@link #DEFAULT_TYPES_PROPERTY default list} when the object does not set one
-     * or sets one that cannot be parsed. Leaves the response uncompressed when the object has no attributes, nothing
-     * matches, or the observer cannot be compressed. Must be called before the first response message is sent.
+     * client accepts and this server has a compressor for, using the server's {@link #DEFAULT_TYPES_PROPERTY default
+     * list} when the object does not set one or sets one that cannot be parsed. Leaves the response uncompressed when
+     * the object has no attributes, nothing matches, or the observer cannot be compressed. Must be called before the
+     * first response message is sent.
      *
      * @param responseObserver the raw gRPC response observer for the call
      * @param accepted the compression types the client accepts, from {@link ClientAcceptCompressionInterceptor}
@@ -89,29 +92,38 @@ public final class BarrageCompression {
                 : parseOrWarn(value.toString(), Table.BARRAGE_COMPRESSION_ATTRIBUTE + " on " + logName,
                         defaultAllowed);
 
-        final Optional<String> chosen = CompressionCodecs.choose(allowed, accepted);
-        if (chosen.isEmpty()) {
-            return chosen;
-        }
         if (!(responseObserver instanceof ServerCallStreamObserver)) {
             return Optional.empty();
         }
 
         final ServerCallStreamObserver<?> call = (ServerCallStreamObserver<?>) responseObserver;
-        try {
-            // lock as GrpcUtil does for every other call on this observer
-            // noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized (call) {
-                call.setCompression(chosen.get());
+        for (final String type : allowed) {
+            if (!accepted.contains(type)) {
+                continue;
             }
-        } catch (final IllegalStateException | IllegalArgumentException e) {
-            // headers were already sent, or the server's compressor registry lacks this codec; the response stays
-            // uncompressed
-            log.warn().append("Unable to compress ").append(logName).append(" with ").append(chosen.get())
-                    .append(": ").append(e.getMessage()).endl();
-            return Optional.empty();
+            try {
+                // lock as GrpcUtil does for every other call on this observer
+                // noinspection SynchronizationOnLocalVariableOrMethodParameter
+                synchronized (call) {
+                    call.setCompression(type);
+                }
+                return Optional.of(type);
+            } catch (final IllegalArgumentException e) {
+                // the server's compressor registry lacks this codec (the Netty server has only gzip); try the next type
+                if (ALREADY_LOGGED_LIST.add(type)) {
+                    log.warn().append("Unable to compress ").append(logName).append(" with ").append(type)
+                            .append(": ").append(e.getMessage())
+                            .append("; responses use the next allowed type instead, and this will not be logged again")
+                            .endl();
+                }
+            } catch (final IllegalStateException e) {
+                // headers were already sent, which no caller should allow; the response stays uncompressed
+                log.warn().append("Unable to compress ").append(logName).append(" with ").append(type)
+                        .append(": ").append(e.getMessage()).endl();
+                return Optional.empty();
+            }
         }
-        return chosen;
+        return Optional.empty();
     }
 
     /**

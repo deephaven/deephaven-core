@@ -15,9 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -115,19 +113,6 @@ public class CompressionCodecsTest {
         assertThat(CompressionCodecs.parseAcceptEncoding("identity, deflate, GZIP"))
                 .containsExactly("identity", "deflate", "gzip");
         assertThat(CompressionCodecs.parseAcceptEncoding(null)).isEmpty();
-    }
-
-    @Test
-    public void chooseUsesFirstAllowedCodecTheClientAccepts() {
-        final List<String> zstdOnly = List.of("zstd");
-        final List<String> all = List.of("zstd", "snappy", "gzip");
-
-        assertThat(CompressionCodecs.choose(zstdOnly, Set.of("gzip"))).isEmpty();
-        assertThat(CompressionCodecs.choose(zstdOnly, Set.of("gzip", "zstd"))).contains("zstd");
-        assertThat(CompressionCodecs.choose(all, Set.of("gzip", "snappy"))).contains("snappy");
-        assertThat(CompressionCodecs.choose(all, Set.of("identity", "deflate", "gzip"))).contains("gzip");
-        assertThat(CompressionCodecs.choose(all, Set.of())).isEmpty();
-        assertThat(CompressionCodecs.choose(List.of(), Set.of("gzip", "zstd"))).isEqualTo(Optional.empty());
     }
 
     private static byte[] compress(final Compressor compressor, final byte[] payload) throws IOException {

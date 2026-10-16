@@ -8,7 +8,6 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.grpc.MTlsCertificate;
-import io.deephaven.grpc.compression.CompressionCodecs;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.plugin.js.JsPluginNoopConsumerModule;
 import io.deephaven.server.runner.GrpcServer;
@@ -54,8 +53,6 @@ public interface NettyServerModule {
         interceptors.forEach(serverBuilder::intercept);
         serverBuilder.intercept(MTlsCertificate.DEFAULT_INTERCEPTOR);
         serverBuilder.maxInboundMessageSize(serverConfig.maxInboundMessageSize());
-        serverBuilder.compressorRegistry(CompressionCodecs.compressorRegistry());
-        serverBuilder.decompressorRegistry(CompressionCodecs.decompressorRegistry(CompressionCodecs.SUPPORTED));
         if (serverConfig.ssl().isPresent()) {
             final SSLConfig ssl = serverConfig.ssl().get().orTrust(TrustJdk.of());
             final SSLFactory kickstart = KickstartUtils.create(ssl);

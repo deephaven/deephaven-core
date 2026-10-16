@@ -17,13 +17,12 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * The gRPC registries for every {@link CompressionType}, and the rule that picks a response encoding from a server-side
- * allowed list and a client's {@code grpc-accept-encoding}.
+ * The gRPC registries for every {@link CompressionType}, and parsers for compression type lists and a client's
+ * {@code grpc-accept-encoding}.
  */
 public final class CompressionCodecs {
 
@@ -109,24 +108,6 @@ public final class CompressionCodecs {
             }
         }
         return Collections.unmodifiableSet(names);
-    }
-
-    /**
-     * Picks the response encoding: the first entry of {@code allowed} that the client accepts.
-     *
-     * @param allowed the encodings the server allows, in order of preference
-     * @param accepted the encodings the client advertised in {@code grpc-accept-encoding}
-     * @return the chosen encoding, or empty to send uncompressed
-     */
-    public static Optional<String> choose(
-            @NotNull final List<String> allowed,
-            @NotNull final Set<String> accepted) {
-        for (final String name : allowed) {
-            if (accepted.contains(name)) {
-                return Optional.of(name);
-            }
-        }
-        return Optional.empty();
     }
 
     /**

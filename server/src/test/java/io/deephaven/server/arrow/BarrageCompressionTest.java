@@ -128,6 +128,28 @@ public class BarrageCompressionTest {
     }
 
     @Test
+    public void codecsMissingFromTheServerRegistryFallThroughToTheNextType() {
+        final Table table =
+                TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,snappy,gzip"));
+        // a server with only gzip, as the Netty server is
+        final RecordingObserver gzipOnly = new RecordingObserver() {
+            @Override
+            public void setCompression(final String compression) {
+                if (!compression.equals("gzip")) {
+                    throw new IllegalArgumentException("Unable to find compressor by name " + compression);
+                }
+                super.setCompression(compression);
+            }
+        };
+        assertEquals(Optional.of("gzip"),
+                BarrageCompression.apply(gzipOnly, Set.of("gzip", "zstd", "snappy"), table, "gzipOnly"));
+        assertEquals("gzip", gzipOnly.compression);
+        // nothing left to fall through to
+        assertEquals(Optional.empty(),
+                BarrageCompression.apply(gzipOnly, Set.of("zstd", "snappy"), table, "gzipOnly"));
+    }
+
+    @Test
     public void rollupViewsUseTheRollupsAttributes() {
         final Table source = TableTools.emptyTable(10).update("A = ii % 3", "B = ii");
         final HierarchicalTableViewExchangeMarshaller marshaller =
