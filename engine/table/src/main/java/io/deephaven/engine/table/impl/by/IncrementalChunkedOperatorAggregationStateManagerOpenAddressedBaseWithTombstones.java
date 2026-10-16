@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -373,6 +374,21 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     @Override
     abstract public int findPositionForKey(Object key);
+
+    protected abstract void lookup(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            WritableLongChunk<RowKeys> outputPositions);
+
+    /**
+     * Search the table for a chunk of keys, without changing it. The search keeps no state in this manager, so that any
+     * number of readers may search at once. The search passes over tombstones, so a removed key is not found.
+     */
+    @Override
+    public void findPositionsForKeys(
+            @NotNull final Chunk<? extends Values>[] keyChunks,
+            @NotNull final WritableLongChunk<RowKeys> positions) {
+        positions.setSize(keyChunks[0].size());
+        lookup(null, keyChunks, positions);
+    }
 
     private void setupNewAlternate(int oldTableSize) {
         Assert.eqZero(rehashPointer, "rehashPointer");

@@ -443,7 +443,19 @@ public class ChunkedOperatorAggregationHelper {
                         control.getTargetLoadFactor());
             }
         }
-        ac.supplyRowLookup(() -> stateManager::findPositionForKey);
+        ac.supplyRowLookup(() -> new AggregationRowLookup() {
+            @Override
+            public int get(@Nullable final Object key) {
+                return stateManager.findPositionForKey(key);
+            }
+
+            @Override
+            public void get(
+                    @NotNull final Chunk<? extends Values>[] keyChunks,
+                    @NotNull final WritableLongChunk<RowKeys> rowKeys) {
+                stateManager.findPositionsForKeys(keyChunks, rowKeys);
+            }
+        });
         return stateManager;
     }
 
@@ -1849,7 +1861,19 @@ public class ChunkedOperatorAggregationHelper {
         ac.supplyRowLookup(() -> {
             final ToLongFunction<Object> lookupKeyToRowKey =
                     DataIndexUtils.buildRowKeyMappingFunction(indexKeyTable, dataIndexKeyNames);
-            return key -> (int) lookupKeyToRowKey.applyAsLong(key);
+            return new AggregationRowLookup() {
+                @Override
+                public int get(@Nullable final Object key) {
+                    return (int) lookupKeyToRowKey.applyAsLong(key);
+                }
+
+                @Override
+                public void get(
+                        @NotNull final Chunk<? extends Values>[] keyChunks,
+                        @NotNull final WritableLongChunk<RowKeys> rowKeys) {
+                    AggregationRowLookup.boxedGet(this, keyChunks, rowKeys);
+                }
+            };
         });
 
         final QueryTable finalResult = ac.transformResult(result);
@@ -2405,7 +2429,20 @@ public class ChunkedOperatorAggregationHelper {
             snapshotControl.setListenerAndResult(listener, result);
         }
 
-        ac.supplyRowLookup(() -> key -> Arrays.equals((Object[]) key, EMPTY_KEY) ? 0 : DEFAULT_UNKNOWN_ROW);
+        ac.supplyRowLookup(() -> new AggregationRowLookup() {
+            @Override
+            public int get(@Nullable final Object key) {
+                return Arrays.equals((Object[]) key, EMPTY_KEY) ? 0 : DEFAULT_UNKNOWN_ROW;
+            }
+
+            @Override
+            public void get(
+                    @NotNull final Chunk<? extends Values>[] keyChunks,
+                    @NotNull final WritableLongChunk<RowKeys> rowKeys) {
+                throw new UnsupportedOperationException(
+                        "A chunked lookup needs a key column, and a no-key aggregation has none");
+            }
+        });
 
         final QueryTable finalResult = ac.transformResult(result);
         finalResult.setFlat();

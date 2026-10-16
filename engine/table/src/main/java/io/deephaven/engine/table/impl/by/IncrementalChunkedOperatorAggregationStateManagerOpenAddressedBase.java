@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -21,6 +22,8 @@ import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
@@ -437,5 +440,20 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     @Override
     public boolean canReclaim() {
         return false;
+    }
+
+    protected abstract void lookup(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            WritableLongChunk<RowKeys> outputPositions);
+
+    /**
+     * Search the table for a chunk of keys, without changing it. The search keeps no state in this manager, so that any
+     * number of readers may search at once.
+     */
+    @Override
+    public void findPositionsForKeys(
+            @NotNull final Chunk<? extends Values>[] keyChunks,
+            @NotNull final WritableLongChunk<RowKeys> positions) {
+        positions.setSize(keyChunks[0].size());
+        lookup(null, keyChunks, positions);
     }
 }

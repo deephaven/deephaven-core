@@ -21,8 +21,10 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
@@ -212,9 +214,12 @@ public class QueryTable extends BaseTable<QueryTable> {
      * Before using a data index for a where filter, ensure that the index table size is at most this fraction of the
      * size of the rows remaining to be filtered. If the fraction is greater than this threshold, then the engine will
      * ignore the index table and filter the rows directly.
+     * <p>
+     * The default, {@code 1 / 16}, uses an index only when the rows to be filtered average more than 16 per index key:
+     * below that, reading and merging a row set per key costs more than matching each row.
      */
     public static double DATA_INDEX_FOR_WHERE_THRESHOLD =
-            Configuration.getInstance().getDoubleWithDefault("QueryTable.dataIndexForWhereThreshold", 0.25);
+            Configuration.getInstance().getDoubleWithDefault("QueryTable.dataIndexForWhereThreshold", 1.0 / 16);
 
     /**
      * If the Configuration property "QueryTable.useDataIndexForAggregation" is set to true (default), then permit
@@ -1705,7 +1710,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                     // the result reaches through its WhereListener, so no parent reference is needed here. Note that
                     // a reference to rightTable would in any case be the wrong table to retain, since the set table
                     // actually used may be a data index table or a selectDistinct of it.
-                    return whereInternal(new DynamicWhereFilter(rightTable, inclusion, columnsToMatch));
+                    // The filter listens to its set table before the where begins; an enclosed scope releases the
+                    // filter, and that listener, when the where fails.
+                    return LivenessScopeStack.computeEnclosed(
+                            () -> whereInternal(new DynamicWhereFilter(rightTable, inclusion, columnsToMatch)),
+                            rightTable.isRefreshing(),
+                            Table::isRefreshing);
                 });
     }
 
@@ -1860,15 +1870,15 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
 
                             try {
-                                analyzer.applyUpdate(
-                                        fakeUpdate, emptyRowSet, updateHelper, jobScheduler, liveResultCapture,
-                                        () -> waitForResult.complete(null),
-                                        waitForResult::completeExceptionally);
-                            } catch (Exception e) {
-                                waitForResult.completeExceptionally(e);
-                            }
+                                try {
+                                    analyzer.applyUpdate(
+                                            fakeUpdate, emptyRowSet, updateHelper, jobScheduler, liveResultCapture,
+                                            () -> waitForResult.complete(null),
+                                            waitForResult::completeExceptionally);
+                                } catch (Exception e) {
+                                    waitForResult.completeExceptionally(e);
+                                }
 
-                            try {
                                 waitForResult.get();
                             } catch (InterruptedException e) {
                                 throw new CancellationException("interrupted while computing select or update");
@@ -1877,6 +1887,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         "an exception occurred while performing the initial select or update",
                                         e.getCause());
                             } finally {
+                                // On an operation initializer this waits for every job the analyzer submitted, so none
+                                // still uses updateHelper or emptyRowSet when they close, even if applyUpdate threw.
                                 final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
                                 if (baseEntry != null) {
                                     QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(baseEntry);
@@ -2437,9 +2449,12 @@ public class QueryTable extends BaseTable<QueryTable> {
             return QueryPerformanceRecorder.withNugget(
                     "raj(" + "rightTable, " + matchString(columnsToMatch) + ", " + joinRule + ", "
                             + matchString(columnsToAdd) + ")",
-                    () -> ajInternal(rightTableCoalesced.reverse(), columnsToMatch, columnsToAdd,
-                            SortingOrder.Descending,
-                            joinRule));
+                    // an enclosed scope releases the reversed right table, and its listener, when the join fails
+                    () -> LivenessScopeStack.computeEnclosed(
+                            () -> ajInternal(rightTableCoalesced.reverse(), columnsToMatch, columnsToAdd,
+                                    SortingOrder.Descending, joinRule),
+                            rightTableCoalesced.isRefreshing(),
+                            Table::isRefreshing));
         }
     }
 
@@ -3224,7 +3239,6 @@ public class QueryTable extends BaseTable<QueryTable> {
      *
      * @return an identical table; but with a new set of attributes
      */
-    @Override
     public QueryTable copy() {
         return copy(StandardOptions.COPY_ALL);
     }
@@ -3233,6 +3247,14 @@ public class QueryTable extends BaseTable<QueryTable> {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return copy(definition, shouldCopy);
+        }
+    }
+
+    @Override
+    protected QueryTable copy(@NotNull final Map<String, Object> attributes) {
+        final UpdateGraph updateGraph = getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return copyInternal(definition, attributes);
         }
     }
 
@@ -3252,6 +3274,20 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     public QueryTable copy(TableDefinition definition, Predicate<String> shouldCopy) {
+        final Map<String, Object> attributes;
+        if (shouldCopy == StandardOptions.COPY_ALL) {
+            attributes = getAttributes();
+        } else if (shouldCopy == StandardOptions.COPY_NONE) {
+            attributes = null;
+        } else {
+            attributes = getAttributes(shouldCopy);
+        }
+        return copyInternal(definition, attributes);
+    }
+
+    private QueryTable copyInternal(
+            @NotNull final TableDefinition definition,
+            @Nullable final Map<String, Object> attributes) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
@@ -3260,11 +3296,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final OperationSnapshotControl snapshotControl =
                         createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                 initializeWithSnapshot("copy", snapshotControl, (usePrev, beforeClockValue) -> {
-                    final QueryTable resultTable = new CopiedTable(definition, this);
+                    final QueryTable resultTable = new CopiedTable(definition, this, attributes);
                     propagateFlatness(resultTable, usePrev);
-                    if (shouldCopy != StandardOptions.COPY_NONE) {
-                        copyAttributes(resultTable, shouldCopy);
-                    }
                     if (snapshotControl != null) {
                         final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
                         snapshotControl.setListenerAndResult(listener, resultTable);
@@ -3284,8 +3317,11 @@ public class QueryTable extends BaseTable<QueryTable> {
     static class CopiedTable extends QueryTable {
         private final QueryTable parent;
 
-        private CopiedTable(TableDefinition definition, QueryTable parent) {
-            super(definition, parent.rowSet, parent.columns, null, null);
+        private CopiedTable(
+                TableDefinition definition,
+                QueryTable parent,
+                @Nullable Map<String, Object> attributes) {
+            super(definition, parent.rowSet, parent.columns, null, attributes);
             this.parent = parent;
         }
 
@@ -3425,6 +3461,23 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static void checkInitiateBinaryOperation(@NotNull final Table first, @NotNull final Table second) {
         if (first.isRefreshing() || second.isRefreshing()) {
             first.getUpdateGraph(second).checkInitiateSerialTableOperation();
+        }
+    }
+
+    /**
+     * Refuse a join of a failed input, as a failed table refuses a listener, even when the other input would make the
+     * result static.
+     *
+     * @param leftTable the left input of the join
+     * @param rightTable the right input of the join
+     * @throws TableAlreadyFailedException if either input has failed
+     */
+    public static void checkJoinInputsNotFailed(@NotNull final Table leftTable, @NotNull final Table rightTable) {
+        if (leftTable.isFailed()) {
+            throw new TableAlreadyFailedException("Can not join failed left table " + leftTable.getDescription());
+        }
+        if (rightTable.isFailed()) {
+            throw new TableAlreadyFailedException("Can not join failed right table " + rightTable.getDescription());
         }
     }
 

@@ -23,7 +23,7 @@ from deephaven import empty_table
 source = empty_table(10).update(["X = i", "Y = 0.1 * X", "Z = Y ** 2"])
 
 local_adapter = iceberg.adapter_s3_rest(
-    name="minio-iceberg",
+    name="rustfs-iceberg",
     catalog_uri=catalog_uri,
     warehouse_location=warehouse_location,
     region_name=aws_region,

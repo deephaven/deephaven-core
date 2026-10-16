@@ -1062,7 +1062,7 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         // A plain copy, a redefinition that keeps the partitioning column, and one that drops it. Each owns its
         // filters, so each can be coalesced without disturbing the others.
-        final Table copied = filteredSource.copy();
+        final Table copied = filteredSource.copy(filteredSource.getAttributes());
         final Table withoutData = filteredSource.dropColumns("II");
         final Table withoutPartition = filteredSource.dropColumns("partition");
 
@@ -1354,5 +1354,35 @@ public class TestPartitionAwareSourceTableNoMocks {
         assertTableEquals(expectedPartitions("B"), result.view("partition"));
         Assert.eq(result.getRowSet().firstRowKey(), "result.getRowSet().firstRowKey()",
                 RegionedColumnSource.getFirstRowKey(0), "first region");
+    }
+
+    @Test
+    public void testPartitionWhereCopiesFilterAttributes() {
+        final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl locationProvider =
+                locationProvider(tds, "A", "B");
+        final Table source = partitionedSource(locationProvider, "filterAttributes").withAttributes(Map.of(
+                Table.SORTABLE_COLUMNS_ATTRIBUTE, "partition",
+                Table.MERGED_TABLE_ATTRIBUTE, true));
+
+        final Table filtered = source.where("partition in `A`");
+        Assert.eq(filtered.getAttribute(Table.SORTABLE_COLUMNS_ATTRIBUTE), "sortable columns", "partition");
+        Assert.eqFalse(filtered.hasAttribute(Table.MERGED_TABLE_ATTRIBUTE), "has merged attribute");
+    }
+
+    @Test
+    public void testCopyKeepsReplacedColumnSourceManagerAttribute() {
+        final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+        final Table source = partitionedSource(locationProvider(tds, "A", "B"), "csmAttributes");
+        final String csmAttribute = source.hasAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE)
+                ? Table.APPEND_ONLY_TABLE_ATTRIBUTE
+                : Table.ADD_ONLY_TABLE_ATTRIBUTE;
+        Assert.equals(source.getAttribute(csmAttribute), "source " + csmAttribute, Boolean.TRUE);
+
+        final Table replaced = source.withAttributes(Map.of(csmAttribute, Boolean.FALSE));
+        Assert.equals(replaced.getAttribute(csmAttribute), "replaced " + csmAttribute, Boolean.FALSE);
+        final Table copied = replaced.withAttributes(Map.of("Other", "o"));
+        Assert.equals(copied.getAttribute(csmAttribute), "copied " + csmAttribute, Boolean.FALSE);
+        Assert.equals(copied.getAttribute("Other"), "copied Other", "o");
     }
 }
