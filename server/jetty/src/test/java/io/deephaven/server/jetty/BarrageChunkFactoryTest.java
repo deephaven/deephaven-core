@@ -81,6 +81,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerInterceptor;
+import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.AsyncPutListener;
 import org.apache.arrow.flight.CallHeaders;
 import org.apache.arrow.flight.CallStatus;
@@ -1402,6 +1403,8 @@ public class BarrageChunkFactoryTest {
 
     @Test
     public void testUnsupportedWireTypePropagation() throws Exception {
+        // the upload publishes its export under the next ticket
+        final int ticket = nextTicket;
         try {
             new RoundTripTest<ViewVarCharVector>(String.class) {
                 @Override
@@ -1412,21 +1415,27 @@ public class BarrageChunkFactoryTest {
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
             assertTrue(fre.getMessage().contains("No known Barrage ChunkReader"));
+            assertExportFailedWith(ticket, "No known Barrage ChunkReader");
         }
     }
 
     @Test
     public void testUnsupportedMappingPropagation() throws Exception {
+        // the upload publishes its export under the next ticket
+        final int ticket = nextTicket;
         try {
             new Utf8RoundTripTest(BarrageChunkFactoryTest.class, new ArrowType.Utf8()).runTest();
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
             assertTrue(fre.getMessage().contains("cannot be serialized directly. Consider an updateView()"));
+            assertExportFailedWith(ticket, "cannot be serialized directly. Consider an updateView()");
         }
     }
 
     @Test
     public void testNotAListDestinationPropagation() throws Exception {
+        // the upload publishes its export under the next ticket
+        final int ticket = nextTicket;
         try {
             new RoundTripTest<>(Collection.class, Long.class) {
                 @Override
@@ -1445,11 +1454,14 @@ public class BarrageChunkFactoryTest {
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
             assertTrue(fre.getMessage().contains("No known Barrage ChunkReader"));
+            assertExportFailedWith(ticket, "No known Barrage ChunkReader");
         }
     }
 
     @Test
     public void testDestClassNotFoundPropagation() throws Exception {
+        // the upload publishes its export under the next ticket
+        final int ticket = nextTicket;
         try {
             new RoundTripTest<>(BarrageChunkFactoryTest.class) {
                 @Override
@@ -1464,11 +1476,14 @@ public class BarrageChunkFactoryTest {
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
             assertTrue(fre.getMessage().contains("could not find class"));
+            assertExportFailedWith(ticket, "could not find class");
         }
     }
 
     @Test
     public void testComponentDestClassNotFoundPropagation() throws Exception {
+        // the upload publishes its export under the next ticket
+        final int ticket = nextTicket;
         try {
             new RoundTripTest<>(BarrageChunkFactoryTest.class) {
                 @Override
@@ -1485,7 +1500,23 @@ public class BarrageChunkFactoryTest {
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
             assertTrue(fre.getMessage().contains("could not find class"));
+            assertExportFailedWith(ticket, "could not find class");
         }
+    }
+
+    /**
+     * Asserts that the export a failed upload published fails with {@code expected}. The server reports a failed DoPut
+     * message both by failing this export and by closing the call, and the client sees whichever reaches it first.
+     */
+    private void assertExportFailedWith(final int ticket, final String expected) throws Exception {
+        final CompletableFuture<StatusRuntimeException> failure = new CompletableFuture<>();
+        final SessionState.ExportObject<Table> export = currentSession.getExport(ticket);
+        currentSession.nonExport()
+                .onErrorHandler(failure::complete)
+                .require(export)
+                .submit(() -> failure.completeExceptionally(new AssertionError("Upload export did not fail")));
+        final String message = failure.get(30, java.util.concurrent.TimeUnit.SECONDS).getMessage();
+        assertTrue(message, message.contains(expected));
     }
 
     @SafeVarargs
