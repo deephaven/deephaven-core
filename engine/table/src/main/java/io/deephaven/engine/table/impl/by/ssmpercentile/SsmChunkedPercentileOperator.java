@@ -35,12 +35,16 @@ import java.util.function.Supplier;
  * Percentile operator backed by two {@link SegmentedSortedMultiSet SSMs} per destination: the low set holds the values
  * at or below the percentile, and the high set holds the rest.
  * <p>
- * Values are not inserted into or removed from the SSMs as each chunk arrives. Instead, each destination stages the
- * values added to it and the values removed from it (a modification stages its previous value as a removal and its new
- * value as an addition). When the initial state or a cycle's updates are propagated, each touched destination compacts
- * its staged values into sorted, counted runs, nets the removals against the additions so that a value both removed and
- * added touches neither SSM, applies one pivoted removal and one pivoted insertion, and then sets its result. Every
- * destination that receives values reports a modification, whether or not its percentile changes.
+ * Values are not inserted into or removed from the SSMs as each chunk arrives. Instead, the operator stages the values
+ * added to each destination and the values removed from it (a modification stages its previous value as a removal and
+ * its new value as an addition). Primitive values are staged in one chunk per destination. Object values, whose sort
+ * compares references rather than primitives, are staged in two {@link PercentileStager stagers} shared by every
+ * destination, which sort and count them in bounded windows; a destination with many values of few distinct kinds then
+ * never sorts more than one window of them at a time, and destinations with few values each share the stagers' buffers.
+ * When the initial state or a cycle's updates are propagated, each touched destination nets its sorted, counted
+ * removals against its additions so that a value both removed and added touches neither SSM, applies one pivoted
+ * removal and one pivoted insertion, and then sets its result. Every destination that receives values reports a
+ * modification, whether or not its percentile changes.
  */
 public class SsmChunkedPercentileOperator implements IterativeChunkedAggregationOperator {
     private static final int NODE_SIZE =
@@ -71,6 +75,16 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
      */
     private final IntegerArraySource touchedDestinations = new IntegerArraySource();
     private int touchedCount;
+    /**
+     * For Object values, the values removed from every destination since staged values were last applied; null for
+     * primitive values, which use {@link #stagedRemoves}.
+     */
+    private final PercentileStager objectRemoves;
+    /**
+     * For Object values, the values added to every destination since staged values were last applied; null for
+     * primitive values, which use {@link #stagedAdds}.
+     */
+    private final PercentileStager objectAdds;
 
     /**
      * @param type the data type of the values
@@ -125,6 +139,13 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         stagedAdds = new ObjectArraySource<>((Class) WritableChunk.class);
         // noinspection unchecked,rawtypes
         stagedRemoves = new ObjectArraySource<>((Class) WritableChunk.class);
+        if (chunkType == ChunkType.Object) {
+            objectRemoves = new PercentileStager(compactAndCountKernel);
+            objectAdds = new PercentileStager(compactAndCountKernel);
+        } else {
+            objectRemoves = null;
+            objectAdds = null;
+        }
         percentileTypeHelper = makeTypeHelper(chunkType, type, percentile, averageEvenlyDivided, internalResult);
     }
 
@@ -212,7 +233,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
-        stageRuns(stagedAdds, values, destinations, startPositions, length, stateModified);
+        stageRuns(false, values, destinations, startPositions, length, stateModified);
     }
 
     @Override
@@ -220,7 +241,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
-        stageRuns(stagedRemoves, values, destinations, startPositions, length, stateModified);
+        stageRuns(true, values, destinations, startPositions, length, stateModified);
     }
 
     @Override
@@ -228,50 +249,61 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
-        stageRuns(stagedRemoves, preValues, destinations, startPositions, length, stateModified);
-        stageRuns(stagedAdds, postValues, destinations, startPositions, length, stateModified);
+        stageRuns(true, preValues, destinations, startPositions, length, stateModified);
+        stageRuns(false, postValues, destinations, startPositions, length, stateModified);
     }
 
     @Override
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        return stage(stagedAdds, (int) destination, values, 0, values.size());
+        return stage(false, (int) destination, values, 0, values.size());
     }
 
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        return stage(stagedRemoves, (int) destination, values, 0, values.size());
+        return stage(true, (int) destination, values, 0, values.size());
     }
 
     @Override
     public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues,
             Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
-        final boolean removed = stage(stagedRemoves, (int) destination, preValues, 0, preValues.size());
-        final boolean added = stage(stagedAdds, (int) destination, postValues, 0, postValues.size());
+        final boolean removed = stage(true, (int) destination, preValues, 0, preValues.size());
+        final boolean added = stage(false, (int) destination, postValues, 0, postValues.size());
         return removed || added;
     }
 
-    private void stageRuns(final ObjectArraySource<WritableChunk<Values>> staged, final Chunk<? extends Values> values,
+    private void stageRuns(final boolean removal, final Chunk<? extends Values> values,
             final IntChunk<RowKeys> destinations, final IntChunk<ChunkPositions> startPositions,
             final IntChunk<ChunkLengths> length, final WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             stateModified.set(ii,
-                    stage(staged, destinations.get(startPosition), values, startPosition, length.get(ii)));
+                    stage(removal, destinations.get(startPosition), values, startPosition, length.get(ii)));
         }
     }
 
     /**
-     * Append {@code values[start, start + length)} to the staged chunk for {@code destination}.
+     * Stage {@code values[start, start + length)} as removed from, or added to, {@code destination}.
      *
      * @return true if any values were staged
      */
-    private boolean stage(final ObjectArraySource<WritableChunk<Values>> staged, final int destination,
-            final Chunk<? extends Values> values, final int start, final int length) {
+    private boolean stage(final boolean removal, final int destination, final Chunk<? extends Values> values,
+            final int start, final int length) {
         if (length == 0) {
             return false;
         }
+        if (objectRemoves != null) {
+            final PercentileStager stager = removal ? objectRemoves : objectAdds;
+            if (stager.maximumEntries() + length > ArrayUtil.MAX_ARRAY_SIZE) {
+                // Staged removals are values present before this cycle, so staged values may be applied early; each
+                // destination is applied again with the values staged after this
+                applyAllStaged();
+            }
+            stager.stage(destination, values, start, length);
+            return true;
+        }
+        final ObjectArraySource<WritableChunk<Values>> staged = removal ? stagedRemoves : stagedAdds;
         WritableChunk<Values> chunk = staged.getUnsafe(destination);
         if (chunk == null) {
             if (stagedAdds.getUnsafe(destination) == null && stagedRemoves.getUnsafe(destination) == null) {
@@ -318,6 +350,10 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
     @Override
     public void propagateFailure(@NotNull final Throwable originalException,
             @NotNull final TableListener.Entry sourceEntry) {
+        if (objectRemoves != null) {
+            objectRemoves.release();
+            objectAdds.release();
+        }
         for (int ti = 0; ti < touchedCount; ++ti) {
             final int destination = touchedDestinations.getUnsafe(ti);
             closeStaged(stagedAdds, destination);
@@ -334,6 +370,15 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
     }
 
     private void applyAllStaged() {
+        if (objectRemoves != null) {
+            try (final ApplyContext context = new ApplyContext(chunkType)) {
+                applyObjectStaged(context);
+            } finally {
+                objectRemoves.release();
+                objectAdds.release();
+            }
+            return;
+        }
         if (touchedCount == 0) {
             return;
         }
@@ -361,9 +406,6 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         if (removes == null && adds == null) {
             return;
         }
-
-        final SegmentedSortedMultiSet ssmLo = ssmLoForSlot(destination);
-        final SegmentedSortedMultiSet ssmHi = ssmHiForSlot(destination);
         try {
             // Count NaN, but not NULL values
             final WritableIntChunk<ChunkLengths> removeCounts =
@@ -375,21 +417,77 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             if (adds != null) {
                 compactAndCountKernel.compactAndCount(adds, addCounts, false, true);
             }
-            if (removes != null && adds != null) {
-                netChangeKernel.net(removes, removeCounts, adds, addCounts);
-            }
-
-            if (removes != null && removes.size() > 0) {
-                pivotedRemoval(context, context.removeContext, 0, removes.size(), ssmLo, ssmHi, removes,
-                        removeCounts);
-            }
-            if (adds != null && adds.size() > 0) {
-                pivotedInsertion(context, ssmLo, ssmHi, 0, adds.size(), adds, addCounts);
-            }
+            applyCounted(context, destination, removes, removeCounts, adds, addCounts);
         } finally {
             SafeCloseable.closeAll(removes, adds);
         }
+    }
 
+    /**
+     * Apply the Object values in {@link #objectRemoves} and {@link #objectAdds}, walking the destinations of the two
+     * stagers together.
+     */
+    private void applyObjectStaged(final ApplyContext context) {
+        objectRemoves.flush();
+        objectAdds.flush();
+        final int removeSize = objectRemoves.size();
+        final int addSize = objectAdds.size();
+        int ri = 0;
+        int ai = 0;
+        while (ri < removeSize || ai < addSize) {
+            final int removeDestination = ri < removeSize ? objectRemoves.destinations().get(ri) : Integer.MAX_VALUE;
+            final int addDestination = ai < addSize ? objectAdds.destinations().get(ai) : Integer.MAX_VALUE;
+            final int destination = Math.min(removeDestination, addDestination);
+            final int removeEnd = destination == removeDestination ? runEnd(objectRemoves, ri) : ri;
+            final int addEnd = destination == addDestination ? runEnd(objectAdds, ai) : ai;
+            final boolean anyRemoves = removeEnd > ri;
+            final boolean anyAdds = addEnd > ai;
+            applyCounted(context, destination,
+                    anyRemoves ? context.removeValues.resetFromChunk(objectRemoves.values(), ri, removeEnd - ri)
+                            : null,
+                    anyRemoves ? context.removeRunCounts.resetFromChunk(objectRemoves.counts(), ri, removeEnd - ri)
+                            : null,
+                    anyAdds ? context.addValues.resetFromChunk(objectAdds.values(), ai, addEnd - ai) : null,
+                    anyAdds ? context.addRunCounts.resetFromChunk(objectAdds.counts(), ai, addEnd - ai) : null);
+            ri = removeEnd;
+            ai = addEnd;
+        }
+    }
+
+    /**
+     * @return the end of the run of entries in {@code staged} that share the destination of the entry at {@code start}
+     */
+    private static int runEnd(final PercentileStager staged, final int start) {
+        final IntChunk<RowKeys> destinations = staged.destinations();
+        final int destination = destinations.get(start);
+        int end = start + 1;
+        while (end < destinations.size() && destinations.get(end) == destination) {
+            ++end;
+        }
+        return end;
+    }
+
+    /**
+     * Apply one destination's sorted, counted values; the removals or the additions are null when the destination has
+     * none.
+     */
+    private void applyCounted(final ApplyContext context, final int destination,
+            final WritableChunk<Values> removes, final WritableIntChunk<ChunkLengths> removeCounts,
+            final WritableChunk<Values> adds, final WritableIntChunk<ChunkLengths> addCounts) {
+        if (removes != null && adds != null) {
+            netChangeKernel.net(removes, removeCounts, adds, addCounts);
+        }
+
+        final SegmentedSortedMultiSet ssmLo = ssmLoForSlot(destination);
+        final SegmentedSortedMultiSet ssmHi = ssmHiForSlot(destination);
+        if (removes != null && removes.size() > 0) {
+            pivotedRemoval(context, context.removeContext, 0, removes.size(), ssmLo, ssmHi, removes, removeCounts);
+        }
+        if (adds != null && adds.size() > 0) {
+            pivotedInsertion(context, ssmLo, ssmHi, 0, adds.size(), adds, addCounts);
+        }
+
+        // an emptied low or high set is kept for the destination's next values; both are freed once it is empty
         if (ssmLo.size() == 0 && ssmHi.size() == 0) {
             clearSsm(destination, 0);
             clearSsm(destination, 1);
@@ -397,12 +495,6 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             return;
         }
         percentileTypeHelper.setResult(ssmLo, ssmHi, destination);
-        if (ssmLo.size() == 0) {
-            clearSsm(destination, 0);
-        }
-        if (ssmHi.size() == 0) {
-            clearSsm(destination, 1);
-        }
     }
 
     private void pivotedRemoval(ApplyContext context, SegmentedSortedMultiSet.RemoveContext removeContext,
@@ -483,14 +575,14 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         final long slot = destination * 2 + hi;
         SegmentedSortedMultiSet ssm = ssms.getUnsafe(slot);
         if (ssm == null) {
-            ssms.set(slot, ssm = ssmFactory.get());
+            ssms.getAndSetUnsafe(slot, ssm = ssmFactory.get());
         }
         return ssm;
     }
 
     private void clearSsm(long destination, int hi) {
         final long slot = destination * 2 + hi;
-        ssms.set(slot, null);
+        ssms.getAndSetUnsafe(slot, null);
     }
 
     @Override
@@ -522,10 +614,21 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         final ResettableWritableIntChunk<ChunkLengths> countResettable;
         private WritableIntChunk<ChunkLengths> removeCounts;
         private WritableIntChunk<ChunkLengths> addCounts;
+        /**
+         * One destination's entries, sliced from the Object stagers.
+         */
+        final ResettableWritableChunk<Values> removeValues;
+        final ResettableWritableIntChunk<ChunkLengths> removeRunCounts;
+        final ResettableWritableChunk<Values> addValues;
+        final ResettableWritableIntChunk<ChunkLengths> addRunCounts;
 
         private ApplyContext(ChunkType chunkType) {
             valueResettable = chunkType.makeResettableWritableChunk();
             countResettable = ResettableWritableIntChunk.makeResettableChunk();
+            removeValues = chunkType.makeResettableWritableChunk();
+            removeRunCounts = ResettableWritableIntChunk.makeResettableChunk();
+            addValues = chunkType.makeResettableWritableChunk();
+            addRunCounts = ResettableWritableIntChunk.makeResettableChunk();
         }
 
         WritableIntChunk<ChunkLengths> removeCounts(final int size) {
@@ -550,6 +653,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
 
         @Override
         public void close() {
+            SafeCloseable.closeAll(removeValues, removeRunCounts, addValues, addRunCounts);
             valueResettable.close();
             countResettable.close();
             if (removeCounts != null) {

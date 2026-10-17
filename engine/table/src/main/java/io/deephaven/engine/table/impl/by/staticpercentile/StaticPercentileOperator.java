@@ -35,15 +35,20 @@ import java.util.Map;
 public abstract class StaticPercentileOperator implements IterativeChunkedAggregationOperator {
     final double percentile;
     final String name;
+    /**
+     * The number of values a destination's array grows to when its first array fills.
+     */
+    private final int expectedSize;
 
     /**
      * The number of values accumulated for each destination; meaningful only once the destination has an array.
      */
     final IntegerArraySource sizes = new IntegerArraySource();
 
-    StaticPercentileOperator(final double percentile, final String name) {
+    StaticPercentileOperator(final double percentile, final String name, final long expectedSize) {
         this.percentile = percentile;
         this.name = name;
+        this.expectedSize = (int) Math.min(ArrayUtil.MAX_ARRAY_SIZE, expectedSize);
     }
 
     /**
@@ -56,38 +61,41 @@ public abstract class StaticPercentileOperator implements IterativeChunkedAggreg
      * @param percentile the percentile to compute
      * @param averageEvenlyDivided see {@link io.deephaven.api.agg.spec.AggSpecPercentile#averageEvenlyDivided()}
      * @param name the name of the result column
+     * @param expectedSize the number of values a destination's array grows to when its first array fills, such as the
+     *        table size when every row belongs to one group; the array still grows past it as needed
      * @return the operator
      */
     public static IterativeChunkedAggregationOperator make(final Class<?> type, final boolean equalsConsistent,
-            final double percentile, final boolean averageEvenlyDivided, final String name) {
+            final double percentile, final boolean averageEvenlyDivided, final String name,
+            final long expectedSize) {
         if (type == char.class) {
-            return new CharStaticPercentileOperator(percentile, averageEvenlyDivided, name);
+            return new CharStaticPercentileOperator(percentile, averageEvenlyDivided, name, expectedSize);
         }
         if (type == byte.class) {
-            return new ByteStaticPercentileOperator(percentile, averageEvenlyDivided, name);
+            return new ByteStaticPercentileOperator(percentile, averageEvenlyDivided, name, expectedSize);
         }
         if (type == short.class) {
-            return new ShortStaticPercentileOperator(percentile, averageEvenlyDivided, name);
+            return new ShortStaticPercentileOperator(percentile, averageEvenlyDivided, name, expectedSize);
         }
         if (type == int.class) {
-            return new IntStaticPercentileOperator(percentile, averageEvenlyDivided, name);
+            return new IntStaticPercentileOperator(percentile, averageEvenlyDivided, name, expectedSize);
         }
         if (type == long.class) {
-            return new LongStaticPercentileOperator(percentile, averageEvenlyDivided, name);
+            return new LongStaticPercentileOperator(percentile, averageEvenlyDivided, name, expectedSize);
         }
         if (type == float.class) {
-            return new FloatStaticPercentileOperator(percentile, averageEvenlyDivided, name);
+            return new FloatStaticPercentileOperator(percentile, averageEvenlyDivided, name, expectedSize);
         }
         if (type == double.class) {
-            return new DoubleStaticPercentileOperator(percentile, averageEvenlyDivided, name);
+            return new DoubleStaticPercentileOperator(percentile, averageEvenlyDivided, name, expectedSize);
         }
         if (type == Instant.class) {
-            return new InstantStaticPercentileOperator(percentile, name);
+            return new InstantStaticPercentileOperator(percentile, name, expectedSize);
         }
         if (type.isPrimitive()) {
             throw new UnsupportedOperationException("Percentile is not supported for " + type);
         }
-        return new ObjectStaticPercentileOperator(type, equalsConsistent, percentile, name);
+        return new ObjectStaticPercentileOperator(type, equalsConsistent, percentile, name, expectedSize);
     }
 
     /**
@@ -104,9 +112,12 @@ public abstract class StaticPercentileOperator implements IterativeChunkedAggreg
      * @return the capacity for an array that holds {@code currentSize + length} values, given its current
      *         {@code capacity}
      */
-    static int grownCapacity(final int capacity, final int currentSize, final int length) {
+    final int grownCapacity(final int capacity, final int currentSize, final int length) {
         final long required = (long) currentSize + length;
-        return (int) Math.min(ArrayUtil.MAX_ARRAY_SIZE, Math.max(required, 2L * capacity));
+        // the first array holds the first run; the expected size applies once more values than that arrive, so a group
+        // whose values are all null, or that receives a NaN early, never allocates it
+        final long grown = capacity == 0 ? required : Math.max(required, Math.max(2L * capacity, expectedSize));
+        return (int) Math.min(ArrayUtil.MAX_ARRAY_SIZE, grown);
     }
 
     @Override

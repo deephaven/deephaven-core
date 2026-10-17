@@ -43,8 +43,8 @@ class ObjectStaticPercentileOperator extends StaticPercentileOperator {
     private final ObjectArraySource<Object[]> arrays = new ObjectArraySource<>(Object[].class);
 
     ObjectStaticPercentileOperator(final Class<?> type, final boolean equalsConsistent, final double percentile,
-            final String name) {
-        super(percentile, name);
+            final String name, final long expectedSize) {
+        super(percentile, name, expectedSize);
         this.equalsConsistent = equalsConsistent;
         // noinspection unchecked
         result = (WritableColumnSource<Object>) ArrayBackedColumnSource.getMemoryColumnSource(0, type);

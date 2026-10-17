@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.benchmarking.generator.EnumStringGenerator;
+import io.deephaven.benchmarking.generator.RandomNumberGenerator;
 import io.deephaven.benchmarking.generator.SequentialNumberGenerator;
 import io.deephaven.benchmarking.impl.PersistentBenchmarkTableBuilder;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
@@ -53,8 +54,14 @@ public class PercentileByBenchmark {
     @Param({"0", "10", "10000"})
     private int keyCount;
 
-    @Param({"long", "double", "BigDecimal"})
+    @Param({"long", "double", "BigDecimal", "String"})
     private String dataType;
+
+    /**
+     * The number of distinct values, or 0 for values drawn from the type's full range, which are essentially distinct.
+     */
+    @Param({"0", "100"})
+    private int valueCardinality;
 
     @Param({"median", "normal", "tdigest"})
     private String percentileMode;
@@ -137,16 +144,25 @@ public class PercentileByBenchmark {
         }
         keyColumnNames = keyCount > 0 ? keyName.split(",") : ArrayTypeUtils.EMPTY_STRING_ARRAY;
 
-        if (dataType.equals("BigDecimal") && percentileMode.equals("tdigest")) {
-            throw new UnsupportedOperationException("tdigest does not support BigDecimal");
+        if ((dataType.equals("BigDecimal") || dataType.equals("String")) && percentileMode.equals("tdigest")) {
+            throw new UnsupportedOperationException("tdigest does not support " + dataType);
         }
         switch (dataType) {
             case "long":
-                builder.addColumn(BenchmarkTools.numberCol("Value", long.class));
+                builder.addColumn(valueCardinality == 0
+                        ? BenchmarkTools.numberCol("Value", long.class)
+                        : BenchmarkTools.numberCol("Value", long.class, 0, valueCardinality));
                 break;
             case "double":
             case "BigDecimal":
-                builder.addColumn(BenchmarkTools.numberCol("Value", double.class, -1_000_000, 1_000_000));
+                builder.addColumn(valueCardinality == 0
+                        ? BenchmarkTools.numberCol("Value", double.class, -1_000_000, 1_000_000)
+                        : BenchmarkTools.numberCol("Value", double.class, new WholeNumberGenerator(valueCardinality)));
+                break;
+            case "String":
+                builder.addColumn(valueCardinality == 0
+                        ? BenchmarkTools.stringCol("Value", 6, 12)
+                        : BenchmarkTools.stringCol("Value", valueCardinality, 6, 6, 0xC0FFEE));
                 break;
             default:
                 throw new IllegalArgumentException("Unknown dataType: " + dataType);
@@ -232,6 +248,20 @@ public class PercentileByBenchmark {
                 }, table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
+    }
+
+    /**
+     * Draws whole numbers uniformly from {@code [0, cardinality)}, for any number type.
+     */
+    private static class WholeNumberGenerator extends RandomNumberGenerator {
+        private WholeNumberGenerator(final int cardinality) {
+            super(0, cardinality);
+        }
+
+        @Override
+        public double getDouble() {
+            return Math.floor(super.getDouble());
+        }
     }
 
     public static void main(String[] args) throws RunnerException {
