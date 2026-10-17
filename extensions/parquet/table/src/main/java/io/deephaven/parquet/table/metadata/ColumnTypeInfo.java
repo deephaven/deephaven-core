@@ -26,7 +26,7 @@ import java.util.Optional;
 public abstract class ColumnTypeInfo {
 
     /**
-     * @return The column name
+     * @return The parquet column name
      */
     public abstract String columnName();
 
