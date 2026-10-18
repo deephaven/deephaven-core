@@ -543,6 +543,10 @@
                 "path": "how-to-guides/deephaven-python-package.md"
               },
               {
+                "label": "Deephaven's pydeephaven-ticking package",
+                "path": "how-to-guides/pydeephaven-ticking.md"
+              },
+              {
                 "label": "Generate query strings",
                 "path": "how-to-guides/generate-query-strings.md"
               },
