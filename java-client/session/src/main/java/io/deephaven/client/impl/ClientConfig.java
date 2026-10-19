@@ -76,6 +76,14 @@ public abstract class ClientConfig {
     }
 
     /**
+     * The compression type this client compresses its {@code DoPut} uploads with, including the rows it adds to input
+     * tables: any of the {@link CompressionCodecs#SUPPORTED supported} types. Unset by default, so uploads are sent
+     * uncompressed. The server must be able to decode the type, or it fails the upload with {@code UNIMPLEMENTED};
+     * every Deephaven server can decode {@code gzip}. Other requests are small, and are never compressed.
+     */
+    public abstract Optional<String> requestCompression();
+
+    /**
      * Returns or creates a client config with {@link #ssl()} as {@code ssl}.
      */
     public abstract ClientConfig withSsl(SSLConfig ssl);
@@ -86,8 +94,9 @@ public abstract class ClientConfig {
     public abstract ClientConfig withUserAgent(String userAgent);
 
     @Check
-    final void checkAcceptCompression() {
+    final void checkCompression() {
         acceptCompression().forEach(CompressionCodecs::checkSupported);
+        requestCompression().ifPresent(CompressionCodecs::checkSupported);
     }
 
     public interface Builder {
@@ -107,6 +116,8 @@ public abstract class ClientConfig {
         Builder maxInboundMessageSize(int maxInboundMessageSize);
 
         Builder acceptCompression(Set<String> acceptCompression);
+
+        Builder requestCompression(String requestCompression);
 
         ClientConfig build();
     }

@@ -197,6 +197,8 @@ To narrow the compression types a client lists, use the setting for that client.
 - A remote table fetched with [`barrage_session`](https://deephaven.io/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session): its `accept_compression` argument.
 - A remote table fetched by resolving a `dh://` URI: the `-DBarrageTableResolver.acceptCompression` property on the fetching server, for example `-DBarrageTableResolver.acceptCompression=zstd`.
 
+The Java client can also compress the data it uploads with `DoPut`, including the rows it adds to input tables: set `ClientConfig.builder().requestCompression(...)`, for example to `"zstd"`. Uploads are uncompressed by default. A server that cannot decode the type fails the upload, so choose `gzip`, which every Deephaven server decodes, when the server might not support the others.
+
 To add a compression type beyond `zstd`, `gzip`, `snappy`, and `deflate`, such as `lz4`, write a Java class that implements `io.deephaven.grpc.compression.CompressionCodecProvider` and returns an `io.grpc.Codec` for the type. Register the class as a Java `ServiceLoader` service, for example with `@AutoService(CompressionCodecProvider.class)`, and put its jar on the server's classpath. Tables can then list the type by its name, and the server uses it for clients that list it. A Java client lists it by default when the same jar is on its classpath; other clients list only the types in the table above.
 
 ## Additional Barrage configuration

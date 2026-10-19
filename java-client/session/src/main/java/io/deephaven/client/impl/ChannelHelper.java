@@ -77,7 +77,11 @@ public final class ChannelHelper {
         } else {
             channelBuilder.usePlaintext();
         }
+        // gRPC's default compressor registry holds only gzip
+        channelBuilder.compressorRegistry(CompressionCodecs.compressorRegistry());
         channelBuilder.decompressorRegistry(CompressionCodecs.decompressorRegistry(clientConfig.acceptCompression()));
+        clientConfig.requestCompression().ifPresent(compression -> channelBuilder
+                .intercept(new DoPutCompressionInterceptor(CompressionCodecs.checkSupported(compression))));
         clientConfig.userAgent().ifPresent(channelBuilder::userAgent);
         clientConfig.overrideAuthority().ifPresent(channelBuilder::overrideAuthority);
         if (!clientConfig.extraHeaders().isEmpty()) {

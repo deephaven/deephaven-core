@@ -1869,18 +1869,12 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     /**
-     * Compresses every DoPut request with {@code compression}, and records the {@code grpc-encoding} each one was sent
-     * with and its uncompressed and on-the-wire sizes.
+     * Records the {@code grpc-encoding} each DoPut request was sent with, and its uncompressed and on-the-wire sizes.
      */
     private static final class RequestCompressionRecorder implements ClientInterceptor {
-        private final String compression;
         private final List<String> sentEncodings = Collections.synchronizedList(new ArrayList<>());
         private final AtomicLong uncompressedBytes = new AtomicLong();
         private final AtomicLong wireBytes = new AtomicLong();
-
-        private RequestCompressionRecorder(final String compression) {
-            this.compression = compression;
-        }
 
         @Override
         public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
@@ -1910,26 +1904,25 @@ public abstract class FlightMessageRoundTripTest {
                     };
                 }
             };
-            return next.newCall(method,
-                    callOptions.withCompression(compression).withStreamTracerFactory(tracerFactory));
+            return next.newCall(method, callOptions.withStreamTracerFactory(tracerFactory));
         }
     }
 
     /**
-     * Uploads {@code table} with a DoPut whose request messages are compressed with {@code compression}, and checks
-     * that they were sent compressed and that the server rebuilt the table intact.
+     * Uploads {@code table} with a DoPut from a client whose {@link ClientConfig#requestCompression()} is
+     * {@code compression}, and checks that the request messages were sent compressed and that the server rebuilt the
+     * table intact.
      */
     private void putWithRequestCompression(final Table table, final String compression) throws Exception {
         final Flight.Ticket sourceTicket = FlightExportTicketHelper.exportIdToFlightTicket(nextTicket++);
         currentSession.newExport(sourceTicket, "test").submit(() -> table);
 
-        final RequestCompressionRecorder recorder = new RequestCompressionRecorder(compression);
+        final RequestCompressionRecorder recorder = new RequestCompressionRecorder();
         final ClientConfig config = ClientConfig.builder()
                 .target(io.deephaven.uri.DeephavenTarget.of(java.net.URI.create("dh+plain://localhost:" + localPort)))
+                .requestCompression(compression)
                 .build();
-        // ChannelHelper registers only decompressors; a client that compresses requests needs the compressors too
         final ManagedChannel channel = ChannelHelper.channelBuilder(config)
-                .compressorRegistry(CompressionCodecs.compressorRegistry())
                 .intercept(recorder)
                 .intercept(new TestAuthClientInterceptor(currentSession.getExpiration().token.toString()))
                 .build();
