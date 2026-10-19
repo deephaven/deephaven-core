@@ -13,6 +13,8 @@ import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.UpdateGraphConflictException;
@@ -25,6 +27,8 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.BooleanSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
+import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
+import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.InstantSparseArraySource;
 import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
@@ -1809,6 +1813,100 @@ public class QueryTableTest extends QueryTableTestBase {
         show(snapshot, 50);
         final Table expect3 = newTable(col("A", 11, 50), col("B", "A", "bc"), col("T", 8, 8));
         assertTableEquals(expect3, snapshot);
+    }
+
+    @Test
+    public void testSnapshotStaticBase() {
+        final Table source = newTable(intCol("A", 3, 1, 2), stringCol("B", "c", "a", "b"));
+        final AtomicInteger baseReads = new AtomicInteger();
+        final ColumnSource<Integer> countingSource =
+                new DelegatingColumnSource<>(int.class, null, source.getColumnSource("A", int.class)) {
+                    @Override
+                    public Chunk<? extends Values> getChunk(
+                            @NotNull final GetContext context,
+                            @NotNull final RowSequence rowSequence) {
+                        baseReads.incrementAndGet();
+                        return super.getChunk(context, rowSequence);
+                    }
+                };
+        final Map<String, ColumnSource<?>> baseColumns = new LinkedHashMap<>();
+        baseColumns.put("A", countingSource);
+        baseColumns.put("B", source.getColumnSource("B"));
+        final QueryTable base = new QueryTable(source.getRowSet().copy().toTracking(), baseColumns);
+
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+        final Table initial = base.snapshotWhen(trigger, Flag.INITIAL);
+        final Table deferred = base.snapshotWhen(trigger);
+        validateUpdates(initial);
+        validateUpdates(deferred);
+        assertTableEquals(source.updateView("T=1"), initial);
+        assertTableEquals(source.head(0).updateView("T=1"), deferred);
+        assertEquals(1, baseReads.get());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int tt = 2; tt <= 3; ++tt) {
+            final int stamp = tt;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(trigger, i(stamp), intCol("T", stamp));
+                trigger.notifyListeners(i(stamp), i(), i());
+            });
+            assertTableEquals(source.updateView("T=" + stamp), initial);
+            assertTableEquals(source.updateView("T=" + stamp), deferred);
+        }
+        assertEquals(2, baseReads.get());
+    }
+
+    @Test
+    public void testSnapshotLazyBase() {
+        final TestLazySnapshotTable lazy = TestLazySnapshotTable.create();
+        assertFalse(lazy.isRefreshing());
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+        final Table snapshot = lazy.snapshotWhen(trigger, Flag.INITIAL);
+        validateUpdates(snapshot);
+        assertTableEquals(newTable(intCol("V", 1, 10), intCol("T", 1, 1)), snapshot);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int tt = 2; tt <= 3; ++tt) {
+            final int stamp = tt;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(trigger, i(stamp), intCol("T", stamp));
+                trigger.notifyListeners(i(stamp), i(), i());
+            });
+            assertTableEquals(newTable(intCol("V", stamp, stamp * 10), intCol("T", stamp, stamp)), snapshot);
+        }
+    }
+
+    /**
+     * A table that does not refresh on the update cycle; each refresh for a snapshot sets its rows to the number of
+     * refreshes so far and ten times that number.
+     */
+    private static final class TestLazySnapshotTable extends QueryTable
+            implements LazySnapshotTable, LazySnapshotTableProvider {
+        private final IntegerArraySource values;
+        private int refreshes;
+
+        private TestLazySnapshotTable(final IntegerArraySource values) {
+            super(RowSetFactory.flat(2).toTracking(), Map.of("V", values));
+            this.values = values;
+        }
+
+        static TestLazySnapshotTable create() {
+            final IntegerArraySource values = new IntegerArraySource();
+            values.ensureCapacity(2);
+            return new TestLazySnapshotTable(values);
+        }
+
+        @Override
+        public void refreshForSnapshot() {
+            ++refreshes;
+            values.set(0, refreshes);
+            values.set(1, refreshes * 10);
+        }
+
+        @Override
+        public LazySnapshotTable getLazySnapshotTable() {
+            return this;
+        }
     }
 
     @Test

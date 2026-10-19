@@ -19,6 +19,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
     private final boolean lazySnapshot;
     private final Table snapshotTable;
     private long snapshotPrevLength;
+    private boolean dataCopied;
     private final QueryTable result;
     private final Map<String, SingleValueColumnSource<?>> resultTriggerColumns;
     private final Map<String, WritableColumnSource<?>> resultBaseColumns;
@@ -68,15 +69,20 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         }
         final TrackingRowSet currentRowSet = snapshotTable.getRowSet();
         final long snapshotSize;
-        try (final RowSet prevRowSet = usePrev ? currentRowSet.copyPrev() : null) {
-            final RowSet snapshotRowSet = prevRowSet != null ? prevRowSet : currentRowSet;
+        if (dataCopied && !lazySnapshot && !snapshotTable.isRefreshing()) {
+            // A static snapshot table never changes, so the data copied by the first snapshot remains current. A lazy
+            // snapshot table is not refreshing, but changes each time it is refreshed for a snapshot.
+            snapshotSize = currentRowSet.size();
+        } else {
+            final RowSet snapshotRowSet = usePrev ? currentRowSet.prev() : currentRowSet;
             snapshotSize = snapshotRowSet.size();
             if (!snapshotRowSet.isEmpty()) {
-                try (final RowSet destRowSet = RowSetFactory.fromRange(0, snapshotRowSet.size() - 1)) {
+                try (final RowSet destRowSet = RowSetFactory.fromRange(0, snapshotSize - 1)) {
                     SnapshotUtils.copyDataColumns(snapshotDataColumns,
                             snapshotRowSet, resultBaseColumns, destRowSet, usePrev);
                 }
             }
+            dataCopied = true;
         }
         if (snapshotPrevLength < snapshotSize) {
             resultRowSet.insertRange(snapshotPrevLength, snapshotSize - 1);
