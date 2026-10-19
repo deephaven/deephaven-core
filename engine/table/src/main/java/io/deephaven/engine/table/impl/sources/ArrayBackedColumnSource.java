@@ -194,7 +194,7 @@ public abstract class ArrayBackedColumnSource<T>
             @Nullable final Class<?> componentType) {
         final WritableColumnSource<T> result = getMemoryColumnSource(data.length, dataType, componentType);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, ObjectChunk.chunkWrap(data), range);
         }
         return result;
@@ -210,7 +210,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Byte> result = new ByteArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, ByteChunk.chunkWrap(data), range);
         }
         return result;
@@ -227,7 +227,7 @@ public abstract class ArrayBackedColumnSource<T>
         final WritableColumnSource<Byte> dest = (WritableColumnSource<Byte>) result.reinterpret(byte.class);
         result.ensureCapacity(data.length);
         try (final FillFromContext context = dest.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             dest.fillFromChunk(context, ByteChunk.chunkWrap(data), range);
         }
         return result;
@@ -243,7 +243,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Character> result = new CharacterArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, CharChunk.chunkWrap(data), range);
         }
         return result;
@@ -259,7 +259,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Double> result = new DoubleArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, DoubleChunk.chunkWrap(data), range);
         }
         return result;
@@ -275,7 +275,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Float> result = new FloatArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, FloatChunk.chunkWrap(data), range);
         }
         return result;
@@ -291,7 +291,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Integer> result = new IntegerArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, IntChunk.chunkWrap(data), range);
         }
         return result;
@@ -307,7 +307,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Long> result = new LongArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, LongChunk.chunkWrap(data), range);
         }
         return result;
@@ -341,7 +341,7 @@ public abstract class ArrayBackedColumnSource<T>
         result.ensureCapacity(data.length);
         final WritableColumnSource<Long> asLong = (WritableColumnSource<Long>) result.reinterpret(long.class);
         try (final FillFromContext context = asLong.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             asLong.fillFromChunk(context, LongChunk.chunkWrap(data), range);
         }
         return result;
@@ -357,7 +357,7 @@ public abstract class ArrayBackedColumnSource<T>
         final ArrayBackedColumnSource<Short> result = new ShortArraySource();
         result.ensureCapacity(data.length);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
-                final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
+                final RowSequence range = RowSequenceFactory.flat(data.length)) {
             result.fillFromChunk(context, ShortChunk.chunkWrap(data), range);
         }
         return result;

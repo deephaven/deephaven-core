@@ -28,7 +28,7 @@ One or more columns will be used as keys to match data between the left and righ
 The basic syntax for [`join`](../reference/table-operations/join/join.md), [`exact_join`](../reference/table-operations/join/exact-join.md), and [`natural_join`](../reference/table-operations/join/natural-join.md) is as follows:
 
 ```python syntax
-# Include all non-key columns
+# Include all right table columns except those sharing a name with a left match column
 result = left_table.join_method(table=right_table, on=["ColumnsToMatch"])
 
 # Include only some non-key columns (ColumnsToAdd)
@@ -42,7 +42,7 @@ Where `right_table` is the table to join with, and `on` and `joins` are the Stri
 The basic syntax for [`left_outer_join`](../reference/table-operations/join/left-outer-join.md) and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) are as follows:
 
 ```python syntax
-# Port all non-key columns
+# Port all right table columns except those sharing a name with a left match column
 result = outer_join_method(
     l_table=left_table, r_table=right_table, on=["ColumnsToMatch"]
 )
@@ -59,10 +59,10 @@ result = outer_join_method(
 > [!NOTE]
 > [`left_outer_join`](../reference/table-operations/join/left-outer-join.md) and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) are currently experimental. The API may change in the future.
 
-Outside of the left and right tables, exact and relational joins take up to two more arguments. The first is required, while the second is optional:
+Outside of the left and right tables, two arguments control how exact and relational joins match rows and which right table columns they add:
 
-- `on`: The key column(s) on which to look for exact matches. Columns of any data type can be used as key columns, but corresponding match columns in the left and right table _must_ be of the same data type.
-- `joins` (Optional): The column(s) in the right table to join to the left table. If not specified, all columns are joined.
+- `on`: The key column(s) on which to look for exact matches. Columns of any data type can be used as key columns (custom objects must implement consistent equality and hashCode), but corresponding match columns in the left and right table _must_ be of the same data type. [`exact_join`](../reference/table-operations/join/exact-join.md) and [`natural_join`](../reference/table-operations/join/natural-join.md) require `on`. [`join`](../reference/table-operations/join/join.md), [`left_outer_join`](../reference/table-operations/join/left-outer-join.md), and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) can omit it, in which case every left table row matches every right table row.
+- `joins` (Optional): The column(s) in the right table to join to the left table. If not specified, all right table columns are joined except those whose names match a left table column in `on`. A right table match column with a different name from its left table match column, such as `DeptID` in `"DeptNumber = DeptID"`, is joined.
 
 ### Match columns with different names
 
@@ -88,7 +88,7 @@ result = left_table.join_method(
 
 ### Rename joined columns
 
-Columns being joined from the right table that have the same name as existing columns in the left table will cause a name conflict error. To avoid this, the `joins` argument can be renamed as a column from the right table. The following example renames the right table's `OldColumnName` column to `NewColumnName`:
+Columns being joined from the right table that have the same name as existing columns in the left table will cause a name conflict error. To avoid this, the `joins` argument can rename a column from the right table. The following example renames the right table's `OldColumnName` column to `NewColumnName`:
 
 ```python syntax
 result = left_table.join_method(
@@ -246,7 +246,7 @@ result = left.join(table=right, on=["DeptID"])
 ```
 
 > [!TIP]
-> [`join`](../reference/table-operations/join/join.md) computes the cross product of the left and right tables and subsets the rows based on the arguments. This means it is slow relative to [`natural_join`](../reference/table-operations/join/natural-join.md), so [`natural_join`](../reference/table-operations/join/natural-join.md) should be preferred in most places.
+> [`join`](../reference/table-operations/join/join.md) produces a result row for every matching pair of left and right table rows and reserves space in each result row key for the matching right table rows. This makes it slow relative to [`natural_join`](../reference/table-operations/join/natural-join.md), so [`natural_join`](../reference/table-operations/join/natural-join.md) should be preferred in most places.
 
 ### `left_outer_join`
 

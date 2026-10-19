@@ -113,7 +113,7 @@ public abstract class RangeJoinMatch {
     public abstract ColumnName rightRangeColumn();
 
     /**
-     * The rule applied to {@link #leftStartColumn()} and {@link #rightRangeColumn()} to determine the end of the
+     * The rule applied to {@link #leftEndColumn()} and {@link #rightRangeColumn()} to determine the end of the
      * responsive range from the right table for a given left table row.
      * 
      * @return The range end rule

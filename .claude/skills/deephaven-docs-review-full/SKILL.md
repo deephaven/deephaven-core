@@ -48,6 +48,53 @@ The line is between *repairing* what the page has and *replacing* it:
 When a fix is targeted, don't defer it just because the example it touches has bigger problems
 too; make the repair, and put the bigger change in the report.
 
+**Audit and overhaul fixes are the explicit exception.** When the task is to fix a page from a
+docs audit (for example a DOC-1560 page issue) or to overhaul a page, the request covers the whole
+page, and the fix-not-rewrite limit above does not apply:
+
+- For audit-driven work, start from the complete list of recorded findings for the page (a standalone
+  overhaul of an unaudited page starts from the whole-page review instead). This skill can't read Jira, so
+  the caller supplies the list: the page issue's checklist plus any readability or "Found during"
+  comments and linked readability issues. If you weren't given it, ask for it before editing; a
+  fresh review is not a substitute, because it won't reproduce every recorded minor and readability
+  finding.
+- Apply every recorded finding, of every severity: wrong, misleading, hard to follow, minor, and
+  readability. Verify each finding first, as for any other claim: an audit can be stale or wrong,
+  so record a disproved finding as not a problem, with the source, rather than applying it. Don't fix one severity now and leave the rest for a later pass; a page that is
+  patched in one place and wrong two paragraphs down still sends readers the wrong way, and every
+  later reviewer re-finds the open items.
+- Restructure, replace an example, or rewrite a section where the findings cluster or the
+  section can't be made clear by patching. Keep every accurate fact. This skill doesn't run
+  examples: list each new or changed example as needing a snapshot run (`docs/updateSnapshots`), or
+  run it yourself if the caller's environment allows, and fix any failure.
+- Keep what is accurate. Full scope means fixing everything that is wrong, unclear, or badly
+  organized, not rewording everything. Leave correct sentences, simple lists, accurate bullets and
+  notes, needed vocabulary, correct code comments, and TODOs for work you didn't do as the author
+  wrote them. Every change should trace to a finding or a verified problem, so a reviewer can see
+  why it was made. Don't rename variables, tables, or headings, or reword a correct note into a
+  different form, unless a finding calls for it; in the report, give the reason for every change you
+  list.
+- Keep the terms readers search for. A word the API, its parameters, or its developers use (for
+  example "include" for the columns a join adds)
+  is how readers find the page and match it to the code. Define such a term where it first
+  appears rather than replacing it with a plainer synonym. A term the page itself defines (often in
+  italics) stays word for word, even when you correct its
+  definition.
+- Edit only the pages in scope. When a wrong claim lives on another page, in a reference page
+  that a different PR or ticket owns, or in source code such as a docstring, don't edit it there:
+  other work may be in flight on that page, and source changes need their own review. List it as
+  labeled follow-up work with the file, the wrong text, and the fix.
+- Treat the recorded findings as a floor, not the scope. The audit missed things; fix what you
+  find while working through the page, in the sibling language's page too unless the caller
+  limited the task to one language or file.
+- When the edits are done, review the finished page, not the diff: run the accuracy, structure,
+  examples, and style steps again over the whole page, fix what they find, and repeat until a round finds
+  nothing wrong, misleading, or hard to follow. Apply the minor and style findings from that last
+  round too, without starting another round. Then do one adversarial read, assuming problems
+  remain, before handing the page to a human or a bot reviewer.
+
+**Reviewing a PR or a set of pages: cover every page with every step.** Before telling anyone a PR is ready, list every doc page the PR changes with `git diff --name-status -M <base>...HEAD -- 'docs/*.md'`, which keeps only Markdown and drops images, scripts, YAML, snapshots, and `sidebar.json`, in both languages. Review the pages marked `A` or `M` and the new path of each rename (`R`). A page the PR deletes (`D`) and the old path of each rename cannot be reviewed as pages: give each its own row with a reason in place of step marks, such as inbound links to the old path and sidebar entries checked. Run the whole sequence below on each page (category identification, developmental pass, accuracy, structure, re-verify when edits were applied, examples, style), including configuration pages, reference pages, and pages the PR only touches lightly: a page that received only an accuracy pass is the one a human reviewer finds walls of text and unlinked operation names on. Put a page-by-step table at the top of the report with a Category column next to each page (its category from `ref-deephaven-doc-categories`, which the directory decides, so fill it in at once) and one column per remaining step. Mark a step cell with a check only once that step has run on that page; until then write `pending`, or a reason such as `not run` or `n/a`, so a missing pass is visible instead of assumed.
+
 ## 0. Identify the doc's category
 
 Read `ref-deephaven-doc-categories` and determine which of the four categories this doc is. Carry
@@ -88,7 +135,8 @@ matter regardless of structure), but report structure and style findings as patt
 or two examples each rather than line by line — line-level edits on text that's about to be
 reorganized are wasted effort for the author. In edit mode, the verdict doesn't license a
 rewrite: apply the targeted fixes and put the restructuring plan in the report (see **"Apply the
-fixes" means fix, not rewrite** above).
+fixes" means fix, not rewrite** above). Audit and overhaul fixes are the exception: restructure as
+**Audit and overhaul fixes are the explicit exception** above describes.
 
 This pass is report-only. It doesn't replace `deephaven-doc-structure-review`: that skill checks
 specific organizational patterns; this pass asks whether the page is doing the right job at all.
@@ -96,7 +144,7 @@ specific organizational patterns; this pass asks whether the page is doing the r
 ## 2. Accuracy
 
 Invoke `deephaven-core-accuracy-check` on the doc, starting from the core claims the
-developmental pass wrote down. Facts before reorganizing: there's no point building a clean
+developmental pass wrote down. Review the whole page, not the diff: unchanged sentences next to an edit are in scope, and the accuracy check builds a claim ledger so coverage is visible. Facts before reorganizing: there's no point building a clean
 structure around a wrong claim, and it's easier to verify claims against source while they're
 still in their original location and context. Per the report-by-default rule above, this step
 reports issues; only apply the fixes it finds if the user asked for edits. Claims the accuracy
@@ -118,7 +166,8 @@ this workflow's re-verify and style steps instead, so don't expect or trigger th
 here. In a report, this step may recommend moving, merging, cutting, reordering, or renaming sections.
 When applying fixes, make only the targeted structural fixes allowed under **"Apply the fixes" means
 fix, not rewrite** above (for example, delete a duplicate or move one paragraph), and report larger
-restructuring instead, unless the user asked for a rewrite. Either way, content verified in the accuracy
+restructuring instead, unless the user asked for a rewrite or the task is an audit or overhaul fix
+(see **Audit and overhaul fixes are the explicit exception** above). Either way, content verified in the accuracy
 step can change here, which is why the re-verify step exists.
 Note everywhere content was moved, merged, cut, reordered, renamed, **or reworded in place**
 (rewritten without changing location) — the re-verify step needs the complete list, since a rewrite that
@@ -190,6 +239,12 @@ report rather than assuming it works. Blocks marked `syntax` or `skip-test` are 
 - **Is every major concept shown, not just described?** Flag long conceptual stretches with no
   example, and concepts that would be clearer as a wrong-then-right pair (the unsafe query and its
   corrected form, with both outputs).
+- **Does the traced result teach the concept?** The accuracy check has already traced each
+  example's data through the code. Reuse those values and judge whether the output visibly shows
+  what the lead-in says it will, to this page's reader. Trace an example the accuracy check skipped.
+- **Do blocks that share a `test-set` agree on settings?** `docker-config` needs to appear on only one
+  block in a set; the other blocks inherit it (`docs/snapshotter/README.md`). Flag a block that names a
+  different `docker-config` from the rest of its set, which is an error, but not a block that omits it.
 - **Is it executable and tested?** A `syntax` or `skip-test` block where a runnable one would work
   isn't validated by the docs snapshotter; flag it unless the page has a reason.
 - **Is it readable in one view?** Short enough to follow, with realistic names, and with comments
@@ -235,6 +290,19 @@ section would get something wrong without it; otherwise cut it, or move it to wh
 belongs. A replacement sentence should be no longer or more qualified than it needs to be to be
 correct.
 
+Then run `deephaven-core-accuracy-spot-check` on every sentence the fix pass wrote or rewrote,
+before the change is pushed. The Accuracy step ran against the page as it was; a
+restructure that adds a summary table, a new intro sentence, or a reworded takeaway produces
+claims that step never saw. Those are the sentences most likely to overstate, because they
+compress several verified sentences into one: a table cell that turns a contract phrased as "never invoked
+concurrently with itself" into a resource the contract never names, or a Crash Course sentence
+that widens "shared mutable state" to any state at all. Treat the fix pass's own
+output as unreviewed content, list each new or changed sentence that makes a claim, and verify
+each against source. A review that finishes with "all findings applied" and no spot-check of the
+applied text is not finished. This check runs after **Style last**, and the spot-check skill skips
+its own style pass when this orchestrator invokes it, so if the spot-check changes any prose, run
+the style step's mechanical checks on those lines again before pushing.
+
 When the edits come from a set of review comments rather than from this review, triage
 them with `deephaven-docs-address-review-comments` first — it sorts each one into apply,
 redirect, decline, or ask before anything changes.
@@ -247,6 +315,11 @@ orphaned aside flagged harder because the doc is a Reference guide). If a cross-
 was pulled into scope by the accuracy step, report on both files.
 
 ```
+## Page coverage (only when reviewing a PR or a set of pages)
+The page-by-step table from "Reviewing a PR or a set of pages": one row per changed page, both
+languages, a Category column (the category name, filled in at once), one column per remaining step, a check only for a step that has run and `pending` or a stated reason otherwise. Place it above the
+editorial summary. Omit this section for a single page.
+
 ## Editorial summary
 2–4 sentences: overall assessment, the single biggest issue, and the developmental verdict
 (ready for technical review / needs revision / needs restructuring).
@@ -271,6 +344,13 @@ only for findings that aren't part of a pattern.
 ## Author queries
 Questions the review couldn't resolve from source — mostly technical claims that need an SME.
 Format: AQ1 [heading, para N or line N]: question
+
+## Coverage
+Factual or behavioral claims in prose, headings, lists, tables, captions, and code comments (the
+accuracy check's claim ledger): how many rows, how many were verified against source, and how many
+are author queries. Include the ledger table itself, one row per claim, so a reader can see which
+sentences were checked. A page with no ledger was not fully reviewed. In edit mode, report the ledger for the finished
+page: update it after the edits, so it drops removed claims and includes rewritten ones.
 
 ## Strengths
 1–3 specific things that work and should be kept, so a revision doesn't remove them.

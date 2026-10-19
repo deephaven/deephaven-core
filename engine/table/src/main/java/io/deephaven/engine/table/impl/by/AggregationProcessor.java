@@ -88,6 +88,7 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedUni
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator;
+import io.deephaven.engine.table.impl.by.staticpercentile.StaticPercentileOperator;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.IntegerSingleValueSource;
@@ -576,6 +577,16 @@ public class AggregationProcessor implements AggregationContextFactory {
                 }
             }
             addOperator(makeMinOrMaxOperator(type, resultName, isMin, isAddOnly || isBlink), inputSource, inputName);
+        }
+
+        final IterativeChunkedAggregationOperator makePercentileOperator(final Class<?> type, final String name,
+                final double percentile, final boolean averageEvenlyDivided) {
+            if (!table.isRefreshing()) {
+                return StaticPercentileOperator.make(type, compareConsistentWithEquality(type), percentile,
+                        averageEvenlyDivided, name);
+            }
+            return new SsmChunkedPercentileOperator(type, compareConsistentWithEquality(type), percentile,
+                    averageEvenlyDivided, name);
         }
 
         final void addFirstOrLastOperators(final boolean isFirst, final String exposeRedirectionAs) {
@@ -1115,8 +1126,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecMedian median) {
-            addBasicOperators((t, n) -> new SsmChunkedPercentileOperator(t, compareConsistentWithEquality(t), 0.50d,
-                    median.averageEvenlyDivided(), n));
+            addBasicOperators((t, n) -> makePercentileOperator(t, n, 0.50d, median.averageEvenlyDivided()));
         }
 
         @Override
@@ -1126,9 +1136,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecPercentile pct) {
-            addBasicOperators(
-                    (t, n) -> new SsmChunkedPercentileOperator(t, compareConsistentWithEquality(t), pct.percentile(),
-                            pct.averageEvenlyDivided(), n));
+            addBasicOperators((t, n) -> makePercentileOperator(t, n, pct.percentile(), pct.averageEvenlyDivided()));
         }
 
         @Override
