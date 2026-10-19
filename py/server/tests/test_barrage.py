@@ -108,6 +108,14 @@ class BarrageTestCase(BaseTestCase):
                 auth_type="Anonymous",
                 accept_compression="lz4",
             )
+        # an empty string is a name, not an empty list
+        with self.assertRaises(DHError):
+            barrage_session(
+                host="localhost",
+                port=10000,
+                auth_type="Anonymous",
+                accept_compression="",
+            )
 
     def test_with_compression(self):
         t = empty_table(10).update(
@@ -149,6 +157,9 @@ class BarrageTestCase(BaseTestCase):
         # one name cannot hold a list
         with self.assertRaises(DHError):
             t.with_compression("zstd,gzip")
+        # an empty string is a name, not an empty list
+        with self.assertRaises(DHError):
+            t.with_compression("")
         with self.assertRaises(DHError):
             t.with_compression(None)
         with self.assertRaises(DHError):

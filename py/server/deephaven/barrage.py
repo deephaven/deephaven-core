@@ -263,10 +263,13 @@ def _build_client_config(
         for header, value in extra_headers.items():
             j_client_config_builder.putExtraHeaders(header, value)
     if accept_compression is not None:
-        # to_sequence keeps a single string such as "zstd" as one element
-        j_client_config_builder.acceptCompression(
-            j_hashset(set(to_sequence(accept_compression)))
+        # a string is one name, even an empty one, which ClientConfig rejects; only an empty sequence accepts none
+        names = (
+            (accept_compression,)
+            if isinstance(accept_compression, str)
+            else to_sequence(accept_compression)
         )
+        j_client_config_builder.acceptCompression(j_hashset(set(names)))
     if tls_root_certs:
         j_ssl_config = (
             _JSSLConfig.builder()

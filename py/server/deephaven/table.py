@@ -153,7 +153,12 @@ def _j_with_compression(
         raise TypeError(
             "expected a compression type name or a sequence of them, not None"
         )
-    names = to_sequence(compression_types)
+    # a string is one name, even an empty one, which the Java method rejects; only an empty sequence means none
+    names = (
+        (compression_types,)
+        if isinstance(compression_types, str)
+        else to_sequence(compression_types)
+    )
     for name in names:
         if not isinstance(name, str):
             raise TypeError(
