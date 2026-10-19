@@ -39,6 +39,9 @@ import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.ScopeTicketHelper;
+import io.deephaven.qst.column.header.ColumnHeader;
+import io.deephaven.qst.column.header.ColumnHeaders3;
+import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.server.arrow.ArrowModule;
@@ -1803,8 +1806,19 @@ public abstract class FlightMessageRoundTripTest {
         return new ArrayList<>(recorder.encodings);
     }
 
+    private static final int COMPRESSION_TEST_ROWS = 50_000;
+    /**
+     * The rows {@link #putWithRequestCompression} uploads, in one DoPut message, which the test server accepts only up
+     * to 1 MiB after decompression.
+     */
+    private static final int COMPRESSION_UPLOAD_ROWS = 20_000;
+
     private static Table compressionTestTable(final String allowedCompression) {
-        final Table table = TableTools.emptyTable(50_000).update("I = i", "S = `sym` + (i % 32)", "D = i * 0.5");
+        return compressionTestTable(COMPRESSION_TEST_ROWS, allowedCompression);
+    }
+
+    private static Table compressionTestTable(final int rows, final String allowedCompression) {
+        final Table table = TableTools.emptyTable(rows).update("I = i", "S = `sym` + (i % 32)", "D = i * 0.5");
         return allowedCompression == null
                 ? table
                 : table.withAttributes(Map.of(Table.BARRAGE_COMPRESSION_ATTRIBUTE, allowedCompression));
@@ -1909,14 +1923,25 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     /**
-     * Uploads {@code table} with a DoPut from a client whose {@link ClientConfig#requestCompression()} is
-     * {@code compression}, and checks that the request messages were sent compressed and that the server rebuilt the
-     * table intact.
+     * The first {@code numRows} rows of {@link #compressionTestTable(int, String)}, built on the client.
      */
-    private void putWithRequestCompression(final Table table, final String compression) throws Exception {
-        final Flight.Ticket sourceTicket = FlightExportTicketHelper.exportIdToFlightTicket(nextTicket++);
-        currentSession.newExport(sourceTicket, "test").submit(() -> table);
+    private static NewTable compressionTestNewTable(final int numRows) {
+        final ColumnHeaders3<Integer, String, Double>.Rows rows = ColumnHeader.ofInt("I")
+                .header(ColumnHeader.ofString("S"))
+                .header(ColumnHeader.ofDouble("D"))
+                .start(numRows);
+        for (int ii = 0; ii < numRows; ++ii) {
+            rows.row(ii, "sym" + (ii % 32), ii * 0.5);
+        }
+        return rows.newTable();
+    }
 
+    /**
+     * Uploads {@value #COMPRESSION_UPLOAD_ROWS} rows, built on the client by {@link #compressionTestNewTable(int)},
+     * with a DoPut from a client whose {@link ClientConfig#requestCompression()} is {@code compression}, and checks
+     * that the request messages were sent compressed and that the table the server rebuilt equals {@code expected}.
+     */
+    private void putWithRequestCompression(final Table expected, final String compression) throws Exception {
         final RequestCompressionRecorder recorder = new RequestCompressionRecorder();
         final ClientConfig config = ClientConfig.builder()
                 .target(io.deephaven.uri.DeephavenTarget.of(java.net.URI.create("dh+plain://localhost:" + localPort)))
@@ -1927,18 +1952,10 @@ public abstract class FlightMessageRoundTripTest {
                 .intercept(new TestAuthClientInterceptor(currentSession.getExpiration().token.toString()))
                 .build();
         final int uploadTicket = nextTicket++;
-        try (final FlightClient putClient = FlightGrpcUtils.createFlightClientWithSharedChannel(allocator, channel);
-                final FlightStream source =
-                        flightClient.getStream(new Ticket(sourceTicket.getTicket().toByteArray()))) {
-            final FlightClient.ClientStreamListener putStream = putClient.startPut(
-                    FlightDescriptor.path("export", Integer.toString(uploadTicket)),
-                    source.getRoot(),
-                    new AsyncPutListener());
-            while (source.next()) {
-                putStream.putNext();
-            }
-            putStream.completed();
-            putStream.getResult();
+        try (final FlightClient putClient = FlightGrpcUtils.createFlightClientWithSharedChannel(allocator, channel)) {
+            // the Java client's own upload, as FlightSession.put sends it
+            FlightClientHelper.put(putClient, FlightDescriptor.path("export", Integer.toString(uploadTicket)),
+                    compressionTestNewTable(COMPRESSION_UPLOAD_ROWS), allocator);
         } finally {
             channel.shutdownNow();
             channel.awaitTermination(10, TimeUnit.SECONDS);
@@ -1954,12 +1971,12 @@ public abstract class FlightMessageRoundTripTest {
                 .onErrorHandler(error -> uploaded.completeExceptionally(error))
                 .require(export)
                 .submit(() -> uploaded.complete(export.get()));
-        io.deephaven.engine.testutil.TstUtils.assertTableEquals(table, uploaded.get(30, TimeUnit.SECONDS));
+        io.deephaven.engine.testutil.TstUtils.assertTableEquals(expected, uploaded.get(30, TimeUnit.SECONDS));
     }
 
     @Test
     public void testServerAcceptsCompressedRequests() throws Exception {
-        final Table table = compressionTestTable(null);
+        final Table table = compressionTestTable(COMPRESSION_UPLOAD_ROWS, null);
         for (final String compression : CompressionCodecs.SUPPORTED) {
             if (serverCompressionTypes().contains(compression)) {
                 putWithRequestCompression(table, compression);
