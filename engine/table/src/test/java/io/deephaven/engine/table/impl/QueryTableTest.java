@@ -43,6 +43,7 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.LongColumnSourceRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
@@ -2785,9 +2786,8 @@ public class QueryTableTest extends QueryTableTestBase {
         show(prevTable(snapshot));
         assertTableEquals(snapshot, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")));
 
-        final ListenerWithGlobals listener;
-        snapshot.addUpdateListener(listener = newListenerWithGlobals(snapshot));
-        listener.reset();
+        final SimpleListener listener = new SimpleListener(snapshot);
+        snapshot.addUpdateListener(listener);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -2808,9 +2808,9 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("B", "c", "aa", "a", "b", "bc"),
                 col("T", 5, 5, 5, 5, 5)));
         assertEquals(listener.getCount(), 1);
-        assertEquals(base.getRowSet(), added);
-        assertEquals(i(), modified);
-        assertEquals(i(), removed);
+        assertEquals(base.getRowSet(), listener.getUpdate().added());
+        assertEquals(i(), listener.getUpdate().modified());
+        assertEquals(i(), listener.getUpdate().removed());
         listener.reset();
 
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -2839,10 +2839,10 @@ public class QueryTableTest extends QueryTableTestBase {
                 col("B", "A", "bc", "Q"),
                 col("T", 8, 5, 8)));
         assertEquals(listener.getCount(), 1);
-        assertEquals(i(75), added);
-        assertEquals(i(25), modified);
-        assertEquals(i(10, 20, 30), removed);
-        listener.reset();
+        assertEquals(i(75), listener.getUpdate().added());
+        assertEquals(i(25), listener.getUpdate().modified());
+        assertEquals(i(10, 20, 30), listener.getUpdate().removed());
+        listener.close();
     }
 
     @Test
@@ -3304,14 +3304,15 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final QueryTable snapshot = (QueryTable) base.snapshotWhen(stampTable, Flag.INCREMENTAL);
 
-        final SimpleShiftObliviousListener simpleListener = new SimpleShiftObliviousListener(snapshot);
+        final SimpleListener simpleListener = new SimpleListener(snapshot);
         snapshot.addUpdateListener(simpleListener);
 
-        final CoalescingListener coalescingListener = new CoalescingListener(base);
-        base.addUpdateListener(coalescingListener, true);
+        final UpdateCoalescingListener coalescingListener = new UpdateCoalescingListener(base);
+        base.addUpdateListener(coalescingListener);
 
         Table lastSnapshot = snapshot.silent().select();
         RowSet lastRowSet = RowSetFactory.empty();
+        boolean firstSnapshot = true;
 
         try {
             for (int step = 0; step < 200; step++) {
@@ -3354,18 +3355,23 @@ public class QueryTableTest extends QueryTableTestBase {
 
                     assertTableEquals(base, snapshot.dropColumns("Stamp"));
 
-                    if (coalescingListener.getCount() > 0) {
-                        System.out.println("Snapshot Added: " + simpleListener.added);
-                        System.out.println("Snapshot Removed: " + simpleListener.removed);
-                        System.out.println("Snapshot Modified: " + simpleListener.modified);
-                        final RowSet coalAdded = coalescingListener.indexUpdateCoalescer.takeAdded();
-                        System.out.println("Right Coalesced Added: " + coalAdded);
-                        final RowSet coalRemoved = coalescingListener.indexUpdateCoalescer.takeRemoved();
-                        System.out.println("Right Coalesced Removed: " + coalRemoved);
-                        final RowSet coalModified = coalescingListener.indexUpdateCoalescer.takeModified();
-                        System.out.println("Right Coalesced Modified: " + coalModified);
+                    final TableUpdate baseUpdate = coalescingListener.take();
+                    if (firstSnapshot) {
+                        // the first snapshot copies the whole base
+                        assertEquals(1, simpleListener.getCount());
+                        assertEquals(base.getRowSet(), simpleListener.getUpdate().added());
+                        assertEquals(i(), simpleListener.getUpdate().removed());
+                        assertEquals(i(), simpleListener.getUpdate().modified());
+                        if (baseUpdate != null) {
+                            baseUpdate.release();
+                        }
+                        firstSnapshot = false;
+                    } else if (baseUpdate != null) {
+                        final TableUpdate snapshotUpdate = simpleListener.getUpdate();
+                        System.out.println("Snapshot Update: " + simpleListener);
+                        System.out.println("Right Coalesced Update: " + baseUpdate);
 
-                        final RowSet modified = simpleListener.added.union(simpleListener.modified);
+                        final RowSet modified = snapshotUpdate.added().union(snapshotUpdate.modified());
                         final RowSet unmodified = snapshot.getRowSet().minus(modified);
                         System.out.println("Modified: " + modified);
                         System.out.println("Unmodified: " + unmodified);
@@ -3391,9 +3397,11 @@ public class QueryTableTest extends QueryTableTestBase {
 
                         assertEquals(1, simpleListener.getCount());
 
-                        assertEquals(coalAdded, simpleListener.added);
-                        assertEquals(coalRemoved, simpleListener.removed);
-                        assertEquals(coalModified, simpleListener.modified);
+                        assertEquals(baseUpdate.added(), snapshotUpdate.added());
+                        assertEquals(baseUpdate.removed(), snapshotUpdate.removed());
+                        assertEquals(baseUpdate.modified(), snapshotUpdate.modified());
+                        assertEquals(baseUpdate.shifted(), snapshotUpdate.shifted());
+                        baseUpdate.release();
                     } else {
                         assertEquals(0, simpleListener.getCount());
                     }
@@ -3402,8 +3410,6 @@ public class QueryTableTest extends QueryTableTestBase {
                     lastSnapshot = new QueryTable(snapshot.getRowSet().copy().toTracking(),
                             snapshot.getColumnSourceMap());
                     lastRowSet = base.getRowSet().copy();
-                    // the coalescing listener can be reset
-                    coalescingListener.reset();
                     simpleListener.reset();
                 } else {
                     assertEquals(0, simpleListener.getCount());
@@ -3412,7 +3418,51 @@ public class QueryTableTest extends QueryTableTestBase {
                 }
             }
         } finally {
-            simpleListener.freeResources();
+            simpleListener.close();
+            coalescingListener.close();
+        }
+    }
+
+    /**
+     * Coalesces the updates of a table between calls to {@link #take()}.
+     */
+    private static final class UpdateCoalescingListener extends InstrumentedTableUpdateListenerAdapter {
+        private final Table source;
+        private UpdateCoalescer coalescer;
+
+        private UpdateCoalescingListener(final Table source) {
+            super(source, false);
+            this.source = source;
+        }
+
+        @Override
+        public void onUpdate(final TableUpdate upstream) {
+            if (coalescer == null) {
+                coalescer = new UpdateCoalescer(source.getRowSet().prev(), upstream);
+            } else {
+                coalescer.update(upstream);
+            }
+        }
+
+        /**
+         * @return the updates since the last call as one update, which the caller must release, or {@code null} if
+         *         there were none
+         */
+        TableUpdate take() {
+            if (coalescer == null) {
+                return null;
+            }
+            try (final UpdateCoalescer taken = coalescer) {
+                coalescer = null;
+                return taken.coalesce();
+            }
+        }
+
+        void close() {
+            if (coalescer != null) {
+                coalescer.close();
+                coalescer = null;
+            }
         }
     }
 
