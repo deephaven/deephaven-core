@@ -1,0 +1,1 @@
+{"file":"how-to-guides/data-import-export/csv-export.md","objects":{"live":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"int"}],"rows":[[{"value":"2026-10-19 12:21:09.000"},{"value":"0"}]]}}}}

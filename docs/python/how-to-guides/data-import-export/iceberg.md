@@ -2,9 +2,17 @@
 title: Iceberg and Deephaven
 ---
 
-[Apache Iceberg](https://iceberg.apache.org/) is a high-performance format for tabular data. Deephaven's Iceberg integration enables users to interact with Iceberg catalogs, namespaces, tables, and snapshots. This guide walks through reading from Iceberg with a single table and snapshot, then writes multiple Deephaven tables to the same Iceberg namespace. The examples presented this guide interact with a [REST catalog](https://iceberg.apache.org/rest-catalog-spec/).
+[Apache Iceberg](https://iceberg.apache.org/) is a high-performance format for tabular data. Deephaven's Iceberg integration enables users to interact with Iceberg catalogs, namespaces, tables, and snapshots. An Iceberg catalog keeps track of a set of Iceberg tables and groups them into namespaces, much as a database groups its tables into schemas. A snapshot is the state of an Iceberg table at one point in time. Each write to the table creates a new snapshot.
 
-The API enables you to interact with many types of catalogs. They include:
+This guide walks through the following tasks:
+
+- Connect to an Iceberg catalog.
+- Read an Iceberg table into Deephaven as a static table, as a refreshing table, or as of a specific snapshot.
+- Write Deephaven tables to new unpartitioned and partitioned Iceberg tables in the same namespace as the table this guide reads.
+
+The examples in this guide use a [REST catalog](https://iceberg.apache.org/rest-catalog-spec/).
+
+Deephaven's Iceberg integration works with many types of catalogs, including:
 
 - REST
 - AWS Glue
@@ -14,51 +22,33 @@ The API enables you to interact with many types of catalogs. They include:
 - Nessie
 
 > [!NOTE]
-> Some catalog types in the list above require adding dependencies to your classpath.
+> Hive and Nessie catalogs require adding their Iceberg catalog modules (`iceberg-hive-metastore` or `iceberg-nessie`) to your classpath, and a JDBC catalog requires a JDBC driver for its database.
 
 ## Deephaven's Iceberg module
 
-Deephaven's Iceberg integration is provided by the [`deephaven.experimental.iceberg`](/core/pydoc/code/deephaven.experimental.iceberg.html#module-deephaven.experimental.iceberg) module. The module contains the following classes and functions:
-
-- Classes:
-  - [`IcebergCatalogAdapter`](../../reference/iceberg/iceberg-catalog-adapter.md)
-  - [`IcebergReadInstructions`](../../reference/iceberg/iceberg-read-instructions.md)
-  - [`IcebergTable`](../../reference/iceberg/iceberg-table.md)
-  - [`IcebergTableAdapter`](../../reference/iceberg/iceberg-table-adapter.md)
-  - [`IcebergUpdateMode`](../../reference/iceberg/iceberg-update-mode.md)
-  - [`IcebergWriteInstructions`](../../reference/iceberg/iceberg-write-instructions.md)
-  - [`IcebergTableWriter`](../../reference/iceberg/iceberg-table-writer.md)
-  - [`InferenceResolver`](../../reference/iceberg/inference-resolver.md)
-  - [`SchemaProvider`](../../reference/iceberg/schema-provider.md)
-  - [`SortOrderProvider`](../../reference/iceberg/sort-order-provider.md)
-  - [`TableParquetWriterOptions`](../../reference/iceberg/table-parquet-writer-options.md)
-  - [`UnboundResolver`](../../reference/iceberg/unbound-resolver.md)
-- Methods:
-  - [`adapter`](../../reference/iceberg/adapter.md)
-  - [`adapter_aws_glue`](../../reference/iceberg/adapter-aws-glue.md)
-  - [`adapter_s3_rest`](../../reference/iceberg/adapter-s3-rest.md)
-
-When querying Iceberg tables located in any S3-compatible storage service, the [`deephaven.experimental.s3`](/core/pydoc/code/deephaven.experimental.s3.html#module-deephaven.experimental.s3) module must be used to read the data.
+The [`deephaven.experimental.iceberg`](/core/pydoc/code/deephaven.experimental.iceberg.html#module-deephaven.experimental.iceberg) module provides Deephaven's Iceberg integration. This guide introduces each Iceberg class and function when an example first uses it. [Related documentation](#related-documentation) links the reference page for each one.
 
 ## A Deephaven deployment for Iceberg
 
-The examples in this guide use the Docker deployment found in the [Deephaven example Iceberg REST catalog deployment](https://github.com/deephaven-examples/deephaven-iceberg-rest-catalog/). It includes a Deephaven server, Iceberg REST catalog, MinIO object store, and MinIO client. The repository's README contains a full description of the deployment.
+The examples in this guide use the Docker deployment found in the [Deephaven example Iceberg REST catalog deployment](https://github.com/deephaven-examples/deephaven-iceberg-rest-catalog/). It includes a Deephaven server, Iceberg REST catalog, MinIO object store, MinIO client, and an Apache Spark server that creates the sample Iceberg table and then shuts down. The repository's README contains a full description of the deployment.
 
 For this guide, you need only clone the repository, `cd` into the `Python` directory, and run `docker compose up`:
 
 ```bash
-git clone git@github.com:deephaven-examples/deephaven-iceberg-rest-catalog.git
+git clone https://github.com/deephaven-examples/deephaven-iceberg-rest-catalog.git
 cd deephaven-iceberg-rest-catalog/Python
 docker compose up
 ```
 
-The deployment automates the creation of an Iceberg catalog with a single table that is used in this guide.
+The deployment creates an Iceberg catalog with one table, `taxis`, in the `nyc` namespace. This guide reads that table.
+
+The deployment also uses [application mode](../application-mode.md) to define the connection variables that the examples use: `catalog_uri`, `aws_region`, `aws_access_key_id`, `aws_secret_access_key`, and `s3_endpoint`. Their values come from the deployment's environment variables, so `s3_endpoint` points to the deployment's MinIO server. If you use a different deployment, define these variables yourself before running the examples.
+
+After the deployment starts, open the Deephaven IDE at `http://localhost:10000/ide` to run the examples.
 
 ## Interact with the Iceberg catalog
 
-After creating the Iceberg catalog and table, head to the Deephaven IDE at `http://localhost:10000/ide`.
-
-To interact with an Iceberg catalog, you must first create an instance of the [`IcebergCatalogAdapter`](../../reference/iceberg/iceberg-catalog-adapter.md) class. Since this guide uses a REST catalog, the adapter can be created using the more generic [`adapter`](../../reference/iceberg/adapter.md) method:
+To interact with an Iceberg catalog, you must first create an instance of the [`IcebergCatalogAdapter`](../../reference/iceberg/iceberg-catalog-adapter.md) class. Create one with the [`adapter`](../../reference/iceberg/adapter.md) function, which takes the catalog's configuration properties:
 
 ```python docker-config=iceberg test-set=1 order=null
 from deephaven.experimental import iceberg
@@ -77,46 +67,41 @@ rest_adapter = iceberg.adapter(
 )
 ```
 
-If you are working with a REST catalog backed by S3 storage, you can use the more specific [`adapter_s3_rest`](../../reference/iceberg/adapter-s3-rest.md) method:
+The same function creates adapters for the other catalog types listed above. Set the `type` property to the catalog type, such as `"glue"` for an AWS Glue catalog, and supply the properties that catalog needs.
 
-```python docker-config=iceberg test-set=1 order=null
-from deephaven.experimental import iceberg
+> [!NOTE]
+> If your Iceberg tables are in S3-compatible storage, you can control S3 connectivity with [`S3Instructions`](/core/pydoc/code/deephaven.experimental.s3.html#deephaven.experimental.s3.S3Instructions) from the [`deephaven.experimental.s3`](/core/pydoc/code/deephaven.experimental.s3.html#module-deephaven.experimental.s3) module. You can pass them in three places:
+>
+> - When you create the adapter, pass them to the `s3_instructions` parameter of [`adapter`](../../reference/iceberg/adapter.md).
+> - When you read a table, pass them to the `data_instructions` parameter of the table adapter's [`table`](../../reference/iceberg/iceberg-table-adapter.md#methods) method.
+> - When you write a table, pass them to the `data_instructions` parameter of [`TableParquetWriterOptions`](../../reference/iceberg/table-parquet-writer-options.md).
+>
+> If you don't pass them, Deephaven derives the S3 settings from the catalog properties. The examples in this guide don't need them.
 
-rest_adapter = iceberg.adapter_s3_rest(
-    name="rustfs-iceberg",
-    catalog_uri=catalog_uri,
-    warehouse_location=warehouse_location,
-    region_name=aws_region,
-    access_key_id=aws_access_key_id,
-    secret_access_key=aws_secret_access_key,
-    end_point_override=s3_endpoint,
-)
-```
-
-Similarly, if you are working with an AWS Glue catalog, you can use the [`adapter_aws_glue`](../../reference/iceberg/adapter-aws-glue.md) method.
-
-Once an [`IcebergCatalogAdapter`](../../reference/iceberg/iceberg-catalog-adapter.md) has been created, it can query the namespaces and tables in a catalog. The following code block gets the available top-level namespaces and tables in the `nyc` namespace.
+The catalog adapter can query the namespaces and tables in a catalog. The following code block calls [`namespaces`](../../reference/iceberg/iceberg-catalog-adapter.md#methods) to get the top-level namespaces and [`tables`](../../reference/iceberg/iceberg-catalog-adapter.md#methods) to get the tables in the `nyc` namespace:
 
 ```python docker-config=iceberg test-set=1 order=namespaces,tables
 namespaces = rest_adapter.namespaces()
 tables = rest_adapter.tables(namespace="nyc")
 ```
 
+## Read Iceberg tables
+
 ### Load an Iceberg table into Deephaven
 
-At this point, you can load a table from the catalog with [`load_table`](../../reference/iceberg/iceberg-catalog-adapter.md#methods). This returns an [`IcebergTableAdapter`](../../reference/iceberg/iceberg-table-adapter.md) rather than a Deephaven table. The table adapter provides you with several methods to read from or write to the underlying Iceberg table.
+To load the `nyc.taxis` Iceberg table, call [`load_table`](../../reference/iceberg/iceberg-catalog-adapter.md#methods). Identify the table as `namespace.table`, here `nyc.taxis`. The method returns an [`IcebergTableAdapter`](../../reference/iceberg/iceberg-table-adapter.md) rather than a Deephaven table. The table adapter provides you with several methods to read from or write to the underlying Iceberg table.
 
 ```python docker-config=iceberg test-set=1 order=null
 iceberg_taxis = rest_adapter.load_table(table_identifier="nyc.taxis")
 ```
 
-Now that we have the table adapter and the instructions, we can read the table into a Deephaven table:
+Now that you have the table adapter, read the table into a Deephaven table with [`table`](../../reference/iceberg/iceberg-table-adapter.md#methods). The `update_mode` argument is optional and defaults to [`IcebergUpdateMode.static`](../../reference/iceberg/iceberg-update-mode.md#methods), which loads the table once without refreshing it. [Read a refreshing Iceberg table](#read-a-refreshing-iceberg-table) covers the other modes. The following code sets the static mode explicitly:
 
 ```python docker-config=iceberg test-set=1
 taxis = iceberg_taxis.table(update_mode=iceberg.IcebergUpdateMode.static())
 ```
 
-For greater control over the resultant Deephaven table and greater resilience to schema changes, use an [`UnboundResolver`](../../reference/iceberg/unbound-resolver.md) to map the Iceberg table schema to a Deephaven table definition. The following code shows how to do so using field IDs so that if the Iceberg schema changes, the mapping is still valid:
+For greater control over the resultant Deephaven table and greater resilience to schema changes, use an [`UnboundResolver`](../../reference/iceberg/unbound-resolver.md) to map the Iceberg table schema to a Deephaven table definition. The following code maps columns by field ID. Iceberg gives every column in a schema a numeric field ID that stays the same when the column is renamed, so the mapping still works after columns are renamed or reordered.
 
 ```python docker-config=iceberg test-set=1 order=taxis
 from deephaven import dtypes as dht
@@ -131,7 +116,7 @@ taxis_def = {
     "StoreAndFwdFlag": dht.string,
     "PickupLocationID": dht.int64,
     "DropoffLocationID": dht.int64,
-    "PaymentType": dht.long,
+    "PaymentType": dht.int64,
     "FareAmount": dht.double,
     "Extra": dht.double,
     "MtaTax": dht.double,
@@ -171,15 +156,78 @@ resolver_by_id = iceberg.UnboundResolver(
 
 iceberg_taxis = rest_adapter.load_table(
     table_identifier="nyc.taxis",
-    resolver=iceberg.UnboundResolver(taxis_def, column_instructions),
+    resolver=resolver_by_id,
 )
 
 taxis = iceberg_taxis.table(update_mode=iceberg.IcebergUpdateMode.static())
 ```
 
-### Write Deephaven tables to Iceberg
+In the `column_instructions` argument of [`UnboundResolver`](../../reference/iceberg/unbound-resolver.md), an `int` value maps a Deephaven column to an Iceberg schema field ID, and a `str` value maps it to a schema field name, such as `{"PickupTime": "tpep_pickup_datetime"}`.
 
-To write one or more Deephaven tables to Iceberg, first create the table(s) you want to write. This example uses two tables:
+Set the table definition and column names with the resolver when you call [`load_table`](../../reference/iceberg/iceberg-catalog-adapter.md#methods). The arguments to [`table`](../../reference/iceberg/iceberg-table-adapter.md#methods) don't change them.
+
+### Read a refreshing Iceberg table
+
+Deephaven can also read an Iceberg table as a live, refreshing table. When Deephaven loads a new snapshot of the Iceberg table, the Deephaven table updates, and so does every query built on it. The [`IcebergUpdateMode`](../../reference/iceberg/iceberg-update-mode.md) class has three update modes:
+
+- [`static`](../../reference/iceberg/iceberg-update-mode.md#methods): Deephaven loads the Iceberg table once and never refreshes it.
+- [`manual_refresh`](../../reference/iceberg/iceberg-update-mode.md#methods): Deephaven loads the table once and refreshes it only when you request a refresh.
+- [`auto_refresh`](../../reference/iceberg/iceberg-update-mode.md#methods): Deephaven loads the table once and refreshes it at a set interval, which defaults to once per minute.
+
+The examples above use static Iceberg tables. To refresh a manually refreshing table, call [`update`](../../reference/iceberg/iceberg-table.md#methods) on the [`IcebergTable`](../../reference/iceberg/iceberg-table.md) that [`table`](../../reference/iceberg/iceberg-table-adapter.md#methods) returns. Without an argument, `update` refreshes the table to the latest snapshot. To refresh to a specific snapshot instead, pass its ID. The snapshot must be newer than the one the table currently shows. [Read a specific snapshot](#read-a-specific-snapshot) shows how to list snapshot IDs, and [Refresh a table after a write](#refresh-a-table-after-a-write) shows a manual refresh picking up new data.
+
+To set a refresh interval other than one minute, pass it in milliseconds to the `auto_refresh_ms` argument of [`auto_refresh`](../../reference/iceberg/iceberg-update-mode.md#methods).
+
+The following code block reads the same Iceberg table in the other two modes:
+
+```python docker-config=iceberg test-set=1 ticking-table order=null
+# Manually refreshing
+taxis_manual = iceberg_taxis.table(
+    update_mode=iceberg.IcebergUpdateMode.manual_refresh()
+)
+
+# Automatically refreshing every minute
+taxis_auto_60s = iceberg_taxis.table(
+    update_mode=iceberg.IcebergUpdateMode.auto_refresh()
+)
+
+# Automatically refreshing every 30 seconds
+taxis_auto_30s = iceberg_taxis.table(
+    update_mode=iceberg.IcebergUpdateMode.auto_refresh(auto_refresh_ms=30000)
+)
+```
+
+### Read a specific snapshot
+
+By default, [`table`](../../reference/iceberg/iceberg-table-adapter.md#methods) reads the most recent snapshot. To read a specific snapshot instead, pass its ID to the `snapshot_id` parameter.
+
+The [`snapshots`](../../reference/iceberg/iceberg-table-adapter.md#methods) method lists the snapshots of an Iceberg table, with each snapshot's ID in the `Id` column and the operation that created it in the `Operation` column.
+
+The deployment empties the `taxis` table before loading data into it, so the table's first snapshot has no rows. The following code reads the table as of that first snapshot, so `taxis_at_snapshot` has the table's columns but no rows:
+
+```python docker-config=iceberg test-set=1 order=taxis_snapshots,taxis_at_snapshot
+from deephaven.numpy import to_numpy
+
+taxis_snapshots = iceberg_taxis.snapshots()
+
+first_snapshot_id = int(to_numpy(taxis_snapshots, cols=["Id"])[0][0])
+taxis_at_snapshot = iceberg_taxis.table(snapshot_id=first_snapshot_id)
+```
+
+## Write Deephaven tables to Iceberg
+
+Deephaven supports only appending data to Iceberg tables. Each append operation creates a new snapshot. A single [`append`](../../reference/iceberg/iceberg-table-writer.md#methods) call that writes multiple tables writes them all in the same snapshot.
+
+To write tables, you create an [`IcebergTableWriter`](../../reference/iceberg/iceberg-table-writer.md). A single writer can write any number of Deephaven tables, as long as each table has the writer's table definition without its partitioning columns:
+
+- For an unpartitioned Iceberg table, each table has the writer's whole table definition.
+- For a partitioned Iceberg table, each table leaves out the partitioning columns, and a partition path supplies their values. See [Partitioned Iceberg tables](#partitioned-iceberg-tables).
+
+Each writer belongs to the Iceberg table whose adapter created it. Creating the writer checks its table definition against the Iceberg table's schema, and writes made with it skip that check, so they are faster. Each write still checks that its tables match the writer's table definition and that its partition paths match the table's partitioning.
+
+Because most of the work happens when you create the writer, create one writer per Iceberg table and reuse it for every Deephaven table you append to that table.
+
+To write Deephaven tables to Iceberg, first create the tables you want to write. This example uses two tables:
 
 ```python docker-config=iceberg test-set=1 order=source_2024,source_2025
 from deephaven import empty_table
@@ -192,9 +240,7 @@ source_2025 = empty_table(50).update(
 )
 ```
 
-Writing multiple Deephaven tables to the same Iceberg table _requires_ that the tables have the same definition, regardless of whether or not the Iceberg table is partitioned.
-
-#### Unpartitioned Iceberg tables
+### Unpartitioned Iceberg tables
 
 When writing data to an unpartitioned Iceberg table, you need the Deephaven table definition:
 
@@ -202,17 +248,24 @@ When writing data to an unpartitioned Iceberg table, you need the Deephaven tabl
 source_def = source_2024.definition
 ```
 
-Then, create an [`IcebergTableAdapter`](../../reference/iceberg/iceberg-table-adapter.md) from a table definition and table identifier, which must include the Iceberg namespace (`nyc`):
+Then, create the Iceberg table with [`create_table`](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.IcebergCatalogAdapter.create_table), which returns an [`IcebergTableAdapter`](../../reference/iceberg/iceberg-table-adapter.md). It takes a table identifier of the form `namespace.table` and a table definition. This example creates the table in the `nyc` namespace, which `create_table` would create if it didn't exist.
+
+`create_table` fails if the table already exists. So that you can run this guide more than once, the following code first drops any existing `nyc.source` table. The Python module has no function for dropping a table, so the code calls the [`dropTable`](https://iceberg.apache.org/javadoc/latest/org/apache/iceberg/catalog/Catalog.html#dropTable(org.apache.iceberg.catalog.TableIdentifier,boolean)) method of the Java Iceberg catalog behind the adapter. Its second argument, `True`, also deletes the table's data files. If the table doesn't exist, `dropTable` returns `False` instead of failing.
 
 ```python docker-config=iceberg test-set=1 order=null
+import jpy
+
+TableIdentifier = jpy.get_type("org.apache.iceberg.catalog.TableIdentifier")
+
+# Drop nyc.source if it exists, so that this example can run more than once
+rest_adapter.j_object.catalog().dropTable(TableIdentifier.parse("nyc.source"), True)
+
 source_adapter = rest_adapter.create_table(
     table_identifier="nyc.source", table_definition=source_def
 )
 ```
 
-To write the table to Iceberg, you need to create an [`IcebergTableWriter`](../../reference/iceberg/iceberg-table-writer.md). A single writer instance with a fixed table definition can write as many Deephaven tables as desired, given that all tables have the same definition as provided to the writer. Most of the heavy lifting is done when the writer is created, so it's more efficient to create a writer once and write many tables than to create a writer for each table.
-
-To create a writer instance, you'll need to define the [`TableParquetWriterOptions`](../../reference/iceberg/table-parquet-writer-options.md) to configure the writer:
+To create a writer, first define the [`TableParquetWriterOptions`](../../reference/iceberg/table-parquet-writer-options.md) that configure it, then pass them to [`table_writer`](../../reference/iceberg/iceberg-table-adapter.md#methods):
 
 ```python docker-config=iceberg test-set=1 order=null
 from deephaven.experimental import iceberg
@@ -224,15 +277,19 @@ writer_options = iceberg.TableParquetWriterOptions(table_definition=source_def)
 source_writer = source_adapter.table_writer(writer_options=writer_options)
 ```
 
-Now you can write the data to Iceberg. The following code block writes the `source_2024` and `source_2025` tables to the `nyc.source` table:
+Now you can write the data to Iceberg. The following code block wraps the `source_2024` and `source_2025` tables in [`IcebergWriteInstructions`](../../reference/iceberg/iceberg-write-instructions.md) and passes the instructions to [`append`](../../reference/iceberg/iceberg-table-writer.md#methods), which writes the tables to the `nyc.source` table:
 
 ```python docker-config=iceberg test-set=1 order=null
 source_writer.append(iceberg.IcebergWriteInstructions([source_2024, source_2025]))
 ```
 
-#### Partitioned Iceberg tables
+### Partitioned Iceberg tables
 
-To write data to a partitioned Iceberg table, you must specify one or more partitioning columns with [`deephaven.column`](/core/pydoc/code/deephaven.column.html#module-deephaven.column):
+To write data to a partitioned Iceberg table, you must build the table definition yourself and mark one or more columns as partitioning columns. Create each column with [`col_def`](/core/pydoc/code/deephaven.column.html#deephaven.column.col_def), and set the `column_type` parameter to [`ColumnType.PARTITIONING`](/core/pydoc/code/deephaven.column.html#deephaven.column.ColumnType) for each partitioning column.
+
+Deephaven can write only to partitioned Iceberg tables whose partition values are plain column values (identity partitioning), with partitioning columns of type boolean, int, long, float, double, `String`, or `LocalDate`. For example, it can't append to `nyc.taxis`, which is partitioned by the day of `tpep_pickup_datetime`. Tables you create with [`create_table`](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.IcebergCatalogAdapter.create_table) always use identity partitioning.
+
+The following code defines a table with the partitioning column `Year`:
 
 ```python docker-config=iceberg test-set=1 order=null
 from deephaven.column import col_def, ColumnType
@@ -246,17 +303,20 @@ source_def_partitioned = [
 ]
 ```
 
-Then, create an [`IcebergTableAdapter`](../../reference/iceberg/iceberg-table-adapter.md) from a table definition and table identifier, which must include the Iceberg namespace:
+Then, create the partitioned Iceberg table with [`create_table`](/core/pydoc/code/deephaven.experimental.iceberg.html#deephaven.experimental.iceberg.IcebergCatalogAdapter.create_table), which returns an [`IcebergTableAdapter`](../../reference/iceberg/iceberg-table-adapter.md). As before, the code first drops any existing table with the same identifier:
 
 ```python docker-config=iceberg test-set=1 order=null
+# Drop nyc.source_partitioned if it exists, so that this example can run more than once
+rest_adapter.j_object.catalog().dropTable(
+    TableIdentifier.parse("nyc.source_partitioned"), True
+)
+
 source_adapter_partitioned = rest_adapter.create_table(
     table_identifier="nyc.source_partitioned", table_definition=source_def_partitioned
 )
 ```
 
-To write the table to Iceberg, you'll need to create an [`IcebergTableWriter`](../../reference/iceberg/iceberg-table-writer.md). A single writer instance with a fixed table definition can write as many Deephaven tables as desired if they all have the same definition as provided to the writer. Most of the heavy lifting is done when the writer is created, so it's more efficient to create a writer once and write many tables than to create a writer for each table.
-
-To create a writer instance, you'll need to define the [`TableParquetWriterOptions`](../../reference/iceberg/table-parquet-writer-options.md) to configure the writer:
+As with unpartitioned tables, create a writer with [`TableParquetWriterOptions`](../../reference/iceberg/table-parquet-writer-options.md):
 
 ```python docker-config=iceberg test-set=1 order=null
 from deephaven.experimental import iceberg
@@ -272,7 +332,9 @@ source_writer_partitioned = source_adapter_partitioned.table_writer(
 )
 ```
 
-Now you can write the data to Iceberg. The following code block writes the `source_2024` and `source_2025` tables to the `nyc.source_partitioned` table. The partition paths are specified in the [`IcebergWriteInstructions`](../../reference/iceberg/iceberg-write-instructions.md):
+Now you can write the data to Iceberg. The `partition_paths` argument of [`IcebergWriteInstructions`](../../reference/iceberg/iceberg-write-instructions.md) takes one partition path per table, in the same order as the tables. A partition path names the partition that a table's rows go to, written as `column=value`, with pairs separated by `/` when the table has more than one partitioning column. In this example, `Year=2024` sends the rows of `source_2024` to the 2024 partition.
+
+Drop the partitioning column from each table before writing, because the partition path supplies its value. The following code block uses [`drop_columns`](../../reference/table-operations/select/drop-columns.md) to remove the `Year` column from the `source_2024` and `source_2025` tables and writes them to the `nyc.source_partitioned` table:
 
 ```python docker-config=iceberg test-set=1 order=null
 source_writer_partitioned.append(
@@ -283,82 +345,53 @@ source_writer_partitioned.append(
 )
 ```
 
-> [!NOTE]
-> The partitioning column(s) cannot be written to Iceberg, as they are already specified in the partition path. The above example drops them from the Deephaven tables before writing.
+### Check the write operations
 
-#### Check the write operations
-
-Deephaven currently only supports appending data to Iceberg tables. Each append operation creates a new snapshot. When multiple tables are written in a single `append` call, all tables are written in the same snapshot.
-
-Similarly, you can also write to a partitioned Iceberg table by providing the exact partition path where each Deephaven table should be appended. See [`IcebergWriteInstructions`](../../reference/iceberg/iceberg-write-instructions.md) for more information.
-
-Check that the operations worked by reading the Iceberg tables back into Deephaven using the same table adapter:
+Check that the writes worked by reading each Iceberg table back into Deephaven with the table adapter that created it:
 
 ```python docker-config=iceberg test-set=1 order=source_from_iceberg,source_from_iceberg_partitioned
 source_from_iceberg = source_adapter.table()
 source_from_iceberg_partitioned = source_adapter_partitioned.table()
 ```
 
-### Custom Iceberg instructions
+### Refresh a table after a write
 
-You can specify custom instructions when creating an [`IcebergReadInstructions`](../../reference/iceberg/iceberg-read-instructions.md) instance. Each subsection below covers a different custom instruction that can be passed in when reading Iceberg tables.
+Now that `nyc.source` has data, let's watch a manually refreshing table pick up a new snapshot. The following code block reads `nyc.source` in manual refresh mode and saves a static copy of it with [`snapshot`](../../reference/table-operations/snapshot/snapshot.md). It then appends `source_2025` to `nyc.source` a second time, which creates a new snapshot, and calls [`update`](../../reference/iceberg/iceberg-table.md#methods) to refresh `source_manual` to that snapshot. `source_manual_before` keeps the original 150 rows, while `source_manual` updates to 200 rows:
 
-`IcebergReadInstructions` does not set the table definition or column names. To control either, pass an [`UnboundResolver`](../../reference/iceberg/unbound-resolver.md) to `load_table`, as shown in [Load an Iceberg table into Deephaven](#load-an-iceberg-table-into-deephaven). In the `column_instructions` argument of `UnboundResolver`, an `int` value maps a Deephaven column to an Iceberg schema field ID, and a `str` value maps it to a schema field name, such as `{"PickupTime": "tpep_pickup_datetime"}`.
-
-#### Refreshing Iceberg tables
-
-Deephaven also supports refreshing Iceberg tables. The [`IcebergUpdateMode`](../../reference/iceberg/iceberg-update-mode.md) class specifies three different supported update modes:
-
-- Static
-- Refreshed manually
-- Refreshed automatically
-
-This guide already looked at static Iceberg tables. For Iceberg tables that can be refreshed manually and automatically, the following code block creates an instance of each mode:
-
-```python skip-test
-manual_refresh_mode = iceberg.IcebergUpdateMode.manual_refresh()
-auto_refresh_mode_60s = iceberg.IcebergUpdateMode.auto_refresh()
-auto_refresh_mode_30s = iceberg.IcebergUpdateMode.auto_refresh(auto_refresh_ms=30000)
-
-# Manually refreshing
-manual_refresh_instructions = iceberg.IcebergReadInstructions(
-    update_mode=manual_refresh_mode
+```python docker-config=iceberg test-set=1 ticking-table order=source_manual_before,source_manual
+source_manual = source_adapter.table(
+    update_mode=iceberg.IcebergUpdateMode.manual_refresh()
 )
 
-# Automatically refreshing every minute
-auto_refresh_instructions_60s = iceberg.IcebergReadInstructions(
-    update_mode=auto_refresh_mode_60s
-)
+# Save a static copy of the table as it is now
+source_manual_before = source_manual.snapshot()
 
-# Automatically refreshing every 30 seconds
-auto_refresh_instructions_30s = iceberg.IcebergReadInstructions(
-    update_mode=auto_refresh_mode_30s
-)
+# Append source_2025 again, which creates a new snapshot of nyc.source
+source_writer.append(iceberg.IcebergWriteInstructions([source_2025]))
+
+# Refresh source_manual to the new snapshot
+source_manual.update()
 ```
 
-#### Snapshot ID
-
-You can tell Deephaven to read a specific snapshot of an Iceberg table based on its snapshot ID:
-
-```python order=null
-from deephaven.experimental import iceberg
-
-snapshot_instructions = iceberg.IcebergReadInstructions(snapshot_id=6738371110677246500)
-```
+Any query you build on `source_manual` updates along with it. With [`auto_refresh`](../../reference/iceberg/iceberg-update-mode.md#methods), Deephaven checks for new snapshots on its own, so your queries keep up with the Iceberg table as other systems write to it.
 
 ## Next steps
 
-This guide presented a basic example of interacting with an Iceberg catalog in Deephaven. These examples can be extended to include more complex queries, catalogs with multiple namespaces, snapshots, custom instructions, and more.
+This guide connected Deephaven to an Iceberg catalog, read an Iceberg table as a static table, a refreshing table, and a past snapshot, and appended Deephaven tables to new Iceberg tables. From here, try the examples against your own catalog, or build real-time queries on refreshing Iceberg tables. The reference pages below cover every option.
 
 ## Related documentation
 
-- [`adapter_aws_glue`](../../reference/iceberg/adapter-aws-glue.md)
-- [`adapter_s3_rest`](../../reference/iceberg/adapter-s3-rest.md)
+- [`adapter`](../../reference/iceberg/adapter.md)
 - [`IcebergCatalogAdapter`](../../reference/iceberg/iceberg-catalog-adapter.md)
-- [`IcebergReadInstructions`](../../reference/iceberg/iceberg-read-instructions.md)
 - [`IcebergTable`](../../reference/iceberg/iceberg-table.md)
 - [`IcebergTableAdapter`](../../reference/iceberg/iceberg-table-adapter.md)
 - [`IcebergTableWriter`](../../reference/iceberg/iceberg-table-writer.md)
 - [`IcebergUpdateMode`](../../reference/iceberg/iceberg-update-mode.md)
+- [`IcebergWriteInstructions`](../../reference/iceberg/iceberg-write-instructions.md)
+- [`InferenceResolver`](../../reference/iceberg/inference-resolver.md)
+- [`SchemaProvider`](../../reference/iceberg/schema-provider.md)
+- [`SortOrderProvider`](../../reference/iceberg/sort-order-provider.md)
+- [`TableParquetWriterOptions`](../../reference/iceberg/table-parquet-writer-options.md)
+- [`UnboundResolver`](../../reference/iceberg/unbound-resolver.md)
 - [Iceberg Pydoc](/core/pydoc/code/deephaven.experimental.iceberg.html)
-- [s3 Pydoc](/core/pydoc/code/deephaven.experimental.s3.html)
+- [S3 Pydoc](/core/pydoc/code/deephaven.experimental.s3.html)

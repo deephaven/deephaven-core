@@ -2,148 +2,158 @@
 title: Arrow Flight and Deephaven
 ---
 
-[Apache Arrow](https://arrow.apache.org/) is a high-performance language-independent columnar memory format for flat and nested data. Deephaven's Arrow Flight integration enables users to import and export data via native remote Flight clients over gRPC.
+[Apache Arrow](https://arrow.apache.org/) is a high-performance, language-independent columnar memory format for flat and nested data. Deephaven's [Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) integration lets you import and export data with remote Flight clients over gRPC. Deephaven's [Barrage](../../conceptual/what-is-barrage.md) protocol extends Flight, so Flight clients can also subscribe to ticking tables and receive only what changes each cycle.
 
-## Unsupported Types / Features
+This guide shows how Arrow types map to Deephaven column types, how to choose the Arrow types a table uses on the network (its _wire types_) when you import or export it, and how to register your own type mappings.
 
-- Maps have very limited support as Deephaven Column Sources cannot keep track of key or value types.
-- No support for large types such as LargeUtf8, LargeBinary, LargeList, and LargeListView (requires simulating 64-bit arrays).
-- No support for structs.
-- No support for Utf8View or BinaryView.
+## Arrow type support matrix
 
-## Arrow Type Support Matrix
+Deephaven supports a wide range of Arrow types. The following table lists each supported Arrow type, the Deephaven type it maps to by default, and its supported coercions. A coercion is a non-default Deephaven type that Deephaven can convert the Arrow type to on import, and convert back to the Arrow type on export. You request one on import with the [`deephaven:type`](#import) metadata tag, and on export by [attaching a Flight schema to the table](#export).
 
-Deephaven supports a wide range of Arrow types. The following table summarizes the supported Arrow types and their corresponding Deephaven types. The table also includes notes on coercions and other relevant information.
+| Arrow Type                            | Default Deephaven Type                                                                | Supported Coercions                                                                                                         | Notes                                                                                                                                                                                                                                                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Bool`                                | `Boolean`                                                                             | `byte`, `boolean`                                                                                                           | Deephaven uses boxed `Boolean` so that cells can hold nulls. A non-nullable field with no [`deephaven:type`](#import) tag defaults to primitive `boolean`, as does the component type of a non-nullable list element. On import, a `deephaven:type` of `boolean` still produces a `Boolean` column. |
+| `Int(8, signed)`                      | `byte`                                                                                | `char`, `short`, `int`, `long`, `float`, `double`, `BigInteger`, `BigDecimal`                                               | See notes on [integral coercion](#integral-coercion).                                                                                                                                                                                                                                               |
+| `Int(8, unsigned)`                    | `short`                                                                               | `byte`, `char`, `int`, `long`, `float`, `double`, `BigInteger`, `BigDecimal`                                                | See notes on [integral coercion](#integral-coercion).                                                                                                                                                                                                                                               |
+| `Int(16, signed)`                     | `short`                                                                               | `byte`, `char`, `int`, `long`, `float`, `double`, `BigInteger`, `BigDecimal`                                                | See notes on [integral coercion](#integral-coercion).                                                                                                                                                                                                                                               |
+| `Int(16, unsigned)`                   | `char`                                                                                | `byte`, `short`, `int`, `long`, `float`, `double`, `BigInteger`, `BigDecimal`                                               | See notes on [integral coercion](#integral-coercion).                                                                                                                                                                                                                                               |
+| `Int(32, signed)`                     | `int`                                                                                 | `byte`, `char`, `short`, `long`, `float`, `double`, `BigInteger`, `BigDecimal`                                              | See notes on [integral coercion](#integral-coercion).                                                                                                                                                                                                                                               |
+| `Int(32, unsigned)`                   | `long`                                                                                | `byte`, `char`, `short`, `int`, `float`, `double`, `BigInteger`, `BigDecimal`                                               | See notes on [integral coercion](#integral-coercion).                                                                                                                                                                                                                                               |
+| `Int(64, signed)`                     | `long`                                                                                | `byte`, `char`, `short`, `int`, `float`, `double`, `BigInteger`, `BigDecimal`                                               | See notes on [integral coercion](#integral-coercion).                                                                                                                                                                                                                                               |
+| `Int(64, unsigned)`                   | `BigInteger`                                                                          | `byte`, `char`, `short`, `int`, `long`, `float`, `double`, `BigDecimal`                                                     | See notes on [integral coercion](#integral-coercion).                                                                                                                                                                                                                                               |
+| `Decimal`                             | `BigDecimal`                                                                          | `byte`, `char`, `short`, `int`, `long`, `float`, `double`, `BigInteger`                                                     | See notes on [decimal coercion](#decimal-coercion).                                                                                                                                                                                                                                                 |
+| `FloatingPoint(precision)`            | `float` (for `HALF`/`SINGLE`) or `double` (for `DOUBLE`)                              | `byte`, `char`, `short`, `int`, `long`, `BigDecimal`, `BigInteger`, and whichever of `float` or `double` is not the default | See notes on [decimal coercion](#decimal-coercion).                                                                                                                                                                                                                                                 |
+| `Time(timeUnit, bitWidth)`            | `LocalTime`                                                                           | —                                                                                                                           | Time-of-day values. The bit width, 32 or 64, depends on the time unit.                                                                                                                                                                                                                              |
+| `Timestamp(timeUnit, [timeZone])`     | `Instant`, or `ZonedDateTime` when the field has a non-UTC time zone                  | `long`, `LocalDateTime`, and whichever of `Instant` or `ZonedDateTime` is not the default                                   | Deephaven reads a `long` column mapped to `Timestamp` as nanoseconds and converts each value to the field's `TimeUnit` on the wire.                                                                                                                                                                 |
+| `Date(dateUnit)`                      | `LocalDate`                                                                           | —                                                                                                                           |                                                                                                                                                                                                                                                                                                     |
+| `Duration(timeUnit)`                  | `Duration`                                                                            | —                                                                                                                           |                                                                                                                                                                                                                                                                                                     |
+| `Interval(intervalUnit)`              | `Period` (`YEAR_MONTH`), `Duration` (`DAY_TIME`), `PeriodDuration` (`MONTH_DAY_NANO`) | `Period` (any unit), `PeriodDuration` (any unit), `Duration` (`DAY_TIME` only)                                              | `PeriodDuration` is Arrow Java's class. Deephaven uses it to match the Arrow Java implementation.                                                                                                                                                                                                   |
+| `Utf8`                                | `String`                                                                              | —                                                                                                                           | Text encoded as UTF-8.                                                                                                                                                                                                                                                                              |
+| `Binary`                              | `byte[]`                                                                              | `ByteVector`, `ByteBuffer`, `String`                                                                                        | [Custom mappings](#custom-mappings) are supported. Deephaven has custom encodings for `BigDecimal`, `BigInteger`, and Arrow Java's `Schema` object.                                                                                                                                                 |
+| `FixedSizeBinary(fixedLength)`        | `byte[]`                                                                              | `ByteVector`, `ByteBuffer`                                                                                                  | [Custom mappings](#custom-mappings) are supported.                                                                                                                                                                                                                                                  |
+| `SparseUnion`/`DenseUnion`            | `Object`                                                                              | —                                                                                                                           | Union types (dense or sparse) map to a generic `Object` column type.                                                                                                                                                                                                                                |
+| `Null`                                | `Object`                                                                              | —                                                                                                                           | Best when coupled with a `Union` or when [specifying the Deephaven type to use](#import).                                                                                                                                                                                                           |
+| `Map`                                 | `Map`                                                                                 | —                                                                                                                           | Deephaven collects each cell into a `LinkedHashMap`. You can't choose a different collector. A Deephaven column doesn't record the key or value types of its maps, so Deephaven exports a `Map` column as strings unless you [attach a Flight schema for the export](#export).                      |
+| `List` / `ListView` / `FixedSizeList` | `T[]` — a native Java array of the inner field's default type                         | Other array types, such as `int[]`, and `Vector` types, such as `LongVector` and `ObjectVector`                             | Deephaven truncates or null-pads each value to fit a fixed-size list wire format. To choose the array or vector type on import, see [Import](#import).                                                                                                                                              |
+| `RunEndEncoded`                       | Default type of the values child                                                      | —                                                                                                                           | The column type comes from the values child; the `run_ends` child is only an index.                                                                                                                                                                                                                 |
+| Dictionary-encoded fields             | Default type of the dictionary value type                                             | —                                                                                                                           | Applies to any field that carries a `DictionaryEncoding`.                                                                                                                                                                                                                                           |
 
-| Arrow Type                            | Default Deephaven Type                                                          | Supported Coercions                                                            | Notes                                                                                                                                                                                        |
-| ------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Bool`                                | `Boolean`                                                                       | `byte`, `boolean`                                                              | Primitive `boolean` is typically automatically boxed to allow for nulls, but may be targeted for array types.                                                                                |
-| `Int(8, signed)`                      | `byte`                                                                          | `char`, `short`, `int`, `long`, `float`, `double`, `BigInteger`, `BigDecimal`  | See notes on [integral coercion](#integral-coercion).                                                                                                                                        |
-| `Int(8, unsigned)`                    | `short`                                                                         | `byte`, `char`, `int`, `long`, `float`, `double`, `BigInteger`, `BigDecimal`   | See notes on [integral coercion](#integral-coercion).                                                                                                                                        |
-| `Int(16, signed)`                     | `short`                                                                         | `byte`, `char`, `int`, `long`, `float`, `double`, `BigInteger`, `BigDecimal`   | See notes on [integral coercion](#integral-coercion).                                                                                                                                        |
-| `Int(16, unsigned)`                   | `char`                                                                          | `byte`, `short`, `int`, `long`, `float`, `double`, `BigInteger`, `BigDecimal`  | See notes on [integral coercion](#integral-coercion).                                                                                                                                        |
-| `Int(32, signed)`                     | `int`                                                                           | `byte`, `char`, `short`, `long`, `float`, `double`, `BigInteger`, `BigDecimal` | See notes on [integral coercion](#integral-coercion).                                                                                                                                        |
-| `Int(32, unsigned)`                   | `long`                                                                          | `byte`, `char`, `short`, `int`, `float`, `double`, `BigInteger`, `BigDecimal`  | See notes on [integral coercion](#integral-coercion).                                                                                                                                        |
-| `Int(64, signed)`                     | `long`                                                                          | `byte`, `char`, `short`, `int`, `float`, `double`, `BigInteger`, `BigDecimal`  | See notes on [integral coercion](#integral-coercion).                                                                                                                                        |
-| `Int(64, unsigned)`                   | `BigInteger`                                                                    | `byte`, `char`, `short`, `int`, `long`, `float`, `double`, `BigDecimal`        | See notes on [integral coercion](#integral-coercion).                                                                                                                                        |
-| `Decimal`                             | `BigDecimal`                                                                    | `byte`, `char`, `short`, `int`, `long`, `float`, `double`, `BigInteger`        | See notes on [decimal coercion](#decimal-coercion).                                                                                                                                          |
-| `FloatingPoint(precision)`            | `float` (for HALF/SINGLE) or `double` (for DOUBLE)                              | `byte`, `char`, `short`, `int`, `long`, `BigDecimal`, `BigInteger`             | See notes on [decimal coercion](#decimal-coercion).                                                                                                                                          |
-| `Time(timeUnit, bitWidth)`            | `LocalTime`                                                                     | —                                                                              | Time-of-day values; bit width (32 or 64) depends on the time unit.                                                                                                                           |
-| `Timestamp(timeUnit, [timeZone])`     | `Instant` (or `ZonedDateTime` if non-UTC timezone provided)                     | `long`, `LocalDateTime`                                                        | It is assumed that the unit of a `long` column, being treated as a `Timestamp`, is in nanoseconds. On the wire, this value is adjusted to match the field's TimeUnit.                        |
-| `Date(dateUnit)`                      | `LocalDate`                                                                     | —                                                                              |                                                                                                                                                                                              |
-| `Duration(timeUnit)`                  | `Duration`                                                                      | —                                                                              |                                                                                                                                                                                              |
-| `Interval(intervalUnit)`              | `Period` (YEAR_MONTH), `Duration` (DAY_TIME), `PeriodDuration` (MONTH_DAY_NANO) | May allow limited cross‑coercion between interval types.                       | Deephaven's implementation matches the Arrow-Java implementation, using Flight's `PeriodDuration`, for this column type.                                                                     |
-| `Utf8`                                | `String`                                                                        | —                                                                              | Text encoded as UTF‑8.                                                                                                                                                                       |
-| `Binary`                              | `byte[]`                                                                        | `ByteVector`, `ByteBuffer`                                                     | [Custom mappings](#custom-mappings) are supported. Deephaven has custom encodings for BigDecimal, BigInteger, and Arrow Flight's Schema POJO.                                                |
-| `FixedSizeBinary(fixedLength)`        | `byte[]`                                                                        | `ByteVector, ByteBuffer`                                                       | [Custom mappings](#custom-mappings) are supported.                                                                                                                                           |
-| `SparseUnion`/`DenseUnion`            | `Object`                                                                        | —                                                                              | Union types (dense or sparse) map to a generic `Object` column type.                                                                                                                         |
-| `Null`                                | `Object`                                                                        | —                                                                              | Best when coupled with a Union or when [specifying the Deephaven type to use](#set-the-flight-schema).                                                                                       |
-| `Map`                                 | `LinkedHashMap`                                                                 | —                                                                              | Map types require that the [Arrow schema to be specified](#set-the-flight-schema). Cells are accumulated into `LinkedHashMap`s; it's not possible to pick another collector at this time.    |
-| `List` / `ListView` / `FixedSizeList` | `T[]` - a native Java array of the inner field                                  | Supports conversion to Deephaven internal `Vector` types such as `LongVector`. | Note that the `deephaven:componentType` metadata key must be set to the inner type. Fixed-size list wire formats will be truncated and/or null-padded to match the data as best as possible. |
-| `RunEndEncoded`                       | Default type of the values child                                                | —                                                                              | The column type comes from the values child; the `run_ends` child is only an index.                                                                                                          |
-| Dictionary-encoded fields             | Default type of the dictionary value type                                       | —                                                                              | Applies to any field that carries a `DictionaryEncoding`.                                                                                                                                    |
+### Integral coercion
 
-### Integral Coercion
+Coercion from a larger integral type to a smaller one, or from an unsigned type to the signed type of the same width, follows Java's narrowing primitive conversion, which keeps only the low-order bits. Some values truncate to `null`, because Deephaven reserves one value of each primitive type as its null marker. For example, `0x2080` becomes `null` when coerced to a `byte`, because [`QueryConstants.NULL_BYTE`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/QueryConstants.html#NULL_BYTE) is `0x80`. Similarly, `-1` becomes `null` when coerced to a `char`, because [`QueryConstants.NULL_CHAR`](https://docs.deephaven.io/core/javadoc/io/deephaven/util/QueryConstants.html#NULL_CHAR) is `0xFFFF`.
 
-Integral coercion from a larger type to a smaller type follows typical truncation rules, however, some values will be "truncated" to `null` values. For example `0x2080` will be truncated to `null` when coerced to a `byte` value as `QueryConstants.NULL_BYTE` is `0x80`. Similarly, any `-1` will be coerced to `null` when coerced to a `char` as `QueryConstants.NULL_CHAR` is `0xFFFF`.
+### Decimal coercion
 
-### Decimal Coercion
+Coercing a decimal value to a type with lower precision rounds or truncates it. For example, coercion to any integral type drops the fractional part of the decimal value.
 
-Decimal coercion from a type with higher precision to a type with lower precision may result in rounding or truncation. For example, coercion to any integral type will lose the fractional part of the decimal value.
+## Unsupported Arrow types
 
-## Disable toString by Default
+Deephaven does not support the following Arrow types:
 
-By default, unsupported types will be transformed into UTF-8 strings. This is not always desirable, especially for types that have no meaningful, or no lossless, toString representation. This feature can be disabled:
+- Large types such as `LargeUtf8`, `LargeBinary`, `LargeList`, and `LargeListView`
+- `Struct`
+- `Utf8View` and `BinaryView`
+
+Supporting the large types would require simulating 64-bit arrays.
+
+## Set the Flight schema
+
+### Import
+
+When a Flight client uploads data to Deephaven with a `DoPut` call, the client can specify the destination column types by adding metadata tags to the Flight schema's fields.
+
+The metadata keys are as follows:
+
+- `deephaven:type`: the canonical class name of the Deephaven type to use for the column. For a list field, this can be an array class, such as `int[]`, or a vector class, such as `io.deephaven.vector.LongVector`.
+- `deephaven:componentType`: the canonical class name of the element type to use for the column. For an `ObjectVector` column, set it to choose the element class. Without it, Deephaven uses the default type of the list's element field. For an array column or a primitive vector column, Deephaven infers the element type from `deephaven:type`.
+
+Any field without type tags gets the default Deephaven type for its Arrow wire type, as listed in the [Arrow type support matrix](#arrow-type-support-matrix).
+
+The [Upload a table](#upload-a-table) example shows how to set the schema metadata from an Arrow Java Flight client. It maps `Duration` to `long`, which isn't a supported coercion, so it works only after you [register the custom mapping](#register-the-custom-mapping).
+
+### Export
+
+You can specify the Flight schema, and so each column's wire type, to use when exporting a table to a Flight client. Use [`withAttributes`](../../reference/table-operations/select/withAttributes.md) to store an Arrow Java `org.apache.arrow.vector.types.pojo.Schema` object in the table's attributes under the key [`Table.BARRAGE_SCHEMA_ATTRIBUTE`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#BARRAGE_SCHEMA_ATTRIBUTE). The key's value is `BarrageSchema`. The schema you attach overrides the one Deephaven generates from the table's column types.
+
+When you build the schema:
+
+- Start from [`BarrageUtil.schemaFromTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/util/BarrageUtil.html#schemaFromTable(io.deephaven.engine.table.Table)), which returns the default schema, and change only the fields you need.
+- Check each field's type and dictionary before you replace its type. The default schema may run-end encode or dictionary encode a column whose values repeat often. [Barrage schema annotation](barrage-schema.md#verify-the-encoding-from-a-subscriber) shows how to check which encoding a client receives.
+
+The following example fetches the default schema and changes the export wire type of column `D` from `Int(64, signed)` to `Timestamp(MILLISECOND)`. Deephaven's default `long` writer treats each value as nanoseconds and converts it to milliseconds on the wire. The column has no repeated values, so Deephaven doesn't encode its field, and the example can replace the field's type directly:
 
 ```groovy
+import io.deephaven.engine.table.Table
+import io.deephaven.extensions.barrage.util.BarrageUtil
+import org.apache.arrow.vector.types.TimeUnit
+import org.apache.arrow.vector.types.pojo.ArrowType
+import org.apache.arrow.vector.types.pojo.Field
+import org.apache.arrow.vector.types.pojo.FieldType
+import org.apache.arrow.vector.types.pojo.Schema
+
+t = emptyTable(32).update("D = ii * 1_000_000_000L")
+
+Schema currSchema = BarrageUtil.schemaFromTable(t)
+Field currField = currSchema.getFields().get(0)
+FieldType currFtype = currField.getFieldType()
+Map<String, String> currMetadata = currField.getMetadata()
+// currMetadata already sets deephaven:type to long, so a receiving Deephaven server creates a long column.
+// To choose a different column type, copy the map first (it is immutable): new HashMap<>(currMetadata), then change deephaven:type.
+
+ArrowType newType = new ArrowType.Timestamp(TimeUnit.MILLISECOND, null)
+FieldType newFtype = new FieldType(currFtype.isNullable(), newType, currFtype.getDictionary(), currMetadata)
+List<Field> newFields = List.of(new Field(currField.getName(), newFtype, currField.getChildren()))
+Schema newSchema = new Schema(newFields, currSchema.getCustomMetadata())
+
+// now set the table attribute to advertise how to write this on the wire
+t = t.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, newSchema))
+```
+
+For focused examples that use [`Table.BARRAGE_SCHEMA_ATTRIBUTE`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#BARRAGE_SCHEMA_ATTRIBUTE) for `Union`, `Map`, run-end encoded, and dictionary-encoded wire types, see [Barrage schema annotation](barrage-schema.md).
+
+### Round-tripping
+
+When a client uploads a table with `DoPut`, Deephaven stores the Flight schema in the table's [`Table.BARRAGE_SCHEMA_ATTRIBUTE`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#BARRAGE_SCHEMA_ATTRIBUTE) attribute, whose value is `BarrageSchema`. This is convenient, because you can then download the table in exactly the same wire format.
+
+Most table operations drop this attribute, even when they keep every column's type unchanged. Filters (such as [`where`](../../reference/table-operations/filter/where.md)), [`sort`](../../reference/table-operations/sort/sort.md), [`reverse`](../../reference/table-operations/sort/reverse.md), [`flatten`](../../reference/table-operations/create/flatten.md), [`firstBy`](../../reference/table-operations/group-and-aggregate/firstBy.md), and [`lastBy`](../../reference/table-operations/group-and-aggregate/lastBy.md) keep it, and so do the constituent tables of a [`partitionBy`](../../reference/table-operations/group-and-aggregate/partitionBy.md). To preserve the original wire types after any other operation, re-attach a schema with [`withAttributes`](../../reference/table-operations/select/withAttributes.md) as shown in [Export](#export). The schema needs one field for each of the result table's columns, so after an operation that adds, drops, or renames columns, adjust the schema's fields to match.
+
+## Turn off the default `toString` export
+
+By default, when Deephaven has no writer for a column's type, it exports the column's values as UTF-8 strings, using each value's `toString`. This is not always desirable. Some types have no meaningful string form, and others can't be converted to a string without losing data. To turn off this behavior for every export from the server, call [`disableToStringUnknownTypes`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/chunk/DefaultChunkWriterFactory.html#disableToStringUnknownTypes()):
+
+```groovy reset
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory
 
 DefaultChunkWriterFactory.INSTANCE.disableToStringUnknownTypes()
 ```
 
 > [!IMPORTANT]
-> After `disableToStringUnknownTypes` is called, serializing columns that do not have an explicit mapping will cause DoGet and DoExchange to throw a StatusRuntimeException. This is propagated as an `INVALID_ARGUMENT` gRPC error to the remote client.
+> After you call [`disableToStringUnknownTypes`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/chunk/DefaultChunkWriterFactory.html#disableToStringUnknownTypes()), exporting a column that has no explicit mapping throws a `StatusRuntimeException`. This applies to a `DoGet`, which is a client download, and to a `DoExchange`, which is a two-way stream such as a subscription. The remote client receives the exception as an `INVALID_ARGUMENT` gRPC error.
+>
+> To export such a column, register a writer for its type as described in [Custom mappings](#custom-mappings), next.
 
-## Set the Flight Schema
+## Custom mappings
 
-### Import
+You can register new Arrow-to-Deephaven type mappings, or replace the reader or writer for an existing pair. You can't change the default Deephaven type for an Arrow type, which applies when no `deephaven:type` metadata is present.
 
-When importing data into Deephaven using a Flight client and a DoPut call, the client can specify the destination column types by adding metadata tags to the Flight schema's fields.
+The [`DefaultChunkReaderFactory`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/chunk/DefaultChunkReaderFactory.html) and [`DefaultChunkWriterFactory`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/chunk/DefaultChunkWriterFactory.html) classes maintain the registry of import/export mappings. Their [source code](https://github.com/deephaven/deephaven-core/tree/main/extensions/barrage/src/main/java/io/deephaven/extensions/barrage/chunk) shows more examples of reusing Deephaven's internal helpers in your own readers and writers.
 
-The metadata keys are as follows:
+Let's go through a full example of how to add and use a custom mapping from an Arrow `Duration` to primitive `long` and back. The client steps run in an Arrow Flight client, such as a separate Java or Groovy process that has Arrow Flight on its classpath.
 
-- `deephaven:type` - The canonical class name of the Deephaven type to use for the column.
-- `deephaven:componentType` - The canonical class name of the component type to use for the column. This is used for array types.
-
-Any field/column that does not have type tags will use the default Deephaven type for the Arrow wire type.
-
-See [uploading a table](#upload-a-table) for an example of setting the schema metadata from an Arrow-Java Flight client.
-
-### Round-Tripping
-
-Any table uploaded to Deephaven via a DoPut places the Flight Schema in a table attribute key of `BarrageSchema` (aka `io.deephaven.engine.table.Table.BARRAGE_SCHEMA_ATTRIBUTE`). This is convenient as it allows you to upload a table and then download the table using exactly the same wire format.
-
-Most table operations drop this attribute, even for column types that are completely preserved. Filters (such as [`where`](../../reference/table-operations/filter/where.md)), [`sort`](../../reference/table-operations/sort/sort.md), [`reverse`](../../reference/table-operations/sort/reverse.md), [`flatten`](../../reference/table-operations/create/flatten.md), [`firstBy`](../../reference/table-operations/group-and-aggregate/firstBy.md), and [`lastBy`](../../reference/table-operations/group-and-aggregate/lastBy.md) keep it, and so do the constituent tables of a [`partitionBy`](../../reference/table-operations/group-and-aggregate/partitionBy.md). Re-attach the schema after any other operation if you want to preserve the original wire types.
-
-### Exporting
-
-You can specify the wire-type schema to use when exporting a table to a Flight client. Simply place the Schema POJO in the table's attributes with the key `BarrageSchema` (aka `io.deephaven.engine.table.Table.BARRAGE_SCHEMA_ATTRIBUTE`). This will override the default schema that would be generated from the table's column types.
-
-Consider using [`BarrageUtil#schemaFromTable`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/util/BarrageUtil.html#schemaFromTable(io.deephaven.engine.table.Table)) to generate the default schema and then modify it as needed.
-
-> [!NOTE]
-> Deephaven has no default writer from a `long` column to an Arrow `Duration` field. Exporting the table in the following example requires the custom `long`-to-`Duration` writer registered in [Custom mappings](#custom-mappings).
-
-Here is an example that fetches the default schema and then changes the wire type from `Int(64, signed)` to `Duration(ms)` for the column (for export):
-
-```groovy
-import io.deephaven.engine.table.Table
-import io.deephaven.extensions.barrage.util.BarrageUtil
-import org.apache.arrow.vector.types.TimeUnit
-import org.apache.arrow.vector.types.Types
-import org.apache.arrow.vector.types.pojo.ArrowType
-import org.apache.arrow.vector.types.pojo.Field
-import org.apache.arrow.vector.types.pojo.FieldType
-import org.apache.arrow.vector.types.pojo.Schema
-
-Table t = emptyTable(32).update("D = ii * 1_000_000_000L")
-
-Schema curr_schema = BarrageUtil.schemaFromTable(t)
-Field curr_field = curr_schema.getFields().get(0)
-FieldType curr_ftype = curr_field.getFieldType()
-Map<String, String> curr_metadata = curr_field.getMetadata()
-// note that we could replace the destination metadata deephaven type, too, if the remote client is a Deephaven worker
-
-ArrowType new_type = new ArrowType.Duration(TimeUnit.MILLISECOND)
-FieldType new_ftype = new FieldType(curr_ftype.isNullable(), new_type, curr_ftype.getDictionary(), curr_metadata);
-List<Field> new_fields = List.of(new Field(curr_field.getName(), new_ftype, curr_field.getChildren()))
-Schema new_schema = new Schema(new_fields, curr_schema.getCustomMetadata())
-
-// now set the table attribute to advertise how to write this on the wire
-t = t.withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, new_schema))
-```
-
-For focused Groovy examples of using `Table.BARRAGE_SCHEMA_ATTRIBUTE` for Union and Map wire types, see [Barrage Schema Annotation](barrage-schema.md).
-
-## Custom Mappings
-
-Deephaven allows extending the set of supported type mappings. We currently do not support allowing the user to change the default mappings.
-
-The [`DefaultChunkReaderFactory`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/chunk/DefaultChunkReaderFactory.html) and [`DefaultChunkWriterFactory`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/chunk/DefaultChunkWriterFactory.html) classes maintain the registry of import/export mappings. Take a look at their source code for more examples and ideas on how to reuse Deephaven's internal helpers for your own custom serializers and deserializers.
-
-Let's go through a full example of how to add and use a custom mapping from an Arrow `Duration` to primitive `long` and back.
-
-1. Register the custom mapping with the `DefaultChunkReaderFactory` and `DefaultChunkWriterFactory`.
-2. Prepare a remote client to connect to the Deephaven server.
-3. Upload a table to the QueryScope variable `uploaded_table`.
-4. Download the table from the server and print the returned data.
+1. On the server, register the custom mapping with [`DefaultChunkReaderFactory`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/chunk/DefaultChunkReaderFactory.html) and [`DefaultChunkWriterFactory`](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/chunk/DefaultChunkWriterFactory.html).
+2. On the client, prepare a remote client to connect to the Deephaven server.
+3. On the client, upload a table to the [query scope](../query-scope.md) variable `uploadedTable`.
+4. On the server, verify the uploaded table's column type and data.
+5. On the client, download the table from the server and print the returned data.
 
 > [!IMPORTANT]
-> While this example is provided as Groovy, it is a best practice to implement custom type mappings from Java within [Application Mode](../application-mode.md).
+> This example uses Groovy for brevity. For production, implement type mappings in Java and load them with [Application Mode](../application-mode.md).
 
-### Register the Custom Mapping
+### Register the custom mapping
 
-```groovy
+This step runs on the Deephaven server. It registers a custom reader and writer for the Arrow `Duration` type. The reader converts incoming `Duration` values to a primitive `long` column in nanoseconds. The writer converts the nanoseconds back to the field's time unit on export.
+
+```groovy reset
 import java.time.Duration
 import io.deephaven.util.QueryConstants
 import io.deephaven.chunk.*
@@ -206,12 +216,14 @@ DefaultChunkWriterFactory.INSTANCE.register(
                     chunk.set(ii, (long)(value == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : value / factor));
                 }
                 return chunk;
-            }, ObjectChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
+            }, LongChunk::getEmptyChunk, typeInfo.arrowField().isNullable());
         }
 )
 ```
 
-### Prepare the Remote Client
+### Prepare the remote client
+
+This step and the next run in the Flight client, not in the Deephaven server console. The client connects to the server and authenticates with the server's pre-shared key, which a default server prints to its log on startup.
 
 ```groovy skip-test
 import org.apache.arrow.flight.CallHeaders
@@ -227,22 +239,24 @@ client = FlightClient.builder()
         .allocator(allocator)
         .location(Location.forGrpcInsecure("localhost", 10000))
         .intercept(new ClientCookieMiddleware.Factory())
-        .build();
+        .build()
 
 CallHeaders headers = new FlightCallHeaders()
-headers.insert("Authorization", "Anonymous")
-// pre-shared key authentication would look like this:
-// headers.insert("Authorization", "io.deephaven.authentication.psk.PskAuthenticationHandler $PRE_SHARED_KEY_VALUE$")
+headers.insert("Authorization", "io.deephaven.authentication.psk.PskAuthenticationHandler <your-pre-shared-key>")
+// a server configured for anonymous authentication accepts this instead:
+// headers.insert("Authorization", "Anonymous")
 headers.insert("x-deephaven-auth-cookie-request", "true")
 client.handshake(new HeaderCallOption(headers))
 ```
 
 > [!WARNING]
-> Long running remote Deephaven clients must heartbeat the server to keep session state alive. This can be done automatically using additional Arrow Flight Middleware. A heartbeat can be performed on any Deephaven gRPC call as long as the current authentication cookie is passed in the headers.
+> Long-running remote Deephaven clients must send heartbeats to the server to keep session state alive. Any Deephaven gRPC call counts as a heartbeat if it passes the current authentication cookie in its headers. Arrow Flight client middleware, such as the `ClientCookieMiddleware` in this example, attaches that cookie to each call. The middleware doesn't make calls on its own, so an otherwise idle client must make a call periodically.
 >
-> It is highly recommended to use an official Deephaven client as often as possible to ensure that these details are implemented according to the server's requirements.
+> Use an official Deephaven client where you can, because it meets these server requirements for you.
 
 ### Upload a table
+
+This step runs in the Flight client. It uploads millisecond `Duration` values and tags the field with [`deephaven:type`](#import) so that Deephaven stores the column as a `long`.
 
 ```groovy skip-test
 import org.apache.arrow.vector.types.TimeUnit
@@ -250,24 +264,23 @@ import org.apache.arrow.vector.types.pojo.ArrowType
 import org.apache.arrow.vector.types.pojo.FieldType
 import org.apache.arrow.vector.types.pojo.Field
 import org.apache.arrow.vector.types.pojo.Schema
-
-// Prepare the schema with appropriate metadata to specify the target column type for the Deephaven table
-COLUMN_NAME = "duration"
-Map<String, String> attrs = new HashMap<>();
-attrs.put("deephaven:type", "long");
-// if this was an array/vector type, we would set the componentType, too:
-// attrs.put("deephaven:componentType", "canonical.class.path.to.type");
-boolean nullable = true
-ArrowType arrowType = new ArrowType.Duration(TimeUnit.MILLISECOND)
-FieldType fieldType = new FieldType(nullable, arrowType, null, attrs);
-Schema schema = new Schema(Collections.singletonList(new Field(COLUMN_NAME, fieldType, null)));
-
-// Upload data:
 import org.apache.arrow.flight.FlightDescriptor
 import org.apache.arrow.flight.AsyncPutListener
 import org.apache.arrow.vector.DurationVector
 import org.apache.arrow.vector.VectorSchemaRoot
 
+// Prepare the schema with appropriate metadata to specify the target column type for the Deephaven table
+COLUMN_NAME = "Duration"
+Map<String, String> attrs = new HashMap<>()
+attrs.put("deephaven:type", "long")
+// for an ObjectVector column, optionally choose the element type:
+// attrs.put("deephaven:componentType", "java.lang.String")
+boolean nullable = true
+ArrowType arrowType = new ArrowType.Duration(TimeUnit.MILLISECOND)
+FieldType fieldType = new FieldType(nullable, arrowType, null, attrs)
+Schema schema = new Schema(Collections.singletonList(new Field(COLUMN_NAME, fieldType, null)))
+
+// Upload data:
 NUM_ROWS = 32
 try (final VectorSchemaRoot source = VectorSchemaRoot.create(schema, allocator)) {
     source.allocateNew()
@@ -284,8 +297,8 @@ try (final VectorSchemaRoot source = VectorSchemaRoot.create(schema, allocator))
         }
     }
 
-    // upload the table into a QueryScope variable named "uploaded_table"
-    FlightDescriptor descriptor = FlightDescriptor.path("scope", "uploaded_table")
+    // upload the table into a QueryScope variable named "uploadedTable"
+    FlightDescriptor descriptor = FlightDescriptor.path("scope", "uploadedTable")
     AsyncPutListener listener = new AsyncPutListener()
     FlightClient.ClientStreamListener putStream = client.startPut(descriptor, source, listener)
     putStream.putNext()
@@ -295,26 +308,34 @@ try (final VectorSchemaRoot source = VectorSchemaRoot.create(schema, allocator))
 }
 ```
 
-On the Deephaven Server, we can run a short snippet to verify that the table was uploaded correctly:
+### Verify the upload on the server
+
+Run these snippets in the Deephaven server console to verify that the client uploaded the table correctly. First, check the column type:
 
 ```groovy skip-test
-TableTools.show(uploaded_table.meta())
+import io.deephaven.engine.util.TableTools
+
+TableTools.show(uploadedTable.meta())
 ```
 
-We can see that the destination column type is `long`:
+The console output, written out here as a table, shows that the destination column type is `long`:
 
 | Name     | DataType | ColumnType | IsPartitioning |
 | -------- | -------- | ---------- | -------------- |
-| duration | long     | Normal     | false          |
+| Duration | long     | Normal     | false          |
+
+Next, print the table's data:
 
 ```groovy skip-test
+import io.deephaven.engine.util.TableTools
+
 // print the first ten rows of the table
-TableTools.show(uploaded_table)
+TableTools.show(uploadedTable)
 ```
 
-We can see that the uploaded column data is represented in nanoseconds, as expected per the custom mapping implementation, even though we uploaded milliseconds:
+The console output, written out here as a table, shows values in nanoseconds. The client uploaded milliseconds, and the custom reader multiplied each value by the time-unit factor. Your values differ from these because the client uploads random durations:
 
-| duration  |
+| Duration  |
 | --------- |
 | 979000000 |
 | 384000000 |
@@ -329,14 +350,14 @@ We can see that the uploaded column data is represented in nanoseconds, as expec
 
 ### Download the table
 
-Normally, you would need to set the `Table.BARRAGE_SCHEMA_ATTRIBUTE` table attribute to configure the custom schema for the download. However, Deephaven associates the uploaded schema with a table and uses it for the download as long as we're downloading the uploaded table, or a table derived from it by an operation that keeps the attribute (see [Round-tripping](#round-tripping)). Being able to round-trip from a client without setting the custom export schema is a quality-of-life feature of Deephaven.
+This step runs in the Flight client. You don't need to set [`Table.BARRAGE_SCHEMA_ATTRIBUTE`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#BARRAGE_SCHEMA_ATTRIBUTE) for this download. Deephaven keeps the uploaded schema on the table and uses it when you download that table, or a table derived from it by an operation that keeps the attribute. [Round-tripping](#round-tripping) lists those operations. Being able to round-trip a table from a client without setting a custom export schema is a quality-of-life feature of Deephaven.
 
 ```groovy skip-test
 import org.apache.arrow.flight.FlightStream
 import org.apache.arrow.flight.Ticket
 import java.nio.charset.StandardCharsets
 
-Ticket ticket = new Ticket("s/uploaded_table".getBytes(StandardCharsets.UTF_8));
+Ticket ticket = new Ticket("s/uploadedTable".getBytes(StandardCharsets.UTF_8))
 try (final FlightStream stream = client.getStream(ticket)) {
     while (stream.next()) {
         println(stream.getRoot().getVector(0))
@@ -344,7 +365,7 @@ try (final FlightStream stream = client.getStream(ticket)) {
 }
 ```
 
-For the random table above, this prints:
+For the same upload, the output looks like this. The first ten values match the table above:
 
 ```text
 [PT0.979S, PT0.384S, PT0.186S, PT0.531S, PT0.542S, PT0.44S, PT0.576S, null, PT0.683S, PT0.699S, ... PT0.868S, null, PT0.118S, PT0.003S, PT0.356S, PT0.907S, PT0.799S, PT0.248S, PT0.372S, null]
@@ -352,5 +373,7 @@ For the random table above, this prints:
 
 ## Related documentation
 
+- [Barrage schema annotation](./barrage-schema.md)
+- [What is Barrage?](../../conceptual/what-is-barrage.md)
 - [Barrage Extensions Package Summary](https://docs.deephaven.io/core/javadoc/io/deephaven/extensions/barrage/package-summary.html)
 - [Arrow Flight Package Summary](https://docs.deephaven.io/core/javadoc/org/apache/arrow/flight/package-summary.html)
