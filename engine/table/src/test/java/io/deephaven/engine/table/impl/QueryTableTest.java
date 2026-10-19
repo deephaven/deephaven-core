@@ -2561,6 +2561,68 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testSnapshotIncrementalReaddBeforeSecondSnapshot() {
+        final QueryTable base = testRefreshingTable(i(10, 20, 30).toTracking(), col("A", 1, 2, 3));
+        final QueryTable trigger = testRefreshingTable(col("T", 1));
+        final Table snapshot = base.snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL);
+
+        final SimpleListener listener = new SimpleListener(snapshot);
+        snapshot.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(base, i(30));
+            addToTable(base, i(10), col("A", 100));
+            base.notifyListeners(new TableUpdateImpl(i(10), i(10, 30), i(), RowSetShiftData.EMPTY,
+                    ModifiedColumnSet.EMPTY));
+        });
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(trigger, i(1), col("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+
+        assertTableEquals(testRefreshingTable(i(10, 20).toTracking(), col("A", 100, 2), col("T", 2, 1)), snapshot);
+        assertEquals(1, listener.getCount());
+        assertEquals(i(), listener.getUpdate().added());
+        assertEquals(i(30), listener.getUpdate().removed());
+        assertEquals(i(10), listener.getUpdate().modified());
+        assertTrue(listener.getUpdate().shifted().empty());
+        listener.close();
+    }
+
+    @Test
+    public void testSnapshotIncrementalShiftBeforeSecondSnapshot() {
+        final QueryTable base = testRefreshingTable(i(10, 20, 30).toTracking(), col("A", 1, 2, 3));
+        final QueryTable trigger = testRefreshingTable(col("T", 1));
+        final Table snapshot = base.snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL);
+
+        final SimpleListener listener = new SimpleListener(snapshot);
+        snapshot.addUpdateListener(listener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(base, i(10, 20, 30));
+            addToTable(base, i(15, 25), col("A", 2, 3));
+            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+            shiftBuilder.shiftRange(20, 30, -5);
+            base.notifyListeners(new TableUpdateImpl(i(), i(10), i(), shiftBuilder.build(),
+                    ModifiedColumnSet.EMPTY));
+        });
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(trigger, i(1), col("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+
+        assertTableEquals(testRefreshingTable(i(15, 25).toTracking(), col("A", 2, 3), col("T", 2, 2)), snapshot);
+        assertEquals(1, listener.getCount());
+        assertEquals(i(15, 25), listener.getUpdate().added());
+        assertEquals(i(10, 20, 30), listener.getUpdate().removed());
+        assertEquals(i(), listener.getUpdate().modified());
+        assertTrue(listener.getUpdate().shifted().empty());
+        listener.close();
+    }
+
+    @Test
     public void testSnapshotIncrementalPrev() {
         final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 col("A", 3, 1, 2), col("B", "c", "a", "b"));

@@ -83,6 +83,7 @@ public class SnapshotIncrementalListener extends MergedListener {
     public void doFirstSnapshot(boolean initial) {
         doRowCopy(baseTable.getRowSet());
         resultTable.getRowSet().writableCast().insert(baseTable.getRowSet());
+        lastBaseRowSet.insert(baseTable.getRowSet());
         if (!initial) {
             resultTable.notifyListeners(resultTable.getRowSet().copy(),
                     RowSetFactory.empty(), RowSetFactory.empty());
