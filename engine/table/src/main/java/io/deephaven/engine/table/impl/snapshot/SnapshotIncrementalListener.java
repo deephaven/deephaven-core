@@ -32,7 +32,6 @@ import io.deephaven.util.SafeCloseablePair;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,10 +43,9 @@ public class SnapshotIncrementalListener extends MergedListener {
     private final ListenerRecorder triggerListener;
     private final QueryTable baseTable;
     private final Map<String, ? extends ColumnSource<?>> triggerColumns;
-    private final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns;
+    private final SnapshotUtils.DataColumnCopy dataCopy;
     private final SparseArrayColumnSource<?>[] sparseResultColumns;
     private final WritableColumnSource<?>[] objectResultColumns;
-    private final String[] dataColumnNames;
     private final ModifiedColumnSet[] dataColumnSets;
     private final ModifiedColumnSet.Transformer dataColumnTransformer;
     private final ModifiedColumnSet stampColumnSet;
@@ -72,7 +70,9 @@ public class SnapshotIncrementalListener extends MergedListener {
         this.triggerListener = triggerListener;
         this.baseTable = baseTable;
         this.triggerColumns = triggerColumns;
-        this.snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(baseTable);
+        final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns =
+                SnapshotUtils.generateSnapshotDataColumns(baseTable);
+        this.dataCopy = SnapshotUtils.dataColumnCopy(snapshotDataColumns, resultColumns);
 
         // a reinterpretable result column, such as an Instant column, may hold its values in a sparse primitive source
         final List<SparseArrayColumnSource<?>> sparseColumns = new ArrayList<>(resultColumns.size());
@@ -87,7 +87,7 @@ public class SnapshotIncrementalListener extends MergedListener {
         this.sparseResultColumns = sparseColumns.toArray(SparseArrayColumnSource<?>[]::new);
         this.objectResultColumns = SnapshotUtils.objectColumns(resultColumns);
 
-        dataColumnNames = snapshotDataColumns.keySet().toArray(String[]::new);
+        final String[] dataColumnNames = snapshotDataColumns.keySet().toArray(String[]::new);
         dataColumnSets = new ModifiedColumnSet[dataColumnNames.length];
         for (int ii = 0; ii < dataColumnNames.length; ++ii) {
             dataColumnSets[ii] = baseTable.newModifiedColumnSet(dataColumnNames[ii]);
@@ -185,17 +185,28 @@ public class SnapshotIncrementalListener extends MergedListener {
                 try (final RowSet stampedRows = baseUpdate.added().union(baseUpdate.modified())) {
                     copyStampsToResult(stampedRows, triggerTable, triggerColumns, resultColumns);
                 }
-                SnapshotUtils.copyDataColumns(snapshotDataColumns, baseUpdate.added(), resultColumns,
+                ChunkUtils.copyData(dataCopy.sources(), baseUpdate.added(), dataCopy.destinations(),
                         baseUpdate.added(), false);
                 if (baseUpdate.modified().isNonempty()) {
-                    final Map<String, ChunkSource.WithPrev<? extends Values>> modifiedDataColumns =
-                            new LinkedHashMap<>();
-                    for (int ii = 0; ii < dataColumnNames.length; ++ii) {
-                        if (baseUpdate.modifiedColumnSet().containsAny(dataColumnSets[ii])) {
-                            modifiedDataColumns.put(dataColumnNames[ii], snapshotDataColumns.get(dataColumnNames[ii]));
+                    final ModifiedColumnSet baseModifiedColumns = baseUpdate.modifiedColumnSet();
+                    int numModified = 0;
+                    for (final ModifiedColumnSet dataColumnSet : dataColumnSets) {
+                        if (baseModifiedColumns.containsAny(dataColumnSet)) {
+                            ++numModified;
                         }
                     }
-                    SnapshotUtils.copyDataColumns(modifiedDataColumns, baseUpdate.modified(), resultColumns,
+                    // noinspection unchecked
+                    final ChunkSource.WithPrev<? extends Values>[] modifiedSources =
+                            new ChunkSource.WithPrev[numModified];
+                    final WritableColumnSource<?>[] modifiedDestinations = new WritableColumnSource[numModified];
+                    int mi = 0;
+                    for (int ii = 0; ii < dataColumnSets.length; ++ii) {
+                        if (baseModifiedColumns.containsAny(dataColumnSets[ii])) {
+                            modifiedSources[mi] = dataCopy.sources()[ii];
+                            modifiedDestinations[mi++] = dataCopy.destinations()[ii];
+                        }
+                    }
+                    ChunkUtils.copyData(modifiedSources, baseUpdate.modified(), modifiedDestinations,
                             baseUpdate.modified(), false);
                 }
 
@@ -245,15 +256,20 @@ public class SnapshotIncrementalListener extends MergedListener {
     }
 
     private void doRowCopy(RowSet rowSet) {
-        copyRowsToResult(rowSet, triggerTable, snapshotDataColumns, triggerColumns, resultColumns);
+        copyRowsToResult(rowSet, triggerTable, dataCopy, triggerColumns, resultColumns);
     }
 
+    /**
+     * Copy the base data and the current stamp into {@code rowsToCopy} of the result.
+     *
+     * @param dataCopy The base data sources and the result columns that receive them
+     */
     public static void copyRowsToResult(RowSet rowsToCopy, QueryTable triggerTable,
-            Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns,
+            SnapshotUtils.DataColumnCopy dataCopy,
             Map<String, ? extends ColumnSource<?>> triggerColumns,
             Map<String, WritableColumnSource<?>> resultColumns) {
         copyStampsToResult(rowsToCopy, triggerTable, triggerColumns, resultColumns);
-        SnapshotUtils.copyDataColumns(snapshotDataColumns, rowsToCopy, resultColumns, rowsToCopy, false);
+        ChunkUtils.copyData(dataCopy.sources(), rowsToCopy, dataCopy.destinations(), rowsToCopy, false);
     }
 
     private static void copyStampsToResult(RowSet rowsToStamp, QueryTable triggerTable,

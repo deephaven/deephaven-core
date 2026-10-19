@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.LazySnapshotTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +36,7 @@ public class SnapshotInternalListener extends MergedListener {
     private final Map<String, WritableColumnSource<?>> resultBaseColumns;
     private final WritableColumnSource<?>[] objectBaseColumns;
     private final Map<String, ? extends ColumnSource<?>> triggerStampColumns;
-    private final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns;
+    private final SnapshotUtils.DataColumnCopy dataCopy;
     private final TrackingWritableRowSet resultRowSet;
     private final ListenerRecorder triggerRecorder;
 
@@ -69,7 +70,9 @@ public class SnapshotInternalListener extends MergedListener {
             manage(snapshotTable);
         }
         triggerStampColumns = SnapshotUtils.generateTriggerStampColumns(triggerTable);
-        snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(snapshotTable);
+        final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns =
+                SnapshotUtils.generateSnapshotDataColumns(snapshotTable);
+        dataCopy = SnapshotUtils.dataColumnCopy(snapshotDataColumns, resultBaseColumns);
     }
 
     private static List<ListenerRecorder> recorders(
@@ -111,8 +114,8 @@ public class SnapshotInternalListener extends MergedListener {
             snapshotSize = snapshotRowSet.size();
             if (!snapshotRowSet.isEmpty()) {
                 try (final RowSet destRowSet = RowSetFactory.fromRange(0, snapshotSize - 1)) {
-                    SnapshotUtils.copyDataColumns(snapshotDataColumns,
-                            snapshotRowSet, resultBaseColumns, destRowSet, usePrev);
+                    ChunkUtils.copyData(dataCopy.sources(), snapshotRowSet, dataCopy.destinations(), destRowSet,
+                            usePrev);
                 }
             }
             dataCopied = true;

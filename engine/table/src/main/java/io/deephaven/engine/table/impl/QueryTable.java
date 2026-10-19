@@ -2938,20 +2938,21 @@ public class QueryTable extends BaseTable<QueryTable> {
             resultTable.getRowSet().writableCast().initializePreviousValue();
         } else if (doInitialSnapshot) {
             SnapshotIncrementalListener.copyRowsToResult(baseTable.getRowSet(), this,
-                    SnapshotUtils.generateSnapshotDataColumns(baseTable),
+                    SnapshotUtils.dataColumnCopy(SnapshotUtils.generateSnapshotDataColumns(baseTable), resultColumns),
                     triggerColumns, resultColumns);
             resultTable.getRowSet().writableCast().insert(baseTable.getRowSet());
             resultTable.getRowSet().writableCast().initializePreviousValue();
         } else if (isRefreshing()) {
             // we are not doing an initial snapshot, but are refreshing so need to take a snapshot of our (static)
             // base table on the very first tick of the triggerTable
+            final SnapshotUtils.DataColumnCopy dataCopy =
+                    SnapshotUtils.dataColumnCopy(SnapshotUtils.generateSnapshotDataColumns(baseTable), resultColumns);
             addUpdateListener(
                     new ListenerImpl("snapshotIncremental (triggerTable)", this, resultTable) {
                         @Override
                         public void onUpdate(TableUpdate upstream) {
                             SnapshotIncrementalListener.copyRowsToResult(baseTable.getRowSet(),
-                                    QueryTable.this, SnapshotUtils.generateSnapshotDataColumns(baseTable),
-                                    triggerColumns, resultColumns);
+                                    QueryTable.this, dataCopy, triggerColumns, resultColumns);
                             resultTable.getRowSet().writableCast().insert(baseTable.getRowSet());
                             resultTable.notifyListeners(resultTable.getRowSet().copy(),
                                     RowSetFactory.empty(),

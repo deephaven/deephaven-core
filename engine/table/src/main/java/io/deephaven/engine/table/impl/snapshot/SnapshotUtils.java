@@ -188,30 +188,39 @@ public class SnapshotUtils {
     }
 
     /**
-     * For each name in srcColumns, copy all the data at srcColumns.get(name) (with a range of rows defined by
-     * srcRowSet) to a column indicated by destColumns.get(name) (with a range of rows defined by destRowSet).
+     * The parallel sources and destinations of a
+     * {@link ChunkUtils#copyData(ChunkSource.WithPrev[], RowSequence, WritableColumnSource[], RowSequence, boolean)
+     * copy} of data columns into result columns. Copying every column together lets sources that share state, such as a
+     * row redirection, share its lookups.
      *
-     * @param srcColumns The stamp columns that serve as the source data
-     * @param srcRowSet The keys in the srcColumns we are reading from
-     * @param destColumns The destination columns we are writing to
-     * @param destRowSet The keys in destColumns we want to write to
+     * @param sources The columns that serve as the source data
+     * @param destinations The columns that receive the data, parallel to {@code sources}
      */
-    public static void copyDataColumns(@NotNull Map<String, ChunkSource.WithPrev<? extends Values>> srcColumns,
-            @NotNull RowSet srcRowSet, @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns,
-            @NotNull RowSet destRowSet,
-            boolean usePrev) {
-        assert srcRowSet.size() == destRowSet.size();
-        if (srcRowSet.isEmpty()) {
-            return;
-        }
-        for (Map.Entry<String, ? extends ChunkSource.WithPrev<? extends Values>> entry : srcColumns.entrySet()) {
-            final String name = entry.getKey();
-            final ChunkSource.WithPrev<? extends Values> srcCs = entry.getValue();
+    public record DataColumnCopy(
+            ChunkSource.WithPrev<? extends Values>[] sources,
+            WritableColumnSource<?>[] destinations) {
+    }
 
-            final WritableColumnSource<?> destCs = destColumns.get(name);
-            destCs.ensureCapacity(destRowSet.lastRowKey() + 1);
-            ChunkUtils.copyData(srcCs, srcRowSet, destCs, destRowSet, usePrev);
+    /**
+     * Pair each of {@code srcColumns} with the column of {@code destColumns} that has the same name.
+     *
+     * @param srcColumns The columns that serve as the source data
+     * @param destColumns The destination columns, which include a column for each name in srcColumns
+     * @return The parallel sources and destinations, in the order of {@code srcColumns}
+     */
+    public static DataColumnCopy dataColumnCopy(
+            @NotNull Map<String, ChunkSource.WithPrev<? extends Values>> srcColumns,
+            @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns) {
+        // noinspection unchecked
+        final ChunkSource.WithPrev<? extends Values>[] sources = new ChunkSource.WithPrev[srcColumns.size()];
+        final WritableColumnSource<?>[] destinations = new WritableColumnSource[srcColumns.size()];
+        int cc = 0;
+        for (final Map.Entry<String, ChunkSource.WithPrev<? extends Values>> entry : srcColumns.entrySet()) {
+            sources[cc] = entry.getValue();
+            destinations[cc] = destColumns.get(entry.getKey());
+            ++cc;
         }
+        return new DataColumnCopy(sources, destinations);
     }
 
     /**

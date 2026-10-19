@@ -14,6 +14,7 @@ import io.deephaven.auth.AuthContext;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
@@ -29,6 +30,8 @@ import io.deephaven.engine.table.impl.sources.BooleanSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.InstantSparseArraySource;
 import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
@@ -38,6 +41,8 @@ import io.deephaven.engine.table.impl.sources.ZonedDateTimeSparseArraySource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.impl.util.LongColumnSourceRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
@@ -1953,6 +1958,42 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(2, plain.size());
         assertEquals(2, incremental.size());
         assertEquals(2, history.size());
+    }
+
+    @Test
+    public void testSnapshotSharesRedirection() {
+        final Table source = newTable(intCol("A", 1, 2, 3), intCol("B", 10, 20, 30));
+        final LongArraySource innerKeys = new LongArraySource();
+        innerKeys.ensureCapacity(3);
+        for (int ii = 0; ii < 3; ++ii) {
+            innerKeys.set(ii, 2L - ii);
+        }
+        final AtomicInteger redirectionReads = new AtomicInteger();
+        final ColumnSource<Long> countingKeys = new DelegatingColumnSource<>(long.class, null, innerKeys) {
+            @Override
+            public void fillChunk(
+                    @NotNull final FillContext context,
+                    @NotNull final WritableChunk<? super Values> destination,
+                    @NotNull final RowSequence rowSequence) {
+                redirectionReads.incrementAndGet();
+                super.fillChunk(context, destination, rowSequence);
+            }
+        };
+        final RowRedirection redirection = new LongColumnSourceRowRedirection<>(countingKeys);
+        final Map<String, ColumnSource<?>> baseColumns = new LinkedHashMap<>();
+        baseColumns.put("A", RedirectedColumnSource.maybeRedirect(redirection, source.getColumnSource("A")));
+        baseColumns.put("B", RedirectedColumnSource.maybeRedirect(redirection, source.getColumnSource("B")));
+        final QueryTable base = new QueryTable(RowSetFactory.flat(3).toTracking(), baseColumns);
+
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+        final Table expected = newTable(intCol("A", 3, 2, 1), intCol("B", 30, 20, 10), intCol("T", 1, 1, 1));
+        for (final Flag[] flags : new Flag[][] {{Flag.INITIAL}, {Flag.INCREMENTAL, Flag.INITIAL}}) {
+            redirectionReads.set(0);
+            final Table snapshot = base.snapshotWhen(trigger, flags);
+            assertTableEquals(expected, snapshot);
+            // one chunk of rows, whose redirection both columns share
+            assertEquals(Arrays.toString(flags), 1, redirectionReads.get());
+        }
     }
 
     @Test
