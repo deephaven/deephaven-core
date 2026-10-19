@@ -88,7 +88,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
                     resultRowSet.copy(), resultRowSet.copyPrev(),
                     RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         }
-        snapshotPrevLength = snapshotTable.size();
+        snapshotPrevLength = snapshotSize;
     }
 
     @Override

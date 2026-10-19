@@ -6,8 +6,11 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -22,6 +25,7 @@ import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
@@ -37,6 +41,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -1312,6 +1317,51 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         TstUtils.assertTableEquals(tableStart, snap1);
         TstUtils.assertTableEquals(tableStart, snap2);
         TstUtils.assertTableEquals(tableUpdate, snap3);
+    }
+
+    @Test
+    public void testStaticSnapshotRetry() throws ExecutionException, InterruptedException, TimeoutException {
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(), col("x", 1, 2, 3));
+
+        // The first snapshot attempt reads previous values; it holds there until the cycle completes, so the attempt
+        // is inconsistent and ConstructSnapshot retries it with current values.
+        final CountDownLatch readingPrev = new CountDownLatch(1);
+        final CountDownLatch cycleCompleted = new CountDownLatch(1);
+        final AtomicBoolean prevRead = new AtomicBoolean();
+        final ColumnSource<Integer> blockingSource =
+                new DelegatingColumnSource<>(int.class, null, table.getColumnSource("x", int.class)) {
+                    @Override
+                    public Chunk<? extends Values> getPrevChunk(
+                            @NotNull final GetContext context,
+                            @NotNull final RowSequence rowSequence) {
+                        if (prevRead.compareAndSet(false, true)) {
+                            readingPrev.countDown();
+                            try {
+                                Assert.eqTrue(cycleCompleted.await(TIMEOUT_LENGTH, TIMEOUT_UNIT),
+                                        "cycleCompleted.await(TIMEOUT_LENGTH, TIMEOUT_UNIT)");
+                            } catch (InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                        return super.getPrevChunk(context, rowSequence);
+                    }
+                };
+        final QueryTable base = new QueryTable(table.getRowSet(), Map.of("x", blockingSource));
+        table.addUpdateListener(new BaseTable.ListenerImpl("blocking source", table, base));
+
+        updateGraph.startCycleForUnitTests(false);
+        TstUtils.addToTable(table, i(3), col("x", 4));
+
+        final Future<Table> snapshotFuture = pool.submit(base::snapshot);
+        assertTrue(readingPrev.await(TIMEOUT_LENGTH, TIMEOUT_UNIT));
+
+        table.notifyListeners(i(3), i(), i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+        updateGraph.completeCycleForUnitTests();
+        cycleCompleted.countDown();
+
+        final Table snapshot = snapshotFuture.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
+        TstUtils.assertTableEquals(TableTools.newTable(intCol("x", 1, 4, 2, 3)), snapshot);
     }
 
     @Test
