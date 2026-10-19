@@ -3,7 +3,7 @@ plugins {
   id 'io.deephaven.project.register'
 }
 
-description = 'gRPC message compression codecs (zstd, snappy) and codec selection shared by the Deephaven server and Java client'
+description = 'gRPC message compression codecs (zstd, snappy, deflate) and compression type names shared by the Deephaven server and Java client'
 
 dependencies {
   api platform(libs.grpc.bom)

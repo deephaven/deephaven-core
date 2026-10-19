@@ -3,6 +3,7 @@
 //
 package io.deephaven.grpc.compression;
 
+import com.github.luben.zstd.RecyclingBufferPool;
 import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
 import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
 import io.grpc.Codec;
@@ -13,7 +14,8 @@ import java.io.OutputStream;
 
 /**
  * A gRPC {@link Codec} for the {@code zstd} message encoding, backed by zstd-jni streams at zstd's default compression
- * level.
+ * level. gRPC opens a stream for every message, so the streams take their buffers from zstd-jni's shared
+ * {@link RecyclingBufferPool} rather than allocating new ones each time.
  */
 public final class ZstdCodec implements Codec {
 
@@ -39,13 +41,13 @@ public final class ZstdCodec implements Codec {
     @Override
     public OutputStream compress(final OutputStream os) throws IOException {
         // gRPC creates and closes each compressing stream within one write, so it needs no finalizer
-        return new ZstdOutputStreamNoFinalizer(os, LEVEL);
+        return new ZstdOutputStreamNoFinalizer(os, RecyclingBufferPool.INSTANCE, LEVEL);
     }
 
     @Override
     public InputStream decompress(final InputStream is) throws IOException {
         // gRPC closes each message stream after parsing it, including when the call is cancelled, so it needs no
         // finalizer
-        return new ZstdInputStreamNoFinalizer(is);
+        return new ZstdInputStreamNoFinalizer(is, RecyclingBufferPool.INSTANCE);
     }
 }

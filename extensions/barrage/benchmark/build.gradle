@@ -19,7 +19,7 @@ dependencies {
     // BarrageGrpcPropagateBenchmark writes through a real gRPC Netty transport to clients on the loopback interface
     implementation libs.grpc.stub
     implementation libs.grpc.netty
-    implementation project(':java-client-grpc-compression')
+    implementation project(':extensions-grpc-compression')
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation TestTools.projectDependency(project, 'engine-rowset')
     implementation TestTools.projectDependency(project, 'engine-table')

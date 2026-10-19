@@ -256,6 +256,9 @@ project(':extensions-barrage').projectDir = file('extensions/barrage')
 include(':extensions-barrage-benchmark')
 project(':extensions-barrage-benchmark').projectDir = file('extensions/barrage/benchmark')
 
+include(':extensions-grpc-compression')
+project(':extensions-grpc-compression').projectDir = file('extensions/grpc-compression')
+
 include(':extensions-classgraph')
 project(':extensions-classgraph').projectDir = file('extensions/classgraph')
 
@@ -332,9 +335,6 @@ project(':uri').projectDir = file('java-client/uri')
 
 include(':java-client-session')
 project(':java-client-session').projectDir = file('java-client/session')
-
-include(':java-client-grpc-compression')
-project(':java-client-grpc-compression').projectDir = file('java-client/grpc-compression')
 
 include(':java-client-flight')
 project(':java-client-flight').projectDir = file('java-client/flight')

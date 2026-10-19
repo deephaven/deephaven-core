@@ -37,6 +37,7 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
+import io.grpc.Context;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -93,8 +94,9 @@ public class ArrowFlightUtil {
 
         final String ticketLogName = ticketRouter.getLogNameFor(request, "table");
         final String description = "FlightService#DoGet(table=" + ticketLogName + ")";
-        // only readable on the gRPC thread; the snapshot itself runs on the session executor
-        final Set<String> acceptedCompression = ClientAcceptCompressionInterceptor.acceptedCompression();
+        // holds the compression types the client accepts; the snapshot itself runs on the session executor, which does
+        // not attach it
+        final Context grpcContext = Context.current();
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
@@ -125,7 +127,8 @@ public class ArrowFlightUtil {
                         metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                         metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
-                        BarrageCompression.apply(observer, acceptedCompression, table, ticketLogName);
+                        grpcContext.run(() -> BarrageCompression.apply(observer,
+                                ClientAcceptCompressionInterceptor.acceptedCompression(), table, ticketLogName));
 
                         // create an adapter for the response observer
                         final StreamObserver<BarrageMessageWriter.MessageView> listener =
@@ -415,8 +418,11 @@ public class ArrowFlightUtil {
 
         /** the unwrapped response observer, needed to choose the response compression */
         private final StreamObserver<InputStream> responseObserver;
-        /** the compression types the client accepts; captured at construction, on the gRPC thread */
-        private final Set<String> acceptedCompression;
+        /**
+         * the call's gRPC context, which holds the compression types the client accepts; captured at construction, on
+         * the gRPC thread
+         */
+        private final Context grpcContext;
 
         private volatile boolean isClosed = false;
 
@@ -473,7 +479,7 @@ public class ArrowFlightUtil {
             this.session = session;
             this.listener = new MessageViewAdapter(responseObserver);
             this.responseObserver = responseObserver;
-            this.acceptedCompression = ClientAcceptCompressionInterceptor.acceptedCompression();
+            this.grpcContext = Context.current();
             this.errorTransformer = errorTransformer;
             this.marshallers = exchangeMarshallers;
 
@@ -555,8 +561,10 @@ public class ArrowFlightUtil {
                 final ExchangeMarshaller marshallerForExport,
                 final Object export,
                 final String logName) {
-            BarrageCompression.apply(responseObserver, acceptedCompression,
-                    marshallerForExport.attributesFor(export), logName);
+            // handlers call this on the session executor, which does not attach the call's context
+            grpcContext.run(() -> BarrageCompression.apply(responseObserver,
+                    ClientAcceptCompressionInterceptor.acceptedCompression(),
+                    marshallerForExport.attributesFor(export), logName));
         }
 
         public List<ExchangeMarshaller> getMarshallers() {

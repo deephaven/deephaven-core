@@ -16,7 +16,7 @@ dependencies {
 
     api project(':engine-table')
     implementation project(':proto:proto-backplane-grpc-flight')
-    implementation project(':java-client-grpc-compression')
+    implementation project(':extensions-grpc-compression')
     implementation project(':log-factory')
     api libs.deephaven.barrage.format
     api libs.hdrhistogram
