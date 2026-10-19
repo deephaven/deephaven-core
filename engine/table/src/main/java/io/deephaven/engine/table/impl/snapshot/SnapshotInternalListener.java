@@ -6,38 +6,56 @@ package io.deephaven.engine.table.impl.snapshot;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.ListenerRecorder;
+import io.deephaven.engine.table.impl.MergedListener;
 import io.deephaven.engine.table.impl.LazySnapshotTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
-public class SnapshotInternalListener extends BaseTable.ListenerImpl {
+/**
+ * Takes the snapshots of a non-incremental {@code snapshotWhen}. When the trigger is refreshing, a
+ * {@link ListenerRecorder} on the trigger, and one on the snapshot table when it is refreshing and not lazy, feed this
+ * listener; a failure of either fails the result. With a static trigger there are no recorders, and the only snapshot
+ * is the initial one taken by {@link #doSnapshot(boolean, boolean)}.
+ */
+public class SnapshotInternalListener extends MergedListener {
     private final QueryTable triggerTable;
     private final boolean lazySnapshot;
     private final Table snapshotTable;
     private long snapshotPrevLength;
     private boolean dataCopied;
-    private final QueryTable result;
     private final Map<String, SingleValueColumnSource<?>> resultTriggerColumns;
     private final Map<String, WritableColumnSource<?>> resultBaseColumns;
     private final WritableColumnSource<?>[] objectBaseColumns;
     private final Map<String, ? extends ColumnSource<?>> triggerStampColumns;
     private final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns;
     private final TrackingWritableRowSet resultRowSet;
+    private final ListenerRecorder triggerRecorder;
 
+    /**
+     * @param triggerRecorder the recorder on the trigger table, or {@code null} if the trigger is static
+     * @param snapshotRecorder the recorder on the snapshot table, or {@code null} if the trigger is static or the
+     *        snapshot table is static or lazy
+     */
     public SnapshotInternalListener(QueryTable triggerTable,
             boolean lazySnapshot,
             Table snapshotTable,
             QueryTable result,
             Map<String, SingleValueColumnSource<?>> resultTriggerColumns,
             Map<String, WritableColumnSource<?>> resultBaseColumns,
-            TrackingWritableRowSet resultRowSet) {
-        super("snapshot " + result.getDefinition().getColumnNameSet(), triggerTable, result);
+            TrackingWritableRowSet resultRowSet,
+            @Nullable ListenerRecorder triggerRecorder,
+            @Nullable ListenerRecorder snapshotRecorder) {
+        super(recorders(triggerRecorder, snapshotRecorder), Collections.emptyList(),
+                "snapshot " + result.getDefinition().getColumnNameSet(), result);
         this.triggerTable = triggerTable;
-        this.result = result;
         this.lazySnapshot = lazySnapshot;
         this.snapshotTable = snapshotTable;
         this.snapshotPrevLength = 0;
@@ -45,17 +63,29 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         this.resultBaseColumns = resultBaseColumns;
         this.objectBaseColumns = SnapshotUtils.objectColumns(resultBaseColumns);
         this.resultRowSet = resultRowSet;
-        if (triggerTable.isRefreshing() && snapshotTable.isRefreshing()) {
-            // only a listener on a refreshing trigger reads the snapshot table after construction
+        this.triggerRecorder = triggerRecorder;
+        if (triggerRecorder != null && snapshotRecorder == null && snapshotTable.isRefreshing()) {
+            // a refreshing lazy snapshot table has no recorder, but is read on every trigger tick
             manage(snapshotTable);
         }
         triggerStampColumns = SnapshotUtils.generateTriggerStampColumns(triggerTable);
         snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(snapshotTable);
     }
 
+    private static List<ListenerRecorder> recorders(
+            @Nullable final ListenerRecorder triggerRecorder,
+            @Nullable final ListenerRecorder snapshotRecorder) {
+        if (triggerRecorder == null) {
+            return Collections.emptyList();
+        }
+        return snapshotRecorder == null ? List.of(triggerRecorder) : List.of(triggerRecorder, snapshotRecorder);
+    }
+
     @Override
-    public void onUpdate(final TableUpdate upstream) {
-        doSnapshot(true, false);
+    protected void process() {
+        if (triggerRecorder.recordedVariablesAreValid()) {
+            doSnapshot(true, false);
+        }
     }
 
     public void doSnapshot(final boolean notifyListeners, final boolean usePrev) {
@@ -104,14 +134,6 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
                     RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         }
         snapshotPrevLength = snapshotSize;
-    }
-
-    @Override
-    public boolean canExecute(final long step) {
-        if (!lazySnapshot) {
-            return snapshotTable.satisfied(step) && super.canExecute(step);
-        }
-        return super.canExecute(step);
     }
 
 }

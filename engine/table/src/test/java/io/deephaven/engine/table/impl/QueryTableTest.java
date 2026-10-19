@@ -1911,6 +1911,50 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testSnapshotHistoryTriggerNotAppendOnly() {
+        final QueryTable base = testRefreshingTable(i(10).toTracking(), intCol("A", 1));
+        final QueryTable trigger = testRefreshingTable(i(0, 1).toTracking(), intCol("T", 1, 2));
+        final Table history = base.snapshotWhen(trigger, Flag.HISTORY);
+        assertEquals(2, history.size());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(trigger, i(0));
+                trigger.notifyListeners(i(), i(0), i());
+            });
+        }
+        assertTrue(history.isFailed());
+        assertEquals(2, history.size());
+    }
+
+    @Test
+    public void testSnapshotBaseFailure() {
+        final QueryTable base = testRefreshingTable(i(10, 20).toTracking(), intCol("A", 1, 2));
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+        final Table plain = base.snapshotWhen(trigger, Flag.INITIAL);
+        final Table incremental = base.snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL);
+        final Table history = base.snapshotWhen(trigger, Flag.HISTORY);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        try (final SafeCloseable ignored = new ErrorExpectation()) {
+            updateGraph.runWithinUnitTestCycle(
+                    () -> base.notifyListenersOnError(new RuntimeException("simulated base failure"), null));
+        }
+        assertTrue(plain.isFailed());
+        assertTrue(incremental.isFailed());
+        assertTrue(history.isFailed());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(trigger, i(1), intCol("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+        assertEquals(2, plain.size());
+        assertEquals(2, incremental.size());
+        assertEquals(2, history.size());
+    }
+
+    @Test
     public void testSnapshotArrayTrigger() {
         final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 col("A", 3, 1, 2), col("B", "c", "a", "b"));
@@ -2184,7 +2228,18 @@ public class QueryTableTest extends QueryTableTestBase {
             assertFalse(
                     snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
-            // This will do the notification for left; at which point we can do the first snapshot
+            // These flush the listener recorders of both snapshots on the trigger
+            for (int recorder = 0; recorder < 2; ++recorder) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+                assertFalse(snappedFirst
+                        .satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+                assertFalse(snappedDep
+                        .satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+                assertFalse(snappedOfSnap
+                        .satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            }
+
+            // This will do the merged notification of the first snapshot, which takes the snapshot
             boolean flushed = updateGraph.flushOneNotificationForUnitTests();
 
             assertTrue(flushed);
@@ -2217,10 +2272,13 @@ public class QueryTableTest extends QueryTableTestBase {
             assertFalse(
                     snappedOfSnap.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
-            // Now we should flush the second snapshot
-            flushed = updateGraph.flushOneNotificationForUnitTests();
-            assertTrue(flushed);
-            // Which also generates a result notification as a pass-through
+            // Now we should flush the select's pass-through and the second snapshot's recorder on the select
+            for (int notification = 0; notification < 2; ++notification) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+                assertFalse(snappedOfSnap
+                        .satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            }
+            // And the merged notification of the second snapshot, which takes the snapshot
             flushed = updateGraph.flushOneNotificationForUnitTests();
             assertTrue(flushed);
             assertTrue(
