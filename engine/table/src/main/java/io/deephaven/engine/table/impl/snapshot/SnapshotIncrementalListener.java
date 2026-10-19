@@ -79,7 +79,7 @@ public class SnapshotIncrementalListener extends MergedListener {
     protected void process() {
         if (!firstSnapshot && baseListener.recordedVariablesAreValid()) {
             if (baseUpdates == null) {
-                baseUpdates = new UpdateCoalescer(baseTable.getRowSet(), baseListener.getUpdate());
+                baseUpdates = new UpdateCoalescer(baseTable.getRowSet().prev(), baseListener.getUpdate());
             } else {
                 baseUpdates.update(baseListener.getUpdate());
             }

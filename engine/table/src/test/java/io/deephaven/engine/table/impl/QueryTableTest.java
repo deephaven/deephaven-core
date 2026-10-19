@@ -3021,6 +3021,43 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testSnapshotIncrementalRandomShifts() {
+        for (int seed = 0; seed < 50; ++seed) {
+            testSnapshotIncrementalRandomShifts(seed);
+        }
+    }
+
+    private void testSnapshotIncrementalRandomShifts(final int seed) {
+        final Random random = new Random(seed);
+        final ColumnInfo<?, ?>[] baseInfo;
+        final QueryTable base = getTable(50, random,
+                baseInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                        new SetGenerator<>("aa", "bb", "bc", "cc", "dd", "ee", "ff", "gg", "hh", "ii"),
+                        new IntGenerator(0, 100),
+                        new DoubleGenerator(0, 100)));
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), intCol("Stamp", 0));
+        final Table snapshot = base.snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL);
+        validateUpdates(snapshot);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 1; step <= 50; ++step) {
+            final int stamp = step;
+            final boolean tickTrigger = random.nextInt(3) == 0;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, 10,
+                        random, base, baseInfo);
+                if (tickTrigger) {
+                    addToTable(trigger, i(stamp), intCol("Stamp", stamp));
+                    trigger.notifyListeners(i(stamp), i(), i());
+                }
+            });
+            if (tickTrigger) {
+                assertTableEquals("seed=" + seed + ", step=" + step, base, snapshot.dropColumns("Stamp"));
+            }
+        }
+    }
+
+    @Test
     public void testSnapshotIncrementalRandom() {
         final ColumnInfo<?, ?>[] stampInfo;
         final ColumnInfo<?, ?>[] rightInfo;
