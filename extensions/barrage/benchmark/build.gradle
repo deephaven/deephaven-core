@@ -19,6 +19,13 @@ dependencies {
     // BarrageGrpcPropagateBenchmark writes through a real gRPC Netty transport to clients on the loopback interface
     implementation libs.grpc.stub
     implementation libs.grpc.netty
+    // BarrageGrpcPropagateBenchmark's jetty transport: gRPC's servlet adapter in Jetty, as the server's default transport
+    implementation project(':grpc-java:grpc-servlet-jakarta')
+    implementation libs.jakarata.servlet.api
+    implementation platform(libs.jetty.bom)
+    implementation platform(libs.jetty.ee10.bom)
+    implementation libs.jetty.servlet
+    implementation libs.jetty.http2.server
     implementation project(':extensions-grpc-compression')
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation TestTools.projectDependency(project, 'engine-rowset')

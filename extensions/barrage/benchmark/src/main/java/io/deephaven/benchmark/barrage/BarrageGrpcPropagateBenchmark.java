@@ -24,26 +24,42 @@ import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageMessageWriterImpl;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.grpc.compression.CompressionCodecs;
 import io.deephaven.server.barrage.BarrageMessageProducer;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.PassthroughInputStreamMarshaller;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.CallOptions;
+import io.grpc.ClientStreamTracer;
 import io.grpc.ManagedChannel;
+import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.Server;
 import io.grpc.ServerServiceDefinition;
+import io.grpc.ServerStreamTracer;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.netty.NettyServerBuilder;
+import io.grpc.servlet.jakarta.ServletAdapter;
+import io.grpc.servlet.jakarta.ServletServerBuilder;
 import io.grpc.stub.ClientCalls;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.http2.RateControl;
+import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.ServerConnector;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -63,6 +79,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.LinkedHashSet;
@@ -109,7 +127,26 @@ import java.util.stream.Collectors;
  * modifying the table, which is the producer's listener recording the delta. It runs before the job, outside the
  * measured span, and is reported so the full cost of supplying the update can be summed.</li>
  * <li>{@code megabytesTotal}: the message payload written to the transport, over all subscribers.</li>
+ * <li>{@code wireMegabytesTotal}: the bytes the clients received, after {@code compression}.</li>
+ * <li>{@code messagesTotal}: the gRPC messages the server sent, over all subscribers.</li>
+ * <li>{@code peakMessageMegabytesTotal}: the invocation's largest gRPC message, after {@code compression}. gRPC holds a
+ * whole compressed message in memory before it sends any of it, so this is what one stream holds at once.</li>
+ * <li>{@code peakInFlightMegabytesTotal}: the most the server had framed that the clients had not yet received, sampled
+ * about every millisecond. gRPC reports each message once it is framed and once it is received, so this counts whole
+ * messages: it is exact for compressed messages, which gRPC sends only once framed, but it understates an uncompressed
+ * message, whose buffers gRPC sends as it fills them.</li>
+ * <li>{@code peakHeapGrowthMegabytesTotal}: the most the heap grew during the invocation, from its size after a
+ * collection just before it, sampled the same way. It includes garbage not yet collected, so it bounds what the
+ * invocation kept rather than measuring it.</li>
  * </ul>
+ *
+ * <p>
+ * {@code transport} picks the server's transport: {@code netty}, or {@code jetty}, the Deephaven server's default,
+ * whose gRPC servlet adapter frames each message into heap byte arrays. {@code compression} is the type every
+ * subscriber's stream is compressed with, set as the server sets it, or {@code identity} for none; the clients accept
+ * every supported type. {@code batchSize} is the rows per record batch the subscriptions ask for, or 0 for the server's
+ * default, under which a snapshot is a single record batch.
+ * </p>
  *
  * <p>
  * The table's 30 columns are six {@code long}, five {@code int}, four {@code double}, three {@code short}, two
@@ -219,21 +256,36 @@ public class BarrageGrpcPropagateBenchmark {
         public double writeMillisTotal;
         public double recordMillisTotal;
         public double megabytesTotal;
+        public double wireMegabytesTotal;
+        public long messagesTotal;
+        public double peakMessageMegabytesTotal;
+        public double peakInFlightMegabytesTotal;
+        public double peakHeapGrowthMegabytesTotal;
 
         @Setup(Level.Iteration)
         public void reset() {
             invocations = 0;
             jobMillisTotal = prewriteMillisTotal = writeMillisTotal = recordMillisTotal = megabytesTotal = 0;
+            messagesTotal = 0;
+            wireMegabytesTotal = peakMessageMegabytesTotal = peakInFlightMegabytesTotal = 0;
+            peakHeapGrowthMegabytesTotal = 0;
         }
 
         void record(final double job, final double prewrite, final double write, final double record,
-                final double megabytes) {
+                final double megabytes, final double wireMegabytes, final long messages,
+                final double peakMessageMegabytes, final double peakInFlightMegabytes,
+                final double peakHeapGrowthMegabytes) {
             ++invocations;
             jobMillisTotal += job;
             prewriteMillisTotal += prewrite;
             writeMillisTotal += write;
             recordMillisTotal += record;
             megabytesTotal += megabytes;
+            wireMegabytesTotal += wireMegabytes;
+            messagesTotal += messages;
+            peakMessageMegabytesTotal += peakMessageMegabytes;
+            peakInFlightMegabytesTotal += peakInFlightMegabytes;
+            peakHeapGrowthMegabytesTotal += peakHeapGrowthMegabytes;
         }
     }
 
@@ -255,6 +307,18 @@ public class BarrageGrpcPropagateBenchmark {
         @Param({"full"})
         String mix;
 
+        /** The server's transport: {@code netty}, or {@code jetty}, the Deephaven server's default. */
+        @Param({"netty"})
+        String transport;
+
+        /** The compression type each subscriber's stream is sent with, or {@code identity} for none. */
+        @Param({"identity"})
+        String compression;
+
+        /** Rows per record batch the subscriptions ask for; 0 asks for the server's default. */
+        @Param({"0"})
+        int batchSize;
+
         SafeCloseable executionContext;
         SafeCloseable livenessScope;
         ThreadPoolExecutor helperPool;
@@ -266,8 +330,20 @@ public class BarrageGrpcPropagateBenchmark {
         String[] strPool;
         String[] symPool;
 
-        Server server;
+        Sink sink;
         final BlockingQueue<StreamObserver<InputStream>> openedStreams = new LinkedBlockingQueue<>();
+        /** The bytes the server has framed and the clients have received, after compression, since the trial began. */
+        final AtomicLong framedWireBytes = new AtomicLong();
+        final AtomicLong receivedWireBytes = new AtomicLong();
+        /** The current invocation's gRPC messages, and its largest, after compression. */
+        final AtomicLong messagesSent = new AtomicLong();
+        final AtomicLong peakMessageBytes = new AtomicLong();
+        /** The current invocation's peaks, which {@link #sampler} keeps. */
+        final AtomicLong peakInFlightBytes = new AtomicLong();
+        final AtomicLong peakHeapBytes = new AtomicLong();
+        /** The heap in use after the collection just before the current invocation. */
+        long baseHeapBytes;
+        Thread sampler;
         final List<Client> clients = new ArrayList<>();
 
         /** The first write's start and the last write's end, over all subscribers, of the current invocation. */
@@ -279,7 +355,7 @@ public class BarrageGrpcPropagateBenchmark {
         /** The table's row count. */
         abstract int rows();
 
-        void setupProducer() throws IOException {
+        void setupProducer() throws Exception {
             executionContext = TestExecutionContext.createForUnitTests().open();
             updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             updateGraph.enableUnitTestMode();
@@ -299,32 +375,152 @@ public class BarrageGrpcPropagateBenchmark {
             scheduler = new TestControlledScheduler();
             producer = table.getResult(makeOperation());
 
-            // The sink: a real gRPC server on the loopback interface, built as the server's Netty transport is
-            server = NettyServerBuilder.forPort(0)
-                    .directExecutor()
-                    .addService(ServerServiceDefinition.builder(SERVICE_NAME)
-                            .addMethod(SERVER_METHOD, ServerCalls.asyncBidiStreamingCall(responseObserver -> {
-                                openedStreams.add(responseObserver);
-                                return new StreamObserver<>() {
-                                    @Override
-                                    public void onNext(final InputStream request) {}
+            // The sink: a real gRPC server on the loopback interface
+            final ServerServiceDefinition service = ServerServiceDefinition.builder(SERVICE_NAME)
+                    .addMethod(SERVER_METHOD, ServerCalls.asyncBidiStreamingCall(responseObserver -> {
+                        if (!compression.equals("identity")) {
+                            // as BarrageCompression.apply sets it, before the first message
+                            ((ServerCallStreamObserver<?>) responseObserver).setCompression(compression);
+                        }
+                        openedStreams.add(responseObserver);
+                        return new StreamObserver<>() {
+                            @Override
+                            public void onNext(final InputStream request) {}
 
-                                    @Override
-                                    public void onError(final Throwable t) {}
+                            @Override
+                            public void onError(final Throwable t) {}
 
-                                    @Override
-                                    public void onCompleted() {}
-                                };
-                            }))
-                            .build())
-                    .build()
-                    .start();
+                            @Override
+                            public void onCompleted() {}
+                        };
+                    }))
+                    .build();
+            final ServerStreamTracer.Factory framedCounter = new ServerStreamTracer.Factory() {
+                @Override
+                public ServerStreamTracer newServerStreamTracer(final String fullMethodName, final Metadata headers) {
+                    return new ServerStreamTracer() {
+                        @Override
+                        public void outboundWireSize(final long bytes) {
+                            framedWireBytes.addAndGet(bytes);
+                        }
+
+                        @Override
+                        public void outboundMessageSent(final int seqNo, final long optionalWireSize,
+                                final long optionalUncompressedSize) {
+                            messagesSent.incrementAndGet();
+                            peakMessageBytes.accumulateAndGet(optionalWireSize, Math::max);
+                        }
+                    };
+                }
+            };
+            sink = transport.equals("jetty") ? jettySink(service, framedCounter) : nettySink(service, framedCounter);
             for (int si = 0; si < subscribers; ++si) {
-                clients.add(new Client(NettyChannelBuilder.forAddress("127.0.0.1", server.getPort())
+                clients.add(new Client(NettyChannelBuilder.forAddress("127.0.0.1", sink.port())
                         .usePlaintext()
                         .maxInboundMessageSize(Integer.MAX_VALUE)
+                        .decompressorRegistry(CompressionCodecs.decompressorRegistry(CompressionCodecs.SUPPORTED))
                         .build()));
             }
+            startSampler();
+        }
+
+        /** The gRPC server the producer writes to. */
+        private interface Sink {
+            int port();
+
+            void close() throws Exception;
+        }
+
+        /**
+         * A Netty server, built as the server's Netty transport is, but with every compression type registered, as the
+         * Jetty transport registers them.
+         */
+        private Sink nettySink(final ServerServiceDefinition service, final ServerStreamTracer.Factory tracer)
+                throws IOException {
+            final Server server = NettyServerBuilder.forPort(0)
+                    .directExecutor()
+                    .compressorRegistry(CompressionCodecs.compressorRegistry())
+                    .decompressorRegistry(CompressionCodecs.decompressorRegistry(CompressionCodecs.SUPPORTED))
+                    .addStreamTracerFactory(tracer)
+                    .addService(service)
+                    .build()
+                    .start();
+            return new Sink() {
+                @Override
+                public int port() {
+                    return server.getPort();
+                }
+
+                @Override
+                public void close() throws InterruptedException {
+                    server.shutdownNow();
+                    server.awaitTermination(STREAM_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                }
+            };
+        }
+
+        /**
+         * A Jetty server, built as the server's default transport is: gRPC's servlet adapter, with every compression
+         * type registered, behind a cleartext HTTP/2 connector with rate control off.
+         */
+        private Sink jettySink(final ServerServiceDefinition service, final ServerStreamTracer.Factory tracer)
+                throws Exception {
+            final ServletServerBuilder builder = new ServletServerBuilder();
+            builder.directExecutor();
+            builder.compressorRegistry(CompressionCodecs.compressorRegistry());
+            builder.decompressorRegistry(CompressionCodecs.decompressorRegistry(CompressionCodecs.SUPPORTED));
+            builder.addStreamTracerFactory(tracer);
+            builder.addService(service);
+            final ServletAdapter adapter = builder.buildServletAdapter();
+
+            final org.eclipse.jetty.server.Server jetty = new org.eclipse.jetty.server.Server();
+            final HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(new HttpConfiguration());
+            h2c.setRateControlFactory(new RateControl.Factory() {});
+            final ServerConnector connector = new ServerConnector(jetty, h2c);
+            connector.setHost("127.0.0.1");
+            connector.setPort(0);
+            jetty.addConnector(connector);
+            final ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+            final ServletHolder holder = new ServletHolder(new HttpServlet() {
+                @Override
+                protected void doPost(final HttpServletRequest request, final HttpServletResponse response)
+                        throws IOException {
+                    adapter.doPost(request, response);
+                }
+            });
+            holder.setAsyncSupported(true);
+            context.addServlet(holder, "/*");
+            jetty.setHandler(context);
+            jetty.start();
+            return new Sink() {
+                @Override
+                public int port() {
+                    return connector.getLocalPort();
+                }
+
+                @Override
+                public void close() throws Exception {
+                    adapter.destroy();
+                    jetty.stop();
+                }
+            };
+        }
+
+        /**
+         * Starts the thread that keeps each invocation's peak bytes in flight and peak heap, sampling about every
+         * millisecond.
+         */
+        private void startSampler() {
+            final MemoryMXBean memory = ManagementFactory.getMemoryMXBean();
+            sampler = new Thread(() -> {
+                while (!Thread.currentThread().isInterrupted()) {
+                    peakInFlightBytes.accumulateAndGet(framedWireBytes.get() - receivedWireBytes.get(), Math::max);
+                    peakHeapBytes.accumulateAndGet(memory.getHeapMemoryUsage().getUsed(), Math::max);
+                    LockSupport.parkNanos(1_000_000);
+                }
+            }, "memory-sampler");
+            sampler.setDaemon(true);
+            sampler.start();
         }
 
         private BarrageMessageProducer.Operation makeOperation() {
@@ -355,7 +551,11 @@ public class BarrageGrpcPropagateBenchmark {
 
         /** Opens a gRPC stream for each client and subscribes it; the next run of the scheduler sends snapshots. */
         void subscribe() throws InterruptedException {
-            final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder().build();
+            final BarrageSubscriptionOptions.Builder optionsBuilder = BarrageSubscriptionOptions.builder();
+            if (batchSize > 0) {
+                optionsBuilder.batchSize(batchSize);
+            }
+            final BarrageSubscriptionOptions options = optionsBuilder.build();
             final long width = Math.max(1, rows() / 10);
             for (int si = 0; si < subscribers; ++si) {
                 final Client client = clients.get(si);
@@ -387,6 +587,13 @@ public class BarrageGrpcPropagateBenchmark {
             for (final Client client : clients) {
                 client.resetBytes();
             }
+            // every invocation's heap growth is measured from a heap just collected
+            System.gc();
+            baseHeapBytes = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed();
+            peakHeapBytes.set(baseHeapBytes);
+            peakInFlightBytes.set(0);
+            messagesSent.set(0);
+            peakMessageBytes.set(0);
         }
 
         /**
@@ -400,9 +607,11 @@ public class BarrageGrpcPropagateBenchmark {
             final long jobEnd = System.nanoTime();
             long written = 0;
             long received = 0;
+            long wire = 0;
             for (final Client client : clients) {
                 written += client.subscription.written.get();
                 received += client.awaitDelivery();
+                wire += client.wireReceived.get();
             }
             final boolean wrote = firstWriteStartNanos.get() != Long.MAX_VALUE;
             counters.record(
@@ -410,12 +619,21 @@ public class BarrageGrpcPropagateBenchmark {
                     wrote ? (firstWriteStartNanos.get() - jobStart) / 1e6 : 0,
                     wrote ? (lastWriteEndNanos.get() - firstWriteStartNanos.get()) / 1e6 : 0,
                     recordNanos / 1e6,
-                    written / 1e6);
+                    written / 1e6,
+                    wire / 1e6,
+                    messagesSent.get(),
+                    peakMessageBytes.get() / 1e6,
+                    peakInFlightBytes.get() / 1e6,
+                    (peakHeapBytes.get() - baseHeapBytes) / 1e6);
             recordNanos = 0;
             return received;
         }
 
-        void tearDownProducer() throws InterruptedException {
+        void tearDownProducer() throws Exception {
+            if (sampler != null) {
+                sampler.interrupt();
+                sampler.join();
+            }
             for (final Client client : clients) {
                 client.channel.shutdownNow();
             }
@@ -423,9 +641,8 @@ public class BarrageGrpcPropagateBenchmark {
                 client.channel.awaitTermination(STREAM_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             }
             clients.clear();
-            if (server != null) {
-                server.shutdownNow();
-                server.awaitTermination(STREAM_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            if (sink != null) {
+                sink.close();
             }
             livenessScope.close();
             if (helperPool != null) {
@@ -444,6 +661,8 @@ public class BarrageGrpcPropagateBenchmark {
         final class Client implements StreamObserver<Long> {
             final ManagedChannel channel;
             final AtomicLong received = new AtomicLong();
+            /** The bytes this client received, before decompression. */
+            final AtomicLong wireReceived = new AtomicLong();
             Subscription subscription;
             volatile CountDownLatch closed;
             volatile Throwable failure;
@@ -455,8 +674,23 @@ public class BarrageGrpcPropagateBenchmark {
             /** Starts a stream, and pairs it with the server end the service hands over. */
             void open() throws InterruptedException {
                 closed = new CountDownLatch(1);
-                final StreamObserver<InputStream> requests =
-                        ClientCalls.asyncBidiStreamingCall(channel.newCall(CLIENT_METHOD, CallOptions.DEFAULT), this);
+                final ClientStreamTracer.Factory wireCounter = new ClientStreamTracer.Factory() {
+                    @Override
+                    public ClientStreamTracer newClientStreamTracer(
+                            final ClientStreamTracer.StreamInfo info,
+                            final Metadata headers) {
+                        return new ClientStreamTracer() {
+                            @Override
+                            public void inboundWireSize(final long bytes) {
+                                wireReceived.addAndGet(bytes);
+                                receivedWireBytes.addAndGet(bytes);
+                            }
+                        };
+                    }
+                };
+                final StreamObserver<InputStream> requests = ClientCalls.asyncBidiStreamingCall(
+                        channel.newCall(CLIENT_METHOD, CallOptions.DEFAULT.withStreamTracerFactory(wireCounter)),
+                        this);
                 // one message, so that the headers reach the server and it opens its end
                 requests.onNext(new ByteArrayInputStream(new byte[0]));
                 final StreamObserver<InputStream> serverEnd =
@@ -469,6 +703,7 @@ public class BarrageGrpcPropagateBenchmark {
 
             void resetBytes() {
                 received.set(0);
+                wireReceived.set(0);
                 if (subscription != null) {
                     subscription.written.set(0);
                 }
@@ -592,7 +827,7 @@ public class BarrageGrpcPropagateBenchmark {
         }
 
         @Setup(Level.Trial)
-        public void setupTrial() throws IOException {
+        public void setupTrial() throws Exception {
             setupProducer();
         }
 
@@ -608,7 +843,7 @@ public class BarrageGrpcPropagateBenchmark {
         }
 
         @TearDown(Level.Trial)
-        public void tearDownTrial() throws InterruptedException {
+        public void tearDownTrial() throws Exception {
             tearDownProducer();
         }
     }
@@ -632,7 +867,7 @@ public class BarrageGrpcPropagateBenchmark {
         }
 
         @Setup(Level.Trial)
-        public void setupTrial() throws IOException, InterruptedException {
+        public void setupTrial() throws Exception {
             setupProducer();
             beginInvocation();
             subscribe();
@@ -664,7 +899,7 @@ public class BarrageGrpcPropagateBenchmark {
         }
 
         @TearDown(Level.Trial)
-        public void tearDownTrial() throws InterruptedException {
+        public void tearDownTrial() throws Exception {
             unsubscribe();
             tearDownProducer();
         }
