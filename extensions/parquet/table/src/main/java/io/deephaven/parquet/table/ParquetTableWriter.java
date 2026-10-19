@@ -5,7 +5,6 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.SortColumn;
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -172,12 +171,9 @@ public class ParquetTableWriter {
                     final Table indexTable = dataIndex.table().sort(info.indexColumnNames.toArray(new String[0]));
                     // Like the rest of the footer metadata, sorting columns are recorded by parquet column name; the
                     // index table is written with the same parquet column names as the file it indexes, since it is
-                    // written with the same instructions. SortColumnInfo requires each name to be a valid Deephaven
-                    // column name, both here and wherever the footer is read, and the sort is a prefix, so it ends at
-                    // the first parquet name that is not a valid Deephaven column name.
+                    // written with the same instructions.
                     final TableInfo.Builder indexTableInfoBuilder = TableInfo.builder().addSortingColumns(
                             Arrays.stream(info.parquetColumnNames)
-                                    .takeWhile(NameValidator::isValidColumnName)
                                     .map(parquetColumnName -> SortColumnInfo.of(parquetColumnName,
                                             SortColumnInfo.SortDirection.Ascending))
                                     .toArray(SortColumnInfo[]::new));
@@ -211,19 +207,15 @@ public class ParquetTableWriter {
         // a single column sort in the metadata at this time.
         // Like the rest of the footer metadata, it is recorded by parquet column name, which is what a reader sees in
         // the file whatever renames it applies. Only a column that is written has a parquet column name; another column
-        // may be written under the parquet name an unwritten column maps to. SortColumnInfo requires that parquet name
-        // to be a valid Deephaven column name, both here and wherever the footer is read, so a parquet name that is not
-        // a valid Deephaven column name leaves the sort unrecorded.
+        // may be written under the parquet name an unwritten column maps to.
         final List<SortColumn> sortedColumns = SortedColumnsAttribute.getSortedColumns(t);
         if (!sortedColumns.isEmpty() && definition.getColumn(sortedColumns.get(0).column().name()) != null) {
             final SortColumn sortedColumn = sortedColumns.get(0);
             final String parquetColumnName =
                     writeInstructions.getParquetColumnNameFromColumnNameOrDefault(sortedColumn.column().name());
-            if (NameValidator.isValidColumnName(parquetColumnName)) {
-                tableInfoBuilder.addSortingColumns(SortColumnInfo.of(parquetColumnName, sortedColumn.isAscending()
-                        ? SortColumnInfo.SortDirection.Ascending
-                        : SortColumnInfo.SortDirection.Descending));
-            }
+            tableInfoBuilder.addSortingColumns(SortColumnInfo.of(parquetColumnName, sortedColumn.isAscending()
+                    ? SortColumnInfo.SortDirection.Ascending
+                    : SortColumnInfo.SortDirection.Descending));
         }
         final long numBytes = write(t, definition, writeInstructions, dest, destOutputStream, incomingMeta,
                 tableInfoBuilder, metadataFileWriter, computedCache);

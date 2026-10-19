@@ -3,6 +3,8 @@
 //
 package io.deephaven.parquet.table.location;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.BasicDataIndex;
@@ -299,17 +301,40 @@ public class ParquetMetadataKeyingTest {
     }
 
     /**
-     * The metadata records a sort column by its parquet name, and every reader validates it as a Deephaven column name,
-     * so a sorted column renamed on write to a parquet name that is not one is written without its sortedness.
+     * The metadata records a sort column by its parquet name, which need not be a valid Deephaven column name. The sort
+     * lands on the Deephaven column reading parquet {@code x col}, whether the read maps that name back or legalizes
+     * it.
      */
     @Test
     public void sortednessWithWriteRenameToNonColumnName() {
         final ParquetInstructions renamed = ParquetInstructions.builder()
                 .addColumnNameMapping("x col", "X")
                 .build();
-        final Table fromDisk = ParquetTools.readTable(writeSortedTable(renamed), renamed);
-        assertEquals(Optional.empty(), sortOrder(fromDisk, "X"));
-        assertFilterMatchesOracle(fromDisk, "X >= 500");
+        final String dest = writeSortedTable(renamed);
+
+        final Table mapped = ParquetTools.readTable(dest, renamed);
+        assertEquals(Optional.of(SortingOrder.Ascending), sortOrder(mapped, "X"));
+        assertFilterMatchesOracle(mapped, "X >= 500");
+
+        final Table legalized = ParquetTools.readTable(dest);
+        assertEquals(Optional.of(SortingOrder.Ascending), sortOrder(legalized, "x_col"));
+        assertFilterMatchesOracle(legalized, "x_col >= 500");
+    }
+
+    /**
+     * A location built directly, with instructions that have neither a table definition nor renames, does not legalize
+     * parquet {@code x col}. No Deephaven column can have that name, so no Deephaven column reads {@code x col}, and
+     * the location has no sort columns rather than failing to name one.
+     */
+    @Test
+    public void sortednessOfNonColumnNameWithoutRenamesOrDefinition() {
+        final String dest = writeSortedTable(ParquetInstructions.builder()
+                .addColumnNameMapping("x col", "X")
+                .build());
+        final ParquetTableLocation location = new ParquetTableLocation(StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(new File(dest).toURI(), 0, null, ParquetInstructions.EMPTY),
+                ParquetInstructions.EMPTY);
+        assertEquals(List.of(), location.getSortedColumns());
     }
 
     /**
@@ -489,12 +514,19 @@ public class ParquetMetadataKeyingTest {
     }
 
     /**
-     * An index on a column written under a parquet name that is not a valid Deephaven column name is written, and is
-     * found whether the read maps that name back or legalizes it.
+     * An index on a column written under a parquet name that is not a valid Deephaven column name is written, sorted by
+     * that parquet name, and is found whether the read maps that name back or legalizes it.
      */
     @Test
     public void dataIndexWithWriteRenameToNonColumnName() {
         final String dest = writeIndexedTableUnderNonColumnName();
+        final ParquetInstructions indexInstructions = ParquetInstructions.builder()
+                .addColumnNameMapping("b col", "B")
+                .build();
+        final ParquetTableLocation indexLocation = new ParquetTableLocation(StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(indexFile(dest).toURI(), 0, null, indexInstructions), indexInstructions);
+        assertEquals(List.of(SortColumn.asc(ColumnName.of("B"))), indexLocation.getSortedColumns());
+
         final Table mapped = ParquetTools.readTable(dest, ParquetInstructions.builder()
                 .addColumnNameMapping("b col", "B")
                 .build());

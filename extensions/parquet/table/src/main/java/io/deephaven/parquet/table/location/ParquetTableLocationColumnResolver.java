@@ -5,6 +5,7 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
@@ -119,9 +120,12 @@ final class ParquetTableLocationColumnResolver implements ParquetColumnResolver 
     @Nullable
     String findDeephavenColumnName(@NotNull final String parquetColumnName) {
         if (renamesLeaveAlone(parquetColumnName)) {
-            // The only possible reader is the Deephaven column with the same name
+            // The only possible reader is the Deephaven column with the same name, which cannot exist when that name is
+            // not a valid Deephaven column name; with no rename to read it, such a parquet column has no reader
             final String columnName = parquetColumnName;
-            return readsFile(columnName) && readsWholeColumn(of(columnName).orElse(List.of())) ? columnName : null;
+            return NameValidator.isValidColumnName(columnName)
+                    && readsFile(columnName)
+                    && readsWholeColumn(of(columnName).orElse(List.of())) ? columnName : null;
         }
         return metadataNames().deephavenByParquet.get(parquetColumnName);
     }

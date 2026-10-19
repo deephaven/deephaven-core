@@ -602,10 +602,10 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     groupingSchema.getFields().stream().map(Type::getName).collect(Collectors.joining(", "))));
         }
         // Legacy grouping tables are written with a key, start position, and end position. We must convert the ranges
-        // to RowSets. That comes first: a view's columns apply in order, and the key column may be named like a
-        // position column.
+        // to RowSets. The row set column comes first: a view's columns apply in order, and the key column may be named
+        // like a position column, which would hide the file's position column from a later row set column.
         return ParquetTools.readTable(indexFileMetaData.fileURI.toString(), indexReadInstructions)
-                .updateView(List.of(
+                .view(List.of(
                         // Using this lets us avoid a compilation or boxing, but does force us to do single-cell access
                         // rather than using chunks.
                         new MultiSourceFunctionalColumn<>(
@@ -619,10 +619,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
                                     return endPos <= beginPos
                                             ? RowSetFactory.empty()
                                             : RowSetFactory.fromRange(beginPos, endPos - 1);
-                                })))
-                .view(List.of(
-                        new SourceColumn(GROUPING_KEY_COLUMN_NAME, keyColumnNames[0]),
-                        new SourceColumn(INDEX_ROW_SET_COLUMN_NAME)));
+                                }),
+                        new SourceColumn(GROUPING_KEY_COLUMN_NAME, keyColumnNames[0])));
     }
 
     // endregion Indexing
@@ -936,13 +934,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
     }
 
     /**
-     * Attempts to resolve all columns referenced by {@code filter} against the Parquet schema.
+     * Attempts to resolve each column referenced by {@code filter} to a top-level column of the Parquet schema that
+     * this location can push filters down to. A column that is found in the schema but fails
+     * {@link #isSupportedForPushdown(String, List)} is not resolved. When any column is not resolved, this location
+     * declines every pushdown action for {@code filter}; the filter is still applied to this location's rows, just
+     * without pushdown.
      *
      * @param filter The filter containing the columns to resolve
      * @param renameMap A map from the filter's column names to the table definition's names for them; a name it lacks
      *        is the same in both
-     * @return {@code Optional.empty()} if <b>any</b> column cannot be resolved, otherwise an {@code Optional}
-     *         containing the fully resolved list.
+     * @return {@code Optional.empty()} if <b>any</b> column cannot be resolved or does not support pushdown, otherwise
+     *         an {@code Optional} containing the fully resolved list.
      */
     private Optional<List<ResolvedColumnInfo>> resolveColumns(
             @NotNull final WhereFilter filter,
