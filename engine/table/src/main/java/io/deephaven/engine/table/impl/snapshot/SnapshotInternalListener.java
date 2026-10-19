@@ -23,6 +23,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
     private final QueryTable result;
     private final Map<String, SingleValueColumnSource<?>> resultTriggerColumns;
     private final Map<String, WritableColumnSource<?>> resultBaseColumns;
+    private final WritableColumnSource<?>[] objectBaseColumns;
     private final Map<String, ? extends ColumnSource<?>> triggerStampColumns;
     private final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns;
     private final TrackingWritableRowSet resultRowSet;
@@ -42,6 +43,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         this.snapshotPrevLength = 0;
         this.resultTriggerColumns = resultTriggerColumns;
         this.resultBaseColumns = resultBaseColumns;
+        this.objectBaseColumns = SnapshotUtils.objectColumns(resultBaseColumns);
         this.resultRowSet = resultRowSet;
         if (snapshotTable.isRefreshing()) {
             manage(snapshotTable);
@@ -88,6 +90,12 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             resultRowSet.insertRange(snapshotPrevLength, snapshotSize - 1);
         } else if (snapshotPrevLength > snapshotSize) {
             resultRowSet.removeRange(snapshotSize, snapshotPrevLength - 1);
+            if (objectBaseColumns.length > 0) {
+                try (final RowSequence removedRows =
+                        RowSequenceFactory.forRange(snapshotSize, snapshotPrevLength - 1)) {
+                    SnapshotUtils.nullObjectColumns(objectBaseColumns, removedRows);
+                }
+            }
         }
         if (notifyListeners) {
             result.notifyListeners(new TableUpdateImpl(

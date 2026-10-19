@@ -64,6 +64,7 @@ import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.text.ParseException;
 import java.time.Instant;
@@ -2786,6 +2787,104 @@ public class QueryTableTest extends QueryTableTestBase {
 
         assertTableEquals(testRefreshingTable(i(10, 20, 30).toTracking(),
                 intCol("A", 5, 2, 3), intCol("T", QueryConstants.NULL_INT, 1, QueryConstants.NULL_INT)), snapshot);
+    }
+
+    @Test
+    public void testSnapshotReleasesRemovedValues() throws InterruptedException {
+        testSnapshotReleasesRemovedValues(Flag.INITIAL);
+    }
+
+    @Test
+    public void testSnapshotIncrementalReleasesRemovedValues() throws InterruptedException {
+        testSnapshotReleasesRemovedValues(Flag.INITIAL, Flag.INCREMENTAL);
+    }
+
+    private void testSnapshotReleasesRemovedValues(final Flag... flags) throws InterruptedException {
+        final List<WeakReference<String>> references = new ArrayList<>();
+        final QueryTable base = testRefreshingTable(i(10, 20).toTracking(),
+                stringCol("S", trackedStrings(references, "kept", "removed")));
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+        final Table snapshot = base.snapshotWhen(trigger, flags);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(base, i(20));
+            base.notifyListeners(i(), i(20), i());
+            addToTable(trigger, i(1), intCol("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+        // A further cycle leaves no previous values from the removal.
+        updateGraph.runWithinUnitTestCycle(() -> {
+        });
+        assertEquals(1, snapshot.size());
+
+        for (int attempt = 0; attempt < 100 && references.get(1).get() != null; ++attempt) {
+            System.gc();
+            Thread.sleep(10);
+        }
+        assertNotNull(references.get(0).get());
+        assertNull("removed value still reachable", references.get(1).get());
+    }
+
+    @Test
+    public void testSnapshotReleasesRemovedValuesKeepsInstants() throws InterruptedException {
+        testSnapshotReleasesRemovedValuesKeepsInstants(Flag.INITIAL);
+        testSnapshotReleasesRemovedValuesKeepsInstants(Flag.INITIAL, Flag.INCREMENTAL);
+    }
+
+    /**
+     * An Instant column has an Object chunk type but holds its values in a reinterpretable long source; clearing the
+     * removed rows must leave the remaining rows' Instants, current and previous, intact.
+     */
+    private void testSnapshotReleasesRemovedValuesKeepsInstants(final Flag... flags) throws InterruptedException {
+        final Instant[] instants = {DateTimeUtils.epochNanosToInstant(1000), DateTimeUtils.epochNanosToInstant(2000),
+                DateTimeUtils.epochNanosToInstant(3000)};
+        final List<WeakReference<String>> references = new ArrayList<>();
+        final QueryTable base = testRefreshingTable(i(10, 20, 30).toTracking(), instantCol("Ts", instants),
+                stringCol("S", trackedStrings(references, "first", "removed", "last")));
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+        final Table snapshot = base.snapshotWhen(trigger, flags);
+        validateUpdates(snapshot);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(base, i(20));
+            base.notifyListeners(i(), i(20), i());
+            addToTable(trigger, i(1), intCol("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+        // A further cycle leaves no previous values from the removal.
+        updateGraph.runWithinUnitTestCycle(() -> {
+        });
+
+        final String context = Arrays.toString(flags);
+        assertTableEquals(context, base, snapshot.dropColumns("T"));
+        final ColumnSource<Instant> timestamps = snapshot.getColumnSource("Ts", Instant.class);
+        final ColumnSource<?> timestampNanos = ReinterpretUtils.maybeConvertToPrimitive(timestamps);
+        assertEquals(context, long.class, timestampNanos.getType());
+        final long[] expectedNanos = {1000, 3000};
+        final int[] position = {0};
+        snapshot.getRowSet().forAllRowKeys(rowKey -> {
+            assertEquals(context, instants[position[0] * 2], timestamps.get(rowKey));
+            assertEquals(context, expectedNanos[position[0]], timestampNanos.getLong(rowKey));
+            ++position[0];
+        });
+        assertEquals(context, 2, position[0]);
+
+        for (int attempt = 0; attempt < 100 && references.get(1).get() != null; ++attempt) {
+            System.gc();
+            Thread.sleep(10);
+        }
+        assertNull(context + ": removed value still reachable", references.get(1).get());
+    }
+
+    private static String[] trackedStrings(final List<WeakReference<String>> references, final String... values) {
+        final String[] result = new String[values.length];
+        for (int ii = 0; ii < values.length; ++ii) {
+            result[ii] = new String(values[ii]);
+            references.add(new WeakReference<>(result[ii]));
+        }
+        return result;
     }
 
     @Test

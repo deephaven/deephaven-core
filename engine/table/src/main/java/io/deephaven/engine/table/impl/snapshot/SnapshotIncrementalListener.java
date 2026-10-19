@@ -12,13 +12,17 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.ListenerRecorder;
 import io.deephaven.engine.table.impl.MergedListener;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.SafeCloseable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class SnapshotIncrementalListener extends MergedListener {
@@ -30,6 +34,8 @@ public class SnapshotIncrementalListener extends MergedListener {
     private final QueryTable baseTable;
     private final Map<String, ? extends ColumnSource<?>> triggerColumns;
     private final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns;
+    private final SparseArrayColumnSource<?>[] sparseResultColumns;
+    private final WritableColumnSource<?>[] objectResultColumns;
 
     private UpdateCoalescer baseUpdates;
     private final TrackingWritableRowSet lastBaseRowSet;
@@ -54,6 +60,19 @@ public class SnapshotIncrementalListener extends MergedListener {
         this.triggerColumns = triggerColumns;
         this.lastBaseRowSet = RowSetFactory.empty().toTracking();
         this.snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(baseTable);
+
+        // a reinterpretable result column, such as an Instant column, may hold its values in a sparse primitive source
+        final List<SparseArrayColumnSource<?>> sparseColumns = new ArrayList<>(resultColumns.size());
+        for (final ColumnSource<?> resultColumn : resultColumns.values()) {
+            final ColumnSource<?> storage = resultColumn instanceof SparseArrayColumnSource
+                    ? resultColumn
+                    : ReinterpretUtils.maybeConvertToPrimitive(resultColumn);
+            if (storage instanceof SparseArrayColumnSource) {
+                sparseColumns.add((SparseArrayColumnSource<?>) storage);
+            }
+        }
+        this.sparseResultColumns = sparseColumns.toArray(SparseArrayColumnSource<?>[]::new);
+        this.objectResultColumns = SnapshotUtils.objectColumns(resultColumns);
     }
 
     @Override
@@ -106,6 +125,9 @@ public class SnapshotIncrementalListener extends MergedListener {
             }
 
             resultTable.getRowSet().writableCast().update(baseAdded, baseRemoved);
+            SnapshotUtils.nullObjectColumns(objectResultColumns, baseRemoved);
+            SparseArrayColumnSource.clearBlocksWithoutLiveRows(baseRemoved, resultTable.getRowSet(),
+                    sparseResultColumns);
             resultTable.notifyListeners(baseAdded, baseRemoved, baseModified);
         }
     }

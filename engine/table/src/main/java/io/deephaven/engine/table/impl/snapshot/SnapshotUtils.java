@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.snapshot;
 
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
@@ -207,6 +208,34 @@ public class SnapshotUtils {
                 }
                 blockPosition = lastBlockPosition + 1;
             }
+        }
+    }
+
+    /**
+     * Find the columns with an {@link ChunkType#Object Object} chunk type, whose values must be set to {@code null}
+     * when their rows leave a result so that the columns hold no references to them.
+     *
+     * @param columns The columns to search
+     * @return The columns of {@code columns} with an Object chunk type
+     */
+    public static WritableColumnSource<?>[] objectColumns(
+            @NotNull Map<String, ? extends WritableColumnSource<?>> columns) {
+        return columns.values().stream()
+                .filter(column -> column.getChunkType() == ChunkType.Object)
+                .toArray(WritableColumnSource<?>[]::new);
+    }
+
+    /**
+     * Set the rows in {@code rowSequence} of each of {@code objectColumns} to {@code null}.
+     *
+     * @param objectColumns The columns to clear, as found by {@link #objectColumns(Map)}
+     * @param rowSequence The keys in objectColumns to clear
+     */
+    public static void nullObjectColumns(
+            @NotNull WritableColumnSource<?>[] objectColumns,
+            @NotNull RowSequence rowSequence) {
+        for (final WritableColumnSource<?> column : objectColumns) {
+            ChunkUtils.fillWithNullValue(column, rowSequence);
         }
     }
 
