@@ -21,6 +21,7 @@ import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.MappedIterable;
 import io.grpc.Status;
 import jsinterop.base.JsPropertyMap;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -363,6 +364,7 @@ public class RequestBatcher {
      * Produces a non-empty failure message for a non-OK status. A status built from response headers that carry a
      * {@code grpc-status} but no {@code grpc-message} (as can happen when the connection is lost) has no description.
      */
+    @NotNull
     private static String describeFailure(Status status) {
         String description = status.getDescription();
         if (description != null && !description.isEmpty()) {
@@ -375,7 +377,7 @@ public class RequestBatcher {
         return "Request failed with status " + status.getCode();
     }
 
-    private void failed(RejectCallbackFn reject, String fail) {
+    private void failed(RejectCallbackFn reject, @NotNull String fail) {
         failed = true;
         for (ClientTableState s : allStates().filter(cts -> !cts.isFinished())) {
             s.setResolution(ClientTableState.ResolutionState.FAILED, fail);
