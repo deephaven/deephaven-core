@@ -61,7 +61,7 @@ Extra headers to set when configuring the gRPC channel. Defaults to `None`.
 </Param>
 <Param name="accept_compression" type="Union[str, Sequence[str]]" optional>
 
-The compression type, or types, that the session accepts: any of `"gzip"`, `"zstd"`, and `"snappy"`. The remote server compresses only tables that allow one of these types; see [Compress Barrage data](../../../how-to-guides/performance/barrage-performance.md#compress-barrage-data). `None` accepts all three. An empty sequence accepts none, so data is always sent uncompressed. Defaults to `None`.
+The compression type, or types, that the session accepts, such as `"gzip"`, `"zstd"`, and `"snappy"`. The remote server compresses only tables that allow one of these types; see [Compress Barrage data](../../../how-to-guides/performance/barrage-performance.md#compress-barrage-data). `None` accepts every supported type. An empty sequence accepts none, so data is always sent uncompressed. Defaults to `None`.
 
 </Param>
 </ParamTable>

@@ -5,7 +5,7 @@ package io.deephaven.extensions.barrage;
 
 import io.deephaven.engine.table.AttributeMap;
 import io.deephaven.engine.table.Table;
-import io.deephaven.grpc.compression.CompressionType;
+import io.deephaven.grpc.compression.CompressionCodecs;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -24,34 +24,38 @@ public final class BarrageCompressionAttribute {
 
     /**
      * Returns a copy of {@code grid} that allows the server to compress its Barrage snapshots and subscriptions with
-     * {@code preference}. The server uses the first type in {@code preference} that the client accepts, and sends
-     * uncompressed data when none match. Repeated types keep their first position. With no types, the result is never
-     * compressed, even when the server has default compression types.
+     * {@code preference}: the names of {@link CompressionCodecs#SUPPORTED supported} compression types, such as the
+     * built-in {@code "zstd"}, {@code "gzip"} and {@code "snappy"}. Case and surrounding whitespace are ignored. The
+     * server uses the first type in {@code preference} that the client accepts, and sends uncompressed data when none
+     * match. Repeated types keep their first position. With no types, the result is never compressed, even when the
+     * server has default compression types.
      *
      * @param grid the table, rollup table or tree table to compress
-     * @param preference the compression types to allow, most preferred first
+     * @param preference the names of the compression types to allow, most preferred first
      * @return a copy of {@code grid} with its {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE} set, to an empty list if
      *         {@code preference} is empty
+     * @throws IllegalArgumentException if a name is not a supported compression type
      */
     public static <T extends AttributeMap<T>> T withCompression(
             @NotNull final T grid,
-            @NotNull final CompressionType... preference) {
+            @NotNull final String... preference) {
         return withCompression(grid, Arrays.asList(preference));
     }
 
     /**
-     * Like {@link #withCompression(AttributeMap, CompressionType...)}, with the compression types in a list.
+     * Like {@link #withCompression(AttributeMap, String...)}, with the compression type names in a list.
      *
      * @param grid the table, rollup table or tree table to compress
-     * @param preference the compression types to allow, most preferred first
+     * @param preference the names of the compression types to allow, most preferred first
      * @return a copy of {@code grid} with its {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE} set, to an empty list if
      *         {@code preference} is empty
+     * @throws IllegalArgumentException if a name is not a supported compression type
      */
     public static <T extends AttributeMap<T>> T withCompression(
             @NotNull final T grid,
-            @NotNull final List<CompressionType> preference) {
+            @NotNull final List<String> preference) {
         final String value = preference.stream()
-                .map(type -> Objects.requireNonNull(type, "type").encodingName())
+                .map(name -> CompressionCodecs.checkSupported(Objects.requireNonNull(name, "name")))
                 .distinct()
                 .collect(Collectors.joining(","));
         return grid.withAttributes(Map.of(Table.BARRAGE_COMPRESSION_ATTRIBUTE, value));

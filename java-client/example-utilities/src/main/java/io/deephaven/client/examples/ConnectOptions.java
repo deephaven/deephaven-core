@@ -55,8 +55,8 @@ public class ConnectOptions {
     Map<String, String> headers;
 
     @Option(names = {"--accept-compression"}, split = ",",
-            description = "The compression types to accept (gzip, zstd, snappy); "
-                    + "defaults to all three. Pass an empty value to accept none.")
+            description = "The compression types to accept, such as gzip, zstd and snappy; "
+                    + "defaults to every supported type. Pass an empty value to accept none.")
     Set<String> acceptCompression;
 
     public ClientConfig config() {

@@ -2,20 +2,17 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 """This module defines the BarrageSession wrapper class and provides a factory function to create an instance of it
-for accessing resources on remote Deephaven servers. It also defines :class:`CompressionType`, the compression types
-that :meth:`deephaven.table.Table.with_compression` lets this server use for a table's Barrage snapshots and
-subscriptions."""
+for accessing resources on remote Deephaven servers."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
-from enum import Enum
 from typing import Optional, Union
 
 import jpy
 
 from deephaven import DHError
-from deephaven.jcompat import j_array_list, j_hashset, to_sequence
+from deephaven.jcompat import j_hashset, to_sequence
 from deephaven.table import Table
 
 _JURI = jpy.get_type("java.net.URI")
@@ -35,46 +32,6 @@ _JSessionImpl = jpy.get_type("io.deephaven.client.impl.SessionImpl")
 _JExecutors = jpy.get_type("java.util.concurrent.Executors")
 _JRootAllocator = jpy.get_type("org.apache.arrow.memory.RootAllocator")
 _JDeephavenApiServer = jpy.get_type("io.deephaven.server.runner.DeephavenApiServer")
-_JCompressionType = jpy.get_type("io.deephaven.grpc.compression.CompressionType")
-_JBarrageCompressionAttribute = jpy.get_type(
-    "io.deephaven.extensions.barrage.BarrageCompressionAttribute"
-)
-
-
-class CompressionType(Enum):
-    """An enum of the compression types that the server may use for a table's Barrage snapshots and subscriptions.
-    See :meth:`deephaven.table.Table.with_compression`."""
-
-    # Wraps the Java enum io.deephaven.grpc.compression.CompressionType, the one list of compression types.
-    # tests/test_barrage.py fails if a Java constant has no member here.
-    ZSTD = _JCompressionType.ZSTD
-    """Zstandard: compresses nearly as well as gzip, and many times faster."""
-    GZIP = _JCompressionType.GZIP
-    """gzip: compresses slightly smaller than zstd but much more slowly. Most gRPC clients, including pydeephaven, can
-    decode it."""
-    SNAPPY = _JCompressionType.SNAPPY
-    """Snappy: the fastest compression type, but the one that saves the least."""
-
-
-def _j_with_compression(
-    j_grid: jpy.JType,
-    compression_types: Union[CompressionType, Sequence[CompressionType]],
-) -> jpy.JType:
-    """Returns a copy of a Java table, rollup table or tree table with its BarrageCompression attribute set to the
-    given compression types. Backs the with_compression methods in deephaven.table, which cannot import this module
-    when they are defined, because this module imports deephaven.table."""
-    if compression_types is None:
-        # to_sequence would turn None into an empty sequence, which disables compression
-        raise TypeError("expected a CompressionType or a sequence of them, not None")
-    types = to_sequence(compression_types)
-    for t in types:
-        if not isinstance(t, CompressionType):
-            raise TypeError(
-                f"expected a CompressionType, not {type(t).__name__}: {t!r}"
-            )
-    return _JBarrageCompressionAttribute.withCompression(
-        j_grid, j_array_list([t.value for t in types])
-    )
 
 
 class BarrageSession:
@@ -199,9 +156,9 @@ def barrage_session(
              as True. Defaults to None
         extra_headers (Optional[dict[str, str]]): extra headers to set when configuring the gRPC channel. Defaults to None.
         accept_compression (Optional[Union[str, Sequence[str]]]): the compression type, or types, that the session
-            accepts: any of "gzip", "zstd" and "snappy". The remote server compresses only tables that allow one of
-            them. None accepts all three; an empty sequence accepts none, so data is always sent uncompressed. Defaults
-            to None.
+            accepts, such as "gzip", "zstd" and "snappy". The remote server compresses only tables that allow one of
+            them. None accepts every supported type; an empty sequence accepts none, so data is always sent
+            uncompressed. Defaults to None.
 
     Returns:
         a Deephaven Barrage session

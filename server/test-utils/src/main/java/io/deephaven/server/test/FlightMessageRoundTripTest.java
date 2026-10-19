@@ -1829,6 +1829,15 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
+    public void testEverySupportedTypeCompressesResponses() throws Exception {
+        // including any type a CompressionCodecProvider adds, such as JettyFlightRoundTripTest's test-deflate
+        for (final String compression : CompressionCodecs.SUPPORTED) {
+            assertEquals(compression, expectedEncodings(compression),
+                    fetchWithCompression(compressionTestTable(compression), Set.of(compression)));
+        }
+    }
+
+    @Test
     public void testCompressionFallsBackToIdentity() throws Exception {
         // the client accepts nothing the table allows
         assertEquals(expectedEncodings(),
@@ -1844,7 +1853,7 @@ public abstract class FlightMessageRoundTripTest {
     @Test
     public void testMalformedCompressionAttributeIsIgnored() throws Exception {
         assertEquals(expectedEncodings(),
-                fetchWithCompression(compressionTestTable("zstd,lz4"), Set.of("gzip", "zstd", "snappy")));
+                fetchWithCompression(compressionTestTable("zstd,not-a-codec"), Set.of("gzip", "zstd", "snappy")));
     }
 
     @Test

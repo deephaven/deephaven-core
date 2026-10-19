@@ -3,6 +3,7 @@
 //
 package io.deephaven.grpc.compression;
 
+import io.grpc.Codec;
 import io.grpc.Compressor;
 import io.grpc.CompressorRegistry;
 import io.grpc.Decompressor;
@@ -14,13 +15,99 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class CompressionCodecsTest {
+
+    @Test
+    public void supportedNames() {
+        // no CompressionCodecProvider is registered on this module's test classpath; server-jetty's tests register one
+        assertThat(CompressionCodecs.SUPPORTED).containsExactly("zstd", "gzip", "snappy");
+    }
+
+    @Test
+    public void providedCodecsFollowTheBuiltIns() {
+        final Codec lz4 = new NamedCodec("lz4");
+        final Codec custom = new NamedCodec("x-lz4.v2+raw_1");
+        final Map<String, Codec> codecs = CompressionCodecs.byEncodingName(CompressionCodecs.BUILT_IN,
+                List.of(new FixedProvider(lz4), new FixedProvider(custom)));
+        assertThat(codecs.keySet()).containsExactly("zstd", "gzip", "snappy", "lz4", "x-lz4.v2+raw_1");
+        assertThat(codecs.get("lz4")).isSameAs(lz4);
+        assertThat(codecs.get("x-lz4.v2+raw_1")).isSameAs(custom);
+    }
+
+    @Test
+    public void providedNamesMustBeWellFormed() {
+        // upper case could never match, commas and whitespace separate names, and identity means no compression
+        for (final String name : Arrays.asList("LZ4", "lz 4", "lz4,zstd", " lz4", "-lz4", "", "identity", null)) {
+            assertThatThrownBy(() -> CompressionCodecs.byEncodingName(CompressionCodecs.BUILT_IN,
+                    List.of(new FixedProvider(new NamedCodec(name)))))
+                    .as("'%s'", name)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(FixedProvider.class.getName());
+        }
+        assertThatThrownBy(
+                () -> CompressionCodecs.byEncodingName(CompressionCodecs.BUILT_IN, List.of(new FixedProvider(null))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage(FixedProvider.class.getName() + " provides no codec");
+    }
+
+    @Test
+    public void providedNamesMustBeNew() {
+        assertThatThrownBy(() -> CompressionCodecs.byEncodingName(CompressionCodecs.BUILT_IN,
+                List.of(new FixedProvider(new NamedCodec("gzip")))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage(
+                        "Compression type 'gzip' is provided by both Deephaven and " + FixedProvider.class.getName());
+        assertThatThrownBy(() -> CompressionCodecs.byEncodingName(CompressionCodecs.BUILT_IN,
+                List.of(new FixedProvider(new NamedCodec("lz4")), new OtherProvider(new NamedCodec("lz4")))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Compression type 'lz4' is provided by both " + FixedProvider.class.getName() + " and "
+                        + OtherProvider.class.getName());
+    }
+
+    @Test
+    public void checkSupportedIgnoresCaseAndWhitespace() {
+        for (final String name : CompressionCodecs.SUPPORTED) {
+            assertThat(CompressionCodecs.checkSupported(name)).isEqualTo(name);
+        }
+        assertThat(CompressionCodecs.checkSupported(" ZStd ")).isEqualTo("zstd");
+    }
+
+    @Test
+    public void checkSupportedRejectsUnknownNames() {
+        assertThatThrownBy(() -> CompressionCodecs.checkSupported("lz4"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unsupported compression 'lz4'; supported values are zstd, gzip, snappy");
+        // a single name cannot hold a list, nor name the absence of compression
+        for (final String name : List.of("identity", "", " ", "zstd,gzip")) {
+            assertThatThrownBy(() -> CompressionCodecs.checkSupported(name))
+                    .as("'%s'", name)
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Test
+    public void codecIsTheOneTheRegistriesHold() {
+        final CompressorRegistry compressors = CompressionCodecs.compressorRegistry();
+        final DecompressorRegistry decompressors = CompressionCodecs.decompressorRegistry(CompressionCodecs.SUPPORTED);
+        for (final String name : CompressionCodecs.SUPPORTED) {
+            final Codec codec = CompressionCodecs.codec(name);
+            assertThat(codec.getMessageEncoding()).isEqualTo(name);
+            assertThat(compressors.lookupCompressor(name)).as(name).isSameAs(codec);
+            assertThat(decompressors.lookupDecompressor(name)).as(name).isSameAs(codec);
+        }
+        assertThat(CompressionCodecs.codec(" ZStd ")).isSameAs(CompressionCodecs.codec("zstd"));
+        assertThatThrownBy(() -> CompressionCodecs.codec("lz4"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("lz4");
+    }
 
     @Test
     public void everySupportedCodecRoundTrips() throws IOException {
@@ -113,6 +200,50 @@ public class CompressionCodecsTest {
         assertThat(CompressionCodecs.parseAcceptEncoding("identity, deflate, GZIP"))
                 .containsExactly("identity", "deflate", "gzip");
         assertThat(CompressionCodecs.parseAcceptEncoding(null)).isEmpty();
+    }
+
+    /** A codec that does not compress, under any name. */
+    private static final class NamedCodec implements Codec {
+        private final String name;
+
+        private NamedCodec(final String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String getMessageEncoding() {
+            return name;
+        }
+
+        @Override
+        public OutputStream compress(final OutputStream os) {
+            return os;
+        }
+
+        @Override
+        public InputStream decompress(final InputStream is) {
+            return is;
+        }
+    }
+
+    private static class FixedProvider implements CompressionCodecProvider {
+        private final Codec codec;
+
+        private FixedProvider(final Codec codec) {
+            this.codec = codec;
+        }
+
+        @Override
+        public Codec codec() {
+            return codec;
+        }
+    }
+
+    /** a second provider class, so that errors about a name two providers share can name both */
+    private static final class OtherProvider extends FixedProvider {
+        private OtherProvider(final Codec codec) {
+            super(codec);
+        }
     }
 
     private static byte[] compress(final Compressor compressor, final byte[] payload) throws IOException {

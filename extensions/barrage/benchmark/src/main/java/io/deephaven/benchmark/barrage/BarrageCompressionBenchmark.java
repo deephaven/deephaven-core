@@ -5,7 +5,7 @@ package io.deephaven.benchmark.barrage;
 
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.grpc.compression.CompressionType;
+import io.deephaven.grpc.compression.CompressionCodecs;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -27,8 +27,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Times gRPC message compression ({@link CompressionType}) of a full {@code DoGet}-style snapshot of a static table.
- * Each invocation processes the whole table; run {@link BarrageCompressionSizeReport} for the matching wire sizes.
+ * Times gRPC message compression, with each built-in compression type, of a full {@code DoGet}-style snapshot of a
+ * static table. To time a type that a {@code CompressionCodecProvider} adds, put its jar on the classpath and pass
+ * {@code -p compression=<name>}. Each invocation processes the whole table; run {@link BarrageCompressionSizeReport}
+ * for the matching wire sizes.
  * <ul>
  * <li>{@link #compress} and {@link #decompress} time only the compression work, starting from and ending at serialized
  * bytes.</li>
@@ -51,9 +53,12 @@ public class BarrageCompressionBenchmark {
     @Param({"1024", "65536", "1048576"})
     private int numRows;
 
-    /** every {@link CompressionType}, since no values are listed */
-    @Param
-    private CompressionType compression;
+    /**
+     * the name of a {@link CompressionCodecs#SUPPORTED supported} compression type; by default, each built-in one, as
+     * JMH fills in values only for enums
+     */
+    @Param({"zstd", "gzip", "snappy"})
+    private String compression;
 
     private MessageCodec codec;
 

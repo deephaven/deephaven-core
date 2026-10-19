@@ -93,7 +93,7 @@ createJmhTask('jmhRunBarrageGrpcPropagateSmoke',
 
 createJmhTask('jmhRunBarrageCopyKernel', 'BarrageCopyKernelBenchmark')
 
-// gRPC message compression (every CompressionType) of a DoGet snapshot; narrow it with JMH options, e.g.
+// gRPC message compression (each built-in compression type) of a DoGet snapshot; narrow it with JMH options, e.g.
 // --args='BarrageCompressionBenchmark -p shape=MIXED -p numRows=65536'
 createJmhTask('jmhRunBarrageCompression', 'BarrageCompressionBenchmark')
 

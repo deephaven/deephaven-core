@@ -7,6 +7,7 @@ import com.google.auto.service.AutoService;
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
+import io.deephaven.grpc.compression.CompressionCodecs;
 import io.deephaven.server.jetty.js.Example123Registration;
 import io.deephaven.server.jetty.js.Sentinel;
 import io.deephaven.server.plugin.js.JsPluginsManifestRegistration;
@@ -63,6 +64,12 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
     @Override
     protected TestComponent component() {
         return DaggerJettyFlightRoundTripTest_JettyTestComponent.create();
+    }
+
+    @Test
+    public void providedCodecIsSupported() {
+        // without TestDeflateCodecProvider, the compression tests would never use a codec that a provider adds
+        assertThat(CompressionCodecs.SUPPORTED).containsExactly("zstd", "gzip", "snappy", "test-deflate");
     }
 
     @Test

@@ -3,7 +3,7 @@
 //
 package io.deephaven.benchmark.barrage;
 
-import io.deephaven.grpc.compression.CompressionType;
+import io.deephaven.grpc.compression.CompressionCodecs;
 import io.grpc.Codec;
 
 import java.io.ByteArrayInputStream;
@@ -17,12 +17,12 @@ import java.util.List;
 
 /**
  * gRPC message compression, applied to each serialized {@code FlightData} message as a whole, using the codec of a
- * {@link CompressionType}: the same codec the Deephaven server and Java client register. The 5-byte gRPC frame prefix
- * is the same size for every configuration and is not counted.
+ * {@link CompressionCodecs#SUPPORTED supported} compression type: the same codec the Deephaven server and Java client
+ * register. The 5-byte gRPC frame prefix is the same size for every configuration and is not counted.
  */
 final class MessageCodec {
     /** no compression; the baseline */
-    static final MessageCodec IDENTITY = new MessageCodec("IDENTITY", null);
+    static final MessageCodec IDENTITY = new MessageCodec("identity", null);
 
     private final String name;
     private final Codec codec;
@@ -32,18 +32,21 @@ final class MessageCodec {
         this.codec = codec;
     }
 
-    static MessageCodec of(final CompressionType type) {
-        return new MessageCodec(type.name(), type.codec());
+    /**
+     * @param name the name of a {@link CompressionCodecs#SUPPORTED supported} compression type
+     */
+    static MessageCodec of(final String name) {
+        return new MessageCodec(CompressionCodecs.checkSupported(name), CompressionCodecs.codec(name));
     }
 
     /**
-     * @return {@link #IDENTITY} followed by every {@link CompressionType}
+     * @return {@link #IDENTITY} followed by every {@link CompressionCodecs#SUPPORTED supported} compression type
      */
     static List<MessageCodec> all() {
         final List<MessageCodec> codecs = new ArrayList<>();
         codecs.add(IDENTITY);
-        for (final CompressionType type : CompressionType.values()) {
-            codecs.add(of(type));
+        for (final String name : CompressionCodecs.SUPPORTED) {
+            codecs.add(of(name));
         }
         return codecs;
     }

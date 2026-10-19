@@ -6,10 +6,8 @@ import subprocess
 import time
 import unittest
 
-import jpy
-
 from deephaven import DHError, agg, empty_table
-from deephaven.barrage import CompressionType, barrage_session
+from deephaven.barrage import barrage_session
 from deephaven.table import RollupTable, TreeTable
 from tests.testbase import BaseTestCase
 
@@ -116,45 +114,45 @@ class BarrageTestCase(BaseTestCase):
             ["ID = ii", "Parent = ii == 0 ? NULL_LONG : 0L", "B = ii"]
         )
 
-        compressed = t.with_compression([CompressionType.SNAPPY, CompressionType.GZIP])
+        compressed = t.with_compression(["snappy", "gzip"])
         self.assertEqual("snappy,gzip", compressed.attributes()["BarrageCompression"])
         self.assertEqual(
-            "zstd",
-            t.with_compression(CompressionType.ZSTD).attributes()["BarrageCompression"],
+            "zstd", t.with_compression("zstd").attributes()["BarrageCompression"]
+        )
+        self.assertEqual(
+            "zstd,gzip",
+            t.with_compression([" ZSTD ", "Gzip", "zstd"]).attributes()[
+                "BarrageCompression"
+            ],
         )
         self.assertNotIn("BarrageCompression", t.attributes())
         self.assertEqual(
             "", compressed.with_compression([]).attributes()["BarrageCompression"]
         )
 
-        rollup = t.rollup(aggs=[agg.sum_("B")], by="ID").with_compression(
-            CompressionType.ZSTD
-        )
+        rollup = t.rollup(aggs=[agg.sum_("B")], by="ID").with_compression("zstd")
         self.assertIsInstance(rollup, RollupTable)
         self.assertEqual(
             "zstd", rollup.j_rollup_table.getAttribute("BarrageCompression")
         )
 
-        tree = t.tree(id_col="ID", parent_col="Parent").with_compression(
-            [CompressionType.GZIP]
-        )
+        tree = t.tree(id_col="ID", parent_col="Parent").with_compression(["gzip"])
         self.assertIsInstance(tree, TreeTable)
         self.assertEqual("gzip", tree.j_tree_table.getAttribute("BarrageCompression"))
 
+        with self.assertRaises(DHError) as cm:
+            t.with_compression(["zstd", "zsdt"])
+        self.assertIn(
+            "Unsupported compression 'zsdt'; supported values are zstd, gzip, snappy",
+            str(cm.exception),
+        )
+        # one name cannot hold a list
         with self.assertRaises(DHError):
-            t.with_compression("zstd")
+            t.with_compression("zstd,gzip")
         with self.assertRaises(DHError):
             t.with_compression(None)
-
-    def test_compression_types_match_java(self):
-        # CompressionType wraps the Java enum, so it needs a member for every Java constant
-        j_compression_type = jpy.get_type(
-            "io.deephaven.grpc.compression.CompressionType"
-        )
-        self.assertEqual(
-            {str(v.name()) for v in j_compression_type.values()},
-            {t.name for t in CompressionType},
-        )
+        with self.assertRaises(DHError):
+            t.with_compression([1])
 
     def test_subscribe(self):
         session = barrage_session(host="localhost", port=10000, auth_type="Anonymous")

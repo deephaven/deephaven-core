@@ -16,8 +16,7 @@ dependencies {
 
     api project(':engine-table')
     implementation project(':proto:proto-backplane-grpc-flight')
-    // BarrageCompressionAttribute takes CompressionType in its public signature
-    api project(':java-client-grpc-compression')
+    implementation project(':java-client-grpc-compression')
     implementation project(':log-factory')
     api libs.deephaven.barrage.format
     api libs.hdrhistogram

@@ -9,7 +9,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageCompressionAttribute;
-import io.deephaven.grpc.compression.CompressionType;
 import io.deephaven.server.hierarchicaltable.HierarchicalTableView;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.ServerCallStreamObserver;
@@ -59,8 +58,7 @@ public class BarrageCompressionTest {
 
     @Test
     public void typesFromWithCompressionAreChosen() {
-        final Table table = BarrageCompressionAttribute.withCompression(TableTools.emptyTable(10),
-                CompressionType.SNAPPY, CompressionType.GZIP);
+        final Table table = BarrageCompressionAttribute.withCompression(TableTools.emptyTable(10), "snappy", "gzip");
         assertEquals(Optional.of("snappy"), apply(Set.of("gzip", "zstd", "snappy"), table));
         assertEquals(Optional.of("gzip"), apply(Set.of("gzip", "deflate"), table));
     }
@@ -69,7 +67,7 @@ public class BarrageCompressionTest {
     public void tablesWithoutAValidListAreNotCompressed() {
         assertEquals(Optional.empty(), apply(Set.of("gzip", "zstd"), TableTools.emptyTable(10)));
         final Table malformed =
-                TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,lz4"));
+                TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,not-a-codec"));
         assertEquals(Optional.empty(), apply(Set.of("gzip", "zstd"), malformed));
         // parsed even for a client that accepts nothing; not logged again, since the first fetch logged this value
         assertEquals(Optional.empty(), apply(Set.of(), malformed));
@@ -85,10 +83,10 @@ public class BarrageCompressionTest {
         assertEquals(Optional.of("gzip"), apply(Set.of("gzip"), TableTools.emptyTable(10), defaults));
         // a malformed attribute is ignored, as if unset
         final Table malformed =
-                TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,lz4"));
+                TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,not-a-codec"));
         assertEquals(Optional.of("snappy"), apply(Set.of("zstd", "snappy"), malformed, defaults));
         // the table's own list replaces the default
-        final Table zstd = BarrageCompressionAttribute.withCompression(TableTools.emptyTable(10), CompressionType.ZSTD);
+        final Table zstd = BarrageCompressionAttribute.withCompression(TableTools.emptyTable(10), "zstd");
         assertEquals(Optional.of("zstd"), apply(Set.of("zstd", "snappy"), zstd, defaults));
         assertEquals(Optional.empty(), apply(Set.of("gzip", "snappy"), zstd, defaults));
         // an empty list opts out of the default
