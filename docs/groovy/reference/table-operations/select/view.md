@@ -7,7 +7,7 @@ The `view` method creates a new table that includes one formula column for each 
 A formula column is [not stored in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand). Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
 
 > [!NOTE]
-> `view` and [`select`](./select.md) take the same arguments: [formula strings](../../../how-to-guides/formulas.md) or a collection of [`Selectable`](../../query-language/types/Selectable.md) objects. `view` throws an exception for a [`Selectable`](../../query-language/types/Selectable.md) that respects [Barriers](../../../conceptual/query-engine/parallelization.md#barriers), and, with the default settings, for one that runs serially. Both methods return a table with one column for each argument. `view` stores formulas and recalculates cells on access, while [`select`](./select.md) stores those columns in memory.
+> `view` and [`select`](./select.md) take the same arguments: [formula strings](../../../how-to-guides/formulas.md) or a collection of [`Selectable`](../../query-language/types/Selectable.md) objects. Both methods return a table with one column for each argument. `view` stores formulas and recalculates cells on access, while [`select`](./select.md) stores those columns [in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand).
 >
 > `view` fits best when:
 >
@@ -28,6 +28,7 @@ A formula column is [not stored in memory](../../../how-to-guides/use-select-vie
 
 ```
 table.view(columns...)
+table.view(columns)
 ```
 
 ## Parameters
@@ -44,14 +45,14 @@ Formulas to compute columns in the new table:
 </Param>
 <Param name="columns" type="Collection<? extends Selectable>">
 
-One [`Selectable`](../../query-language/types/Selectable.md) for each column to compute in the new table. A [`Selectable`](../../query-language/types/Selectable.md) pairs a formula with concurrency controls such as [`withSerial`](../../query-language/types/Selectable.md#withserial). `view` throws an exception for a [`Selectable`](../../query-language/types/Selectable.md) that respects [Barriers](../../../conceptual/query-engine/parallelization.md#barriers), and, with the default settings, for one that runs serially.
+One [`Selectable`](../../query-language/types/Selectable.md) for each column to compute in the new table. A [`Selectable`](../../query-language/types/Selectable.md) pairs a formula with [concurrency controls](../../query-language/types/ConcurrencyControl.md) such as [`withSerial`](../../query-language/types/Selectable.md#withserial). `view` throws an exception for a [`Selectable`](../../query-language/types/Selectable.md) that respects [Barriers](../../../conceptual/query-engine/parallelization.md#barriers). It also throws for a [`Selectable`](../../query-language/types/Selectable.md) that runs [serially](../../../conceptual/query-engine/parallelization.md#serial-execution) when [`QueryTable.statelessSelectByDefault`](../../../conceptual/query-table-configuration.md#stateless-by-default) is `true`, which is the default.
 
 </Param>
 </ParamTable>
 
 ## Returns
 
-A new table that includes one formula column for each argument.
+A new table that includes one formula column for each argument. If no formulas are provided, `view` returns the source table.
 
 ## Examples
 
@@ -79,7 +80,7 @@ source = newTable(
 result = source.view("X = A", "B")
 ```
 
-The following example creates a table containing column `A`, column `B` (renamed as `X`), and the square root of column `C` (renamed as `Y`). While no memory is used to store column `Y`, the square root function is evaluated every time a cell in column `Y` is accessed.
+The following example creates a table containing column `A`, column `B` (renamed as `X`), and the square root of column `C` (renamed as `Y`). While Deephaven stores no values for column `Y`, it evaluates the square root function every time a reader accesses a cell in column `Y`.
 
 ```groovy order=source,result
 source = newTable(
@@ -87,7 +88,6 @@ source = newTable(
     intCol("B", 1, 2, 3, 4),
     intCol("C", 5, 6, 7, 8)
 )
-
 
 result = source.view("A", "X = B", "Y = sqrt(C)")
 ```
@@ -100,6 +100,7 @@ result = source.view("A", "X = B", "Y = sqrt(C)")
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
 - [Parallelization](../../../conceptual/query-engine/parallelization.md)
 - [Selectable](../../query-language/types/Selectable.md)
+- [ConcurrencyControl](../../query-language/types/ConcurrencyControl.md)
 - [select](./select.md)
 - [updateView](./update-view.md)
 - [update](./update.md)

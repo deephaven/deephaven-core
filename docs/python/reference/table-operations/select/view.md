@@ -7,7 +7,7 @@ The `view` method creates a new table that includes one formula column for each 
 A formula column is [not stored in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand). Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
 
 > [!NOTE]
-> `view` accepts only [formula strings](../../../how-to-guides/formulas.md). [`select`](./select.md) accepts [formula strings](../../../how-to-guides/formulas.md) and [`Selectable`](../../query-language/types/Selectable.md) objects. Both methods return a table with one column for each argument. `view` stores formulas and recalculates cells on access, while [`select`](./select.md) stores those columns in memory.
+> `view` accepts only [formula strings](../../../how-to-guides/formulas.md). [`select`](./select.md) accepts [formula strings](../../../how-to-guides/formulas.md) and [`Selectable`](../../query-language/types/Selectable.md) objects. Both methods return a table with one column for each argument. `view` stores formulas and recalculates cells on access, while [`select`](./select.md) stores those columns [in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand).
 >
 > `view` fits best when:
 >
@@ -46,7 +46,7 @@ Formulas to compute columns in the new table:
 
 ## Returns
 
-A new table that includes one formula column for each argument.
+A new table that includes one formula column for each argument. If `formulas` is an empty sequence, `view` returns the source table.
 
 ## Examples
 
@@ -84,7 +84,7 @@ source = new_table(
 result = source.view(formulas=["X = A", "B"])
 ```
 
-The following example creates a table containing column `A`, column `B` (renamed as `X`), and the square root of column `C` (renamed as `Y`). While no memory is used to store column `Y`, the square root function is evaluated every time a cell in column `Y` is accessed.
+The following example creates a table containing column `A`, column `B` (renamed as `X`), and the square root of column `C` (renamed as `Y`). While Deephaven stores no values for column `Y`, it evaluates the square root function every time a reader accesses a cell in column `Y`.
 
 ```python order=source,result
 from deephaven import new_table
@@ -97,6 +97,7 @@ source = new_table(
         int_col("C", [5, 6, 7, 8]),
     ]
 )
+
 result = source.view(formulas=["A", "X = B", "Y = sqrt(C)"])
 ```
 
@@ -108,6 +109,7 @@ result = source.view(formulas=["A", "X = B", "Y = sqrt(C)"])
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
 - [Parallelization](../../../conceptual/query-engine/parallelization.md)
 - [Selectable](../../query-language/types/Selectable.md)
+- [ConcurrencyControl](../../query-language/types/ConcurrencyControl.md)
 - [select](./select.md)
 - [update_view](./update-view.md)
 - [update](./update.md)
