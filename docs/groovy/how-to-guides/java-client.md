@@ -195,7 +195,7 @@ try (final SafeCloseable ignoredContext = executionContext.open();
 }
 ```
 
-Inside the `try` block, `latestTable` is a local copy of the server's `latest_by_city` table, and it updates as the server's data changes. Use it only inside the block: when the block exits, the liveness scope closes and releases the table. This application displays the table directly. Other applications can filter, join, or aggregate it like any other Deephaven table.
+Inside the `try` block, `latestTable` is a local copy of the server's `latest_by_city` table, and it updates as the server's data changes. Use it only inside the block: when the block exits, the liveness scope closes and releases the table. This application displays the table directly, so the execution context above includes only what a subscription needs. Operations that compile formulas, such as a `where` filter or an `update` column on `latestTable`, also need a query compiler and an operation initializer in the [execution context](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html). Without them, those operations fail.
 
 The steps above are adapted from the [`SubscribeTable`](https://github.com/deephaven/deephaven-core/blob/main/java-client/barrage-examples/src/main/java/io/deephaven/client/examples/SubscribeTable.java) example.
 
