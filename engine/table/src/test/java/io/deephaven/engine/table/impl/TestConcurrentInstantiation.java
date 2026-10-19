@@ -10,6 +10,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -1397,6 +1398,28 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
             trigger.notifyListeners(downstream);
         });
         TstUtils.assertTableEquals(snap, base);
+    }
+
+    @Test
+    public void testStaticTriggerSnapshotLiveness() {
+        final QueryTable base;
+        final SingletonLivenessManager baseManager;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            base = TstUtils.testRefreshingTable(i(0).toTracking(), col("x", 1));
+            baseManager = new SingletonLivenessManager(base);
+        }
+
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final Table snapshot = base.snapshot();
+            final Table snapshotWhen = base.snapshotWhen(TableTools.emptyTable(1), Flag.INITIAL);
+            TstUtils.assertTableEquals(base, snapshot);
+            TstUtils.assertTableEquals(base, snapshotWhen);
+
+            // the static results hold copies of the data, so the base is free to go once its own manager releases it
+            updateGraph.exclusiveLock().doLocked(baseManager::release);
+            assertFalse(base.tryRetainReference());
+            TstUtils.assertTableEquals(TableTools.newTable(intCol("x", 1)), snapshot);
+        }
     }
 
     @Test

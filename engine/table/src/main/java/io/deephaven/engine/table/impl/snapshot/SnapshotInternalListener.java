@@ -45,7 +45,8 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         this.resultBaseColumns = resultBaseColumns;
         this.objectBaseColumns = SnapshotUtils.objectColumns(resultBaseColumns);
         this.resultRowSet = resultRowSet;
-        if (snapshotTable.isRefreshing()) {
+        if (triggerTable.isRefreshing() && snapshotTable.isRefreshing()) {
+            // only a listener on a refreshing trigger reads the snapshot table after construction
             manage(snapshotTable);
         }
         triggerStampColumns = SnapshotUtils.generateTriggerStampColumns(triggerTable);
