@@ -155,7 +155,7 @@ For tables with frequent updates or many subscribers, these costs can add up. Mo
 
 ### Barrage connections from the local server
 
-[`BarrageTableResolver`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html) opens one Barrage connection per target URI and reuses it for every later subscription and snapshot to that same target URI. `BarrageTableResolver` has no method to close that connection, so this workflow has no close step.
+[`BarrageTableResolver`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html) opens one Barrage connection per target URI and reuses it for every later subscription and snapshot to that same target URI. `BarrageTableResolver` has no method to close that connection, so this workflow has no closing step.
 
 ### Handle connection issues
 
