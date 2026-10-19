@@ -2034,6 +2034,38 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testSnapshotStampTypes() {
+        final Table base = emptyTable(20000).update("X=ii");
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(),
+                charCol("C", 'a'), byteCol("By", (byte) 1), shortCol("Sh", (short) 2), intCol("I", 3),
+                longCol("L", 4L), floatCol("F", 5.0f), doubleCol("D", 6.0), booleanCol("Bo", true),
+                stringCol("S", "s"), instantCol("In", DateTimeUtils.epochNanosToInstant(7)),
+                col("V", new IntVector[] {new IntVectorDirect(8, 9)}));
+        final Table history = base.snapshotWhen(trigger, Flag.HISTORY);
+        final Table incremental = base.snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL);
+        assertTableEquals(trigger.join(base), history);
+        assertTableEquals(base.naturalJoin(trigger.tail(1), ""), incremental);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(trigger, i(1, 2),
+                    charCol("C", QueryConstants.NULL_CHAR, 'b'),
+                    byteCol("By", QueryConstants.NULL_BYTE, (byte) 11),
+                    shortCol("Sh", QueryConstants.NULL_SHORT, (short) 12),
+                    intCol("I", QueryConstants.NULL_INT, 13),
+                    longCol("L", QueryConstants.NULL_LONG, 14L),
+                    floatCol("F", QueryConstants.NULL_FLOAT, 15.0f),
+                    doubleCol("D", QueryConstants.NULL_DOUBLE, 16.0),
+                    booleanCol("Bo", null, false),
+                    stringCol("S", null, "t"),
+                    instantCol("In", null, DateTimeUtils.epochNanosToInstant(17)),
+                    col("V", new IntVector[] {null, new IntVectorDirect(18, 19)}));
+            trigger.notifyListeners(i(1, 2), i(), i());
+        });
+        assertTableEquals(trigger.join(base), history);
+    }
+
+    @Test
     public void testSnapshotHistorical() {
         final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 col("A", 3, 1, 2), col("B", "c", "a", "b"));

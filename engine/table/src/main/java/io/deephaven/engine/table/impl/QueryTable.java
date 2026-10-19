@@ -2669,16 +2669,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             ws.ensureCapacity(newCapacity);
         }
 
-        final long baseSize = baseRowSet.size();
-        long[] destOffsetHolder = new long[] {destOffset};
-        // For each key on the snapshotting side
-        triggerRowSet.forAllRowKeys(snapshotKey -> {
-            final long doff = destOffsetHolder[0];
-            destOffsetHolder[0] += baseSize;
-            try (final RowSet destRowSet = RowSetFactory.fromRange(doff, doff + baseSize - 1)) {
-                SnapshotUtils.copyStampColumns(triggerColumns, snapshotKey, dest, destRowSet);
-            }
-        });
+        SnapshotUtils.copyStampColumnsRepeated(triggerColumns, triggerRowSet, dest, destOffset, baseRowSet.size());
         SnapshotUtils.copyDataColumnsRepeated(baseColumns, baseRowSet, dest, destOffset, triggerRowSet.size());
         return newCapacity;
     }

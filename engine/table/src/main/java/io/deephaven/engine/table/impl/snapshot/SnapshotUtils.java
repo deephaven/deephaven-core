@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.snapshot;
 
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
@@ -12,11 +13,11 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.engine.table.impl.util.fill.FillFromElementKernel;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
@@ -57,14 +58,78 @@ public class SnapshotUtils {
      */
     public static void copyStampColumns(@NotNull Map<String, ? extends ColumnSource<?>> stampColumns, long stampKey,
             @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns, @NotNull RowSet destRowSet) {
+        if (destRowSet.isEmpty()) {
+            return;
+        }
+        final int chunkSize = (int) Math.min(destRowSet.size(), ChunkUtils.COPY_DATA_CHUNK_SIZE);
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : stampColumns.entrySet()) {
             final String name = entry.getKey();
             final ColumnSource<?> src = entry.getValue();
 
-            // Fill the corresponding destination column
+            // Fill a chunk with the stamp value once, then write it to every destination row
             final WritableColumnSource<?> dest = destColumns.get(name);
-            final ChunkFiller destFiller = ChunkFiller.forChunkType(src.getChunkType());
-            destFiller.fillFromSingleValue(src, stampKey, dest, destRowSet);
+            final FillFromElementKernel kernel = FillFromElementKernel.makeFillFromElementKernel(dest.getChunkType());
+            try (final ChunkSource.GetContext stampContext = src.makeGetContext(1);
+                    final WritableChunk<Values> stampChunk = dest.getChunkType().makeWritableChunk(chunkSize);
+                    final ChunkSink.FillFromContext fillContext = dest.makeFillFromContext(chunkSize);
+                    final RowSequence.Iterator destIter = destRowSet.getRowSequenceIterator()) {
+                kernel.fillFromElement(stampChunk, 0, chunkSize, src.getChunk(stampContext, stampKey, stampKey), 0);
+                while (destIter.hasMore()) {
+                    final RowSequence destKeys = destIter.getNextRowSequenceWithLength(chunkSize);
+                    stampChunk.setSize(destKeys.intSize());
+                    dest.fillFromChunk(fillContext, stampChunk, destKeys);
+                }
+            }
+        }
+    }
+
+    /**
+     * For each name in stampColumns, write the value of each row in {@code stampKeys} to its own block of
+     * {@code blockSize} consecutive rows in destColumns.get(name). The blocks are contiguous, follow the order of
+     * {@code stampKeys}, and the first begins at row key {@code destOffset}.
+     *
+     * @param stampColumns The stamp columns that serve as the source data
+     * @param stampKeys The source keys, one per block
+     * @param destColumns The destination columns we are writing to, with capacity for every block
+     * @param destOffset The first row key of the first block in destColumns
+     * @param blockSize The number of rows in each block
+     */
+    public static void copyStampColumnsRepeated(@NotNull Map<String, ? extends ColumnSource<?>> stampColumns,
+            @NotNull RowSet stampKeys, @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns,
+            long destOffset, long blockSize) {
+        if (stampKeys.isEmpty() || blockSize == 0) {
+            return;
+        }
+        final int chunkSize = (int) Math.min(blockSize, ChunkUtils.COPY_DATA_CHUNK_SIZE);
+        final int stampChunkSize = (int) Math.min(stampKeys.size(), ChunkUtils.COPY_DATA_CHUNK_SIZE);
+        for (Map.Entry<String, ? extends ColumnSource<?>> entry : stampColumns.entrySet()) {
+            final ColumnSource<?> src = entry.getValue();
+            final WritableColumnSource<?> dest = destColumns.get(entry.getKey());
+            final FillFromElementKernel kernel = FillFromElementKernel.makeFillFromElementKernel(dest.getChunkType());
+            try (final ChunkSource.GetContext stampContext = src.makeGetContext(stampChunkSize);
+                    final WritableChunk<Values> stampChunk = dest.getChunkType().makeWritableChunk(chunkSize);
+                    final ChunkSink.FillFromContext fillContext = dest.makeFillFromContext(chunkSize);
+                    final RowSequence.Iterator stampIter = stampKeys.getRowSequenceIterator()) {
+                long blockStart = destOffset;
+                while (stampIter.hasMore()) {
+                    final Chunk<? extends Values> stampValues =
+                            src.getChunk(stampContext, stampIter.getNextRowSequenceWithLength(stampChunkSize));
+                    final int numStamps = stampValues.size();
+                    for (int si = 0; si < numStamps; ++si) {
+                        stampChunk.setSize(chunkSize);
+                        kernel.fillFromElement(stampChunk, 0, chunkSize, stampValues, si);
+                        for (long blockPosition = 0; blockPosition < blockSize; blockPosition += chunkSize) {
+                            final long lastBlockPosition = Math.min(blockPosition + chunkSize, blockSize) - 1;
+                            stampChunk.setSize((int) (lastBlockPosition - blockPosition + 1));
+                            try (final RowSequence destKeys = RowSequenceFactory.forRange(
+                                    blockStart + blockPosition, blockStart + lastBlockPosition)) {
+                                dest.fillFromChunk(fillContext, stampChunk, destKeys);
+                            }
+                        }
+                        blockStart += blockSize;
+                    }
+                }
+            }
         }
     }
 
@@ -298,15 +363,62 @@ public class SnapshotUtils {
     }
 
     /**
-     * Handles only the get method for converting a Vector into a direct vector for our snapshot trigger columns.
-     *
-     * NOTE: THIS CLASS DOES NOT IMPLEMENT getChunk and fillChunk PROPERLY!
+     * Converts the Vectors of a snapshot trigger column into direct Vectors, both for single values and for chunks.
      */
     private static class VectorDirectDelegatingColumnSource extends DelegatingColumnSource<Vector<?>, Vector<?>> {
+        private final VectorChunkAdapter<Values> directChunks;
+
         public VectorDirectDelegatingColumnSource(Class<Vector<?>> vectorType,
                 Class<?> componentType,
                 ColumnSource<Vector<?>> underlyingVectorSource) {
             super(vectorType, componentType, underlyingVectorSource);
+            directChunks = new VectorChunkAdapter<>(underlyingVectorSource);
+        }
+
+        @Override
+        public ChunkSource.FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
+            return directChunks.makeFillContext(chunkCapacity, sharedContext);
+        }
+
+        @Override
+        public ChunkSource.GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
+            return directChunks.makeGetContext(chunkCapacity, sharedContext);
+        }
+
+        @Override
+        public Chunk<? extends Values> getChunk(@NotNull ChunkSource.GetContext context,
+                @NotNull RowSequence rowSequence) {
+            return directChunks.getChunk(context, rowSequence);
+        }
+
+        @Override
+        public Chunk<? extends Values> getChunk(@NotNull ChunkSource.GetContext context, long firstKey,
+                long lastKey) {
+            return directChunks.getChunk(context, firstKey, lastKey);
+        }
+
+        @Override
+        public void fillChunk(@NotNull ChunkSource.FillContext context,
+                @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+            directChunks.fillChunk(context, destination, rowSequence);
+        }
+
+        @Override
+        public Chunk<? extends Values> getPrevChunk(@NotNull ChunkSource.GetContext context,
+                @NotNull RowSequence rowSequence) {
+            return directChunks.getPrevChunk(context, rowSequence);
+        }
+
+        @Override
+        public Chunk<? extends Values> getPrevChunk(@NotNull ChunkSource.GetContext context, long firstKey,
+                long lastKey) {
+            return directChunks.getPrevChunk(context, firstKey, lastKey);
+        }
+
+        @Override
+        public void fillPrevChunk(@NotNull ChunkSource.FillContext context,
+                @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+            directChunks.fillPrevChunk(context, destination, rowSequence);
         }
 
         @Override
