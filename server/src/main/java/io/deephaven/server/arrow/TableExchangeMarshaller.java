@@ -26,6 +26,7 @@ import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.vector.types.pojo.Schema;
 
 import java.util.BitSet;
 
@@ -76,9 +77,9 @@ public class TableExchangeMarshaller implements ExchangeMarshaller {
                     "Table is already failed");
         }
 
-        // push the schema to the listener
-        listener.onNext(streamGeneratorFactory.getSchemaView(
-                fbb -> BarrageUtil.makeTableSchemaPayload(fbb, options, table)));
+        // push the schema to the listener; the snapshot is written with this same schema
+        final Schema schema = BarrageUtil.schemaFromTable(options, table);
+        listener.onNext(streamGeneratorFactory.getSchemaView(schema::getSchema));
 
         // collect the viewport and columnsets (if provided)
         final BitSet columns = BarrageRequestHelpers.getColumns(snapshotRequest);
@@ -89,7 +90,7 @@ public class TableExchangeMarshaller implements ExchangeMarshaller {
 
         // leverage common code for `DoGet` and `BarrageSnapshotOptions`
         BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, columns, viewport,
-                reverseViewport, options, listener,
+                reverseViewport, options, schema, listener,
                 metrics);
     }
 

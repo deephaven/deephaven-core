@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.function.LongUnaryOperator;
 
 /**
  * The server-side {@link DictionaryWriterRegistry} implementation, backed by fastutil maps.
@@ -98,9 +99,13 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
     }
 
     @Override
-    public void resetOverflowedEntries(final long liveRowCount) {
+    public void maybeResetEntries(@NotNull final LongUnaryOperator maxSizeForDictId) {
+        if (sharedDictionaries != null) {
+            // the producer resets shared dictionaries itself, before a propagation phase's writes begin
+            return;
+        }
         for (final Entry e : entries.values()) {
-            if (e.state.totalSize() > liveRowCount) {
+            if (e.state.totalSize() > maxSizeForDictId.applyAsLong(e.state.getDictId())) {
                 e.state.reset();
             }
         }

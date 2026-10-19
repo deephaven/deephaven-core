@@ -540,6 +540,21 @@ public class BarrageUtil {
         return schemaForTable(DEFAULT_SNAPSHOT_OPTIONS, table);
     }
 
+    /**
+     * Returns the schema {@code table} is written with under {@code options}. A request that sends a schema message and
+     * then a snapshot should compute this once and pass it to both, through
+     * {@link #createAndSendSnapshot(BarrageMessageWriter.Factory, BaseTable, BitSet, RowSet, boolean, BarrageSnapshotOptions, Schema, StreamObserver, BarragePerformanceLog.SnapshotMetricsHelper)}:
+     * inferred encodings come from sampling the table's current data, so two computations for a ticking table may
+     * choose different encodings, and the client would then be told one encoding and sent another.
+     *
+     * @param options the options the table is written with
+     * @param table the table
+     * @return the schema
+     */
+    public static Schema schemaFromTable(@NotNull final BarrageOptions options, @NotNull final Table table) {
+        return schemaForTable(options, table);
+    }
+
     private static Schema schemaForTable(
             @NotNull final BarrageOptions options,
             @NotNull final Table table) {
@@ -1443,28 +1458,57 @@ public class BarrageUtil {
         final boolean reeSample = REE_AUTO_DETECT_ENABLED && REE_SAMPLING_ENABLED;
         final boolean dictSample = DICT_AUTO_DETECT_ENABLED && DICT_SAMPLING_ENABLED;
         if (detectStructuralDict || reeSample || dictSample) {
+            // The snapshot retries an attempt that proves inconsistent. Each attempt therefore starts from the
+            // structural choices made above, and only the attempt the snapshot accepts, which is the last, is kept.
+            final MutableObject<Map<String, ColumnEncoding>> acceptedEncodings = new MutableObject<>();
             ConstructSnapshot.callDataSnapshotFunction("BarrageUtil.inferEncodings",
                     ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(),
                             (NotificationStepSource) table),
                     (usePrev, beforeClockValue) -> {
-                        final RowSet rowSetToUse = usePrev ? table.getRowSet().prev() : table.getRowSet();
-                        try (final WritableRowSet sampleRowSet = buildEncodingSampleRowSet(rowSetToUse)) {
-                            if (sampleRowSet != null) {
-                                // Structural dictionary detection is a cheap, high-confidence hint; run it first so a
-                                // symbol-table-backed column is marked without needing the cardinality pass.
-                                if (detectStructuralDict) {
-                                    detectStructuralDictionaryEncoding(table, sampleRowSet, encodings);
-                                }
-                                if (reeSample || dictSample) {
-                                    sampleColumnsForEncoding(table, encodings, usePrev, sampleRowSet, reeSample,
-                                            dictSample);
-                                }
-                            }
-                        }
+                        acceptedEncodings.setValue(detectEncodingsFromData(table, encodings, usePrev,
+                                detectStructuralDict, reeSample, dictSample));
                         return true;
                     });
+            return acceptedEncodings.getValue();
         }
 
+        return encodings;
+    }
+
+    /**
+     * Runs the encoding detection that reads live data, for one attempt of the snapshot in {@link #inferEncodings}. The
+     * result starts from a copy of {@code startingEncodings}, which this does not change, so that an attempt the
+     * snapshot rejects leaves no choices behind for the next attempt to treat as settled.
+     *
+     * @param table the table to detect encodings for
+     * @param startingEncodings the encodings chosen before the snapshot, without reading data
+     * @param usePrev whether to read previous values
+     * @param detectStructuralDict whether to detect dictionary encoding from symbol-table-backed sources
+     * @param reeSample whether to sample for run-end encoding
+     * @param dictSample whether to sample for dictionary encoding
+     * @return {@code startingEncodings} plus the encodings detected from the data
+     */
+    static Map<String, ColumnEncoding> detectEncodingsFromData(
+            @NotNull final Table table,
+            @NotNull final Map<String, ColumnEncoding> startingEncodings,
+            final boolean usePrev,
+            final boolean detectStructuralDict,
+            final boolean reeSample,
+            final boolean dictSample) {
+        final Map<String, ColumnEncoding> encodings = new HashMap<>(startingEncodings);
+        final RowSet rowSetToUse = usePrev ? table.getRowSet().prev() : table.getRowSet();
+        try (final WritableRowSet sampleRowSet = buildEncodingSampleRowSet(rowSetToUse)) {
+            if (sampleRowSet != null) {
+                // Structural dictionary detection is a cheap, high-confidence hint; run it first so a
+                // symbol-table-backed column is marked without needing the cardinality pass.
+                if (detectStructuralDict) {
+                    detectStructuralDictionaryEncoding(table, sampleRowSet, encodings);
+                }
+                if (reeSample || dictSample) {
+                    sampleColumnsForEncoding(table, encodings, usePrev, sampleRowSet, reeSample, dictSample);
+                }
+            }
+        }
         return encodings;
     }
 
@@ -1561,14 +1605,15 @@ public class BarrageUtil {
                     final Chunk<? extends Values> chunk = usePrev
                             ? source.getPrevChunk(context, sampleRowSet)
                             : source.getChunk(context, sampleRowSet);
-                    // We only auto-detect dictionary on Object columns.
+                    // We only auto-detect dictionary on Object columns, and not on every one of those.
                     if (source.getChunkType() == ChunkType.Object) {
+                        final boolean sampleDict = detectDict && isDictionaryCandidate(source.getType());
                         // Compute the run count and distinct-value cardinality in a single pass.
                         final ObjectChunk<?, ? extends Values> objectChunk = chunk.asObjectChunk();
-                        final HashSet<Object> distinct = detectDict ? new HashSet<>() : null;
+                        final HashSet<Object> distinct = sampleDict ? new HashSet<>() : null;
                         int numRuns = 1;
                         Object prev = objectChunk.get(0);
-                        if (detectDict) {
+                        if (sampleDict) {
                             distinct.add(prev);
                         }
                         for (int i = 1; i < objectChunk.size(); ++i) {
@@ -1576,7 +1621,7 @@ public class BarrageUtil {
                             if (detectRee && !Objects.equals(prev, next)) {
                                 ++numRuns;
                             }
-                            if (detectDict) {
+                            if (sampleDict) {
                                 distinct.add(next);
                             }
                             prev = next;
@@ -1586,7 +1631,7 @@ public class BarrageUtil {
                         useRee |= detectRee && (double) numRuns / chunk.size() < REE_RUN_RATIO_THRESHOLD;
                         // A dictionary only makes sense with at least two distinct values, otherwise REE-only is better
                         // (and will have been detected).
-                        useDict |= detectDict && distinct.size() > 1
+                        useDict |= sampleDict && distinct.size() > 1
                                 && (double) distinct.size() / chunk.size() < DICT_CARDINALITY_RATIO_THRESHOLD;
                     } else if (detectRee) {
                         ChunkEquals.makeEqual(source.getChunkType()).equalNext(chunk, isEqualNext);
@@ -1606,6 +1651,15 @@ public class BarrageUtil {
                 }
             });
         }
+    }
+
+    /**
+     * Whether sampling may choose dictionary encoding for a column of {@code type}. Arrays, vectors and maps are not
+     * candidates: an array's equality is its identity, so the sampled cardinality of an array column says nothing about
+     * repeated values, and all three travel as Arrow lists or maps, which few consumers can read through a dictionary.
+     */
+    private static boolean isDictionaryCandidate(@NotNull final Class<?> type) {
+        return !type.isArray() && !Vector.class.isAssignableFrom(type) && !Map.class.isAssignableFrom(type);
     }
 
     public static Field arrowFieldFor(
@@ -1807,11 +1861,30 @@ public class BarrageUtil {
             BarrageSnapshotOptions snapshotRequestOptions,
             StreamObserver<BarrageMessageWriter.MessageView> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
+        createAndSendStaticSnapshot(bmwFactory, table, columns, viewport, reverseViewport, snapshotRequestOptions,
+                schemaForTable(snapshotRequestOptions, table), listener, metrics);
+    }
+
+    /**
+     * Like
+     * {@link #createAndSendStaticSnapshot(BarrageMessageWriter.Factory, BaseTable, BitSet, RowSet, boolean, BarrageSnapshotOptions, StreamObserver, BarragePerformanceLog.SnapshotMetricsHelper)},
+     * but writes the columns as {@code effectiveSchema} describes them; see
+     * {@link #schemaFromTable(BarrageOptions, Table)}.
+     */
+    public static void createAndSendStaticSnapshot(
+            BarrageMessageWriter.Factory bmwFactory,
+            BaseTable<?> table,
+            BitSet columns,
+            RowSet viewport,
+            boolean reverseViewport,
+            BarrageSnapshotOptions snapshotRequestOptions,
+            @NotNull final Schema effectiveSchema,
+            StreamObserver<BarrageMessageWriter.MessageView> listener,
+            BarragePerformanceLog.SnapshotMetricsHelper metrics) {
         // start with small value and grow
         long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
         double snapshotNanosPerCell = 0.0;
 
-        final Schema effectiveSchema = schemaForTable(snapshotRequestOptions, table);
         final Map<String, org.apache.arrow.flatbuf.Field> fieldFor = buildFlatbufFieldMap(effectiveSchema);
         snapshotRequestOptions =
                 effectiveSnapshotOptions(snapshotRequestOptions, maxBatchSizeForSchema(effectiveSchema));
@@ -1926,16 +1999,33 @@ public class BarrageUtil {
             BarrageSnapshotOptions options,
             StreamObserver<BarrageMessageWriter.MessageView> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
+        createAndSendSnapshot(bwmFactory, table, columns, viewport, reverseViewport, options,
+                schemaForTable(options, table), listener, metrics);
+    }
+
+    /**
+     * Like
+     * {@link #createAndSendSnapshot(BarrageMessageWriter.Factory, BaseTable, BitSet, RowSet, boolean, BarrageSnapshotOptions, StreamObserver, BarragePerformanceLog.SnapshotMetricsHelper)},
+     * but writes the columns as {@code effectiveSchema} describes them. Pass the schema that was sent to the client;
+     * see {@link #schemaFromTable(BarrageOptions, Table)}.
+     */
+    public static void createAndSendSnapshot(
+            BarrageMessageWriter.Factory bwmFactory,
+            BaseTable<?> table,
+            BitSet columns, RowSet viewport, boolean reverseViewport,
+            BarrageSnapshotOptions options,
+            @NotNull final Schema effectiveSchema,
+            StreamObserver<BarrageMessageWriter.MessageView> listener,
+            BarragePerformanceLog.SnapshotMetricsHelper metrics) {
 
         // if the table is static and a full snapshot is requested, we can make and send multiple
         // snapshots to save memory and operate more efficiently
         if (!table.isRefreshing()) {
             createAndSendStaticSnapshot(bwmFactory, table, columns, viewport, reverseViewport,
-                    options, listener, metrics);
+                    options, effectiveSchema, listener, metrics);
             return;
         }
 
-        final Schema effectiveSchema = schemaForTable(options, table);
         final Map<String, org.apache.arrow.flatbuf.Field> fieldFor = buildFlatbufFieldMap(effectiveSchema);
         options = effectiveSnapshotOptions(options, maxBatchSizeForSchema(effectiveSchema));
 

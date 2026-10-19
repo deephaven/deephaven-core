@@ -33,9 +33,12 @@ import io.deephaven.extensions.barrage.BarrageTypeInfo;
 import io.deephaven.extensions.barrage.chunk.BarrageCopyKernel;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
+import io.deephaven.extensions.barrage.chunk.DictionaryChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistry;
 import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistryImpl;
+import io.deephaven.extensions.barrage.chunk.SharedDictionaryWriterState;
 import io.deephaven.extensions.barrage.chunk.SharedWriterDictionary;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -52,6 +55,9 @@ import io.deephaven.vector.Vector;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.Schema;
+import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
+import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 import org.HdrHistogram.Histogram;
@@ -209,6 +215,8 @@ public class BarrageMessageProducer extends LivenessArtifact
     private final org.apache.arrow.vector.types.pojo.Schema chunkWriterSchema;
     /** effective maximum batch size; Short.MAX_VALUE when any column uses Int16 REE, otherwise DEFAULT_BATCH_SIZE */
     private final int maxBatchSize;
+    /** the columns of chunkWriterSchema that are dictionary encoded, keyed by dictionary id */
+    private final Long2ObjectOpenHashMap<DictionaryColumns> dictionaryColumns;
     /** internally, booleans are reinterpretted to bytes; however we need to be packed bitsets over Arrow */
     private final Class<?>[] realColumnType;
     private final Class<?>[] realColumnComponentType;
@@ -398,6 +406,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         maxBatchSize = chunkWriterSchema.getFields().stream().anyMatch(BarrageUtil::isReeInt16Field)
                 ? Short.MAX_VALUE
                 : BarrageMessageWriterImpl.DEFAULT_BATCH_SIZE;
+        dictionaryColumns = findDictionaryColumns(chunkWriterSchema);
         final Schema schema = SchemaHelper.flatbufSchema(
                 BarrageUtil.schemaBytes(chunkWriterSchema::getSchema).asReadOnlyByteBuffer());
 
@@ -1573,6 +1582,11 @@ public class BarrageMessageProducer extends LivenessArtifact
                     log.debug().append(logPrefix).append("Sending snapshot to ").append(activeSubscriptions.size())
                             .append(" subscriber(s).").endl();
                 }
+
+                // Growing full subscriptions add the snapshot's values to the shared dictionaries, so make room for
+                // them first. The snapshot does not cover the whole table, so do not compact by the live row count.
+                maybeResetSharedDictionaries(snapshot, Long.MAX_VALUE);
+
                 for (final Subscription subscription : growingSubscriptions) {
                     if (subscription.pendingDelete) {
                         continue;
@@ -1628,16 +1642,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             final BarrageMessage message,
             final RowSet propRowSetForMessagePrev,
             final RowSet propRowSetForMessage) {
-        // Check shared dictionary states for overflow before building any batches. When the cumulative dictionary size
-        // exceeds the current live row count, the dictionary has grown larger than the data it encodes; reset it so
-        // the next DictionaryBatch is isDelta=false with a compacted set of values. FullSubscriptionDictionaryState
-        // instances detect the reset lazily via the SharedWriterDictionary generation counter.
-        final long fullTableRowCount = propRowSetForMessage.size();
-        for (final SharedWriterDictionary sharedState : sharedDictionaryStates.values()) {
-            if (sharedState.getTotalSize() > fullTableRowCount) {
-                sharedState.reset();
-            }
-        }
+        maybeResetSharedDictionaries(message, propRowSetForMessage.size());
 
         // message is released via transfer to stream generator (as it must live until all views are closed)
         try (final BarrageMessageWriter bmw = streamGeneratorFactory.newMessageWriter(
@@ -1667,10 +1672,12 @@ public class BarrageMessageProducer extends LivenessArtifact
                         final RowSet clientView =
                                 vp != null ? propRowSetForMessage.subSetForPositions(vp, isReversed) : null) {
                     // For viewport subscriptions, check their private local dictionary registries for overflow.
-                    // Full subscriptions are handled above via the shared dictionary reset.
-                    if (subscription.dictionaryRegistry != null && subscription.targetViewport != null) {
+                    // Full subscriptions are handled above via the shared dictionary reset, and their shared-backed
+                    // registries ignore this call.
+                    if (subscription.dictionaryRegistry != null) {
                         final long viewportRowCount = clientView != null ? clientView.size() : 0;
-                        subscription.dictionaryRegistry.resetOverflowedEntries(viewportRowCount);
+                        subscription.dictionaryRegistry.maybeResetEntries(
+                                dictId -> maxDictionarySizeBeforeWriting(dictId, bmw.getMessage(), viewportRowCount));
                     }
                     subscription.listener.onNext(bmw.getSubView(
                             effectiveOptions(subscription.options), false, subscription.isFullSubscription(), vp,
@@ -1684,6 +1691,113 @@ public class BarrageMessageProducer extends LivenessArtifact
                     removeSubscription(subscription.listener);
                 }
             }
+        }
+    }
+
+    /**
+     * Resets each shared dictionary that may not stay usable while {@code message} is written to the full
+     * subscriptions; see {@link #maxDictionarySizeBeforeWriting}. Call this before a propagation phase's writes begin,
+     * when no registry is adding to the shared dictionaries. {@link SharedDictionaryWriterState} instances detect the
+     * reset lazily via the {@link SharedWriterDictionary} generation counter, and emit an {@code isDelta=false}
+     * DictionaryBatch with a compacted set of values.
+     *
+     * @param message the message about to be written
+     * @param liveRowCount the number of rows in the table once {@code message} is applied
+     */
+    private void maybeResetSharedDictionaries(final BarrageMessage message, final long liveRowCount) {
+        for (final SharedWriterDictionary sharedState : sharedDictionaryStates.values()) {
+            if (sharedState.getTotalSize() > maxDictionarySizeBeforeWriting(
+                    sharedState.getDictId(), message, liveRowCount)) {
+                sharedState.reset();
+            }
+        }
+    }
+
+    /**
+     * Returns the most values the dictionary {@code dictId} may hold before {@code message} is written with it. A
+     * dictionary holding more values than {@code liveRowCount} has grown larger than the data it encodes, and one that
+     * the values {@code message} may add would take past the number its index can address would overflow. Resetting
+     * such a dictionary leaves it holding only the values of {@code message}, which overflow its index only when the
+     * live data itself has more distinct values than the index can address.
+     *
+     * @param dictId the dictionary id
+     * @param message the message about to be written
+     * @param liveRowCount the number of rows visible to the subscription once {@code message} is applied
+     * @return the most values the dictionary may hold before {@code message} is written
+     */
+    private long maxDictionarySizeBeforeWriting(final long dictId, final BarrageMessage message,
+            final long liveRowCount) {
+        final DictionaryColumns columns = dictionaryColumns.get(dictId);
+        if (columns == null || columns.maxSize == Long.MAX_VALUE) {
+            return liveRowCount;
+        }
+        // Each row written to a dictionary encoded column adds at most one value to its dictionary, unless the
+        // dictionary encodes the elements of a list or map; a row may then add any number, so assume it fills the
+        // index.
+        final long maxValuesPerRow = columns.multiValued ? columns.maxSize : 1;
+        long maxAddedValues = 0;
+        for (int ii = 0; ii < columns.columnIndices.size(); ++ii) {
+            final int ci = columns.columnIndices.getInt(ii);
+            maxAddedValues += message.rowsIncluded.size() * maxValuesPerRow;
+            if (ci < message.modColumnData.length) {
+                maxAddedValues += message.modColumnData[ci].rowsModified.size() * maxValuesPerRow;
+            }
+        }
+        return Math.min(liveRowCount, Math.max(0, columns.maxSize - maxAddedValues));
+    }
+
+    /** The columns that share a dictionary id, and the most distinct values the narrowest of their indexes allows. */
+    private static final class DictionaryColumns {
+        private final IntArrayList columnIndices = new IntArrayList();
+        private long maxSize = Long.MAX_VALUE;
+        /** Whether one row of a column may add more than one value, as when the dictionary encodes list elements. */
+        private boolean multiValued;
+    }
+
+    /**
+     * Finds the dictionary encoded fields of {@code schema}, at any depth: a column's own field, or a field nested in
+     * it, such as the values of a run-end encoded column or the elements of a list.
+     */
+    private static Long2ObjectOpenHashMap<DictionaryColumns> findDictionaryColumns(
+            final org.apache.arrow.vector.types.pojo.Schema schema) {
+        final Long2ObjectOpenHashMap<DictionaryColumns> result = new Long2ObjectOpenHashMap<>();
+        final List<Field> fields = schema.getFields();
+        for (int ci = 0; ci < fields.size(); ++ci) {
+            findDictionaryColumns(result, ci, fields.get(ci), false);
+        }
+        return result;
+    }
+
+    /**
+     * Records the dictionary encoded fields of column {@code ci} found at or below {@code field}.
+     *
+     * @param multiValued whether a row of the column may hold more than one value of {@code field}
+     */
+    private static void findDictionaryColumns(
+            final Long2ObjectOpenHashMap<DictionaryColumns> result,
+            final int ci,
+            final Field field,
+            final boolean multiValued) {
+        final DictionaryEncoding encoding = field.getDictionary();
+        if (encoding != null) {
+            final DictionaryColumns columns = result.computeIfAbsent(encoding.getId(), id -> new DictionaryColumns());
+            final int numColumns = columns.columnIndices.size();
+            if (numColumns == 0 || columns.columnIndices.getInt(numColumns - 1) != ci) {
+                columns.columnIndices.add(ci);
+            }
+            columns.maxSize = Math.min(columns.maxSize,
+                    DictionaryChunkWriter.maxDictionarySize(encoding.getIndexType().getBitWidth()));
+            columns.multiValued |= multiValued;
+        }
+        // A run-end encoded column holds one value per run, a union one value of one of its children, and a struct one
+        // value of each child; any other parent, such as a list or map, may hold any number of child values in a row.
+        final ArrowType.ArrowTypeID typeId = field.getType().getTypeID();
+        final boolean childrenMultiValued = multiValued
+                || (typeId != ArrowType.ArrowTypeID.RunEndEncoded
+                        && typeId != ArrowType.ArrowTypeID.Union
+                        && typeId != ArrowType.ArrowTypeID.Struct);
+        for (final Field child : field.getChildren()) {
+            findDictionaryColumns(result, ci, child, childrenMultiValued);
         }
     }
 
@@ -1735,6 +1849,14 @@ public class BarrageMessageProducer extends LivenessArtifact
                                     : chunkWriterSchema;
                     subscription.listener.onNext(streamGeneratorFactory.getSchemaView(
                             schemaToUse::getSchema));
+                }
+
+                // Viewport subscriptions add the snapshot's values to their private dictionaries; make room for them.
+                // Full subscriptions share dictionaries that were made room for before the snapshot phase began, and
+                // their shared-backed registries ignore this call.
+                if (subscription.dictionaryRegistry != null) {
+                    subscription.dictionaryRegistry.maybeResetEntries(dictId -> maxDictionarySizeBeforeWriting(
+                            dictId, snapshotGenerator.getMessage(), Long.MAX_VALUE));
                 }
 
                 // some messages may be empty of rows, but we need to update the client viewport and column set

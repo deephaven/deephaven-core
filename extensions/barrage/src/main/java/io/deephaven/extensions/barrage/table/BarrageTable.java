@@ -560,7 +560,11 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             @NotNull final ColumnDefinition<?> column) {
         ZoneId bestZone = ZoneId.systemDefault();
         try {
-            final Field field = schema.arrowSchema.findField(column.getName());
+            Field field = schema.arrowSchema.findField(column.getName());
+            if (field.getType().getTypeID() == ArrowType.ArrowTypeID.RunEndEncoded) {
+                // the values child (child[1]) carries the column's type; run_ends (child[0]) is just an index
+                field = field.getChildren().get(1);
+            }
             if (field.getType().getTypeID() == ArrowType.ArrowTypeID.Timestamp) {
                 bestZone = ZoneId.of(((ArrowType.Timestamp) field.getType()).getTimezone());
             }
