@@ -33,12 +33,12 @@ The Deephaven Query Language (DQL) is the primary way of expressing commands dir
 ```groovy test-set=1
 t = (
     emptyTable(10)
-    .update("Col1 = ii", "Col2 = Col1 + 3", "Col3 = 2 * Math.sin(Col1 + Col2)")
+    .update("Col1 = i", "Col2 = Col1 + 3", "Col3 = 2 * Math.sin(Col1 + Col2)")
     .where("Col1 % 2 == 0", "Col3 > 0")
 )
 ```
 
-`ii` and `i` are [special variables](../reference/query-language/variables/special-variables.md) that hold each row's index, as a `long` and an `int` respectively.
+`i` and `ii` are [special variables](../reference/query-language/variables/special-variables.md) that hold each row's index, as an `int` and a `long` respectively.
 
 > [!NOTE]
 > To learn more about the details of the DQL syntax and exactly what these commands do, refer to the DQL section in our User Guide, which includes guides on [writing basic formulas](../how-to-guides/formulas.md), [working with strings](../how-to-guides/work-with-strings.md), [using built-in functions](../how-to-guides/built-in-functions.md), and more.
