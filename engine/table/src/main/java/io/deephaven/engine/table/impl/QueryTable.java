@@ -2685,12 +2685,16 @@ public class QueryTable extends BaseTable<QueryTable> {
     private Table snapshotHistoryInternal(final Table baseTable) {
         checkInitiateBinaryOperation(this, baseTable);
 
-        // resultColumns initially contains the trigger columns, then we insert the base columns into it
-        final Map<String, WritableColumnSource<?>> resultColumns = SnapshotUtils
+        // the result holds the trigger columns, followed by the base columns
+        final Map<String, WritableColumnSource<?>> triggerColumns = SnapshotUtils
                 .createColumnSourceMap(this.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
         final Map<String, WritableColumnSource<?>> baseColumns = SnapshotUtils.createColumnSourceMap(
                 baseTable.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
+        final Map<String, WritableColumnSource<?>> resultColumns = new LinkedHashMap<>(triggerColumns);
         resultColumns.putAll(baseColumns);
+        if (resultColumns.size() != triggerColumns.size() + baseColumns.size()) {
+            throwColumnConflictMessage(triggerColumns.keySet(), baseColumns.keySet());
+        }
 
         // BTW, we don't track prev because these items are never modified or removed.
         final Table triggerTable = this; // For readability.

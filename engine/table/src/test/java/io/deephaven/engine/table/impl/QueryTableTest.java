@@ -2110,6 +2110,17 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testSnapshotColumnConflict() {
+        final QueryTable base = testRefreshingTable(i(10).toTracking(), intCol("A", 1), intCol("B", 2));
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), stringCol("A", "a"));
+        for (final Flag[] flags : new Flag[][] {{}, {Flag.INCREMENTAL}, {Flag.HISTORY}}) {
+            final RuntimeException conflict = assertThrows(Arrays.toString(flags), RuntimeException.class,
+                    () -> base.snapshotWhen(trigger, flags));
+            assertEquals("Column name conflicts: A", conflict.getMessage());
+        }
+    }
+
+    @Test
     public void testSnapshotHistorical() {
         final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 col("A", 3, 1, 2), col("B", "c", "a", "b"));
