@@ -92,6 +92,11 @@ public class BarrageCompressionTest {
         // an empty list opts out of the default
         final Table never = BarrageCompressionAttribute.withCompression(TableTools.emptyTable(10));
         assertEquals(Optional.empty(), apply(Set.of("gzip", "snappy"), never, defaults));
+        // withDefaultCompression undoes either, so the default applies again
+        assertEquals(Optional.of("snappy"),
+                apply(Set.of("gzip", "snappy"), BarrageCompressionAttribute.withDefaultCompression(zstd), defaults));
+        assertEquals(Optional.of("snappy"),
+                apply(Set.of("gzip", "snappy"), BarrageCompressionAttribute.withDefaultCompression(never), defaults));
         // an object without attributes is never compressed
         assertEquals(Optional.empty(), apply(Set.of("gzip", "snappy"), null, defaults));
     }

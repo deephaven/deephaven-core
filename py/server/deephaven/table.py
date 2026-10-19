@@ -149,9 +149,10 @@ def _j_with_compression(
     """Returns a copy of a Java table, rollup table or tree table with its BarrageCompression attribute set to the
     given compression type names, which the Java method checks against the supported names."""
     if compression_types is None:
-        # to_sequence would turn None into an empty sequence, which disables compression
+        # None reads as either "never compress" or "the server's default", so it is neither
         raise TypeError(
-            "expected a compression type name or a sequence of them, not None"
+            "compression_types must not be None; pass [] to never compress, or call with_default_compression() for "
+            "the server's default compression types"
         )
     # a string is one name, even an empty one, which the Java method rejects; only an empty sequence means none
     names = (
@@ -167,6 +168,14 @@ def _j_with_compression(
     return _j_barrage_compression_attribute().withCompression(
         j_grid, j_array_list(names)
     )
+
+
+def _j_with_default_compression(j_grid: jpy.JType) -> jpy.JType:
+    """Returns a copy of a Java table, rollup table or tree table without its BarrageCompression attribute, which
+    undoes with_compression: the server compresses the result's Barrage snapshots and subscriptions with its default
+    compression types, from the BarrageCompression.defaultTypes property, and does not compress them when that
+    property is unset."""
+    return _j_barrage_compression_attribute().withDefaultCompression(j_grid)
 
 
 class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
@@ -546,6 +555,28 @@ class RollupTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "with_compression on RollupTable failed.") from e
 
+    def with_default_compression(self) -> RollupTable:
+        """Returns a new RollupTable that the server compresses with its default compression types, which undoes
+        :meth:`with_compression`. See :meth:`Table.with_default_compression`.
+
+        Returns:
+            a new RollupTable
+
+        Raises:
+            DHError
+        """
+        try:
+            return RollupTable(
+                j_rollup_table=jpy.cast(
+                    _j_with_default_compression(self.j_rollup_table), _JRollupTable
+                ),
+                include_constituents=self.include_constituents,
+                aggs=self.aggs,
+                by=self.by,
+            )
+        except Exception as e:
+            raise DHError(e, "with_default_compression on RollupTable failed.") from e
+
     def with_filters(
         self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]
     ) -> RollupTable:
@@ -706,6 +737,27 @@ class TreeTable(JObjectWrapper):
             )
         except Exception as e:
             raise DHError(e, "with_compression on TreeTable failed.") from e
+
+    def with_default_compression(self) -> TreeTable:
+        """Returns a new TreeTable that the server compresses with its default compression types, which undoes
+        :meth:`with_compression`. See :meth:`Table.with_default_compression`.
+
+        Returns:
+            a new TreeTable
+
+        Raises:
+            DHError
+        """
+        try:
+            return TreeTable(
+                j_tree_table=jpy.cast(
+                    _j_with_default_compression(self.j_tree_table), _JTreeTable
+                ),
+                id_col=self.id_col,
+                parent_col=self.parent_col,
+            )
+        except Exception as e:
+            raise DHError(e, "with_default_compression on TreeTable failed.") from e
 
     def with_filters(
         self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]
@@ -1229,11 +1281,13 @@ class Table(JObjectWrapper):
         tree table, call with_compression on the RollupTable or TreeTable rather than on its source. A table with no
         attribute set uses the server's default compression types, from the BarrageCompression.defaultTypes property,
         which is unset by default. An empty sequence sets the attribute to an empty list, so the table is never
-        compressed, even when the server has default compression types.
+        compressed, even when the server has default compression types. To return to the server's default
+        compression types, call :meth:`with_default_compression`.
 
         Args:
             compression_types (Union[str, Sequence[str]]): the name, or names, of the compression types to allow,
-                most preferred first, ignoring case; an empty sequence returns a table that is never compressed
+                most preferred first, ignoring case; an empty sequence returns a table that is never compressed. None
+                is not accepted, because it could mean either never compressing or the server's default
 
         Returns:
             a new Table
@@ -1245,6 +1299,25 @@ class Table(JObjectWrapper):
             return Table(j_table=_j_with_compression(self.j_table, compression_types))
         except Exception as e:
             raise DHError(e, "failed to create a table with compression.") from e
+
+    def with_default_compression(self) -> Table:
+        """Returns a new Table that shares the data of this table and that the server compresses with its default
+        compression types, from the BarrageCompression.defaultTypes property, or not at all when that property is
+        unset. This undoes :meth:`with_compression`, including with_compression([]), by removing the table's
+        "BarrageCompression" attribute.
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            return Table(j_table=_j_with_default_compression(self.j_table))
+        except Exception as e:
+            raise DHError(
+                e, "failed to create a table with default compression."
+            ) from e
 
     def with_keys(self, cols: Union[str, Sequence[str]]) -> Table:
         """Returns a new Table that shares the underlying data and schema with this table and has the specified

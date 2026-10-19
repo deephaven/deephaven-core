@@ -239,8 +239,9 @@ public interface Table extends
      * compressed. An attribute set to an empty list means never compress, even when the server has a default list.
      * <p>
      * Prefer setting it with {@code io.deephaven.extensions.barrage.BarrageCompressionAttribute.withCompression}, which
-     * rejects unsupported names when called. The server ignores a value it cannot parse, using its default list
-     * instead, and logs a warning the first time a client fetches a table with that value.
+     * rejects unsupported names when called, and removing it with {@code withDefaultCompression} in the same class. The
+     * server ignores a value it cannot parse, using its default list instead, and logs a warning the first time a
+     * client fetches a table with that value.
      * <p>
      * Operations whose result holds only this table's values keep the attribute: filtering, sorting, reversing,
      * flattening, dropping or renaming columns, {@code partitionBy} constituents, {@code firstBy}, {@code lastBy},

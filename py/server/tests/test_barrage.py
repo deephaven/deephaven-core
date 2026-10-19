@@ -160,10 +160,44 @@ class BarrageTestCase(BaseTestCase):
         # an empty string is a name, not an empty list
         with self.assertRaises(DHError):
             t.with_compression("")
-        with self.assertRaises(DHError):
+        # None could mean "never compress" or "the server's default"; the message names both
+        with self.assertRaises(DHError) as cm:
             t.with_compression(None)
+        self.assertIn("pass [] to never compress", str(cm.exception))
+        self.assertIn("with_default_compression()", str(cm.exception))
         with self.assertRaises(DHError):
             t.with_compression([1])
+
+    def test_with_default_compression(self):
+        t = empty_table(10).update(
+            ["ID = ii", "Parent = ii == 0 ? NULL_LONG : 0L", "B = ii"]
+        )
+
+        # undoes a list of types, and an empty list, which never compresses
+        for compressed in [t.with_compression("zstd"), t.with_compression([])]:
+            self.assertNotIn(
+                "BarrageCompression",
+                compressed.with_default_compression().attributes(),
+            )
+        self.assertNotIn(
+            "BarrageCompression", t.with_default_compression().attributes()
+        )
+
+        rollup = (
+            t.rollup(aggs=[agg.sum_("B")], by="ID")
+            .with_compression("zstd")
+            .with_default_compression()
+        )
+        self.assertIsInstance(rollup, RollupTable)
+        self.assertIsNone(rollup.j_rollup_table.getAttribute("BarrageCompression"))
+
+        tree = (
+            t.tree(id_col="ID", parent_col="Parent")
+            .with_compression("gzip")
+            .with_default_compression()
+        )
+        self.assertIsInstance(tree, TreeTable)
+        self.assertIsNone(tree.j_tree_table.getAttribute("BarrageCompression"))
 
     def test_subscribe(self):
         session = barrage_session(host="localhost", port=10000, auth_type="Anonymous")

@@ -11,15 +11,18 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static io.deephaven.engine.table.Table.BARRAGE_COMPRESSION_ATTRIBUTE;
 import static io.deephaven.extensions.barrage.BarrageCompressionAttribute.withCompression;
+import static io.deephaven.extensions.barrage.BarrageCompressionAttribute.withDefaultCompression;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 public class BarrageCompressionAttributeTest {
 
@@ -71,8 +74,34 @@ public class BarrageCompressionAttributeTest {
     @Test
     public void nullNamesAreRejected() {
         final Table source = TableTools.emptyTable(10);
-        assertThrows(NullPointerException.class, () -> withCompression(source, "zstd", null));
-        assertThrows(NullPointerException.class, () -> withCompression(source, Arrays.asList(null, "gzip")));
+        // null is neither "never compress" nor "the server's default", so each message names both
+        for (final ThrowingRunnable call : List.<ThrowingRunnable>of(
+                () -> withCompression(source, "zstd", null),
+                () -> withCompression(source, Arrays.asList(null, "gzip")),
+                () -> withCompression(source, (String[]) null),
+                () -> withCompression(source, (List<String>) null))) {
+            final NullPointerException e = assertThrows(NullPointerException.class, call);
+            assertTrue(e.getMessage(), e.getMessage().contains("pass none to never compress"));
+            assertTrue(e.getMessage(), e.getMessage().contains("withDefaultCompression"));
+        }
+    }
+
+    @Test
+    public void withDefaultCompressionRemovesTheAttribute() {
+        final Table source = TableTools.emptyTable(10).update("ID = ii", "Parent = ii == 0 ? NULL_LONG : 0L", "B = ii");
+
+        final Table compressed = withCompression(source, "zstd");
+        assertNull(withDefaultCompression(compressed).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        // also undoes an empty list, which never compresses
+        assertNull(withDefaultCompression(withCompression(source)).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertNull(withDefaultCompression(source).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertEquals("zstd", compressed.getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+
+        final RollupTable rollup = withCompression(source.rollup(List.of(Aggregation.AggSum("B")), "ID"), "zstd");
+        assertNull(withDefaultCompression(rollup).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+
+        final TreeTable tree = withCompression(source.tree("ID", "Parent"), "snappy");
+        assertNull(withDefaultCompression(tree).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
     }
 
     @Test
