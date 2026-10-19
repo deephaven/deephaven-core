@@ -46,7 +46,7 @@ A new table that includes all the original columns from the source table and the
 
 ## Examples
 
-In the following example, `update_view` creates a table that contains the columns from the source table plus two new columns, `X` and `Y`. The result looks the same as the result of [`update`](./update.md). The difference is that `update_view` stores no values for `X` and `Y` and recalculates them when a reader accesses them.
+In the following example, `update_view` creates a table that contains the columns from the source table plus two new columns, `X` and `Y`. The result looks the same as the result of [`update`](./update.md). The column `X = B` refers to the data of column `B`, so it needs no calculation. `Y = sqrt(C)` is a formula column: `update_view` stores no values for it and recalculates it when a reader accesses a cell.
 
 ```python order=source,result
 from deephaven import new_table
