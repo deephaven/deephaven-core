@@ -1423,6 +1423,38 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
     }
 
     @Test
+    public void testIncrementalSnapshotOfStaticBaseLiveness() {
+        final QueryTable trigger;
+        final SingletonLivenessManager triggerManager;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            trigger = TstUtils.testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+            triggerManager = new SingletonLivenessManager(trigger);
+        }
+        final Table base = TableTools.newTable(intCol("A", 1, 2));
+
+        final Table snapshot;
+        final SingletonLivenessManager snapshotManager;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            snapshot = base.snapshotWhen(trigger, Flag.INCREMENTAL);
+            snapshotManager = new SingletonLivenessManager(snapshot);
+        }
+        assertEquals(0, snapshot.size());
+
+        // the first trigger tick copies the static base, after which the result can never change
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(trigger, i(1), intCol("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+        TstUtils.assertTableEquals(base.updateView("T=2"), snapshot);
+        assertFalse(trigger.hasListeners());
+
+        updateGraph.exclusiveLock().doLocked(triggerManager::release);
+        assertFalse(trigger.tryRetainReference());
+        TstUtils.assertTableEquals(base.updateView("T=2"), snapshot);
+        updateGraph.exclusiveLock().doLocked(snapshotManager::release);
+    }
+
+    @Test
     public void testSnapshotHistoryLiveness() {
         final QueryTable trigger, source, history;
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {

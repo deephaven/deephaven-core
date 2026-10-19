@@ -2956,7 +2956,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                             resultTable.notifyListeners(resultTable.getRowSet().copy(),
                                     RowSetFactory.empty(),
                                     RowSetFactory.empty());
+                            // the result can never change again, so it no longer depends on the trigger
                             removeUpdateListener(this);
+                            resultTable.unmanage(this);
                         }
                     });
         }
