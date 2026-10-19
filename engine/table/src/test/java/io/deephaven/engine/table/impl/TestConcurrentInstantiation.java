@@ -1350,6 +1350,31 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
     }
 
     @Test
+    public void testSnapshotHistoryLiveness() {
+        final QueryTable trigger, source, history;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            source = TstUtils.testRefreshingTable(i(0).toTracking(), col("x", 1));
+            trigger = TstUtils.testRefreshingTable(i(0).toTracking(), col("T", 1));
+            final Table base = source.update("y = x * 2");
+            history = (QueryTable) base.snapshotWhen(trigger, Flag.HISTORY);
+            history.retainReference();
+        }
+
+        TstUtils.assertTableEquals(TableTools.newTable(intCol("T", 1), intCol("x", 1), intCol("y", 2)), history);
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source, i(0), col("x", 5));
+            source.notifyListeners(i(), i(), i(0));
+            TstUtils.addToTable(trigger, i(1), col("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+        TstUtils.assertTableEquals(
+                TableTools.newTable(intCol("T", 1, 2), intCol("x", 1, 5), intCol("y", 2, 10)), history);
+
+        history.dropReference();
+    }
+
+    @Test
     public void testSourceDependencyWithoutListener() {
         final QueryTable rootTable = TstUtils.testRefreshingTable(i(10).toTracking(), intCol("Sentinel", 10));
         final QueryTable tickTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol("Ticking", 1));

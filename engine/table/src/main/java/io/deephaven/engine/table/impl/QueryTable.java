@@ -2712,7 +2712,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         final TrackingWritableRowSet resultRowSet = RowSetFactory.flat(initialSize).toTracking();
         final QueryTable result = new QueryTable(resultRowSet, resultColumns);
         if (isRefreshing()) {
-            addUpdateListener(
+            final ShiftObliviousListenerImpl listener =
                     new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet(), this, result) {
                         private long lastKey = rowSet.lastRowKey();
 
@@ -2738,7 +2738,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                         public boolean canExecute(final long step) {
                             return baseTable.satisfied(step) && super.canExecute(step);
                         }
-                    });
+                    };
+            if (baseTable.isRefreshing()) {
+                listener.manage(baseTable);
+            }
+            addUpdateListener(listener);
         }
         result.setFlat();
         return result;
