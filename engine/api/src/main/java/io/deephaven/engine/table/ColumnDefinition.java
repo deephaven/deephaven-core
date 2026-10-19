@@ -805,11 +805,28 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         this.columnType = columnType;
     }
 
+    /**
+     * The column name. It is always a valid column name, as determined by
+     * {@link NameValidator#validateColumnName(String)}.
+     *
+     * @return the column name
+     */
     @NotNull
     public String getName() {
         return name;
     }
 
+    /**
+     * The data type: the type of the column's values.
+     *
+     * <p>
+     * Like column sources, column definitions use {@link Boolean} for boolean columns, and the primitive type for other
+     * primitive columns (such as {@code int}, never {@link Integer}). The data type is never {@code void} or
+     * {@link Void}. For array and {@link Vector} data types, the type of the elements is the {@link #getComponentType()
+     * component type}.
+     *
+     * @return the data type
+     */
     @NotNull
     public Class<TYPE> getDataType() {
         return dataType;
