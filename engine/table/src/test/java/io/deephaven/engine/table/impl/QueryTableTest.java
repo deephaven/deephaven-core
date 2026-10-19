@@ -1983,6 +1983,20 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testSnapshotVectorStampComponentType() {
+        final QueryTable base = testRefreshingTable(i(10).toTracking(), intCol("A", 1));
+        final Table trigger = testRefreshingTable(i(0, 1).toTracking(), stringCol("K", "a", "a"),
+                stringCol("S", "x", "y")).groupBy("K");
+        final ColumnDefinition<?> stampDefinition = trigger.getDefinition().getColumn("S");
+        assertEquals(String.class, stampDefinition.getComponentType());
+        for (final Flag[] flags : new Flag[][] {{Flag.INITIAL}, {Flag.INCREMENTAL, Flag.INITIAL}, {Flag.HISTORY}}) {
+            final Table snapshot = base.snapshotWhen(trigger, flags);
+            assertEquals(Arrays.toString(flags), stampDefinition, snapshot.getDefinition().getColumn("S"));
+            assertEquals(Arrays.toString(flags), String.class, snapshot.getColumnSource("S").getComponentType());
+        }
+    }
+
+    @Test
     public void testSnapshotArrayValues() {
         final QueryTable right = testRefreshingTable(i(10, 25, 30).toTracking(),
                 col("A", 3, 1, 2), col("B", "c", "a", "b"));

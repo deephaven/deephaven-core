@@ -2794,8 +2794,9 @@ public class QueryTable extends BaseTable<QueryTable> {
         // use a SingleValueColumnSource for these columns.
         final Map<String, SingleValueColumnSource<?>> triggerColumns = new LinkedHashMap<>();
         for (String stampColumn : stampColumns) {
-            final Class<?> stampColumnType = getColumnSource(stampColumn).getType();
-            triggerColumns.put(stampColumn, SingleValueColumnSource.getSingleValueColumnSource(stampColumnType));
+            final ColumnSource<?> stampSource = getColumnSource(stampColumn);
+            triggerColumns.put(stampColumn, SingleValueColumnSource.getSingleValueColumnSource(
+                    stampSource.getType(), stampSource.getComponentType()));
         }
 
         // make our result table
