@@ -2993,6 +2993,33 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testSnapshotIncrementalShiftsReinterpretedColumns() {
+        final Instant[] instants = {DateTimeUtils.epochNanosToInstant(1000), DateTimeUtils.epochNanosToInstant(2000),
+                DateTimeUtils.epochNanosToInstant(3000)};
+        final QueryTable base = testRefreshingTable(i(10, 20, 30).toTracking(), instantCol("Ts", instants),
+                booleanCol("Bo", true, null, false), stringCol("S", "a", "b", "c"));
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+        final Table snapshot = base.snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL);
+        validateUpdates(snapshot);
+
+        final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+        shiftBuilder.shiftRange(20, 30, -5);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(base, i(10, 20, 30));
+            addToTable(base, i(15, 25), instantCol("Ts", instants[1], instants[2]), booleanCol("Bo", null, false),
+                    stringCol("S", "b", "c"));
+            base.notifyListeners(new TableUpdateImpl(i(), i(10), i(), shiftBuilder.build(),
+                    ModifiedColumnSet.EMPTY));
+            addToTable(trigger, i(1), intCol("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+
+        assertTableEquals(base, snapshot.dropColumns("T"));
+        assertTableEquals(testRefreshingTable(i(15, 25).toTracking(), intCol("T", 1, 1)), snapshot.view("T"));
+    }
+
+    @Test
     public void testSnapshotIncrementalPrependShiftsRows() {
         final int size = 10000;
         final QueryTable base = testRefreshingTable(RowSetFactory.flat(size).toTracking(),

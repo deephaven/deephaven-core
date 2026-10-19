@@ -46,6 +46,7 @@ public class SnapshotIncrementalListener extends MergedListener {
     private final SnapshotUtils.DataColumnCopy dataCopy;
     private final SparseArrayColumnSource<?>[] sparseResultColumns;
     private final WritableColumnSource<?>[] objectResultColumns;
+    private final WritableColumnSource<?>[] movableResultColumns;
     private final ModifiedColumnSet[] dataColumnSets;
     private final ModifiedColumnSet.Transformer dataColumnTransformer;
     private final ModifiedColumnSet stampColumnSet;
@@ -86,6 +87,10 @@ public class SnapshotIncrementalListener extends MergedListener {
         }
         this.sparseResultColumns = sparseColumns.toArray(SparseArrayColumnSource<?>[]::new);
         this.objectResultColumns = SnapshotUtils.objectColumns(resultColumns);
+        // shifted rows move through the primitive storage of reinterpretable columns, such as Instant columns
+        this.movableResultColumns = resultColumns.values().stream()
+                .map(ReinterpretUtils::maybeConvertToWritablePrimitive)
+                .toArray(WritableColumnSource<?>[]::new);
 
         final String[] dataColumnNames = snapshotDataColumns.keySet().toArray(String[]::new);
         dataColumnSets = new ModifiedColumnSet[dataColumnNames.length];
@@ -239,7 +244,7 @@ public class SnapshotIncrementalListener extends MergedListener {
             return;
         }
         final int chunkSize = (int) Math.min(preShiftKeys.size(), ChunkUtils.COPY_DATA_CHUNK_SIZE);
-        for (final WritableColumnSource<?> column : resultColumns.values()) {
+        for (final WritableColumnSource<?> column : movableResultColumns) {
             try (final ChunkSource.FillContext fillContext = column.makeFillContext(chunkSize);
                     final ChunkSink.FillFromContext fillFromContext = column.makeFillFromContext(chunkSize);
                     final WritableChunk<Values> chunk = column.getChunkType().makeWritableChunk(chunkSize);
