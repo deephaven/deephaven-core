@@ -22,6 +22,7 @@ import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.parquet.table.ParquetSchemaReader;
 import io.deephaven.parquet.table.ParquetTableWriter;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.metadata.RowGroupInfo;
@@ -43,6 +44,7 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -454,7 +456,10 @@ public class ParquetMetadataKeyingTest {
         return dest;
     }
 
-    /** A BigInteger column, written as a decimal with codec metadata, with a data index on it. */
+    /**
+     * A BigInteger column, with a data index on it. The writer marks a BigInteger column as {@code DECIMAL(1,0)}, which
+     * the reader maps back to BigInteger; the footer records nothing for it.
+     */
     private String writeBigIntegerIndexedTable() {
         final String dest = path("bigIntegerIndexed.parquet");
         ParquetTools.writeTable(
@@ -465,18 +470,32 @@ public class ParquetMetadataKeyingTest {
     }
 
     /**
-     * The footer records a column's type metadata, such as the codec that reads a decimal back as a BigInteger, by
-     * parquet name, so a read that renames the column finds it under that name.
+     * The footer records a column's type metadata, such as an explicit codec, by parquet name, so a read that renames
+     * the column finds it under that name. Here the codec writes strings as plain binary, so only the footer's codec
+     * entry reads the column, and its index's keys, back as strings rather than bytes.
      */
     @Test
     public void codecColumnWithReadRename() {
-        final Table fromDisk = ParquetTools.readTable(writeBigIntegerIndexedTable(), ParquetInstructions.builder()
+        final String dest = path("codecRenamed.parquet");
+        ParquetTools.writeTable(
+                TableTools.emptyTable(100).update("B = `b` + (ii % 5)", "C = (int) ii"),
+                dest,
+                ParquetInstructions.builder()
+                        .addColumnCodec("B", UTF8StringAsByteArrayCodec.class.getName())
+                        .addIndexColumns("B")
+                        .build());
+        final Map<String, String> keyValueMetadata =
+                new ParquetTableLocationKey(new File(dest).toURI(), 0, null, ParquetInstructions.EMPTY)
+                        .getMetadata().getFileMetaData().getKeyValueMetaData();
+        assertTrue(ParquetSchemaReader.parseMetadata(keyValueMetadata).orElseThrow()
+                .columnTypeMap().get("B").codec().isPresent());
+
+        final Table fromDisk = ParquetTools.readTable(dest, ParquetInstructions.builder()
                 .addColumnNameMapping("B", "Sym")
                 .build());
-        assertEquals(BigInteger.class, fromDisk.getDefinition().getColumn("Sym").getDataType());
-        assertEquals(BigInteger.class, indexKeyType(fromDisk, "Sym"));
-        assertTableEquals(TableTools.emptyTable(100).update("Sym = java.math.BigInteger.valueOf(ii % 5)"),
-                fromDisk.view("Sym"));
+        assertEquals(String.class, fromDisk.getDefinition().getColumn("Sym").getDataType());
+        assertEquals(String.class, indexKeyType(fromDisk, "Sym"));
+        assertTableEquals(TableTools.emptyTable(100).update("Sym = `b` + (ii % 5)"), fromDisk.view("Sym"));
     }
 
     /** The footer's vector type entry is recorded by parquet name too, so a renamed vector column is read as one. */
