@@ -36,6 +36,7 @@ import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.qst.type.Type;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -62,6 +63,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1818,6 +1820,228 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    @Test
+    public void testDictionaryEncodedInstantSerialization() throws IOException {
+        final long[] epochNanos = {1_700_000_000_000_000_000L, 1_700_000_001_000_000_000L, 1_700_000_002_000_000_000L};
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            for (final int indexBitWidth : new int[] {8, 16, 32}) {
+                testDictionaryRoundTrip(indexBitWidth, Instant.class, opts, (utO) -> {
+                    final WritableLongChunk<Values> chunk = utO.asWritableLongChunk();
+                    for (int i = 0; i < chunk.size(); ++i) {
+                        chunk.set(i, i % 5 == 0 ? QueryConstants.NULL_LONG : epochNanos[i % epochNanos.length]);
+                    }
+                }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+            }
+        }
+    }
+
+    @Test
+    public void testDictionaryEncodedZonedDateTimeSerialization() throws IOException {
+        final long[] epochNanos = {1_700_000_000_000_000_000L, 1_700_000_001_000_000_000L, 1_700_000_002_000_000_000L};
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            testDictionaryRoundTrip(32, ZonedDateTime.class, opts, (utO) -> {
+                final WritableLongChunk<Values> chunk = utO.asWritableLongChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 5 == 0 ? QueryConstants.NULL_LONG : epochNanos[i % epochNanos.length]);
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
+    /**
+     * A ZonedDateTime source that cannot be reinterpreted to long delivers an ObjectChunk to a dictionary writer built
+     * for long. The dictionary must be keyed by epoch nanos, so values at the same instant in different zones share one
+     * entry, and the values decode as the instants the source held.
+     */
+    @Test
+    public void testDictionaryEncodedZonedDateTimeObjectSerialization() throws IOException {
+        final long t0 = 1_700_000_000_000_000_000L;
+        final long t1 = t0 + 1_000_000_000L;
+        final long t2 = t0 + 2_000_000_000L;
+        final ZonedDateTime[] values = {
+                DateTimeUtils.epochNanosToZonedDateTime(t0, ZoneId.of("America/New_York")),
+                DateTimeUtils.epochNanosToZonedDateTime(t0, ZoneId.of("UTC")),
+                null,
+                DateTimeUtils.epochNanosToZonedDateTime(t1, ZoneId.of("Asia/Tokyo")),
+                DateTimeUtils.epochNanosToZonedDateTime(t0, ZoneId.of("Europe/London")),
+                DateTimeUtils.epochNanosToZonedDateTime(t2, ZoneId.of("UTC")),
+                null,
+                DateTimeUtils.epochNanosToZonedDateTime(t1, ZoneId.of("America/New_York")),
+        };
+        final int numRows = values.length;
+        final int numDistinctInstants = 3;
+
+        // Like production callers, build the writer and reader for the reinterpreted wire type (ZonedDateTime -> long)
+        // while the schema field still describes the logical type.
+        final Field writerField = buildDictionaryField(ZonedDateTime.class, 32, 0L);
+        final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) DefaultChunkWriterFactory.INSTANCE.newWriter(
+                BarrageTypeInfo.make(long.class, null, writerField));
+        Assert.eq(ChunkType.Long, "ChunkType.Long", dictWriter.getValuesChunkType(), "dictWriter.getValuesChunkType()");
+
+        try (final WritableLongChunk<Values> expected = WritableLongChunk.makeWritableChunk(numRows)) {
+            for (int i = 0; i < numRows; ++i) {
+                expected.set(i, DateTimeUtils.epochNanos(values[i]));
+            }
+
+            for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, dictWriter.getValuesChunkType());
+                final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
+                final WritableObjectChunk<ZonedDateTime, Values> work = WritableObjectChunk.makeWritableChunk(numRows);
+                for (int i = 0; i < numRows; ++i) {
+                    work.set(i, values[i]);
+                }
+                // the context owns work and closes it
+                try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0);
+                        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                    final LongStream.Builder bufBld = LongStream.builder();
+                    final List<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                    try (final ChunkWriter.DrainableColumn col = dictWriter.getInputStream(ctx, null, opts, state)) {
+                        col.visitFieldNodes((n, nc) -> fieldNodes.add(new ChunkWriter.FieldNodeInfo(n, nc)));
+                        col.visitBuffers(bufBld::add);
+                        col.drainTo(baos);
+                    }
+                    final long[] buffers = bufBld.build().toArray();
+
+                    // With Deephaven nulls, the null sentinel is a real dictionary entry.
+                    final int expectedDictSize = numDistinctInstants + (opts.useDeephavenNulls() ? 1 : 0);
+                    Assert.eq(expectedDictSize, "expectedDictSize", state.totalSize(), "state.totalSize()");
+
+                    try (final WritableChunk<Values> deltaChunk = state.buildDeltaChunk()) {
+                        registry.update(0L, deltaChunk, false);
+                    }
+                    state.resetDelta();
+
+                    @SuppressWarnings("unchecked")
+                    final ChunkReader<WritableChunk<Values>> reader =
+                            (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
+                                    .newReader(BarrageTypeInfo.make(long.class, null, writerField), opts, registry,
+                                            null);
+                    try (final WritableChunk<Values> rt = reader.readChunk(
+                            fieldNodes.iterator(), Arrays.stream(buffers).iterator(),
+                            new LittleEndianDataInputStream(
+                                    new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size())),
+                            null, 0, numRows)) {
+                        Assert.eq(numRows, "numRows", rt.size(), "rt.size()");
+                        primitiveIdentityValidate(expected, rt, null, 0);
+                    }
+                } finally {
+                    registry.close();
+                }
+            }
+        }
+    }
+
+    /**
+     * A ZonedDateTime source that cannot be reinterpreted to long delivers an ObjectChunk to a run-end encoded writer
+     * built for long. The values must be converted to epoch nanos before runs are detected, so that values at the same
+     * instant in different zones extend one run, both when the run values are written plainly and when they are
+     * dictionary encoded.
+     */
+    @Test
+    public void testRunEndEncodedZonedDateTimeObjectSerialization() throws IOException {
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            testRunEndEncodedZonedDateTimeObjects(false, opts);
+            testRunEndEncodedZonedDateTimeObjects(true, opts);
+        }
+    }
+
+    private static void testRunEndEncodedZonedDateTimeObjects(
+            final boolean dictionaryEncoded,
+            final BarrageSubscriptionOptions opts) throws IOException {
+        final long t0 = 1_700_000_000_000_000_000L;
+        final long t1 = t0 + 1_000_000_000L;
+        final long t2 = t0 + 2_000_000_000L;
+        final ZonedDateTime[] values = {
+                DateTimeUtils.epochNanosToZonedDateTime(t0, ZoneId.of("America/New_York")),
+                DateTimeUtils.epochNanosToZonedDateTime(t0, ZoneId.of("UTC")),
+                DateTimeUtils.epochNanosToZonedDateTime(t1, ZoneId.of("Asia/Tokyo")),
+                null,
+                null,
+                DateTimeUtils.epochNanosToZonedDateTime(t0, ZoneId.of("Europe/London")),
+                DateTimeUtils.epochNanosToZonedDateTime(t2, ZoneId.of("UTC")),
+                DateTimeUtils.epochNanosToZonedDateTime(t1, ZoneId.of("America/New_York")),
+        };
+        final int numRows = values.length;
+        // the first two rows hold one instant, as do the two nulls
+        final int numRuns = 6;
+        final int numDistinctInstants = 3;
+
+        // Like production callers, build the writer and reader for the reinterpreted wire type (ZonedDateTime -> long)
+        // while the schema field still describes the logical type.
+        final Field writerField = buildRunEndEncodedField(ZonedDateTime.class,
+                dictionaryEncoded ? new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)) : null);
+        final ChunkWriter<Chunk<Values>> writer =
+                DefaultChunkWriterFactory.INSTANCE.newWriter(BarrageTypeInfo.make(long.class, null, writerField));
+        final DictionaryWriterRegistry writerRegistry = new DictionaryWriterRegistryImpl();
+        final DictionaryReaderRegistry readerRegistry = new DictionaryReaderRegistry();
+
+        final WritableObjectChunk<ZonedDateTime, Values> work = WritableObjectChunk.makeWritableChunk(numRows);
+        for (int i = 0; i < numRows; ++i) {
+            work.set(i, values[i]);
+        }
+        // the context owns work and closes it
+        try (final WritableLongChunk<Values> expected = WritableLongChunk.makeWritableChunk(numRows);
+                final ChunkWriter.Context ctx = writer.makeContext(work, 0);
+                final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+            for (int i = 0; i < numRows; ++i) {
+                expected.set(i, DateTimeUtils.epochNanos(values[i]));
+            }
+
+            final LongStream.Builder bufBld = LongStream.builder();
+            final List<ChunkWriter.FieldNodeInfo> fieldNodes = new ArrayList<>();
+            try (final ChunkWriter.DrainableColumn col = writer.getInputStream(ctx, null, opts, writerRegistry)) {
+                col.visitFieldNodes((n, nc) -> fieldNodes.add(new ChunkWriter.FieldNodeInfo(n, nc)));
+                col.visitBuffers(bufBld::add);
+                col.drainTo(baos);
+            }
+            final long[] buffers = bufBld.build().toArray();
+            // field nodes are the REE parent, then its run_ends and values children
+            Assert.eq(numRuns, "numRuns", fieldNodes.get(1).numElements, "run_ends length");
+
+            if (dictionaryEncoded) {
+                Assert.eq(1, "1", writerRegistry.entries().size(), "writerRegistry.entries().size()");
+                for (final DictionaryWriterRegistry.Entry entry : writerRegistry.entries()) {
+                    // With Deephaven nulls, the null sentinel is a real dictionary entry.
+                    final int expectedDictSize = numDistinctInstants + (opts.useDeephavenNulls() ? 1 : 0);
+                    Assert.eq(expectedDictSize, "expectedDictSize", entry.state.totalSize(), "totalSize()");
+                    try (final WritableChunk<Values> deltaChunk = entry.state.buildDeltaChunk()) {
+                        readerRegistry.update(entry.state.getDictId(), deltaChunk, false);
+                    }
+                    entry.state.resetDelta();
+                }
+            }
+
+            @SuppressWarnings("unchecked")
+            final ChunkReader<WritableChunk<Values>> reader =
+                    (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
+                            .newReader(BarrageTypeInfo.make(long.class, null, writerField), opts, readerRegistry,
+                                    null);
+            try (final WritableChunk<Values> rt = reader.readChunk(
+                    fieldNodes.iterator(), Arrays.stream(buffers).iterator(),
+                    new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size())),
+                    null, 0, numRows)) {
+                Assert.eq(numRows, "numRows", rt.size(), "rt.size()");
+                primitiveIdentityValidate(expected, rt, null, 0);
+            }
+        } finally {
+            readerRegistry.close();
+        }
+    }
+
+    @Test
+    public void testDictionaryEncodedBooleanSerialization() throws IOException {
+        for (final BarrageSubscriptionOptions opts : new BarrageSubscriptionOptions[] {OPT_DEFAULT, OPT_DH_NULLS}) {
+            testDictionaryRoundTrip(32, Boolean.class, opts, (utO) -> {
+                final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 5 == 0
+                            ? BooleanUtils.NULL_BOOLEAN_AS_BYTE
+                            : BooleanUtils.booleanAsByte(i % 2 == 0));
+                }
+            }, BarrageColumnRoundTripTest::primitiveIdentityValidate);
+        }
+    }
+
     /** Two batches: second batch introduces a new dictionary value (delta append). */
     @Test
     public void testDictionaryEncodedMultiBatchDelta() throws IOException {
@@ -2401,6 +2625,35 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     // ---- Dictionary-encoded helpers ----
 
     /**
+     * Builds a run-end encoded field with Int32 run ends, whose values child is the standard field for
+     * {@code valueType}, dictionary encoded when {@code valuesEncoding} is not null.
+     */
+    private static Field buildRunEndEncodedField(
+            final Class<?> valueType,
+            @Nullable final DictionaryEncoding valuesEncoding) {
+        final ByteString stdSchemaBytes = BarrageUtil.schemaBytesFromTableDefinition(
+                TableDefinition.of(ColumnDefinition.of("col", Type.find(valueType))),
+                Collections.emptyMap(), false);
+        final Schema stdSchema = SchemaHelper.flatbufSchema(stdSchemaBytes.asReadOnlyByteBuffer());
+        final org.apache.arrow.vector.types.pojo.Field stdPojoField =
+                org.apache.arrow.vector.types.pojo.Field.convertField(stdSchema.fields(0));
+        final org.apache.arrow.vector.types.pojo.Field runEndsField =
+                new org.apache.arrow.vector.types.pojo.Field("run_ends",
+                        new FieldType(false, new ArrowType.Int(32, true), null, null), Collections.emptyList());
+        final org.apache.arrow.vector.types.pojo.Field valuesField =
+                new org.apache.arrow.vector.types.pojo.Field("values",
+                        new FieldType(stdPojoField.isNullable(), stdPojoField.getType(), valuesEncoding,
+                                stdPojoField.getMetadata()),
+                        stdPojoField.getChildren());
+        final org.apache.arrow.vector.types.pojo.Schema pojoSchema =
+                new org.apache.arrow.vector.types.pojo.Schema(Collections.singletonList(
+                        new org.apache.arrow.vector.types.pojo.Field("col",
+                                new FieldType(true, ArrowType.RunEndEncoded.INSTANCE, null, null),
+                                List.of(runEndsField, valuesField))));
+        return SchemaHelper.flatbufSchema(ByteBuffer.wrap(pojoSchema.serializeAsMessage())).fields(0);
+    }
+
+    /**
      * Builds a flatbuf Arrow {@link Field} whose value type matches {@code valueType} but carries a
      * {@link DictionaryEncoding} with the given index bit width and dictionary id.
      */
@@ -2441,13 +2694,18 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             final Consumer<WritableChunk<Values>> initData,
             final Validator validator) throws IOException {
         final int NUM_ROWS = 8;
-        final ChunkType chunkType = (type == Boolean.class || type == boolean.class)
+        // Like production callers, build the writer and reader for the reinterpreted wire type (e.g. Instant -> long)
+        // while the schema field still describes the logical type.
+        final Class<?> wireType = ReinterpretUtils.maybeConvertToPrimitiveDataType(type);
+        final ChunkType chunkType = (wireType == Boolean.class || wireType == boolean.class)
                 ? ChunkType.Byte
-                : ChunkType.fromElementType(type);
+                : ChunkType.fromElementType(wireType);
 
         final Field writerField = buildDictionaryField(type, indexBitWidth, 0L);
         final DictionaryChunkWriter dictWriter = (DictionaryChunkWriter) DefaultChunkWriterFactory.INSTANCE.newWriter(
-                BarrageTypeInfo.make(type, null, writerField));
+                BarrageTypeInfo.make(wireType, null, writerField));
+        // The writer state must hold the same chunk type that the values writer consumes.
+        Assert.eq(chunkType, "chunkType", dictWriter.getValuesChunkType(), "dictWriter.getValuesChunkType()");
 
         try (final WritableChunk<Values> srcData = chunkType.makeWritableChunk(NUM_ROWS)) {
             srcData.setSize(NUM_ROWS);
@@ -2455,7 +2713,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             // --- full batch ---
             {
-                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, chunkType);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, dictWriter.getValuesChunkType());
                 final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
                 final WritableChunk<Values> work = chunkType.makeWritableChunk(NUM_ROWS);
                 work.copyFromChunk(srcData, 0, 0, NUM_ROWS);
@@ -2477,7 +2735,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     final ChunkReader<WritableChunk<Values>> reader =
                             (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
                                     .newReader(
-                                            BarrageTypeInfo.make(type, null, writerField), options, registry, null);
+                                            BarrageTypeInfo.make(wireType, null, writerField), options, registry, null);
                     try (final WritableChunk<Values> rt = reader.readChunk(
                             fieldNodes.iterator(), Arrays.stream(buffers).iterator(),
                             new LittleEndianDataInputStream(
@@ -2492,7 +2750,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             // --- empty subset: reader must handle numRows=0 without consulting the registry ---
             {
-                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, chunkType);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, dictWriter.getValuesChunkType());
                 final WritableChunk<Values> work = chunkType.makeWritableChunk(NUM_ROWS);
                 work.copyFromChunk(srcData, 0, 0, NUM_ROWS);
                 try (final ChunkWriter.Context ctx = dictWriter.makeContext(work, 0);
@@ -2510,7 +2768,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     final ChunkReader<WritableChunk<Values>> reader =
                             (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
                                     .newReader(
-                                            BarrageTypeInfo.make(type, null, writerField), options,
+                                            BarrageTypeInfo.make(wireType, null, writerField), options,
                                             new DictionaryReaderRegistry(), null);
                     try (final WritableChunk<Values> rt = reader.readChunk(
                             fieldNodes.iterator(), Arrays.stream(buffers).iterator(),
@@ -2524,7 +2782,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
             // --- swiss-cheese subset ---
             {
-                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, chunkType);
+                final DictionaryWriterState state = new LocalDictionaryWriterState(0L, dictWriter.getValuesChunkType());
                 final DictionaryReaderRegistry registry = new DictionaryReaderRegistry();
                 final WritableChunk<Values> work = chunkType.makeWritableChunk(NUM_ROWS);
                 work.copyFromChunk(srcData, 0, 0, NUM_ROWS);
@@ -2561,7 +2819,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                         final ChunkReader<WritableChunk<Values>> reader =
                                 (ChunkReader<WritableChunk<Values>>) (ChunkReader<?>) DefaultChunkReaderFactory.INSTANCE
                                         .newReader(
-                                                BarrageTypeInfo.make(type, null, writerField), options, registry, null);
+                                                BarrageTypeInfo.make(wireType, null, writerField), options, registry,
+                                                null);
                         try (final WritableChunk<Values> rt = reader.readChunk(
                                 fieldNodes.iterator(), Arrays.stream(buffers).iterator(),
                                 new LittleEndianDataInputStream(

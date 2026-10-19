@@ -5,103 +5,108 @@ isort:skip_file
 Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 """
 
-import builtins
-import collections.abc
-import deephaven_core.proto.ticket_pb2
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.message
+from collections import abc as _abc
+from deephaven_core.proto import ticket_pb2 as _ticket_pb2
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+import builtins as _builtins
 import sys
-import typing
+import typing as _typing
 
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
-@typing.final
-class FetchObjectRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class FetchObjectRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    @property
-    def source_id(self) -> deephaven_core.proto.ticket_pb2.TypedTicket: ...
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def source_id(self) -> _ticket_pb2.TypedTicket: ...
     def __init__(
         self,
         *,
-        source_id: deephaven_core.proto.ticket_pb2.TypedTicket | None = ...,
+        source_id: _ticket_pb2.TypedTicket | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___FetchObjectRequest: typing_extensions.TypeAlias = FetchObjectRequest
+Global___FetchObjectRequest: _TypeAlias = FetchObjectRequest  # noqa: Y015
 
-@typing.final
-class FetchObjectResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class FetchObjectResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    TYPE_FIELD_NUMBER: builtins.int
-    DATA_FIELD_NUMBER: builtins.int
-    TYPED_EXPORT_IDS_FIELD_NUMBER: builtins.int
-    type: builtins.str
-    data: builtins.bytes
-    @property
-    def typed_export_ids(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[deephaven_core.proto.ticket_pb2.TypedTicket]: ...
+    TYPE_FIELD_NUMBER: _builtins.int
+    DATA_FIELD_NUMBER: _builtins.int
+    TYPED_EXPORT_IDS_FIELD_NUMBER: _builtins.int
+    type: _builtins.str
+    data: _builtins.bytes
+    @_builtins.property
+    def typed_export_ids(self) -> _containers.RepeatedCompositeFieldContainer[_ticket_pb2.TypedTicket]: ...
     def __init__(
         self,
         *,
-        type: builtins.str = ...,
-        data: builtins.bytes = ...,
-        typed_export_ids: collections.abc.Iterable[deephaven_core.proto.ticket_pb2.TypedTicket] | None = ...,
+        type: _builtins.str = ...,
+        data: _builtins.bytes = ...,
+        typed_export_ids: _abc.Iterable[_ticket_pb2.TypedTicket] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["data", b"data", "type", b"type", "typed_export_ids", b"typed_export_ids"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["data", b"data", "type", b"type", "typed_export_ids", b"typed_export_ids"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___FetchObjectResponse: typing_extensions.TypeAlias = FetchObjectResponse
+Global___FetchObjectResponse: _TypeAlias = FetchObjectResponse  # noqa: Y015
 
-@typing.final
-class ConnectRequest(google.protobuf.message.Message):
+@_typing.final
+class ConnectRequest(_message.Message):
     """
     First payload to send on a MessageStream, indicating the object to connect to
     on the server.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SOURCE_ID_FIELD_NUMBER: builtins.int
-    @property
-    def source_id(self) -> deephaven_core.proto.ticket_pb2.TypedTicket: ...
+    SOURCE_ID_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def source_id(self) -> _ticket_pb2.TypedTicket: ...
     def __init__(
         self,
         *,
-        source_id: deephaven_core.proto.ticket_pb2.TypedTicket | None = ...,
+        source_id: _ticket_pb2.TypedTicket | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["source_id", b"source_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["source_id", b"source_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["source_id", b"source_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["source_id", b"source_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ConnectRequest: typing_extensions.TypeAlias = ConnectRequest
+Global___ConnectRequest: _TypeAlias = ConnectRequest  # noqa: Y015
 
-@typing.final
-class ClientData(google.protobuf.message.Message):
+@_typing.final
+class ClientData(_message.Message):
     """
     A generic payload sent from the client to the server. The specific requirements and
     guarantees are defined by the specific plugin.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    PAYLOAD_FIELD_NUMBER: builtins.int
-    REFERENCES_FIELD_NUMBER: builtins.int
-    payload: builtins.bytes
+    PAYLOAD_FIELD_NUMBER: _builtins.int
+    REFERENCES_FIELD_NUMBER: _builtins.int
+    payload: _builtins.bytes
     """The payload, may be empty."""
-    @property
-    def references(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[deephaven_core.proto.ticket_pb2.TypedTicket]:
+    @_builtins.property
+    def references(self) -> _containers.RepeatedCompositeFieldContainer[_ticket_pb2.TypedTicket]:
         """
         The typed references, may be empty.
 
@@ -115,29 +120,32 @@ class ClientData(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        payload: builtins.bytes = ...,
-        references: collections.abc.Iterable[deephaven_core.proto.ticket_pb2.TypedTicket] | None = ...,
+        payload: _builtins.bytes = ...,
+        references: _abc.Iterable[_ticket_pb2.TypedTicket] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["payload", b"payload", "references", b"references"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["payload", b"payload", "references", b"references"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ClientData: typing_extensions.TypeAlias = ClientData
+Global___ClientData: _TypeAlias = ClientData  # noqa: Y015
 
-@typing.final
-class ServerData(google.protobuf.message.Message):
+@_typing.final
+class ServerData(_message.Message):
     """
     A generic payload sent from the server to the client. The specific requirements and
     guarantees of this are defined by the specific plugin.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    PAYLOAD_FIELD_NUMBER: builtins.int
-    EXPORTED_REFERENCES_FIELD_NUMBER: builtins.int
-    payload: builtins.bytes
+    PAYLOAD_FIELD_NUMBER: _builtins.int
+    EXPORTED_REFERENCES_FIELD_NUMBER: _builtins.int
+    payload: _builtins.bytes
     """The payload, may be empty."""
-    @property
-    def exported_references(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[deephaven_core.proto.ticket_pb2.TypedTicket]:
+    @_builtins.property
+    def exported_references(self) -> _containers.RepeatedCompositeFieldContainer[_ticket_pb2.TypedTicket]:
         """
         The exported references, may be empty.
 
@@ -151,31 +159,34 @@ class ServerData(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        payload: builtins.bytes = ...,
-        exported_references: collections.abc.Iterable[deephaven_core.proto.ticket_pb2.TypedTicket] | None = ...,
+        payload: _builtins.bytes = ...,
+        exported_references: _abc.Iterable[_ticket_pb2.TypedTicket] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["exported_references", b"exported_references", "payload", b"payload"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["exported_references", b"exported_references", "payload", b"payload"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ServerData: typing_extensions.TypeAlias = ServerData
+Global___ServerData: _TypeAlias = ServerData  # noqa: Y015
 
-@typing.final
-class StreamRequest(google.protobuf.message.Message):
+@_typing.final
+class StreamRequest(_message.Message):
     """
     Client payload for the MessageStream.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    CONNECT_FIELD_NUMBER: builtins.int
-    DATA_FIELD_NUMBER: builtins.int
-    @property
+    CONNECT_FIELD_NUMBER: _builtins.int
+    DATA_FIELD_NUMBER: _builtins.int
+    @_builtins.property
     def connect(self) -> Global___ConnectRequest:
         """Indicates that this is the first request of the stream, asking to connect to
         a specific object on the server.
         """
 
-    @property
+    @_builtins.property
     def data(self) -> Global___ClientData:
         """Data to pass to the object on the server."""
 
@@ -185,26 +196,26 @@ class StreamRequest(google.protobuf.message.Message):
         connect: Global___ConnectRequest | None = ...,
         data: Global___ClientData | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["connect", b"connect", "data", b"data", "message", b"message"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["connect", b"connect", "data", b"data", "message", b"message"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["connect", b"connect", "data", b"data", "message", b"message"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["connect", b"connect", "data", b"data", "message", b"message"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_message: typing_extensions.TypeAlias = typing.Literal["connect", "data"]
-    _WhichOneofArgType_message: typing_extensions.TypeAlias = typing.Literal["message", b"message"]
+    _WhichOneofReturnType_message: _TypeAlias = _typing.Literal["connect", "data"]  # noqa: Y015
+    _WhichOneofArgType_message: _TypeAlias = _typing.Literal["message", b"message"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_message) -> _WhichOneofReturnType_message | None: ...
 
-Global___StreamRequest: typing_extensions.TypeAlias = StreamRequest
+Global___StreamRequest: _TypeAlias = StreamRequest  # noqa: Y015
 
-@typing.final
-class StreamResponse(google.protobuf.message.Message):
+@_typing.final
+class StreamResponse(_message.Message):
     """
     Server responses to the client. Currently can only be ServerData messages.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    DATA_FIELD_NUMBER: builtins.int
-    @property
+    DATA_FIELD_NUMBER: _builtins.int
+    @_builtins.property
     def data(self) -> Global___ServerData:
         """Data to pass to the client about the object on the server."""
 
@@ -213,22 +224,27 @@ class StreamResponse(google.protobuf.message.Message):
         *,
         data: Global___ServerData | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["data", b"data", "message", b"message"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["data", b"data", "message", b"message"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["data", b"data", "message", b"message"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["data", b"data", "message", b"message"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_message: typing_extensions.TypeAlias = typing.Literal["data"]
-    _WhichOneofArgType_message: typing_extensions.TypeAlias = typing.Literal["message", b"message"]
+    _WhichOneofReturnType_message: _TypeAlias = _typing.Literal["data"]  # noqa: Y015
+    _WhichOneofArgType_message: _TypeAlias = _typing.Literal["message", b"message"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_message) -> _WhichOneofReturnType_message | None: ...
 
-Global___StreamResponse: typing_extensions.TypeAlias = StreamResponse
+Global___StreamResponse: _TypeAlias = StreamResponse  # noqa: Y015
 
-@typing.final
-class BrowserNextResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class BrowserNextResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___BrowserNextResponse: typing_extensions.TypeAlias = BrowserNextResponse
+Global___BrowserNextResponse: _TypeAlias = BrowserNextResponse  # noqa: Y015

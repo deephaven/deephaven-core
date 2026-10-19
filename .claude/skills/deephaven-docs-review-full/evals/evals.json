@@ -3,10 +3,10 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Do a full review of this parallelization concept guide before we merge it: .claude/skills/eval-fixtures/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
+      "prompt": "Do a full review of this parallelization concept guide before we merge it: .claude/skills/deephaven-docs-review-full/evals/files/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
       "expected_output": "A prioritized editorial report: summary with verdict, developmental notes first, per-dimension findings, style as patterns, author queries — and it catches the view/update_view deferred-evaluation error.",
       "files": [
-        "../eval-fixtures/parallelization-pre-review.md"
+        "evals/files/parallelization-pre-review.md"
       ],
       "expectations": [
         "Opens with an editorial summary that names the single biggest issue and gives a readiness verdict (ready / needs revision / needs restructuring or equivalent)",
@@ -78,7 +78,28 @@
         "Rewrites the operations list so every item has the same shape (operation name first), and keeps every operation the list already names",
         "Does not edit any file other than the copy, and every change the report lists traces to a finding or to a problem the report states"
       ],
-      "id": 4
+      "id": 4,
+      "notes": "DOC-1990 round 5 (PR #8897): new 17/18, baseline 18/18. The baseline skill's re-verify step already produces a per-sentence verification on a page this size, so this eval does not separate the configurations; it documents the case that motivated the post-fix spot-check rule."
+    },
+    {
+      "prompt": "A PR changes the files listed in .claude/skills/deephaven-docs-review-full/evals/files/pr-coverage/changed-files.txt (that file is the unfiltered output of git diff --name-status -M <base>...HEAD -- docs for the PR base, before the skill's Markdown-only filter is applied). Do not review the pages. Following the skill's rule for reviewing a PR, write only the discovery command, the page list, and the table that go at the top of the full-review report.",
+      "expected_output": "Copilot's third, tenth, and eleventh reviews of #8910 asked for coverage of the PR-wide rule, deleted pages, and renames. A reviewer applying the rule gives the git diff --name-status discovery command, lists every changed Markdown page in both languages, drops snapshots and sidebar.json, keeps the lightly touched and configuration pages, builds a page-by-step table (a Category column from the directory, a check only for steps that have run, and pending or a reason for the rest), reviews the new path of a rename as a page, and gives the deleted page and the old path of the rename their own rows with a removed-page reason instead of step marks. The fixture is the unfiltered name-status diff of docs, so it holds snapshot and sidebar.json entries that the skill's Markdown-only pathspec would drop. The discovery command itself cannot be run on a fixture file, and running every step on every page is not tested here; only the discovery filter, the removed-page handling, and the report table are.",
+      "files": [
+        "evals/files/pr-coverage/changed-files.txt"
+      ],
+      "expectations": [
+        "Lists the six modified pages (Python and Groovy for each of the parallelization concept guide, the query-table-configuration page, and the update reference page) as pages to review",
+        "Does not list sidebar.json or any snapshots/*.json file as a page to review",
+        "Keeps the configuration page and the update reference page in the list (does not narrow the review to the headline concept guide)",
+        "Gives the table one row per page, a Category column, and one column per step: developmental pass, accuracy, structure, re-verify, examples, and style",
+        "Every cell holds a check only for a step that has actually run, and otherwise a stated status or reason such as pending or not run; no check marks for steps that have not run, since nothing has been reviewed yet",
+        "Names git diff --name-status -M (status-aware, with rename detection) as the discovery command in its output, not --name-only, which cannot distinguish a deletion from a rename, and not gh pr view",
+        "Reviews the new path of the rename (docs/python/how-to-guides/parallel-select.md) as a page, and gives the old path (use-parallel-select.md) its own row with a removed-page reason, such as inbound links and sidebar entries checked, instead of step marks",
+        "Gives the deleted page (obsolete-parallel-notes.md) its own row with a removed-page reason instead of step marks, and does not run the review steps on it",
+        "Identifies each page's category from its directory in the Category column: Concept guide for the two conceptual pages, Reference guide for the two update pages, and How-to guide for the renamed parallel-select page"
+      ],
+      "id": 5,
+      "notes": "PR #8910: tests the page list, the removed-page handling, and the page-by-step table only, not that every step is then run on every page. One run per configuration, author-graded, not blind. The fixture is unfiltered git diff --name-status output (modified pages, one rename, one deletion, plus sidebar.json and snapshot entries). Changed skill: the first run pre-filled check marks for steps nobody had run and scored 7/8; after the rule was changed to say a cell gets a check only once its step has run (otherwise pending), and a Category column was added after a later review, the rerun scored 9/9. Baseline: 6/9. It produces no per-step columns and gives the rename's old path no row of its own. The category expectation does not separate the two versions; it guards against dropping the prerequisite step. Expectations were added or tightened after earlier runs, so results on the earlier name-only fixture are superseded."
     }
   ]
 }

@@ -93,6 +93,8 @@ page, and the fix-not-rewrite limit above does not apply:
   round too, without starting another round. Then do one adversarial read, assuming problems
   remain, before handing the page to a human or a bot reviewer.
 
+**Reviewing a PR or a set of pages: cover every page with every step.** Before telling anyone a PR is ready, list every doc page the PR changes with `git diff --name-status -M <base>...HEAD -- 'docs/*.md'`, which keeps only Markdown and drops images, scripts, YAML, snapshots, and `sidebar.json`, in both languages. Review the pages marked `A` or `M` and the new path of each rename (`R`). A page the PR deletes (`D`) and the old path of each rename cannot be reviewed as pages: give each its own row with a reason in place of step marks, such as inbound links to the old path and sidebar entries checked. Run the whole sequence below on each page (category identification, developmental pass, accuracy, structure, re-verify when edits were applied, examples, style), including configuration pages, reference pages, and pages the PR only touches lightly: a page that received only an accuracy pass is the one a human reviewer finds walls of text and unlinked operation names on. Put a page-by-step table at the top of the report with a Category column next to each page (its category from `ref-deephaven-doc-categories`, which the directory decides, so fill it in at once) and one column per remaining step. Mark a step cell with a check only once that step has run on that page; until then write `pending`, or a reason such as `not run` or `n/a`, so a missing pass is visible instead of assumed.
+
 ## 0. Identify the doc's category
 
 Read `ref-deephaven-doc-categories` and determine which of the four categories this doc is. Carry
@@ -201,7 +203,7 @@ For every section from the structure step's list, handle it by what happened to 
   dropped" claim costs a reviewer real time chasing content that's actually still there.
 - **Links and anchors**: neither the spot check nor the style step validates that a link's
   *target* still resolves or that a heading's *anchor fragment* is still correct after an edit —
-  `deephaven-writing-style` checks link wording and first-mention linking, but not target/anchor
+  `deephaven-writing-style` checks link wording and every-mention linking, but not target/anchor
   resolution. A heading rename, section move, merge, or cut can silently break an internal link
   or an anchor fragment (`#some-heading`) even when every claim in the doc remains correct. For
   any section the structure step moved, renamed, merged, or cut (not just moved/renamed): re-check that links
@@ -251,6 +253,8 @@ report rather than assuming it works. Blocks marked `syntax` or `skip-test` are 
 If the user asked for edits and you change an example's code or its comments, re-verify the
 changed example with `deephaven-core-accuracy-spot-check` before moving on, as in the re-verify
 step.
+
+Also check each example's framing: a one-sentence lead-in says what it shows, and when the output is not obvious, one sentence after it says what the result demonstrates. An example the reader must decode alone is a finding.
 
 ## 6. Style last
 
@@ -307,12 +311,19 @@ redirect, decline, or ask before anything changes.
 
 ## 7. Report
 
+Include the three hardest-to-read paragraphs on each reviewed page, each with a concrete rewrite (a reader-facing version, not advice). A review that says "wall of text" without showing the rewrite leaves the author to guess what a better paragraph looks like.
+
 Return one review document, prioritized — biggest issue first within every section, not document
 order. Note the doc's category at the top so a reviewer can sanity-check severity calls (e.g. an
 orphaned aside flagged harder because the doc is a Reference guide). If a cross-language sibling
 was pulled into scope by the accuracy step, report on both files.
 
 ```
+## Page coverage (only when reviewing a PR or a set of pages)
+The page-by-step table from "Reviewing a PR or a set of pages": one row per changed page, both
+languages, a Category column (the category name, filled in at once), one column per remaining step, a check only for a step that has run and `pending` or a stated reason otherwise. Place it above the
+editorial summary. Omit this section for a single page.
+
 ## Editorial summary
 2–4 sentences: overall assessment, the single biggest issue, and the developmental verdict
 (ready for technical review / needs revision / needs restructuring).
