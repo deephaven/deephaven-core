@@ -76,6 +76,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.*;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
@@ -2845,9 +2846,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
         assertTableEquals(testRefreshingTable(i(10, 20).toTracking(), col("A", 100, 2), col("T", 2, 1)), snapshot);
         assertEquals(1, listener.getCount());
-        assertEquals(i(), listener.getUpdate().added());
-        assertEquals(i(30), listener.getUpdate().removed());
-        assertEquals(i(10), listener.getUpdate().modified());
+        // row 10 was removed and added again
+        assertEquals(i(10), listener.getUpdate().added());
+        assertEquals(i(10, 30), listener.getUpdate().removed());
+        assertEquals(i(), listener.getUpdate().modified());
         assertTrue(listener.getUpdate().shifted().empty());
         listener.close();
     }
@@ -2857,30 +2859,69 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable base = testRefreshingTable(i(10, 20, 30).toTracking(), col("A", 1, 2, 3));
         final QueryTable trigger = testRefreshingTable(col("T", 1));
         final Table snapshot = base.snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL);
+        validateUpdates(snapshot);
 
         final SimpleListener listener = new SimpleListener(snapshot);
         snapshot.addUpdateListener(listener);
 
+        final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+        shiftBuilder.shiftRange(20, 30, -5);
+        final RowSetShiftData shifted = shiftBuilder.build();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(base, i(10, 20, 30));
             addToTable(base, i(15, 25), col("A", 2, 3));
-            final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
-            shiftBuilder.shiftRange(20, 30, -5);
-            base.notifyListeners(new TableUpdateImpl(i(), i(10), i(), shiftBuilder.build(),
-                    ModifiedColumnSet.EMPTY));
+            base.notifyListeners(new TableUpdateImpl(i(), i(10), i(), shifted, ModifiedColumnSet.EMPTY));
         });
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(trigger, i(1), col("T", 2));
             trigger.notifyListeners(i(1), i(), i());
         });
 
-        assertTableEquals(testRefreshingTable(i(15, 25).toTracking(), col("A", 2, 3), col("T", 2, 2)), snapshot);
+        // the shifted rows did not change, so they keep the stamp of the snapshot that last copied them
+        assertTableEquals(testRefreshingTable(i(15, 25).toTracking(), col("A", 2, 3), col("T", 1, 1)), snapshot);
         assertEquals(1, listener.getCount());
-        assertEquals(i(15, 25), listener.getUpdate().added());
-        assertEquals(i(10, 20, 30), listener.getUpdate().removed());
+        assertEquals(i(), listener.getUpdate().added());
+        assertEquals(i(10), listener.getUpdate().removed());
         assertEquals(i(), listener.getUpdate().modified());
-        assertTrue(listener.getUpdate().shifted().empty());
+        assertEquals(shifted, listener.getUpdate().shifted());
+        listener.close();
+    }
+
+    @Test
+    public void testSnapshotIncrementalPrependShiftsRows() {
+        final int size = 10000;
+        final QueryTable base = testRefreshingTable(RowSetFactory.flat(size).toTracking(),
+                intCol("A", IntStream.range(0, size).toArray()));
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+        final Table snapshot = base.snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL);
+        validateUpdates(snapshot);
+
+        final SimpleListener listener = new SimpleListener(snapshot);
+        snapshot.addUpdateListener(listener);
+
+        final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+        shiftBuilder.shiftRange(0, size - 1, 1);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(base, RowSetFactory.flat(size));
+            addToTable(base, RowSetFactory.flat(size + 1), intCol("A", IntStream.range(-1, size).toArray()));
+            base.notifyListeners(
+                    new TableUpdateImpl(i(0), i(), i(), shiftBuilder.build(), ModifiedColumnSet.EMPTY));
+            addToTable(trigger, i(1), intCol("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+
+        final int[] expectedStamps = new int[size + 1];
+        Arrays.fill(expectedStamps, 1);
+        expectedStamps[0] = 2;
+        assertTableEquals(newTable(intCol("A", IntStream.range(-1, size).toArray()), intCol("T", expectedStamps)),
+                snapshot);
+        assertEquals(1, listener.getCount());
+        assertEquals(i(0), listener.getUpdate().added());
+        assertEquals(i(), listener.getUpdate().removed());
+        assertEquals(i(), listener.getUpdate().modified());
+        assertTrue(listener.getUpdate().shifted().nonempty());
         listener.close();
     }
 

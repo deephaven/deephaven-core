@@ -3,21 +3,31 @@
 //
 package io.deephaven.engine.table.impl.snapshot;
 
+import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.ListenerRecorder;
 import io.deephaven.engine.table.impl.MergedListener;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseablePair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,7 +48,6 @@ public class SnapshotIncrementalListener extends MergedListener {
     private final WritableColumnSource<?>[] objectResultColumns;
 
     private UpdateCoalescer baseUpdates;
-    private final TrackingWritableRowSet lastBaseRowSet;
     private boolean firstSnapshot = true;
 
     public SnapshotIncrementalListener(
@@ -58,7 +67,6 @@ public class SnapshotIncrementalListener extends MergedListener {
         this.triggerListener = triggerListener;
         this.baseTable = baseTable;
         this.triggerColumns = triggerColumns;
-        this.lastBaseRowSet = RowSetFactory.empty().toTracking();
         this.snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(baseTable);
 
         // a reinterpretable result column, such as an Instant column, may hold its values in a sparse primitive source
@@ -103,15 +111,16 @@ public class SnapshotIncrementalListener extends MergedListener {
     protected void destroy() {
         super.destroy();
         getUpdateGraph().runWhenIdle(() -> {
-            SafeCloseable.closeAll(baseUpdates, lastBaseRowSet);
-            baseUpdates = null;
+            if (baseUpdates != null) {
+                baseUpdates.close();
+                baseUpdates = null;
+            }
         });
     }
 
     public void doFirstSnapshot(boolean initial) {
         doRowCopy(baseTable.getRowSet());
         resultTable.getRowSet().writableCast().insert(baseTable.getRowSet());
-        lastBaseRowSet.insert(baseTable.getRowSet());
         if (!initial) {
             resultTable.notifyListeners(resultTable.getRowSet().copy(),
                     RowSetFactory.empty(), RowSetFactory.empty());
@@ -119,37 +128,87 @@ public class SnapshotIncrementalListener extends MergedListener {
         firstSnapshot = false;
     }
 
+    /**
+     * Apply the base updates accumulated since the last snapshot to the result. The result's row set is the base's row
+     * set as of the last snapshot, which is the row set {@code accumulated} began from, so the coalesced update applies
+     * to the result directly: shifted rows move, and only added and modified rows are copied from the base and stamped.
+     */
     private void doSnapshot(final UpdateCoalescer accumulated) {
-        lastBaseRowSet.clear();
-        lastBaseRowSet.insert(baseTable.getRowSet());
-        try (final RowSetShiftDataExpander expander = expand(accumulated)) {
-            final RowSet baseAdded = expander.getAdded().copy();
-            final RowSet baseModified = expander.getModified().copy();
-            final RowSet baseRemoved = expander.getRemoved().copy();
+        final TableUpdate baseUpdate = accumulated.coalesce();
+        try (final SafeCloseable ignored = baseUpdate::release) {
+            final TrackingWritableRowSet resultRowSet = resultTable.getRowSet().writableCast();
+            final RowSetShiftData shifted = baseUpdate.shifted();
 
-            // baseAdded, baseModified, and baseRemoved are given away to notifyListeners below; rowsToCopy exists
-            // only to drive the copy.
-            try (final RowSet rowsToCopy = baseAdded.union(baseModified)) {
-                doRowCopy(rowsToCopy);
+            // the keys that held a row before this snapshot and may hold none after it: the removed rows, and the rows
+            // within the shifted ranges
+            try (final WritableRowSet vacated = baseUpdate.removed().copy()) {
+                if (shifted.nonempty()) {
+                    final RowSetBuilderSequential preShiftBuilder = RowSetFactory.builderSequential();
+                    final RowSetBuilderSequential postShiftBuilder = RowSetFactory.builderSequential();
+                    final int shiftCount = shifted.size();
+                    for (int ii = 0; ii < shiftCount; ++ii) {
+                        final long delta = shifted.getShiftDelta(ii);
+                        preShiftBuilder.appendRange(shifted.getBeginRange(ii), shifted.getEndRange(ii));
+                        postShiftBuilder.appendRange(shifted.getBeginRange(ii) + delta,
+                                shifted.getEndRange(ii) + delta);
+                    }
+                    try (final RowSet preShiftRanges = preShiftBuilder.build();
+                            final RowSet postShiftRanges = postShiftBuilder.build();
+                            final WritableRowSet unmodifiedShifted = postShiftRanges.intersect(baseTable.getRowSet())) {
+                        // modified rows are copied from the base below, so only the unmodified rows that remain move
+                        unmodifiedShifted.remove(baseUpdate.added());
+                        unmodifiedShifted.remove(baseUpdate.modified());
+                        try (final SafeCloseablePair<RowSet, RowSet> moved = SafeCloseablePair.downcast(
+                                shifted.extractParallelShiftedRowsFromPostShiftRowSet(unmodifiedShifted))) {
+                            moveRows(moved.first, moved.second);
+                        }
+                        try (final RowSet shiftedFrom = preShiftRanges.intersect(resultRowSet)) {
+                            vacated.insert(shiftedFrom);
+                        }
+                    }
+                }
+
+                try (final RowSet rowsToCopy = baseUpdate.added().union(baseUpdate.modified())) {
+                    doRowCopy(rowsToCopy);
+                }
+
+                resultRowSet.remove(baseUpdate.removed());
+                shifted.apply(resultRowSet);
+                resultRowSet.insert(baseUpdate.added());
+                Assert.eq(resultRowSet.size(), "resultRowSet.size()", baseTable.size(), "baseTable.size()");
+
+                vacated.remove(resultRowSet);
+                SnapshotUtils.nullObjectColumns(objectResultColumns, vacated);
+                SparseArrayColumnSource.clearBlocksWithoutLiveRows(vacated, resultRowSet, sparseResultColumns);
             }
 
-            resultTable.getRowSet().writableCast().update(baseAdded, baseRemoved);
-            SnapshotUtils.nullObjectColumns(objectResultColumns, baseRemoved);
-            SparseArrayColumnSource.clearBlocksWithoutLiveRows(baseRemoved, resultTable.getRowSet(),
-                    sparseResultColumns);
-            resultTable.notifyListeners(baseAdded, baseRemoved, baseModified);
+            resultTable.notifyListeners(new TableUpdateImpl(baseUpdate.added().copy(), baseUpdate.removed().copy(),
+                    baseUpdate.modified().copy(), baseUpdate.shifted(), ModifiedColumnSet.ALL));
         }
     }
 
     /**
-     * Coalesce {@code accumulated} into a single update and expand its shifts. {@link UpdateCoalescer#coalesce} hands
-     * us ownership of the coalesced update, and the expander copies what it needs out of it while keeping no reference
-     * to it, so the update is released before we return.
+     * Move the values of every result column from {@code preShiftKeys} to the parallel {@code postShiftKeys}. The
+     * values are read as of the start of the cycle, so the order in which overlapping keys are written does not matter.
      */
-    private RowSetShiftDataExpander expand(final UpdateCoalescer accumulated) {
-        final TableUpdate baseUpdate = accumulated.coalesce();
-        try (final SafeCloseable ignored = baseUpdate::release) {
-            return new RowSetShiftDataExpander(baseUpdate, lastBaseRowSet);
+    private void moveRows(final RowSet preShiftKeys, final RowSet postShiftKeys) {
+        if (preShiftKeys.isEmpty()) {
+            return;
+        }
+        final int chunkSize = (int) Math.min(preShiftKeys.size(), ChunkUtils.COPY_DATA_CHUNK_SIZE);
+        for (final WritableColumnSource<?> column : resultColumns.values()) {
+            try (final ChunkSource.FillContext fillContext = column.makeFillContext(chunkSize);
+                    final ChunkSink.FillFromContext fillFromContext = column.makeFillFromContext(chunkSize);
+                    final WritableChunk<Values> chunk = column.getChunkType().makeWritableChunk(chunkSize);
+                    final RowSequence.Iterator preIter = preShiftKeys.getRowSequenceIterator();
+                    final RowSequence.Iterator postIter = postShiftKeys.getRowSequenceIterator()) {
+                while (preIter.hasMore()) {
+                    final RowSequence preKeys = preIter.getNextRowSequenceWithLength(chunkSize);
+                    final RowSequence postKeys = postIter.getNextRowSequenceWithLength(chunkSize);
+                    column.fillPrevChunk(fillContext, chunk, preKeys);
+                    column.fillFromChunk(fillFromContext, chunk, postKeys);
+                }
+            }
         }
     }
 
