@@ -1887,6 +1887,15 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testSnapshotHistoryAppendOnly() {
+        final QueryTable base = testRefreshingTable(i(10).toTracking(), intCol("A", 1));
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+        final QueryTable history = (QueryTable) base.snapshotWhen(trigger, Flag.HISTORY);
+        assertTrue(history.isRefreshing());
+        assertTrue(history.isAppendOnly());
+    }
+
+    @Test
     public void testSnapshotHistorical() {
         final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 col("A", 3, 1, 2), col("B", "c", "a", "b"));

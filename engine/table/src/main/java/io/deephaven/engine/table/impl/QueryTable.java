@@ -2743,6 +2743,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                 listener.manage(baseTable);
             }
             addUpdateListener(listener);
+            result.setAttribute(APPEND_ONLY_TABLE_ATTRIBUTE, TRUE);
         }
         result.setFlat();
         return result;
