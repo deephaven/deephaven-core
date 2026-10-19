@@ -52,7 +52,7 @@ public class BarrageCompressionTest {
 
         assertEquals(Optional.of("snappy"), apply(Set.of("gzip", "snappy"), table));
         assertEquals(Optional.of("zstd"), apply(Set.of("identity", "gzip", "zstd"), table));
-        assertEquals(Optional.empty(), apply(Set.of("identity", "deflate"), table));
+        assertEquals(Optional.empty(), apply(Set.of("identity", "br"), table));
         assertEquals(Optional.empty(), apply(Set.of(), table));
     }
 
@@ -60,7 +60,7 @@ public class BarrageCompressionTest {
     public void typesFromWithCompressionAreChosen() {
         final Table table = BarrageCompressionAttribute.withCompression(TableTools.emptyTable(10), "snappy", "gzip");
         assertEquals(Optional.of("snappy"), apply(Set.of("gzip", "zstd", "snappy"), table));
-        assertEquals(Optional.of("gzip"), apply(Set.of("gzip", "deflate"), table));
+        assertEquals(Optional.of("gzip"), apply(Set.of("gzip", "br"), table));
     }
 
     @Test

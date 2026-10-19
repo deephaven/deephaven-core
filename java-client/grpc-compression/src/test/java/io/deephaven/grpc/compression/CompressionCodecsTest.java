@@ -28,7 +28,7 @@ public class CompressionCodecsTest {
     @Test
     public void supportedNames() {
         // no CompressionCodecProvider is registered on this module's test classpath; server-jetty's tests register one
-        assertThat(CompressionCodecs.SUPPORTED).containsExactly("zstd", "gzip", "snappy");
+        assertThat(CompressionCodecs.SUPPORTED).containsExactly("zstd", "gzip", "snappy", "deflate");
     }
 
     @Test
@@ -37,7 +37,7 @@ public class CompressionCodecsTest {
         final Codec custom = new NamedCodec("x-lz4.v2+raw_1");
         final Map<String, Codec> codecs = CompressionCodecs.byEncodingName(CompressionCodecs.BUILT_IN,
                 List.of(new FixedProvider(lz4), new FixedProvider(custom)));
-        assertThat(codecs.keySet()).containsExactly("zstd", "gzip", "snappy", "lz4", "x-lz4.v2+raw_1");
+        assertThat(codecs.keySet()).containsExactly("zstd", "gzip", "snappy", "deflate", "lz4", "x-lz4.v2+raw_1");
         assertThat(codecs.get("lz4")).isSameAs(lz4);
         assertThat(codecs.get("x-lz4.v2+raw_1")).isSameAs(custom);
     }
@@ -84,7 +84,7 @@ public class CompressionCodecsTest {
     public void checkSupportedRejectsUnknownNames() {
         assertThatThrownBy(() -> CompressionCodecs.checkSupported("lz4"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Unsupported compression 'lz4'; supported values are zstd, gzip, snappy");
+                .hasMessage("Unsupported compression 'lz4'; supported values are zstd, gzip, snappy, deflate");
         // a single name cannot hold a list, nor name the absence of compression
         for (final String name : List.of("identity", "", " ", "zstd,gzip")) {
             assertThatThrownBy(() -> CompressionCodecs.checkSupported(name))
@@ -168,7 +168,7 @@ public class CompressionCodecsTest {
 
         assertThat(CompressionCodecs.decompressorRegistry(List.of()).getAdvertisedMessageEncodings()).isEmpty();
         assertThat(CompressionCodecs.decompressorRegistry(CompressionCodecs.SUPPORTED).getAdvertisedMessageEncodings())
-                .containsExactlyInAnyOrder("gzip", "zstd", "snappy");
+                .containsExactlyInAnyOrder("gzip", "zstd", "snappy", "deflate");
     }
 
     @Test
@@ -192,13 +192,13 @@ public class CompressionCodecsTest {
         assertThatThrownBy(() -> CompressionCodecs.parseList("zstd,identity"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("identity")
-                .hasMessageContaining("zstd, gzip, snappy");
+                .hasMessageContaining("zstd, gzip, snappy, deflate");
     }
 
     @Test
     public void parseAcceptEncodingKeepsUnknownNames() {
-        assertThat(CompressionCodecs.parseAcceptEncoding("identity, deflate, GZIP"))
-                .containsExactly("identity", "deflate", "gzip");
+        assertThat(CompressionCodecs.parseAcceptEncoding("identity, br, GZIP"))
+                .containsExactly("identity", "br", "gzip");
         assertThat(CompressionCodecs.parseAcceptEncoding(null)).isEmpty();
     }
 

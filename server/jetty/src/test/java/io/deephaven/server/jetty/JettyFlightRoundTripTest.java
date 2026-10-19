@@ -68,8 +68,8 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
 
     @Test
     public void providedCodecIsSupported() {
-        // without TestDeflateCodecProvider, the compression tests would never use a codec that a provider adds
-        assertThat(CompressionCodecs.SUPPORTED).containsExactly("zstd", "gzip", "snappy", "test-deflate");
+        // without TestGzipCodecProvider, the compression tests would never use a codec that a provider adds
+        assertThat(CompressionCodecs.SUPPORTED).containsExactly("zstd", "gzip", "snappy", "deflate", "test-gzip");
     }
 
     @Test

@@ -26,8 +26,8 @@ import java.util.regex.Pattern;
 /**
  * The compression types that Deephaven supports for gRPC messages, named as in gRPC's {@code grpc-encoding} and
  * {@code grpc-accept-encoding} headers; their gRPC registries; and parsers for compression type lists and a client's
- * {@code grpc-accept-encoding}. The supported types are a built-in baseline, {@code zstd}, {@code gzip} and
- * {@code snappy}, plus every type that a {@link CompressionCodecProvider} on the classpath adds.
+ * {@code grpc-accept-encoding}. The supported types are a built-in baseline, {@code zstd}, {@code gzip}, {@code snappy}
+ * and {@code deflate}, plus every type that a {@link CompressionCodecProvider} on the classpath adds.
  */
 public final class CompressionCodecs {
 
@@ -42,7 +42,8 @@ public final class CompressionCodecs {
      * The baseline: the codecs that Deephaven includes, which {@link CompressionCodecProvider}s add to. Package-private
      * for tests of {@link #byEncodingName(List, Iterable)}.
      */
-    static final List<Codec> BUILT_IN = List.of(ZstdCodec.INSTANCE, new Codec.Gzip(), SnappyCodec.INSTANCE);
+    static final List<Codec> BUILT_IN =
+            List.of(ZstdCodec.INSTANCE, new Codec.Gzip(), SnappyCodec.INSTANCE, DeflateCodec.INSTANCE);
 
     /**
      * Every supported codec, by its encoding name, in the order of {@link #SUPPORTED}: the {@link #BUILT_IN} baseline,
@@ -60,6 +61,9 @@ public final class CompressionCodecs {
      * <li>{@code gzip}: compresses slightly smaller than {@code zstd} but much more slowly. Most gRPC clients can
      * decode it.</li>
      * <li>{@code snappy}: the fastest of the built-in types, but the one that saves the least.</li>
+     * <li>{@code deflate}: the algorithm of {@code gzip} in the zlib format, which compresses to the same size at the
+     * same speed and decompresses slightly slower. Clients built on gRPC Core, such as the Python, C++ and R clients,
+     * can decode it and {@code gzip}, but no other built-in type.</li>
      * </ul>
      */
     public static final List<String> SUPPORTED = List.copyOf(CODECS.keySet());

@@ -25,10 +25,10 @@ public final class BarrageCompressionAttribute {
     /**
      * Returns a copy of {@code grid} that allows the server to compress its Barrage snapshots and subscriptions with
      * {@code preference}: the names of {@link CompressionCodecs#SUPPORTED supported} compression types, such as the
-     * built-in {@code "zstd"}, {@code "gzip"} and {@code "snappy"}. Case and surrounding whitespace are ignored. The
-     * server uses the first type in {@code preference} that the client accepts, and sends uncompressed data when none
-     * match. Repeated types keep their first position. With no types, the result is never compressed, even when the
-     * server has default compression types.
+     * built-in {@code "zstd"}, {@code "gzip"}, {@code "snappy"} and {@code "deflate"}. Case and surrounding whitespace
+     * are ignored. The server uses the first type in {@code preference} that the client accepts, and sends uncompressed
+     * data when none match. Repeated types keep their first position. With no types, the result is never compressed,
+     * even when the server has default compression types.
      *
      * @param grid the table, rollup table or tree table to compress
      * @param preference the names of the compression types to allow, most preferred first

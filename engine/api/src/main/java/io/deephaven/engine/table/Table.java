@@ -230,8 +230,8 @@ public interface Table extends
      */
     String BARRAGE_SCHEMA_ATTRIBUTE = "BarrageSchema";
     /**
-     * A comma-separated, ordered list of compression types (the built-in {@code gzip}, {@code zstd} and {@code snappy},
-     * or types that an {@code io.deephaven.grpc.compression.CompressionCodecProvider} adds; e.g.
+     * A comma-separated, ordered list of compression types (the built-in {@code gzip}, {@code zstd}, {@code snappy} and
+     * {@code deflate}, or types that an {@code io.deephaven.grpc.compression.CompressionCodecProvider} adds; e.g.
      * {@code "zstd,snappy,gzip"}) that allows compressing this table's Barrage snapshots and subscriptions. The server
      * uses the first listed type that the client accepts, as listed in its {@code grpc-accept-encoding} header, and
      * sends uncompressed data when none match. Tables with no attribute set use the server's default list, from the

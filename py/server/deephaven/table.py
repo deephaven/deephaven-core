@@ -1212,8 +1212,10 @@ class Table(JObjectWrapper):
 
         The built-in compression types are "zstd", which compresses nearly as well as gzip, and many times faster;
         "gzip", which compresses slightly smaller than zstd but much more slowly, and which most gRPC clients, including
-        pydeephaven, can decode; and "snappy", the fastest of them, but the one that saves the least. The server also supports
-        any type that a Java io.deephaven.grpc.compression.CompressionCodecProvider on its classpath adds.
+        pydeephaven, can decode; "snappy", the fastest of them, but the one that saves the least; and "deflate", the
+        algorithm of gzip in the zlib format, which compresses the same as gzip and decompresses slightly slower. The
+        server also supports any type that a Java io.deephaven.grpc.compression.CompressionCodecProvider on its
+        classpath adds.
 
         This sets the table's "BarrageCompression" attribute. Operations whose result holds only this table's values
         keep it: filtering, sorting, reversing, flattening, dropping or renaming columns, partition_by constituents,

@@ -57,7 +57,7 @@ public class BarrageCompressionBenchmark {
      * the name of a {@link CompressionCodecs#SUPPORTED supported} compression type; by default, each built-in one, as
      * JMH fills in values only for enums
      */
-    @Param({"zstd", "gzip", "snappy"})
+    @Param({"zstd", "gzip", "snappy", "deflate"})
     private String compression;
 
     private MessageCodec codec;

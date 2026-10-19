@@ -1830,7 +1830,7 @@ public abstract class FlightMessageRoundTripTest {
 
     @Test
     public void testEverySupportedTypeCompressesResponses() throws Exception {
-        // including any type a CompressionCodecProvider adds, such as JettyFlightRoundTripTest's test-deflate
+        // including any type a CompressionCodecProvider adds, such as JettyFlightRoundTripTest's test-gzip
         for (final String compression : CompressionCodecs.SUPPORTED) {
             assertEquals(compression, expectedEncodings(compression),
                     fetchWithCompression(compressionTestTable(compression), Set.of(compression)));
