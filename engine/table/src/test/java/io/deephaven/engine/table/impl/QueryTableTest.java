@@ -1998,6 +1998,27 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testSnapshotLargeColumnlessTables() {
+        final long size = 1L << 31;
+        assertEquals(size, emptyTable(size).snapshot().size());
+
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking());
+        assertEquals(size, emptyTable(size).snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL).size());
+
+        final QueryTable base = testRefreshingTable(RowSetFactory.empty().toTracking());
+        final Table incremental = base.snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL);
+        assertEquals(0, incremental.size());
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            base.getRowSet().writableCast().insertRange(0, size - 1);
+            base.notifyListeners(RowSetFactory.flat(size), i(), i());
+            trigger.getRowSet().writableCast().insert(1);
+            trigger.notifyListeners(i(1), i(), i());
+        });
+        assertEquals(size, incremental.size());
+    }
+
+    @Test
     public void testSnapshotArrayTrigger() {
         final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 col("A", 3, 1, 2), col("B", "c", "a", "b"));

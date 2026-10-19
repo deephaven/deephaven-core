@@ -384,7 +384,7 @@ public class ChunkUtils {
                     srcAllKeys.size(), destAllKeys.size());
             throw new IllegalArgumentException(msg);
         }
-        final int minSize = Math.min(srcAllKeys.intSize(), COPY_DATA_CHUNK_SIZE);
+        final int minSize = (int) Math.min(srcAllKeys.size(), COPY_DATA_CHUNK_SIZE);
         if (minSize == 0) {
             return;
         }
@@ -425,7 +425,7 @@ public class ChunkUtils {
                     srcAllKeys.size(), destAllKeys.size());
             throw new IllegalArgumentException(msg);
         }
-        final int minSize = Math.min(srcAllKeys.intSize(), COPY_DATA_CHUNK_SIZE);
+        final int minSize = (int) Math.min(srcAllKeys.size(), COPY_DATA_CHUNK_SIZE);
         if (minSize == 0) {
             return;
         }
