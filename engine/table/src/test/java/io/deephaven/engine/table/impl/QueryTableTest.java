@@ -2889,6 +2889,69 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testSnapshotIncrementalModifiedColumns() {
+        final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(),
+                intCol("A", 1, 2, 3), intCol("B", 10, 20, 30));
+        final AtomicInteger aReads = new AtomicInteger();
+        final ColumnSource<Integer> countingSource =
+                new DelegatingColumnSource<>(int.class, null, source.getColumnSource("A", int.class)) {
+                    @Override
+                    public Chunk<? extends Values> getChunk(
+                            @NotNull final GetContext context,
+                            @NotNull final RowSequence rowSequence) {
+                        aReads.incrementAndGet();
+                        return super.getChunk(context, rowSequence);
+                    }
+                };
+        final Map<String, ColumnSource<?>> baseColumns = new LinkedHashMap<>();
+        baseColumns.put("A", countingSource);
+        baseColumns.put("B", source.getColumnSource("B"));
+        final QueryTable base = new QueryTable(source.getRowSet(), baseColumns);
+        final ModifiedColumnSet.Transformer transformer = source.newModifiedColumnSetIdentityTransformer(base);
+        source.addUpdateListener(new BaseTable.ListenerImpl("pass-through", source, base) {
+            @Override
+            public void onUpdate(final TableUpdate upstream) {
+                final TableUpdateImpl downstream =
+                        TableUpdateImpl.copy(upstream, base.getModifiedColumnSetForUpdates());
+                transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
+                base.notifyListeners(downstream);
+            }
+        });
+
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+        final QueryTable snapshot = (QueryTable) base.snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL);
+        validateUpdates(snapshot);
+        final SimpleListener listener = new SimpleListener(snapshot);
+        snapshot.addUpdateListener(listener);
+        final int initialReads = aReads.get();
+
+        // row 20 moves to 15 and changes only B; row 30 moves to 25 unchanged
+        final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
+        shiftBuilder.shiftRange(20, 30, -5);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(10, 20, 30));
+            addToTable(source, i(15, 25), intCol("A", 2, 3), intCol("B", 200, 30));
+            source.notifyListeners(new TableUpdateImpl(i(), i(10), i(15), shiftBuilder.build(),
+                    source.newModifiedColumnSet("B")));
+        });
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(trigger, i(1), intCol("T", 2));
+            trigger.notifyListeners(i(1), i(), i());
+        });
+
+        assertTableEquals(testRefreshingTable(i(15, 25).toTracking(),
+                intCol("A", 2, 3), intCol("B", 200, 30), intCol("T", 2, 1)), snapshot);
+        assertEquals(initialReads, aReads.get());
+        assertEquals(1, listener.getCount());
+        assertEquals(i(15), listener.getUpdate().modified());
+        final ModifiedColumnSet modifiedColumns = listener.getUpdate().modifiedColumnSet();
+        assertTrue(modifiedColumns.containsAll(snapshot.newModifiedColumnSet("B", "T")));
+        assertFalse(modifiedColumns.containsAny(snapshot.newModifiedColumnSet("A")));
+        listener.close();
+    }
+
+    @Test
     public void testSnapshotIncrementalPrependShiftsRows() {
         final int size = 10000;
         final QueryTable base = testRefreshingTable(RowSetFactory.flat(size).toTracking(),

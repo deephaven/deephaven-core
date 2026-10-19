@@ -32,6 +32,7 @@ import io.deephaven.util.SafeCloseablePair;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,6 +47,10 @@ public class SnapshotIncrementalListener extends MergedListener {
     private final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns;
     private final SparseArrayColumnSource<?>[] sparseResultColumns;
     private final WritableColumnSource<?>[] objectResultColumns;
+    private final String[] dataColumnNames;
+    private final ModifiedColumnSet[] dataColumnSets;
+    private final ModifiedColumnSet.Transformer dataColumnTransformer;
+    private final ModifiedColumnSet stampColumnSet;
 
     private UpdateCoalescer baseUpdates;
     private boolean firstSnapshot = true;
@@ -81,6 +86,14 @@ public class SnapshotIncrementalListener extends MergedListener {
         }
         this.sparseResultColumns = sparseColumns.toArray(SparseArrayColumnSource<?>[]::new);
         this.objectResultColumns = SnapshotUtils.objectColumns(resultColumns);
+
+        dataColumnNames = snapshotDataColumns.keySet().toArray(String[]::new);
+        dataColumnSets = new ModifiedColumnSet[dataColumnNames.length];
+        for (int ii = 0; ii < dataColumnNames.length; ++ii) {
+            dataColumnSets[ii] = baseTable.newModifiedColumnSet(dataColumnNames[ii]);
+        }
+        dataColumnTransformer = baseTable.newModifiedColumnSetTransformer(resultTable, dataColumnNames);
+        stampColumnSet = resultTable.newModifiedColumnSet(triggerColumns.keySet().toArray(String[]::new));
     }
 
     @Override
@@ -154,12 +167,12 @@ public class SnapshotIncrementalListener extends MergedListener {
                     }
                     try (final RowSet preShiftRanges = preShiftBuilder.build();
                             final RowSet postShiftRanges = postShiftBuilder.build();
-                            final WritableRowSet unmodifiedShifted = postShiftRanges.intersect(baseTable.getRowSet())) {
-                        // modified rows are copied from the base below, so only the unmodified rows that remain move
-                        unmodifiedShifted.remove(baseUpdate.added());
-                        unmodifiedShifted.remove(baseUpdate.modified());
+                            final WritableRowSet remainingShifted = postShiftRanges.intersect(baseTable.getRowSet())) {
+                        // every row that remains moves, including the modified rows, whose unmodified columns are not
+                        // copied from the base below
+                        remainingShifted.remove(baseUpdate.added());
                         try (final SafeCloseablePair<RowSet, RowSet> moved = SafeCloseablePair.downcast(
-                                shifted.extractParallelShiftedRowsFromPostShiftRowSet(unmodifiedShifted))) {
+                                shifted.extractParallelShiftedRowsFromPostShiftRowSet(remainingShifted))) {
                             moveRows(moved.first, moved.second);
                         }
                         try (final RowSet shiftedFrom = preShiftRanges.intersect(resultRowSet)) {
@@ -168,8 +181,22 @@ public class SnapshotIncrementalListener extends MergedListener {
                     }
                 }
 
-                try (final RowSet rowsToCopy = baseUpdate.added().union(baseUpdate.modified())) {
-                    doRowCopy(rowsToCopy);
+                // added and modified rows take the current stamp; modified rows copy only the columns that changed
+                try (final RowSet stampedRows = baseUpdate.added().union(baseUpdate.modified())) {
+                    copyStampsToResult(stampedRows, triggerTable, triggerColumns, resultColumns);
+                }
+                SnapshotUtils.copyDataColumns(snapshotDataColumns, baseUpdate.added(), resultColumns,
+                        baseUpdate.added(), false);
+                if (baseUpdate.modified().isNonempty()) {
+                    final Map<String, ChunkSource.WithPrev<? extends Values>> modifiedDataColumns =
+                            new LinkedHashMap<>();
+                    for (int ii = 0; ii < dataColumnNames.length; ++ii) {
+                        if (baseUpdate.modifiedColumnSet().containsAny(dataColumnSets[ii])) {
+                            modifiedDataColumns.put(dataColumnNames[ii], snapshotDataColumns.get(dataColumnNames[ii]));
+                        }
+                    }
+                    SnapshotUtils.copyDataColumns(modifiedDataColumns, baseUpdate.modified(), resultColumns,
+                            baseUpdate.modified(), false);
                 }
 
                 resultRowSet.remove(baseUpdate.removed());
@@ -182,8 +209,13 @@ public class SnapshotIncrementalListener extends MergedListener {
                 SparseArrayColumnSource.clearBlocksWithoutLiveRows(vacated, resultRowSet, sparseResultColumns);
             }
 
+            final ModifiedColumnSet modifiedColumns = resultTable.getModifiedColumnSetForUpdates();
+            dataColumnTransformer.clearAndTransform(baseUpdate.modifiedColumnSet(), modifiedColumns);
+            if (baseUpdate.modified().isNonempty() && !stampColumnSet.empty()) {
+                modifiedColumns.setAll(stampColumnSet);
+            }
             resultTable.notifyListeners(new TableUpdateImpl(baseUpdate.added().copy(), baseUpdate.removed().copy(),
-                    baseUpdate.modified().copy(), baseUpdate.shifted(), ModifiedColumnSet.ALL));
+                    baseUpdate.modified().copy(), baseUpdate.shifted(), modifiedColumns));
         }
     }
 
@@ -220,12 +252,18 @@ public class SnapshotIncrementalListener extends MergedListener {
             Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns,
             Map<String, ? extends ColumnSource<?>> triggerColumns,
             Map<String, WritableColumnSource<?>> resultColumns) {
+        copyStampsToResult(rowsToCopy, triggerTable, triggerColumns, resultColumns);
+        SnapshotUtils.copyDataColumns(snapshotDataColumns, rowsToCopy, resultColumns, rowsToCopy, false);
+    }
+
+    private static void copyStampsToResult(RowSet rowsToStamp, QueryTable triggerTable,
+            Map<String, ? extends ColumnSource<?>> triggerColumns,
+            Map<String, WritableColumnSource<?>> resultColumns) {
         final RowSet qtRowSet = triggerTable.getRowSet();
         if (qtRowSet.isEmpty()) {
-            SnapshotUtils.setNullStampColumns(triggerColumns, resultColumns, rowsToCopy);
+            SnapshotUtils.setNullStampColumns(triggerColumns, resultColumns, rowsToStamp);
         } else {
-            SnapshotUtils.copyStampColumns(triggerColumns, qtRowSet.lastRowKey(), resultColumns, rowsToCopy);
+            SnapshotUtils.copyStampColumns(triggerColumns, qtRowSet.lastRowKey(), resultColumns, rowsToStamp);
         }
-        SnapshotUtils.copyDataColumns(snapshotDataColumns, rowsToCopy, resultColumns, rowsToCopy, false);
     }
 }
