@@ -21,7 +21,7 @@ Before reading this guide, you should understand:
 
 For details on how Deephaven processes updates internally, see [Incremental update model](../conceptual/table-update-model.md).
 
-## The surprise: a table from an external source starts empty
+## The surprise: a table from an external source can start empty
 
 Consider this code:
 
@@ -47,7 +47,7 @@ Deephaven execution has two distinct phases: initialization and real-time update
 
 When your script runs, table operations execute and build the [DAG](../conceptual/dag.md) (dependency graph), and initial calculations run on any existing data.
 
-**Tables fed by external sources, such as [Kafka](./data-import-export/kafka-stream.md), have no data from those sources yet.**
+**Tables fed by external sources, such as [Kafka](./data-import-export/kafka-stream.md), may not have data from those sources yet.**
 
 ### Phase 2: Real-time updates
 

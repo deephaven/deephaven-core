@@ -10,7 +10,7 @@ Deephaven runs your script in two phases: initialization and real-time updates. 
 
 Deephaven execution has two phases:
 
-1. **Initialization** — Your script runs, creating tables and building the dependency graph ([DAG](../conceptual/dag.md)). Tables from external sources, such as [Kafka](./data-import-export/kafka-stream.md), have no data yet.
+1. **Initialization** — Your script runs, creating tables and building the dependency graph ([DAG](../conceptual/dag.md)). Tables from external sources, such as [Kafka](./data-import-export/kafka-stream.md), may not have data yet.
 2. **Real-time updates** — Data flows in continuously. The engine propagates changes through the DAG. [Listeners](./table-listeners-groovy.md) fire.
 
 The engine component that processes real-time updates is the _update graph_. It works in _update cycles_: in each cycle, it applies new data from sources and propagates the changes through the DAG. For more details on how updates propagate, see [Incremental update model](../conceptual/table-update-model.md).
