@@ -7,7 +7,7 @@ The `update_view` method creates a new table containing a new formula column for
 A formula column is [not stored in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand). Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
 
 > [!NOTE]
-> `update_view` and [`lazy_update`](./lazy-update.md) accept only [formula strings](../../../how-to-guides/formulas.md). [`update`](./update.md) accepts [formula strings](../../../how-to-guides/formulas.md) and [`Selectable`](../../query-language/types/Selectable.md) objects. All three methods return a table with all the source columns plus the new columns. `update_view` stores formulas and recalculates cells on access, while [`update`](./update.md) stores the new columns in memory.
+> `update_view` and [`lazy_update`](./lazy-update.md) accept only [formula strings](../../../how-to-guides/formulas.md). [`update`](./update.md) accepts formula strings and [`Selectable`](../../query-language/types/Selectable.md) objects.
 >
 > `update_view` fits best when:
 >
@@ -22,7 +22,7 @@ A formula column is [not stored in memory](../../../how-to-guides/use-select-vie
 > When using [`view`](./view.md) or `update_view`, non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods belong in [`select`](./select.md) or [`update`](./update.md) instead.
 
 > [!CAUTION]
-> [`view`](./view.md) and `update_view` do not support [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) or respecting [Barriers](../../../conceptual/query-engine/parallelization.md#barriers). These operations compute results lazily, when cells are accessed, so rows can be evaluated in any order, at any time, and by any thread. This makes ordering guarantees meaningless. A formula that requires serial evaluation or must wait for another operation belongs in [`select`](./select.md) or [`update`](./update.md) instead.
+> [`view`](./view.md) and `update_view` compute cells when a reader accesses them, on any thread and in any order, so they cannot guarantee [evaluation order](../../../conceptual/query-engine/parallelization.md#serial-execution). A formula that must run in order belongs in [`select`](./select.md) or [`update`](./update.md) instead.
 
 ## Syntax
 
@@ -46,7 +46,7 @@ A new table that includes all the original columns from the source table and the
 
 ## Examples
 
-In the following example, a new table containing the columns from the source table plus two new columns, `X` and `Y`, is created.
+In the following example, `update_view` creates a table that contains the columns from the source table plus two new columns, `X` and `Y`. The result looks the same as the result of [`update`](./update.md). The difference is that `update_view` stores no values for `X` and `Y` and recalculates them when a reader accesses them.
 
 ```python order=source,result
 from deephaven import new_table

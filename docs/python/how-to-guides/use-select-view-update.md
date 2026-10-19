@@ -88,12 +88,12 @@ from deephaven import empty_table
 
 source = empty_table(5).update(formulas=["Column_1 = i"])
 
-# select() and view() have identical syntax
+# select() and view() have identical syntax for formula strings
 # These create a table only with Column_2
 t_select = source.select(formulas=["Column_2 = Column_1^2"])
 t_view = source.view(formulas=["Column_2 = Column_1^2"])
 
-# update(), update_view(), and lazy_update() have identical syntax
+# update(), update_view(), and lazy_update() have identical syntax for formula strings
 # These create a table with the original set of columns (i.e., Column_1) plus Column_2
 t_update = source.update(formulas=["Column_2 = Column_1^2"])
 t_update_view = source.update_view(formulas=["Column_2 = Column_1^2"])
@@ -140,7 +140,7 @@ Similar to `update_view`, with `lazy_update` column formulas are computed on-dem
 When performing a `lazy_update`, cell values are stored in memory in a cache. Because results are cached (memoized) for the set of input values, the same input values will never be computed twice. Existing results are referenced without additional memory allocation. This improves performance when the number of distinct inputs are low relative to the number of rows in the table.
 
 > [!NOTE]
-> The syntax for the `lazy_update`, [`update_view`](../reference/table-operations/select/update-view.md), and [`update`](../reference/table-operations/select/update.md) methods is identical, as is the resulting table.
+> The syntax for the `lazy_update`, [`update_view`](../reference/table-operations/select/update-view.md), and [`update`](../reference/table-operations/select/update.md) methods is identical for formula strings, as is the resulting table.
 >
 > `lazy_update` is recommended for small sets of unique input values. In this case, `lazy_update` uses less memory than `update` and requires less computation than `update_view`. However, if there are many unique input values, `update` will be more efficient because `lazy_update` stores the formula inputs and result in a map, whereas `update` stores the values more compactly in an array.
 

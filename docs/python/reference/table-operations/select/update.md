@@ -7,7 +7,7 @@ The `update` method creates a new table containing a new, [in-memory](../../../h
 When using `update`, the new columns are evaluated and [stored in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand). Existing columns are referenced without additional memory allocation.
 
 > [!NOTE]
-> `update` accepts [formula strings](../../../how-to-guides/formulas.md) and [`Selectable`](../../query-language/types/Selectable.md) objects. [`update_view`](./update-view.md) and [`lazy_update`](./lazy-update.md) accept only [formula strings](../../../how-to-guides/formulas.md). All three methods return a table with all the source columns plus the new columns. `update` stores the new columns in memory, while [`update_view`](./update-view.md) stores formulas and recalculates cells on access.
+> `update` accepts [formula strings](../../../how-to-guides/formulas.md) and [`Selectable`](../../query-language/types/Selectable.md) objects. [`update_view`](./update-view.md) and [`lazy_update`](./lazy-update.md) accept only formula strings.
 >
 > `update` fits best when:
 >
@@ -29,7 +29,7 @@ update(formulas: Union[str, Sequence[str], Selectable, Sequence[Selectable]]) ->
 <ParamTable>
 <Param name="formulas" type="Union[str, Sequence[str], Selectable, Sequence[Selectable]]">
 
-Formulas to compute columns in the new table; e.g., `"X = A * sqrt(B)"`. A [`Selectable`](../../query-language/types/Selectable.md) carries the same formula plus concurrency controls such as [`with_serial`](../../query-language/types/Selectable.md#with_serial).
+Formulas to compute columns in the new table; e.g., `"X = A * sqrt(B)"`. A [`Selectable`](../../query-language/types/Selectable.md) pairs a formula with [concurrency controls](../../query-language/types/ConcurrencyControl.md) such as [`with_serial`](../../query-language/types/Selectable.md#with_serial).
 
 </Param>
 </ParamTable>
@@ -40,7 +40,7 @@ A new table that includes all the original columns from the source table and the
 
 ## Examples
 
-In the following example, `update` adds two columns. The new column `Y` allocates memory and is immediately populated with values. The new column `X = B` points to the same in-memory data as `B`, so it allocates none. `A`, `B`, and `C` are the source table's own columns, which `new_table` holds in memory, so referencing them allocates none either.
+In the following example, `update` adds two columns. The new column `Y` allocates memory and is populated with values immediately. The new column `X = B` points to the same in-memory data as `B`, so it allocates none. The source columns `A`, `B`, and `C` are already in memory, because [`new_table`](../create/newTable.md) creates them there, so referencing them allocates no memory either.
 
 ```python order=source,result
 from deephaven import new_table
@@ -59,9 +59,9 @@ result = source.update(formulas=["A", "X = B", "Y = sqrt(C)"])
 
 ## Serial execution
 
-By default, Deephaven parallelizes `update` calculations across multiple CPU cores when the input is large enough. A formula that has side effects or depends on row order can use [`with_serial`](../../query-language/types/Selectable.md#with_serial) to force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) in row-set order.
+A formula that has side effects or depends on row order can use [`with_serial`](../../query-language/types/Selectable.md#with_serial) to force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) in row set order. Without it, `update` can split a large input across CPU cores. With default settings, that means 4,194,304 rows or more, as [`QueryTable.minimumParallelSelectRows`](../../../conceptual/query-table-configuration.md#parallel-processing-with-select) sets. A formula backed by a Python callback is split only on a [free-threaded](../../../conceptual/query-engine/parallelization.md#python-formulas-and-free-threading) Python build.
 
-The following example marks the `ID` column as serial with [`with_serial`](../../query-language/types/Selectable.md#with_serial). Each row calls `get_next_id` in row-set order, so the counter increments one row at a time and `ID` holds the values 1 through 10 in row order.
+The following example marks the `ID` column as serial with [`with_serial`](../../query-language/types/Selectable.md#with_serial). Each row calls `get_next_id` in row set order, so the counter increments one row at a time and `ID` holds the values 1 through 10 in row order. The example evaluates 10 rows, far below the parallelization threshold, so it shows the ordering guarantee rather than a speedup.
 
 ```python order=result
 from deephaven.table import Selectable

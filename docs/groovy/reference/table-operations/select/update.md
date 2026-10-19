@@ -7,8 +7,6 @@ The `update` method creates a new table containing a new, [in-memory](../../../h
 When using `update`, the new columns are evaluated and [stored in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand). Existing columns are referenced without additional memory allocation.
 
 > [!NOTE]
-> `update`, [`updateView`](./update-view.md), and [`lazyUpdate`](./lazy-update.md) take the same arguments: [formula strings](../../../how-to-guides/formulas.md) or a collection of [`Selectable`](../../query-language/types/Selectable.md) objects. All three methods return a table with all the source columns plus the new columns. `update` stores the new columns in memory, while [`updateView`](./update-view.md) stores formulas and recalculates cells on access.
->
 > `update` fits best when:
 >
 > 1. all the source columns are desired in the result,
@@ -22,6 +20,7 @@ When using `update`, the new columns are evaluated and [stored in memory](../../
 
 ```
 table.update(columns...)
+table.update(columns)
 ```
 
 ## Parameters
@@ -45,7 +44,7 @@ A new table that includes all the original columns from the source table and the
 
 ## Examples
 
-In the following example, `update` adds two columns. The new column `Y` allocates memory and is immediately populated with values. The new column `X = B` points to the same in-memory data as `B`, so it allocates none. `A`, `B`, and `C` are the source table's own columns, which `newTable` holds in memory, so referencing them allocates none either.
+In the following example, `update` adds two columns. The new column `Y` allocates memory and is populated with values immediately. The new column `X = B` points to the same in-memory data as `B`, so it allocates none. The source columns `A`, `B`, and `C` are already in memory, because [`newTable`](../create/newTable.md) creates them there, so referencing them allocates no memory either.
 
 ```groovy order=source,result
 source = newTable(
@@ -59,9 +58,9 @@ result = source.update("A", "X = B", "Y = sqrt(C)")
 
 ## Serial execution
 
-By default, Deephaven parallelizes `update` calculations across multiple CPU cores when the input is large enough. A formula that has side effects or depends on row order can use [`withSerial`](../../query-language/types/Selectable.md#withserial) to force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) in row-set order.
+A formula that has side effects or depends on row order can use [`withSerial`](../../query-language/types/Selectable.md#withserial) to force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) in row set order. Without it, `update` can split a large input across CPU cores. With default settings, that means 4,194,304 rows or more, as [`QueryTable.minimumParallelSelectRows`](../../../conceptual/query-table-configuration.md#parallel-processing-with-select) sets.
 
-The following example marks the `ID` column as serial with [`withSerial`](../../query-language/types/Selectable.md#withserial). Each row calls `counter.getAndIncrement()` in row-set order, so the counter increments one row at a time and `ID` holds the values 0 through 9 in row order.
+The following example marks the `ID` column as serial with [`withSerial`](../../query-language/types/Selectable.md#withserial). Each row calls `getAndIncrement` on `counter` in row set order, so the counter increments one row at a time and `ID` holds the values 0 through 9 in row order. The example evaluates 10 rows, far below the parallelization threshold, so it shows the ordering guarantee rather than a speedup.
 
 ```groovy order=result
 import io.deephaven.api.Selectable
