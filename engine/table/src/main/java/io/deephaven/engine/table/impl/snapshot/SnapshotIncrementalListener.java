@@ -99,6 +99,15 @@ public class SnapshotIncrementalListener extends MergedListener {
         }
     }
 
+    @Override
+    protected void destroy() {
+        super.destroy();
+        getUpdateGraph().runWhenIdle(() -> {
+            SafeCloseable.closeAll(baseUpdates, lastBaseRowSet);
+            baseUpdates = null;
+        });
+    }
+
     public void doFirstSnapshot(boolean initial) {
         doRowCopy(baseTable.getRowSet());
         resultTable.getRowSet().writableCast().insert(baseTable.getRowSet());
