@@ -343,6 +343,11 @@ public class BarrageGrpcPropagateBenchmark {
         /** The current invocation's peaks, which {@link #sampler} keeps. */
         final AtomicLong peakInFlightBytes = new AtomicLong();
         final AtomicLong peakHeapBytes = new AtomicLong();
+        /**
+         * Held while {@link #sampler} reads and records a sample, and while an invocation resets the peaks, so that a
+         * sample taken before a reset cannot land after it.
+         */
+        private final Object sampleLock = new Object();
         /** The heap in use after the collection just before the current invocation. */
         long baseHeapBytes;
         Thread sampler;
@@ -516,8 +521,11 @@ public class BarrageGrpcPropagateBenchmark {
             final MemoryMXBean memory = ManagementFactory.getMemoryMXBean();
             sampler = new Thread(() -> {
                 while (!Thread.currentThread().isInterrupted()) {
-                    peakInFlightBytes.accumulateAndGet(framedWireBytes.get() - receivedWireBytes.get(), Math::max);
-                    peakHeapBytes.accumulateAndGet(memory.getHeapMemoryUsage().getUsed(), Math::max);
+                    synchronized (sampleLock) {
+                        peakInFlightBytes.accumulateAndGet(framedWireBytes.get() - receivedWireBytes.get(),
+                                Math::max);
+                        peakHeapBytes.accumulateAndGet(memory.getHeapMemoryUsage().getUsed(), Math::max);
+                    }
                     LockSupport.parkNanos(1_000_000);
                 }
             }, "memory-sampler");
@@ -591,9 +599,11 @@ public class BarrageGrpcPropagateBenchmark {
             }
             // every invocation's heap growth is measured from a heap just collected
             System.gc();
-            baseHeapBytes = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed();
-            peakHeapBytes.set(baseHeapBytes);
-            peakInFlightBytes.set(0);
+            synchronized (sampleLock) {
+                baseHeapBytes = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed();
+                peakHeapBytes.set(baseHeapBytes);
+                peakInFlightBytes.set(0);
+            }
             messagesSent.set(0);
             peakMessageBytes.set(0);
         }
