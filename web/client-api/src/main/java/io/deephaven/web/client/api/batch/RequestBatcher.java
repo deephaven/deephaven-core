@@ -19,6 +19,7 @@ import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.CustomColumnDescriptor;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.MappedIterable;
+import io.grpc.Status;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
@@ -328,7 +329,7 @@ public class RequestBatcher {
                 if (status.isOk()) {
                     resolve.onInvoke((Void) null);
                 } else {
-                    failed(reject, status.getDescription());
+                    failed(reject, describeFailure(status));
                 }
 
                 // Tell anybody who was orphaned to check if they should release their subscriptions / handles
@@ -356,6 +357,22 @@ public class RequestBatcher {
         t.fireEvent(CoreClient.EVENT_REQUEST_FAILED, JsPropertyMap.of(
                 "errorMessage", failureMessage,
                 "configuration", best.toJs()));
+    }
+
+    /**
+     * Produces a non-empty failure message for a non-OK status. A status built from response headers that carry a
+     * {@code grpc-status} but no {@code grpc-message} (as can happen when the connection is lost) has no description.
+     */
+    private static String describeFailure(Status status) {
+        String description = status.getDescription();
+        if (description != null && !description.isEmpty()) {
+            return description;
+        }
+        Throwable cause = status.getCause();
+        if (cause != null && cause.getMessage() != null && !cause.getMessage().isEmpty()) {
+            return "Request failed with status " + status.getCode() + ": " + cause.getMessage();
+        }
+        return "Request failed with status " + status.getCode();
     }
 
     private void failed(RejectCallbackFn reject, String fail) {
