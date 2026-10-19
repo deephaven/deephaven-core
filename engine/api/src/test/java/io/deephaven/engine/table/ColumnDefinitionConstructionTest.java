@@ -4,6 +4,7 @@
 package io.deephaven.engine.table;
 
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.engine.table.vectors.IntVectorColumnWrapper;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.GenericType;
@@ -238,6 +239,30 @@ public class ColumnDefinitionConstructionTest {
     @Test
     public void customTypeVector() {
         checkGenericVector(ObjectVector.type(MyCustomType.type()));
+    }
+
+    @Test
+    public void customTypeVectorImplementation() {
+        // CustomType only rejects Vector types in io.deephaven.vector, so a Vector implementation in another package is
+        // a custom type; its component type must still be inferred, as fromGenericType does
+        final ColumnDefinition<?> wrapper = ColumnDefinition.fromGenericType(CN, IntVectorColumnWrapper.class);
+        assertThat(wrapper.getComponentType()).isEqualTo(int.class);
+        final CustomType<IntVectorColumnWrapper> wrapperType = Type.ofCustom(IntVectorColumnWrapper.class);
+        assertThat(ColumnDefinition.of(CN, wrapperType)).isEqualTo(wrapper);
+        assertThat(ColumnDefinition.of(CN, (GenericType<?>) wrapperType)).isEqualTo(wrapper);
+        assertThat(ColumnDefinition.of(CN, (Type<?>) wrapperType)).isEqualTo(wrapper);
+
+        final CustomType<MyObjectVector> objectVectorType = Type.ofCustom(MyObjectVector.class);
+        final ColumnDefinition<?> objects = ColumnDefinition.of(CN, objectVectorType);
+        assertThat(objects.getDataType()).isEqualTo(MyObjectVector.class);
+        assertThat(objects.getComponentType()).isEqualTo(Object.class);
+        assertThat(objects).isEqualTo(ColumnDefinition.fromGenericType(CN, MyObjectVector.class));
+    }
+
+    /**
+     * A {@link Vector} type outside {@code io.deephaven.vector}, which {@link CustomType} therefore accepts.
+     */
+    private interface MyObjectVector extends ObjectVector<String> {
     }
 
     @Test

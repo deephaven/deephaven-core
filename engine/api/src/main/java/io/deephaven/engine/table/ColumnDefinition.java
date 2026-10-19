@@ -212,7 +212,9 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
      * {@link BooleanType};</li>
      * <li>for {@link BoxedType boxed types}, the same as for the corresponding primitive type;</li>
      * <li>for other {@link GenericType generic types}, the type's class, with the array or {@link Vector} component
-     * type as the component type for {@link ArrayType array types}.</li>
+     * type as the component type for {@link ArrayType array types}. A {@link CustomType} whose class is a
+     * {@link Vector} implementation (outside {@code io.deephaven.vector}, which CustomType does not allow) gets an
+     * inferred component type, as by {@link #fromGenericType(String, Class)}.</li>
      * </ul>
      *
      * @param name the column name
@@ -239,7 +241,9 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     /**
      * Creates a {@link ColumnType#Normal normal} column definition for a qst {@link GenericType}. The data type is the
      * same as for the corresponding primitive type for {@link BoxedType boxed types}, and otherwise the type's class,
-     * with the array or {@link Vector} component type as the component type for {@link ArrayType array types}.
+     * with the array or {@link Vector} component type as the component type for {@link ArrayType array types}. A
+     * {@link CustomType} whose class is a {@link Vector} implementation gets an inferred component type, as by
+     * {@link #fromGenericType(String, Class)}.
      *
      * @param name the column name
      * @param type the type
@@ -714,9 +718,11 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
 
         @Override
         public ColumnDefinition<?> visit(CustomType<?> customType) {
-            // CustomType excludes primitive, boxed, array, and Vector types, so the class needs no normalization or
-            // component type; it may still be void or Void, which are not static types, and create rejects those.
-            return create(name, customType.clazz());
+            // CustomType excludes primitive, boxed, and array types, but only excludes Vector types by package name
+            // (io.deephaven.vector), so it may still be a Vector implementation in another package, such as
+            // IntVectorColumnWrapper, whose component type must be inferred. It may also be void or Void, which are not
+            // static types. fromGenericType infers the component type, and rejects void and Void.
+            return fromGenericType(name, customType.clazz());
         }
     }
 
