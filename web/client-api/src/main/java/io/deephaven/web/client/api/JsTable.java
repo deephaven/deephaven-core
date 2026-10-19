@@ -10,7 +10,6 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
-import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
 import elemental2.promise.Promise;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
@@ -1055,8 +1054,26 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     private Promise<JsTotalsTable> fetchTotals(Object config, JsProvider<ClientTableState> state) {
+        if (isClosed()) {
+            // nothing to total, and nothing to build before finding that out
+            return Promise.reject("Table already closed, cannot be used again");
+        }
         JsTotalsTableConfig directive = getTotalsDirectiveFromOptionalConfig(config);
+        // Retains the source state the totals are built from. One token per totals table, never the config object:
+        // a caller may pass the same config to several requests, and each must hold the source on its own.
+        final Object sourceRetainer = new Object() {
+            @Override
+            public String toString() {
+                return "totals source retainer for " + directive;
+            }
+        };
         ClientTableState[] lastGood = {null};
+
+        // A rebase that fails before the caller holds the totals table fails the request instead: nobody can listen
+        // for the event yet, and the totals would be behind the source.
+        String[] pendingFailure = {null};
+        boolean[] resolved = {false};
+
         final JsTableFetch totalsFactory = (callback, newState) -> {
             final ClientTableState target;
             // we know this will get called at least once, immediately, so lastGood will never be null
@@ -1067,9 +1084,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 target = state.valueOf();
                 // make sure we are only retained by one state at a time
                 // TODO: refactor subscription system to handle non-JsTable subscriptions w/ same one:one semantics,
-                target.retain(directive);
+                target.retain(sourceRetainer);
                 if (lastGood[0] != null && lastGood[0] != target) {
-                    lastGood[0].unretain(directive);
+                    lastGood[0].unretain(sourceRetainer);
                 }
                 lastGood[0] = target;
             }
@@ -1124,74 +1141,127 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 workerConnection.tableServiceClient().aggregate(requestMessage.build(), callback);
             }
         };
-        String summary = "totals table " + directive + ", " + directive.groupBy.join(",");
+        final String summary = "totals table " + directive;
         final ClientTableState totals = workerConnection.newState(totalsFactory, summary);
-        final LazyPromise<JsTotalsTable> result = new LazyPromise<>();
-        boolean[] downsample = {true};
-        return totals.refetch() // lastGood will always be non-null after this
-                .then(ready -> {
-                    JsTable wrapped = new JsTable(workerConnection, ready);
-                    // technically this is overkill, but it is more future-proofed than only listening for column
-                    // changes
-                    final RemoverFn remover = addEventListener(
-                            INTERNAL_EVENT_STATECHANGED,
-                            e -> {
-                                // eat superfluous changes (wait until event loop settles before firing requests).
-                                // IDS-2684 If you disable downsampling, you can lock up the entire websocket with some
-                                // rapid
-                                // table-state-changes that trigger downstream totals table changes.
-                                // It probably makes more sense to move this downsampling to the internal event,
-                                // or expose a public event that is already downsampled by a more sophisticated latch.
-                                // (for example, a batch that can outlive a single event loop by using an internal table
-                                // copy()
-                                // which simply accrues state until the user decides to commit the modification).
-                                if (downsample[0]) {
-                                    downsample[0] = false;
-                                    LazyPromise.runLater(() -> {
-                                        if (wrapped.isClosed()) {
-                                            return;
-                                        }
-                                        downsample[0] = true;
-                                        // IDS-2684 - comment out the four lines above to reproduce
-                                        // when ever the main table changes its state, reload the totals table from the
-                                        // new state
-                                        final ClientTableState existing = wrapped.state();
-                                        final ClientTableState nextState =
-                                                workerConnection.newState(totalsFactory, summary);
-                                        JsLog.debug("Rebasing totals table", existing, " -> ", nextState, " for ",
-                                                wrapped);
-                                        wrapped.setState(nextState);
-                                        // If the wrapped table's state has changed (any filter / sort / columns
-                                        // applied),
-                                        // then we'll want to re-apply these conditions on top of the newly set state.
-                                        final boolean needsMutation = !existing.isEqual(ready);
+        final JsTable wrapped = new JsTable(workerConnection, totals);
+        final JsTotalsTable totalsTable = new JsTotalsTable(wrapped, directive.serialize(), directive.groupBy);
 
-                                        final ThenOnFulfilledCallbackFn restoreVp = running -> {
-                                            // now that we've (possibly) updated selection conditions, put back in any
-                                            // viewport.
-                                            result.onSuccess(JsTotalsTable::refreshViewport);
-                                            return null;
-                                        };
-                                        final Promise<ClientTableState> promise =
-                                                nextState.refetch();
-                                        if (needsMutation) { // nextState will be empty, so we might want to test for
-                                                             // isEmpty() instead
-                                            wrapped.batch(b -> b.setConfig(existing)).then(restoreVp);
-                                        } else {
-                                            promise.then(restoreVp);
-                                        }
-                                        // IDS-2684 - Comment out the two lines below to reproduce
-                                    });
-                                }
-                            });
-                    wrapped.onClosed.add(remover::remove);
-                    wrapped.onClosed.add(() -> lastGood[0].unretain(directive));
-                    onClosed.add(remover::remove);
-                    final JsTotalsTable totalsTable =
-                            new JsTotalsTable(wrapped, directive.serialize(), directive.groupBy);
-                    result.succeed(totalsTable);
-                    return result.asPromise();
+        // The state change fires before the server has produced the new state, and the
+        // totals factory reads lastVisibleState(), which would still resolve to the old
+        // state's rollback. Wait until the new state is running before rebasing. A state
+        // that is no longer current by then is skipped, as is a source the totals are
+        // already built from, so a burst of state changes rebases at most once.
+        final JsConsumer<ClientTableState> rebaseWhenRunning = source -> {
+            source.onRunning(running -> {
+                if (wrapped.isClosed() || isClosed() || source != state()) {
+                    return;
+                }
+                if (lastGood[0] == state.valueOf()) {
+                    // e.g. grand totals, whose source ignores a filter change
+                    return;
+                }
+                // Whenever the main table changes its state, reload the totals table from the new state. Create
+                // the rebased totals first; the wrapped table only moves once the state is running, so any filter or
+                // sort on the totals table is re-applied from a running state, the way any table is mutated.
+                final ClientTableState nextState = workerConnection.newState(totalsFactory, summary);
+                JsLog.debug("Rebasing totals table", wrapped.state(), " -> ", nextState, " for ", wrapped);
+                // own the state while it is fetched; a state nobody owns can be swept by any release check
+                nextState.retain(totalsTable);
+                nextState.refetch().then(ready -> {
+                    if (wrapped.isClosed() || isClosed() || source != state()) {
+                        // superseded by a newer source change, or no longer wanted; nothing else holds it
+                        nextState.unretain(totalsTable);
+                        return null;
+                    }
+                    final ClientTableState existing = wrapped.state();
+                    wrapped.setState(nextState);
+                    // the binding owns it now
+                    nextState.unretain(totalsTable);
+                    // the totals match the source again, whatever an earlier rebase did
+                    pendingFailure[0] = null;
+                    // The states the totals table was on are no longer reachable from it; let each one go once the
+                    // table's current state settles, the way the batcher disposes of the states it walks past.
+                    for (ClientTableState orphan : existing.reversed()) {
+                        orphan.cleanup();
+                    }
+                    if (existing.isEqual(totals)) {
+                        totalsTable.refreshViewport();
+                        return null;
+                    }
+                    // The totals table has its own filter, sort or columns; re-apply them on top of the new state.
+                    // If that fails, the batcher has already rolled the table back to the rebased totals and fired
+                    // EVENT_REQUEST_FAILED; either way, put the viewport back on whichever state the table is on.
+                    return wrapped.batch(b -> b.setConfig(existing)).then(ignored -> {
+                        totalsTable.refreshViewport();
+                        return null;
+                    }, failure -> {
+                        totalsTable.refreshViewport();
+                        return null;
+                    });
+                }, error -> {
+                    nextState.unretain(totalsTable);
+                    if (wrapped.isClosed() || isClosed() || source != state()) {
+                        // superseded by a newer source change, whose rebase decides; or no longer wanted
+                        return null;
+                    }
+                    if (!resolved[0]) {
+                        pendingFailure[0] = String.valueOf(error);
+                        return null;
+                    }
+                    // The totals can no longer follow the source. Report it the way a table that fails on the server
+                    // is reported; the totals keep their last good values until the source changes again.
+                    wrapped.failureHandled(String.valueOf(error));
+                    return null;
                 });
+            }, JsRunnable.doNothing());
+        };
+        final RemoverFn remover = addEventListener(INTERNAL_EVENT_STATECHANGED, e -> rebaseWhenRunning.apply(state()));
+        if (!state().isRunning()) {
+            // A change already in flight fired its state change before this listener existed. The first fetch builds
+            // from the running state behind it; rebase onto the pending one once it runs, as any later change would.
+            rebaseWhenRunning.apply(state());
+        }
+        wrapped.onClosed.add(remover::remove);
+        wrapped.onClosed.add(() -> lastGood[0].unretain(sourceRetainer));
+        onClosed.add(remover::remove);
+
+        // Hands the totals table over, unless a rebase failed while the request was pending: those totals do not
+        // match the source, and the request fails with that rebase's reason instead.
+        final JsProvider<Promise<JsTotalsTable>> settle = () -> {
+            resolved[0] = true;
+            if (pendingFailure[0] != null) {
+                wrapped.close();
+                return Promise.reject(pendingFailure[0]);
+            }
+            return Promise.resolve(totalsTable);
+        };
+        // The first fetch's rejection is only a failure if the wrapped table still holds this state. If a rebase
+        // replaced it, that export was cancelled on purpose; the result is whichever state the table ends up on.
+        return totals.refetch().then(
+                ignore -> settle.valueOf(),
+                error -> {
+                    if (wrapped.state() == totals) {
+                        wrapped.close();
+                        return Promise.reject(error);
+                    }
+                    return wrapped.whenRunning().then(ignore -> settle.valueOf());
+                });
+    }
+
+    /**
+     * Resolves once this table is on a running state, following it through any states that are replaced before they
+     * run, and rejects if the state it holds fails.
+     * <p>
+     * Written for the wrapped table of a totals table, whose state is only ever replaced by an already-running one, and
+     * only before the totals promise resolves. It has not been exercised beyond that: for a state that stops running
+     * between the check and the callback it neither resolves nor rejects, and it assumes the table is open.
+     */
+    private Promise<Void> whenRunning() {
+        return new Promise<>((resolve, reject) -> state().onRunning(
+                ignore -> resolve.onInvoke((Void) null),
+                reject::onInvoke,
+                // released before running: superseded by a newer state, so adopt the wait on that one
+                () -> resolve.onInvoke(whenRunning())));
     }
 
     private JsTotalsTableConfig getTotalsDirectiveFromOptionalConfig(Object config) {
