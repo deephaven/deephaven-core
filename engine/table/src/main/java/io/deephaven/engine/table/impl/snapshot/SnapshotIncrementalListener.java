@@ -131,7 +131,9 @@ public class SnapshotIncrementalListener extends MergedListener {
             Map<String, ? extends ColumnSource<?>> triggerColumns,
             Map<String, WritableColumnSource<?>> resultColumns) {
         final RowSet qtRowSet = triggerTable.getRowSet();
-        if (!qtRowSet.isEmpty()) {
+        if (qtRowSet.isEmpty()) {
+            SnapshotUtils.setNullStampColumns(triggerColumns, resultColumns, rowsToCopy);
+        } else {
             SnapshotUtils.copyStampColumns(triggerColumns, qtRowSet.lastRowKey(), resultColumns, rowsToCopy);
         }
         SnapshotUtils.copyDataColumns(snapshotDataColumns, rowsToCopy, resultColumns, rowsToCopy, false);

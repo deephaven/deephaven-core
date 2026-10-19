@@ -2623,6 +2623,26 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testSnapshotIncrementalEmptyTrigger() {
+        final QueryTable base = testRefreshingTable(i(10, 20).toTracking(), intCol("A", 1, 2));
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+        final Table snapshot = base.snapshotWhen(trigger, Flag.INCREMENTAL, Flag.INITIAL);
+        assertTableEquals(testRefreshingTable(i(10, 20).toTracking(), intCol("A", 1, 2), intCol("T", 1, 1)),
+                snapshot);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(base, i(10, 30), intCol("A", 5, 3));
+            base.notifyListeners(i(30), i(), i(10));
+            removeRows(trigger, i(0));
+            trigger.notifyListeners(i(), i(0), i());
+        });
+
+        assertTableEquals(testRefreshingTable(i(10, 20, 30).toTracking(),
+                intCol("A", 5, 2, 3), intCol("T", QueryConstants.NULL_INT, 1, QueryConstants.NULL_INT)), snapshot);
+    }
+
+    @Test
     public void testSnapshotIncrementalPrev() {
         final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 col("A", 3, 1, 2), col("B", "c", "a", "b"));

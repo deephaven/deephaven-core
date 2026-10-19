@@ -100,6 +100,22 @@ public class SnapshotUtils {
     }
 
     /**
+     * Like the above, but sets each of the rows in {@code destRowSet} to the appropriate {@code null} value.
+     *
+     * @param stampColumns The stamp columns that serve as the source data
+     * @param destColumns The destination columns we are writing to
+     * @param destRowSet The keys in destColumns we want to write to
+     */
+    public static void setNullStampColumns(
+            @NotNull Map<String, ? extends ColumnSource<?>> stampColumns,
+            @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns,
+            @NotNull RowSet destRowSet) {
+        for (String name : stampColumns.keySet()) {
+            destColumns.get(name).setNull(destRowSet);
+        }
+    }
+
+    /**
      * For each name in srcColumns, copy all the data at srcColumns.get(name) (with a range of rows defined by
      * srcRowSet) to a column indicated by destColumns.get(name) (with a range of rows defined by destRowSet).
      *
