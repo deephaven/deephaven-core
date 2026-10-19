@@ -17,7 +17,10 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Objects;
+import java.util.Set;
 
 public class ChunkUtils {
     public static final int COPY_DATA_CHUNK_SIZE = 16384;
@@ -442,11 +445,13 @@ public class ChunkUtils {
                 final SafeCloseableArray<ChunkSink.FillFromContext> ignored2 =
                         new SafeCloseableArray<>(destContexts)) {
 
+            final Set<WritableColumnSource<?>> destinationSet =
+                    Collections.newSetFromMap(new IdentityHashMap<>(destinations.length));
+            Collections.addAll(destinationSet, destinations);
             for (int ss = 0; ss < sources.length; ++ss) {
-                for (WritableColumnSource<?> destination : destinations) {
-                    if (sources[ss] == destination) {
-                        throw new IllegalArgumentException("Source must not equal destination!");
-                    }
+                // noinspection SuspiciousMethodCalls
+                if (destinationSet.contains(sources[ss])) {
+                    throw new IllegalArgumentException("Source must not equal destination!");
                 }
                 destinations[ss].ensureCapacity(destAllKeys.lastRowKey() + 1);
                 sourceContexts[ss] = sources[ss].makeGetContext(minSize, sharedContext);
