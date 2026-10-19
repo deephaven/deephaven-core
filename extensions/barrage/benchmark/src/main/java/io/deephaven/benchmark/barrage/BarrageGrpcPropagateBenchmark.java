@@ -144,8 +144,10 @@ import java.util.stream.Collectors;
  * {@code transport} picks the server's transport: {@code netty}, or {@code jetty}, the Deephaven server's default,
  * whose gRPC servlet adapter frames each message into heap byte arrays. {@code compression} is the type every
  * subscriber's stream is compressed with, set as the server sets it, or {@code identity} for none; the clients accept
- * every supported type. {@code batchSize} is the rows per record batch the subscriptions ask for, or 0 for the server's
- * default, under which a snapshot is a single record batch.
+ * every supported type. {@code batchSize} is the most rows per record batch the subscriptions ask for, or 0 for the
+ * server's default. The writer treats it as a maximum and may send smaller batches, so a snapshot goes out as a series
+ * of record batches, each its own gRPC message; {@code messagesTotal} and {@code peakMessageMegabytesTotal} report what
+ * it sent.
  * </p>
  *
  * <p>
@@ -154,8 +156,8 @@ import java.util.stream.Collectors;
  * drawn from a pool of {@value #STR_POOL_SIZE} values, a {@code String} column of {@value #SYM_POOL_SIZE} symbols that
  * is dictionary encoded, and an {@code int} column whose value changes every {@value #RLE_RUN_LENGTH} rows that is
  * run-end encoded. The two encodings are requested through the table's {@link Table#BARRAGE_SCHEMA_ATTRIBUTE}, as a
- * user would request them. Subscriptions use the default options, under which a snapshot is a single record batch and
- * so a single gRPC message, as it is for the Java and Python clients.
+ * user would request them. Subscriptions use the default options, as the Java and Python clients do, unless
+ * {@code batchSize} is set.
  * </p>
  *
  * <p>
@@ -315,7 +317,7 @@ public class BarrageGrpcPropagateBenchmark {
         @Param({"identity"})
         String compression;
 
-        /** Rows per record batch the subscriptions ask for; 0 asks for the server's default. */
+        /** The most rows per record batch the subscriptions ask for; 0 asks for the server's default. */
         @Param({"0"})
         int batchSize;
 
