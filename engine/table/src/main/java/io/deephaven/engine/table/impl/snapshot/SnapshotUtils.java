@@ -3,9 +3,12 @@
 //
 package io.deephaven.engine.table.impl.snapshot;
 
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
@@ -13,7 +16,10 @@ import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -139,6 +145,68 @@ public class SnapshotUtils {
             final WritableColumnSource<?> destCs = destColumns.get(name);
             destCs.ensureCapacity(destRowSet.lastRowKey() + 1);
             ChunkUtils.copyData(srcCs, srcRowSet, destCs, destRowSet, usePrev);
+        }
+    }
+
+    /**
+     * For each name in srcColumns, copy the data at srcColumns.get(name) for the rows in srcRowSet into
+     * {@code numCopies} consecutive, contiguous blocks of destColumns.get(name), the first of which begins at row key
+     * {@code destOffset}. Each chunk of source data is read once and written to every block.
+     *
+     * @param srcColumns The columns that serve as the source data
+     * @param srcRowSet The keys in the srcColumns we are reading from
+     * @param destColumns The destination columns we are writing to, with capacity for every block
+     * @param destOffset The first row key of the first block in destColumns
+     * @param numCopies The number of blocks to write
+     */
+    public static void copyDataColumnsRepeated(
+            @NotNull Map<String, ChunkSource.WithPrev<? extends Values>> srcColumns,
+            @NotNull RowSet srcRowSet,
+            @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns,
+            long destOffset,
+            long numCopies) {
+        final long blockSize = srcRowSet.size();
+        if (blockSize == 0 || numCopies == 0) {
+            return;
+        }
+        final int chunkSize = (int) Math.min(blockSize, ChunkUtils.COPY_DATA_CHUNK_SIZE);
+        final long destEnd = destOffset + numCopies * blockSize;
+        final int numColumns = srcColumns.size();
+
+        // noinspection unchecked
+        final ChunkSource.WithPrev<? extends Values>[] sources = new ChunkSource.WithPrev[numColumns];
+        final WritableColumnSource<?>[] destinations = new WritableColumnSource[numColumns];
+        final ChunkSource.GetContext[] getContexts = new ChunkSource.GetContext[numColumns];
+        final ChunkSink.FillFromContext[] fillContexts = new ChunkSink.FillFromContext[numColumns];
+        try (final SharedContext sharedContext = SharedContext.makeSharedContext();
+                final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(getContexts);
+                final SafeCloseableArray<ChunkSink.FillFromContext> ignored2 = new SafeCloseableArray<>(fillContexts);
+                final RowSequence.Iterator srcIter = srcRowSet.getRowSequenceIterator()) {
+            int cc = 0;
+            for (final Map.Entry<String, ChunkSource.WithPrev<? extends Values>> entry : srcColumns.entrySet()) {
+                sources[cc] = entry.getValue();
+                destinations[cc] = destColumns.get(entry.getKey());
+                getContexts[cc] = sources[cc].makeGetContext(chunkSize, sharedContext);
+                fillContexts[cc] = destinations[cc].makeFillFromContext(chunkSize);
+                ++cc;
+            }
+
+            long blockPosition = 0;
+            while (srcIter.hasMore()) {
+                final RowSequence srcKeys = srcIter.getNextRowSequenceWithLength(chunkSize);
+                final long lastBlockPosition = blockPosition + srcKeys.size() - 1;
+                sharedContext.reset();
+                for (cc = 0; cc < numColumns; ++cc) {
+                    final Chunk<? extends Values> chunk = sources[cc].getChunk(getContexts[cc], srcKeys);
+                    for (long blockStart = destOffset; blockStart < destEnd; blockStart += blockSize) {
+                        try (final RowSequence destKeys = RowSequenceFactory.forRange(
+                                blockStart + blockPosition, blockStart + lastBlockPosition)) {
+                            destinations[cc].fillFromChunk(fillContexts[cc], chunk, destKeys);
+                        }
+                    }
+                }
+                blockPosition = lastBlockPosition + 1;
+            }
         }
     }
 

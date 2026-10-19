@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 
 public class ChunkUtils {
-    private static final int COPY_DATA_CHUNK_SIZE = 16384;
+    public static final int COPY_DATA_CHUNK_SIZE = 16384;
 
     /**
      * Produce a pretty key for error messages from an element within parallel chunks.

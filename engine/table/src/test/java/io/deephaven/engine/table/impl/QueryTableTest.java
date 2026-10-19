@@ -1994,6 +1994,45 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testSnapshotHistoryMultipleTriggers() {
+        final int size = 20000;
+        final Table source = emptyTable(size).update("X=ii", "S=Long.toString(ii)");
+        final AtomicInteger baseReads = new AtomicInteger();
+        final ColumnSource<Long> countingSource =
+                new DelegatingColumnSource<>(long.class, null, source.getColumnSource("X", long.class)) {
+                    @Override
+                    public Chunk<? extends Values> getChunk(
+                            @NotNull final GetContext context,
+                            @NotNull final RowSequence rowSequence) {
+                        baseReads.incrementAndGet();
+                        return super.getChunk(context, rowSequence);
+                    }
+                };
+        final Map<String, ColumnSource<?>> baseColumns = new LinkedHashMap<>();
+        baseColumns.put("X", countingSource);
+        baseColumns.put("S", source.getColumnSource("S"));
+        final QueryTable base = new QueryTable(source.getRowSet().copy().toTracking(), baseColumns);
+
+        final QueryTable trigger = testRefreshingTable(i(0).toTracking(), intCol("T", 1));
+        final Table history = base.snapshotWhen(trigger, Flag.HISTORY);
+        validateUpdates(history);
+        assertTableEquals(source.updateView("T=1").view("T", "X", "S"), history);
+        final int readsPerSnapshot = baseReads.get();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(trigger, i(1, 2, 3), intCol("T", 2, 3, 4));
+            trigger.notifyListeners(i(1, 2, 3), i(), i());
+        });
+        assertTableEquals(TableTools.merge(
+                source.updateView("T=1").view("T", "X", "S"),
+                source.updateView("T=2").view("T", "X", "S"),
+                source.updateView("T=3").view("T", "X", "S"),
+                source.updateView("T=4").view("T", "X", "S")), history);
+        assertEquals(2 * readsPerSnapshot, baseReads.get());
+    }
+
+    @Test
     public void testSnapshotHistorical() {
         final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 col("A", 3, 1, 2), col("B", "c", "a", "b"));
