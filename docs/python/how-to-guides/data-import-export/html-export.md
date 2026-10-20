@@ -35,7 +35,7 @@ print(html_table)
 
 The returned string is an HTML `<table>` element with a header row of column names and one row for each table row. [`to_html`](../../reference/data-import-export/HTML/to-html.md) writes each cell's value as untyped text, so the output carries no column type information. It writes values as follows:
 
-- It escapes string values with CSV rules, not HTML rules. It wraps a value that contains a comma, a double quote, or a line break in double quotes and doubles any double quotes inside it. It writes characters such as `<` and `&` as-is.
+- It escapes string values with CSV rules, not HTML rules. It wraps a value that contains a comma, a double quote, or a line break in double quotes and doubles any double quotes inside it. It writes characters such as `<` and `&` as-is. Because string values aren't HTML-escaped, a value that contains HTML markup becomes active markup in any page that displays the output. Convert only tables whose contents you trust, or HTML-escape untrusted string values before you convert the table.
 - It formats `Instant` values, such as the `Datetime` column created with [`datetime_col`](../../reference/table-operations/create/dateTimeCol.md), in the server JVM's system default time zone, which can differ from the time zone the web UI uses to display the table.
 - It writes null values as `(null)`.
 - It writes other values, including other date-time types such as `ZonedDateTime` and `LocalDate`, with their Java `toString` form. For a Java array column, such as an `int[]` column, that form is an object reference like `[I@1b6d3586`, not the array's contents.
