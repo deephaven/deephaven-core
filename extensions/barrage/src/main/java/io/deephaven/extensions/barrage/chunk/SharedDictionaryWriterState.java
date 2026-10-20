@@ -25,6 +25,13 @@ import org.jetbrains.annotations.Nullable;
  * in future delta batches.
  *
  * <p>
+ * Other subscribers add values to the shared dictionary, and this subscriber is sent them only in a batch whose own
+ * rows reference the dictionary, that is, a batch for which {@link #fillIndexChunk} was called. A subscriber that never
+ * writes a column using this dictionary, such as one that did not subscribe to it, is sent only the first batch,
+ * carrying no values, which defines the dictionary for strict Arrow readers. It then holds an empty dictionary, so a
+ * later batch that references the dictionary is sent every value from the start, as a delta.
+ *
+ * <p>
  * {@link #resetDelta()} advances past exactly the values that the last {@link #buildDeltaChunk()} covered, not past
  * whatever the shared dictionary holds by then. Full subscribers write in parallel, so other subscribers may add values
  * between this subscriber's building a DictionaryBatch and its sending it; those values were not in the batch, and they
@@ -71,6 +78,11 @@ public final class SharedDictionaryWriterState implements DictionaryWriterState 
      * advances {@link #flushedOffset} to; {@code -1} when no delta has been built since the last advance.
      */
     private int builtDeltaEnd = -1;
+    /**
+     * Whether a batch of this subscriber's has encoded values with this dictionary since its last accepted batch. Only
+     * then is it sent the values it is owed; see the class documentation.
+     */
+    private boolean referenced = false;
 
     public SharedDictionaryWriterState(@NotNull final SharedWriterDictionary shared) {
         this.shared = shared;
@@ -103,13 +115,15 @@ public final class SharedDictionaryWriterState implements DictionaryWriterState 
             @Nullable final RowSet subset,
             @NotNull final BarrageOptions options,
             @NotNull final WritableIntChunk<Values> out) {
+        referenced = true;
         shared.fillIndexChunk(source, subset, options, out);
     }
 
     @Override
     public boolean hasDelta() {
         syncGeneration();
-        return needsFullBatch || flushedOffset < shared.getTotalSize();
+        // the first batch is always sent, to define the dictionary, even when it carries no values
+        return needsFullBatch || (referenced && flushedOffset < shared.getTotalSize());
     }
 
     @Override
@@ -123,20 +137,23 @@ public final class SharedDictionaryWriterState implements DictionaryWriterState 
     public WritableChunk<Values> buildDeltaChunk() {
         syncGeneration();
         // The value list only grows between resets, so the range measured here is still exactly what the copy covers,
-        // however many values other subscribers add in between.
-        final int deltaEnd = shared.getTotalSize();
+        // however many values other subscribers add in between. A batch that does not reference the dictionary carries
+        // none of the values the subscriber is owed.
+        final int deltaEnd = referenced ? shared.getTotalSize() : flushedOffset;
         final WritableChunk<Values> delta = shared.buildDeltaChunk(flushedOffset, deltaEnd);
         builtDeltaEnd = deltaEnd;
         return delta;
     }
 
     /**
-     * Advances past the values that the last {@link #buildDeltaChunk()} covered. With no delta built since the last
-     * advance, nothing was sent and nothing changes.
+     * Accepts the batch just written: advances past the values that the last {@link #buildDeltaChunk()} covered, and
+     * forgets that the batch referenced the dictionary. With no delta built since the last advance, nothing was sent
+     * and the offset does not change.
      */
     @Override
     public void resetDelta() {
         syncGeneration();
+        referenced = false;
         if (builtDeltaEnd < 0) {
             return;
         }

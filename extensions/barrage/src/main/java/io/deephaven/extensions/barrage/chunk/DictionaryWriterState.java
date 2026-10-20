@@ -59,7 +59,8 @@ public interface DictionaryWriterState {
     /**
      * Returns {@code true} if a DictionaryBatch message needs to be emitted before the current RecordBatch — either
      * because this is the first batch for this subscriber ({@code isDelta=false}) or because new values have been added
-     * since the last reset.
+     * since the last reset. A subscriber is owed values that others added to a shared dictionary only once one of its
+     * own batches references the dictionary; see {@link SharedDictionaryWriterState}.
      */
     boolean hasDelta();
 
@@ -74,11 +75,12 @@ public interface DictionaryWriterState {
     WritableChunk<Values> buildDeltaChunk();
 
     /**
-     * Advances the delta boundary past the values that the last {@link #buildDeltaChunk()} covered, once the
-     * DictionaryBatch built from them has been emitted, so that they are excluded from future delta batches. Call this
-     * method only after {@link #buildDeltaChunk()}; without a preceding {@link #buildDeltaChunk()} call, the shared
-     * implementation does nothing. Unlike {@link #reset()}, this does not discard the accumulated value-to-index
-     * mapping, so the client's cached dictionary remains valid after this call.
+     * Accepts the batch just written. Advances the delta boundary past the values that the last
+     * {@link #buildDeltaChunk()} covered, once the DictionaryBatch built from them has been emitted, so that they are
+     * excluded from future delta batches. This is called after every accepted batch, whether or not a DictionaryBatch
+     * was built for this state; without a preceding {@link #buildDeltaChunk()} call, the shared implementation's
+     * boundary does not move. Unlike {@link #reset()}, this does not discard the accumulated value-to-index mapping, so
+     * the client's cached dictionary remains valid after this call.
      */
     void resetDelta();
 
