@@ -408,4 +408,119 @@ public class OrderedLongSetBuilderSequentialTest {
             result.ixRelease();
         }
     }
+
+    private static RspBitmap bitmapOf(final long... keys) {
+        final RspBitmap rsp = new RspBitmap();
+        for (final long key : keys) {
+            rsp.appendRangeUnsafeNoWriteCheck(key, key);
+        }
+        rsp.finishMutations();
+        return rsp;
+    }
+
+    private static void assertKeys(final OrderedLongSet result, final long... keys) {
+        result.ixValidate();
+        assertEquals(keys.length, result.ixCardinality());
+        for (final long key : keys) {
+            assertTrue("missing " + key, result.ixContainsRange(key, key));
+        }
+    }
+
+    /**
+     * A bitmap set shifted down is checked against its first block for keys below zero, and against its exact first key
+     * only when that block would move below zero.
+     */
+    @Test
+    public void testNegativeShiftOfBitmapSet() {
+        for (final Supplier<RspBitmapBuilderSequential> factory : List.<Supplier<RspBitmapBuilderSequential>>of(
+                RspBitmapBuilderSequential::new, OrderedLongSetBuilderSequential::new)) {
+            // The block moves below zero, but the keys do not.
+            final RspBitmap high = bitmapOf(BLOCK_SIZE + 100, BLOCK_SIZE + 200);
+            final RspBitmapBuilderSequential fits = factory.get();
+            fits.appendOrderedLongSet(-(BLOCK_SIZE + 50), high);
+            final OrderedLongSet fitsResult = fits.getOrderedLongSet();
+            assertKeys(fitsResult, 50, 150);
+            fitsResult.ixRelease();
+
+            // The first key moves below zero.
+            final RspBitmapBuilderSequential below = factory.get();
+            assertThrows(AssertionFailure.class, () -> below.appendOrderedLongSet(-(BLOCK_SIZE + 150), high));
+            high.ixRelease();
+
+            // A block-aligned shift down to a block after the builder's keys, which shares the set's spans.
+            final RspBitmapBuilderSequential shared = factory.get();
+            long key = 0;
+            while (shared.rb == null) {
+                shared.appendKey(key);
+                key += 2;
+            }
+            final long heldKeys = key / 2;
+            final RspBitmap far = bitmapOf(9 * BLOCK_SIZE + 7, 10 * BLOCK_SIZE + 8);
+            shared.appendOrderedLongSet(-4 * BLOCK_SIZE, far);
+            far.ixRelease();
+            final OrderedLongSet sharedResult = shared.getOrderedLongSet();
+            sharedResult.ixValidate();
+            assertEquals(heldKeys + 2, sharedResult.ixCardinality());
+            assertTrue(sharedResult.ixContainsRange(5 * BLOCK_SIZE + 7, 5 * BLOCK_SIZE + 7));
+            assertTrue(sharedResult.ixContainsRange(6 * BLOCK_SIZE + 8, 6 * BLOCK_SIZE + 8));
+            sharedResult.ixRelease();
+        }
+    }
+
+    /**
+     * A bitmap set that starts after everything the builder holds is shared whatever the builder has pending: a range,
+     * a container with no range, or nothing.
+     */
+    @Test
+    public void testShareSetAfterEachPendingState() {
+        for (final Supplier<RspBitmapBuilderSequential> factory : List.<Supplier<RspBitmapBuilderSequential>>of(
+                RspBitmapBuilderSequential::new, OrderedLongSetBuilderSequential::new)) {
+            for (int state = 0; state < 3; ++state) {
+                final RspBitmapBuilderSequential builder = factory.get();
+                // Enough separate ranges to commit the builder to a bitmap.
+                long key = 0;
+                while (builder.rb == null) {
+                    builder.appendKey(key);
+                    key += 2;
+                }
+                final long heldKeys = key / 2;
+                final long block = 4 * BLOCK_SIZE;
+                switch (state) {
+                    case 0:
+                        // A pending range.
+                        builder.appendRange(block + 10, block + 20);
+                        break;
+                    case 1:
+                        // A set that is not a bitmap goes straight to the pending container, leaving no range.
+                        builder.appendOrderedLongSet(0, SingleRange.make(block + 10, block + 20));
+                        break;
+                    default:
+                        // An ordered chunk goes straight into the bitmap, leaving nothing pending.
+                        try (final WritableLongChunk<OrderedRowKeys> chunk =
+                                WritableLongChunk.makeWritableChunk(11)) {
+                            for (int ki = 0; ki < 11; ++ki) {
+                                chunk.set(ki, block + 10 + ki);
+                            }
+                            builder.appendOrderedRowKeysChunk(chunk, 0, 11);
+                        }
+                        break;
+                }
+                final RspBitmap later = bitmapOf(6 * BLOCK_SIZE + 3, 6 * BLOCK_SIZE + 5, 7 * BLOCK_SIZE + 1);
+                builder.appendOrderedLongSet(0, later);
+                later.ixRelease();
+                // A key after the shared set extends its last block.
+                builder.appendKey(7 * BLOCK_SIZE + 9);
+                final OrderedLongSet result = builder.getOrderedLongSet();
+                result.ixValidate();
+                assertEquals("state=" + state, heldKeys + 11 + 4, result.ixCardinality());
+                assertTrue(result.ixContainsRange(block + 10, block + 20));
+                for (final long expected : new long[] {
+                        6 * BLOCK_SIZE + 3, 6 * BLOCK_SIZE + 5, 7 * BLOCK_SIZE + 1, 7 * BLOCK_SIZE + 9}) {
+                    assertTrue("state=" + state + " missing " + expected,
+                            result.ixContainsRange(expected, expected));
+                }
+                result.ixRelease();
+            }
+        }
+    }
 }
