@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.configuration.Configuration;
@@ -158,6 +159,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     final ColumnChunkReader columnChunkReader;
     private final long mask;
     final ToPage<ATTR, ?> toPage;
+    private final RunCopyKernel runCopyKernel;
 
     private final long numRows;
 
@@ -249,6 +251,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         this.columnChunkReader = columnChunkReader;
         this.mask = mask;
         this.toPage = toPage;
+        runCopyKernel = RunCopyKernel.makeRunCopyKernel(toPage.getChunkType());
 
         this.numRows = Require.inRange(columnChunkReader.numRows(), "numRows", mask, "mask");
     }
@@ -466,14 +469,16 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
      * Copy the values at {@code sourcePositions} of {@code source} to {@code destinationOffset} plus the corresponding
      * {@code destinationPositions} of {@code destination}. The two position sets have the same size.
      */
-    private static void copyPositions(
+    private void copyPositions(
             @NotNull final Object source,
             @NotNull final RowSet sourcePositions,
             @NotNull final WritableChunk<?> destination,
             final int destinationOffset,
             @NotNull final RowSet destinationPositions) {
         try (final RowSet.RangeIterator sourceRanges = sourcePositions.rangeIterator();
-                final RowSet.RangeIterator destinationRanges = destinationPositions.rangeIterator()) {
+                final RowSet.RangeIterator destinationRanges = destinationPositions.rangeIterator();
+                final RunBatch runs = new RunBatch()) {
+            runs.begin(runCopyKernel, source, destination);
             long sourcePos = 0;
             long sourceEnd = -1;
             long destinationPos = 0;
@@ -481,6 +486,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             while (true) {
                 if (sourcePos > sourceEnd) {
                     if (!sourceRanges.hasNext()) {
+                        runs.finish();
                         return;
                     }
                     sourceRanges.next();
@@ -493,7 +499,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                     destinationEnd = destinationRanges.currentRangeEnd();
                 }
                 final int length = (int) Math.min(sourceEnd - sourcePos, destinationEnd - destinationPos) + 1;
-                destination.copyFromArray(source, (int) sourcePos, destinationOffset + (int) destinationPos, length);
+                runs.add((int) sourcePos, destinationOffset + (int) destinationPos, length);
                 sourcePos += length;
                 destinationPos += length;
             }
@@ -694,7 +700,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         }
         if (decodeCount == 0) {
             // noinspection DataFlowIssue: pageRows is never empty, so some rows were cached
-            fillMerged(cached, requestRanges, pageFirstKey, null, rowCount, destination);
+            fillMerged(contextWrapper, cached, requestRanges, pageFirstKey, null, rowCount, destination);
             SPARSE_HITS.increment();
             return true;
         }
@@ -711,7 +717,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 final SparsePage<ATTR> published = getSparsePage(state);
                 if (published != null
                         && collectMissing(published, requestRanges, pageFirstKey, decodeRanges) == 0) {
-                    fillMerged(published, requestRanges, pageFirstKey, null, rowCount, destination);
+                    fillMerged(contextWrapper, published, requestRanges, pageFirstKey, null, rowCount, destination);
                     SPARSE_HITS.increment();
                     return true;
                 }
@@ -745,7 +751,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             destination.setSize(destinationOffset + rowCount);
             destination.copyFromArray(values, 0, destinationOffset, rowCount);
         } else {
-            fillMerged(cached, requestRanges, pageFirstKey, values, rowCount, destination);
+            fillMerged(contextWrapper, cached, requestRanges, pageFirstKey, values, rowCount, destination);
         }
         contextWrapper.appendPending(this, pageNum, decodeRanges, decodeCount, values);
         contextWrapper.sparseStore = this;
@@ -801,6 +807,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
      * @param rowCount The number of requested rows
      */
     private void fillMerged(
+            @NotNull final ChannelContextWrapper contextWrapper,
             @NotNull final SparsePage<ATTR> cached,
             @NotNull final LongChunk<OrderedRowKeyRanges> requestRanges,
             final long pageFirstKey,
@@ -810,6 +817,10 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         int destinationPos = destination.size();
         destination.setSize(destinationPos + rowCount);
         int decodedPos = 0;
+        final RunBatch cachedRuns = contextWrapper.cachedRuns();
+        final RunBatch decodedRuns = contextWrapper.decodedRuns();
+        cachedRuns.begin(runCopyKernel, cached.values, destination);
+        decodedRuns.begin(runCopyKernel, decoded, destination);
         try (final CachedRanges cachedRanges = new CachedRanges(cached)) {
             for (int ii = 0; ii < requestRanges.size(); ii += 2) {
                 long first = requestRanges.get(ii) - pageFirstKey;
@@ -820,20 +831,84 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                     if (found && cachedRanges.start <= first) {
                         end = Math.min(last, cachedRanges.end);
                         final int length = (int) (end - first + 1);
-                        destination.copyFromArray(cached.values, (int) cachedRanges.positionOf(first),
-                                destinationPos, length);
+                        cachedRuns.add((int) cachedRanges.positionOf(first), destinationPos, length);
                         destinationPos += length;
                     } else {
                         end = found ? Math.min(last, cachedRanges.start - 1) : last;
                         final int length = (int) (end - first + 1);
-                        // noinspection DataFlowIssue: decoded holds every requested row that cached lacks
-                        destination.copyFromArray(decoded, decodedPos, destinationPos, length);
+                        // decoded holds every requested row that cached lacks
+                        decodedRuns.add(decodedPos, destinationPos, length);
                         decodedPos += length;
                         destinationPos += length;
                     }
                     first = end + 1;
                 }
             }
+        }
+        cachedRuns.finish();
+        decodedRuns.finish();
+    }
+
+    /**
+     * Collects runs to copy from one array to a chunk, and copies each batch of them with one {@link RunCopyKernel}
+     * call. Short runs are common, and a {@link WritableChunk#copyFromArray} call per run is a megamorphic call per
+     * run.
+     */
+    private static final class RunBatch implements SafeCloseable {
+        /** Room for 1024 runs. */
+        private static final int CAPACITY = 3 * 1024;
+
+        private final WritableIntChunk<Any> runs = WritableIntChunk.makeWritableChunk(CAPACITY);
+        private RunCopyKernel kernel;
+        private Object source;
+        private WritableChunk<?> destination;
+
+        private RunBatch() {
+            runs.setSize(0);
+        }
+
+        /**
+         * @param source The array to copy from, or {@code null} if no runs will be added
+         */
+        private void begin(
+                @NotNull final RunCopyKernel kernel,
+                @Nullable final Object source,
+                @NotNull final WritableChunk<?> destination) {
+            this.kernel = kernel;
+            this.source = source;
+            this.destination = destination;
+            runs.setSize(0);
+        }
+
+        private void add(final int sourcePos, final int destinationPos, final int length) {
+            if (runs.size() == CAPACITY) {
+                flush();
+            }
+            runs.add(sourcePos);
+            runs.add(destinationPos);
+            runs.add(length);
+        }
+
+        /**
+         * Copy the remaining runs and release the arrays.
+         */
+        private void finish() {
+            flush();
+            source = null;
+            destination = null;
+        }
+
+        private void flush() {
+            if (runs.size() > 0) {
+                // noinspection DataFlowIssue: runs are added only with a source
+                kernel.copyRuns(source, runs, destination);
+                runs.setSize(0);
+            }
+        }
+
+        @Override
+        public void close() {
+            runs.close();
         }
     }
 
@@ -940,6 +1015,10 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         private SizedLongChunk<OrderedRowKeyRanges> requestRanges;
         @Nullable
         private SizedLongChunk<Indices> decodeRanges;
+        @Nullable
+        private RunBatch cachedRuns;
+        @Nullable
+        private RunBatch decodedRuns;
 
         private ChannelContextWrapper(
                 final int chunkCapacity,
@@ -987,6 +1066,28 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 decodeRanges = new SizedLongChunk<>();
             }
             return decodeRanges.ensureCapacity(capacity);
+        }
+
+        /**
+         * @return The runs a merged fill copies from cached sparse values, owned by this context
+         */
+        @NotNull
+        RunBatch cachedRuns() {
+            if (cachedRuns == null) {
+                cachedRuns = new RunBatch();
+            }
+            return cachedRuns;
+        }
+
+        /**
+         * @return The runs a merged fill copies from decoded values, owned by this context
+         */
+        @NotNull
+        RunBatch decodedRuns() {
+            if (decodedRuns == null) {
+                decodedRuns = new RunBatch();
+            }
+            return decodedRuns;
         }
 
         /**
@@ -1063,6 +1164,12 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 }
                 if (decodeRanges != null) {
                     decodeRanges.close();
+                }
+                if (cachedRuns != null) {
+                    cachedRuns.close();
+                }
+                if (decodedRuns != null) {
+                    decodedRuns.close();
                 }
             }
         }
