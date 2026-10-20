@@ -120,9 +120,9 @@ public class DictionaryWriterStateTest {
     }
 
     /**
-     * A full subscriber that never writes a column using the dictionary, such as one that did not subscribe to it, is
-     * sent only an empty first batch, however many values the other subscribers add. Once a batch of its own references
-     * the dictionary, it is sent every value, from the start, as a delta to the empty dictionary it holds.
+     * A full subscriber that never writes a column using the dictionary, such as a subscriber not subscribed to that
+     * column, is sent only an empty first batch, however many values the other subscribers add. Once a batch of its own
+     * references the dictionary, it is sent every value, from the start, as a delta to the empty dictionary it holds.
      */
     @Test
     public void testFullSubscriptionIsSentNoValuesUntilItReferencesTheDictionary() {

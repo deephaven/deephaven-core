@@ -579,7 +579,7 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_CHAR);
             } else {
                 final char[] currentBlock = blocks[blockNo];
@@ -609,7 +609,7 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_CHAR);
                 continue;
             }

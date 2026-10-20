@@ -582,7 +582,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_BYTE);
             } else {
                 final byte[] currentBlock = blocks[blockNo];
@@ -612,7 +612,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_BYTE);
                 continue;
             }

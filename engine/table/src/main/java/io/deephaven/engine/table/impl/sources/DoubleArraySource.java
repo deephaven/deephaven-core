@@ -582,7 +582,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_DOUBLE);
             } else {
                 final double[] currentBlock = blocks[blockNo];
@@ -612,7 +612,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_DOUBLE);
                 continue;
             }

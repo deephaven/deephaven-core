@@ -106,12 +106,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     protected long capacity = 0;
     /** the reinterpreted destination writable sources */
     protected final WritableColumnSource<?>[] destSources;
-    /**
-     * The columns whose {@link #destSources} hold storage: each column that is subscribed, or has been. See
-     * {@link #ensureSourceCapacity()}.
-     */
-    private final BitSet allocatedColumns = new BitSet();
-    /** The most rows {@link #ensureSourceCapacity()} has grown the allocated sources to hold. */
+    /** The most rows {@link #ensureSourceCapacity()} has grown the subscribed columns' sources to hold. */
     private long allocatedCapacity = 0;
 
     /**
@@ -360,10 +355,10 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     }
 
     /**
-     * Grows the source of each column that is subscribed, or has been, to hold {@link #capacity} rows, or more if it
-     * was grown larger before. The source of a column that has never been subscribed is never allocated: it holds no
-     * values, and reads as null at every row. A source stays allocated, and keeps growing, once its column is no longer
-     * subscribed, as it must then cover every row the table may read from it.
+     * Grows the source of each subscribed column to hold {@link #capacity} rows, or more if a source was grown larger
+     * before. The source of a column that is not subscribed does not grow, as nothing is written to it: an array-backed
+     * source reads as null at every row past its capacity, so a column that has never been subscribed holds no values
+     * at all, and costs no storage.
      */
     protected void ensureSourceCapacity() {
         allocatedCapacity = Math.max(allocatedCapacity, capacity);
@@ -372,9 +367,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
         for (int ii = 0; ii < destSources.length; ++ii) {
             if (isSubscribedColumn(ii)) {
-                allocatedColumns.set(ii);
-            }
-            if (allocatedColumns.get(ii)) {
                 destSources[ii].ensureCapacity(allocatedCapacity);
             }
         }

@@ -874,7 +874,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_LONG);
             } else {
                 final long[] currentBlock = blocks[blockNo];
@@ -901,7 +901,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, null);
             } else {
                 final long[] currentBlock = blocks[blockNo];
@@ -931,7 +931,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_LONG);
                 continue;
             }
@@ -958,7 +958,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, null);
                 continue;
             }

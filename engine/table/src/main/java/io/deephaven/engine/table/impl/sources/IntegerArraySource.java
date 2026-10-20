@@ -582,7 +582,7 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_INT);
             } else {
                 final int[] currentBlock = blocks[blockNo];
@@ -612,7 +612,7 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_INT);
                 continue;
             }

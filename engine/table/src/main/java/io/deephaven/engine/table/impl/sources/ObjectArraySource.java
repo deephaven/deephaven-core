@@ -459,7 +459,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 dest.set(ii, null);
             } else {
                 final T[] currentBlock = blocks[blockNo];
@@ -482,7 +482,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
             }
 
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 dest.set(ii, null);
                 continue;
             }

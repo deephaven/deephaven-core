@@ -27,9 +27,9 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Other subscribers add values to the shared dictionary, and this subscriber is sent them only in a batch whose own
  * rows reference the dictionary, that is, a batch for which {@link #fillIndexChunk} was called. A subscriber that never
- * writes a column using this dictionary, such as one that did not subscribe to it, is sent only the first batch,
- * carrying no values, which defines the dictionary for strict Arrow readers. It then holds an empty dictionary, so a
- * later batch that references the dictionary is sent every value from the start, as a delta.
+ * writes a column using this dictionary, such as a subscriber not subscribed to that column, is sent only the first
+ * batch, carrying no values, which defines the dictionary for strict Arrow readers. It then holds an empty dictionary,
+ * so a later batch that references the dictionary is sent every value from the start, as a delta.
  *
  * <p>
  * {@link #resetDelta()} advances past exactly the values that the last {@link #buildDeltaChunk()} covered, not past

@@ -582,7 +582,7 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_FLOAT);
             } else {
                 final float[] currentBlock = blocks[blockNo];
@@ -612,7 +612,7 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_FLOAT);
                 continue;
             }

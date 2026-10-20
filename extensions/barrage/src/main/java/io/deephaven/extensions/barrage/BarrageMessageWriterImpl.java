@@ -382,7 +382,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             for (int ii = 0; ii < modColumnData.length; ++ii) {
                 final ModColumnWriter mcd = modColumnData[ii];
                 // the subscriber is sent no modified rows for a column it did not subscribe to
-                final boolean included = includesColumn(ii);
+                final boolean included = isColumnIncluded(ii);
 
                 if (keyspaceViewport == null) {
                     if (included) {
@@ -490,14 +490,10 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
          *
          * <p>
          * A producer's message carries data for every column that any of its subscriptions needs, so a subscription's
-         * view writes only the columns in its {@code subscribedColumns}.
+         * view writes only the columns in its {@code subscribedColumns}. Final, as the constructor relies on it.
          */
         @Override
-        public boolean isColumnIncluded(final int col) {
-            return includesColumn(col);
-        }
-
-        private boolean includesColumn(final int col) {
+        public final boolean isColumnIncluded(final int col) {
             return subscribedColumns == null || subscribedColumns.get(col);
         }
 
@@ -578,7 +574,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                     try (final RowSetWriter modRowsGen = new RowSetWriter(clientModdedRows[ii])) {
                         myModRowOffset = modRowsGen.addToFlatBuffer(metadata);
                     }
-                } else if (!includesColumn(ii)) {
+                } else if (!isColumnIncluded(ii)) {
                     myModRowOffset = EmptyRowSetWriter.INSTANCE.addToFlatBuffer(metadata);
                 } else {
                     myModRowOffset = modColumnData[ii].rowsModified.addToFlatBuffer(metadata);
@@ -1251,7 +1247,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         final DictionaryWriterRegistry dictionaryRegistry = view.dictionaryRegistry();
         try (myAddedOffsets;
                 final RowSet adjustedOffsets = shift == 0 ? null : myAddedOffsets.shift(shift)) {
-            // every column must write to the stream, though one the view leaves out writes no rows
+            // every column must write to the stream, though a column the view leaves out writes no rows
             for (int ci = 0; ci < addColumnData.length; ++ci) {
                 final ColumnChunksWriter<Chunk<Values>> chunkListWriter = addColumnData[ci];
                 final int numElements = chunkListWriter.chunks().length == 0 || !view.isColumnIncluded(ci)

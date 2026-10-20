@@ -59,8 +59,8 @@ public interface DictionaryWriterState {
     /**
      * Returns {@code true} if a DictionaryBatch message needs to be emitted before the current RecordBatch — either
      * because this is the first batch for this subscriber ({@code isDelta=false}) or because new values have been added
-     * since the last reset. A subscriber is owed values that others added to a shared dictionary only once one of its
-     * own batches references the dictionary; see {@link SharedDictionaryWriterState}.
+     * since the last reset. A subscriber is owed values that others added to a shared dictionary only once a batch of
+     * its own references the dictionary; see {@link SharedDictionaryWriterState}.
      */
     boolean hasDelta();
 

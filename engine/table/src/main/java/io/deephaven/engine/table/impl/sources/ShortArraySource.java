@@ -582,7 +582,7 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_SHORT);
             } else {
                 final short[] currentBlock = blocks[blockNo];
@@ -612,7 +612,7 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_SHORT);
                 continue;
             }

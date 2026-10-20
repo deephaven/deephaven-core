@@ -332,7 +332,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 dest.set(ii, null);
             } else {
                 final byte[] currentBlock = blocks[blockNo];
@@ -354,7 +354,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 dest.set(ii, null);
                 continue;
             }
@@ -677,7 +677,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                     continue;
                 }
                 final int blockNo = getBlockNo(fromIndex);
-                if (blockNo >= blocks.length) {
+                if (fromIndex > maxIndex) {
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                 } else {
                     final byte[] currentBlock = blocks[blockNo];
@@ -698,7 +698,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                     continue;
                 }
                 final int blockNo = getBlockNo(fromIndex);
-                if (blockNo >= blocks.length) {
+                if (fromIndex > maxIndex) {
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
