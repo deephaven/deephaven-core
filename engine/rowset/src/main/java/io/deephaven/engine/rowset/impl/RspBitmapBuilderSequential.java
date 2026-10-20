@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.rsp.container.Container;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.*;
 import static io.deephaven.engine.rowset.impl.rsp.RspBitmap.*;
@@ -176,8 +177,18 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
                 Assert.geqZero(ix.ixLastKey() + shiftAmount, "ix.ixLastKey() + shiftAmount");
             }
         }
-        if (ix instanceof RspBitmap && rb != null && (shiftAmount & BLOCK_LAST) == 0) {
-            final RspBitmap ixRb = (RspBitmap) ix;
+        if (rb == null) {
+            ix.ixForEachLongRange((final long start, final long end) -> {
+                appendRange(start + shiftAmount, end + shiftAmount);
+                return true;
+            });
+            return;
+        }
+        // A bitmap's spans can be shared when the shift keeps them block aligned, from the first one that starts in a
+        // block after everything we hold.
+        final RspBitmap ixRb = ix instanceof RspBitmap && (shiftAmount & BLOCK_LAST) == 0 ? (RspBitmap) ix : null;
+        boolean shareAfterFirstSpan = false;
+        if (ixRb != null) {
             final long heldLastBlockKey;
             if (pendingStart != -1) {
                 heldLastBlockKey = highBits(pendingEnd);
@@ -189,9 +200,8 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
                 Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
                 heldLastBlockKey = rb.keyForLastBlock();
             }
-            // ix's spans can be shared only when it starts in a block after everything we hold; otherwise its ranges
-            // are appended one at a time below.
-            if (ixRb.keyForFirstBlock() + shiftAmount > heldLastBlockKey) {
+            final long ixFirstBlockKey = ixRb.keyForFirstBlock() + shiftAmount;
+            if (ixFirstBlockKey > heldLastBlockKey) {
                 if (pendingStart != -1) {
                     flushPendingRange();
                 }
@@ -204,13 +214,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
                     return;
                 }
             }
-        }
-        if (rb == null) {
-            ix.ixForEachLongRange((final long start, final long end) -> {
-                appendRange(start + shiftAmount, end + shiftAmount);
-                return true;
-            });
-            return;
+            shareAfterFirstSpan = ixFirstBlockKey == heldLastBlockKey;
         }
         if (pendingStart != -1) {
             flushPendingRange();
@@ -219,7 +223,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         // every one with that same bound is as cheap as tracking which one is first. Past that check they go straight
         // to the containers.
         final long heldLastKey = check ? (lastFlushedKey != -1 ? lastFlushedKey : rb.lastValue()) : -1;
-        ix.ixForEachLongRange((final long start, final long end) -> {
+        final LongRangeAbortableConsumer appendAfterHeld = (final long start, final long end) -> {
             final long shiftedStart = start + shiftAmount;
             if (shiftedStart <= heldLastKey) {
                 throw new IllegalArgumentException(outOfOrderKeyErrorMsg +
@@ -227,7 +231,25 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             }
             flushRangeToPendingContainer(shiftedStart, end + shiftAmount);
             return true;
-        });
+        };
+        if (!shareAfterFirstSpan) {
+            ix.ixForEachLongRange(appendAfterHeld);
+            return;
+        }
+        // Only ix's first span starts in the block we end with. Its ranges go in one at a time; every later span
+        // starts in a later block, so those are shared.
+        ixRb.forEachLongRangeInSpanWithOffset(0, 0, appendAfterHeld);
+        if (ixRb.keyForLastBlock() + shiftAmount == highBits(lastFlushedKey)) {
+            // ix has no later span. Its last block stays pending for whatever is appended next.
+            return;
+        }
+        if (pendingContainerKey != -1) {
+            flushPendingContainer();
+        }
+        Assert.eqTrue(rb.tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, ixRb, 1),
+                "rb.tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, ixRb, 1)");
+        // As above, rb now ends with ix's last span.
+        lastFlushedKey = -1;
     }
 
     @Override

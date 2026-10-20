@@ -4688,7 +4688,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return true;
     }
 
-    boolean forEachLongRangeInSpanWithOffset(final int i, final long offset,
+    /**
+     * Pass the ranges of span {@code i}, starting {@code offset} into its first block, to {@code larc}. Unlike
+     * {@link #forEachLongRange(LongRangeAbortableConsumer)}, a range is not joined to the adjacent ranges of the spans
+     * on either side.
+     *
+     * @return False if {@code larc} asked to stop, true otherwise
+     */
+    public boolean forEachLongRangeInSpanWithOffset(final int i, final long offset,
             final LongRangeAbortableConsumer larc) {
         try (SpanView view = workDataPerThread.get().borrowSpanView(this, i)) {
             if (view.isSingletonSpan()) {
@@ -5100,13 +5107,32 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      *         nothing is changed
      */
     public boolean tryAppendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other) {
+        return tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, other, 0);
+    }
+
+    /**
+     * As {@link #tryAppendShiftedUnsafeNoWriteCheck(long, RspArray)}, for {@code other}'s spans from
+     * {@code otherStartIdx} on.
+     *
+     * @param shiftAmount The amount to add to every key appended; a multiple of {@code BLOCK_SIZE}
+     * @param other The array whose spans to append; this may not be empty
+     * @param otherStartIdx The first of {@code other}'s spans to append; when it is {@code other}'s size there is
+     *        nothing to append, and the result is true
+     * @return Whether the spans were appended; when the first of them, shifted, does not start after our last block,
+     *         nothing is changed
+     */
+    public boolean tryAppendShiftedUnsafeNoWriteCheck(
+            final long shiftAmount, final RspArray other, final int otherStartIdx) {
         if (RspArray.debug) {
-            if (size == 0 || other.size == 0) {
-                throw new IllegalArgumentException(
-                        "Append called for empty argument: size=" + size + ", other.size=" + other.size);
+            if (size == 0 || otherStartIdx < 0 || otherStartIdx > other.size) {
+                throw new IllegalArgumentException("Append called with size=" + size + ", otherStartIdx="
+                        + otherStartIdx + ", other.size=" + other.size);
             }
         }
-        final long otherFirstSpanInfo = other.spanInfos[0];
+        if (otherStartIdx == other.size) {
+            return true;
+        }
+        final long otherFirstSpanInfo = other.spanInfos[otherStartIdx];
         final long firstOtherBlockKey = spanInfoToKey(otherFirstSpanInfo) + shiftAmount;
         final long ourLastSpanInfo = spanInfos[size - 1];
         final Object ourLastSpan = spans[size - 1];
@@ -5116,15 +5142,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         if (firstOtherBlockKey <= ourLastBlockKey) {
             return false;
         }
-        int firstOtherSpan = 0;
+        int firstOtherSpan = otherStartIdx;
         if (ourLastBlockKey + BLOCK_SIZE == firstOtherBlockKey) {
             if (ourflen > 0) {
-                final Object otherFirstSpan = other.spans[0];
+                final Object otherFirstSpan = other.spans[otherStartIdx];
                 final long otherflen = getFullBlockSpanLen(otherFirstSpanInfo, otherFirstSpan);
                 if (otherflen > 0) {
                     // we need to merge these spans.
                     setFullBlockSpan(size - 1, ourLastKey, ourflen + otherflen);
-                    firstOtherSpan = 1;
+                    ++firstOtherSpan;
                 }
             }
 
