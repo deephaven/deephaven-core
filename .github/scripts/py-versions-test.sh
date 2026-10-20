@@ -6,7 +6,7 @@ set -o nounset
 
 # Runs the Python server or client tests on one Python version, for the Nightly Python Versions CI workflow. It makes a
 # fresh venv, installs the Deephaven packages and the test dependencies, then calls py/<suite>/run-tests-embedded.sh.
-# Developers who want to run the tests in their own venv call that script directly, see py/server/TESTING.md.
+# Developers who want to run the tests in their own venv call that script directly, see py/<suite>/TESTING.md.
 #
 # usage: py-versions-test.sh <server|client> <python-version> [test ...]
 #   python-version  any version uv accepts, for example 3.9, 3.14 or 3.14t (free-threaded)
@@ -59,8 +59,8 @@ uv venv --quiet --managed-python --python "${PY_VERSION}" "${VENV}"
 # package version does not change between edits.
 uv pip install --quiet --python "${VENV}/bin/python" --reinstall-package deephaven-core --reinstall-package pydeephaven \
     "${PACKAGES[@]}"
-# Install the test dependencies here, one at a time and without constraints, so uv may adjust the packages above to fit
-# them. run-tests-embedded.sh would only add packages that fit the venv as it is. A missing one must not stop the run.
+# Install the test dependencies one at a time, so a package with no wheel for this Python does not stop the others.
+# The tests that need a missing one skip or fail on their own.
 while IFS= read -r req; do
     req="${req%%#*}"
     [[ -z "${req// /}" ]] && continue

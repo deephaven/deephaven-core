@@ -1,4 +1,4 @@
-# Python packages the tests in tests/ need beyond pydeephaven and deephaven-core. run-tests-embedded.sh installs any
+# Python packages the tests in tests/ need beyond pydeephaven and deephaven-core. run-tests-embedded.sh warns about any
 # that are missing. Versions are left open, so the tests run against the latest releases.
 unittest-xml-reporting
 # tests/test_flightsql.py

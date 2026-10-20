@@ -12,11 +12,11 @@
 #
 # Before the first run:
 #   1. Build the server distribution: ./gradlew :server-jetty-app:installDist
-#   2. Activate a venv that has pydeephaven and deephaven-core. py/server/TESTING.md shows how to make one.
-# The script installs any package from requirements-test.txt that the venv lacks. It never changes the packages the
-# venv already has. It needs uv.
+#   2. Activate a venv that has pydeephaven and deephaven-core. py/client/TESTING.md shows how to make one.
+# The venv also needs the packages in requirements-test.txt. The script warns about any that are missing. It never
+# installs or changes anything in the venv.
 #
-# See py/server/TESTING.md for details.
+# See py/client/TESTING.md for details.
 
 set -o errexit
 set -o nounset
@@ -27,18 +27,14 @@ ROOT="$(cd "${CLIENT_DIR}/../.." && pwd)"
 PORT=10000
 SERVER_DIST="${ROOT}/server/jetty-app/build/install/server-jetty"
 
-if ! command -v uv > /dev/null; then
-    echo "This script needs uv. See https://docs.astral.sh/uv/getting-started/installation/" >&2
-    exit 1
-fi
 if [[ -z "${VIRTUAL_ENV:-}" || ! -x "${VIRTUAL_ENV}/bin/python" ]]; then
-    echo "Activate a venv first. See py/server/TESTING.md." >&2
+    echo "Activate a venv first. See py/client/TESTING.md." >&2
     exit 1
 fi
 PYTHON="${VIRTUAL_ENV}/bin/python"
 # Look the packages up without importing them. Importing deephaven needs a running JVM.
 if ! "${PYTHON}" -c "import importlib.util, sys; sys.exit(not all(importlib.util.find_spec(m) for m in ('deephaven', 'pydeephaven')))"; then
-    echo "The venv ${VIRTUAL_ENV} needs pydeephaven and deephaven-core. See py/server/TESTING.md." >&2
+    echo "The venv ${VIRTUAL_ENV} needs pydeephaven and deephaven-core. See py/client/TESTING.md." >&2
     exit 1
 fi
 if [[ ! -x "${SERVER_DIST}/bin/start" ]]; then
@@ -55,18 +51,36 @@ rm -rf "${BUILD}" "${RESULTS}"
 mkdir -p "${BUILD}/data" "${BUILD}/cache" "${BUILD}/config" "${WORK}" "${RESULTS}"
 "${PYTHON}" -VV
 
-# Install the test dependencies the venv lacks. The packages it already has are passed as constraints, so an install
-# never upgrades or downgrades them. A package that cannot install, for example one with no wheel for this Python, is
-# skipped. The tests that need it then skip or fail on their own.
-uv pip freeze --python "${PYTHON}" > "${BUILD}/before.txt"
-grep -E '^[A-Za-z0-9._-]+==' "${BUILD}/before.txt" > "${BUILD}/constraints.txt" || true
-while IFS= read -r req; do
-    req="${req%%#*}"
-    [[ -z "${req// /}" ]] && continue
-    uv pip install --quiet --python "${PYTHON}" -c "${BUILD}/constraints.txt" "${req}" \
-        || echo "Could not install ${req}. The tests that need it will skip or fail."
-done < "${CLIENT_DIR}/requirements-test.txt"
-uv pip freeze --python "${PYTHON}" | grep -v -x -F -f "${BUILD}/before.txt" | sed 's/^/Installed test dependency: /' || true
+# Warn about test dependencies the venv lacks. The tests that need one skip or fail on their own. A line with an
+# environment marker is checked only when the packaging library is there to evaluate the marker.
+"${PYTHON}" - "${CLIENT_DIR}/requirements-test.txt" << 'EOF'
+import importlib.metadata, re, sys
+missing = []
+for line in open(sys.argv[1]):
+    line = line.split("#")[0].strip()
+    if not line:
+        continue
+    req, _, marker = line.partition(";")
+    if marker.strip():
+        try:
+            from packaging.markers import Marker
+        except ImportError:
+            continue
+        if not Marker(marker).evaluate():
+            continue
+    name = re.split(r"[\s\[<>=!~]", req.strip())[0]
+    try:
+        importlib.metadata.distribution(name)
+    except importlib.metadata.PackageNotFoundError:
+        missing.append(name)
+if missing:
+    print("Missing test dependencies: " + ", ".join(missing) + ". The tests that need them will skip or fail.")
+    print("To install them: pip install -r " + sys.argv[1])
+EOF
+if ! "${PYTHON}" -c "import xmlrunner" 2> /dev/null; then
+    echo "The venv needs unittest-xml-reporting to run the tests. Run: pip install -r ${CLIENT_DIR}/requirements-test.txt" >&2
+    exit 1
+fi
 
 if [[ "${PY_LABEL}" == *t ]]; then
     # grpcio, which pydeephaven uses, has not declared itself free-thread safe. Importing it turns the GIL back on,

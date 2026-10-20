@@ -12,8 +12,8 @@
 # Before the first run:
 #   1. Build the Java test classes: ./gradlew :Integrations:testClasses :engine-time:testClasses
 #   2. Activate a venv that has deephaven-core, deephaven-server and pydeephaven. TESTING.md shows how to make one.
-# The script installs any package from requirements-test.txt that the venv lacks. It never changes the packages the
-# venv already has. It needs uv.
+# The venv also needs the packages in requirements-test.txt. The script warns about any that are missing. It never
+# installs or changes anything in the venv.
 #
 # See TESTING.md for details, including the Kafka and Postgres tests.
 
@@ -24,10 +24,6 @@ set -o pipefail
 SERVER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${SERVER_DIR}/../.." && pwd)"
 
-if ! command -v uv > /dev/null; then
-    echo "This script needs uv. See https://docs.astral.sh/uv/getting-started/installation/" >&2
-    exit 1
-fi
 if [[ -z "${VIRTUAL_ENV:-}" || ! -x "${VIRTUAL_ENV}/bin/python" ]]; then
     echo "Activate a venv first. See py/server/TESTING.md." >&2
     exit 1
@@ -54,18 +50,36 @@ rm -rf "${BUILD}" "${RESULTS}"
 mkdir -p "${BUILD}/data" "${BUILD}/cache" "${WORK}" "${RESULTS}"
 "${PYTHON}" -VV
 
-# Install the test dependencies the venv lacks. The packages it already has are passed as constraints, so an install
-# never upgrades or downgrades them. A package that cannot install, for example one with no wheel for this Python, is
-# skipped. The tests that need it then skip or fail on their own.
-uv pip freeze --python "${PYTHON}" > "${BUILD}/before.txt"
-grep -E '^[A-Za-z0-9._-]+==' "${BUILD}/before.txt" > "${BUILD}/constraints.txt" || true
-while IFS= read -r req; do
-    req="${req%%#*}"
-    [[ -z "${req// /}" ]] && continue
-    uv pip install --quiet --python "${PYTHON}" -c "${BUILD}/constraints.txt" "${req}" \
-        || echo "Could not install ${req}. The tests that need it will skip or fail."
-done < "${SERVER_DIR}/requirements-test.txt"
-uv pip freeze --python "${PYTHON}" | grep -v -x -F -f "${BUILD}/before.txt" | sed 's/^/Installed test dependency: /' || true
+# Warn about test dependencies the venv lacks. The tests that need one skip or fail on their own. A line with an
+# environment marker is checked only when the packaging library is there to evaluate the marker.
+"${PYTHON}" - "${SERVER_DIR}/requirements-test.txt" << 'EOF'
+import importlib.metadata, re, sys
+missing = []
+for line in open(sys.argv[1]):
+    line = line.split("#")[0].strip()
+    if not line:
+        continue
+    req, _, marker = line.partition(";")
+    if marker.strip():
+        try:
+            from packaging.markers import Marker
+        except ImportError:
+            continue
+        if not Marker(marker).evaluate():
+            continue
+    name = re.split(r"[\s\[<>=!~]", req.strip())[0]
+    try:
+        importlib.metadata.distribution(name)
+    except importlib.metadata.PackageNotFoundError:
+        missing.append(name)
+if missing:
+    print("Missing test dependencies: " + ", ".join(missing) + ". The tests that need them will skip or fail.")
+    print("To install them: pip install -r " + sys.argv[1])
+EOF
+if ! "${PYTHON}" -c "import xmlrunner" 2> /dev/null; then
+    echo "The venv needs unittest-xml-reporting to run the tests. Run: pip install -r ${SERVER_DIR}/requirements-test.txt" >&2
+    exit 1
+fi
 
 # Run from a fresh copy of the tests. They write files such as data_from_dh.parquet into the working directory, and
 # leftovers from an earlier run make some tests fail.

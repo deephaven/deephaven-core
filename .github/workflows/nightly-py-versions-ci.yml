@@ -127,7 +127,7 @@ jobs:
 
       - name: Run tests
         # The script makes a venv, installs the packages, then calls py/<suite>/run-tests-embedded.sh, which developers
-        # run in their own venv, see py/server/TESTING.md. On the older Pythons, uv picks older numpy, pandas, pyarrow and
+        # run in their own venv, see py/<suite>/TESTING.md. On the older Pythons, uv picks older numpy, pandas, pyarrow and
         # numba releases, because the newest ones dropped those Pythons.
         run: .github/scripts/py-versions-test.sh ${{ matrix.suite }} ${{ matrix.python-version }}
 
