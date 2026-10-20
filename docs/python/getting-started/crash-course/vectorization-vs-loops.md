@@ -2,13 +2,13 @@
 title: Recipes, not loops!
 ---
 
-If you're coming from pandas, traditional Python, or other data processing tools, you're likely accustomed to writing loops to transform data. **Stop!** Deephaven works fundamentally differently, and understanding this difference early will save you countless hours of frustration and help you write better, faster code.
+If you're accustomed to writing loops to transform data, **stop!** Deephaven works fundamentally differently, and understanding this difference early saves you frustration and helps you write better, faster code.
 
 ## The fundamental paradigm shift: recipes, not loops
 
-### How you might be thinking
+### How you might think
 
-In pandas or traditional Python, you tell the computer **exactly how** to process each row:
+In traditional Python, you tell the computer **exactly how** to process each element:
 
 ```python skip-test
 # A loop applied to data — common habit, but wrong for Deephaven!
@@ -20,7 +20,7 @@ This loop processes one element at a time and builds a new list. You're giving *
 
 ### How to think in Deephaven
 
-In Deephaven, you specify **what** you want, not **how** to compute it. You write a **recipe** that describes the transformation, and the Deephaven engine figures out the optimal way to execute it:
+In Deephaven, you specify **what** you want, not **how** to compute it. You write a **recipe** that describes the transformation, and the Deephaven engine figures out the optimal way to execute it. Table operations such as [`update`](../../reference/table-operations/select/update.md) take recipes as [query strings](./query-strings.md):
 
 ```python order=result test-set=recipe-example
 from deephaven import empty_table
@@ -29,12 +29,26 @@ from deephaven import empty_table
 result = empty_table(5).update(["X = i", "XSquared = X * X"])
 ```
 
-Notice:
+There's **no loop**. You describe the relationship (`XSquared = X * X`), and the engine applies it to every row. This works the same way for arbitrarily complex operations.
 
-- **No loops** — you describe the relationship (`XSquared = X * X`) and the engine applies it to every row.
-- You specify **what** to compute, not **how** to iterate.
-- The engine applies this recipe to all rows automatically.
-- This works the same way for arbitrarily complex operations.
+When you write `XSquared = X * X`, you're **not** saying:
+
+- "Start at row 0"
+- "Read `X` from row 0"
+- "Multiply `X` by itself"
+- "Store the result in `XSquared` at row 0"
+- "Go to row 1"
+- "Repeat..."
+
+You're saying:
+
+- "For every row, `XSquared` should equal `X` times `X`"
+
+The engine decides:
+
+- How to split the data into batches of rows for fast processing.
+- Whether to parallelize the operation.
+- Which rows to recompute when data changes.
 
 ## Why this matters
 
@@ -42,195 +56,50 @@ Notice:
 
 Even for static, one-time calculations, the recipe approach has advantages:
 
-1. **Clearer code** - Declarative recipes are easier to read than imperative loops.
-2. **Faster execution** - The engine can optimize vectorized operations.
-3. **Less error-prone** - No manual loop management or index tracking.
+1. **Clearer code** — declarative recipes are easier to read than imperative loops.
+2. **Faster execution** — the engine evaluates formulas over batches of rows in compiled code.
+3. **Less error-prone** — no manual loop management or index tracking.
 
 ### For real-time data
 
-This is the critical difference. **Loops execute once and stop. Recipes update automatically.**
+This is the critical difference. **Loops execute once and stop. Recipes keep applying to new rows as they arrive.**
 
 ```python ticking-table order=null test-set=ticking-demo
 from deephaven import time_table
 
-# This table adds a new row every second
-source = time_table("PT1s").update(["X = i", "XSquared = X * X", "XCubed = X * X * X"])
+# This table adds roughly one new row every second
+source = time_table("PT1s").update(["X = ii", "XSquared = X * X", "XCubed = X * X * X"])
 ```
 
 Watch what happens:
 
-- The table **keeps updating** - new rows appear every second.
-- Your **recipe runs automatically** on every new row.
-- You wrote it **once**, but it executes **forever**.
+- The table **keeps updating** — new rows appear about every second.
+- You wrote the recipe **once**, and the engine applies it to every new row.
 
-With a loop approach:
+Compare a loop that uses [`iter_tuple`](../../reference/data-import-export/iterate/iter-tuple.md) to read rows one at a time:
 
 ```python skip-test
-# This would only work ONCE and never update!
+# This runs once, blocks table updates while it iterates, and never reacts to new rows!
 for row in source.iter_tuple():
     x = row.X
     x_squared = x * x  # ❌ Where would this even go?
 ```
 
-## The recipe paradigm explained
+#### The engine is smart about updates
 
-### Recipes are specifications, not instructions
+When the source data changes, the engine:
 
-When you write:
+1. **Tracks dependencies** — it knows that `XSquared` depends on `X`.
+2. **Computes incrementally** — each update tells the engine which rows were added, which existing rows changed (modified rows), and which columns changed. The engine computes `XSquared` for the added rows. For modified rows, it recomputes `XSquared` only when `X` is one of the changed columns.
+3. **Updates results in place** — it writes the new values into the result table, so you never re-run the query.
 
-```python skip-test
-t.update("Y = X * 2")
-```
+With loops, this requires significant additional infrastructure. A loop executes once and stops, so you'd have to write your own code to detect new and changed rows and recompute them. With recipes, it's automatic.
 
-You're **not** saying:
+## Common patterns: wrong vs. right
 
-- "Start at row 0"
-- "Read X from row 0"
-- "Multiply by 2"
-- "Store in Y at row 0"
-- "Go to row 1"
-- "Repeat..."
+You've already seen the simplest pattern, creating a column from another column, in [How to think in Deephaven](#how-to-think-in-deephaven). Two other common loops have recipe equivalents.
 
-You're saying:
-
-- "For every row, Y should equal X times 2"
-
-The engine decides:
-
-- How to chunk the data for optimal performance.
-- Whether to parallelize the operation.
-- How to handle updates efficiently.
-- What rows need recomputation when data changes.
-
-### The engine is smart about updates
-
-1. **Tracks dependencies** - It knows that `Y` depends on `X`.
-2. **Computes incrementally** - Only new or changed rows are processed.
-3. **Updates automatically** - Results update without you doing anything.
-
-This requires significant additional infrastructure with loops — a loop executes once and stops, so you would need to build your own subscription and recomputation logic.
-
-## Bridging pandas and Deephaven
-
-Many users need to work with both pandas and Deephaven. Here's how to think about the transition:
-
-```python order=df,t1,m,t2,t3,df2 test-set=pandas-bridge
-import pandas as pd
-import deephaven.pandas as dhpd
-
-# Create data in pandas
-time_index = pd.date_range(start="2025-01-01 00:00:00", periods=5, freq="h")
-df = pd.DataFrame(
-    {
-        "time": time_index,
-        "value": range(5),
-    }
-)
-
-print("Original pandas DataFrame:")
-print(df)
-
-# Convert to Deephaven
-t1 = dhpd.to_table(df)
-
-# Check the column types
-m = t1.meta_table
-
-# Now use Deephaven recipes (NOT loops!)
-t2 = t1.update("TsEpochNs = epochNanos(time)")
-
-# More time operations using recipes
-t3 = t2.update(
-    [
-        "TS3 = epochNanosToInstant(TsEpochNs + 2*SECOND)",
-        "TS4 = time + 'PT2s'",
-        "D3 = TS3-time",
-        "D4 = TS4-time",
-    ]
-)
-
-# Convert back to pandas if needed
-df2 = dhpd.to_pandas(t3)
-print("Result DataFrame:")
-print(df2)
-```
-
-**Key principle:** Once you're in Deephaven, think in recipes. Save loops for when you convert back to pandas.
-
-## When loops ARE appropriate
-
-There are valid uses for loops in Deephaven:
-
-### ✅ Extracting data from Deephaven
-
-```python order=source test-set=valid-loops
-from deephaven import empty_table
-
-source = empty_table(5).update(["X = i", "Y = X * 2"])
-
-# This is fine - you're extracting, not transforming
-for row in source.iter_tuple():
-    print(f"X={row.X}, Y={row.Y}")
-```
-
-See the [table iteration guide](../../how-to-guides/iterate-table-data.md) for details.
-
-### ✅ Control flow in your Python code
-
-```python order=null test-set=control-flow
-from deephaven import empty_table
-
-source = empty_table(100).update(
-    ["Symbol = (i % 3 == 0) ? `AAPL` : (i % 3 == 1) ? `GOOGL` : `MSFT`", "X = i"]
-)
-
-# Creating multiple similar tables - fine!
-tables = []
-for symbol in ["AAPL", "GOOGL", "MSFT"]:
-    t = source.where(f"Symbol = `{symbol}`")
-    tables.append(t)
-```
-
-### ❌ Transforming table columns
-
-```python order=source test-set=antipattern-transform
-from deephaven import empty_table
-
-source = empty_table(10).update("X = i")
-
-# NEVER do this!
-result_data = []
-for row in source.iter_tuple():
-    result_data.append(row.X * 2)  # ❌ Use .update() instead!
-```
-
-## Common patterns: Wrong vs Right
-
-### Pattern: Create a column from another column
-
-❌ **Wrong** (loop approach):
-
-```python order=source test-set=antipattern-col
-from deephaven import empty_table
-
-source = empty_table(10).update("X = i")
-
-# Don't do this!
-values = []
-for row in source.iter_tuple():
-    values.append(row.X * row.X)
-# Now what? How do you get this back into a table?
-```
-
-✅ **Right** (recipe approach):
-
-```python order=result test-set=pattern1
-from deephaven import empty_table
-
-result = empty_table(10).update(["X = i", "XSquared = X * X"])
-```
-
-### Pattern: Conditional logic
+### Pattern: conditional logic
 
 ❌ **Wrong** (loop approach):
 
@@ -248,7 +117,7 @@ for row in source.iter_tuple():
         results.append("Odd")
 ```
 
-✅ **Right** (recipe with ternary operator):
+✅ **Right** (recipe with the [ternary-if operator](../../how-to-guides/ternary-if-how-to.md)). The operator has the form `condition ? valueIfTrue : valueIfFalse`:
 
 ```python order=result test-set=pattern2
 from deephaven import empty_table
@@ -256,7 +125,7 @@ from deephaven import empty_table
 result = empty_table(10).update(["X = i", "Label = (X % 2 == 0) ? `Even` : `Odd`"])
 ```
 
-### Pattern: Running calculations
+### Pattern: running calculations
 
 ❌ **Wrong** (loop with accumulator):
 
@@ -273,7 +142,7 @@ for row in source.iter_tuple():
     results.append(running_sum)
 ```
 
-✅ **Right** (use update_by):
+✅ **Right** (use [`update_by`](../../reference/table-operations/update-by-operations/updateBy.md)):
 
 ```python order=result test-set=pattern3
 from deephaven import empty_table
@@ -282,20 +151,86 @@ from deephaven.updateby import cum_sum
 result = empty_table(10).update("X = i").update_by(cum_sum("SumX = X"))
 ```
 
-## Quick reference: Migration guide
+## When loops are appropriate
 
-| pandas/Python Pattern          | Deephaven Recipe                    |
-| ------------------------------ | ----------------------------------- |
-| `df.apply(func)`               | `.update("Y = func(X)")`            |
-| `for row in df.iterrows():`    | ❌ Don't! Use `.update()`           |
-| `df['Y'] = df['X'] * 2`        | `.update("Y = X * 2")`              |
-| `df[df['X'] > 5]`              | `.where("X > 5")`                   |
-| `df.rolling(window=10).mean()` | `.update_by(rolling_avg_tick(...))` |
-| `df.groupby('G').sum()`        | `.sum_by("G")`                      |
+Recipes replace loops for transforming data, but loops are still the right tool for extracting data from a table and for control flow in your own code.
+
+### ✅ Extracting data from Deephaven
+
+```python order=source,:log test-set=valid-loops
+from deephaven import empty_table
+
+source = empty_table(5).update(["X = i", "Y = X * 2"])
+
+# This is fine — you're extracting, not transforming
+for row in source.iter_tuple():
+    print(f"X={row.X}, Y={row.Y}")
+```
+
+See the [table iteration guide](../../how-to-guides/iterate-table-data.md) for details.
+
+### ✅ Control flow in your Python code
+
+A loop over ordinary Python values is fine when each iteration builds a query rather than reading table rows. Here, the loop creates one filtered table per symbol, and each table is still a live recipe.
+
+```python order=null test-set=control-flow
+from deephaven import empty_table
+
+source = empty_table(100).update(
+    ["Symbol = (i % 3 == 0) ? `AAPL` : (i % 3 == 1) ? `GOOGL` : `MSFT`", "X = i"]
+)
+
+# Creating multiple similar tables — fine!
+tables = []
+for symbol in ["AAPL", "GOOGL", "MSFT"]:
+    t = source.where(f"Symbol = `{symbol}`")
+    tables.append(t)
+```
+
+## Bridging pandas and Deephaven
+
+Many users work with both pandas and Deephaven. Here's how to think about the transition. The habit to break is looping over DataFrame rows:
+
+```python skip-test
+# pandas habit: loop over rows
+doubled = []
+for _, row in df.iterrows():
+    doubled.append(row["Value"] * 2)
+```
+
+Instead, convert the DataFrame to a table once with [`to_table`](../../reference/pandas/to-table.md) from the `deephaven.pandas` module, and use a recipe. Convert back with [`to_pandas`](../../reference/pandas/to-pandas.md) only if you need a DataFrame again. The next chapter, [Python integrations](./py-integrations.md#pandas), covers both functions:
+
+```python order=t,result,df,df2 test-set=pandas-bridge
+import pandas as pd
+from deephaven import pandas as dhpd
+
+df = pd.DataFrame({"Value": range(5)})
+
+# Convert to Deephaven, then use a recipe instead of a loop
+t = dhpd.to_table(df)
+result = t.update("DoubleValue = Value * 2")
+
+# Convert back to pandas if needed
+df2 = dhpd.to_pandas(result)
+```
+
+**Key principle:** Once you're in Deephaven, think in recipes.
+
+### Quick reference: pandas operations as recipes
+
+These are the closest Deephaven recipes for common DataFrame operations:
+
+| pandas pattern                      | Deephaven recipe                                                                                                                      |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `df['Y'] = df['X'].apply(func)`     | [`.update("Y = func(X)")`](../../reference/table-operations/select/update.md)                                                         |
+| `df['Y'] = df['X'] * 2`             | [`.update("Y = X * 2")`](../../reference/table-operations/select/update.md)                                                           |
+| `df[df['X'] > 5]`                   | [`.where("X > 5")`](../../reference/table-operations/filter/where.md)                                                                 |
+| `df['X'].rolling(window=10).mean()` | [`.update_by(rolling_avg_tick("AvgX = X", rev_ticks=10))`](../../reference/table-operations/update-by-operations/rolling-avg-tick.md) |
+| `df.groupby('G').sum()`             | [`.sum_by("G")`](../../reference/table-operations/group-and-aggregate/sumBy.md)                                                       |
 
 ## Next steps
 
+- Continue to the next chapter, [Python integrations](./py-integrations.md), to convert between Deephaven tables and pandas, NumPy, and other Python libraries.
 - Read [Think like a ninja](../../conceptual/ninja.md#looping-dont-do-it) for more examples.
-- Learn about [table operations](./table-ops.md) to see recipes in action.
-- Understand [the query engine](../../conceptual/vectorization-and-recipes.md) for technical details.
-- See [update_by operations](../../how-to-guides/rolling-aggregations.md) for powerful recipes.
+- Read [Vectorization and the recipe paradigm](../../conceptual/vectorization-and-recipes.md) for technical details.
+- See [rolling aggregations with `update_by`](../../how-to-guides/rolling-aggregations.md) for more recipes.

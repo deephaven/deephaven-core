@@ -169,18 +169,18 @@ If desired, you can [disable](#disabling-predicate-pushdown-features) the use of
 
 Under certain circumstances, you may want to disable specific predicate pushdown features. These settings are global and will affect all pushdown operations across the Deephaven engine. The following properties affect pushdown:
 
-- [`QueryTable.useDataIndexForWhere`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#USE_DATA_INDEX_FOR_WHERE) – enables the use of Deephaven table-level data indexes when filtering.
-- [`QueryTable.disableWherePushdownParquetRowGroupMetadata`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA) – disables consideration of Parquet row group metadata when filtering.
-- [`QueryTable.disableWherePushdownDataIndex`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DATA_INDEX) – disables the use of file-level Deephaven data indexes when filtering.
-- [`QueryTable.disableWherePushdownDictionary`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DICTIONARY) – disables the use of dictionary encoding when filtering.
-- [`QueryTable.disableWherePushdownSortedColumn`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION) – disables the use of sorted column binary search when filtering.
+- [`QueryTable.useDataIndexForWhere`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#USE_DATA_INDEX_FOR_WHERE) — enables the use of Deephaven table-level data indexes when filtering.
+- [`QueryTable.disableWherePushdownParquetRowGroupMetadata`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA) — disables consideration of Parquet row group metadata when filtering.
+- [`QueryTable.disableWherePushdownDataIndex`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DATA_INDEX) — disables the use of file-level Deephaven data indexes when filtering.
+- [`QueryTable.disableWherePushdownDictionary`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DICTIONARY) — disables the use of dictionary encoding when filtering.
+- [`QueryTable.disableWherePushdownSortedColumn`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION) — disables the use of sorted column binary search when filtering.
 
 ## Tuning predicate pushdown features
 
 Some pushdown techniques must build or scan an auxiliary structure (such as a data index table or a dictionary) before they can eliminate rows. That work is only worthwhile when the structure is small relative to the data it filters, so the engine applies a size-ratio test before using it. Both properties below are doubles that bound the size of the auxiliary structure as a fraction of the remaining rows to be filtered; when the structure is too large for its threshold, the engine skips the optimization and filters the rows directly.
 
-- [`QueryTable.dataIndexForWhereThreshold`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DATA_INDEX_FOR_WHERE_THRESHOLD) (default `0.25`) – the maximum ratio of data index table size to remaining row count for the engine to use a [data index](#deephaven-data-indexes) when filtering.
-- [`QueryTable.dictionaryForWhereThreshold`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DICTIONARY_FOR_WHERE_THRESHOLD) (default `0.25`) – the ratio of dictionary size to remaining row count that the dictionary must fall below for the engine to use [dictionary encoding](#dictionary-encoding) when filtering.
+- [`QueryTable.dataIndexForWhereThreshold`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DATA_INDEX_FOR_WHERE_THRESHOLD) (default `0.0625`) — the maximum ratio of data index table size to remaining row count for the engine to use a [data index](#deephaven-data-indexes) when filtering.
+- [`QueryTable.dictionaryForWhereThreshold`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DICTIONARY_FOR_WHERE_THRESHOLD) (default `0.25`) — the ratio of dictionary size to remaining row count that the dictionary must fall below for the engine to use [dictionary encoding](#dictionary-encoding) when filtering.
 
 Raising a threshold toward `1.0` makes the engine more willing to use the optimization on columns with many distinct values; lowering it restricts the optimization to highly repetitive data. Setting a threshold to `0` effectively disables that pushdown technique.
 

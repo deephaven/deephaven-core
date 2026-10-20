@@ -43,8 +43,9 @@ public class CharPercentileTypeMedianHelper extends CharPercentileTypeHelper {
 
             if (ssmLo.totalSize() == ssmHi.totalSize()) {
                 // region averageEvenlyDivided
-                return setResult(destination, (((CharSegmentedSortedMultiset) ssmLo).getMaxChar()
-                        + ((CharSegmentedSortedMultiset) ssmHi).getMinChar()) / 2.0);
+                return setResult(destination, PercentileAverages.average(
+                        ((CharSegmentedSortedMultiset) ssmLo).getMaxChar(),
+                        ((CharSegmentedSortedMultiset) ssmHi).getMinChar()));
                 // endregion averageEvenlyDivided
             } else {
                 return setResult(destination, ((CharSegmentedSortedMultiset) ssmLo).getMaxChar());

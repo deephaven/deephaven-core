@@ -125,7 +125,7 @@ The following table operations produce vector columns:
 
 - [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md)
 - [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md)
-- [`rangeJoin`](../reference/table-operations/join/rangeJoin.md)
+- [`rangeJoin`](../reference/table-operations/join/range-join.md)
 
 ## Related documentation
 

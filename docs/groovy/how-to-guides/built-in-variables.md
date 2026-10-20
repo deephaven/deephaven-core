@@ -64,7 +64,7 @@ import io.deephaven.iceberg.util.*
 sourceData = emptyTable(20).update("GroupKey = i % 3", "Value = i * 10")
 
 restAdapter = IcebergToolsS3.createS3Rest(
-    "minio-iceberg",
+    "rustfs-iceberg",
     catalogUri,
     warehouseLocation,
     awsRegion,

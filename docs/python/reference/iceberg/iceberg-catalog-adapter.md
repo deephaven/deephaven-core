@@ -32,13 +32,13 @@ glue_adapter = iceberg.adapter_aws_glue(
 )
 ```
 
-The following example creates an `IcebergCatalogAdapter` using a local MinIO instance and a REST catalog:
+The following example creates an `IcebergCatalogAdapter` using a local RustFS instance and a REST catalog:
 
 ```python docker-config=iceberg order=null
 from deephaven.experimental import iceberg
 
 rest_adapter = iceberg.adapter_s3_rest(
-    name="minio-iceberg",
+    name="rustfs-iceberg",
     catalog_uri=catalog_uri,
     warehouse_location=warehouse_location,
     region_name=aws_region,
