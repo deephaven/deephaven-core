@@ -340,4 +340,72 @@ public class OrderedLongSetBuilderSequentialTest {
         rsp.ixRelease();
         sr.ixRelease();
     }
+
+    /**
+     * Ranges appended to a block the builder's bitmap ends with, after a set was shared into it, leave that block's
+     * container with no capacity to spare once the builder is done.
+     */
+    @Test
+    public void testAppendsAfterSharedSetLeaveContainerCompact() {
+        final OrderedLongSetBuilderSequential builder = new OrderedLongSetBuilderSequential();
+        // Enough separate ranges to commit the builder to a bitmap.
+        long key = 0;
+        long count = 0;
+        while (builder.rb == null) {
+            builder.appendKey(key);
+            key += 2;
+            ++count;
+        }
+        final long lastBlock = 4 * BLOCK_SIZE;
+        final RspBitmap shared = new RspBitmap();
+        shared.appendRangeUnsafeNoWriteCheck(lastBlock, lastBlock);
+        shared.finishMutations();
+        builder.appendOrderedLongSet(0, shared);
+        shared.ixRelease();
+        for (int ki = 1; ki < 1000; ++ki) {
+            builder.appendRange(lastBlock + 2L * ki, lastBlock + 2L * ki);
+        }
+        final OrderedLongSet result = builder.getOrderedLongSet();
+        result.ixValidate();
+        assertEquals(count + 1000, result.ixCardinality());
+        final double overhead = ((RspBitmap) result).containerOverhead();
+        assertTrue("containerOverhead=" + overhead, overhead < 0.01);
+        result.ixRelease();
+    }
+
+    /**
+     * Alternating ordered chunks and ranges within one block moves its container between the bitmap and the pending
+     * container on every append. The result holds every key, and a block filled this way joins the full block before
+     * it.
+     */
+    @Test
+    public void testAlternatingChunksAndRangesInOneBlock() {
+        for (final Supplier<RspBitmapBuilderSequential> factory : List.<Supplier<RspBitmapBuilderSequential>>of(
+                RspBitmapBuilderSequential::new, OrderedLongSetBuilderSequential::new)) {
+            final RspBitmapBuilderSequential builder = factory.get();
+            // Enough separate ranges to commit the builder to a bitmap.
+            long key = 0;
+            long count = 0;
+            while (builder.rb == null) {
+                builder.appendKey(key);
+                key += 2;
+                ++count;
+            }
+            final long fullBlock = 4 * BLOCK_SIZE;
+            builder.appendRange(fullBlock, fullBlock + BLOCK_SIZE - 1);
+            final long block = fullBlock + BLOCK_SIZE;
+            try (final WritableLongChunk<OrderedRowKeys> chunk = WritableLongChunk.makeWritableChunk(1)) {
+                for (long blockKey = block; blockKey < block + BLOCK_SIZE; blockKey += 2) {
+                    chunk.set(0, blockKey);
+                    builder.appendOrderedRowKeysChunk(chunk, 0, 1);
+                    builder.appendRange(blockKey + 1, blockKey + 1);
+                }
+            }
+            final OrderedLongSet result = builder.getOrderedLongSet();
+            result.ixValidate();
+            assertEquals(count + 2 * BLOCK_SIZE, result.ixCardinality());
+            assertTrue(result.ixContainsRange(fullBlock, block + BLOCK_SIZE - 1));
+            result.ixRelease();
+        }
+    }
 }

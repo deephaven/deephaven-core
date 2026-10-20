@@ -25,6 +25,12 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     protected long pendingEnd = -1;
     protected long pendingContainerKey = -1;
     protected Container pendingContainer;
+
+    /**
+     * Whether {@link #pendingContainer} was taken back out of {@link #rb}, rather than started for a block rb did not
+     * yet have.
+     */
+    private boolean pendingContainerReopened;
     protected RspBitmap rb;
     protected long maxKeyHint = -1;
 
@@ -172,16 +178,15 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         }
         if (ix instanceof RspBitmap && rb != null && (shiftAmount & BLOCK_LAST) == 0) {
             final RspBitmap ixRb = (RspBitmap) ix;
-            // Every path that creates rb appends to it immediately, so rb is never empty here. That matters because
-            // keyForLastBlock() and tryAppendShiftedUnsafeNoWriteCheck read rb's last span, which is not valid on an
-            // empty bitmap.
-            Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
             final long heldLastBlockKey;
             if (pendingStart != -1) {
                 heldLastBlockKey = highBits(pendingEnd);
             } else if (pendingContainerKey != -1) {
                 heldLastBlockKey = highBits(pendingContainerKey);
             } else {
+                // With nothing pending rb is not empty: it is only emptied by taking its last span back out as the
+                // pending container. keyForLastBlock() reads that span.
+                Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
                 heldLastBlockKey = rb.keyForLastBlock();
             }
             // ix's spans can be shared only when it starts in a block after everything we hold; otherwise its ranges
@@ -246,7 +251,10 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             flushPendingRange();
         }
         if (pendingContainerKey != -1) {
-            flushPendingContainer();
+            // The chunk may add to the pending container's block, and later ranges may take the block back out as the
+            // pending container, so it is not optimized on every such round trip. Moving on to a later block
+            // optimizes it.
+            movePendingContainerToRb();
         }
 
         // The keys are ordered, so the first one is the least and the last one the greatest.
@@ -321,10 +329,10 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         final int lowEnd = RspArray.lowBitsAsInt(end);
         final boolean singleBlock = highStart == highEnd;
         if (pendingContainerKey == -1 && rb != null && !rb.isEmpty()) {
-            // A key chunk or an RSP-backed row sequence appended in bitmap mode goes straight into rb and leaves
-            // nothing pending, so the block this range starts in may be the one rb already ends with. Appending a
-            // container to rb for that block would give the block a second span; the part of the range inside it is
-            // added to rb's last span instead.
+            // A key chunk or a set appended in bitmap mode can go straight into rb and leave nothing pending, so the
+            // block this range starts in may be the one rb already ends with. Appending a container to rb for that
+            // block would give the block a second span. Instead the block's span is taken back out of rb to be the
+            // pending container, extended like any other, and optimized when it is flushed back.
             final long lastBlockKey = rb.keyForLastBlock();
             if (lastBlockKey >= highStart) {
                 if (check) {
@@ -334,13 +342,21 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
                                 "last=" + rbLastKey + " while appending value=" + start);
                     }
                 }
-                if (singleBlock) {
-                    rb.appendRangeUnsafeNoWriteCheck(start, end);
+                final Container lastSpan = lastBlockKey == highStart ? rb.removeLastSpanUnsafeNoWriteCheck() : null;
+                if (lastSpan == null) {
+                    // rb ends with a full block span, or, when order is not checked, past this range's start; rb is
+                    // extended in place.
+                    if (singleBlock) {
+                        rb.appendRangeUnsafeNoWriteCheck(start, end);
+                        return;
+                    }
+                    rb.appendRangeUnsafeNoWriteCheck(start, highStart | BLOCK_LAST);
+                    flushRangeToPendingContainer(highStart + BLOCK_SIZE, end);
                     return;
                 }
-                rb.appendRangeUnsafeNoWriteCheck(start, highStart | BLOCK_LAST);
-                flushRangeToPendingContainer(highStart + BLOCK_SIZE, end);
-                return;
+                pendingContainerKey = lastBlockKey;
+                pendingContainer = lastSpan;
+                pendingContainerReopened = true;
             }
         }
         if (singleBlock) { // short path.
@@ -585,11 +601,22 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     }
 
     protected void flushPendingContainer() {
-        ensureRb();
         if (pendingContainer != null) {
             pendingContainer = pendingContainer.runOptimize();
         }
-        rb.appendContainerUnsafeNoWriteCheck(pendingContainerKey, pendingContainer);
+        movePendingContainerToRb();
+    }
+
+    private void movePendingContainerToRb() {
+        ensureRb();
+        if (pendingContainerReopened) {
+            // Appending would optimize the span before it again, which costs a pass over that span on every round
+            // trip through the pending container.
+            rb.restoreLastSpanUnsafeNoWriteCheck(pendingContainerKey, pendingContainer);
+            pendingContainerReopened = false;
+        } else {
+            rb.appendContainerUnsafeNoWriteCheck(pendingContainerKey, pendingContainer);
+        }
         pendingContainerKey = -1;
         pendingContainer = null;
     }

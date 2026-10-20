@@ -1075,6 +1075,61 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return getKey(0);
     }
 
+    /**
+     * Remove the last span, so that a sequential builder can go on adding to its block elsewhere and append the block
+     * back when it is done. Does not update the cardinality cache.
+     *
+     * @return The span's keys, without their block's high bits, as a container that may be shared, and so may only be
+     *         changed through operations that copy a shared container; or null, leaving this unchanged, when the last
+     *         span is a full block span
+     */
+    public Container removeLastSpanUnsafeNoWriteCheck() {
+        final int lastIdx = size - 1;
+        final Object span = spans[lastIdx];
+        final long spanInfo = spanInfos[lastIdx];
+        final Container container;
+        if (isSingletonSpan(span)) {
+            container = Container.singleton(lowBits(spanInfoToSingletonSpanValue(spanInfo)));
+        } else if (span instanceof short[]) {
+            // A packed ArrayContainer keeps its shared flag in the array itself, so wrapping the array preserves it.
+            container = ArrayContainer.makeByWrapping(
+                    (short[]) span, (int) (spanInfo & SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK));
+        } else if (span instanceof Container) {
+            container = (Container) span;
+        } else {
+            return null;
+        }
+        spans[lastIdx] = null;
+        size = lastIdx;
+        modifiedSpan(lastIdx);
+        return container;
+    }
+
+    /**
+     * Append back a span taken out by {@link #removeLastSpanUnsafeNoWriteCheck()}, possibly holding more keys now. The
+     * span before it is as it was when the removed span was first appended after it, so unlike the other appends this
+     * does not optimize it again. Does not update the cardinality cache.
+     *
+     * @param k The span's block key
+     * @param c The span's keys, without their block's high bits; not empty
+     */
+    public void restoreLastSpanUnsafeNoWriteCheck(final long k, final Container c) {
+        if (c.isAllOnes()) {
+            if (tryMergeLeftFullBlockSpan(size, k, 1)) {
+                return;
+            }
+            ensureSizeCanGrowBy(1);
+            setFullBlockSpanRaw(size, k, 1);
+        } else if (c.isSingleElement()) {
+            ensureSizeCanGrowBy(1);
+            setSingletonSpanRaw(size, k | c.first());
+        } else {
+            ensureSizeCanGrowBy(1);
+            setContainerSpanRaw(size, k, c);
+        }
+        ++size;
+    }
+
     public long keyForLastBlock() {
         final Object span = spans[size - 1];
         final long spanInfo = spanInfos[size - 1];
