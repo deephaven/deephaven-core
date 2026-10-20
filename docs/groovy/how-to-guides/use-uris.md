@@ -190,7 +190,7 @@ import static io.deephaven.uri.ResolveTools.resolve
 resolvedTable = resolve("dh+plain://table-producer/scope/myTable")
 ```
 
-![The resolved table ticking in the table-consumer IDE (shown here from the Python version of this example)](../assets/how-to/resolved-table-uri.gif)
+![The resolved table ticking in the table-consumer IDE](../assets/how-to/resolved-table-uri.gif)
 
 In the `table-consumer` IDE, `resolvedTable` now ticks as `myTable` on the producer adds rows.
 
