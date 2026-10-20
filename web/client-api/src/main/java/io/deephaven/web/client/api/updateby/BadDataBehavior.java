@@ -21,8 +21,7 @@ import jsinterop.annotations.JsType;
  * <li>POISON - Allow the bad data to poison the result. This is only valid for use with NaN.</li>
  * </ul>
  */
-@TsName(namespace = "dh.updateby", name = "BadDataBehavior")
-@TsUnion(anonymous = false)
+@TsUnion(anonymous = false, namespace = "dh.updateby", name = "BadDataBehavior")
 @JsType(name = "Object", namespace = JsPackage.GLOBAL, isNative = true)
 public interface BadDataBehavior {
     @TsUnionMember

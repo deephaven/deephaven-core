@@ -21,8 +21,7 @@ import jsinterop.base.Js;
  * {@link LastRowKey} are not supported.
  */
 @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
-@TsUnion(anonymous = false)
-@TsName(namespace = "dh.agg", name = "AggAllByUnion")
+@TsUnion(anonymous = false, namespace = "dh.agg", name = "AggAllByUnion")
 public interface AggAllByUnion {
     @JsOverlay
     @TsUnionMember

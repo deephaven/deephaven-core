@@ -31,8 +31,11 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
      * Internal thenable implementation that wraps an ongoing promise, and allows new calls to race that operation.
      */
     private static class Pending extends MicrotaskBatchImpl implements JsPendingTable {
+        private final BatchTableRequest.Operation operation;
+
         public Pending(WorkerConnection connection, Ticket ticket, BatchTableRequest.Operation.Builder operation) {
-            super(connection, ticket, operation);
+            super(connection, ticket);
+            this.operation = operation.build();
         }
 
         @Override
@@ -60,8 +63,11 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     // TODO this all needs to be done, either by wrapping JsTable or otherwise sharing details about how
     // to interact with a CTS
     private static class Resolved extends MicrotaskBatchImpl implements JsResolvedTable {
+        private final BatchTableRequest.Operation operation;
+
         public Resolved(WorkerConnection connection, Ticket ticket, BatchTableRequest.Operation.Builder operation) {
-            super(connection, ticket, operation);
+            super(connection, ticket);
+            this.operation = operation.build();
         }
 
         @Override
@@ -121,21 +127,18 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         ENQUEUED, RUNNING, RESOLVED, RELEASED, FAILED
     }
 
-    protected final BatchTableRequest.Operation operation;
     protected final LazyPromise<ExportedTableCreationResponse> promise = new LazyPromise<>();
     protected State state = State.ENQUEUED;
     protected boolean retained;
-    private static final ThreadLocal<List<MicrotaskBatchImpl>> enqueued = new ThreadLocal<>();
+    private static @Nullable List<Pending> enqueued;
     protected final WorkerConnection connection;
     protected final Ticket ticket;
 
     private final Exception trace = new Exception();
 
-    public MicrotaskBatchImpl(WorkerConnection connection, Ticket ticket,
-            BatchTableRequest.Operation.Builder operation) {
+    protected MicrotaskBatchImpl(WorkerConnection connection, Ticket ticket) {
         this.connection = connection;
         this.ticket = ticket;
-        this.operation = operation.build();
     }
 
     private void checkRetained() {
@@ -152,19 +155,19 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     @Override
     public JsPendingTable call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
         checkRetained();
-        if (enqueued.get() == null) {
-            ArrayList<MicrotaskBatchImpl> tasks = new ArrayList<>();
-            enqueued.set(tasks);
+        if (enqueued == null) {
+            ArrayList<Pending> tasks = new ArrayList<>();
+            enqueued = tasks;
 
             // Wait a microtask, then send all accumulated requests in a single gRPC call
             Promise.resolve((Object) null).then(ignore -> {
-                assert tasks == enqueued.get();
-                enqueued.remove();
+                assert tasks == enqueued;
+                enqueued = null;
 
                 BatchTableRequest.Builder request = BatchTableRequest.newBuilder();
-                Map<Ticket, MicrotaskBatchImpl> ticketToTask = new HashMap<>();
+                Map<Ticket, Pending> ticketToTask = new HashMap<>();
                 for (int i = 0; i < tasks.size(); i++) {
-                    MicrotaskBatchImpl task = tasks.get(i);
+                    Pending task = tasks.get(i);
                     if (task.state != State.ENQUEUED) {
                         throw new IllegalStateException("Task " + i + " was not in ENQUEUED state, but " + task.state);
                     }
@@ -179,27 +182,27 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                     getConnection().tableServiceClient().batch(request.build(), observer);
                 });
                 stream.onData(etcr -> {
-                    MicrotaskBatchImpl impl = ticketToTask.remove(etcr.getResultId().getTicket());
+                    Pending pending = ticketToTask.remove(etcr.getResultId().getTicket());
                     if (etcr.getSuccess()) {
-                        if (impl.retained) {
-                            impl.state = State.RESOLVED;
-                            impl.promise.succeed(etcr);
+                        if (pending.retained) {
+                            pending.state = State.RESOLVED;
+                            pending.promise.succeed(etcr);
                         } else {
-                            impl.state = State.RELEASED;
-                            impl.promise.fail("Resolved, but was never retained, cannot be retained now");
+                            pending.state = State.RELEASED;
+                            pending.promise.fail("Resolved, but was never retained, cannot be retained now");
                             // TODO this is probably too early, other operations could still be using it. CTS has
                             // some tooling to handle this for us, probably defer to that
-                            impl.connection.releaseTicket(impl.ticket);
+                            pending.connection.releaseTicket(pending.ticket);
                         }
                     } else {
-                        impl.state = State.FAILED;
-                        impl.promise.fail(etcr.getErrorInfo());
+                        pending.state = State.FAILED;
+                        pending.promise.fail(etcr.getErrorInfo());
                     }
                 });
                 stream.onEnd(status -> {
-                    for (MicrotaskBatchImpl impl : ticketToTask.values()) {
-                        impl.state = State.FAILED;
-                        impl.promise.fail(status.getDescription());
+                    for (Pending pending : ticketToTask.values()) {
+                        pending.state = State.FAILED;
+                        pending.promise.fail(status.getDescription());
                     }
                     ticketToTask.clear();
                 });
@@ -207,7 +210,9 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 return null;
             });
         }
-        return new Pending(connection, resultId, operation);
+        Pending pending = new Pending(connection, resultId, operation);
+        enqueued.add(pending);
+        return pending;
     }
 
     @Override

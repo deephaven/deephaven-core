@@ -32,8 +32,7 @@ import jsinterop.base.Js;
  * @see AggAllByUnion for the subset accepted by {@code aggAllBy}
  */
 @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
-@TsUnion(anonymous = false)
-@TsName(name = "AggregationUnion", namespace = "dh.agg")
+@TsUnion(anonymous = false, name = "AggregationUnion", namespace = "dh.agg")
 public interface AggregationUnion {
     @JsOverlay
     @TsUnionMember

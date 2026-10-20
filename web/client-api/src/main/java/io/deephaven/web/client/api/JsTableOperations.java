@@ -493,8 +493,7 @@ public interface JsTableOperations extends ServerObject {
      * matches.</li>
      * </ul>
      */
-    @TsName(name = "NaturalJoinType", namespace = "dh")
-    @TsUnion(anonymous = false)
+    @TsUnion(anonymous = false, name = "NaturalJoinType", namespace = "dh")
     @JsType(namespace = JsPackage.GLOBAL, name = "String", isNative = true)
     interface NaturalJoinType {
         @TsLiteral
@@ -623,8 +622,7 @@ public interface JsTableOperations extends ServerObject {
     /**
      * The match condition rule for the final match column of as-of-join.
      */
-    @TsUnion(anonymous = false)
-    @TsName(name = "AsOfJoinRule", namespace = "dh")
+    @TsUnion(anonymous = false, name = "AsOfJoinRule", namespace = "dh")
     @JsType(namespace = JsPackage.GLOBAL, name = "?", isNative = true)
     interface AsOfMatchRule {
         @TsLiteral
