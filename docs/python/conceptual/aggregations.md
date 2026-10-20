@@ -27,7 +27,7 @@ The following table compares the operations that group or aggregate data. The se
 
 ### Single aggregation
 
-A single aggregation calculates one statistic for each group, and most apply it to every non-key column. Examples include [`sum_by`](../reference/table-operations/group-and-aggregate/sumBy.md), [`avg_by`](../reference/table-operations/group-and-aggregate/avgBy.md), [`max_by`](../reference/table-operations/group-and-aggregate/maxBy.md), and [`first_by`](../reference/table-operations/group-and-aggregate/firstBy.md). [`count_by`](../reference/table-operations/group-and-aggregate/countBy.md) is a single aggregation too, but it returns one new column that holds the count, and you give it that column's name. Numeric statistics such as `sum_by` raise an error if a non-key column is not numeric.
+A single aggregation calculates one statistic for each group, and most apply it to every non-key column. Examples include [`sum_by`](../reference/table-operations/group-and-aggregate/sumBy.md), [`avg_by`](../reference/table-operations/group-and-aggregate/avgBy.md), [`max_by`](../reference/table-operations/group-and-aggregate/maxBy.md), and [`first_by`](../reference/table-operations/group-and-aggregate/firstBy.md). [`count_by`](../reference/table-operations/group-and-aggregate/countBy.md) is a single aggregation too, but it returns one new column that holds the count, and you give it that column's name. Numeric statistics such as `sum_by` raise an error on a column type they can't compute, such as a string column. `sum_by` does accept Boolean columns: it counts the `true` values.
 
 ### Multi-aggregation
 
