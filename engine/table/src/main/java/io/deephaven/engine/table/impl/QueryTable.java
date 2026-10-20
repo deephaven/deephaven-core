@@ -21,8 +21,10 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
@@ -212,9 +214,12 @@ public class QueryTable extends BaseTable<QueryTable> {
      * Before using a data index for a where filter, ensure that the index table size is at most this fraction of the
      * size of the rows remaining to be filtered. If the fraction is greater than this threshold, then the engine will
      * ignore the index table and filter the rows directly.
+     * <p>
+     * The default, {@code 1 / 16}, uses an index only when the rows to be filtered average more than 16 per index key:
+     * below that, reading and merging a row set per key costs more than matching each row.
      */
     public static double DATA_INDEX_FOR_WHERE_THRESHOLD =
-            Configuration.getInstance().getDoubleWithDefault("QueryTable.dataIndexForWhereThreshold", 0.25);
+            Configuration.getInstance().getDoubleWithDefault("QueryTable.dataIndexForWhereThreshold", 1.0 / 16);
 
     /**
      * If the Configuration property "QueryTable.useDataIndexForAggregation" is set to true (default), then permit
@@ -1683,7 +1688,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                     // the result reaches through its WhereListener, so no parent reference is needed here. Note that
                     // a reference to rightTable would in any case be the wrong table to retain, since the set table
                     // actually used may be a data index table or a selectDistinct of it.
-                    return whereInternal(new DynamicWhereFilter(rightTable, inclusion, columnsToMatch));
+                    // The filter listens to its set table before the where begins; an enclosed scope releases the
+                    // filter, and that listener, when the where fails.
+                    return LivenessScopeStack.computeEnclosed(
+                            () -> whereInternal(new DynamicWhereFilter(rightTable, inclusion, columnsToMatch)),
+                            rightTable.isRefreshing(),
+                            Table::isRefreshing);
                 });
     }
 
@@ -2417,9 +2427,12 @@ public class QueryTable extends BaseTable<QueryTable> {
             return QueryPerformanceRecorder.withNugget(
                     "raj(" + "rightTable, " + matchString(columnsToMatch) + ", " + joinRule + ", "
                             + matchString(columnsToAdd) + ")",
-                    () -> ajInternal(rightTableCoalesced.reverse(), columnsToMatch, columnsToAdd,
-                            SortingOrder.Descending,
-                            joinRule));
+                    // an enclosed scope releases the reversed right table, and its listener, when the join fails
+                    () -> LivenessScopeStack.computeEnclosed(
+                            () -> ajInternal(rightTableCoalesced.reverse(), columnsToMatch, columnsToAdd,
+                                    SortingOrder.Descending, joinRule),
+                            rightTableCoalesced.isRefreshing(),
+                            Table::isRefreshing));
         }
     }
 
@@ -3426,6 +3439,23 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static void checkInitiateBinaryOperation(@NotNull final Table first, @NotNull final Table second) {
         if (first.isRefreshing() || second.isRefreshing()) {
             first.getUpdateGraph(second).checkInitiateSerialTableOperation();
+        }
+    }
+
+    /**
+     * Refuse a join of a failed input, as a failed table refuses a listener, even when the other input would make the
+     * result static.
+     *
+     * @param leftTable the left input of the join
+     * @param rightTable the right input of the join
+     * @throws TableAlreadyFailedException if either input has failed
+     */
+    public static void checkJoinInputsNotFailed(@NotNull final Table leftTable, @NotNull final Table rightTable) {
+        if (leftTable.isFailed()) {
+            throw new TableAlreadyFailedException("Can not join failed left table " + leftTable.getDescription());
+        }
+        if (rightTable.isFailed()) {
+            throw new TableAlreadyFailedException("Can not join failed right table " + rightTable.getDescription());
         }
     }
 

@@ -9,12 +9,19 @@ The `docker-server-slim` project produces the image `deephaven/server-slim-netty
 The `docker-server` project produces the images:
 * `deephaven/server-netty:local-build`
 
-When the base images for `docker-server` are updated, the requirements.txt files may need to be updated.
-This can currently be done manually via:
+When the `server-base` registry image is updated, the requirements.txt files
+(`docker/server/src/main/server-netty/requirements.txt` and `docker/server-jetty/src/main/server-jetty/requirements.txt`)
+need to be regenerated from the new image. [update-requirements.sh](registry/scripts/update-requirements.sh) does this
+(after running `pullImage bumpImage` for _every_ registry image); to regenerate them for just the pinned `server-base`
+image:
 
 ```shell
-docker run --rm ghcr.io/deephaven/server-base:latest pip freeze > docker/server/src/main/server/requirements.txt
+docker run --rm "$(./gradlew -q docker-server-base:showImageId)" \
+  pip freeze --exclude wheel --exclude setuptools \
+  | tee docker/server-jetty/src/main/server-jetty/requirements.txt docker/server/src/main/server-netty/requirements.txt
 ```
+
+`pip freeze` drops hand-maintained environment markers; see [Hand-maintained content](#hand-maintained-content).
 
 ## runtime-base
 
@@ -74,6 +81,80 @@ This can usually be done automatically via:
 ```shell
 ./gradlew docker-<folderName>:bumpImage
 ```
+
+Group related images when bumping (for example, all of the kafka images together), and keep images that are
+consumed in different ways on separate branches / PRs, so a breakage can be attributed to a specific image.
+
+#### Checking the registry without pulling
+
+`docker buildx imagetools inspect` resolves a tag to its multi-arch index digest (the form used in
+`deephaven.registry.imageId`) without pulling the image:
+
+```shell
+docker buildx imagetools inspect <imageName> --format '{{.Manifest.Digest}}'
+```
+
+`--format '{{json .Image}}'` prints each platform's image config (including `Env`), which is often enough to determine
+the version behind a floating tag (e.g. `GOLANG_VERSION`, `NODE_VERSION`, `PYTHON_VERSION`). Inspecting an explicit
+version tag and comparing digests is another way to correlate a floating tag (`latest`) with a version.
+
+Docker Hub rate-limits anonymous pulls, and counts manifest `GET`s (including `imagetools inspect`) as pulls; a
+manifest `HEAD` request does not count. `docker.redpanda.com` is backed by Docker Hub, and shares the limit.
+
+#### Podman
+
+When the Docker API is served by Podman, an image's `RepoDigests` contains both the multi-arch index digest and the
+platform-specific manifest digest, prefixed with `docker.io/` for Docker Hub images. In that case `bumpImage` fails with
+"multiple digests", and `compareImage` reports every Docker Hub image as out-of-date. Use `imagetools inspect` (above)
+and update `deephaven.registry.imageId` by hand with the index digest.
+
+#### Hand-maintained content
+
+`bumpImage` rewrites `gradle.properties` from scratch, keeping only `io.deephaven.project.ProjectType`,
+`deephaven.registry.imageName`, and `deephaven.registry.imageId`. After running it, restore (and update) any other
+properties and comments it dropped; for example:
+
+* `cp-kafka`, `kafka`, `kafka-native`, `redpanda`, `rustfs`: the `# <version>` that `latest` currently refers to
+* `cpp-clients-multi-base`: the reminder to update `cpp-client/build-dependencies.sh`
+* `cpp-clients-multi-base`, `manylinux2014_x86_64`, `protoc-base`: the `deephaven.registry.platform=linux/amd64` property;
+  dropping it silently changes the platform the image is pulled and built for
+* `protoc-base`: the arm64 TODO
+* `selenium`: the reminder to keep the version in lockstep with `gradle/libs.versions.toml`
+
+Similarly, `pip freeze` does not reproduce the `platform.machine == 'x86_64'` environment marker on `connectorx` in the
+server requirements.txt files. Keep it as long as the arm64 `server-base` image does not include `connectorx`.
+
+#### Image-specific follow-ups and checks
+
+Some images require changes elsewhere when bumped, and each image has a set of tasks that exercise it. Run the
+relevant tasks locally before pushing.
+
+| Registry image(s)                         | Follow-up changes                                                                                                                                                    | Tasks that exercise the image                                                                                                                         |
+|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `cp-kafka`, `kafka`, `kafka-native`, `redpanda` | Update the `# <version>` comments                                                                                                                              | `:extensions-kafka:testOutOfBand` (`kafka-native` is currently commented out of `kafka_images` in `extensions/kafka/build.gradle`, so it is not exercised) |
+| `dotnet`, `dotnet-runtime-8`              |                                                                                                                                                                      | `:csharp-client:testCsharpClient`                                                                                                                     |
+| `go`                                      |                                                                                                                                                                      | `:go:testGoClient`                                                                                                                                    |
+| `node`                                    | `proto/raw-js-openapi` pins the exact node / npm versions in `package.json` and `package-lock.json` `engines`, with `engine-strict=true`; update them to match the image | `:proto:raw-js-openapi:webpackSources`, `:web-client-api:types:typedoc`, `:web-client-ui:ui`                                                          |
+| `python`                                  |                                                                                                                                                                      | `:py-server:buildWheel`, `:py-client:buildWheel`, `:py-embedded-server:buildWheel`, `:py-client:testPyClient` |
+| `protoc-base`                             | Generated code may change; regenerate the checked-in code with `:py-client:updateProtobuf` and `:go:updateProtobuf`                                                   | `:go:compareProtobuf`, `:py-client:compareProtobuf`, `:py-client:testPyClient`                                                                        |
+| `cpp-clients-multi-base`                  | Sync `cpp-client/build-dependencies.sh` with `/opt/deephaven/build-dependencies.sh` from the image                                                                   | `:cpp-client:testCppClient`                                                                                                                           |
+| `manylinux2014_x86_64`                    |                                                                                                                                                                      | `:py-client-ticking:syncWheels` (builds the wheels for every python version), `:py-client-ticking:testCPythonClientTicking-3.12-fedora` |
+| `fedora`                                  |                                                                                                                                                                      | `:py-client-ticking:testCPythonClientTicking-<version>-fedora`, for `<version>` in 3.9 - 3.13                                                         |
+| `ubi-minimal`                             |                                                                                                                                                                      | `:py-client-ticking:testCPythonClientTicking-3.9-ubi-minimal`, `:py-client-ticking:testCPythonClientTicking-3.11-ubi-minimal`                       |
+| `server-base`                             | Regenerate the server requirements.txt files (see [docker-server](#docker-server))                                                                                  | `:Integrations:test-py-deephaven`, `:py-embedded-server:testEmbeddedServer`, `:py-client:testPyClient`, `:docker-server:buildDocker-server-netty`, `:docker-runtime-base:buildDocker` |
+| `slim-base`                               |                                                                                                                                                                      | `:docker-server-slim:buildDocker-server-slim`                                                                                                         |
+| `selenium`                                | Keep in lockstep with `selenium` in `gradle/libs.versions.toml`                                                                                                      | `:web-client-api:gwtIntegrationTest`                                                                                                                  |
+| `rustfs`                                  | Update the `# <version>` comment                                                                                                                                     | `:extensions-s3:testOutOfBand`, `:extensions-parquet-table:testOutOfBand`, `:extensions-iceberg-s3:testOutOfBand`                                     |
+
+Prefer the targeted `testCPythonClientTicking-*` tasks above over `:py-client-ticking:testPyClientTicking`, which also runs
+`testCPythonClientTicking-3.13-ubi-minimal`; that task fails independently of any image bump (the pinned ubi8 image has no
+`python3.13` package). `check` only runs the fedora 3.12 variant.
+
+Docker tasks that copy files out of a container (for example `buildWheel`, `generateProtobuf`, `typedoc`, `ui`, and the
+client test tasks) are split into `*MakeImage` and `*Run` steps; image-build tasks (such as `buildDocker-*`) are not.
+When only a base image has changed, the `*Run` step may be considered up-to-date even though `*MakeImage` rebuilt the
+image; pass `--rerun` to the `*Run` task (for example, `./gradlew :py-server:buildWheelRun --rerun`) to make sure the
+new image is actually exercised.
 
 ### Caveats
 

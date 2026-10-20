@@ -5,28 +5,28 @@ isort:skip_file
 Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 """
 
-import builtins
-import collections.abc
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.internal.enum_type_wrapper
-import google.protobuf.message
+from collections import abc as _abc
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
+import builtins as _builtins
 import sys
-import typing
+import typing as _typing
 
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
 class _ItemType:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
 
-class _ItemTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_ItemType.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+class _ItemTypeEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_ItemType.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
     UNKNOWN: _ItemType.ValueType  # 0
     """Should not be used, exists only to indicate that this was left unset"""
     DIRECTORY: _ItemType.ValueType  # 1
@@ -38,17 +38,17 @@ UNKNOWN: ItemType.ValueType  # 0
 """Should not be used, exists only to indicate that this was left unset"""
 DIRECTORY: ItemType.ValueType  # 1
 FILE: ItemType.ValueType  # 2
-Global___ItemType: typing_extensions.TypeAlias = ItemType
+Global___ItemType: _TypeAlias = ItemType  # noqa: Y015
 
-@typing.final
-class ListItemsRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ListItemsRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    PATH_FIELD_NUMBER: builtins.int
-    FILTER_GLOB_FIELD_NUMBER: builtins.int
-    path: builtins.str
+    PATH_FIELD_NUMBER: _builtins.int
+    FILTER_GLOB_FIELD_NUMBER: _builtins.int
+    path: _builtins.str
     """The path to the directory to list. empty to list top level"""
-    filter_glob: builtins.str
+    filter_glob: _builtins.str
     """A pattern to filter for, with "?" to match any one character, "*" to match any number of characters, and "{}"s
     to hold a comma-separated list of possible matches. The format follows Java's FileSystem.getPathMatcher (see
     https://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-),
@@ -57,113 +57,116 @@ class ListItemsRequest(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        path: builtins.str = ...,
-        filter_glob: builtins.str | None = ...,
+        path: _builtins.str = ...,
+        filter_glob: _builtins.str | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_filter_glob", b"_filter_glob", "filter_glob", b"filter_glob"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_filter_glob", b"_filter_glob", "filter_glob", b"filter_glob", "path", b"path"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_filter_glob", b"_filter_glob", "filter_glob", b"filter_glob"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_filter_glob", b"_filter_glob", "filter_glob", b"filter_glob", "path", b"path"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType__filter_glob: typing_extensions.TypeAlias = typing.Literal["filter_glob"]
-    _WhichOneofArgType__filter_glob: typing_extensions.TypeAlias = typing.Literal["_filter_glob", b"_filter_glob"]
+    _WhichOneofReturnType__filter_glob: _TypeAlias = _typing.Literal["filter_glob"]  # noqa: Y015
+    _WhichOneofArgType__filter_glob: _TypeAlias = _typing.Literal["_filter_glob", b"_filter_glob"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType__filter_glob) -> _WhichOneofReturnType__filter_glob | None: ...
 
-Global___ListItemsRequest: typing_extensions.TypeAlias = ListItemsRequest
+Global___ListItemsRequest: _TypeAlias = ListItemsRequest  # noqa: Y015
 
-@typing.final
-class ItemInfo(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ItemInfo(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    PATH_FIELD_NUMBER: builtins.int
-    TYPE_FIELD_NUMBER: builtins.int
-    SIZE_FIELD_NUMBER: builtins.int
-    ETAG_FIELD_NUMBER: builtins.int
-    path: builtins.str
+    PATH_FIELD_NUMBER: _builtins.int
+    TYPE_FIELD_NUMBER: _builtins.int
+    SIZE_FIELD_NUMBER: _builtins.int
+    ETAG_FIELD_NUMBER: _builtins.int
+    path: _builtins.str
     """The path to the item that this message describes."""
     type: Global___ItemType.ValueType
     """The type of this item, either file or directory."""
-    size: builtins.int
+    size: _builtins.int
     """If this message represents a file, this is the size of the file."""
-    etag: builtins.str
+    etag: _builtins.str
     """Opaque string value representing a hash of the contents of this file, if available."""
     def __init__(
         self,
         *,
-        path: builtins.str = ...,
+        path: _builtins.str = ...,
         type: Global___ItemType.ValueType = ...,
-        size: builtins.int = ...,
-        etag: builtins.str | None = ...,
+        size: _builtins.int = ...,
+        etag: _builtins.str | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag", "path", b"path", "size", b"size", "type", b"type"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_etag", b"_etag", "etag", b"etag"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_etag", b"_etag", "etag", b"etag", "path", b"path", "size", b"size", "type", b"type"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType__etag: typing_extensions.TypeAlias = typing.Literal["etag"]
-    _WhichOneofArgType__etag: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag"]
+    _WhichOneofReturnType__etag: _TypeAlias = _typing.Literal["etag"]  # noqa: Y015
+    _WhichOneofArgType__etag: _TypeAlias = _typing.Literal["_etag", b"_etag"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType__etag) -> _WhichOneofReturnType__etag | None: ...
 
-Global___ItemInfo: typing_extensions.TypeAlias = ItemInfo
+Global___ItemInfo: _TypeAlias = ItemInfo  # noqa: Y015
 
-@typing.final
-class ListItemsResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ListItemsResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    ITEMS_FIELD_NUMBER: builtins.int
-    CANONICAL_PATH_FIELD_NUMBER: builtins.int
-    canonical_path: builtins.str
+    ITEMS_FIELD_NUMBER: _builtins.int
+    CANONICAL_PATH_FIELD_NUMBER: _builtins.int
+    canonical_path: _builtins.str
     """The canonical path of the listed directory. This is useful to recognize the basename
     of the items in a cross-platform way.
     """
-    @property
-    def items(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___ItemInfo]:
+    @_builtins.property
+    def items(self) -> _containers.RepeatedCompositeFieldContainer[Global___ItemInfo]:
         """List of items found in the specified directory."""
 
     def __init__(
         self,
         *,
-        items: collections.abc.Iterable[Global___ItemInfo] | None = ...,
-        canonical_path: builtins.str = ...,
+        items: _abc.Iterable[Global___ItemInfo] | None = ...,
+        canonical_path: _builtins.str = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["canonical_path", b"canonical_path", "items", b"items"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["canonical_path", b"canonical_path", "items", b"items"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ListItemsResponse: typing_extensions.TypeAlias = ListItemsResponse
+Global___ListItemsResponse: _TypeAlias = ListItemsResponse  # noqa: Y015
 
-@typing.final
-class FetchFileRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class FetchFileRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    PATH_FIELD_NUMBER: builtins.int
-    ETAG_FIELD_NUMBER: builtins.int
-    path: builtins.str
+    PATH_FIELD_NUMBER: _builtins.int
+    ETAG_FIELD_NUMBER: _builtins.int
+    path: _builtins.str
     """The path to the file to read"""
-    etag: builtins.str
+    etag: _builtins.str
     """If present, tells the server to not send a result if the etag matches the current file's content."""
     def __init__(
         self,
         *,
-        path: builtins.str = ...,
-        etag: builtins.str | None = ...,
+        path: _builtins.str = ...,
+        etag: _builtins.str | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag", "path", b"path"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_etag", b"_etag", "etag", b"etag"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_etag", b"_etag", "etag", b"etag", "path", b"path"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType__etag: typing_extensions.TypeAlias = typing.Literal["etag"]
-    _WhichOneofArgType__etag: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag"]
+    _WhichOneofReturnType__etag: _TypeAlias = _typing.Literal["etag"]  # noqa: Y015
+    _WhichOneofArgType__etag: _TypeAlias = _typing.Literal["_etag", b"_etag"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType__etag) -> _WhichOneofReturnType__etag | None: ...
 
-Global___FetchFileRequest: typing_extensions.TypeAlias = FetchFileRequest
+Global___FetchFileRequest: _TypeAlias = FetchFileRequest  # noqa: Y015
 
-@typing.final
-class FetchFileResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class FetchFileResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    CONTENTS_FIELD_NUMBER: builtins.int
-    ETAG_FIELD_NUMBER: builtins.int
-    contents: builtins.bytes
+    CONTENTS_FIELD_NUMBER: _builtins.int
+    ETAG_FIELD_NUMBER: _builtins.int
+    contents: _builtins.bytes
     """Contains the contents of the file, unless the returned etag matches the requested etag."""
-    etag: builtins.str
+    etag: _builtins.str
     """Represents the current etag of the requested file. If an etag was in the request and this matches,
     contents should be ignored, and the existing client copy of the file is already correct. In all
     other cases, this etag can be used in future requests to see if the file's contents are different.
@@ -171,155 +174,182 @@ class FetchFileResponse(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        contents: builtins.bytes = ...,
-        etag: builtins.str | None = ...,
+        contents: _builtins.bytes = ...,
+        etag: _builtins.str | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "contents", b"contents", "etag", b"etag"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_etag", b"_etag", "etag", b"etag"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_etag", b"_etag", "contents", b"contents", "etag", b"etag"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType__etag: typing_extensions.TypeAlias = typing.Literal["etag"]
-    _WhichOneofArgType__etag: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag"]
+    _WhichOneofReturnType__etag: _TypeAlias = _typing.Literal["etag"]  # noqa: Y015
+    _WhichOneofArgType__etag: _TypeAlias = _typing.Literal["_etag", b"_etag"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType__etag) -> _WhichOneofReturnType__etag | None: ...
 
-Global___FetchFileResponse: typing_extensions.TypeAlias = FetchFileResponse
+Global___FetchFileResponse: _TypeAlias = FetchFileResponse  # noqa: Y015
 
-@typing.final
-class SaveFileRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class SaveFileRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    ALLOW_OVERWRITE_FIELD_NUMBER: builtins.int
-    PATH_FIELD_NUMBER: builtins.int
-    CONTENTS_FIELD_NUMBER: builtins.int
-    allow_overwrite: builtins.bool
+    ALLOW_OVERWRITE_FIELD_NUMBER: _builtins.int
+    PATH_FIELD_NUMBER: _builtins.int
+    CONTENTS_FIELD_NUMBER: _builtins.int
+    allow_overwrite: _builtins.bool
     """True to permit replacing an existing file, false to require that no file already exists with that name."""
-    path: builtins.str
+    path: _builtins.str
     """The path to the file to write contents to"""
-    contents: builtins.bytes
+    contents: _builtins.bytes
     """The contents to use when creating then file, or to use to replace the file."""
     def __init__(
         self,
         *,
-        allow_overwrite: builtins.bool = ...,
-        path: builtins.str = ...,
-        contents: builtins.bytes = ...,
+        allow_overwrite: _builtins.bool = ...,
+        path: _builtins.str = ...,
+        contents: _builtins.bytes = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["allow_overwrite", b"allow_overwrite", "contents", b"contents", "path", b"path"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["allow_overwrite", b"allow_overwrite", "contents", b"contents", "path", b"path"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___SaveFileRequest: typing_extensions.TypeAlias = SaveFileRequest
+Global___SaveFileRequest: _TypeAlias = SaveFileRequest  # noqa: Y015
 
-@typing.final
-class SaveFileResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class SaveFileResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    ETAG_FIELD_NUMBER: builtins.int
-    etag: builtins.str
+    ETAG_FIELD_NUMBER: _builtins.int
+    etag: _builtins.str
     """Represents the etag of the saved contents, so the client can check for external changes."""
     def __init__(
         self,
         *,
-        etag: builtins.str | None = ...,
+        etag: _builtins.str | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag", "etag", b"etag"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_etag", b"_etag", "etag", b"etag"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_etag", b"_etag", "etag", b"etag"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType__etag: typing_extensions.TypeAlias = typing.Literal["etag"]
-    _WhichOneofArgType__etag: typing_extensions.TypeAlias = typing.Literal["_etag", b"_etag"]
+    _WhichOneofReturnType__etag: _TypeAlias = _typing.Literal["etag"]  # noqa: Y015
+    _WhichOneofArgType__etag: _TypeAlias = _typing.Literal["_etag", b"_etag"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType__etag) -> _WhichOneofReturnType__etag | None: ...
 
-Global___SaveFileResponse: typing_extensions.TypeAlias = SaveFileResponse
+Global___SaveFileResponse: _TypeAlias = SaveFileResponse  # noqa: Y015
 
-@typing.final
-class MoveItemRequest(google.protobuf.message.Message):
+@_typing.final
+class MoveItemRequest(_message.Message):
     """Requests to move a file to a new path, which may be in a different directory. Presently it is not
     permitted to overwrite an existing file in this way.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    OLD_PATH_FIELD_NUMBER: builtins.int
-    NEW_PATH_FIELD_NUMBER: builtins.int
-    ALLOW_OVERWRITE_FIELD_NUMBER: builtins.int
-    old_path: builtins.str
+    OLD_PATH_FIELD_NUMBER: _builtins.int
+    NEW_PATH_FIELD_NUMBER: _builtins.int
+    ALLOW_OVERWRITE_FIELD_NUMBER: _builtins.int
+    old_path: _builtins.str
     """The path where the file currently exists"""
-    new_path: builtins.str
+    new_path: _builtins.str
     """The path where the file should be moved to"""
-    allow_overwrite: builtins.bool
+    allow_overwrite: _builtins.bool
     """True to permit replacing an existing file, false to require that no file already exists with that name."""
     def __init__(
         self,
         *,
-        old_path: builtins.str = ...,
-        new_path: builtins.str = ...,
-        allow_overwrite: builtins.bool = ...,
+        old_path: _builtins.str = ...,
+        new_path: _builtins.str = ...,
+        allow_overwrite: _builtins.bool = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["allow_overwrite", b"allow_overwrite", "new_path", b"new_path", "old_path", b"old_path"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["allow_overwrite", b"allow_overwrite", "new_path", b"new_path", "old_path", b"old_path"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___MoveItemRequest: typing_extensions.TypeAlias = MoveItemRequest
+Global___MoveItemRequest: _TypeAlias = MoveItemRequest  # noqa: Y015
 
-@typing.final
-class MoveItemResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class MoveItemResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___MoveItemResponse: typing_extensions.TypeAlias = MoveItemResponse
+Global___MoveItemResponse: _TypeAlias = MoveItemResponse  # noqa: Y015
 
-@typing.final
-class CreateDirectoryRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class CreateDirectoryRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    PATH_FIELD_NUMBER: builtins.int
-    path: builtins.str
+    PATH_FIELD_NUMBER: _builtins.int
+    path: _builtins.str
     """The path to the directory to create"""
     def __init__(
         self,
         *,
-        path: builtins.str = ...,
+        path: _builtins.str = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["path", b"path"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["path", b"path"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___CreateDirectoryRequest: typing_extensions.TypeAlias = CreateDirectoryRequest
+Global___CreateDirectoryRequest: _TypeAlias = CreateDirectoryRequest  # noqa: Y015
 
-@typing.final
-class CreateDirectoryResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class CreateDirectoryResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___CreateDirectoryResponse: typing_extensions.TypeAlias = CreateDirectoryResponse
+Global___CreateDirectoryResponse: _TypeAlias = CreateDirectoryResponse  # noqa: Y015
 
-@typing.final
-class DeleteItemRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class DeleteItemRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    PATH_FIELD_NUMBER: builtins.int
-    path: builtins.str
+    PATH_FIELD_NUMBER: _builtins.int
+    path: _builtins.str
     """The path to the item to delete."""
     def __init__(
         self,
         *,
-        path: builtins.str = ...,
+        path: _builtins.str = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["path", b"path"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["path", b"path"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___DeleteItemRequest: typing_extensions.TypeAlias = DeleteItemRequest
+Global___DeleteItemRequest: _TypeAlias = DeleteItemRequest  # noqa: Y015
 
-@typing.final
-class DeleteItemResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class DeleteItemResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___DeleteItemResponse: typing_extensions.TypeAlias = DeleteItemResponse
+Global___DeleteItemResponse: _TypeAlias = DeleteItemResponse  # noqa: Y015

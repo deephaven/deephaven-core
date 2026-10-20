@@ -41,8 +41,8 @@ def full_outer_join(
         joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from right table to the result
             table, can be renaming expressions, i.e. "new_col = col"; default is None, meaning all the columns from
             the right table except those whose names match a left table column in on
-        reserve_bits (Optional[int]): the number of bits to reserve for the right row; default is None,
-            meaning the configured value is used, which is 10 bits by default.
+        reserve_bits (Optional[int]): the number of bits to reserve for the right row, between 1 and 62
+            (inclusive); default is None, meaning the configured value is used, which is 10 bits by default.
 
     Returns:
         a new Table
@@ -53,9 +53,8 @@ def full_outer_join(
     try:
         on = ",".join(to_sequence(on))
         joins = ",".join(to_sequence(joins))
-        reserve_bits = (
-            reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
-        )
+        if reserve_bits is None:
+            reserve_bits = _default_cross_join_reserve_bits()
         with auto_locking_ctx(l_table, r_table):
             return Table(
                 j_table=_JOuterJoinTools.fullOuterJoin(
@@ -87,8 +86,8 @@ def left_outer_join(
         joins (Optional[Union[str, Sequence[str]]]): the column(s) to be added from right table to the result
             table, can be renaming expressions, i.e. "new_col = col"; default is None, meaning all the columns from
             the right table except those whose names match a left table column in on
-        reserve_bits (Optional[int]): the number of bits to reserve for the right row; default is None,
-            meaning the configured value is used, which is 10 bits by default.
+        reserve_bits (Optional[int]): the number of bits to reserve for the right row, between 1 and 62
+            (inclusive); default is None, meaning the configured value is used, which is 10 bits by default.
 
     Returns:
         a new Table
@@ -99,9 +98,8 @@ def left_outer_join(
     try:
         on = ",".join(to_sequence(on))
         joins = ",".join(to_sequence(joins))
-        reserve_bits = (
-            reserve_bits if reserve_bits else _default_cross_join_reserve_bits()
-        )
+        if reserve_bits is None:
+            reserve_bits = _default_cross_join_reserve_bits()
         with auto_locking_ctx(l_table, r_table):
             return Table(
                 j_table=_JOuterJoinTools.leftOuterJoin(

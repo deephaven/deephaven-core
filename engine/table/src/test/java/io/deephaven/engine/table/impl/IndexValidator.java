@@ -4,21 +4,31 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.*;
 
 import static io.deephaven.engine.table.impl.dataindex.DataIndexUtils.lookupKeysEqual;
+import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
+import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 import static org.junit.Assert.*;
 
 /**
@@ -26,6 +36,7 @@ import static org.junit.Assert.*;
  * of columns are still valid. It is meant to be used as part of a unit test for incremental updates, to ensure that
  * stale indexes are not left between table updates.
  */
+
 public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
 
     private final Table sourceTable;
@@ -138,6 +149,34 @@ public class IndexValidator extends InstrumentedTableUpdateListenerAdapter {
             }
             // Validate that we visit every row
             Assert.equals(sourceTableRowSet, "sourceTableRowSet", visitedRowSet, "visitedRowSet");
+        }
+
+        // Validate that the chunked index lookup returns the right row keys, a chunk of keys at a time
+        final ColumnSource<?>[] reinterpretedIndexKeys = Arrays.stream(index.keyColumns(sourceKeyColumns))
+                .map(ReinterpretUtils::maybeConvertToPrimitive)
+                .toArray(ColumnSource[]::new);
+        final int chunkSize = 1024;
+        // noinspection unchecked
+        final Chunk<Values>[] indexKeyChunks = new Chunk[reinterpretedIndexKeys.length];
+        try (final ProbeContext context = new ProbeContext(reinterpretedIndexKeys, chunkSize);
+                final WritableLongChunk<RowKeys> lookedUpRowKeys = WritableLongChunk.makeWritableChunk(chunkSize);
+                final RowSequence.Iterator indexRowsIterator = indexTableRowSet.getRowSequenceIterator()) {
+            while (indexRowsIterator.hasMore()) {
+                final RowSequence indexRows = indexRowsIterator.getNextRowSequenceWithLength(chunkSize);
+                if (usePrev) {
+                    getPrevKeyChunks(reinterpretedIndexKeys, context.getContexts, indexKeyChunks, indexRows);
+                } else {
+                    getKeyChunks(reinterpretedIndexKeys, context.getContexts, indexKeyChunks, indexRows);
+                }
+                indexLookup.apply(indexKeyChunks, lookedUpRowKeys, usePrev);
+                final LongChunk<OrderedRowKeys> indexRowKeys = indexRows.asRowKeyChunk();
+                Assert.eq(lookedUpRowKeys.size(), "lookedUpRowKeys.size()", indexRowKeys.size(), "indexRowKeys.size()");
+                for (int ii = 0; ii < indexRowKeys.size(); ++ii) {
+                    Assert.eq(indexRowKeys.get(ii), "indexRowKeys.get(ii)",
+                            lookedUpRowKeys.get(ii), "lookedUpRowKeys.get(ii)");
+                }
+                context.resetSharedContexts();
+            }
         }
     }
 
