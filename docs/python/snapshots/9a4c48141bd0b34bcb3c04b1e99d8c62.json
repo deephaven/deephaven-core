@@ -1,1 +1,1 @@
-{"file":"getting-started/crash-course/table-ops.md","objects":{"t_avg":{"type":"Table","data":{"columns":[{"name":"X","type":"double"},{"name":"Y","type":"double"}],"rows":[[{"value":"52.0100"},{"value":"4.4055"}]]}}}}
+{"file":"getting-started/crash-course/table-ops.md","objects":{"t_avg":{"type":"Table","data":{"columns":[{"name":"X","type":"double"},{"name":"Y","type":"double"}],"rows":[[{"value":"52.6300"},{"value":"5.2978"}]]}}}}

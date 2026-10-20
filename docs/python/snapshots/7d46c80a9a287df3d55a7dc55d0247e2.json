@@ -1,0 +1,1 @@
+{"file":"how-to-guides/metadata.md","objects":{":log":{"type":"Log","data":"TableDefinition {columns=[ColumnDefinition {name=Month, dataType=class java.lang.String, componentType=null, columnType=Normal}, ColumnDefinition {name=Temp, dataType=int, componentType=null, columnType=Normal}, ColumnDefinition {name=Rain, dataType=double, componentType=null, columnType=Normal}]}\n"}}}
