@@ -259,6 +259,7 @@ Attempting to use the following operations on a blink table throws an error:
 - [`aggAllBy`](../reference/table-operations/group-and-aggregate/AggAllBy.md) if [`AggSpec.group`](https://deephaven.io/core/javadoc/io/deephaven/api/agg/spec/AggSpec.html#group()) or the deprecated [`AggSpec.formula`](https://deephaven.io/core/javadoc/io/deephaven/api/agg/spec/AggSpec.html) is used
 - [`rollup`](../reference/table-operations/create/rollup.md) if `includeConstituents` is `true`, or if [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md), [`AggFormula`](../reference/table-operations/group-and-aggregate/AggFormula.md), [`AggFirst`](../reference/table-operations/group-and-aggregate/AggFirst.md), [`AggLast`](../reference/table-operations/group-and-aggregate/AggLast.md), [`AggSortedFirst`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md), or [`AggSortedLast`](../reference/table-operations/group-and-aggregate/AggSortedLast.md) is used
 - [`tree`](../reference/table-operations/create/tree.md)
+- [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) with key columns. Without key columns, `updateBy` runs, but it sees only the current update cycle's rows, so a cumulative operation such as [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md) starts over each cycle.
 
 ### Partition a blink table
 

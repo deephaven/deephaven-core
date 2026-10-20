@@ -269,6 +269,7 @@ Attempting to use the following operations on a blink table raises an error:
 - [`agg_all_by`](../reference/table-operations/group-and-aggregate/AggAllBy.md) if [`agg.group`](../reference/table-operations/group-and-aggregate/AggGroup.md) or the deprecated `formula_param` form of [`agg.formula`](../reference/table-operations/group-and-aggregate/AggFormula.md) is used
 - [`rollup`](../reference/table-operations/create/rollup.md) if `include_constituents=True`, or if [`agg.group`](../reference/table-operations/group-and-aggregate/AggGroup.md), [`agg.formula`](../reference/table-operations/group-and-aggregate/AggFormula.md), [`agg.first`](../reference/table-operations/group-and-aggregate/AggFirst.md), [`agg.last`](../reference/table-operations/group-and-aggregate/AggLast.md), [`agg.sorted_first`](../reference/table-operations/group-and-aggregate/AggSortedFirst.md), or [`agg.sorted_last`](../reference/table-operations/group-and-aggregate/AggSortedLast.md) is used
 - [`tree`](../reference/table-operations/create/tree.md)
+- [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) with key columns. Without key columns, `update_by` runs, but it sees only the current update cycle's rows, so a cumulative operation such as [`cum_sum`](../reference/table-operations/update-by-operations/cum-sum.md) starts over each cycle.
 
 ### Partition a blink table
 
