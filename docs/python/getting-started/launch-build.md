@@ -21,7 +21,7 @@ You can build and run Deephaven from source only on the following operating syst
 On Windows, run every command in this guide inside a WSL 2 terminal.
 
 > [!WARNING]
-> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven [ticking tables](./crash-course/create-tables.md#ticking-tables), which update live as new data arrives. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven [ticking tables](./crash-course/create-tables.md#create-ticking-tables), which update live as new data arrives. Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
 
 ## Prerequisites
 
