@@ -305,10 +305,12 @@ public abstract class WebBarrageSubscription {
 
             currentRowSet.addRangeSet(message.rowsAdded);
 
+            // a server may send modified rows for columns this subscription is not subscribed to; they are ignored
             RangeSet totalMods = new RangeSet();
             for (int i = 0; i < message.modColumnData.length; i++) {
-                WebBarrageMessage.ModColumnData column = message.modColumnData[i];
-                totalMods.addRangeSet(column.rowsModified);
+                if (isSubscribedColumn(i)) {
+                    totalMods.addRangeSet(message.modColumnData[i].rowsModified);
+                }
             }
 
             if (!message.rowsIncluded.isEmpty()) {
@@ -345,7 +347,7 @@ public abstract class WebBarrageSubscription {
             BitSet modifiedColumnSet = new BitSet(numColumns());
             for (int ii = 0; ii < message.modColumnData.length; ii++) {
                 WebBarrageMessage.ModColumnData column = message.modColumnData[ii];
-                if (column.rowsModified.isEmpty()) {
+                if (column.rowsModified.isEmpty() || !isSubscribedColumn(ii)) {
                     continue;
                 }
 

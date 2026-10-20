@@ -128,7 +128,7 @@ public class BarrageRedirectedTable extends BarrageTable {
             final WritableRowSet mods = RowSetFactory.empty();
             for (int ci = 0; ci < update.modColumnData.length; ++ci) {
                 final RowSet rowsModified = update.modColumnData[ci].rowsModified;
-                if (rowsModified.isNonempty()) {
+                if (rowsModified.isNonempty() && isSubscribedColumn(ci)) {
                     mods.insert(rowsModified);
                     modifiedColumnSet.setColumnWithIndex(ci);
                 }
@@ -190,10 +190,12 @@ public class BarrageRedirectedTable extends BarrageTable {
             }
             currentRowSet.insert(update.rowsAdded);
 
+            // a server may send modified rows for columns this table is not subscribed to; they are ignored
             final WritableRowSet totalMods = RowSetFactory.empty();
             for (int i = 0; i < update.modColumnData.length; ++i) {
-                final BarrageMessage.ModColumnData column = update.modColumnData[i];
-                totalMods.insert(column.rowsModified);
+                if (isSubscribedColumn(i)) {
+                    totalMods.insert(update.modColumnData[i].rowsModified);
+                }
             }
 
             if (update.rowsIncluded.isNonempty()) {
@@ -204,9 +206,7 @@ public class BarrageRedirectedTable extends BarrageTable {
                     // ensure the data sources have at least the incoming capacity. The sources can auto-resize but
                     // we know the initial snapshot size and can resize immediately
                     capacity = update.rowsIncluded.size();
-                    for (final WritableColumnSource<?> source : destSources) {
-                        source.ensureCapacity(capacity);
-                    }
+                    ensureSourceCapacity();
                     freeset.insertRange(0, capacity - 1);
                 }
 
@@ -260,7 +260,7 @@ public class BarrageRedirectedTable extends BarrageTable {
             modifiedColumnSet.clear();
             for (int ii = 0; ii < update.modColumnData.length; ++ii) {
                 final BarrageMessage.ModColumnData column = update.modColumnData[ii];
-                if (column.rowsModified.isEmpty()) {
+                if (column.rowsModified.isEmpty() || !isSubscribedColumn(ii)) {
                     continue;
                 }
 
@@ -345,9 +345,7 @@ public class BarrageRedirectedTable extends BarrageTable {
         }
 
         if (needsResizing) {
-            for (final WritableColumnSource<?> source : destSources) {
-                source.ensureCapacity(capacity);
-            }
+            ensureSourceCapacity();
         }
 
         final RowSet result = freeset.subSetByPositionRange(0, size);

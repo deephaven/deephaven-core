@@ -565,7 +565,8 @@ public abstract class ArrayBackedColumnSource<T>
             final long first = rowSequence.firstRowKey();
             final long last = rowSequence.lastRowKey();
 
-            if (getBlockNo(first) == getBlockNo(last)) {
+            // Rows past maxIndex have no block; filling reads them as null.
+            if (getBlockNo(first) == getBlockNo(last) && last <= maxIndex) {
                 // Optimization if the caller requests a single range which happens to fall within a single block
                 final int blockPos = getBlockNo(first);
                 return DefaultGetContext.resetChunkFromArray(context,

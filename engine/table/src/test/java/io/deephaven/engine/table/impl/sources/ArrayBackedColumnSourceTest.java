@@ -3,6 +3,12 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.GenericArray;
@@ -11,6 +17,7 @@ import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.Type;
+import io.deephaven.util.QueryConstants;
 import org.junit.Test;
 
 import java.time.Instant;
@@ -70,6 +77,43 @@ public class ArrayBackedColumnSourceTest {
     @Test
     public void fromInstants() {
         check(Type.instantType(), Instant.ofEpochMilli(1), null, Instant.ofEpochMilli(3));
+    }
+
+    /**
+     * A source holds no values for rows past its capacity, and reads them as null, including through the single-block
+     * path of {@code getChunk}: both for a source never allocated, and for the block after the last one allocated.
+     */
+    @Test
+    public void getChunkPastCapacityIsNull() {
+        final LongArraySource unallocated = new LongArraySource();
+        assertNullLongs(unallocated, 0, 9);
+
+        final LongArraySource allocated = new LongArraySource();
+        allocated.ensureCapacity(ArrayBackedColumnSource.BLOCK_SIZE);
+        allocated.set(0, 7L);
+        assertNullLongs(allocated, ArrayBackedColumnSource.BLOCK_SIZE, ArrayBackedColumnSource.BLOCK_SIZE + 9);
+
+        final ObjectArraySource<String> unallocatedObjects = new ObjectArraySource<>(String.class);
+        try (final RowSequence rows = RowSequenceFactory.forRange(0, 9);
+                final ChunkSource.GetContext context = unallocatedObjects.makeGetContext(10)) {
+            final ObjectChunk<String, ? extends Values> chunk =
+                    unallocatedObjects.getChunk(context, rows).asObjectChunk();
+            assertThat(chunk.size()).isEqualTo(10);
+            for (int ii = 0; ii < chunk.size(); ++ii) {
+                assertThat(chunk.get(ii)).isNull();
+            }
+        }
+    }
+
+    private static void assertNullLongs(final LongArraySource source, final long first, final long last) {
+        try (final RowSequence rows = RowSequenceFactory.forRange(first, last);
+                final ChunkSource.GetContext context = source.makeGetContext(rows.intSize())) {
+            final LongChunk<? extends Values> chunk = source.getChunk(context, rows).asLongChunk();
+            assertThat(chunk.size()).isEqualTo(rows.intSize());
+            for (int ii = 0; ii < chunk.size(); ++ii) {
+                assertThat(chunk.get(ii)).isEqualTo(QueryConstants.NULL_LONG);
+            }
+        }
     }
 
     @Test
