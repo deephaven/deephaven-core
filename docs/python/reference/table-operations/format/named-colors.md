@@ -2,7 +2,7 @@
 title: Named colors
 ---
 
-Deephaven defines 279 named colors. Each one is a constant of the [`Color`](/core/javadoc/io/deephaven/gui/color/Color.html) class, so you can use its name directly in a formatting formula, such as `"Score = bg(BRIGHT_GREEN)"` in [`format_columns`](./format-columns.md). Wherever Deephaven takes a color as a string, such as a plot's `color` argument or [`Color.of_name`](/core/pydoc/code/deephaven.plot.color.html#deephaven.plot.color.Color.of_name), you can pass the name instead, in any case.
+Deephaven defines 279 named colors. Each one is a constant of the [`Color`](/core/javadoc/io/deephaven/gui/color/Color.html) class, so you can use its name directly in a formatting formula, such as `"Score = bg(BRIGHT_GREEN)"` in [`format_columns`](./format-columns.md). Wherever Deephaven takes a color as a string, such as a plot's `color` argument or [`Color.of_name`](/core/pydoc/code/deephaven.plot.color.html#deephaven.plot.color.Color.of_name), you can pass the name instead, in any case. The exceptions are 3 legacy colors whose string names differ: pass `LEGACY_GREEN` for `DB_GREEN`, `LEGACY_ORANGE` for `DB_ORANGE`, and `LEGACY_PINK` for `DB_PINK`. The table shows the string name next to each one.
 
 This list is generated from the `Color` class. [`NO_FORMATTING`](../../../how-to-guides/format-columns.md) is also a `Color` constant, but it means "apply no color", so it isn't listed here.
 
@@ -389,17 +389,17 @@ scores_colored = scores.format_columns(
     </tr>
     <tr>
       <td><span aria-hidden="true" style={{display: 'inline-block', width: '3em', height: '1.2em', verticalAlign: 'middle', borderRadius: '3px', border: '1px solid rgba(128, 128, 128, 0.6)', backgroundColor: '#00FF00'}} /></td>
-      <td><code>DB_GREEN</code></td>
+      <td><code>DB_GREEN</code> (string: <code>LEGACY_GREEN</code>)</td>
       <td><code>#00FF00</code></td>
     </tr>
     <tr>
       <td><span aria-hidden="true" style={{display: 'inline-block', width: '3em', height: '1.2em', verticalAlign: 'middle', borderRadius: '3px', border: '1px solid rgba(128, 128, 128, 0.6)', backgroundColor: '#FFC800'}} /></td>
-      <td><code>DB_ORANGE</code></td>
+      <td><code>DB_ORANGE</code> (string: <code>LEGACY_ORANGE</code>)</td>
       <td><code>#FFC800</code></td>
     </tr>
     <tr>
       <td><span aria-hidden="true" style={{display: 'inline-block', width: '3em', height: '1.2em', verticalAlign: 'middle', borderRadius: '3px', border: '1px solid rgba(128, 128, 128, 0.6)', backgroundColor: '#FFAFAF'}} /></td>
-      <td><code>DB_PINK</code></td>
+      <td><code>DB_PINK</code> (string: <code>LEGACY_PINK</code>)</td>
       <td><code>#FFAFAF</code></td>
     </tr>
     <tr>
