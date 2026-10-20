@@ -134,11 +134,6 @@ DEFAULT_JVM_OPTS=${defaultJvmOpts}
 # There is no easy way for users to override these options
 DEFAULT_JVM_OPTS="\${DEFAULT_JVM_OPTS} -XX:+UnlockDiagnosticVMOptions -XX:CompilerDirectivesFile=\"\${APP_HOME}/etc/dh-compiler-directives.txt\""
 
-# Customization for deephaven-core to include vm options file by default
-# If users explicitly set JAVA_OPTS, they will be opting out of dh-default.vmoptions
-DH_DEFAULT_VMOPTIONS="-XX:VMOptionsFile=\"\${APP_HOME}/etc/dh-default.vmoptions\""
-JAVA_OPTS="\${JAVA_OPTS:-\${DH_DEFAULT_VMOPTIONS}}"
-
 # Use the maximum available, or set MAX_FD != -1 to use that value.
 MAX_FD=maximum
 
@@ -193,6 +188,28 @@ else
 
 Please set the JAVA_HOME variable in your environment to match the
 location of your Java installation."
+fi
+
+# Customization for deephaven-core to include vm options file by default
+# If users explicitly set JAVA_OPTS, they will be opting out of the dh-default vm options.
+# etc/dh-default-<major>.vmoptions is used when it exists for the Java major version, otherwise etc/dh-default.vmoptions.
+# The major version comes from the JDK's release file, or from the java command itself when there is no release file.
+if [ -z "\$JAVA_OPTS" ] ; then
+    if [ -n "\$JAVA_HOME" ] ; then
+        DH_JAVA_HOME=\$JAVA_HOME
+    else
+        DH_JAVA_HOME=\$( readlink -f "\$( command -v java )" 2>/dev/null ) && DH_JAVA_HOME=\${DH_JAVA_HOME%/bin/java}
+    fi
+    if [ -n "\$DH_JAVA_HOME" ] && [ -f "\$DH_JAVA_HOME/release" ] ; then
+        DH_JAVA_MAJOR=\$( sed -n 's/^JAVA_VERSION="\\([0-9]*\\).*/\\1/p' "\$DH_JAVA_HOME/release" )
+    else
+        DH_JAVA_MAJOR=\$( "\$JAVACMD" -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java\\.specification\\.version = \\([0-9]*\\).*/\\1/p' )
+    fi
+    DH_DEFAULT_VMOPTIONS_FILE="\${APP_HOME}/etc/dh-default-\${DH_JAVA_MAJOR}.vmoptions"
+    if [ -z "\$DH_JAVA_MAJOR" ] || [ ! -f "\$DH_DEFAULT_VMOPTIONS_FILE" ] ; then
+        DH_DEFAULT_VMOPTIONS_FILE="\${APP_HOME}/etc/dh-default.vmoptions"
+    fi
+    JAVA_OPTS="-XX:VMOptionsFile=\"\${DH_DEFAULT_VMOPTIONS_FILE}\""
 fi
 
 # Increase the maximum file descriptors if we can.
