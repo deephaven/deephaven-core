@@ -2,17 +2,19 @@
 title: Filter
 ---
 
-A [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) is an object that represents a filter condition. [`where`](../../table-operations/filter/where.md) accepts `Filter` objects as well as strings. When it receives a string, Deephaven creates a `Filter` from it internally.
+A [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) is an object that represents a filter condition. [`where`](../../table-operations/filter/where.md) accepts `Filter` objects as well as strings.
 
 ## Why use a Filter?
 
-Most filters need no `Filter` object. [`where`](../../table-operations/filter/where.md) with a string condition, [`whereIn`](../../table-operations/filter/where-in.md), [`whereNotIn`](../../table-operations/filter/where-not-in.md), and the other filter methods cover them. A string condition is enough when the condition examines only values in the current row, such as `"Price > 100"`, and has no side effects. A condition with no side effects does not modify global variables, write to files, or depend on evaluation order. [`where`](../../table-operations/filter/where.md) creates a `Filter` from the string and [parallelizes](../../../conceptual/query-engine/parallelization.md) its evaluation across cores when enough rows reach it.
+Most conditions need no `Filter` object. Use [`where`](../../table-operations/filter/where.md) with a string condition, or [`whereIn`](../../table-operations/filter/where-in.md), [`whereNotIn`](../../table-operations/filter/where-not-in.md), and the other filter methods. A string condition is enough when it reads only values in the current row and has no side effects, such as `"Price > 100"`.
+
+[`where`](../../table-operations/filter/where.md) turns a string condition into a `Filter` and evaluates it in [parallel](../../../conceptual/query-engine/parallelization.md) across cores when enough rows reach it. A condition has no side effects if it does not modify global variables, write to files, or depend on evaluation order.
 
 Use a `Filter` object in these three situations:
 
 - **Filters with shared state**: a filter that modifies shared state, such as counting how many rows pass, can corrupt that state when threads evaluate rows at the same time. Mark it serial with [`withSerial`](./ConcurrencyControl.md#withserial) so that the engine evaluates its rows one at a time.
-- **Complex boolean logic**: use [`Filter.and`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html), [`Filter.or`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html), and [`Filter.not`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) to compose filters programmatically when conditions are built dynamically or when separate objects express the conditions more clearly.
-- **[Barriers](./Barrier.md) between filters**: use them when one filter with shared state must finish before another starts. This is rare because most filters do not share state. See [Barrier](./Barrier.md) for the full reference or [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide for broader context.
+- **Boolean logic built in code**: a string condition can already combine tests with `&&` and `||`. Use [`Filter.and`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html), [`Filter.or`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html), and [`Filter.not`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) when code builds the conditions, such as from a list assembled at run time, or when the parts are `Filter` objects.
+- **Ordering between filters**: a [Barrier](./Barrier.md) makes one filter finish before another starts. This is rare because most filters do not share state. See [Barrier](./Barrier.md) for the full reference.
 
 ## Create a Filter
 
@@ -31,6 +33,8 @@ source = emptyTable(10).update("X = i")
 myFilter = Filter.from("X > 5")[0]
 result = source.where(myFilter)
 ```
+
+This example only shows how to create a `Filter`. It is equivalent to `source.where("X > 5")`, because the `Filter` has no control method and is not combined with other filters.
 
 ### Combine filters with boolean logic
 
@@ -74,13 +78,13 @@ The [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.
 
 ## Methods
 
-`Filter` implements [`ConcurrencyControl`](./ConcurrencyControl.md), which provides three methods that control how Deephaven evaluates the filter. By default, Deephaven [parallelizes](../../../conceptual/query-engine/parallelization.md) the evaluation of a single filter across CPU cores when enough rows reach it.
+`Filter` implements [`ConcurrencyControl`](./ConcurrencyControl.md), which provides three methods that control how Deephaven evaluates the filter. [Parallelization](../../../conceptual/query-engine/parallelization.md) describes the defaults.
 
 ### `withSerial`
 
-[`withSerial`](./ConcurrencyControl.md#withserial) marks the filter serial. Deephaven never runs a serial filter concurrently with itself, and it evaluates the rows of the filter one at a time in row set order. A filter that has side effects, such as modifying shared state, or that depends on row order needs this guarantee.
+[`withSerial`](./ConcurrencyControl.md#withserial) marks the filter serial. Deephaven never runs a serial filter concurrently with itself, and it evaluates the rows of the filter one at a time in row set order.
 
-A serial filter also keeps its position among the other filters in a [`where`](../../table-operations/filter/where.md). [Filter evaluation order](../../table-operations/filter/where.md#control-filter-evaluation-order) describes the rules, and [Serial execution](../../table-operations/filter/where.md#run-a-filter-serially) describes when Deephaven parallelizes a filter that is not serial.
+A serial filter also keeps its position among the other filters in a [`where`](../../table-operations/filter/where.md), so no later filter runs ahead of it. [Filter evaluation order](../../table-operations/filter/where.md#control-filter-evaluation-order) describes the rules.
 
 The following example marks a filter serial because it modifies external state.
 
@@ -105,9 +109,7 @@ The serial filter evaluates each of the 100 rows exactly once, one at a time, so
 
 ### `withDeclaredBarriers` and `withRespectedBarriers`
 
-These two methods enforce execution order between filters. One filter declares a [Barrier](./Barrier.md) and goes first. Another filter respects the [Barrier](./Barrier.md) and waits.
-
-A [Barrier](./Barrier.md) is a synchronization object that is created once and shared between filters. In Groovy, any Java object can serve as a [Barrier](./Barrier.md). The two methods apply it as follows:
+A [Barrier](./Barrier.md) is an object that is created once and shared between filters. These two methods give filters their roles, and together they enforce execution order between filters:
 
 - [`withDeclaredBarriers(barrier)`](./ConcurrencyControl.md#withdeclaredbarriers): this filter goes first. It evaluates all of its rows before any respecting filter evaluates its own.
 - [`withRespectedBarriers(barrier)`](./ConcurrencyControl.md#withrespectedbarriers): this filter waits. It does not evaluate its rows until the filter that declares the [Barrier](./Barrier.md) finishes.

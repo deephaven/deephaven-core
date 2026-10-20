@@ -2,11 +2,11 @@
 title: Selectable
 ---
 
-A [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) is a column definition: a formula such as `NewColumn = ExistingColumn * 2`, optionally with concurrency controls attached. [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) accept it in place of a [formula string](../../../how-to-guides/formulas.md), and so do [`view`](../../table-operations/select/view.md), [`updateView`](../../table-operations/select/update-view.md), and [`lazyUpdate`](../../table-operations/select/lazy-update.md), with the [restrictions](#table-operations-that-accept-a-selectable) below. The controls force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) or order execution between columns with [Barriers](./Barrier.md).
+A [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) is a column definition: a formula such as `NewColumn = ExistingColumn * 2`, optionally with concurrency controls attached. [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) accept it in place of a [formula string](../../../how-to-guides/formulas.md), and so do [`view`](../../table-operations/select/view.md), [`updateView`](../../table-operations/select/update-view.md), and [`lazyUpdate`](../../table-operations/select/lazy-update.md), with the [restrictions](#table-operations-that-accept-a-selectable) below.
 
 ## Why use a Selectable?
 
-A `Selectable` adds concurrency controls to a column formula.
+Most formulas need no `Selectable` object. A `Selectable` adds concurrency controls to a column formula, so it matters only when a formula needs those controls.
 
 ### Do you need a Selectable at all?
 
@@ -19,13 +19,15 @@ Such a formula gains nothing from an explicit `Selectable` object.
 
 ### When you need explicit control
 
-A formula that reads or writes shared state that changes between rows is safe to run in parallel only if it produces the same result when multiple threads process the rows in any order. Parallel execution can produce incorrect results otherwise, so such a formula needs a `Selectable` with one of these controls:
+A formula that reads or writes shared state can give wrong results when threads process rows in parallel, unless its result is the same for any row order. Such a formula needs a `Selectable` with one of these controls:
 
 - [`withSerial`](./ConcurrencyControl.md#withserial): the formula evaluates its rows in row set order, never in parallel. Typical cases are:
   - A counter or accumulator that increments for each row.
   - Logging or file writes that must happen sequentially.
   - A formula whose result for row N depends on what happened in row N-1.
-- [Barriers](./Barrier.md): one column finishes all of its rows before another column starts. A [Barrier](./Barrier.md) does not make a column serial, so a column that writes state that is not thread-safe needs [`withSerial`](./ConcurrencyControl.md#withserial) in addition to the [Barrier](./Barrier.md). A column that only reads state that a Barrier has already finalized does not. See [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide for broader context.
+- [Barriers](./Barrier.md): one column finishes all of its rows before another column starts. A [Barrier](./Barrier.md) does not make a column serial, so a column that writes state that is not thread-safe also needs [`withSerial`](./ConcurrencyControl.md#withserial). A column that only reads state that a Barrier has already finalized does not.
+
+See [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide for broader context.
 
 ## Create a Selectable
 
@@ -60,19 +62,21 @@ result = source.update([col])
 ```
 
 > [!WARNING]
-> Neither [`Selectable.of`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) nor [`Selectable.parse`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) validates the expression, which Deephaven compiles as query code. [`RawString`](https://deephaven.io/core/javadoc/io/deephaven/api/RawString.html) stores the expression unparsed, and [`Selectable.parse`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) wraps everything after the `=` in a [`RawString`](https://deephaven.io/core/javadoc/io/deephaven/api/RawString.html) in the same way. Untrusted user input can inject arbitrary query code. The expression must come from a trusted source, and external input must be validated or allowlisted first.
+> The expression must come from a trusted source, and external input must be validated or allowlisted first, because untrusted user input can inject arbitrary query code. Neither [`Selectable.of`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) nor [`Selectable.parse`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) validates the expression, which Deephaven compiles as query code. [`RawString`](https://deephaven.io/core/javadoc/io/deephaven/api/RawString.html) stores the expression unparsed, and [`Selectable.parse`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) wraps everything after the `=` in a [`RawString`](https://deephaven.io/core/javadoc/io/deephaven/api/RawString.html) in the same way.
 
 ## Methods
 
-A `Selectable` has the three methods defined in [`ConcurrencyControl`](./ConcurrencyControl.md): [`withSerial`](./ConcurrencyControl.md#withserial), [`withDeclaredBarriers`](./ConcurrencyControl.md#withdeclaredbarriers), and [`withRespectedBarriers`](./ConcurrencyControl.md#withrespectedbarriers). This section describes how they apply to column calculations.
+A `Selectable` has the three methods defined in [`ConcurrencyControl`](./ConcurrencyControl.md): [`withSerial`](./ConcurrencyControl.md#withserial), [`withDeclaredBarriers`](./ConcurrencyControl.md#withdeclaredbarriers), and [`withRespectedBarriers`](./ConcurrencyControl.md#withrespectedbarriers).
 
 ### `withSerial`
 
 [`withSerial`](./ConcurrencyControl.md#withserial) returns a `Selectable` that is serial, as [`ConcurrencyControl`](./ConcurrencyControl.md) defines the term: the column calculation never runs concurrently with itself, and it evaluates its rows one at a time in row set order.
 
-Parallel evaluation follows these defaults:
+Without [`withSerial`](./ConcurrencyControl.md#withserial), Deephaven can evaluate a column calculation in parallel under these conditions:
 
-- Deephaven considers a column calculation for parallel evaluation once it processes 4,194,304 rows or more, and when more than one worker thread is available. [`QueryTable.minimumParallelSelectRows`](../../../conceptual/query-table-configuration.md#parallel-processing-with-select) sets the row count. The count is the whole table on initialization, or the added and modified rows of each cycle on a refreshing table.
+- Deephaven considers a column calculation for parallel evaluation once it processes 4,194,304 rows or more. [`QueryTable.minimumParallelSelectRows`](../../../conceptual/query-table-configuration.md#parallel-processing-with-select) sets the row count.
+- The row count is the whole table on initialization, or the added and modified rows of each cycle on a refreshing table.
+- Deephaven also needs more than one worker thread.
 
 The following example evaluates 10 rows, far below the parallelization threshold. It shows the ordering guarantee rather than a speedup.
 
@@ -88,9 +92,7 @@ result = emptyTable(10).update([col])
 
 ### `withDeclaredBarriers` and `withRespectedBarriers`
 
-These two methods work together to order columns. One column declares a [Barrier](./Barrier.md), and another column respects it.
-
-A [Barrier](./Barrier.md) is a synchronization object shared between columns. In Groovy, any Java object can serve as a [Barrier](./Barrier.md). The two roles are:
+A [Barrier](./Barrier.md) is a synchronization object shared between columns. In Groovy, any Java object can serve as a [Barrier](./Barrier.md). One column declares it, and another column respects it. The two roles are:
 
 - [`withDeclaredBarriers`](./ConcurrencyControl.md#withdeclaredbarriers): this column goes first. It computes all of its rows before any respecting column computes its rows.
 - [`withRespectedBarriers`](./ConcurrencyControl.md#withrespectedbarriers): this column waits. It computes no rows until the declaring column has finished.

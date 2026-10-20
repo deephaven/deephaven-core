@@ -4,15 +4,15 @@ title: ConcurrencyControl
 
 [`ConcurrencyControl`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_control.html#deephaven.concurrency_control.ConcurrencyControl) is the interface that controls how Deephaven runs a column calculation or a filter. [`Selectable`](./Selectable.md) (used by [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)) and [`Filter`](./Filter.md) (used by [`where`](../../table-operations/filter/where.md)) both implement it. Both therefore have the same three methods: [`with_serial`](#with_serial), [`with_declared_barriers`](#with_declared_barriers), and [`with_respected_barriers`](#with_respected_barriers).
 
-This page defines what each method guarantees and where the guarantees differ between a [`Selectable`](./Selectable.md) and a [`Filter`](./Filter.md). The [`Selectable`](./Selectable.md) and [`Filter`](./Filter.md) pages describe how to use each type.
+This page defines what each method guarantees and where the guarantees differ between a [`Selectable`](./Selectable.md) and a [`Filter`](./Filter.md). The [`Selectable`](./Selectable.md) and [`Filter`](./Filter.md) pages describe how to use each type, and [`with_serial` versus Barriers](#with_serial-versus-barriers) compares the two controls.
 
 This page uses these terms:
 
 - **Expression**: a [`Selectable`](./Selectable.md) or a [`Filter`](./Filter.md).
 - **Row set order**: ascending row key.
 - **[Barrier](./Barrier.md)**: an object that orders one expression after another.
-- **Default parallelization**: Deephaven assumes an expression is safe to run in parallel unless it is marked [serial](#with_serial). When the operation processes enough rows and enough threads are available, Deephaven splits the rows of the expression across threads. See [Parallelization](../../../conceptual/query-engine/parallelization.md).
-- **[Free-threaded Python](../../../conceptual/query-engine/parallelization.md#python-formulas-and-free-threading)**: a Python build without the global interpreter lock (GIL). A column or [filter](./Filter.md) that calls a Python function or uses Python objects is split across cores only on a free-threaded build.
+- **Default parallelization**: Deephaven splits the rows of an expression across threads when enough rows and threads are available, unless the expression is marked [serial](#with_serial). See [Parallelization](../../../conceptual/query-engine/parallelization.md).
+- **[Free-threaded Python](../../../conceptual/query-engine/parallelization.md#python-formulas-and-free-threading)**: a Python build without the global interpreter lock (GIL). Deephaven splits a column or [filter](./Filter.md) that calls a Python function or uses Python objects across cores only on such a build.
 
 ## Methods
 
@@ -54,7 +54,7 @@ result = empty_table(10).update(col)
 - State shared with other [selectables](./Selectable.md) in the same [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) call. [Barriers](./Barrier.md) order those expressions.
 - State shared with another table's [formulas](../../../how-to-guides/formulas.md). [Barriers](./Barrier.md) cannot order across tables, so that shared code must be thread-safe, meaning concurrent calls cannot corrupt it.
 
-A serial [filter](./Filter.md) evaluates exactly the rows that earlier filters keep, so it does not skip rows that later filters would eliminate, and it forgoes some engine optimizations.
+A serial [filter](./Filter.md) evaluates only the rows that earlier filters keep. Because no later filter can reduce that set first, it can examine more rows than a non-serial filter would, and it gives up some engine optimizations.
 
 > [!NOTE]
 > Not running concurrently is not the same as running in row set order. The engine can evaluate a non-serial expression out of row set order even when it does not run that expression concurrently.
@@ -117,13 +117,13 @@ Expressions that share state usually need both controls. [`with_serial`](#with_s
 
 The two types share these methods but differ in the following ways.
 
-|                                                                              | [`Selectable`](./Selectable.md)                                                                                                               | [`Filter`](./Filter.md)                                                                                                                       |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Table operations                                                             | [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)                                   | [`where`](../../table-operations/filter/where.md)                                                                                             |
-| Effect of [`with_serial`](#with_serial) on other expressions                 | By default, none. Two independent [selectables](./Selectable.md) can still run at the same time unless a [Barrier](./Barrier.md) orders them. | A serial filter is never reordered: no filter in the same [`where`](../../table-operations/filter/where.md) call runs out of order around it. |
-| Constant-valued expression declaring or respecting a [Barrier](./Barrier.md) | Not allowed.                                                                                                                                  | Allowed.                                                                                                                                      |
+|                                                                              | [`Selectable`](./Selectable.md)                                                                                                               | [`Filter`](./Filter.md)                                                                                                                          |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Table operations                                                             | [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md)                                   | [`where`](../../table-operations/filter/where.md)                                                                                                |
+| Effect of [`with_serial`](#with_serial) on other expressions                 | By default, none. Two independent [selectables](./Selectable.md) can still run at the same time unless a [Barrier](./Barrier.md) orders them. | A serial filter keeps its position: the engine moves no other filter in the same [`where`](../../table-operations/filter/where.md) call past it. |
+| Constant-valued expression declaring or respecting a [Barrier](./Barrier.md) | Not allowed.                                                                                                                                  | Allowed.                                                                                                                                         |
 
-The default for [`Selectable`](./Selectable.md) comes from the [`QueryTable.serialSelectImplicitBarriers`](../../../conceptual/query-table-configuration.md#stateless-by-default) property. [Implicit Barriers](../../../conceptual/query-engine/parallelization.md#implicit-barriers) describes the alternative.
+By default, Deephaven adds no implicit ordering between [selectables](./Selectable.md). The [`QueryTable.serialSelectImplicitBarriers`](../../../conceptual/query-table-configuration.md#stateless-by-default) property changes that, and [Implicit Barriers](../../../conceptual/query-engine/parallelization.md#implicit-barriers) describes the alternative.
 
 ## Related documentation
 
