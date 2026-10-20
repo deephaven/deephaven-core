@@ -5,6 +5,7 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Indices;
 import io.deephaven.engine.page.ChunkPageFactory;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.parquet.base.PageMaterializerFactory;
@@ -67,7 +68,7 @@ public interface ToPage<ATTR extends Any, RESULT> {
      * must be accepted by {@link #convertResult}, so an implementation that overrides {@link #getResult} must override
      * this too.
      */
-    default Object getSparseResult(SparsePageCursor cursor, LongChunk<?> rowRanges, int rowCount)
+    default Object getSparseResult(SparsePageCursor cursor, LongChunk<Indices> rowRanges, int rowCount)
             throws IOException {
         return cursor.materialize(nullValue(), rowRanges, rowCount);
     }
@@ -151,7 +152,7 @@ public interface ToPage<ATTR extends Any, RESULT> {
         }
 
         @Override
-        public Object getSparseResult(SparsePageCursor cursor, LongChunk<?> rowRanges, int rowCount)
+        public Object getSparseResult(SparsePageCursor cursor, LongChunk<Indices> rowRanges, int rowCount)
                 throws IOException {
             return toPage.getSparseResult(cursor, rowRanges, rowCount);
         }

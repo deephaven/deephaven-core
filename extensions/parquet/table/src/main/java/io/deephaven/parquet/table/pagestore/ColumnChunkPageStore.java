@@ -4,6 +4,7 @@
 package io.deephaven.parquet.table.pagestore;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -26,6 +27,7 @@ import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.engine.table.Releasable;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Indices;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -74,6 +76,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     private static final LongAdder SPARSE_FILLS = new LongAdder();
     private static final LongAdder SPARSE_OPENS = new LongAdder();
     private static final LongAdder SPARSE_HITS = new LongAdder();
+    private static final LongAdder SPARSE_DECLINES = new LongAdder();
 
     /**
      * Set the process-wide sparse read density cutoff, which starts as the
@@ -121,6 +124,14 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     @TestUseOnly
     static long sparseHitCount() {
         return SPARSE_HITS.sum();
+    }
+
+    /**
+     * @return The number of page fills, across all stores, that the density cutoff declined to read sparsely
+     */
+    @TestUseOnly
+    static long sparseDeclineCount() {
+        return SPARSE_DECLINES.sum();
     }
 
     /**
@@ -662,6 +673,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         final SparseState<ATTR> state = sparseState(pageNum);
         final SparsePage<ATTR> cached = getSparsePage(state);
         if (dense && cached == null) {
+            SPARSE_DECLINES.increment();
             return false;
         }
         final int rowCount = pageRows.intSize();
@@ -669,7 +681,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         final WritableLongChunk<OrderedRowKeyRanges> requestRanges = contextWrapper.requestRanges(2 * rowCount);
         pageRows.fillRowKeyRangesChunk(requestRanges);
         // Page-relative ranges of the rows to decode: the requested rows that have no cached value.
-        final WritableLongChunk<OrderedRowKeyRanges> decodeRanges = contextWrapper.decodeRanges(2 * rowCount);
+        final WritableLongChunk<Indices> decodeRanges = contextWrapper.decodeRanges(2 * rowCount);
         final int decodeCount;
         if (cached == null) {
             decodeRanges.setSize(requestRanges.size());
@@ -687,6 +699,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             return true;
         }
         if (dense) {
+            SPARSE_DECLINES.increment();
             return false;
         }
         if (sameStore && (pageNum < cursorPageNum || (onCursorPage && decodeRanges.get(0) < cursor.nextRow()))) {
@@ -709,6 +722,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 + (onCursorPage ? contextWrapper.pendingSize(this, pageNum) : 0);
         if (cachedRows + decodeCount > maxDensity * pageRowCount(pageNum)) {
             // Enough of the page is wanted to cache it whole.
+            SPARSE_DECLINES.increment();
             return false;
         }
         // Until this fill completes, the cursor's position is unknown.
@@ -752,7 +766,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             @NotNull final SparsePage<?> cached,
             @NotNull final LongChunk<OrderedRowKeyRanges> requestRanges,
             final long pageFirstKey,
-            @NotNull final WritableLongChunk<OrderedRowKeyRanges> missingRanges) {
+            @NotNull final WritableLongChunk<Indices> missingRanges) {
         missingRanges.setSize(0);
         int missingCount = 0;
         try (final CachedRanges cachedRanges = new CachedRanges(cached)) {
@@ -857,7 +871,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             final int checkpoint = page.checkpointBefore(key);
             if (checkpoint >= 0 && page.checkpointRow(checkpoint) > start) {
                 // Past the current range: jump, rather than step over up to a checkpoint interval's ranges.
-                ranges.advance(page.checkpointRow(checkpoint));
+                // A checkpoint row starts one of the page's ranges, so the advance finds it.
+                Assert.assertion(ranges.advance(page.checkpointRow(checkpoint)), "ranges.advance(checkpointRow)");
                 start = ranges.currentRangeStart();
                 end = ranges.currentRangeEnd();
                 startPosition = page.checkpointPosition(checkpoint);
@@ -924,7 +939,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         @Nullable
         private SizedLongChunk<OrderedRowKeyRanges> requestRanges;
         @Nullable
-        private SizedLongChunk<OrderedRowKeyRanges> decodeRanges;
+        private SizedLongChunk<Indices> decodeRanges;
 
         private ChannelContextWrapper(
                 final int chunkCapacity,
@@ -964,10 +979,10 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         }
 
         /**
-         * @return A second chunk like {@link #requestRanges}
+         * @return A second chunk like {@link #requestRanges}, for page-relative ranges
          */
         @NotNull
-        WritableLongChunk<OrderedRowKeyRanges> decodeRanges(final int capacity) {
+        WritableLongChunk<Indices> decodeRanges(final int capacity) {
             if (decodeRanges == null) {
                 decodeRanges = new SizedLongChunk<>();
             }
@@ -982,7 +997,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         void appendPending(
                 @NotNull final ColumnChunkPageStore<?> store,
                 final int pageNum,
-                @NotNull final LongChunk<OrderedRowKeyRanges> ranges,
+                @NotNull final LongChunk<Indices> ranges,
                 final int count,
                 @NotNull final Object values) {
             if (pendingStore != store || pendingPageNum != pageNum) {
@@ -1000,7 +1015,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 // noinspection SuspiciousSystemArraycopy: both are arrays of the page's values
                 System.arraycopy(values, 0, pendingValues, pendingCount, count);
             }
-            // Not via a RowSet: appending one to a builder holding a bitmap is quadratic in rows per block.
             for (int ii = 0; ii < ranges.size(); ii += 2) {
                 // noinspection DataFlowIssue: set with pendingStore
                 pendingRows.appendRange(ranges.get(ii), ranges.get(ii + 1));

@@ -161,7 +161,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                     "Sparse read of a repeated or nested column: " + columnName + ", uri: " + uri);
         }
         cursor.release();
-        // The cursor outlives this read, so the page goes into its own buffers rather than the context's.
+        // The cursor outlives this read, so the page goes into the cursor's buffers rather than the context's.
         try (
                 final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
                 final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), uri);
@@ -203,7 +203,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             }
             final Encoding dataEncoding = getEncoding(encoding);
             cursor.open(pageMaterializerFactory, getDataReader(dataEncoding, bytes, valueCount, context),
-                    dataEncoding.usesDictionary(), dlDecoder);
+                    dataEncoding.usesDictionary(), dlDecoder, valueCount);
         } catch (final IOException e) {
             throw new ParquetDecodingException("Failed to sparsely read parquet page for column: " + columnName +
                     ", uri: " + uri, e);

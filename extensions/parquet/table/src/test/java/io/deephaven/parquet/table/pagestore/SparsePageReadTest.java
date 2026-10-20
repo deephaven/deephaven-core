@@ -504,8 +504,11 @@ public class SparsePageReadTest {
         try (final SafeCloseable ignored = PageCache.pinCreatedPages()) {
             assertPass("first", expected, source.where(first), Reads.DECODE);
             final String second = "ii % 26 == 13";
+            final long declinesBefore = ColumnChunkPageStore.sparseDeclineCount();
             assertPass("second", dense(() -> ParquetTools.readTable(path).where(second).select()),
                     source.where(second), Reads.ANY);
+            assertTrue("the cutoff should decline the second pass",
+                    ColumnChunkPageStore.sparseDeclineCount() > declinesBefore);
             assertPass("third", expected, source.where(first), Reads.DENSE);
         } finally {
             QueryTable.MINIMUM_PARALLEL_SELECT_ROWS = oldMinimumParallelSelectRows;
@@ -588,9 +591,11 @@ public class SparsePageReadTest {
                 final RowSet single = expected.where("ii % 1300 == 0").getRowSet().copy()) {
             assertTrue("decodes", fillSteps(expectedSource, actual, cached, cached.intSize())[0] > 0);
             // One row per fill: dense over its span of one row.
+            final long declinesBefore = ColumnChunkPageStore.sparseDeclineCount();
             final long[] reads = fillSteps(expectedSource, actual, single, 1);
             assertEquals("sparse fills", 0, reads[0]);
             assertEquals("sparse hits", single.size(), reads[1]);
+            assertEquals("sparse declines", declinesBefore, ColumnChunkPageStore.sparseDeclineCount());
         }
     }
 

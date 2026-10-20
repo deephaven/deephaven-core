@@ -7,6 +7,7 @@ import io.deephaven.parquet.base.PageMaterializerFactory;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Indices;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.LongChunk;
@@ -79,7 +80,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
     @Override
     @NotNull
     public final Object getSparseResult(@NotNull final SparsePageCursor cursor,
-            @NotNull final LongChunk<?> rowRanges, final int rowCount) throws IOException {
+            @NotNull final LongChunk<Indices> rowRanges, final int rowCount) throws IOException {
         if (!cursor.usesDictionary()) {
             return ToPage.super.getSparseResult(cursor, rowRanges, rowCount);
         }
@@ -154,7 +155,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
 
             @Override
             public Object getSparseResult(@NotNull final SparsePageCursor cursor,
-                    @NotNull final LongChunk<?> rowRanges, final int rowCount) throws IOException {
+                    @NotNull final LongChunk<Indices> rowRanges, final int rowCount) throws IOException {
                 return ToPageWithDictionary.this.getSparseResult(cursor, rowRanges, rowCount);
             }
 
