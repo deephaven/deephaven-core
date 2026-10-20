@@ -1822,6 +1822,10 @@
                     "path": "reference/table-operations/format/format-row-where.md"
                   },
                   {
+                    "label": "Named colors",
+                    "path": "reference/table-operations/format/named-colors.md"
+                  },
+                  {
                     "label": "layout_hints",
                     "path": "reference/table-operations/format/layout-hints.md"
                   }
