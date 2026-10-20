@@ -57,7 +57,7 @@ source = new_table(
 result = source.update(formulas=["A", "X = B", "Y = sqrt(C)"])
 ```
 
-## Serial execution
+## Run an update serially
 
 A formula that has side effects or depends on row order can use [`with_serial`](../../query-language/types/Selectable.md#with_serial) to force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) in row set order. Without it, `update` can split a large input across CPU cores. With default settings, that means 4,194,304 rows or more, as [`QueryTable.minimumParallelSelectRows`](../../../conceptual/query-table-configuration.md#parallel-processing-with-select) sets. A formula backed by a Python callback is split only on a [free-threaded](../../../conceptual/query-engine/parallelization.md#python-formulas-and-free-threading) Python build.
 

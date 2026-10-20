@@ -5,7 +5,7 @@ title: where
 The [`where`](#syntax) method filters rows of data from the source table.
 
 > [!NOTE]
-> The engine does not guarantee that it evaluates filters in argument order. See [Filter evaluation order](#filter-evaluation-order) for the order it uses and how to guarantee a specific one.
+> The engine does not guarantee that it evaluates filters in argument order. See [Filter evaluation order](#control-filter-evaluation-order) for the order it uses and how to guarantee a specific one.
 
 ## Syntax
 
@@ -131,7 +131,7 @@ result_filtered = source.where(filters=["(boolean)my_filter(IntegerColumn)"])
 result_not_filtered = source.where(filters=["!((boolean)my_filter(IntegerColumn))"])
 ```
 
-## Filter evaluation order
+## Control filter evaluation order
 
 When [`where`](#syntax) receives several filters, Deephaven evaluates them one after another, and each filter evaluates only the rows that passed the filters before it. Deephaven parallelizes within a single filter by splitting that filter's rows across threads. It does not run different filters at the same time.
 
@@ -147,7 +147,7 @@ A [match filter](../../../how-to-guides/use-filters.md#match-filters) that Deeph
 
 Deephaven applies these rules:
 
-1. A stateful filter keeps its position in the argument list. Reordering never crosses it. The exception is a filter on partitioning columns, which Deephaven can run first, as described under [Filters on partitioning columns](#filters-on-partitioning-columns).
+1. A stateful filter keeps its position in the argument list. Reordering never crosses it. The exception is a filter on partitioning columns, which Deephaven can run first, as described under [Filters on partitioning columns](#filter-on-partitioning-columns).
 2. Within a run of consecutive stateless filters, Deephaven orders the filters by these rules, in priority order:
    - A filter that respects a [Barrier](../../query-language/types/Barrier.md) runs after the filter that declares it.
    - Filters whose data source supports [predicate pushdown](../../../how-to-guides/predicate-pushdown.md) run in order of estimated cost, cheaper first, ahead of filters without that support.
@@ -157,7 +157,7 @@ To guarantee a specific order, use [`with_serial`](../../query-language/types/Fi
 
 When `where` runs on a partitioned source, Deephaven runs filters on partitioning columns first where it can, so their position in the argument list rarely matters. The section on partitioning columns below describes when it cannot. Listing [match filters](../../../how-to-guides/use-filters.md#match-filters) before conditional filters is worthwhile: a match filter that Deephaven evaluates directly does not compile or call a formula, and each later filter evaluates only the rows that earlier filters keep.
 
-## Serial execution
+## Run a filter serially
 
 By default, Deephaven parallelizes the evaluation of a single filter by splitting its rows across CPU cores. Mark a filter serial with [`with_serial`](../../query-language/types/Filter.md#with_serial) when it has side effects or depends on row order. Deephaven then evaluates that filter's rows one at a time in row set order, which is ascending row key.
 
@@ -193,7 +193,7 @@ The serial filter evaluates each of the 100 rows exactly once, one at a time, so
 
 See [Parallelization](../../../conceptual/query-engine/parallelization.md) for more details.
 
-## Filters on partitioning columns
+## Filter on partitioning columns
 
 A partitioned source, such as a directory of [Parquet](../../../how-to-guides/data-import-export/parquet-import.md) files or an [Iceberg](../../../how-to-guides/data-import-export/iceberg.md) table, has partitioning columns whose values identify each partition. Deephaven can apply a filter that uses only partitioning columns to whole partitions before it reads any data. It evaluates the filter once per partition instead of once per row, and runs it ahead of the other filters, so whole partitions are skipped.
 

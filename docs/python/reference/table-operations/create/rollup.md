@@ -68,7 +68,7 @@ Whether or not to include constituent rows at the leaf level. Default is `False`
 - `node_operation_recorder(node_type)` - Get a [`recorder`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.RollupNodeOperationsRecorder) for per-node operations to apply during snapshots of the requested [`NodeType`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.NodeType).
 - `with_node_operations(recorders)` - Create a new rollup table that applies the [`recorded`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.RollupNodeOperationsRecorder) operations to nodes when gathering snapshots.
 
-### Attributes
+### Read rollup attributes
 
 - `aggs` - The aggregations performed in the `rollup` operation.
 - `by` - The group-by columns used for the `rollup` operation.
@@ -145,7 +145,7 @@ result = source.rollup(aggs=agg_list, by=by_list)
 
 ![The above `result` rollup table](../../../assets/how-to/rollup-table-realtime.gif)
 
-## Formula aggregations in rollups
+## Use formula aggregations in rollups
 
 A [formula aggregation](../group-and-aggregate/AggFormula.md) evaluates its formula for every changed row of the output table on each tick. Its input [vectors](../../../conceptual/arrays-vs-vectors.md) can be large: at the root level, they hold every row of the source table. A formula that is slow on large vectors slows the rollup.
 
@@ -172,7 +172,7 @@ simple_sum = source.rollup(
 
 The sum for the root row reads every row of the source table. The engine reports row-level changes (added, removed, modified, and shifted rows), but not changes inside a vector, because a vector sits within a single row. When the table ticks, the engine therefore re-evaluates the whole formula.
 
-### Formula reaggregation
+### Reaggregate formulas
 
 Formula reaggregation limits the size of input vectors while the engine evaluates changes to a rollup. The formula must apply at every level of the rollup and return the same type at each level.
 
@@ -233,7 +233,7 @@ Exception type            : io.deephaven.engine.table.impl.lang.QueryLanguagePar
 Exception message         : Cannot find variable or class Value
 ```
 
-### Formula depth and keys
+### Use formula depth and keys
 
 Formula aggregations may include the constant `__FORMULA_DEPTH__` or `__FORMULA_KEYS__` columns. The `__FORMULA_DEPTH__` column is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. The `__FORMULA_KEYS__` column is an [`ObjectVector`](https://docs.deephaven.io/core/javadoc/io/deephaven/vector/ObjectVector.html) of `String` containing the names of the group-by columns in effect at the current level of the rollup: empty at the root, `["Key"]` at depth 1, and `["Key", "Key2"]` at depth 2 in the examples below. The following formulas demonstrate the values of depth and keys:
 

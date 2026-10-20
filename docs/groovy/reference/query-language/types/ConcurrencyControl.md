@@ -35,12 +35,15 @@ col = Selectable.parse("ID = counter.getAndIncrement()").withSerial()
 result = emptyTable(10).update([col])
 ```
 
-What [`withSerial`](#withserial) protects, and what it does not:
+[`withSerial`](#withserial) protects:
 
-- State used only by this expression is protected.
-- State shared with other [selectables](./Selectable.md) in the same [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) call also needs [Barriers](./Barrier.md).
-- State shared with other [filters](./Filter.md) in the same [`where`](../../table-operations/filter/where.md) call is protected, because a serial filter orders itself against every other filter in that call.
-- State shared with another table's [formulas](../../../how-to-guides/formulas.md) is not protected, and [Barriers](./Barrier.md) cannot order across tables. That shared code must be thread-safe, meaning concurrent calls cannot corrupt it.
+- State used only by this expression.
+- State shared with other [filters](./Filter.md) in the same [`where`](../../table-operations/filter/where.md) call, because a serial filter orders itself against every other filter in that call.
+
+[`withSerial`](#withserial) does not protect:
+
+- State shared with other [selectables](./Selectable.md) in the same [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) call. [Barriers](./Barrier.md) order those expressions.
+- State shared with another table's [formulas](../../../how-to-guides/formulas.md). [Barriers](./Barrier.md) cannot order across tables, so that shared code must be thread-safe, meaning concurrent calls cannot corrupt it.
 
 A serial [filter](./Filter.md) evaluates exactly the rows that earlier filters keep, so it does not skip rows that later filters would eliminate, and it forgoes some engine optimizations.
 
@@ -88,7 +91,7 @@ A respected [Barrier](./Barrier.md) has these rules:
 
 See [Barrier](./Barrier.md) for the full constraints and a complete worked example, including how to coordinate more than two expressions.
 
-## `withSerial` versus Barriers
+## Choose between `withSerial` and Barriers
 
 The two controls order different things:
 
@@ -99,13 +102,13 @@ A column that references another column's result needs no [Barrier](./Barrier.md
 
 Expressions that share state usually need both controls. [`withSerial`](#withserial) evaluates the rows of each expression one at a time. For [selectables](./Selectable.md), a [Barrier](./Barrier.md) also orders the expressions. [Filters](./Filter.md) need only `withSerial`, because a serial filter orders itself against the other filters.
 
-## Selectable versus Filter
+## Compare Selectable and Filter
 
 The two types share these methods but differ in the following ways.
 
 |                                                                              | [`Selectable`](./Selectable.md)                                                                                                               | [`Filter`](./Filter.md)                                                                                                                       |
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Table operations                                                             | The five operations listed above, with restrictions described in [Selectable](./Selectable.md#table-operations-that-accept-a-selectable)      | [`where`](../../table-operations/filter/where.md)                                                                                             |
+| Table operations                                                             | The five operations listed above, with restrictions described in [Selectable](./Selectable.md#pass-a-selectable-to-a-table-operation)         | [`where`](../../table-operations/filter/where.md)                                                                                             |
 | Effect of [`withSerial`](#withserial) on other expressions                   | By default, none. Two independent [selectables](./Selectable.md) can still run at the same time unless a [Barrier](./Barrier.md) orders them. | A serial filter is never reordered: no filter in the same [`where`](../../table-operations/filter/where.md) call runs out of order around it. |
 | Constant-valued expression declaring or respecting a [Barrier](./Barrier.md) | Not allowed.                                                                                                                                  | Allowed.                                                                                                                                      |
 

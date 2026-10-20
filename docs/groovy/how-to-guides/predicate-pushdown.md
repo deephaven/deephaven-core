@@ -14,7 +14,7 @@ For example, a [match](./use-filters.md#match-filters) or [range](./use-filters.
 
 Pushdown can also change the order in which filters run. Without pushdown, the engine runs user-supplied filters one after another in the order you specify. The first filter to run decides which rows of the full table pass, and the engine hands only those rows to the next filter. This continues until only rows that satisfy every filter remain.
 
-With pushdown, the engine can run a filter that a data source can answer cheaply before a filter listed earlier, so the argument order of pushed-down filters is not guaranteed. Parallelism also happens inside a single filter, which can split its rows across threads, so a filter that Deephaven treats as stateless has no guaranteed order in which it sees rows. [Filter evaluation order](../reference/table-operations/filter/where.md#filter-evaluation-order) describes the guarantees that do hold, and [Barriers and serial execution](../conceptual/query-engine/parallelization.md#controlling-execution-order) shows how to enforce an order.
+With pushdown, the engine can run a filter that a data source can answer cheaply before a filter listed earlier, so the argument order of pushed-down filters is not guaranteed. Parallelism also happens inside a single filter, which can split its rows across threads, so a filter that Deephaven treats as stateless has no guaranteed order in which it sees rows. [Filter evaluation order](../reference/table-operations/filter/where.md#control-filter-evaluation-order) describes the guarantees that do hold, and [Barriers and serial execution](../conceptual/query-engine/parallelization.md#controlling-execution-order) shows how to enforce an order.
 
 ## Filter priority
 

@@ -4,7 +4,7 @@ title: Selectable
 
 A [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) is a column definition: a formula such as `NewColumn = ExistingColumn * 2`, optionally with concurrency controls attached. [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) accept it in place of a [formula string](../../../how-to-guides/formulas.md). The controls force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) or order execution between columns with [Barriers](./Barrier.md).
 
-## Creating a Selectable
+## Create a Selectable
 
 [`Selectable.parse`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable.parse) creates a `Selectable` from a [formula string](../../../how-to-guides/formulas.md). The string follows the same `"ColumnName = expression"` syntax as a [formula string](../../../how-to-guides/formulas.md) passed to [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md).
 
@@ -65,18 +65,18 @@ A [Barrier](./Barrier.md) orders columns relative to each other and does not mak
 
 See [Barrier](./Barrier.md) and [`ConcurrencyControl`](./ConcurrencyControl.md) for the full constraints and worked examples, and [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide for broader context.
 
-## Table operations that accept a Selectable
+## Pass a Selectable to a table operation
 
 The table operations differ in what they accept:
 
 - [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) accept `Selectable` objects, so all three concurrency methods apply.
 - [`view`](../../table-operations/select/view.md), [`update_view`](../../table-operations/select/update-view.md), and [`lazy_update`](../../table-operations/select/lazy-update.md) accept [formula strings](../../../how-to-guides/formulas.md) only. They cannot take a `Selectable`, so none of the concurrency methods attach to their formulas.
 
-## When to use Selectable
+## Decide when to use Selectable
 
 A `Selectable` adds concurrency controls to a column formula.
 
-### Do you need a Selectable at all?
+### Decide whether a Selectable is needed
 
 A [formula string](../../../how-to-guides/formulas.md) passed to [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) becomes a `Selectable` internally, and Deephaven [parallelizes](../../../conceptual/query-engine/parallelization.md) it by default. A string is enough for a formula that meets both of these conditions:
 
@@ -85,7 +85,7 @@ A [formula string](../../../how-to-guides/formulas.md) passed to [`select`](../.
 
 Such a formula gains nothing from an explicit `Selectable` object. A formula that calls a Python function runs in parallel only on a free-threaded Python build, as described under [`with_serial`](#with_serial).
 
-### When you need explicit control
+### Add explicit control to a Selectable
 
 A formula that reads or writes shared state that changes between rows is safe to run in parallel only if it produces the same result when multiple threads process the rows in any order. Parallel execution can produce incorrect results otherwise, so such a formula needs a `Selectable` with one of these controls:
 
