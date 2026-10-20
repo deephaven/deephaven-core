@@ -5,6 +5,7 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -18,6 +19,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.lang.ref.Reference;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -126,9 +128,12 @@ public class BarrierActivePushdownTest {
     @Test
     public void inMemoryDataIndex() {
         final Table source = data();
-        // where() uses only an index whose table is already computed.
-        DataIndexer.getOrCreateDataIndex(source, "Key").table();
+        // where() uses only an index whose table is already computed. DataIndexer holds the index weakly, so it is
+        // held here until the check is done.
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(source, "Key");
+        dataIndex.table();
         check(source);
+        Reference.reachabilityFence(dataIndex);
     }
 
     @Test
