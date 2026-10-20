@@ -7,8 +7,8 @@ name: Nightly Python Versions CI
 #   Docker image. Java hosts Python from the job's venv.
 # The Python packages install from source.
 #
-# Floor: python_requires in py/server/setup.py. Ceiling: the newest Python that every dependency has a wheel for. jpy
-# has none for 3.15 yet. The free-threaded 3.14t build runs with the GIL off.
+# Floor: python_requires in py/server/setup.py. Ceiling: the newest Python that jpy has a wheel for, 3.15 as of jpy
+# 2.2.0. The free-threaded 3.14t and 3.15t builds run with the GIL off.
 
 on:
   schedule:
@@ -66,12 +66,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 3.14t is the free-threaded build. 3.13t is left out: grpcio and numba have no 3.13t wheels.
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14', '3.14t']
+        # 3.14t and 3.15t are the free-threaded builds. 3.13t is left out: grpcio and numba have no 3.13t wheels.
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14', '3.14t', '3.15', '3.15t']
         suite: ['server', 'client']
     runs-on: ubuntu-24.04
-    # A normal run takes under 10 minutes. The first 3.14t run also compiles grpcio, about 17 minutes. Without a limit a
-    # hung test runs for GitHub's default of 6 hours.
+    # A normal run takes under 10 minutes. The first 3.14t or 3.15t run also compiles grpcio, about 17 minutes. Without a
+    # limit a hung test runs for GitHub's default of 6 hours.
     timeout-minutes: 45
     env:
       DEEPHAVEN_MAXMEM: 2G
@@ -104,8 +104,8 @@ jobs:
         # .github/scripts/py-versions-test.sh uses uv to download the Python version and create the venv.
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
-          # grpcio has no Linux wheel for 3.14t, so uv compiles it, which takes about 17 minutes. The cache keeps the
-          # built wheel for later runs.
+          # grpcio has no Linux wheel for 3.14t or 3.15t, and numba has none for 3.15t, so uv compiles them. grpcio
+          # takes about 17 minutes. The cache keeps the built wheels for later runs.
           enable-cache: true
           cache-dependency-glob: 'py/*/setup.py'
           cache-suffix: ${{ matrix.suite }}-${{ matrix.python-version }}

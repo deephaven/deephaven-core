@@ -6,14 +6,14 @@ This page lists the Python versions, server Python dependencies, Java (JDK) vers
 
 ## Python versions
 
-A :white_check_mark: indicates that the Deephaven version supports the Python version, and a blank cell indicates that it does not. The Python 3.14/t column covers both Python 3.14 and Python 3.14t, the free-threaded build of Python 3.14. Deephaven 0.40.x also supports Python 3.8.
+A :white_check_mark: indicates that the Deephaven version supports the Python version, and a blank cell indicates that it does not. The Python 3.14/t and 3.15/t columns cover both the regular and the free-threaded build of that Python version, for example Python 3.14 and Python 3.14t. Deephaven 0.40.x also supports Python 3.8.
 
-| Deephaven version |     Python 3.9     |    Python 3.10     |    Python 3.11     |    Python 3.12     |    Python 3.13     |   Python 3.14/t    |
-| ----------------- | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
-| 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
-| 41.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
-| 42.x              |                    |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
-| 43.x              |                    |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Deephaven version |     Python 3.9     |    Python 3.10     |    Python 3.11     |    Python 3.12     |    Python 3.13     |   Python 3.14/t    |   Python 3.15/t    |
+| ----------------- | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
+| 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
+| 41.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
+| 42.x              |                    |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
+| 43.x              |                    |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
 Python 3.9 and 3.10 reached their end of life in October 2025 and October 2026. Deephaven Community Core may keep working with a Python version after its end of life, but Deephaven does not officially support it.
 
