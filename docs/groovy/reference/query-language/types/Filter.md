@@ -8,9 +8,9 @@ A string condition covers most filters. A `Filter` object composes conditions wi
 
 ## Create a Filter
 
-A `Filter` object comes from a condition string or from combining other filters with boolean logic. The [Filter functions](#use-filter-functions) table lists the remaining factories.
+A `Filter` object comes from a condition string or from combining other filters with boolean logic. The [Filter functions](#filter-functions) table lists the remaining factories.
 
-### Create a Filter from a condition string
+### From a condition string
 
 [`Filter.from`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) takes condition strings, the same kind of string that [`where`](../../table-operations/filter/where.md) accepts, such as `"X > 5"`. `Filter.from` returns a collection, so `[0]` selects a single filter.
 
@@ -42,7 +42,7 @@ andFilter = Filter.and(Filter.from("X > 5", "Y < 10"))
 result = source.where(orFilter)
 ```
 
-## Use filter functions
+## Filter functions
 
 The [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) interface provides static factory methods for common conditions. The comparison, `in`, and pattern filters are the separate classes [`FilterComparison`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/FilterComparison.html), [`FilterIn`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/FilterIn.html), and [`FilterPattern`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/FilterPattern.html). Each factory returns a `Filter` object that [`where`](../../table-operations/filter/where.md) accepts, that [`Filter.and`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) and [`Filter.or`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) can combine, and that the [concurrency methods](#methods) can modify.
 
@@ -106,7 +106,7 @@ A [Barrier](./Barrier.md) is a synchronization object that is created once and s
 
 For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md). For broader context, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
-## Decide when to use Filter objects
+## When to use Filter objects
 
 A string condition is enough when the condition examines only values in the current row, such as `"Price > 100"`, and has no side effects. A condition with no side effects does not modify global variables, write to files, or depend on evaluation order. [`where`](../../table-operations/filter/where.md) creates a `Filter` from the string and [parallelizes](../../../conceptual/query-engine/parallelization.md) its evaluation across cores when enough rows reach it.
 

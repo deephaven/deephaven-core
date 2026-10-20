@@ -8,9 +8,9 @@ A string condition covers most filters. A `Filter` object composes conditions wi
 
 ## Create a Filter
 
-A `Filter` object comes from a condition string or from combining other filters with boolean logic. The [Filter functions](#use-filter-functions) table lists the remaining factories.
+A `Filter` object comes from a condition string or from combining other filters with boolean logic. The [Filter functions](#filter-functions) table lists the remaining factories.
 
-### Create a Filter from a condition string
+### From a condition string
 
 [`Filter.from_`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.Filter.from_) takes a condition string, the same kind of string that [`where`](../../table-operations/filter/where.md) accepts, such as `"X > 5"`. It returns one `Filter` for a single condition string and a list of `Filter` objects for several.
 
@@ -41,7 +41,7 @@ or_filter = or_([Filter.from_("X > 5"), Filter.from_("Y < 10")])
 result = source.where(or_filter)
 ```
 
-## Use filter functions
+## Filter functions
 
 The [`deephaven.filters`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html) module provides functions that create filters, and the `Filter` class provides the [`Filter.from_`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.Filter.from_) factory and the [`Filter.not_`](https://docs.deephaven.io/core/pydoc/code/deephaven.filters.html#deephaven.filters.Filter.not_) method. Each returns a `Filter` object that [`where`](../../table-operations/filter/where.md) accepts and that the [concurrency methods](#methods) can modify.
 
@@ -106,7 +106,7 @@ A [Barrier](./Barrier.md) is a synchronization object that is created once and s
 
 For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md). For broader context, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
 
-## Decide when to use Filter objects
+## When to use Filter objects
 
 A string condition is enough when the condition examines only values in the current row, such as `"Price > 100"`, and has no side effects. A condition with no side effects does not modify global variables, write to files, or depend on evaluation order. [`where`](../../table-operations/filter/where.md) creates a `Filter` from the string and [parallelizes](../../../conceptual/query-engine/parallelization.md) its evaluation across cores when enough rows reach it. A string condition that calls a Python function runs in parallel only on a free-threaded Python build.
 

@@ -102,7 +102,7 @@ A respected [Barrier](./Barrier.md) has these rules:
 
 See [Barrier](./Barrier.md) for the full constraints and a complete worked example, including how to coordinate more than two expressions.
 
-## Choose between `with_serial` and Barriers
+## `with_serial` versus Barriers
 
 The two controls order different things:
 
@@ -113,7 +113,7 @@ A column that references another column's result needs no [Barrier](./Barrier.md
 
 Expressions that share state usually need both controls. [`with_serial`](#with_serial) evaluates the rows of each expression one at a time. For [selectables](./Selectable.md), a [Barrier](./Barrier.md) also orders the expressions. [Filters](./Filter.md) need only `with_serial`, because a serial filter orders itself against the other filters.
 
-## Compare Selectable and Filter
+## Selectable versus Filter
 
 The two types share these methods but differ in the following ways.
 

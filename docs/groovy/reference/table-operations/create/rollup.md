@@ -128,7 +128,7 @@ result = source.rollup(aggList, false, "N", "M")
 
 ![The above `result` rollup table](../../../assets/how-to/rollup-table-realtime.gif)
 
-## Use formula aggregations in rollups
+## Formula aggregations in rollups
 
 A [formula aggregation](../group-and-aggregate/AggFormula.md) evaluates its formula for every changed row of the output table on each tick. Its input [vectors](../../../conceptual/arrays-vs-vectors.md) can be large: at the root level, they hold every row of the source table. A formula that is slow on large vectors slows the rollup.
 
@@ -143,7 +143,7 @@ simpleSum = source.rollup(List.of(AggGroup("Value"), AggFormula("Sum = sum(Value
 
 The sum for the root row reads every row of the source table. The engine reports row-level changes (added, removed, modified, and shifted rows), but not changes inside a vector, because a vector sits within a single row. When the table ticks, the engine therefore re-evaluates the whole formula.
 
-### Reaggregate formulas
+### Formula reaggregation
 
 Formula reaggregation limits the size of input vectors while the engine evaluates changes to a rollup. The formula must apply at every level of the rollup and return the same type at each level.
 
@@ -182,7 +182,7 @@ Exception type            : io.deephaven.engine.table.impl.lang.QueryLanguagePar
 Exception message         : Cannot find variable or class Value
 ```
 
-### Use formula depth and keys
+### Formula depth and keys
 
 Formula aggregations may include the constant `__FORMULA_DEPTH__` or `__FORMULA_KEYS__` columns. The `__FORMULA_DEPTH__` column is the depth of the formula aggregation in the rollup tree. The root node of the rollup has a depth of 0, the next level is 1, and so on. The `__FORMULA_KEYS__` column is an [`ObjectVector`](https://docs.deephaven.io/core/javadoc/io/deephaven/vector/ObjectVector.html) of `String` containing the names of the group-by columns in effect at the current level of the rollup: empty at the root, `["Key"]` at depth 1, and `["Key", "Key2"]` at depth 2 in the examples below. The following formulas demonstrate the values of depth and keys:
 

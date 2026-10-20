@@ -6,7 +6,7 @@ A [`Barrier`](https://docs.deephaven.io/core/pydoc/code/deephaven.concurrency_co
 
 A [Barrier](#create-a-barrier) carries no data of its own. It is created once and shared between the operations that need to coordinate.
 
-## Decide whether a Barrier is needed
+## Why use a Barrier?
 
 Deephaven parallelizes column calculations and [filters](./Filter.md) that are eligible for it. Eligibility depends on these factors:
 
@@ -15,7 +15,7 @@ Deephaven parallelizes column calculations and [filters](./Filter.md) that are e
 - How many threads are available.
 - For a [formula](../../../how-to-guides/formulas.md) or [filter](./Filter.md) that calls a Python function or uses Python objects, whether the Python build is free-threaded, meaning it has no global interpreter lock (GIL). On a build that is not free-threaded, Deephaven never splits a Python-backed column or filter across cores. See [Python formulas and free-threading](../../../conceptual/query-engine/parallelization.md#python-formulas-and-free-threading).
 
-As a result, two eligible operations can run at the same time, with no guaranteed order between them. A [Barrier](#create-a-barrier) makes one operation finish all of its rows before another starts. Typical cases are one column that populates a cache that another column reads, or one column that computes a running total that another column depends on. [Example: what a Barrier changes](#see-what-a-barrier-changes) shows the difference.
+As a result, two eligible operations can run at the same time, with no guaranteed order between them. A [Barrier](#create-a-barrier) makes one operation finish all of its rows before another starts. Typical cases are one column that populates a cache that another column reads, or one column that computes a running total that another column depends on. [Example: what a Barrier changes](#example-what-a-barrier-changes) shows the difference.
 
 ## Create a Barrier
 
@@ -47,11 +47,11 @@ A constant is a literal, or literals joined by binary operators (arithmetic, com
 
 An expression that calls a method, such as `counter.incrementAndGet()` in the examples below, is not constant. The engine evaluates it for each row, so it can declare and respect [Barriers](#create-a-barrier).
 
-### Combine Barriers with serial execution
+### Barriers and serial execution
 
-A [Barrier](#create-a-barrier) orders operations relative to each other. It does not change how one operation processes its own rows. [`with_serial`](./ConcurrencyControl.md#with_serial) makes one operation process its rows one at a time, in row set order (ascending row key). [`with_serial` versus Barriers](./ConcurrencyControl.md#choose-between-with_serial-and-barriers) describes when an expression needs one control, the other, or both.
+A [Barrier](#create-a-barrier) orders operations relative to each other. It does not change how one operation processes its own rows. [`with_serial`](./ConcurrencyControl.md#with_serial) makes one operation process its rows one at a time, in row set order (ascending row key). [`with_serial` versus Barriers](./ConcurrencyControl.md#with_serial-versus-barriers) describes when an expression needs one control, the other, or both.
 
-### See what a Barrier changes
+### Example: what a Barrier changes
 
 Column `A` counts the rows it processes in a shared counter, and column `B` reads the counter. `B` is correct only after `A` has processed every row, so `A` declares a [Barrier](#create-a-barrier) and `B` respects it.
 
@@ -87,7 +87,7 @@ With the [Barrier](#create-a-barrier), every row of `B` holds `6000000`, so `Min
 
 Without the two [Barrier](#create-a-barrier) calls, `A` and `B` are independent, so `B` can read the counter while `A` is still counting. `MinB` and `MaxB` can then differ, and the values change with hardware and scheduling. In one run without the [Barrier](#create-a-barrier), `MinB` was 15,436 and `MaxB` was 908,154.
 
-### Coordinate two filters
+### Example: coordinate two filters
 
 [`Filter`](./Filter.md) objects use [Barriers](#create-a-barrier) in [`where`](../../table-operations/filter/where.md) the same way as columns do. In this example, `filter_a` counts the rows it examines, and `filter_b` keeps rows only when the count has reached 10.
 
@@ -116,7 +116,7 @@ result = source.where([filter_a, filter_b])
 
 Because `filter_a` examines all ten rows first, `filter_b` sees a count of 10 and `result` keeps all ten rows.
 
-### Use multiple Barriers
+### Multiple Barriers
 
 Create one [Barrier](#create-a-barrier) for each independent dependency. One operation can respect more than one [Barrier](#create-a-barrier). In this example, `A` and `B` each count the rows they process in their own counter and declare their own [Barrier](#create-a-barrier):
 
@@ -168,7 +168,7 @@ result = (
 )
 ```
 
-## Enable implicit Barriers
+## Implicit Barriers
 
 An implicit [Barrier](#create-a-barrier) is one that Deephaven adds. When [implicit Barriers](../../../conceptual/query-engine/parallelization.md#implicit-barriers) are turned on, each serial column in a [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) waits for every earlier serial column in the same operation, without any explicit [Barrier](#create-a-barrier) object. A serial column here is one that is not stateless.
 

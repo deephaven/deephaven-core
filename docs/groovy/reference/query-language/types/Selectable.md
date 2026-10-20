@@ -2,13 +2,13 @@
 title: Selectable
 ---
 
-A [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) is a column definition: a formula such as `NewColumn = ExistingColumn * 2`, optionally with concurrency controls attached. [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) accept it in place of a [formula string](../../../how-to-guides/formulas.md), and so do [`view`](../../table-operations/select/view.md), [`updateView`](../../table-operations/select/update-view.md), and [`lazyUpdate`](../../table-operations/select/lazy-update.md), with the [restrictions](#pass-a-selectable-to-a-table-operation) below. The controls force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) or order execution between columns with [Barriers](./Barrier.md).
+A [`Selectable`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) is a column definition: a formula such as `NewColumn = ExistingColumn * 2`, optionally with concurrency controls attached. [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) accept it in place of a [formula string](../../../how-to-guides/formulas.md), and so do [`view`](../../table-operations/select/view.md), [`updateView`](../../table-operations/select/update-view.md), and [`lazyUpdate`](../../table-operations/select/lazy-update.md), with the [restrictions](#table-operations-that-accept-a-selectable) below. The controls force [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) or order execution between columns with [Barriers](./Barrier.md).
 
 ## Create a Selectable
 
 Two methods create a `Selectable` from a single column definition. [`Selectable.parse`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) takes a complete column assignment as one string. [`Selectable.of`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) takes the column name and the expression as separate values. [`Selectable.from`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) creates several at once from multiple strings.
 
-### Create a Selectable from a formula string
+### From a formula string
 
 [`Selectable.parse`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) applies when the column assignment is a single [formula string](../../../how-to-guides/formulas.md). This is the most common approach.
 
@@ -21,7 +21,7 @@ col = Selectable.parse("NewColumn = ExistingColumn * 2")
 result = source.update([col])
 ```
 
-### Create a Selectable from a column name and expression
+### From column name and expression
 
 [`Selectable.of`](https://deephaven.io/core/javadoc/io/deephaven/api/Selectable.html) takes a [`ColumnName`](https://deephaven.io/core/javadoc/io/deephaven/api/ColumnName.html) and a [`RawString`](https://deephaven.io/core/javadoc/io/deephaven/api/RawString.html). It applies when the column name and expression are separate values built programmatically, such as from application variables.
 
@@ -76,7 +76,7 @@ A [Barrier](./Barrier.md) orders columns relative to each other and does not mak
 
 See [Barrier](./Barrier.md) and [`ConcurrencyControl`](./ConcurrencyControl.md) for the full constraints and worked examples, and [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide for broader context.
 
-## Pass a Selectable to a table operation
+## Table operations that accept a Selectable
 
 All five operations accept `Selectable` objects, but they differ in how they treat the concurrency methods:
 
@@ -93,11 +93,11 @@ The usual [Barrier](./Barrier.md) validation still applies to [`view`](../../tab
 - A constant-valued column cannot declare or respect a [Barrier](./Barrier.md).
 - In [`lazyUpdate`](../../table-operations/select/lazy-update.md), a respected [Barrier](./Barrier.md) must be declared earlier in the same call. [`view`](../../table-operations/select/view.md) and [`updateView`](../../table-operations/select/update-view.md) reject any respected [Barrier](./Barrier.md) first.
 
-## Decide when to use Selectable
+## When to use Selectable
 
 A `Selectable` adds concurrency controls to a column formula.
 
-### Decide whether a Selectable is needed
+### Do you need a Selectable at all?
 
 A [formula string](../../../how-to-guides/formulas.md) passed to [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) becomes a `Selectable` internally, and Deephaven [parallelizes](../../../conceptual/query-engine/parallelization.md) it by default. A string is enough for a formula that meets both of these conditions:
 
@@ -106,7 +106,7 @@ A [formula string](../../../how-to-guides/formulas.md) passed to [`select`](../.
 
 Such a formula gains nothing from an explicit `Selectable` object.
 
-### Add explicit control to a Selectable
+### When you need explicit control
 
 A formula that reads or writes shared state that changes between rows is safe to run in parallel only if it produces the same result when multiple threads process the rows in any order. Parallel execution can produce incorrect results otherwise, so such a formula needs a `Selectable` with one of these controls:
 
