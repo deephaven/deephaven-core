@@ -4,7 +4,7 @@ title: Filter table data
 
 This guide covers filtering table data in Deephaven. Many different table operations filter data in a table. Some keep rows based on filter expressions, whereas others keep rows based on values in another table or on row positions.
 
-Deephaven filters work on live data. When a source table ticks, which means rows are added, removed, or modified, Deephaven keeps each filtered result up to date, so a filter you write once keeps working as the data changes.
+Deephaven filters work on live data. When a source table ticks — which means rows are added, removed, or modified — Deephaven keeps each filtered result up to date, so a filter you write once keeps working as the data changes.
 
 [Filters in query strings](./filters.md) covers the filter expressions themselves in more depth, including `includes` string filters, `NaN` handling in range filters, and filter performance.
 
