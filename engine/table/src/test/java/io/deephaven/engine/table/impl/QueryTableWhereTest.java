@@ -74,6 +74,7 @@ import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.LongUnaryOperator;
 import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
@@ -2673,6 +2674,139 @@ public abstract class QueryTableWhereTest {
         assertEquals(50_000, numRowsFiltered(midFilter));
         assertEquals(100, numRowsFiltered(filter2)); // index table size
         assertEquals(25_000, numRowsFiltered(postFilter));
+    }
+
+    /**
+     * A {@link PushdownIntTestSource} whose values are its row keys, and that records the cost ceiling of every
+     * pushdown it runs.
+     */
+    private static class CeilingRecordingPushdownIntTestSource extends PushdownIntTestSource {
+        private final List<Long> costCeilings = Collections.synchronizedList(new ArrayList<>());
+
+        public CeilingRecordingPushdownIntTestSource(RowSet rowSet, long pushdownCost, double maybePercentage) {
+            super(rowSet, pushdownCost, maybePercentage, IntStream.range(0, rowSet.intSize()).toArray());
+        }
+
+        @Override
+        public void pushdownFilter(final WhereFilter filter, final RowSet input,
+                final boolean usePrev, final PushdownFilterContext context,
+                final long costCeiling, final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            costCeilings.add(costCeiling);
+            super.pushdownFilter(filter, input, usePrev, context, costCeiling, jobScheduler, onComplete, onError);
+        }
+    }
+
+    /**
+     * Builds a flat table of {@code size} rows whose column {@code C<k>} holds the row key and pushes down at
+     * {@code costs[k]}, reporting {@code maybePercentages[k]} of its matches as maybe matches.
+     */
+    private static QueryTable barrierOrderingTable(final int size, final long[] costs,
+            final double[] maybePercentages) {
+        final WritableRowSet rowSet = RowSetFactory.flat(size);
+        final Map<String, ColumnSource<?>> csMap = new LinkedHashMap<>();
+        for (int ii = 0; ii < costs.length; ++ii) {
+            csMap.put("C" + ii, new CeilingRecordingPushdownIntTestSource(rowSet, costs[ii], maybePercentages[ii]));
+        }
+        return new QueryTable(rowSet.toTracking(), csMap);
+    }
+
+    @Test
+    public void testRespecterDoesNotRunBeforeDeclarerAcrossUnrelatedFilter() {
+        // User order is declarer, unrelated, respecter with strictly descending costs. Each adjacent pair is unrelated
+        // or ordered by cost, so a comparator that only consults barriers for directly related pairs lets a sort run
+        // the respecter, and its pushdown, before the declarer without ever comparing the two.
+        final QueryTable source = barrierOrderingTable(1_000,
+                new long[] {45_000L, 30_000L, 25_000L}, new double[] {0.5, 0.5, 0.5});
+        final CeilingRecordingPushdownIntTestSource declarerSource =
+                (CeilingRecordingPushdownIntTestSource) source.getColumnSourceMap().get("C0");
+
+        final Object barrier = new Object();
+        final RowSetCapturingFilter declarer = new RowSetCapturingFilter(RawString.of("C0 >= 500"));
+        final RowSetCapturingFilter unrelated = new RowSetCapturingFilter(RawString.of("C1 >= 0"));
+        final RowSetCapturingFilter respecter = new RowSetCapturingFilter(RawString.of("C2 >= 0"));
+
+        final Table result = source.where(Filter.and(
+                declarer.withDeclaredBarriers(barrier),
+                unrelated,
+                respecter.withRespectedBarriers(barrier)));
+        assertEquals(500, result.size());
+
+        // The respecter sees only what the declarer kept.
+        assertFalse(respecter.rowSets().isEmpty());
+        for (final RowSet rowSet : respecter.rowSets()) {
+            assertTrue("respecter saw a row the declarer removes: " + rowSet,
+                    rowSet.isEmpty() || rowSet.firstRowKey() >= 500);
+        }
+
+        // The respecter cannot run before the declarer, so its lower cost must not cap the declarer's pushdown.
+        assertFalse(declarerSource.costCeilings.isEmpty());
+        for (final long costCeiling : declarerSource.costCeilings) {
+            assertTrue("declarer pushdown capped below its own cost: " + costCeiling, costCeiling >= 45_000L);
+        }
+    }
+
+    @Test
+    public void testBarrierOrderingRandomized() {
+        final long[] costs = {1_000L, 5_000L, 10_000L, 25_000L, 30_000L, 45_000L, Long.MAX_VALUE};
+        final int size = 2_000;
+        for (int seed = 0; seed < 100; ++seed) {
+            final Random random = new Random(seed);
+            // Past 32 filters Arrays.sort merges runs, and can detect an inconsistent comparator and throw.
+            final int numFilters = 3 + random.nextInt(seed % 4 == 0 ? 45 : 12);
+
+            final long[] filterCosts = new long[numFilters];
+            final double[] maybePercentages = new double[numFilters];
+            for (int ii = 0; ii < numFilters; ++ii) {
+                filterCosts[ii] = costs[random.nextInt(costs.length)];
+                maybePercentages[ii] = random.nextDouble();
+            }
+            final QueryTable source = barrierOrderingTable(size, filterCosts, maybePercentages);
+
+            // Filter k removes the rows whose key is k modulo 4 * numFilters, and may declare barrier k and respect any
+            // barrier declared before it; mustFollow[k] collects every filter k must run after, transitively.
+            final int modulus = 4 * numFilters;
+            final RowSetCapturingFilter[] capturing = new RowSetCapturingFilter[numFilters];
+            final Filter[] filters = new Filter[numFilters];
+            final List<Integer> declarers = new ArrayList<>();
+            final List<Set<Integer>> mustFollow = new ArrayList<>();
+            for (int kk = 0; kk < numFilters; ++kk) {
+                capturing[kk] = new RowSetCapturingFilter(RawString.of("C" + kk + " % " + modulus + " != " + kk));
+                WhereFilter filter = capturing[kk];
+                final Set<Integer> follows = new HashSet<>();
+                for (final int declarer : declarers) {
+                    if (random.nextInt(3) == 0) {
+                        filter = filter.withRespectedBarriers("barrier" + declarer);
+                        follows.add(declarer);
+                        follows.addAll(mustFollow.get(declarer));
+                    }
+                }
+                if (random.nextBoolean()) {
+                    filter = filter.withDeclaredBarriers("barrier" + kk);
+                    declarers.add(kk);
+                }
+                filters[kk] = filter;
+                mustFollow.add(follows);
+            }
+
+            final Table result = source.where(Filter.and(filters));
+            final long expectedSize = IntStream.range(0, size).filter(key -> key % modulus >= numFilters).count();
+            assertEquals("seed " + seed, expectedSize, result.size());
+
+            for (int kk = 0; kk < numFilters; ++kk) {
+                final String context = "seed " + seed + ": filter " + kk;
+                final Set<Integer> follows = mustFollow.get(kk);
+                for (final RowSet rowSet : capturing[kk].rowSets()) {
+                    rowSet.forAllRowKeys(key -> {
+                        final int remover = (int) (key % modulus);
+                        if (follows.contains(remover)) {
+                            fail(context + " saw row " + key + " that filter " + remover
+                                    + ", which it must follow, removes");
+                        }
+                    });
+                }
+            }
+        }
     }
 
     private Table getMultiColumnTestSourceTable() {
