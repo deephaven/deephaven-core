@@ -251,7 +251,7 @@ callMethods = emptyTable(1).update("Timestamp = '2024-03-03T15:00:00.000 UTC'")
 callMethodsMeta = callMethods.meta()
 ```
 
-This column is a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html). Its Javadoc lists every [method](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html#method.summary) you can call. Here are a few.
+This column is a Java [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html). Its Javadoc lists every [method](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html#method-summary) you can call. Here are a few.
 
 ```groovy test-set=1
 callMethods = callMethods.update(
