@@ -293,7 +293,7 @@ call_methods = empty_table(1).update("Timestamp = '2024-03-03T15:00:00.000 UTC'"
 call_methods_meta = call_methods.meta_table
 ```
 
-This column is a Java [Instant](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html). Java's [documentation](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) provides all of the available [methods](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html#method.summary) that can be called. Here are just a few.
+This column is a Java [Instant](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html). Java's [documentation](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) provides all of the available [methods](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html#method-summary) that can be called. Here are just a few.
 
 ```python test-set=1
 call_methods = call_methods.update(
