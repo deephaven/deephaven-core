@@ -11,7 +11,7 @@ This guide shows you how to execute SQL queries on Deephaven tables in your scri
 
 ## Choose the right method
 
-To run a SQL query against tables in your script session, use [`Sql.evaluate`](#execute-a-query-with-evaluate). It is the simplest and most direct option. To check a query without running it, use [`Sql.dryRun`](#validate-queries-with-dryrun). To give the query an explicit list of tables instead of your script session's [query scope](../query-scope.md), use [`SqlAdapter.parseSql`](#advanced-usage-with-sqladapter). This is useful when you build custom SQL tooling or query tables that aren't in your script session.
+To run a SQL query against tables in your script session, use [`Sql.evaluate`](#execute-a-query-with-evaluate). It is the simplest and most direct option. To check a query without running it, use [`Sql.dryRun`](#validate-queries-with-dryrun). [`SqlAdapter.parseSql`](../../reference/data-import-export/SQL/parseSql.md) parses a query against an explicit list of tables instead of your script session's [query scope](../query-scope.md), but Deephaven has no public API to run the result, so use `Sql.evaluate` to run queries.
 
 To query an external database instead, use [`JdbcToTableAdapter.readJdbc`](#read-query-results-from-an-external-database).
 
@@ -109,62 +109,6 @@ Deephaven doesn't support every SQL feature. A query that uses `OFFSET`, `COUNT(
 
 > [!WARNING]
 > Outer joins (`LEFT`, `RIGHT`, and `FULL`) do not throw. Deephaven runs them as [inner joins](../joins-exact-relational.md), so the result drops unmatched rows.
-
-## Advanced usage with `SqlAdapter`
-
-For more control over SQL parsing, use [`SqlAdapter.parseSql`](../../reference/data-import-export/SQL/parseSql.md), which takes an explicit [`Scope`](/core/javadoc/io/deephaven/sql/Scope.html) instead of the script session's [query scope](../query-scope.md). The `Scope` is the catalog of tables the query can reference. Each catalog entry gives:
-
-- The table name.
-- The table's column names and types, as a [`TableHeader`](/core/javadoc/io/deephaven/qst/table/TableHeader.html).
-- A [`TableSpec`](/core/javadoc/io/deephaven/qst/table/TableSpec.html) that stands in for the table. This example uses a [`TicketTable`](/core/javadoc/io/deephaven/qst/table/TicketTable.html) placeholder.
-
-[`parseSql`](../../reference/data-import-export/SQL/parseSql.md) returns a [`TableSpec`](/core/javadoc/io/deephaven/qst/table/TableSpec.html) that refers to tables only through those placeholders. To get a result, map each placeholder back to its real table and create the table from the spec.
-
-> [!WARNING]
-> This example uses `TableCreatorTicketInterceptor`, an internal engine class, to turn the [`TableSpec`](/core/javadoc/io/deephaven/qst/table/TableSpec.html) into a table. It is not part of the public API and may change. Groovy can use it because Groovy ignores Java's package-private visibility. Java code outside the `io.deephaven.engine.sql` package cannot use it.
-
-```groovy order=t1,t2,result
-import io.deephaven.engine.table.Table
-import io.deephaven.qst.column.header.ColumnHeader
-import io.deephaven.qst.table.TableHeader
-import io.deephaven.qst.type.Type
-import io.deephaven.qst.table.TicketTable
-import io.deephaven.sql.ScopeStaticImpl
-import io.deephaven.sql.TableInformation
-import io.deephaven.sql.SqlAdapter
-import io.deephaven.engine.sql.TableCreatorTicketInterceptor
-import io.deephaven.engine.table.impl.TableCreatorImpl
-
-// Create tables
-t1 = emptyTable(10).update("X = i", "Y = i * 2")
-t2 = emptyTable(10).update("X = i + 1", "Y = i * 3")
-
-// Helper to convert TableDefinition to TableHeader
-def headerFrom = { Table t ->
-    def builder = TableHeader.builder()
-    for (cd in t.getDefinition().getColumns()) {
-        builder.addHeaders(ColumnHeader.of(cd.getName(), Type.find(cd.getDataType(), cd.getComponentType())))
-    }
-    builder.build()
-}
-
-// Create TicketTable specs for catalog entries
-def tt1 = TicketTable.of(("sqlref/t1").getBytes("UTF-8"))
-def tt2 = TicketTable.of(("sqlref/t2").getBytes("UTF-8"))
-
-// Build explicit Scope with table metadata
-def scope = ScopeStaticImpl.builder()
-    .addTables(TableInformation.of(["t1"], headerFrom(t1), tt1))
-    .addTables(TableInformation.of(["t2"], headerFrom(t2), tt2))
-    .build()
-
-// Parse SQL with explicit scope
-def tableSpec = SqlAdapter.parseSql("SELECT t1.X, t2.Y FROM t1 JOIN t2 ON t1.X = t2.X", scope)
-
-// Materialize the TableSpec with TicketTable mapping
-def ticketMap = [(tt1): t1, (tt2): t2]
-result = tableSpec.logic().create(new TableCreatorTicketInterceptor(TableCreatorImpl.INSTANCE, ticketMap))
-```
 
 ## Read query results from an external database
 
