@@ -5035,9 +5035,16 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
     }
 
-    // Neither this nor other can be empty.
-    // shiftAmount should be a multiple of BLOCK_SIZE.
-    boolean tryAppendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other) {
+    /**
+     * Append every key of {@code other}, plus {@code shiftAmount}, by sharing its spans, provided that it starts in a
+     * block after our last one. Does not update the cardinality cache.
+     *
+     * @param shiftAmount The amount to add to every key of {@code other}; a multiple of {@code BLOCK_SIZE}
+     * @param other The keys to append; neither it nor this may be empty
+     * @return Whether the keys were appended; when {@code other}'s first block, shifted, is not after our last block,
+     *         nothing is changed
+     */
+    public boolean tryAppendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other) {
         if (RspArray.debug) {
             if (size == 0 || other.size == 0) {
                 throw new IllegalArgumentException(

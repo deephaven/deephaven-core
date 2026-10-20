@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.rowset.impl;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
@@ -14,6 +13,10 @@ import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.highBits;
 
 public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential {
+    /**
+     * The ranges accumulated before the builder commits to an RSP. Only ever non-null while {@link #rb} and the pending
+     * container are absent, so the base class's paths that work on {@link #rb} never have it to flush.
+     */
     private SortedRanges pendingSr;
 
     private static final RowSetCounts rowSetCounts = new RowSetCounts("orderedLongSetBuilderSequential");
@@ -83,40 +86,6 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
     }
 
     @Override
-    public void appendOrderedLongSet(final long shiftAmount, final OrderedLongSet ix) {
-        if (ix.ixIsEmpty()) {
-            return;
-        }
-        // A negative shift can move the first key below zero; a positive one can carry the last past Long.MAX_VALUE.
-        if (shiftAmount < 0) {
-            Assert.geqZero(ix.ixFirstKey() + shiftAmount, "ix.ixFirstKey() + shiftAmount");
-        } else {
-            Assert.geqZero(ix.ixLastKey() + shiftAmount, "ix.ixLastKey() + shiftAmount");
-        }
-        if (!(ix instanceof RspBitmap) || rb == null) {
-            ix.ixForEachLongRange((final long start, final long end) -> {
-                appendRange(start + shiftAmount, end + shiftAmount);
-                return true;
-            });
-            return;
-        }
-        if (pendingStart != -1) {
-            flushPendingRange();
-        }
-        if (pendingSr != null) {
-            flushSrToRsp();
-        }
-        if (pendingContainerKey != -1) {
-            flushPendingContainer();
-        }
-        // Every path that creates rb appends to it immediately, so rb is never empty here. That matters
-        // because appendShiftedUnsafeNoWriteCheck reads rb's last span (lastValue(), spanInfos[size - 1]),
-        // which is not valid on an empty bitmap.
-        Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
-        rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix);
-    }
-
-    @Override
     protected void flushPendingRange() {
         final long pendingStartOnEntry = pendingStart;
         pendingStart = -1;
@@ -147,9 +116,9 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
      *
      * <p>
      * Every range is already known at this point, so rather than growing each container one range at a time -- which
-     * reallocates its backing storage on every append, and is therefore quadratic in the container's cardinality -- we
-     * walk two cursors over the ranges. One feeds ranges to the builder; the other runs ahead to the end of the block
-     * being started, so the container for it can be created at its final size and in the representation that suits it.
+     * reallocates its backing storage as it fills, and may pass through representations it does not end in -- we walk
+     * two cursors over the ranges. One feeds ranges to the builder; the other runs ahead to the end of the block being
+     * started, so the container for it can be created at its final size and in the representation that suits it.
      */
     private void flushSrToRsp() {
         final SortedRanges sr = pendingSr;

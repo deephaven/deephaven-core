@@ -3900,7 +3900,7 @@ public class RspBitmapTest {
     public void testAppendShifted() {
         RspBitmap r0 = RspBitmap.makeSingleRange(20, 39);
         RspBitmap r1 = RspBitmap.makeSingleRange(21, 40);
-        r0.appendShiftedUnsafeNoWriteCheck(BLOCK_SIZE, r1);
+        assertTrue(r0.tryAppendShiftedUnsafeNoWriteCheck(BLOCK_SIZE, r1));
         r0.finishMutationsAndOptimize();
         assertEquals(40, r0.getCardinality());
         assertTrue(r0.containsRange(20, 39));

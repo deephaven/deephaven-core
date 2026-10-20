@@ -26,6 +26,13 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     protected RspBitmap rb;
     protected long maxKeyHint = -1;
 
+    /**
+     * The greatest key moved out of the pending range, into {@link #pendingContainer} or {@link #rb}, or -1 when it is
+     * not known. Order checks against {@link #rb} use this rather than {@code rb.lastValue()}, which has to scan a
+     * bitmap container backward over the words past its last value.
+     */
+    protected long lastFlushedKey = -1;
+
     private boolean built;
 
     /**
@@ -44,7 +51,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
      * The block that {@link #sizedBlockCardinality} and {@link #sizedBlockRangeCount} describe, or -1 when nothing is
      * known ahead of time. A subclass that can see what a block will receive before its container is filled should
      * publish it here, so the container can be created at its final size and in the representation that fits it best;
-     * containers are otherwise grown one range at a time, which reallocates their backing storage on every append. See
+     * containers are otherwise grown one range at a time, reallocating their backing storage as they fill. See
      * {@link Container#emptySizedFor(int, int)}.
      *
      * <p>
@@ -147,12 +154,51 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             return;
         }
         // A negative shift can move the first key below zero; a positive one can carry the last past Long.MAX_VALUE.
+        // For a bitmap, the bounds of its first and last blocks usually settle that; its exact first or last key may
+        // require scanning a bitmap container.
         if (shiftAmount < 0) {
-            Assert.geqZero(ix.ixFirstKey() + shiftAmount, "ix.ixFirstKey() + shiftAmount");
-        } else {
-            Assert.geqZero(ix.ixLastKey() + shiftAmount, "ix.ixLastKey() + shiftAmount");
+            final long firstKeyBound = ix instanceof RspBitmap ? ((RspBitmap) ix).keyForFirstBlock() : ix.ixFirstKey();
+            if (firstKeyBound + shiftAmount < 0) {
+                Assert.geqZero(ix.ixFirstKey() + shiftAmount, "ix.ixFirstKey() + shiftAmount");
+            }
+        } else if (shiftAmount > 0) {
+            final long lastKeyBound =
+                    ix instanceof RspBitmap ? ((RspBitmap) ix).keyForLastBlock() + BLOCK_LAST : ix.ixLastKey();
+            if (lastKeyBound + shiftAmount < 0) {
+                Assert.geqZero(ix.ixLastKey() + shiftAmount, "ix.ixLastKey() + shiftAmount");
+            }
         }
-        if (!(ix instanceof RspBitmap) || rb == null) {
+        if (ix instanceof RspBitmap && rb != null && (shiftAmount & BLOCK_LAST) == 0) {
+            final RspBitmap ixRb = (RspBitmap) ix;
+            // Every path that creates rb appends to it immediately, so rb is never empty here. That matters because
+            // keyForLastBlock() and tryAppendShiftedUnsafeNoWriteCheck read rb's last span, which is not valid on an
+            // empty bitmap.
+            Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
+            final long heldLastBlockKey;
+            if (pendingStart != -1) {
+                heldLastBlockKey = highBits(pendingEnd);
+            } else if (pendingContainerKey != -1) {
+                heldLastBlockKey = highBits(pendingContainerKey);
+            } else {
+                heldLastBlockKey = rb.keyForLastBlock();
+            }
+            // ix's spans can be shared only when it starts in a block after everything we hold; otherwise its ranges
+            // are appended one at a time below.
+            if (ixRb.keyForFirstBlock() + shiftAmount > heldLastBlockKey) {
+                if (pendingStart != -1) {
+                    flushPendingRange();
+                }
+                if (pendingContainerKey != -1) {
+                    flushPendingContainer();
+                }
+                if (rb.tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, ixRb)) {
+                    // rb now ends with ix's last span; its last key is looked up only if an order check needs it.
+                    lastFlushedKey = -1;
+                    return;
+                }
+            }
+        }
+        if (rb == null) {
             ix.ixForEachLongRange((final long start, final long end) -> {
                 appendRange(start + shiftAmount, end + shiftAmount);
                 return true;
@@ -162,14 +208,19 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         if (pendingStart != -1) {
             flushPendingRange();
         }
-        if (pendingContainerKey != -1) {
-            flushPendingContainer();
-        }
-        // Every path that creates rb appends to it immediately, so rb is never empty here. That matters
-        // because appendShiftedUnsafeNoWriteCheck reads rb's last span (lastValue(), spanInfos[size - 1]),
-        // which is not valid on an empty bitmap.
-        Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
-        rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix);
+        // ix's ranges are ordered and disjoint, so they need checking only against the keys we already hold; comparing
+        // every one with that same bound is as cheap as tracking which one is first. Past that check they go straight
+        // to the containers.
+        final long heldLastKey = check ? (lastFlushedKey != -1 ? lastFlushedKey : rb.lastValue()) : -1;
+        ix.ixForEachLongRange((final long start, final long end) -> {
+            final long shiftedStart = start + shiftAmount;
+            if (shiftedStart <= heldLastKey) {
+                throw new IllegalArgumentException(outOfOrderKeyErrorMsg +
+                        "last=" + heldLastKey + " while appending value=" + shiftedStart);
+            }
+            flushRangeToPendingContainer(shiftedStart, end + shiftAmount);
+            return true;
+        });
     }
 
     @Override
@@ -177,7 +228,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         if (length == 0) {
             return;
         }
-        // The keys are ordered, so the first one is the least. Once rb exists they go into it unchecked.
+        // The keys are ordered, so the first one is the least, and checking it covers the whole chunk.
         Assert.geqZero(chunk.get(offset), "chunk.get(offset)");
 
         if (rb != null) {
@@ -196,16 +247,26 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             flushPendingContainer();
         }
 
+        // The keys are ordered, so the first one is the least and the last one the greatest.
+        final long first = chunk.get(offset);
+        if (check) {
+            final long heldLastKey = lastFlushedKey != -1 ? lastFlushedKey : rb.lastValue();
+            if (first <= heldLastKey) {
+                throw new IllegalArgumentException(outOfOrderKeyErrorMsg +
+                        "last=" + heldLastKey + " while appending value=" + first);
+            }
+        }
+        final int lastOffsetInclusive = offset + length - 1;
+        final long last = chunk.get(lastOffsetInclusive);
+        lastFlushedKey = last;
+
         // single key?
         if (length == 1) {
-            rb.appendUnsafeNoWriteCheck(chunk.get(offset));
+            rb.appendUnsafeNoWriteCheck(last);
             return;
         }
 
         // single range?
-        final int lastOffsetInclusive = offset + length - 1;
-        final long first = chunk.get(offset);
-        final long last = chunk.get(lastOffsetInclusive);
         if (last - first + 1 == length) {
             rb.appendRangeUnsafeNoWriteCheck(first, last);
             return;
@@ -243,6 +304,15 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     }
 
     protected void flushRangeToPendingContainer(final long start, final long end) {
+        final long lastFlushedKeyOnEntry = lastFlushedKey;
+        // A pending container is only ever filled from here, so lastFlushedKey is its last key. Ranges reach this
+        // point unchecked when nothing was pending in the range, and the container appends below do not check order.
+        if (check && pendingContainerKey != -1 && start <= lastFlushedKeyOnEntry) {
+            throw new IllegalStateException(outOfOrderKeyErrorMsg +
+                    "last=" + lastFlushedKeyOnEntry + " while appending value=" + start);
+        }
+        // Every path below leaves end as the greatest key held outside the pending range.
+        lastFlushedKey = end;
         final long highStart = highBits(start);
         final int lowStart = RspArray.lowBitsAsInt(start);
         final long highEnd = highBits(end);
@@ -255,9 +325,12 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             // added to rb's last span instead.
             final long lastBlockKey = rb.keyForLastBlock();
             if (lastBlockKey >= highStart) {
-                if (check && (lastBlockKey > highStart || start <= rb.lastValue())) {
-                    throw new IllegalStateException(outOfOrderKeyErrorMsg +
-                            "last=" + rb.lastValue() + " while appending value=" + start);
+                if (check) {
+                    final long rbLastKey = lastFlushedKeyOnEntry != -1 ? lastFlushedKeyOnEntry : rb.lastValue();
+                    if (lastBlockKey > highStart || start <= rbLastKey) {
+                        throw new IllegalStateException(outOfOrderKeyErrorMsg +
+                                "last=" + rbLastKey + " while appending value=" + start);
+                    }
                 }
                 if (singleBlock) {
                     rb.appendRangeUnsafeNoWriteCheck(start, end);
@@ -281,15 +354,6 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
                 return;
             }
             if (pendingContainerKey != -1) {
-                if (check && pendingContainerKey > highStart) {
-                    // When pendingContainer is null the pending span is a singleton and pendingContainerKey is
-                    // its full value; otherwise pendingContainerKey holds the high bits only.
-                    final long pendingLast = (pendingContainer == null)
-                            ? pendingContainerKey
-                            : (highBits(pendingContainerKey) | pendingContainer.last());
-                    throw new IllegalStateException(outOfOrderKeyErrorMsg +
-                            "last=" + pendingLast + " while appending value=" + start);
-                }
                 flushPendingContainer();
             }
             if (lowStart == 0 && lowEnd == BLOCK_LAST) {
