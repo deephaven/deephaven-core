@@ -5116,21 +5116,17 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      *
      * @param shiftAmount The amount to add to every key appended; a multiple of {@code BLOCK_SIZE}
      * @param other The array whose spans to append; this may not be empty
-     * @param otherStartIdx The first of {@code other}'s spans to append; when it is {@code other}'s size there is
-     *        nothing to append, and the result is true
+     * @param otherStartIdx The first of {@code other}'s spans to append; less than {@code other}'s size
      * @return Whether the spans were appended; when the first of them, shifted, does not start after our last block,
      *         nothing is changed
      */
     public boolean tryAppendShiftedUnsafeNoWriteCheck(
             final long shiftAmount, final RspArray other, final int otherStartIdx) {
         if (RspArray.debug) {
-            if (size == 0 || otherStartIdx < 0 || otherStartIdx > other.size) {
+            if (size == 0 || otherStartIdx < 0 || otherStartIdx >= other.size) {
                 throw new IllegalArgumentException("Append called with size=" + size + ", otherStartIdx="
                         + otherStartIdx + ", other.size=" + other.size);
             }
-        }
-        if (otherStartIdx == other.size) {
-            return true;
         }
         final long otherFirstSpanInfo = other.spanInfos[otherStartIdx];
         final long firstOtherBlockKey = spanInfoToKey(otherFirstSpanInfo) + shiftAmount;
