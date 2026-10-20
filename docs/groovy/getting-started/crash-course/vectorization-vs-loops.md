@@ -72,7 +72,7 @@ Watch what happens:
 - The table **keeps updating** — new rows appear about every second.
 - You wrote the recipe **once**, and the engine applies it to every new row.
 
-Compare a loop that uses a [column iterator](../../how-to-guides/extract-table-value.md#tablecolumniterator) to read values one at a time:
+Compare a loop that uses a [column iterator](../../how-to-guides/extract-table-value.md#iterate-over-a-column) to read values one at a time:
 
 ```groovy skip-test
 // This runs once and never reacts to new rows!

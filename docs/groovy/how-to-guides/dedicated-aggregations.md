@@ -8,6 +8,8 @@ Often when working with data, you want to break the data into subgroups and then
 
 The process of breaking a table into subgroups and then performing a single type of calculation on each subgroup is known as "single aggregation" or "dedicated aggregation." "Aggregation" refers to creating a summary of the data within each group. "Single" or "dedicated" means that only one type of calculation runs at a time.
 
+To compare single aggregations with the other ways Deephaven summarizes data, and to choose between them, see [Aggregations in Deephaven](../conceptual/aggregations.md).
+
 Deephaven provides many dedicated aggregations, such as [`maxBy`](../reference/table-operations/group-and-aggregate/maxBy.md) and [`minBy`](../reference/table-operations/group-and-aggregate/minBy.md). These aggregations are good options when you need only one type of aggregation. If you need more than one type of aggregation or have a custom aggregation, [multi-aggregation](./combined-aggregations.md), also called combined aggregation, is a more efficient and more flexible solution.
 
 ## Syntax
@@ -234,6 +236,7 @@ You can reorder, edit, or delete these aggregations in the **Aggregate Columns**
 
 ## Related documentation
 
+- [Aggregations in Deephaven](../conceptual/aggregations.md)
 - [Multi-aggregation](./combined-aggregations.md)
 - [`absSumBy`](../reference/table-operations/group-and-aggregate/absSumBy.md)
 - [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md)
