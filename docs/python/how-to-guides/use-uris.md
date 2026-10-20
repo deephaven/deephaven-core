@@ -123,7 +123,7 @@ To wait for the next change from a ticking remote table, use [`await_update`](..
 remote_table.await_update(10_000)  # Waits up to 10 seconds for the next update
 ```
 
-If the network connection behind a resolved table drops, the subscription ends with an error and the resolved table stops updating. It doesn't reconnect, so call [`resolve`](../reference/data-import-export/uri.md) again to get a new subscription.
+A resolved table rides out a brief network interruption: when the connection returns, the subscription resumes and catches up on the changes it missed. If the producer restarts, or the connection stays down long enough for the producer to expire the consumer's session, the resolved table fails and stops updating. Calling [`resolve`](../reference/data-import-export/uri.md) again with the same URI doesn't help, because the consumer reuses the session it cached for that server, and the producer no longer accepts it. To get the table back, restart the consumer and resolve the URI again.
 
 To work with a fixed copy of a resolved table, for example when every operation in an analysis must see the same data, use [`snapshot`](../reference/table-operations/snapshot/snapshot.md). The copy is static and holds the table state from the moment you take it, while the resolved table keeps receiving updates.
 
@@ -239,7 +239,7 @@ When you share tables across instances with URIs, particularly over networks, co
 
 - **Latency**: Table access over a network introduces latency that varies based on network conditions. When an operation needs low latency, run the instances on the same machine or network.
 - **Bandwidth**: Deephaven's [Barrage protocol](../conceptual/what-is-barrage.md) transmits only changes after the initial snapshot rather than full table refreshes, so bandwidth use depends mostly on the table characteristics below.
-- **Connection reliability**: A resolved table doesn't reconnect after a dropped connection (see [Resolve a URI](#resolve-a-uri)). Co-locate the instances, or resolve over a reliable network link, when the consumer can't tolerate an interrupted subscription.
+- **Connection reliability**: A resolved table recovers from a brief network interruption, but not from a producer restart or a long outage, which require restarting the consumer (see [Resolve a URI](#resolve-a-uri)). Co-locate the instances, or resolve over a reliable network link, when the consumer can't tolerate an interrupted subscription.
 
 ### Table characteristics
 
