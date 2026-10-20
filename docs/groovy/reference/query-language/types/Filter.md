@@ -4,7 +4,15 @@ title: Filter
 
 A [`Filter`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) is an object that represents a filter condition. [`where`](../../table-operations/filter/where.md) accepts `Filter` objects as well as strings. When it receives a string, Deephaven creates a `Filter` from it internally.
 
-A string condition covers most filters. A `Filter` object composes conditions with boolean logic in code, marks a filter serial with [`withSerial`](./ConcurrencyControl.md#withserial), or orders a filter relative to other filters with [Barriers](./Barrier.md).
+## Why use a Filter?
+
+Most filters need no `Filter` object. [`where`](../../table-operations/filter/where.md) with a string condition, [`whereIn`](../../table-operations/filter/where-in.md), [`whereNotIn`](../../table-operations/filter/where-not-in.md), and the other filter methods cover them. A string condition is enough when the condition examines only values in the current row, such as `"Price > 100"`, and has no side effects. A condition with no side effects does not modify global variables, write to files, or depend on evaluation order. [`where`](../../table-operations/filter/where.md) creates a `Filter` from the string and [parallelizes](../../../conceptual/query-engine/parallelization.md) its evaluation across cores when enough rows reach it.
+
+Use a `Filter` object in these three situations:
+
+- **Filters with shared state**: a filter that modifies shared state, such as counting how many rows pass, can corrupt that state when threads evaluate rows at the same time. Mark it serial with [`withSerial`](./ConcurrencyControl.md#withserial) so that the engine evaluates its rows one at a time.
+- **Complex boolean logic**: use [`Filter.and`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html), [`Filter.or`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html), and [`Filter.not`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) to compose filters programmatically when conditions are built dynamically or when separate objects express the conditions more clearly.
+- **[Barriers](./Barrier.md) between filters**: use them when one filter with shared state must finish before another starts. This is rare because most filters do not share state. See [Barrier](./Barrier.md) for the full reference or [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide for broader context.
 
 ## Create a Filter
 
@@ -105,16 +113,6 @@ A [Barrier](./Barrier.md) is a synchronization object that is created once and s
 - [`withRespectedBarriers(barrier)`](./ConcurrencyControl.md#withrespectedbarriers): this filter waits. It does not evaluate its rows until the filter that declares the [Barrier](./Barrier.md) finishes.
 
 For the full reference, constraints, and worked examples, see [Barrier](./Barrier.md) and [ConcurrencyControl](./ConcurrencyControl.md). For broader context, see [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide.
-
-## When to use Filter objects
-
-A string condition is enough when the condition examines only values in the current row, such as `"Price > 100"`, and has no side effects. A condition with no side effects does not modify global variables, write to files, or depend on evaluation order. [`where`](../../table-operations/filter/where.md) creates a `Filter` from the string and [parallelizes](../../../conceptual/query-engine/parallelization.md) its evaluation across cores when enough rows reach it.
-
-Use a `Filter` object in these three situations:
-
-- **Filters with shared state**: a filter that modifies shared state, such as counting how many rows pass, can corrupt that state when threads evaluate rows at the same time. Mark it serial with [`withSerial`](./ConcurrencyControl.md#withserial) so that the engine evaluates its rows one at a time.
-- **Complex boolean logic**: use [`Filter.and`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html), [`Filter.or`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html), and [`Filter.not`](https://deephaven.io/core/javadoc/io/deephaven/api/filter/Filter.html) to compose filters programmatically when conditions are built dynamically or when separate objects express the conditions more clearly.
-- **[Barriers](./Barrier.md) between filters**: use them when one filter with shared state must finish before another starts. This is rare because most filters do not share state. See [Barrier](./Barrier.md) for the full reference or [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide for broader context.
 
 ## Related documentation
 
