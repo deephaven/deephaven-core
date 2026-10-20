@@ -7,11 +7,13 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.util.LongChunkIterator;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.impl.rsp.DisposableRspBitmap;
 import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.rsp.container.Container;
+import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.*;
 import static io.deephaven.engine.rowset.impl.rsp.RspBitmap.*;
@@ -463,6 +465,85 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             pendingContainerKey = endingContainerKey;
             pendingContainer = newContainerForRange(endingContainerKey, 0, endingContainerEnd);
         }
+    }
+
+    /**
+     * Append the ranges of {@code sr}, which must all come after every key this builder holds.
+     *
+     * <p>
+     * Every range is already known, so rather than growing each container one range at a time -- which reallocates its
+     * backing storage as it fills, and may pass through representations it does not end in -- we walk two cursors over
+     * the ranges. One feeds ranges to the builder; the other runs ahead to the end of the block being started, so the
+     * container for it can be created at its final size and in the representation that suits it.
+     */
+    protected final void appendSortedRangesSizingBlocks(final SortedRanges sr) {
+        try (final RowSet.RangeIterator appendIter = sr.getRangeIterator();
+                final RowSet.RangeIterator lookaheadIter = sr.getRangeIterator()) {
+            // The range the lookahead is currently sitting on. It is only partially consumed when it carries over into
+            // a later block, in which case lookStart is advanced to that block and the range is measured again there.
+            boolean lookValid = false;
+            long lookStart = 0;
+            long lookEnd = 0;
+            long sizedBlock = -1;
+            while (appendIter.hasNext()) {
+                appendIter.next();
+                final long start = appendIter.currentRangeStart();
+                final long end = appendIter.currentRangeEnd();
+                // A range that spans blocks leaves a container pending for the block its *end* falls in; any container
+                // for an earlier block is appended whole and never grown, so needs no sizing.
+                final long blockKey = highBits(end);
+                if (blockKey != sizedBlock) {
+                    final long blockLast = blockKey + BLOCK_LAST;
+                    int cardinality = 0;
+                    int rangeCount = 0;
+                    while (true) {
+                        if (!lookValid) {
+                            if (!lookaheadIter.hasNext()) {
+                                break;
+                            }
+                            lookaheadIter.next();
+                            lookStart = lookaheadIter.currentRangeStart();
+                            lookEnd = lookaheadIter.currentRangeEnd();
+                            lookValid = true;
+                        }
+                        if (lookStart > blockLast) {
+                            break;
+                        }
+                        if (lookEnd < blockKey) {
+                            // Entirely behind the block being measured; nothing here to count.
+                            lookValid = false;
+                            continue;
+                        }
+                        // Clip a range that began in an earlier block; only its part in this block belongs here.
+                        lookStart = Math.max(lookStart, blockKey);
+                        cardinality += (int) (Math.min(lookEnd, blockLast) - lookStart + 1);
+                        ++rangeCount;
+                        if (lookEnd > blockLast) {
+                            // Carries over; leave it current, positioned at the start of the next block.
+                            lookStart = blockLast + 1;
+                            break;
+                        }
+                        lookValid = false;
+                    }
+                    setSizedBlock(blockKey, cardinality, rangeCount);
+                    sizedBlock = blockKey;
+                }
+                flushRangeToPendingContainer(start, end);
+            }
+        } finally {
+            clearSizedBlock();
+        }
+    }
+
+    /**
+     * An {@link RspBitmap} holding the keys of {@code sr}, with each container created at its final size and in the
+     * representation that suits it.
+     */
+    public static RspBitmap buildRsp(final SortedRanges sr) {
+        final RspBitmapBuilderSequential builder = new RspBitmapBuilderSequential();
+        builder.appendSortedRangesSizingBlocks(sr);
+        final OrderedLongSet result = builder.getOrderedLongSet();
+        return result instanceof RspBitmap ? (RspBitmap) result : new RspBitmap();
     }
 
     /**

@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
+import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import org.junit.Test;
 
 import java.util.List;
@@ -20,7 +21,9 @@ import java.util.function.Supplier;
 
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class OrderedLongSetBuilderSequentialTest {
@@ -317,5 +320,24 @@ public class OrderedLongSetBuilderSequentialTest {
                 assertThrows(IllegalStateException.class, builder::getOrderedLongSet);
             }
         }
+    }
+
+    /**
+     * Converting a {@link SortedRanges} sees every range before it fills a container, so each container is created at
+     * its final size and has no capacity to spare.
+     */
+    @Test
+    public void testSortedRangesToRspIsCompact() {
+        SortedRanges sr = SortedRanges.makeEmpty();
+        for (int ki = 0; ki < 1000; ++ki) {
+            sr = sr.append(2L * ki);
+            assertNotNull(sr);
+        }
+        final RspBitmap rsp = sr.toRsp();
+        rsp.ixValidate();
+        assertEquals(1000, rsp.getCardinality());
+        assertTrue("containerOverhead=" + rsp.containerOverhead(), rsp.containerOverhead() < 0.01);
+        rsp.ixRelease();
+        sr.ixRelease();
     }
 }
