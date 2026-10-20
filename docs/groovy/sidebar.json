@@ -1623,10 +1623,6 @@
                     "path": "reference/table-operations/format/format-row-where.md"
                   },
                   {
-                    "label": "Named colors",
-                    "path": "reference/table-operations/format/named-colors.md"
-                  },
-                  {
                     "label": "setLayoutHints",
                     "path": "reference/table-operations/format/layout-hints.md"
                   },
@@ -1653,6 +1649,10 @@
                   {
                     "label": "hide",
                     "path": "reference/table-operations/format/hide.md"
+                  },
+                  {
+                    "label": "Named colors",
+                    "path": "reference/table-operations/format/named-colors.md"
                   }
                 ]
               },
