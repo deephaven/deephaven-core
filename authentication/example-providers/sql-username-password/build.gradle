@@ -17,6 +17,11 @@ dependencies {
 shadowJar {
     relocate 'org', 'io.deephaven.authentication.sql.rebased'
     mergeServiceFiles()
+    // Shadow 9 honors the default EXCLUDE strategy, which would drop all but the first copy of each service file
+    // before mergeServiceFiles sees them.
+    filesMatching('META-INF/services/**') {
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
 }
 
 // Usage:

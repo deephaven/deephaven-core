@@ -203,7 +203,7 @@ For every section from the structure step's list, handle it by what happened to 
   dropped" claim costs a reviewer real time chasing content that's actually still there.
 - **Links and anchors**: neither the spot check nor the style step validates that a link's
   *target* still resolves or that a heading's *anchor fragment* is still correct after an edit —
-  `deephaven-writing-style` checks link wording and first-mention linking, but not target/anchor
+  `deephaven-writing-style` checks link wording and every-mention linking, but not target/anchor
   resolution. A heading rename, section move, merge, or cut can silently break an internal link
   or an anchor fragment (`#some-heading`) even when every claim in the doc remains correct. For
   any section the structure step moved, renamed, merged, or cut (not just moved/renamed): re-check that links
@@ -253,6 +253,8 @@ report rather than assuming it works. Blocks marked `syntax` or `skip-test` are 
 If the user asked for edits and you change an example's code or its comments, re-verify the
 changed example with `deephaven-core-accuracy-spot-check` before moving on, as in the re-verify
 step.
+
+Also check each example's framing: a one-sentence lead-in says what it shows, and when the output is not obvious, one sentence after it says what the result demonstrates. An example the reader must decode alone is a finding.
 
 ## 6. Style last
 
@@ -308,6 +310,8 @@ them with `deephaven-docs-address-review-comments` first — it sorts each one i
 redirect, decline, or ask before anything changes.
 
 ## 7. Report
+
+Include the three hardest-to-read paragraphs on each reviewed page, each with a concrete rewrite (a reader-facing version, not advice). A review that says "wall of text" without showing the rewrite leaves the author to guess what a better paragraph looks like.
 
 Return one review document, prioritized — biggest issue first within every section, not document
 order. Note the doc's category at the top so a reviewer can sanity-check severity calls (e.g. an
