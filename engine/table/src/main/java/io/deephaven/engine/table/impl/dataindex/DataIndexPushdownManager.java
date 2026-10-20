@@ -10,12 +10,14 @@ import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetUnionBatcher;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.filter.ExtractFilterWithoutBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -263,22 +265,42 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
             // building the result and the caller taking it.
             try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(dataIndex.table().size())) {
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    // A filter that respects a barrier may see only the keys of rows in question, or it could observe
+                    // keys only in rows its declarers removed; decided before the barriers go.
+                    final boolean barrierActive = ExtractRespectedBarriers.stream(filter).findAny().isPresent();
                     // Extract the fundamental filter, ignoring barriers.
                     final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
-                    final Table toFilter;
+                    final String rowSetColumnName = dataIndex.rowSetColumnName();
+                    Table toFilter = dataIndex.table();
                     if (!renameMap.isEmpty()) {
                         final Collection<Pair> renamePairs = renameMap.entrySet().stream()
                                 .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
                                         ColumnName.of(entry.getKey())))
                                 .collect(Collectors.toList());
-                        toFilter = dataIndex.table().renameColumns(renamePairs);
-                    } else {
-                        toFilter = dataIndex.table();
+                        toFilter = toFilter.renameColumns(renamePairs);
                     }
                     try {
+                        if (barrierActive) {
+                            // Keep only the index rows whose row sets overlap the rows in question, in one ordered
+                            // pass. A where would make the same overlaps call per row, as there is no chunk kernel
+                            // for it, only through a computed overlap column, a filter and an intermediate table.
+                            final RowSetBuilderSequential overlapping = RowSetFactory.builderSequential();
+                            try (final RowSet.Iterator indexRows = toFilter.getRowSet().iterator();
+                                    final CloseableIterator<RowSet> rowSets =
+                                            ColumnVectors.ofObject(toFilter, rowSetColumnName, RowSet.class)
+                                                    .iterator()) {
+                                while (rowSets.hasNext()) {
+                                    final long indexRow = indexRows.nextLong();
+                                    if (rowSets.next().overlaps(result.maybeMatch())) {
+                                        overlapping.appendKey(indexRow);
+                                    }
+                                }
+                            }
+                            toFilter = toFilter.getSubTable(overlapping.build().toTracking());
+                        }
                         final Table filteredTable = toFilter.where(copiedFilter);
                         try (final CloseableIterator<RowSet> it =
-                                ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class)
+                                ColumnVectors.ofObject(filteredTable, rowSetColumnName, RowSet.class)
                                         .iterator()) {
                             it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(result.maybeMatch())));
                         }

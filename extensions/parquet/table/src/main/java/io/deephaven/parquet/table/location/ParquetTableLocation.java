@@ -9,9 +9,14 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
@@ -23,13 +28,13 @@ import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
-import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.LongChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.dataindex.StandaloneDataIndex;
 import io.deephaven.engine.table.impl.filter.ExtractFilterWithoutBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.sources.regioned.*;
+import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.internal.log.LoggerFactory;
@@ -705,7 +710,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             if (!hasDictionaryPage(actionCtx.parquetColumnNames[0], filterCtx.columnDefinitions().get(0))) {
                 return input.copy();
             }
-            return pushdownFilterDictionary(selection, filterCtx, actionCtx.parquetColumnNames, input);
+            return pushdownFilterDictionary(selection, filter, filterCtx, actionCtx.parquetColumnNames, input);
         }
         if (action == DEFERRED_DATA_INDEX) {
             final BasicDataIndex dataIndex =
@@ -940,12 +945,25 @@ public class ParquetTableLocation extends AbstractTableLocation {
         }
     }
 
+    private static final byte ENTRY_UNSEEN = 0;
+    private static final byte ENTRY_MATCHES = 1;
+    private static final byte ENTRY_FAILS = 2;
     /**
-     * Apply the chunk filter to the row group dictionaries and return the result.
+     * Rows read per window of the dictionary scan: the largest chunk the pools keep, so that a filter behind a barrier
+     * gets large batches, with reusable buffers.
+     */
+    private static final int DICTIONARY_SCAN_CHUNK_SIZE = ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
+
+    /**
+     * Apply the chunk filter to the row group dictionaries and return the result. Each row's dictionary entry is looked
+     * up in a table of entry states. Unless the filter respects a barrier, every entry is evaluated first, in one
+     * batch. Otherwise the rows are read in windows, and the entries each window is the first to use are evaluated as
+     * one batch, so that the filter sees only the entries the rows in question use.
      */
     @NotNull
     private PushdownResult pushdownFilterDictionary(
             final RowSet selection,
+            final WhereFilter filter,
             final RegionedPushdownFilterContext ctx,
             final String[] parquetColumnNames,
             final PushdownResult result) {
@@ -957,6 +975,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
             // Future optimization: Use the row-group statistics to determine if there are any nulls in the column
             return result.copy();
         }
+        // A null value has no dictionary entry, so whether a null row matches is decided here.
+        final boolean nullsMatch = filterNullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS;
+        final boolean barrierActive = ExtractRespectedBarriers.stream(filter).findAny().isPresent();
 
         final RowSetBuilderSequential matchBuilder = RowSetFactory.builderSequential();
         final RowSetBuilderSequential maybeBuilder = RowSetFactory.builderSequential();
@@ -983,20 +1004,34 @@ public class ParquetTableLocation extends AbstractTableLocation {
             // No dictionaries of non-zero size, nothing to do.
             return result.copy();
         }
+        // Every row group's dictionary holds the column's values, so they share a chunk type.
+        final ChunkType dictionaryChunkType =
+                Arrays.stream(dictionaryChunks).filter(Objects::nonNull).findFirst().orElseThrow().getChunkType();
 
         // Get the key page stores for the row groups.
         final ColumnChunkPageStore<DictionaryKeys>[] valueStores =
                 columnLocation.getDictionaryKeysPageStores(columnDefinition);
 
         // Allocate a writable chunk sized to the largest dictionary across row groups, and fill it with sequential
-        // indices (0..N-1). These values act as candidate dictionary entry IDs.
+        // indices (0..N-1). These values act as candidate dictionary entry IDs, or as positions in a bounded batch.
         try (final WritableLongChunk<OrderedRowKeys> keyCandidates = WritableLongChunk.makeWritableChunk(maxSize);
-                final BasePushdownFilterContext.UnifiedChunkFilter chunkFilter = ctx.createChunkFilter(maxSize)) {
+                final BasePushdownFilterContext.UnifiedChunkFilter chunkFilter = ctx.createChunkFilter(maxSize);
+                // A bounded filter's batch: the entries a window is the first to use, at most a whole dictionary.
+                final WritableIntChunk<ChunkPositions> newIds =
+                        barrierActive ? WritableIntChunk.makeWritableChunk(maxSize) : null;
+                final WritableChunk<Values> batchValues =
+                        barrierActive ? dictionaryChunkType.makeWritableChunk(maxSize) : null) {
             for (int ii = 0; ii < maxSize; ii++) {
                 keyCandidates.set(ii, ii);
             }
+            // One state per dictionary entry, sized to the largest dictionary and reset by each row group in turn.
+            final byte[] entryStates = new byte[maxSize];
+            // Gathers a batch's values from the dictionary by position.
+            final PermuteKernel gatherKernel =
+                    barrierActive ? PermuteKernel.makePermuteKernel(dictionaryChunkType) : null;
 
             // Iterate each row group intersecting the current "maybe" rows.
+            // NB: "maybe" rows are a subset of "selection" and can not leak information when evaluated by a filter.
             iterateRowGroupsAndRowSet(result.maybeMatch(), (rgIdx, rs) -> {
 
                 // Get the dictionary chunk and value store for this row group.
@@ -1018,58 +1053,72 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     return;
                 }
 
-                // Run the filter on the dictionary to find which dictionary entries satisfy the filter and build an
-                // array of matching dictionary key IDs.
-                final long[] keyMatchArray;
-                try (final WritableLongChunk<OrderedRowKeys> keyCandidatesForChunk =
-                        keyCandidates.slice(0, dictionaryChunk.size())) {
-                    final LongChunk<OrderedRowKeys> keyMatch =
-                            chunkFilter.filter(dictionaryChunk, keyCandidatesForChunk);
-                    if (filterNullBehavior == BasePushdownFilterContext.FilterNullBehavior.INCLUDES_NULLS) {
-                        // Include one extra slot for NULL_LONG as a matching key if the filter includes nulls.
-                        keyMatchArray = new long[keyMatch.size() + 1];
-                        keyMatchArray[keyMatch.size()] = NULL_LONG;
-                    } else if (filterNullBehavior == BasePushdownFilterContext.FilterNullBehavior.EXCLUDES_NULLS) {
-                        if (keyMatch.size() == 0) {
-                            // No matches, and nulls are excluded, so all rows in this row group are excluded.
+                final int dictionarySize = dictionaryChunk.size();
+                if (barrierActive) {
+                    // Entries are evaluated as the rows first use them, below.
+                    Arrays.fill(entryStates, 0, dictionarySize, ENTRY_UNSEEN);
+                } else {
+                    // Evaluate every entry now, in one batch.
+                    Arrays.fill(entryStates, 0, dictionarySize, ENTRY_FAILS);
+                    try (final WritableLongChunk<OrderedRowKeys> ids = keyCandidates.slice(0, dictionarySize)) {
+                        final LongChunk<OrderedRowKeys> matched = chunkFilter.filter(dictionaryChunk, ids);
+                        if (matched.size() == 0 && !nullsMatch) {
+                            // No entry matches and nulls are excluded, so no row in this row group matches.
                             return;
                         }
-                        keyMatchArray = new long[keyMatch.size()];
-                    } else {
-                        throw new IllegalStateException("Unexpected null behavior: " + filterNullBehavior);
+                        for (int ii = 0; ii < matched.size(); ++ii) {
+                            entryStates[(int) matched.get(ii)] = ENTRY_MATCHES;
+                        }
                     }
-                    keyMatch.copyToTypedArray(0, keyMatchArray, 0, keyMatch.size());
                 }
 
-                // Make a MatchFilter with the matching dictionary key IDs. This will accept any encoded value whose
-                // dictionary index is in keyMatchArray
-                final ChunkFilter matchChunkFilter =
-                        LongChunkMatchFilterFactory.makeFilter(MatchOptions.REGULAR, keyMatchArray);
-
-                // Now we need to apply this filter to the encoded values in the row group. We can do this by
-                // iterating the "maybe" rows in chunks, getting the encoded values for those rows, and applying the
-                // filter to those encoded values.
-                // We must shift the row keys to be relative to the row group because the value store is relative to the
-                // row group.
+                // The value store reads offsets within the row group, so the rows are shifted to match it.
                 final long subRegionFirstKey = getSubRegionFirstKey(rgIdx);
-                final int CHUNK_SIZE = 4096;
+                // rs is a subset of the "maybe" rows, evaluating these will not leak information outside the selection.
                 try (final RowSet rowSet = rs.asRowSet();
                         final RowSet shiftedRowSet = rowSet.shift(-subRegionFirstKey);
                         final RowSequence.Iterator it = shiftedRowSet.getRowSequenceIterator();
-                        final ChunkSource.GetContext getContext = valueStore.makeGetContext(CHUNK_SIZE);
-                        final WritableLongChunk<OrderedRowKeys> results =
-                                WritableLongChunk.makeWritableChunk(CHUNK_SIZE)) {
+                        final ChunkSource.GetContext getContext =
+                                valueStore.makeGetContext(DICTIONARY_SCAN_CHUNK_SIZE)) {
                     while (it.hasMore()) {
-                        final RowSequence nextRowSeq = it.getNextRowSequenceWithLength(CHUNK_SIZE);
-                        final Chunk<? extends DictionaryKeys> valueChunk = valueStore.getChunk(getContext, nextRowSeq);
-                        matchChunkFilter.filter(valueChunk, nextRowSeq.asRowKeyChunk(), results);
+                        final RowSequence window = it.getNextRowSequenceWithLength(DICTIONARY_SCAN_CHUNK_SIZE);
+                        final LongChunk<? extends DictionaryKeys> keys =
+                                valueStore.getChunk(getContext, window).asLongChunk();
 
-                        // Iterate over matching row keys, convert them to original row space and save them as a match
-                        final int numMatches = results.size();
-                        for (int idx = 0; idx < numMatches; idx++) {
-                            final long rowKey = results.get(idx);
-                            final long originalRowKey = subRegionFirstKey + rowKey;
-                            matchBuilder.appendKey(originalRowKey);
+                        if (barrierActive) {
+                            // We need to process newly encountered keys, but should try to chunk them for batch
+                            // evaluation for efficiency.
+                            newIds.setSize(0);
+                            for (int ii = 0; ii < keys.size(); ++ii) {
+                                final long key = keys.get(ii);
+                                if (key != NULL_LONG && entryStates[(int) key] == ENTRY_UNSEEN) {
+                                    entryStates[(int) key] = ENTRY_FAILS;
+                                    newIds.add((int) key);
+                                }
+                            }
+                            final int numNew = newIds.size();
+                            if (numNew > 0) {
+                                // Run the filter on the batch, mark the entries that match.
+                                batchValues.setSize(numNew);
+                                gatherKernel.permuteInput(dictionaryChunk, newIds, batchValues);
+                                try (final WritableLongChunk<OrderedRowKeys> batchPositions =
+                                        keyCandidates.slice(0, numNew)) {
+                                    final LongChunk<OrderedRowKeys> matched =
+                                            chunkFilter.filter(batchValues, batchPositions);
+                                    for (int ii = 0; ii < matched.size(); ++ii) {
+                                        entryStates[newIds.get((int) matched.get(ii))] = ENTRY_MATCHES;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Every entry the window uses is now evaluated; append the matching rows in order.
+                        final LongChunk<OrderedRowKeys> rowKeys = window.asRowKeyChunk();
+                        for (int ii = 0; ii < keys.size(); ++ii) {
+                            final long key = keys.get(ii);
+                            if (key == NULL_LONG ? nullsMatch : entryStates[(int) key] == ENTRY_MATCHES) {
+                                matchBuilder.appendKey(subRegionFirstKey + rowKeys.get(ii));
+                            }
                         }
                     }
                 }
@@ -1090,7 +1139,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * maybe matches: rows the index does not place under a matching key are treated as not matching, so the index must
      * be complete and current for the rows it covers (see {@link #hasDataIndex}). When the selection is too small for
      * the index, or filtering the index fails for a reason other than cancellation, the result is a copy of
-     * {@code result}.
+     * {@code result}. A filter that respects a barrier is shown only the keys of rows in {@code result}'s maybe
+     * matches.
      */
     @NotNull
     public static PushdownResult pushdownDataIndex(
@@ -1099,34 +1149,61 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final Map<String, String> renameMap,
             final BasicDataIndex dataIndex,
             final PushdownResult result) {
-        final RowSetBuilderRandom matchingBuilder = RowSetFactory.builderRandom();
+        final WritableRowSet matching;
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final long threshold = (long) (dataIndex.table().size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
             if (result.maybeMatch().size() <= threshold) {
                 return result.copy();
             }
+            final boolean barrierActive = ExtractRespectedBarriers.stream(filter).findAny().isPresent();
             // Extract the fundamental filter, ignoring barriers and serial wrappers.
             final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
-            final Table toFilter;
-            if (!renameMap.isEmpty()) {
-                final Collection<Pair> renamePairs = renameMap.entrySet().stream()
-                        .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
-                                ColumnName.of(entry.getKey())))
-                        .collect(Collectors.toList());
-                toFilter = dataIndex.table().renameColumns(renamePairs);
-            } else {
-                toFilter = dataIndex.table();
-            }
+            final String rowSetColumnName = dataIndex.rowSetColumnName();
+            final RowSet maybeMatch = result.maybeMatch();
             // Apply the filter to the data index table
             try {
-                final Table filteredTable = toFilter.where(copiedFilter);
-                try (final CloseableIterator<RowSet> it =
-                        ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class).iterator()) {
-                    it.forEachRemaining(rowSet -> {
-                        try (final RowSet matching = rowSet.intersect(result.maybeMatch())) {
-                            matchingBuilder.addRowSet(matching);
+                Table toFilter = dataIndex.table();
+                if (!renameMap.isEmpty()) {
+                    final Collection<Pair> renamePairs = renameMap.entrySet().stream()
+                            .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
+                                    ColumnName.of(entry.getKey())))
+                            .collect(Collectors.toList());
+                    toFilter = toFilter.renameColumns(renamePairs);
+                }
+                if (barrierActive) {
+                    // The row sets are read twice, by the overlap test and again for the index rows that pass the
+                    // filter, and a location with several row groups converts them from positions on every read.
+                    // Materializing the row set column reads and converts each once. Only that column: the key
+                    // columns keep their own sources, and with them the pushdown the filter gets on the index table,
+                    // which a select of every column would lose.
+                    toFilter = toFilter.update(List.of(new SourceColumn(rowSetColumnName)));
+                    // Keep only the index rows whose row sets overlap the rows in question, in one ordered pass. A
+                    // where would make the same overlaps call per row, as there is no chunk kernel for it, only
+                    // through a computed overlap column, a filter and an intermediate table; and the locations are
+                    // already pushed down in parallel, so its parallelism would buy nothing.
+                    final RowSetBuilderSequential overlapping = RowSetFactory.builderSequential();
+                    try (final RowSet.Iterator indexRows = toFilter.getRowSet().iterator();
+                            final CloseableIterator<RowSet> rowSets =
+                                    ColumnVectors.ofObject(toFilter, rowSetColumnName, RowSet.class).iterator()) {
+                        while (rowSets.hasNext()) {
+                            final long indexRow = indexRows.nextLong();
+                            if (rowSets.next().overlaps(maybeMatch)) {
+                                overlapping.appendKey(indexRow);
+                            }
                         }
-                    });
+                    }
+                    toFilter = toFilter.getSubTable(overlapping.build().toTracking());
+                }
+                final Table filteredTable = toFilter.where(copiedFilter);
+
+                // One row set per index row that passes the filter. The batcher owns what it gathers, and building
+                // after the iterator is closed leaves nothing that can throw between building and taking the result.
+                try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(filteredTable.size())) {
+                    try (final CloseableIterator<RowSet> it =
+                            ColumnVectors.ofObject(filteredTable, rowSetColumnName, RowSet.class).iterator()) {
+                        it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(maybeMatch)));
+                    }
+                    matching = batcher.build();
                 }
             } catch (final Exception e) {
                 // A cancelled query must stop, not carry on filtering without the index.
@@ -1141,9 +1218,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
             }
         }
         // Retain only the maybe rows and add the previously found matches.
-        try (
-                final WritableRowSet matching = matchingBuilder.build();
-                final WritableRowSet empty = RowSetFactory.empty()) {
+        try (matching; final WritableRowSet empty = RowSetFactory.empty()) {
             matching.insert(result.match());
             return PushdownResult.of(selection, matching, empty);
         }

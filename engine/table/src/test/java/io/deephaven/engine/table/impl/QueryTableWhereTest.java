@@ -2641,7 +2641,8 @@ public abstract class QueryTableWhereTest {
         assertEquals(25_000, numRowsFiltered(postFilter));
 
         assertEquals(100, filter1.numRowsProcessed()); // index table size
-        assertEquals(100, filter2.numRowsProcessed()); // index table size
+        // A barrier respecter is shown only the index keys in its selection: those filter1 kept.
+        assertEquals(50, filter2.numRowsProcessed());
     }
 
     @Test
@@ -2672,7 +2673,8 @@ public abstract class QueryTableWhereTest {
         assertEquals(100_000, numRowsFiltered(preFilter));
         assertEquals(100_000, numRowsFiltered(filter1)); // forced to be serial
         assertEquals(50_000, numRowsFiltered(midFilter));
-        assertEquals(100, numRowsFiltered(filter2)); // index table size
+        // A barrier respecter is shown only the index keys in its selection: those filter1 kept.
+        assertEquals(50, numRowsFiltered(filter2));
         assertEquals(25_000, numRowsFiltered(postFilter));
     }
 
@@ -2924,7 +2926,8 @@ public abstract class QueryTableWhereTest {
                 postFilter));
 
         assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(97, filterA.numRowsProcessed()); // indexA table size
+        // A barrier respecter is shown only the index keys in its selection: those filterB and tmpFilter kept.
+        assertEquals(86, filterA.numRowsProcessed());
         assertEquals(1_067, filterB.numRowsProcessed()); // indexAB table size
         assertEquals(97, tmpFilter.numRowsProcessed()); // indexA table size
         assertEquals(10969, postFilter.numRowsProcessed());
