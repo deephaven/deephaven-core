@@ -2,21 +2,35 @@
 title: Rolling aggregations
 ---
 
-This guide provides a comprehensive overview of how to use the [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) table operation for rolling calculations and aggregations. This operation creates a new table containing columns with aggregated calculations (called `UpdateByOperations`) from a source table. The calculations can be cumulative, windowed by rows (ticks), or windowed by time. They can also be performed on a per-group basis, where groups are defined by one or more key columns.
+This guide shows how to use the [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) table operation for rolling calculations and aggregations. It returns a new table that adds columns calculated by one or more [`UpdateByOperation`](/core/javadoc/io/deephaven/api/updateby/UpdateByOperation.html) objects. The calculations can be cumulative, windowed by rows (ticks) or by time, or exponentially weighted.
 
-For a complete list of all available `UpdateByOperations` that can be performed with [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md), see the [reference page](../reference/table-operations/update-by-operations/updateBy.md#parameters).
+[`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) takes one or more [`UpdateByOperations`](/core/javadoc/io/deephaven/api/updateby/UpdateByOperation.html) and zero or more key columns. The result contains every source column plus any new columns the operations create. An operation whose output column has the same name as an existing column replaces that column. Without key columns, each operation runs over all rows. With key columns (also called grouping columns), each operation runs separately on each unique group.
 
-The use of [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) requires one or more of these calculations, as well as zero or more key columns to define groups. The resultant table contains all columns from the source table, as well as new columns if the output of the `UpdateByOperation` renames them. If no key columns are given, then the calculations are applied to all rows in the specified columns. If one or more key columns are given, the calculations are applied to each unique group in the key column(s).
+For the full list of [`UpdateByOperations`](/core/javadoc/io/deephaven/api/updateby/UpdateByOperation.html) you can pass to [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md), see the [`updateBy` parameters reference](../reference/table-operations/update-by-operations/updateBy.md#parameters).
+
+## `updateBy` vs `updateby`
+
+This document refers to [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) and [`updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) throughout. They are _not_ identical:
+
+- [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) always refers to the `updateBy` _table operation_. You always call it as a method on a table:
+
+```groovy syntax
+result = source.updateBy(...)
+```
+
+- [`updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) is the Java package that defines the operations you pass to [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md). Its [`UpdateByOperation`](/core/javadoc/io/deephaven/api/updateby/UpdateByOperation.html) interface provides these operations, for example [`EmMax`](../reference/table-operations/update-by-operations/em-max.md) and [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md).
+
+Keep this distinction in mind throughout the guide.
 
 ## What are rolling aggregations?
 
-Rolling aggregations are unique from [dedicated](./dedicated-aggregations.md) and [combined](./combined-aggregations.md) aggregations for two reasons.
+Rolling aggregations differ from [dedicated](./dedicated-aggregations.md) and [combined](./combined-aggregations.md) aggregations in two ways: they preserve data history, and they can calculate over a window of rows instead of the whole group.
 
 ### Preservation of data history
 
-When performing aggregations with [dedicated](./dedicated-aggregations.md) and [combined](./combined-aggregations.md) aggregations, the output table contains a single row for each group. In contrast, rolling aggregation tables have the same number of rows as the source table. Thus, they preserve data history, whereas the others do not.
+Most [dedicated](./dedicated-aggregations.md) and [combined](./combined-aggregations.md) aggregations output a single row for each group. The exceptions are [`headBy`](../reference/table-operations/group-and-aggregate/headBy.md) and [`tailBy`](../reference/table-operations/group-and-aggregate/tailBy.md), which output up to `n` rows for each group. In contrast, rolling aggregation tables have the same number of rows as the source table, so they preserve the data history that other aggregations discard.
 
-To illustrate this, consider a cumulative sum on a single grouping column with two key values. Notice how `resultDedicated` and `resultCombined` have two rows - one for each group. In contrast, `resultRolling` has 20 rows - one for each row in the source table. You can see how the cumulative sum increases over time in the latter case.
+To illustrate this, consider a cumulative sum on a single grouping column with two key values. Notice how `resultDedicated` and `resultCombined` have two rows — one for each group. In contrast, `resultRolling` has 20 rows — one for each row in the source table. You can see how the cumulative sum increases over time in the latter case.
 
 ```groovy order=resultRolling,resultDedicated,resultCombined,source
 source = emptyTable(20).update("Key = (ii % 2 == 0) ? `A` : `B`", "Value = ii")
@@ -26,13 +40,16 @@ resultDedicated = source.sumBy("Key")
 resultCombined = source.aggBy(AggSum("SumValue=Value"), "Key")
 ```
 
+> [!NOTE]
+> The syntax `SumValue=Value` names the output column `SumValue` and computes it from the input column `Value`.
+
 ### Windowing
 
-[Dedicated](./dedicated-aggregations.md) and [combined](./combined-aggregations.md) aggregations are all cumulative. They calculate aggregated values over an entire table. In contrast, rolling aggregations can be either [cumulative](#cumulative-aggregations) or [windowed](#windowed-aggregations).
+[Dedicated](./dedicated-aggregations.md) and [combined](./combined-aggregations.md) aggregations calculate each group's aggregated value over all of the group's rows. In contrast, rolling aggregations can be [cumulative](#cumulative-aggregations), [windowed](#windowed-aggregations), or [exponentially weighted](#exponential-moving-aggregations).
 
-A windowed aggregation is one that only calculates aggregated values over a subset of the table. This subset is defined by a window, which can be specified in terms of rows (ticks) or time. For example, a windowed sum may calculate the aggregated sum over the previous 10 rows in the table. When a new row ticks in, the aggregated value is updated to reflect the new row and the oldest row that is no longer in the window.
+A windowed aggregation calculates over a subset of the table called a window. You define the window as a number of rows (ticks) or as a span of time. For example, a windowed sum can add up the previous 10 rows. When a new row arrives in a ticking (live, updating) table, Deephaven updates the result to include the new row and drop the row that left the window.
 
-To illustrate this, consider the following example, which calculates a cumulative sum and a rolling sum with [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md). The rolling sum is applied over the previous 3 rows, so the `SumValue` column differs from its cumulative counterpart:
+To illustrate this, consider the following example, which calculates a cumulative sum and a rolling sum with [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md). The rolling sum uses a 3-row window (the current row and the two rows before it), so the `RollingSumValue` column differs from `CumSumValue`:
 
 ```groovy order=result,source
 source = emptyTable(6).update("Value = ii")
@@ -49,7 +66,7 @@ The following examples demonstrate the fundamental patterns for using [`updateBy
 
 ### A single `UpdateByOperation` with no grouping columns
 
-The following example calculates the tick-based rolling sum of the `X` column in the `source` table. No key columns are provided, so a single group exists that contains all rows of the table.
+The following example calculates the tick-based rolling sum of the `X` column in the `source` table. [`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md) takes `revTicks` and an optional `fwdTicks` as its first arguments. Omitting `fwdTicks` is the same as passing 0. `RollingSum(3, 0, ...)` sets `revTicks = 3` and `fwdTicks = 0`, so the window is the current row and the two previous rows. [Tick-based vs time-based windows](#tick-based-vs-time-based-windows) explains both parameters. The example passes no key columns, so all rows of the table form a single group.
 
 ```groovy order=source,result
 source = emptyTable(20).update("X = i")
@@ -59,7 +76,7 @@ result = source.updateBy(RollingSum(3, 0, "RollingSumX = X"))
 
 ### Multiple `UpdateByOperations` with no grouping columns
 
-The following example builds on the [previous](#a-single-updatebyoperation-with-no-grouping-columns) by performing two `UpdateByOperations` in a single [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md). The cumulative minimum and maximum are calculated, and the range is derived from them.
+The following example builds on the [single-operation example](#a-single-updatebyoperation-with-no-grouping-columns) by performing two [`UpdateByOperations`](/core/javadoc/io/deephaven/api/updateby/UpdateByOperation.html) in a single [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md). It calculates the cumulative minimum and maximum, then derives the range from them with [`update`](../reference/table-operations/select/update.md).
 
 ```groovy order=source,result
 source = emptyTable(20).update("X = randomInt(0, 25)")
@@ -69,7 +86,7 @@ result = source.updateBy([CumMin("MinX = X"), CumMax("MaxX = X")]).update("Range
 
 ### Multiple `UpdateByOperations` with a single grouping column
 
-The following example builds on the [previous](#multiple-updatebyoperations-with-no-grouping-columns) by specifying a grouping column. The grouping column is `Letter`, which contains alternating letters `A` and `B`. As a result, the cumulative minimum, maximum, and range are calculated on a per-letter basis. The `result` table is split by letter via [`where`](../reference/table-operations/filter/where.md) to show this.
+The following example builds on the [ungrouped multiple-operation example](#multiple-updatebyoperations-with-no-grouping-columns) by specifying a grouping column. The grouping column is `Letter`, which contains alternating letters `A` and `B`. As a result, [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) calculates the cumulative minimum, maximum, and range separately for each letter. The example splits `result` by letter with [`where`](../reference/table-operations/filter/where.md) to show this.
 
 ```groovy order=source,result,resultA,resultB
 source = emptyTable(20).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = randomInt(0, 25)")
@@ -80,9 +97,9 @@ resultA = result.where("Letter == `A`")
 resultB = result.where("Letter == `B`")
 ```
 
-### A single `UpdateByOperation` applied to multiple columns with multiple grouping columns
+### Multiple `UpdateByOperations` applied to multiple columns with multiple grouping columns
 
-The following example builds on the [previous](#multiple-updatebyoperations-with-a-single-grouping-column) by applying a single `UpdateByOperation` to multiple columns as well as specifying multiple grouping columns. The grouping columns, `Letter` and `Truth`, contain alternating letters and random true/false values. Thus, groups are defined by unique combinations of letter and boolean. The `result` table is split by letter and truth value to show the unique groups.
+The following example builds on the [single-grouping-column example](#multiple-updatebyoperations-with-a-single-grouping-column) by applying each [`UpdateByOperation`](/core/javadoc/io/deephaven/api/updateby/UpdateByOperation.html) to multiple columns and specifying multiple grouping columns. The grouping columns, `Letter` and `Truth`, contain alternating letters and random true/false values. Each unique combination of letter and boolean forms a group. The example splits `result` by letter and truth value to show the groups.
 
 ```groovy order=source,result,resultATrue,resultAFalse,resultBTrue,resultBFalse
 source = emptyTable(20).update("Letter = (i % 2 == 0) ? `A` : `B`", "Truth = randomBool()", "X = randomInt(0, 25)", "Y = randomInt(50, 75)")
@@ -100,7 +117,7 @@ resultBFalse = result.where("Letter == `B`", "Truth == false")
 
 ### Applying an `UpdateByOperation` to all columns
 
-The following example uses [`Fill`](../reference/table-operations/update-by-operations/fill.md) to fill null values with the most recent previous non-null value. No columns are given to `Fill`, so the forward-fill is applied to _all_ columns in the `source` table except for the specified key column(s). This means the original columns (e.g., `X` and `Y`) are replaced in the `result` table by new columns of the same name containing the forward-filled values.
+The following example uses [`Fill`](../reference/table-operations/update-by-operations/fill.md) to fill null values with the most recent previous non-null value. The example passes no columns to `Fill`, so it fills _all_ columns in `source` except the key columns. The forward-filled columns replace the original columns of the same name, such as `X` and `Y`, in `result`.
 
 ```groovy order=source,result
 source = emptyTable(10).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = (i % 3 == 0) ? NULL_INT : i", "Y = (i % 5 == 2) ? i : NULL_INT")
@@ -108,30 +125,19 @@ source = emptyTable(10).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = (i % 3 
 result = source.updateBy(Fill(), "Letter")
 ```
 
-## `updateBy` vs `updateby`
-
-This document refers to [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) and [`updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) throughout. They are _not_ identical:
-
-- [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) always refers to the[`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) _table operation_. This is always invoked as a method on a table:
-
-```groovy skip-test
-result = source.updateBy(...)
-```
-
-- [`updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) refers to the Groovy package module housing all of the functions and related plumbing. The [`UpdateByOperation`](/core/javadoc/io/deephaven/api/updateby/UpdateByOperation.html) interface contains the `updateBy` operations themselves, such as `EmMax` and `RollingFormula`.
-
-This distinction will be important to keep in mind as you progress through the document.
-
 ## Cumulative aggregations
 
-Cumulative aggregations are the simplest operations in the [`updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) Groovy module. They are statistics computed over all previous data points in a series. The following cumulative statistics are supported:
+Cumulative aggregations are the simplest operations in the [`updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) package. They are statistics computed over all previous data points in a series. Deephaven supports the following cumulative statistics:
 
-| Cumulative statistic | [`updateBy`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) function |
-| -------------------- | ----------------------------------------------------------------------------------- |
-| Minimum              | [`CumMin`](../reference/table-operations/update-by-operations/cum-min.md)           |
-| Maximum              | [`CumMax`](../reference/table-operations/update-by-operations/cum-max.md)           |
-| Sum                  | [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md)           |
-| Product              | [`CumProd`](../reference/table-operations/update-by-operations/cum-prod.md)         |
+| Cumulative statistic | [`UpdateByOperation`](/core/javadoc/io/deephaven/api/updateby/UpdateByOperation.html) method |
+| -------------------- | -------------------------------------------------------------------------------------------- |
+| Minimum              | [`CumMin`](../reference/table-operations/update-by-operations/cum-min.md)                    |
+| Maximum              | [`CumMax`](../reference/table-operations/update-by-operations/cum-max.md)                    |
+| Sum                  | [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md)                    |
+| Product              | [`CumProd`](../reference/table-operations/update-by-operations/cum-prod.md)                  |
+| Count where          | [`CumCountWhere`](../reference/table-operations/update-by-operations/cum-count-where.md)     |
+
+The count-where operations, such as [`CumCountWhere`](../reference/table-operations/update-by-operations/cum-count-where.md), count the rows that match a filter you supply, rather than aggregating a column's values.
 
 ### Cumulative sum
 
@@ -147,12 +153,9 @@ source = emptyTable(8).update("X = ii")
 result = source.updateBy(CumSum("SumX=X"))
 ```
 
-> [!NOTE]
-> The syntax `SumX=X` indicates that the resultant column from the operation is named `SumX`.
-
 ### Cumulative average
 
-The [`updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) module does not directly support a function to compute the cumulative average of a column. However, you can still compute the cumulative average by using two [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md) operations, where one of them is applied over a column of ones:
+The [`updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) package has no method that computes the cumulative average of a column. However, you can still compute the cumulative average with a single [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md) operation that sums both the column and a column of ones, then divide:
 
 ```groovy order=result
 source = emptyTable(8).update("X = ii")
@@ -165,60 +168,109 @@ result = (
 )
 ```
 
-This demonstrates the flexibility of the [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) table operation. If a particular kind of calculation is unavailable, it's almost always possible to accomplish with Deephaven.
+This demonstrates the flexibility of the [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) table operation. When no single operation computes the statistic you need, you can often combine an `updateBy` call with [`update`](../reference/table-operations/select/update.md), as shown here.
 
 ## Windowed aggregations
 
-Windowed aggregations are similar to cumulative aggregations but operate on a finite-sized window of data. This means they only consider a limited number of rows for their calculations. The window size can be defined either by a number of rows (ticks) or by a duration of time.
+Windowed aggregations operate on a finite window of rows rather than on all previous rows, as introduced in [Windowing](#windowing). This section shows how to define a window by rows (ticks) or by time, and lists the operations that use one.
 
 ### Tick-based vs time-based windows
 
-**Tick-based windows** aggregate values over a specified number of rows with fixed window sizes defined by `revTicks` and `fwdTicks` parameters:
+**Tick-based windows** aggregate values over a fixed number of rows. Tick-based operations take `revTicks` and an optional `fwdTicks` (default 0) as their first arguments, for example `RollingSum(revTicks, fwdTicks, "Out=In")` or `RollingSum(revTicks, "Out=In")`. The parameters set the window as follows:
 
-- `revTicks = 1, fwdTicks = 0` - Contains only the current row.
-- `revTicks = 10, fwdTicks = 0` - Contains 9 previous rows and the current row.
-- `revTicks = 0, fwdTicks = 10` - Contains the following 10 rows; excludes the current row.
-- `revTicks = 10, fwdTicks = 10` - Contains the previous 9 rows, the current row and the 10 rows following.
-- `revTicks = 10, fwdTicks = -5` - Contains 5 rows, beginning at 9 rows before, ending at 5 rows before the current row (inclusive).
-- `revTicks = 11, fwdTicks = -1` - Contains 10 rows, beginning at 10 rows before, ending at 1 row before the current row (inclusive).
-- `revTicks = -5, fwdTicks = 10` - Contains 5 rows, beginning 5 rows following, ending at 10 rows following the current row (inclusive).
+- `revTicks`: The number of rows the window extends backward, counting the current row. A value of `N` includes the current row and the `N-1` preceding rows.
+- `fwdTicks`: The number of subsequent rows to include in the window.
+- A negative `fwdTicks` ends the window before the current row, and a `revTicks` of 0 or less starts the window after the current row. Use them to build windows that lie entirely before or entirely after the current row.
 
-**Time-based windows** aggregate values over time durations with variable window sizes defined by `revTime` and `fwdTime` parameters:
+Here are some examples of tick-based windows:
 
-- `revTime = "PT00:00:00", fwdTime = "PT00:00:00"` - Contains rows that exactly match the current timestamp.
-- `revTime = "PT00:10:00", fwdTime = "PT00:00:00"` - Contains rows from 10m earlier through the current timestamp (inclusive).
-- `revTime = "PT00:00:00", fwdTime = "PT00:10:00"` - Contains rows from the current timestamp through 10m following the current row timestamp (inclusive).
-- `revTime = int(60e9), fwdTime = int(60e9)` - Contains rows from 1m earlier through 1m following the current timestamp (inclusive).
-- `revTime = "PT00:10:00", fwdTime = "-PT00:05:00"` - Contains rows from 10m earlier through 5m before the current timestamp (inclusive). This is a purely backward-looking window.
-- `revTime = int(-5e9), fwdTime = int(10e9)` - Contains rows from 5s following through 10s following the current timestamp (inclusive). This is a purely forward-looking window.
+- `revTicks = 1, fwdTicks = 0`: Contains only the current row.
+- `revTicks = 10, fwdTicks = 0`: Contains 9 previous rows and the current row.
+- `revTicks = 0, fwdTicks = 10`: Contains the following 10 rows and excludes the current row.
+- `revTicks = 10, fwdTicks = 10`: Contains the previous 9 rows, the current row, and the following 10 rows.
+- `revTicks = 10, fwdTicks = -5`: Contains 5 rows, from 9 rows before to 5 rows before the current row (inclusive).
+- `revTicks = 11, fwdTicks = -1`: Contains 10 rows, from 10 rows before to 1 row before the current row (inclusive).
+- `revTicks = -5, fwdTicks = 10`: Contains 5 rows, from 6 rows after to 10 rows after the current row (inclusive).
 
-Cumulative operators like [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md) are special cases of tick-based operators, where the window begins at the first table row and continues through to the current row.
+Cumulative operators like [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md) are special cases of tick-based operators, where the window begins at the first row of the group and continues through to the current row.
 
-### Simple moving (rolling) aggregations
+**Time-based windows** aggregate values over time durations with variable window sizes defined by the `revTime` and `fwdTime` parameters:
 
-Simple moving (or rolling) aggregations are statistics computed over a finite, moving window of data. These operations weigh each data point in the window equally, regardless of its distance from the current row. The following simple moving statistics are supported:
+- `revTime`: Duration to look back in time, either a `Duration` such as [`parseDuration("PT5s")`](../reference/time/datetime/parseDuration.md) or a number of nanoseconds.
+- `fwdTime`: Duration to look forward in time.
+- A negative `fwdTime` ends the window before the current row's timestamp, and a negative `revTime` starts the window after it.
+- Time-based windows require a timestamp column, which is the first argument.
 
-| Simple moving statistic | Tick-based                                                                             |
-| ----------------------- | -------------------------------------------------------------------------------------- |
-| Count                   | [`RollingCount`](../reference/table-operations/update-by-operations/rolling-count.md)  |
-| Minimum                 | [`RollingMin`](../reference/table-operations/update-by-operations/rolling-min.md)      |
-| Maximum                 | [`RollingMax`](../reference/table-operations/update-by-operations/rolling-max.md)      |
-| Sum                     | [`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md)      |
-| Product                 | [`RollingProd`](../reference/table-operations/update-by-operations/rolling-product.md) |
-| Average                 | [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md)      |
-| Weighted Average        | [`RollingWavg`](../reference/table-operations/update-by-operations/rolling-wavg.md)    |
-| Standard Deviation      | [`RollingStd`](../reference/table-operations/update-by-operations/rolling-std.md)      |
+Here are some examples of time-based windows:
 
-#### Additional rolling operations
+- `revTime = parseDuration("PT0s"), fwdTime = parseDuration("PT0s")`: Contains rows that exactly match the current timestamp.
+- `revTime = parseDuration("PT10m"), fwdTime = parseDuration("PT0s")`: Contains rows from 10 minutes earlier through the current timestamp (inclusive).
+- `revTime = parseDuration("PT0s"), fwdTime = parseDuration("PT10m")`: Contains rows from the current timestamp through 10 minutes following the current timestamp (inclusive).
+- `revTime = 60_000_000_000L, fwdTime = 60_000_000_000L`: Contains rows from 1 minute earlier through 1 minute following the current timestamp (inclusive).
+- `revTime = parseDuration("PT10m"), fwdTime = parseDuration("-PT5m")`: Contains rows from 10 minutes earlier through 5 minutes before the current timestamp (inclusive). This is a purely backward-looking window.
+- `revTime = -5_000_000_000L, fwdTime = 10_000_000_000L`: Contains rows from 5 seconds following through 10 seconds following the current timestamp (inclusive). This is a purely forward-looking window.
 
-Deephaven offers two additional rolling operations that are not simple statistics, but rather for grouping or custom formulas:
+### Tick-based windowed calculations
 
-| Simple moving operation | Tick-based                                                                                | Time-based                                                                                             |
-| ----------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Grouping                | [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md)     | [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) (time-based)     |
-| Custom formula          | [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) | [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) (time-based) |
+The following example:
 
-The grouping operations collect values within the rolling window into an array. The custom formula operations allow you to define a custom formula that is applied to the values in the window.
+- Creates a static source table with two columns.
+- Calculates the rolling sum of `X` grouped by `Letter`.
+  - Uses three windows: one before, one containing, and one after the current row.
+- Splits the `result` table by letter via [`where`](../reference/table-operations/filter/where.md) to show that each group gets its own windowed calculation.
+
+```groovy order=source,result,resultA,resultB
+source = emptyTable(20).update("X = i", "Letter = (i % 2 == 0) ? `A` : `B`")
+
+opContains = RollingSum(1, 1, "ContainsX = X")
+opBefore = RollingSum(3, -1, "PriorX = X")
+opAfter = RollingSum(-1, 3, "PosteriorX = X")
+
+result = source.updateBy([opContains, opBefore, opAfter], "Letter")
+resultA = result.where("Letter == `A`")
+resultB = result.where("Letter == `B`")
+```
+
+### Time-based windowed calculations
+
+The following example uses the time-based window parameters described in [Tick-based vs time-based windows](#tick-based-vs-time-based-windows). It:
+
+- Creates a static source table with three columns.
+- Calculates the rolling sum of `X` grouped by `Letter`.
+  - Uses three windows: one before, one containing, and one after the current row's timestamp.
+- Splits the `result` table by letter via [`where`](../reference/table-operations/filter/where.md) to show that each group gets its own windowed calculation.
+
+```groovy order=source,result,resultA,resultB
+source = emptyTable(20).update(
+    "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
+    "X = i",
+    "Letter = (i % 2 == 0) ? `A` : `B`"
+)
+
+opBefore = RollingSum("Timestamp", parseDuration("PT4s"), parseDuration("-PT1s"), "PriorX = X")
+opContains = RollingSum("Timestamp", parseDuration("PT2s"), parseDuration("PT2s"), "ContainsX = X")
+opAfter = RollingSum("Timestamp", parseDuration("-PT1s"), parseDuration("PT4s"), "PosteriorX = X")
+
+result = source.updateBy([opBefore, opContains, opAfter], "Letter")
+resultA = result.where("Letter == `A`")
+resultB = result.where("Letter == `B`")
+```
+
+### Simple moving aggregations
+
+Simple moving aggregations are statistics computed over a finite, moving window of data. These operations don't weight data points by their distance from the current row. Every point in the window counts equally, except in the weighted average, where a weight column you supply sets each point's weight. Deephaven supports the following simple moving statistics:
+
+| Simple moving statistic | Tick- and time-based                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------ |
+| Count                   | [`RollingCount`](../reference/table-operations/update-by-operations/rolling-count.md)            |
+| Minimum                 | [`RollingMin`](../reference/table-operations/update-by-operations/rolling-min.md)                |
+| Maximum                 | [`RollingMax`](../reference/table-operations/update-by-operations/rolling-max.md)                |
+| Sum                     | [`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md)                |
+| Product                 | [`RollingProduct`](../reference/table-operations/update-by-operations/rolling-product.md)        |
+| Average                 | [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md)                |
+| Weighted average        | [`RollingWAvg`](../reference/table-operations/update-by-operations/rolling-wavg.md)              |
+| Standard deviation      | [`RollingStd`](../reference/table-operations/update-by-operations/rolling-std.md)                |
+| Count where             | [`RollingCountWhere`](../reference/table-operations/update-by-operations/rolling-count-where.md) |
 
 To illustrate a simple moving aggregation, consider the rolling average. For each row, this operation calculates the average of all values within a specified window. The following illustration shows this:
 
@@ -232,42 +284,7 @@ source = emptyTable(8).update("X = ii")
 result = source.updateBy(RollingAvg(4, "AvgX=X"))
 ```
 
-The following example demonstrates a series of different tick-based windows that look backwards, forwards, and both. Each example calculates the rolling sum of the `Value` column:
-
-```groovy order=source,result
-source = emptyTable(50).update("Value = ii")
-
-updateByOps = [
-    RollingSum(10, 0, "SumValueBackwards=Value"),
-    RollingSum(1, 9, "SumValueForwards=Value"),
-    RollingSum(6, 5, "SumValueBoth=Value"),
-]
-
-result = source.updateBy(updateByOps)
-```
-
-The above example can be modified to use time-based windows instead of tick-based windows:
-
-```groovy order=source,result
-source = emptyTable(50).update(
-    "Timestamp = '2025-05-01T09:30:00 ET' + ii * SECOND",
-    "Value = ii"
-)
-
-updateByOps = [
-    RollingSum("Timestamp", parseDuration("PT10s"), parseDuration("PT00:00:00"), "SumValueBackwards=Value"),
-    RollingSum("Timestamp", parseDuration("PT00:00:00"), parseDuration("PT10s"), "SumValueForwards=Value"),
-    RollingSum("Timestamp", parseDuration("PT5s"), parseDuration("PT5s"), "SumValueBoth=Value"),
-]
-
-result = source.updateBy(updateByOps)
-```
-
-### Rolling average
-
-When creating a tick-based rolling operation, the `revTicks` parameter can configure how far the window extends behind the row. The current row is considered to belong to the backward-looking window, so setting `revTicks=10` includes the current row and previous 9 rows.
-
-The following example creates 2, 3, and 5-row backward-looking tick-based simple moving averages. These averages are computed _by group_, as specified with the `by` argument:
+To compare window sizes, pass several [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md) operations at once. This example computes 2-, 3-, and 5-row backward-looking averages _by group_, using `Letter` as the key column:
 
 ```groovy order=result
 source = emptyTable(10).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = randomInt(0, 100)")
@@ -279,362 +296,37 @@ sma5 = RollingAvg(5, "AvgX5=X")
 result = source.updateBy([sma2, sma3, sma5], "Letter")
 ```
 
-Here's another example that creates 3, 5, and 9-row windows, centered on the current row:
-
-```groovy order=result
-source = emptyTable(10).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = randomInt(0, 100)")
-
-// using fwdTicks gives windows that extend into the future
-sma3 = RollingAvg(2, 1, "AvgX2=X")
-sma5 = RollingAvg(3, 2, "AvgX3=X")
-sma9 = RollingAvg(5, 4, "AvgX5=X")
-
-result = source.updateBy([sma3, sma5, sma9], "Letter")
-```
-
-### Time-based rolling average
-
-Time-based rolling operations use a syntax similar to tick-based operations but require a timestamp column to be specified. This example uses the [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md) function to compute 2-second, 3-second, and 5-second moving averages:
+For a time-based window, pass a timestamp column and a `Duration` to [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md). This example computes 2-, 3-, and 5-second moving averages:
 
 ```groovy order=result
 source = emptyTable(10).update(
-        "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
-        "Letter = (i % 2 == 0) ? `A` : `B`",
-        "X = randomInt(0, 25)",
+    "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
+    "X = randomInt(0, 25)",
 )
 
 sma2sec = RollingAvg("Timestamp", parseDuration("PT00:00:02"), "AvgX2Sec=X")
 sma3sec = RollingAvg("Timestamp", parseDuration("PT3s"), "AvgX3Sec=X")
-sma5sec = RollingAvg("Timestamp", parseDuration("PT3s"), "AvgX5Sec=X")
+sma5sec = RollingAvg("Timestamp", parseDuration("PT5s"), "AvgX5Sec=X")
 
-result = source.updateBy([sma2sec, sma3sec, sma5sec], "Letter")
+result = source.updateBy([sma2sec, sma3sec, sma5sec])
 ```
 
-Like before, you can use `fwdTime` to create windows into the future. Here's an example that creates 2-second, 5-second, and 10-second windows, centered on the current row:
+### Additional rolling operations
 
-```groovy order=result
-source = emptyTable(10).update(
-        "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
-        "Letter = (i % 2 == 0) ? `A` : `B`",
-        "X = randomInt(0, 25)",
-)
+Deephaven offers two more rolling operations that don't compute a fixed statistic. One groups values, and the other applies a custom formula:
 
-sma2sec = RollingAvg("Timestamp", parseDuration("PT00:00:01"), parseDuration("PT00:00:01"), "AvgX2Sec=X")
-sma5sec = RollingAvg("Timestamp", parseDuration("PT2.5s"), parseDuration("PT2.5s"), "AvgX3Sec=X")
-sma10sec = RollingAvg("Timestamp", parseDuration("PT5s"), parseDuration("PT5s"), "AvgX5Sec=X")
+| Rolling operation | Tick- and time-based                                                                      |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| Grouping          | [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md)     |
+| Custom formula    | [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) |
 
-result = source.updateBy([sma2sec, sma5sec, sma10sec], "Letter")
-```
+[`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) collects the values in each window into a vector. [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) applies a formula you write to the values in each window.
 
-> [!NOTE]
-> In tick-based operations, windows are calculated per-group (each group maintains its own window of rows). In time-based operations, windows are defined by timestamps across the entire table regardless of grouping.
+#### Rolling groups
 
-### Exponential moving aggregations
+The following examples create rolling groups with tick-based windows, then with time-based windows. To work with the resulting vectors, see [how to work with arrays](./work-with-arrays.md).
 
-Exponential moving statistics are another form of moving aggregations. Unlike simple moving aggregations that use a fixed window, these statistics use _all_ preceding data points. However, they assign more weight to recent data and exponentially down-weight older data. This means distant observations have little effect on the result, while closer observations have a greater influence. The rate at which the weight decreases is controlled by a decay parameter. The following exponential moving statistics are supported:
-
-| Exponential moving statistic | Tick-based                                                              |
-| ---------------------------- | ----------------------------------------------------------------------- |
-| Minimum (EMMin)              | [`EmMin`](../reference/table-operations/update-by-operations/em-min.md) |
-| Maximum (EMMax)              | [`EmMax`](../reference/table-operations/update-by-operations/em-max.md) |
-| Sum (EMS)                    | [`Ems`](../reference/table-operations/update-by-operations/ems.md)      |
-| Average (EMA)                | [`Ema`](../reference/table-operations/update-by-operations/ema.md)      |
-| Standard Deviation (EMStd)   | [`EmStd`](../reference/table-operations/update-by-operations/em-std.md) |
-
-To visualize an exponential moving statistic, consider the exponential moving average (EMA). The following illustration shows this:
-
-![Exponential moving average illustration](../assets/how-to/updateby-ema.png)
-
-The code for the illustration above looks like this:
-
-```groovy order=result
-source = emptyTable(8).update("X = ii")
-
-result = source.updateBy(Ema(2, "EmaX=X"))
-```
-
-> [!NOTE]
-> The syntax `EmaX=X` indicates that the resultant column from the operation is named `EmaX`.
-
-The following example demonstrates the effect that different decay rates have on the exponential moving average:
-
-```groovy order=result
-source = emptyTable(10).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = randomInt(0, 100)")
-
-ema2 = Ema(2, "EMAX2=X")
-ema3 = Ema(3, "EMAX3=X")
-ema5 = Ema(5, "EMAX5=X")
-
-result = source.updateBy([ema2, ema3, ema5], "Letter")
-```
-
-#### Understanding decay parameters
-
-**Tick-based decay** (`decayTicks`):
-
-- Smaller values = faster decay, more weight on recent data.
-- `decayTicks=1`: Each previous row has ~37% the weight of the current row.
-- `decayTicks=10`: Each previous row has ~90% the weight of the current row.
-- Higher values create smoother, slower-responding averages.
-
-**Time-based decay** (`decayTime`):
-
-- Controls how quickly older data loses influence over time.
-- `decayTime="PT1s"`: Data from 1 second ago has ~37% weight.
-- `decayTime="PT10s"`: Data from 10 seconds ago has ~37% weight.
-- Longer decay times create more stable, less responsive averages.
-
-The same example can be modified to use time-based windows instead of tick-based windows:
-
-```groovy order=result
-source = emptyTable(50).update(
-        "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
-        "Letter = (i % 2 == 0) ? `A` : `B`",
-        "X = randomInt(0, 25)",
-)
-
-ema2sec = Ema("Timestamp", parseDuration("PT2s"), "EmaX2Sec=X")
-ema3sec = Ema("Timestamp", parseDuration("PT00:00:03"), "EmaX3=X")
-ema5sec = Ema("Timestamp", parseDuration("PT5s"), "EmaX5=X",)
-
-result = source.updateBy([ema2sec, ema3sec, ema5sec], "Letter")
-```
-
-In this time-based example:
-
-- `decayTime="PT2s"`: Creates a fast-responding average where data loses ~63% influence after 2 seconds.
-- `decayTime="PT4s"`: Medium responsiveness, data loses ~63% influence after 4 seconds.
-- `decayTime="PT6s"`: Slower response, data loses ~63% influence after 6 seconds.
-
-## Bollinger Bands
-
-Bollinger bands are an application of moving statistics frequently used in financial applications.
-
-To compute Bollinger Bands:
-
-1. Compute the moving average.
-2. Compute the moving standard deviation.
-3. Compute the upper and lower envelopes.
-
-### Tick-based Bollinger Bands using simple moving statistics
-
-When computing tick-based Bollinger bands, [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md), [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md) and [`RollingStd`](../reference/table-operations/update-by-operations/rolling-std.md) are used to compute the average and envelope. Here, `revTicks` is the moving average decay rate in ticks and is used to specify the size of the rolling window.
-
-```groovy order=fAbc,fXyz,source,result
-// Generate some random example data
-
-source = emptyTable(1000).update(
-        "Timestamp='2023-01-13T12:00 ET' + i*MINUTE",
-        "Ticker = i%2==0 ? `ABC` : `XYZ`",
-        "Price = i%2==0 ? 100*sin(i/40)+100*random() : 100*cos(i/40)+100*random()+i/2",
-)
-
-// Compute the Bollinger Bands
-
-revTicks = 20
-
-// Coverage parameter - determines the width of the bands
-w = 2
-
-result = source.updateBy(
-    [
-        RollingAvg(revTicks, "AvgPrice=Price"),
-        RollingAvg(revTicks, "StdPrice=Price"),
-    ],
-    "Ticker",
-).update("Upper = AvgPrice + w*StdPrice", "Lower = AvgPrice - w*StdPrice")
-
-// Plot the Bollinger Bands
-
-def plotBollinger = { t, ticker ->
-    d = t.where("Ticker=`${ticker}`")
-    plot = plot("Price", d, "Timestamp", "Price")
-        .plot("AvgPrice", d, "Timestamp", "AvgPrice")
-        .plot("Upper", d, "Timestamp", "Upper")
-        .plot("Lower", d, "Timestamp", "Lower")
-        .show()
-    return d
-}
-
-
-fAbc = plotBollinger(result, "ABC")
-fXyz = plotBollinger(result, "XYZ")
-```
-
-### Time-based Bollinger Bands using simple moving statistics
-
-When computing time-based Bollinger Bands, [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md), [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md) and [`RollingStd`](../reference/table-operations/update-by-operations/rolling-std.md) are used to compute the average and envelope. Here, `revTime` is the moving average window time.
-
-```groovy order=fAbc,fXyz,source,result
-// Generate some random example data
-
-source = emptyTable(1000).update(
-        "Timestamp='2023-01-13T12:00 ET' + i*MINUTE",
-        "Ticker = i%2==0 ? `ABC` : `XYZ`",
-        "Price = i%2==0 ? 100*sin(i/40)+100*random() : 100*cos(i/40)+100*random()+i/2"
-)
-
-// Compute the Bollinger Bands
-
-revTime = "PT00:20:00"
-// Coverage parameter - determines the width of the bands
-w = 2
-
-result = source.updateBy(
-    [
-        RollingAvg("Timestamp", parseDuration(revTime), "AvgPrice=Price"),
-        RollingStd("Timestamp", parseDuration(revTime), "StdPrice=Price"),
-    ],
-    "Ticker",
-).update("Upper = AvgPrice + w*StdPrice", "Lower = AvgPrice - w*StdPrice")
-
-// Plot the Bollinger Bands
-
-def plotBollinger = { t, ticker ->
-    d = t.where("Ticker=`${ticker}`")
-    plot = plot("Price", d, "Timestamp", "Price")
-        .plot("AvgPrice", d, "Timestamp", "AvgPrice")
-        .plot("Upper", d, "Timestamp", "Upper")
-        .plot("Lower", d, "Timestamp", "Lower")
-        .show()
-    return d
-}
-
-fAbc = plotBollinger(result, "ABC")
-fXyz = plotBollinger(result, "XYZ")
-```
-
-### Tick-based Bollinger Bands using exponential moving statistics
-
-When computing tick-based Bollinger Bands, [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md), [`Ema`](../reference/table-operations/update-by-operations/ema.md) and [`EmStd`](../reference/table-operations/update-by-operations/em-std.md) are used to compute the average and envelope. Here, `decayTicks` is the moving average decay rate in ticks and is used to specify the weighting of previous data points.
-
-```groovy order=fAbc,fXyz,source,result
-// Generate some random example data
-
-source = emptyTable(1000).update(
-        "Timestamp='2023-01-13T12:00 ET' + i*MINUTE",
-        "Ticker = i%2==0 ? `ABC` : `XYZ`",
-        "Price = i%2==0 ? 100*sin(i/40)+100*random() : 100*cos(i/40)+100*random()+i/2"
-)
-
-// Compute the Bollinger Bands
-
-decayTicks = 20
-// Coverage parameter - determines the width of the bands
-w = 2
-
-result = source.updateBy(
-    [
-        Ema(decayTicks, "EmaPrice=Price"),
-        EmStd(decayTicks, "StdPrice=Price"),
-    ],
-    "Ticker",
-).update("Upper = EmaPrice + w*StdPrice", "Lower = EmaPrice - w*StdPrice")
-
-// Plot the Bollinger Bands
-
-def plotBollinger = { t, ticker ->
-    d = t.where("Ticker=`${ticker}`")
-    plot = plot("Price", d, "Timestamp", "Price")
-        .plot("AvgPrice", d, "Timestamp", "EmaPrice")
-        .plot("Upper", d, "Timestamp", "Upper")
-        .plot("Lower", d, "Timestamp", "Lower")
-        .show()
-    return d
-}
-
-fAbc = plotBollinger(result, "ABC")
-fXyz = plotBollinger(result, "XYZ")
-```
-
-### Time-based Bollinger Bands using exponential moving statistics
-
-When computing time-based Bollinger Bands, [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md), [`Ema`](../reference/table-operations/update-by-operations/ema.md) and [`EmStd`](../reference/table-operations/update-by-operations/em-std.md) are used to compute the average and envelope. Here, `decayTime` is the moving average decay rate in time and is used to specify the weighting of new data points.
-
-```groovy order=fAbc,fXyz,source,result
-// Generate some random example data
-
-source = emptyTable(1000).update(
-        "Timestamp='2023-01-13T12:00 ET' + i*MINUTE",
-        "Ticker = i%2==0 ? `ABC` : `XYZ`",
-        "Price = i%2==0 ? 100*sin(i/40)+100*random() : 100*cos(i/40)+100*random()+i/2",
-)
-
-// Compute the Bollinger Bands
-
-decayTime = "PT00:20:00"
-
-// Coverage parameter - determines the width of the bands
-w = 2
-
-result = source.updateBy(
-    [
-        Ema("Timestamp", parseDuration(decayTime), "EmaPrice=Price"),
-        Ema("Timestamp", parseDuration(decayTime), "StdPrice=Price"),
-    ],
-    "Ticker",
-).update("Upper = EmaPrice + w*StdPrice", "Lower = EmaPrice - w*StdPrice")
-
-// Plot the Bollinger Bands
-
-def plotBollinger = { t, ticker ->
-    d = t.where("Ticker=`${ticker}`")
-    plot = plot("Price", d, "Timestamp", "Price")
-        .plot("AvgPrice", d, "Timestamp", "EmaPrice")
-        .plot("Upper", d, "Timestamp", "Upper")
-        .plot("Lower", d, "Timestamp", "Lower")
-        .show()
-    return d
-}
-
-
-
-fAbc = plotBollinger(result, "ABC")
-fXyz = plotBollinger(result, "XYZ")
-```
-
-### Rolling formulas
-
-The [`updateBy`](/core/javadoc/io/deephaven/engine/table/impl/updateby/UpdateBy.html) module enables users to create custom rolling aggregations with the [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) function.
-
-The user-defined formula can utilize any of Deephaven's [built-in functions](../reference/query-language/query-library/auto-imported/index.md), [arithmetic operators](../how-to-guides/operators.md), or even [user-defined Groovy functions](../how-to-guides/groovy-closures.md).
-
-#### Tick-based rolling formulas
-
-Use [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) to create custom tick-based rolling formulas. Here's an example that computes the rolling geometric mean of a column `X` by group:
-
-```groovy order=result
-source = emptyTable(100).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = randomInt(0, 100)")
-
-result = source.updateBy(
-    RollingFormula(3, "pow(product(x), 1/count(x))", "x", "GeomMeanX=X"), "Letter"
-)
-```
-
-#### Time-based rolling formulas
-
-[`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) can also be used to create custom time-based rolling formulas. You must supply a timestamp column, and can specify the time window as backward-looking, forward-looking, or both. Here's an example that computes the 5-second rolling geometric mean of a column `X` by group:
-
-```groovy order=result
-source = emptyTable(100).update(
-        "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
-        "Letter = (i % 2 == 0) ? `A` : `B`",
-        "X = randomInt(0, 25)",
-)
-
-result = source.updateBy(
-    RollingFormula("Timestamp", 5_000_000, "pow(product(x), 1/count(x))", "x", "GeomMeanX=X"),
-    "Letter"
-)
-```
-
-### Rolling groups
-
-In addition to custom rolling formulas, [`updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) provides the ability to create rolling groups with [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md). The grouped data are represented as arrays. See the guide on [how to work with arrays](../how-to-guides/work-with-arrays.md) for more details.
-
-#### Tick-based rolling groups
-
-Use [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) to create tick-based rolling groups, where each group will have a specified number of entries determined by `revTicks` and `fwdTicks`. Here's an example that creates rolling groups with the three previous rows and the current row:
+Use [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) to create tick-based rolling groups, where each row's vector holds the values from a window of rows set by `revTicks` and `fwdTicks`. Here's an example that collects the three previous rows and the current row:
 
 ```groovy order=result
 source = emptyTable(100).update("Letter = randomBool() ? `A` : `B`", "X = randomInt(0, 100)")
@@ -650,15 +342,13 @@ source = emptyTable(100).update("Letter = randomBool() ? `A` : `B`", "X = random
 result = source.updateBy(RollingGroup(3, 4, "GroupX=X"), "Letter")
 ```
 
-#### Time-based rolling groups
-
-Similarly, use [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) to create time-based rolling groups:
+Pass a timestamp column and a `Duration` to [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) to create time-based rolling groups:
 
 ```groovy order=result
 source = emptyTable(100).update(
-        "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
-        "Letter = randomBool() ? `A` : `B`",
-        "X = randomInt(0, 25)",
+    "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
+    "Letter = randomBool() ? `A` : `B`",
+    "X = randomInt(0, 25)",
 )
 
 result = source.updateBy(
@@ -667,26 +357,235 @@ result = source.updateBy(
 )
 ```
 
-These groups are timestamp-based, so they are not guaranteed to contain elements from any previous row. This is in contrast to tick-based [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md), which always yields groups of a fixed size after that size has been reached.
+A time-based rolling group contains only the rows whose timestamps fall inside the window, so the vector's size varies from row to row. When no other row with the same `Letter` falls inside the window, the vector holds only the current row's value. A backward-looking tick-based vector reaches a fixed size once enough rows exist.
 
-The `fwdTime` parameter is used to create groups that include rows occuring after the current row. Here's an example that creates rolling groups out of every row within five seconds of the current row:
+Use `fwdTime` to include rows after the current row. The following example groups every row with the same `Letter` whose timestamp is within five seconds of the current row:
 
 ```groovy order=result
 source = emptyTable(100).update(
-        "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
-        "Letter = randomBool() ? `A` : `B`",
-        "X = randomInt(0, 25)",
+    "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
+    "Letter = randomBool() ? `A` : `B`",
+    "X = randomInt(0, 25)",
 )
 
 result = source.updateBy(RollingGroup("Timestamp", parseDuration("PT5s"), parseDuration("PT5s"), "GroupX=X"), "Letter")
 ```
 
 > [!NOTE]
-> It is always more performant to use a rolling aggregation than to perform a rolling group and then apply calculations.
+> A built-in simple moving aggregation, such as [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md), is generally more performant than a rolling group followed by a calculation.
 
-## Additional operations
+#### Rolling formulas
 
-[`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) also supports several other operations that are not strictly rolling aggregations. This section provides a brief overview of these operations with examples.
+A rolling formula can use any of Deephaven's [built-in functions](../reference/query-language/query-library/auto-imported/index.md), [arithmetic operators](./operators.md), or [user-defined Groovy functions](./groovy-closures.md).
+
+Use [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) to create custom tick-based rolling formulas. Here's an example that computes the rolling geometric mean of a column `X` by group. The formula names the output column (`GeomMeanX`) and refers to the input column (`X`) directly. Within the formula, `X` is the vector of the window's values:
+
+```groovy order=result
+source = emptyTable(100).update("Letter = (i % 2 == 0) ? `A` : `B`", "X = randomInt(0, 100)")
+
+result = source.updateBy(
+    RollingFormula(3, "GeomMeanX = pow(product(X), 1 / count(X))"), "Letter"
+)
+```
+
+[`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) also creates custom time-based rolling formulas. You must supply a timestamp column, and you can make the time window backward-looking, forward-looking, or both. Here's an example that computes the 5-second rolling geometric mean of a column `X` by group:
+
+```groovy order=result
+source = emptyTable(100).update(
+    "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
+    "Letter = (i % 2 == 0) ? `A` : `B`",
+    "X = randomInt(0, 25)",
+)
+
+result = source.updateBy(
+    RollingFormula("Timestamp", parseDuration("PT5s"), "GeomMeanX = pow(product(X), 1 / count(X))"),
+    "Letter"
+)
+```
+
+## Exponential moving aggregations
+
+Exponential moving aggregations are moving statistics that, unlike [windowed aggregations](#windowed-aggregations), use _all_ preceding data points. However, they assign more weight to recent data and exponentially down-weight older data. This means distant observations have little effect on the result, while closer observations have a greater influence. A decay parameter controls how fast the weight decreases. Deephaven supports the following exponential moving statistics:
+
+| Exponential moving statistic | Tick- and time-based                                                    |
+| ---------------------------- | ----------------------------------------------------------------------- |
+| Minimum (EMMin)              | [`EmMin`](../reference/table-operations/update-by-operations/em-min.md) |
+| Maximum (EMMax)              | [`EmMax`](../reference/table-operations/update-by-operations/em-max.md) |
+| Sum (EMS)                    | [`Ems`](../reference/table-operations/update-by-operations/ems.md)      |
+| Average (EMA)                | [`Ema`](../reference/table-operations/update-by-operations/ema.md)      |
+| Standard deviation (EMStd)   | [`EmStd`](../reference/table-operations/update-by-operations/em-std.md) |
+
+Each operation can take an optional [`OperationControl`](../reference/table-operations/update-by-operations/OperationControl.md) as its first argument to configure how it handles [erroneous data](#handling-erroneous-data). The decay parameter comes next. Tick-based operations take `tickDecay`. Time-based operations take a timestamp column followed by `durationDecay` (a `Duration`) or `timeDecay` (nanoseconds).
+
+**Tick-based decay** (`tickDecay`):
+
+- Smaller values decay faster and put more weight on recent data.
+- `tickDecay = 1`: Each row has ~37% of the weight of the row after it.
+- `tickDecay = 10`: Each row has ~90% of the weight of the row after it.
+- Higher values create smoother, slower-responding averages.
+
+**Time-based decay** (`durationDecay`):
+
+- Controls how quickly older data loses influence over time.
+- `durationDecay = parseDuration("PT1s")`: Data from 1 second ago has ~37% of the current row's weight.
+- `durationDecay = parseDuration("PT10s")`: Data from 10 seconds ago has ~37% of the current row's weight.
+- Longer decay times create more stable, less responsive averages.
+
+To visualize an exponential moving statistic, consider the exponential moving average (EMA). The following illustration shows this:
+
+![Exponential moving average illustration](../assets/how-to/updateby-ema.png)
+
+The code for the illustration above looks like this:
+
+```groovy order=result
+source = emptyTable(8).update("X = ii")
+
+result = source.updateBy(Ema(2, "EmaX=X"))
+```
+
+The following example uses [`Ema`](../reference/table-operations/update-by-operations/ema.md) to show the effect that different decay rates have on the exponential moving average:
+
+```groovy order=source,result
+source = emptyTable(50).update("Value = ii")
+
+ema2 = Ema(2, "EmaValue2=Value")
+ema4 = Ema(4, "EmaValue4=Value")
+ema6 = Ema(6, "EmaValue6=Value")
+
+result = source.updateBy([ema2, ema4, ema6])
+```
+
+To decay by time instead of by ticks, pass a timestamp column and a `Duration` to [`Ema`](../reference/table-operations/update-by-operations/ema.md). This version of the decay-rate example uses 2-, 4-, and 6-second decay times:
+
+```groovy order=result
+source = emptyTable(50).update(
+    "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
+    "Letter = (i % 2 == 0) ? `A` : `B`",
+    "X = randomInt(0, 25)",
+)
+
+ema2sec = Ema("Timestamp", parseDuration("PT2s"), "EmaX2Sec=X")
+ema4sec = Ema("Timestamp", parseDuration("PT4s"), "EmaX4Sec=X")
+ema6sec = Ema("Timestamp", parseDuration("PT6s"), "EmaX6Sec=X")
+
+result = source.updateBy([ema2sec, ema4sec, ema6sec], "Letter")
+```
+
+A row's weight falls to ~37% after one `durationDecay`, so `EmaX2Sec` responds fastest and `EmaX6Sec` responds slowest.
+
+## Bollinger Bands
+
+Bollinger Bands are a technical-analysis tool, common in finance, that uses a moving average and a moving standard deviation to draw bands around a price series.
+
+To compute Bollinger Bands:
+
+1. Compute the moving average.
+2. Compute the moving standard deviation.
+3. Compute the upper and lower envelopes: the moving average plus and minus `w` moving standard deviations, where `w` sets the width of the bands.
+
+### Tick-based Bollinger Bands using simple moving statistics
+
+This example passes [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md) and [`RollingStd`](../reference/table-operations/update-by-operations/rolling-std.md) to [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) to compute the moving average and standard deviation, then computes the envelope with [`update`](../reference/table-operations/select/update.md). `revTicks` sets the size of the rolling window in ticks.
+
+```groovy test-set=bollinger order=fAbc,fXyz,source,result
+// Generate some random example data
+
+source = emptyTable(1000).update(
+    "Timestamp = '2023-01-13T12:00 ET' + i * MINUTE",
+    "Ticker = i % 2 == 0 ? `ABC` : `XYZ`",
+    "Price = i % 2 == 0 ? 100 * sin(i / 40) + 100 * random() : 100 * cos(i / 40) + 100 * random() + i / 2",
+)
+
+// Compute the Bollinger Bands
+
+revTicks = 20
+
+// Coverage parameter - determines the width of the bands
+w = 2
+
+result = source.updateBy(
+    [
+        RollingAvg(revTicks, "AvgPrice=Price"),
+        RollingStd(revTicks, "StdPrice=Price"),
+    ],
+    "Ticker",
+).update("Upper = AvgPrice + w * StdPrice", "Lower = AvgPrice - w * StdPrice")
+
+// Plot the Bollinger Bands
+
+plotBollinger = { t, ticker ->
+    def d = t.where("Ticker == `${ticker}`")
+    return plot("Price", d, "Timestamp", "Price")
+        .plot("AvgPrice", d, "Timestamp", "AvgPrice")
+        .plot("Upper", d, "Timestamp", "Upper")
+        .plot("Lower", d, "Timestamp", "Lower")
+        .show()
+}
+
+fAbc = plotBollinger(result, "ABC")
+fXyz = plotBollinger(result, "XYZ")
+```
+
+### Time-based Bollinger Bands using simple moving statistics
+
+Using the `source` table, `w`, and `plotBollinger` from [the tick-based example](#tick-based-bollinger-bands-using-simple-moving-statistics), this example passes [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md) and [`RollingStd`](../reference/table-operations/update-by-operations/rolling-std.md) to [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) to compute the moving average and standard deviation, then computes the envelope with [`update`](../reference/table-operations/select/update.md). `revTime` sets the length of both rolling windows.
+
+```groovy test-set=bollinger order=fAbc,fXyz,result
+revTime = parseDuration("PT00:20:00")
+
+result = source.updateBy(
+    [
+        RollingAvg("Timestamp", revTime, "AvgPrice=Price"),
+        RollingStd("Timestamp", revTime, "StdPrice=Price"),
+    ],
+    "Ticker",
+).update("Upper = AvgPrice + w * StdPrice", "Lower = AvgPrice - w * StdPrice")
+
+fAbc = plotBollinger(result, "ABC")
+fXyz = plotBollinger(result, "XYZ")
+```
+
+### Tick-based Bollinger Bands using exponential moving statistics
+
+Using the `source` table, `w`, and `plotBollinger` from [the tick-based example](#tick-based-bollinger-bands-using-simple-moving-statistics), this example passes [`Ema`](../reference/table-operations/update-by-operations/ema.md) and [`EmStd`](../reference/table-operations/update-by-operations/em-std.md) to [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) to compute the moving average and standard deviation, then computes the envelope with [`update`](../reference/table-operations/select/update.md). `tickDecay` sets the decay rate in ticks, which controls how much weight earlier rows get.
+
+```groovy test-set=bollinger order=fAbc,fXyz,result
+tickDecay = 20
+
+result = source.updateBy(
+    [
+        Ema(tickDecay, "AvgPrice=Price"),
+        EmStd(tickDecay, "StdPrice=Price"),
+    ],
+    "Ticker",
+).update("Upper = AvgPrice + w * StdPrice", "Lower = AvgPrice - w * StdPrice")
+
+fAbc = plotBollinger(result, "ABC")
+fXyz = plotBollinger(result, "XYZ")
+```
+
+### Time-based Bollinger Bands using exponential moving statistics
+
+Using the `source` table, `w`, and `plotBollinger` from [the tick-based example](#tick-based-bollinger-bands-using-simple-moving-statistics), this example passes [`Ema`](../reference/table-operations/update-by-operations/ema.md) and [`EmStd`](../reference/table-operations/update-by-operations/em-std.md) to [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) to compute the moving average and standard deviation, then computes the envelope with [`update`](../reference/table-operations/select/update.md). `durationDecay` sets the decay rate as a duration, which controls how much weight earlier rows get.
+
+```groovy test-set=bollinger order=fAbc,fXyz,result
+durationDecay = parseDuration("PT00:20:00")
+
+result = source.updateBy(
+    [
+        Ema("Timestamp", durationDecay, "AvgPrice=Price"),
+        EmStd("Timestamp", durationDecay, "StdPrice=Price"),
+    ],
+    "Ticker",
+).update("Upper = AvgPrice + w * StdPrice", "Lower = AvgPrice - w * StdPrice")
+
+fAbc = plotBollinger(result, "ABC")
+fXyz = plotBollinger(result, "XYZ")
+```
+
+## Sequential difference and forward fill
+
+[`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) also supports two operations that are not rolling aggregations: [`Delta`](../reference/table-operations/update-by-operations/delta.md) and [`Fill`](../reference/table-operations/update-by-operations/fill.md).
 
 ### Sequential difference
 
@@ -701,13 +600,13 @@ source = emptyTable(100).update(
 result = source.updateBy(Delta("DiffX=X"))
 ```
 
-Sequential differences can be calculated on a per-group basis like all other [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) operations. The following example demonstrates this:
+You can calculate sequential differences per group, like all other [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) operations:
 
 ```groovy order=result
 source = emptyTable(100).update(
-        "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
-        "Letter = randomBool() ? `A` : `B`",
-        "X = randomInt(0, 25)",
+    "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
+    "Letter = randomBool() ? `A` : `B`",
+    "X = randomInt(0, 25)",
 )
 
 result = source.updateBy(Delta("DiffX=X"), "Letter")
@@ -715,29 +614,29 @@ result = source.updateBy(Delta("DiffX=X"), "Letter")
 
 #### Detrend time-series data
 
-Sequential differencing is often used as a first measure for detrending time-series data. The [`updateby`](/core/javadoc/io/deephaven/api/updateby/package-summary.html) module provides the [`Delta`](../reference/table-operations/update-by-operations/delta.md) function to make this easy:
+Sequential differencing is a common first step in detrending time-series data, which means removing a long-term upward or downward trend so that short-term changes are easier to see. The [`Delta`](../reference/table-operations/update-by-operations/delta.md) operation makes this easy. The following example plots `Price` and its sequential difference, `DiffPrice`, for each ticker:
 
 ```groovy order=noDetrend,detrend,source,result
 source = emptyTable(1000).update(
-    "Timestamp='2023-01-13T12:00 ET' + i*MINUTE",
-    "Ticker = i%2==0 ? `ABC` : `XYZ`",
-    "Price = i%2==0 ? 100*sin(i/40)+100*random() : 100*cos(i/40)+100*random()+i/2",
+    "Timestamp = '2023-01-13T12:00 ET' + i * MINUTE",
+    "Ticker = i % 2 == 0 ? `ABC` : `XYZ`",
+    "Price = i % 2 == 0 ? 100 * sin(i / 40) + 100 * random() : 100 * cos(i / 40) + 100 * random() + i / 2",
 )
 
 result = source.updateBy(Delta("DiffPrice=Price"), "Ticker")
 
-noDetrend = plot("ABC", result.where("Ticker = `ABC`"), "Timestamp", "Price")
-    .plot("XYZ", result.where("Ticker = `XYZ`"), "Timestamp", "Price")
+noDetrend = plot("ABC", result.where("Ticker == `ABC`"), "Timestamp", "Price")
+    .plot("XYZ", result.where("Ticker == `XYZ`"), "Timestamp", "Price")
     .show()
 
-detrend = plot("ABC", result.where("Ticker = `ABC`"), "Timestamp", "DiffPrice")
-    .plot("XYZ", result.where("Ticker = `XYZ`"), "Timestamp", "DiffPrice")
+detrend = plot("ABC", result.where("Ticker == `ABC`"), "Timestamp", "DiffPrice")
+    .plot("XYZ", result.where("Ticker == `XYZ`"), "Timestamp", "DiffPrice")
     .show()
 ```
 
-#### Null handling
+#### Null handling with `DeltaControl`
 
-The [`Delta`](../reference/table-operations/update-by-operations/delta.md) function takes an optional `deltaControl` argument to determine how null values are treated. You must supply a [`DeltaControl`](../reference/table-operations/update-by-operations/DeltaControl.md) instance to use this argument. The following behaviors are available:
+To control how [`Delta`](../reference/table-operations/update-by-operations/delta.md) treats null values, pass a [`DeltaControl`](../reference/table-operations/update-by-operations/DeltaControl.md) as its optional first argument, `control`. The following behaviors are available:
 
 - `DeltaControl.NULL_DOMINATES`: A valid value following a null value returns null.
 - `DeltaControl.VALUE_DOMINATES`: A valid value following a null value returns the valid value.
@@ -747,7 +646,7 @@ The [`Delta`](../reference/table-operations/update-by-operations/delta.md) funct
 source = emptyTable(100).update(
     "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
     "Letter = randomBool() ? `A` : `B`",
-    "X = randomInt(0, 25)",
+    "X = (i % 4 == 1) ? NULL_INT : randomInt(0, 25)",
 )
 
 result = source.updateBy(
@@ -761,82 +660,62 @@ result = source.updateBy(
 )
 ```
 
-By default, [`Delta`](../reference/table-operations/update-by-operations/delta.md) uses `NULL_DOMINATES`, so differencing a number from a null will always return a null.
+Because `X` contains nulls, the delta columns differ on the rows where a valid value follows a null. `DefaultDeltaX` matches `NullDomDeltaX`, because [`Delta`](../reference/table-operations/update-by-operations/delta.md) uses `NULL_DOMINATES` by default.
 
 ### Forward fill
 
-The [`Fill`](../reference/table-operations/update-by-operations/fill.md) operation fills in null values with the most recent non-null value. This is useful for filling in missing data points in a time series. The following example demonstrates this:
+[`Fill`](../reference/table-operations/update-by-operations/fill.md) fills in null values with the most recent non-null value, which is useful for filling in missing data points in a time series. The example in [Applying an `UpdateByOperation` to all columns](#applying-an-updatebyoperation-to-all-columns) fills every column. This example fills a single column per group:
 
 ```groovy order=result
 source = emptyTable(100).update(
-        "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
-        "Letter = randomBool() ? `A` : `B`",
-        "X = randomBool() ? NULL_INT : randomInt(0, 25)",
+    "Timestamp = '2023-01-01T00:00:00 ET' + i * SECOND",
+    "Letter = randomBool() ? `A` : `B`",
+    "X = randomBool() ? NULL_INT : randomInt(0, 25)",
 )
 
 result = source.updateBy(Fill("FillX=X"), "Letter")
 ```
 
+## Handling erroneous data
+
+It's common for tables to contain null, NaN, or other erroneous values. Each family of [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) operations has a default way of handling them, and some operations accept a control argument that changes it. To replace nulls with the most recent non-null value, use [`Fill`](#forward-fill).
+
+### Default null handling behavior
+
+By default, [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) operations handle null values as follows:
+
+- **Cumulative operations** ([`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md), [`CumMax`](../reference/table-operations/update-by-operations/cum-max.md), etc.): Skip null values and continue with the last valid result.
+- **Rolling statistics** ([`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md), [`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md), etc.): Exclude null values from window calculations.
+- **Count-where operations** ([`CumCountWhere`](../reference/table-operations/update-by-operations/cum-count-where.md), [`RollingCountWhere`](../reference/table-operations/update-by-operations/rolling-count-where.md)): Evaluate their filter on every row, so a row with a null value is counted when the filter matches it.
+- **Rolling groups and formulas** ([`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md), [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md)): Keep null values in the window's vector, so your formula decides how to treat them.
+- **Exponential operations** ([`Ema`](../reference/table-operations/update-by-operations/ema.md), [`EmMax`](../reference/table-operations/update-by-operations/em-max.md), etc.): Skip null values unless configured otherwise via [`OperationControl`](../reference/table-operations/update-by-operations/OperationControl.md).
+
+### Operations with explicit error handling controls
+
+You can configure some operations to handle erroneous data through control parameters:
+
+- Exponential moving operations ([`Ema`](../reference/table-operations/update-by-operations/ema.md), [`Ems`](../reference/table-operations/update-by-operations/ems.md), [`EmMin`](../reference/table-operations/update-by-operations/em-min.md), [`EmMax`](../reference/table-operations/update-by-operations/em-max.md), and [`EmStd`](../reference/table-operations/update-by-operations/em-std.md)): Pass an [`OperationControl`](../reference/table-operations/update-by-operations/OperationControl.md) as the first argument, `control`.
+- [`Delta`](../reference/table-operations/update-by-operations/delta.md): Pass a [`DeltaControl`](../reference/table-operations/update-by-operations/DeltaControl.md) as the first argument, `control`. See [Null handling with `DeltaControl`](#null-handling-with-deltacontrol).
+
+For detailed configuration options, see the [`OperationControl` reference guide](../reference/table-operations/update-by-operations/OperationControl.md).
+
 ## Choose the right aggregation
 
-Choosing the right aggregation method depends on your specific use case and data requirements. Consider these key questions:
-
-### `aggBy` vs `updateBy`
-
-[`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) and [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) share some distinct similarities and differences. Understanding how the two relate to each other is important for understanding when to use each of them.
-
-`aggBy` is functionally equivalent to `sumBy`, `avgBy`, `minBy`, etc. When you see `sumBy` in examples below, know that you could replace it with `aggBy(AggSum(cols), by=groups)` to achieve the same result. Both approaches perform the same aggregation operations.
-
-#### Similarities
-
-Both operations perform aggregations on a table. For instance, you can calculate a cumulative sum with both. Additionally, both operations also support performing aggregations over groups of rows, such as calculating the average price of a given stock, or the sum of sales for a given product.
-
-#### Differences
-
-There are two main differences between the two operations:
-
-##### `aggBy` output
-
-The output table of a [single aggregation](./dedicated-aggregations.md) or [multiple aggregation](./combined-aggregations.md) only contains one row for each group. To illustrate this, consider the following example, which calculates the aggregated sum of the `Value` column for each `ID` in the source table:
-
-```groovy order=result,source
-source = emptyTable(100).update("ID = randomInt(0, 4)", "Value = randomDouble(0, 1)")
-
-result = source.sumBy("ID")
-```
-
-If the input table is ticking, then the value in each row of the output table changes when the input table ticks.
-
-##### `updateBy` output
-
-[`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) produces an output table that contains the same number of rows as the input table. Each row in the output table contains the aggregated value up to that point for the corresponding group. This means that [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) keeps data history while performing the aggregation. To illustrate this, the previous example is modified to use [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) instead of [`sumBy`](../reference/table-operations/group-and-aggregate/sumBy.md):
-
-```groovy order=result,source
-source = emptyTable(100).update("ID = randomInt(0, 4)", "Value = randomDouble(0, 1)")
-
-result = source.updateBy(CumSum("Value"), "ID")
-```
-
-Note how the `result` table has the same number of rows as the `source` table. You can look back at previous values to see what the aggregated value was at any point in the table's history.
-
-**Use [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md)** (or `sumBy`, `avgBy`, etc.) when you want a single aggregated result per group. The output contains one row for each group with the final aggregated value.
-
-**Use [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md)** when you need to see the progression of aggregated values over time. The output preserves all rows from the source table, showing how the aggregation evolves.
+The following questions help you choose between dedicated aggregations, combined aggregations, and [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) operations.
 
 ### Do you need to preserve data history?
 
-- **Use [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md)** (or `sumBy`, `avgBy`, etc.) when you want a single aggregated result per group. The output contains one row for each group with the final aggregated value.
-- **Use [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md)** when you need to see the progression of aggregated values over time. The output preserves all rows from the source table, showing how the aggregation evolves.
+As shown in [Preservation of data history](#preservation-of-data-history), dedicated and combined aggregations and [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) differ in how many rows they return:
 
-#### Capturing data history with traditional aggregations
+- **Use [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md)** (or [`sumBy`](../reference/table-operations/group-and-aggregate/sumBy.md), [`avgBy`](../reference/table-operations/group-and-aggregate/avgBy.md), etc.) when you want a single aggregated result per group.
+- **Use [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md)** when you need to see how the aggregated value progresses row by row.
+- **Use a dedicated or combined aggregation with a time-bucket key column** when you want one row per group per interval, which gives a partial history. See [Downsampling](./downsampling.md).
 
-While [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) naturally preserves data history, it's also possible to capture some data history with traditional [single aggregations](./dedicated-aggregations.md) and [multiple aggregations](./combined-aggregations.md). However, this requires a key column that places rows into buckets, such as intervals of time.
-
-For example, you can create time-based buckets to see how aggregations change over different time periods:
+For example, the following groups rows into buckets of five with a `TimeGroup` key column, which stands in for a time interval. `(int)` keeps the bucket number an integer, because dividing two integers in a query string returns a `double`:
 
 ```groovy order=source,result
 source = emptyTable(10).update(
-    "TimeGroup = i / 5",
+    "TimeGroup = (int) (i / 5)",
     "Symbol = i % 2 == 0 ? `A` : `B`",
     "Volume = i + 1"
 )
@@ -844,65 +723,27 @@ source = emptyTable(10).update(
 result = source.sumBy("TimeGroup", "Symbol")
 ```
 
-In this example, the traditional aggregation groups data into buckets (using `TimeGroup` to simulate time intervals), showing how aggregated values change across different groups while providing partial history.
-
-For more information on splitting temporal data into buckets of time, see [Downsampling](./downsampling.md).
-
 ### What type of aggregation window do you need?
 
 - **Cumulative aggregations** ([`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md), [`CumMax`](../reference/table-operations/update-by-operations/cum-max.md), etc.): Use when you want to aggregate all data from the beginning up to the current row.
-- **Windowed aggregations**: Use when you only want to consider a subset of recent data:
+- **Windowed aggregations**: Use when you want to consider only a window of rows before, around, or after the current row:
   - **Tick-based windows** ([`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md), etc.): Use when your window should be defined by a fixed number of rows.
-  - **Time-based windows** ([`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md) with timestamp, etc.): Use when your window should be defined by a time duration and you have a timestamp column.
+  - **Time-based windows** ([`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md) with a timestamp column, etc.): Use when your window should be defined by a time duration.
 
-### How should recent vs. distant data be weighted?
+### How should recent vs distant data be weighted?
 
-- **Simple moving aggregations** ([`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md), [`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md), etc.): Use when all data points in the window should be weighted equally.
-- **Exponential moving aggregations** ([`Ema`](../reference/table-operations/update-by-operations/ema.md), [`EmMax`](../reference/table-operations/update-by-operations/em-max.md), etc.): Use when recent data should have more influence than older data, with exponential decay over time.
+- **Simple moving aggregations** ([`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md), [`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md), etc.): Use when a data point's weight shouldn't depend on how far it is from the current row.
+- **Exponential moving aggregations** ([`Ema`](../reference/table-operations/update-by-operations/ema.md), [`EmMax`](../reference/table-operations/update-by-operations/em-max.md), etc.): Use when recent data should have more influence than older data, with weights that decay exponentially by rows or by time.
 
 ### Do you need custom calculations?
 
-- **Standard operations**: Use built-in functions like [`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md), [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md), [`CumMax`](../reference/table-operations/update-by-operations/cum-max.md), etc. for common statistical calculations.
+- **Standard operations**: Use built-in methods such as [`RollingSum`](../reference/table-operations/update-by-operations/rolling-sum.md), [`RollingAvg`](../reference/table-operations/update-by-operations/rolling-avg.md), and [`CumMax`](../reference/table-operations/update-by-operations/cum-max.md) for common statistical calculations.
 - **Custom formulas**: Use [`RollingFormula`](../reference/table-operations/update-by-operations/rolling-formula.md) when you need to apply custom mathematical expressions to windowed data.
-- **Grouping operations**: Use [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) when you need to collect data into arrays for further processing.
+- **Grouping operations**: Use [`RollingGroup`](../reference/table-operations/update-by-operations/rolling-group.md) when you need to collect data into vectors for further processing.
 
 ### Do you need to handle missing or erroneous data?
 
-- **Forward fill**: Use [`Fill`](../reference/table-operations/update-by-operations/fill.md) to replace null values with the most recent non-null value.
-- **Sequential differences**: Use [`Delta`](../reference/table-operations/update-by-operations/delta.md) to calculate row-to-row changes, useful for detrending time-series data.
-- **Error handling**: Some operations like [`Ema`](../reference/table-operations/update-by-operations/ema.md) support `OperationControl` parameters for handling null, NaN, or other erroneous values.
-
-### Performance considerations
-
-- Rolling aggregations are more performant than rolling groups followed by calculations.
-- Tick-based operations maintain separate windows per group, while time-based operations use timestamps across the entire table.
-- Exponential moving aggregations use all historical data but weight recent observations more heavily.
-
-## Handling erroneous data
-
-It's common for tables to contain null, NaN, or other erroneous values. Different [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) operations handle these values in various ways:
-
-### Operations with explicit error handling controls
-
-Certain operations can be configured to handle erroneous data through control parameters:
-
-- [`Ema`](../reference/table-operations/update-by-operations/ema.md): Use `control` parameter with [OperationControl](../reference/table-operations/update-by-operations/OperationControl.md).
-- [`Delta`](../reference/table-operations/update-by-operations/delta.md): Use `deltaControl` parameter with [DeltaControl](../reference/table-operations/update-by-operations/DeltaControl.md).
-
-### Default null handling behavior
-
-Most [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) operations have consistent default behavior for null values:
-
-- **Cumulative operations** (`CumSum`, `CumMax`, etc.): Skip null values and continue with the last valid result.
-- **Rolling operations** (`RollingAvg`, `RollingSum`, etc.): Exclude null values from window calculations.
-- **Exponential operations** (`Ema`, `EmMax`, etc.): Skip null values unless configured otherwise via `OperationControl`.
-
-### Specialized null handling operations
-
-- **[`Fill`](../reference/table-operations/update-by-operations/fill.md)**: Specifically designed to replace null values with the most recent non-null value.
-- **[`Delta`](../reference/table-operations/update-by-operations/delta.md)**: Configurable null handling through `DeltaControl` (see [Null handling](#null-handling) section).
-
-For detailed configuration options, see the [OperationControl reference guide](../reference/table-operations/update-by-operations/OperationControl.md).
+See [Handling erroneous data](#handling-erroneous-data).
 
 ## Related documentation
 
@@ -913,7 +754,7 @@ For detailed configuration options, see the [OperationControl reference guide](.
 - [Downsampling](./downsampling.md)
 - [Select, view, and update](./use-select-view-update.md)
 - [Handle nulls, infs, and NaNs](./null-inf-nan.md)
-- [How to create XY series plots](./plotting/api-plotting.md)
+- [How to create XY series plots](./plotting/api-plotting.md#xy-series)
 - [How to work with arrays](./work-with-arrays.md)
 - [Formulas](./formulas.md)
 - [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md)

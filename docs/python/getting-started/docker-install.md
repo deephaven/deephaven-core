@@ -16,7 +16,7 @@ Deephaven's Docker images run on the following operating systems:
 - Windows 10 or 11 with [Windows Subsystem for Linux 2 (WSL 2)](https://learn.microsoft.com/en-us/windows/wsl/install)
 
 > [!WARNING]
-> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven [ticking tables](./crash-course/create-tables.md#ticking-tables). Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven [ticking tables](./crash-course/create-tables.md#create-ticking-tables). Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
 
 ## Prerequisites
 
