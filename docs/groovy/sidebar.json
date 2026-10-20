@@ -796,17 +796,8 @@
             ]
           },
           {
-            "label": "Development tools",
-            "items": [
-              {
-                "label": "MCP",
-                "path": "how-to-guides/mcp.md"
-              },
-              {
-                "label": "Copilot extension",
-                "path": "how-to-guides/copilot-extension.md"
-              }
-            ]
+            "label": "MCP",
+            "path": "how-to-guides/mcp.md"
           },
           {
             "label": "Best practices and troubleshooting",
@@ -1023,6 +1014,10 @@
               {
                 "label": "Configure the production application",
                 "path": "how-to-guides/configuration/configure-production-application.md"
+              },
+              {
+                "label": "Run Deephaven from your own Java application",
+                "path": "how-to-guides/configuration/custom-java-application.md"
               },
               {
                 "label": "Deephaven configuration files",
@@ -2041,7 +2036,7 @@
                   },
                   {
                     "label": "Multi-join",
-                    "path": "reference/table-operations/join/multijoin.md"
+                    "path": "reference/table-operations/join/multi-join.md"
                   },
                   {
                     "label": "MultiJoinInput",
@@ -2061,7 +2056,7 @@
                   },
                   {
                     "label": "rangeJoin",
-                    "path": "reference/table-operations/join/rangeJoin.md"
+                    "path": "reference/table-operations/join/range-join.md"
                   }
                 ]
               },

@@ -14,10 +14,12 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.FloatChunkHasher;
 import io.deephaven.chunk.util.hashing.LongChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase;
@@ -102,6 +104,54 @@ final class IncrementalAggOpenHasherLongFloat extends IncrementalChunkedOperator
                     if (tableLocation == firstTableLocation) {
                         throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
                     }
+                }
+            }
+        }
+    }
+
+    protected void lookup(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            WritableLongChunk<RowKeys> outputPositions) {
+        final LongChunk<Values> keyChunk0 = sourceKeyChunks[0].asLongChunk();
+        final FloatChunk<Values> keyChunk1 = sourceKeyChunks[1].asFloatChunk();
+        final int chunkSize = keyChunk0.size();
+        for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
+            final long k0 = keyChunk0.get(chunkPosition);
+            final float k1 = keyChunk1.get(chunkPosition);
+            final int hash = hash(k0, k1);
+            final int firstTableLocation = hashToTableLocation(hash);
+            boolean found = false;
+            int tableLocation = firstTableLocation;
+            int outputPosition;
+            while (!isStateEmpty(outputPosition = mainOutputPosition.getUnsafe(tableLocation))) {
+                if (eq(mainKeySource0.getUnsafe(tableLocation), k0) && eq(mainKeySource1.getUnsafe(tableLocation), k1)) {
+                    outputPositions.set(chunkPosition, outputPosition);
+                    found = true;
+                    break;
+                }
+                tableLocation = nextTableLocation(tableLocation);
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
+            }
+            if (!found) {
+                final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
+                boolean alternateFound = false;
+                if (firstAlternateTableLocation < rehashPointer) {
+                    int alternateTableLocation = firstAlternateTableLocation;
+                    while (!isStateEmpty(outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation))) {
+                        if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0) && eq(alternateKeySource1.getUnsafe(alternateTableLocation), k1)) {
+                            outputPositions.set(chunkPosition, outputPosition);
+                            alternateFound = true;
+                            break;
+                        }
+                        alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
+                        if (alternateTableLocation == firstAlternateTableLocation) {
+                            throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                        }
+                    }
+                }
+                if (!alternateFound) {
+                    outputPositions.set(chunkPosition, UNKNOWN_ROW);
                 }
             }
         }

@@ -1,0 +1,131 @@
+commit 615d29b6d6ae0327e10204f006f88c1486f6d5ca
+Author: Charles P. Wright <charleswright@deephaven.io>
+Date:   Thu Oct 8 16:26:50 2026 -0400
+
+    docs: Correct cross, outer and range join documentation (#8798)
+    
+    - **docs: Correct cross join and outer join column, row and argument
+    descriptions**
+    - **docs: Correct range join descriptions and examples**
+    
+    ---------
+    
+    Co-authored-by: margaretkennedy <82049573+margaretkennedy@users.noreply.github.com>
+
+diff --git a/docs/python/how-to-guides/joins-exact-relational.md b/docs/python/how-to-guides/joins-exact-relational.md
+index 0cc35e9972..4bde3d6544 100644
+--- a/docs/python/how-to-guides/joins-exact-relational.md
++++ b/docs/python/how-to-guides/joins-exact-relational.md
+@@ -28,7 +28,7 @@ One or more columns will be used as keys to match data between the left and righ
+ The basic syntax for [`join`](../reference/table-operations/join/join.md), [`exact_join`](../reference/table-operations/join/exact-join.md), and [`natural_join`](../reference/table-operations/join/natural-join.md) is as follows:
+ 
+ ```python syntax
+-# Include all non-key columns
++# Include all right table columns except those sharing a name with a left match column
+ result = left_table.join_method(table=right_table, on=["ColumnsToMatch"])
+ 
+ # Include only some non-key columns (ColumnsToAdd)
+@@ -42,7 +42,7 @@ Where `right_table` is the table to join with, and `on` and `joins` are the Stri
+ The basic syntax for [`left_outer_join`](../reference/table-operations/join/left-outer-join.md) and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) are as follows:
+ 
+ ```python syntax
+-# Port all non-key columns
++# Port all right table columns except those sharing a name with a left match column
+ result = outer_join_method(
+     l_table=left_table, r_table=right_table, on=["ColumnsToMatch"]
+ )
+@@ -59,10 +59,10 @@ result = outer_join_method(
+ > [!NOTE]
+ > [`left_outer_join`](../reference/table-operations/join/left-outer-join.md) and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) are currently experimental. The API may change in the future.
+ 
+-Outside of the left and right tables, exact and relational joins take up to two more arguments. The first is required, while the second is optional:
++Outside of the left and right tables, two arguments control how exact and relational joins match rows and which right table columns they add:
+ 
+-- `on`: The key column(s) on which to look for exact matches. Columns of any data type can be used as key columns, but corresponding match columns in the left and right table _must_ be of the same data type.
+-- `joins` (Optional): The column(s) in the right table to join to the left table. If not specified, all columns are joined.
++- `on`: The key column(s) on which to look for exact matches. Columns of any data type can be used as key columns (custom objects must implement consistent equality and hashCode), but corresponding match columns in the left and right table _must_ be of the same data type. [`exact_join`](../reference/table-operations/join/exact-join.md) and [`natural_join`](../reference/table-operations/join/natural-join.md) require `on`. [`join`](../reference/table-operations/join/join.md), [`left_outer_join`](../reference/table-operations/join/left-outer-join.md), and [`full_outer_join`](../reference/table-operations/join/full-outer-join.md) can omit it, in which case every left table row matches every right table row.
++- `joins` (Optional): The column(s) in the right table to join to the left table. If not specified, all right table columns are joined except those whose names match a left table column in `on`. A right table match column with a different name from its left table match column, such as `DeptID` in `"DeptNumber = DeptID"`, is joined.
+ 
+ ### Match columns with different names
+ 
+@@ -88,7 +88,7 @@ result = left_table.join_method(
+ 
+ ### Rename joined columns
+ 
+-Columns being joined from the right table that have the same name as existing columns in the left table will cause a name conflict error. To avoid this, the `joins` argument can be renamed as a column from the right table. The following example renames the right table's `OldColumnName` column to `NewColumnName`:
++Columns being joined from the right table that have the same name as existing columns in the left table will cause a name conflict error. To avoid this, the `joins` argument can rename a column from the right table. The following example renames the right table's `OldColumnName` column to `NewColumnName`:
+ 
+ ```python syntax
+ result = left_table.join_method(
+@@ -246,7 +246,7 @@ result = left.join(table=right, on=["DeptID"])
+ ```
+ 
+ > [!TIP]
+-> [`join`](../reference/table-operations/join/join.md) computes the cross product of the left and right tables and subsets the rows based on the arguments. This means it is slow relative to [`natural_join`](../reference/table-operations/join/natural-join.md), so [`natural_join`](../reference/table-operations/join/natural-join.md) should be preferred in most places.
++> [`join`](../reference/table-operations/join/join.md) produces a result row for every matching pair of left and right table rows and reserves space in each result row key for the matching right table rows. This makes it slow relative to [`natural_join`](../reference/table-operations/join/natural-join.md), so [`natural_join`](../reference/table-operations/join/natural-join.md) should be preferred in most places.
+ 
+ ### `left_outer_join`
+ 
+diff --git a/docs/python/how-to-guides/joins-timeseries-range.md b/docs/python/how-to-guides/joins-timeseries-range.md
+index fa36b5a169..2f26375c82 100644
+--- a/docs/python/how-to-guides/joins-timeseries-range.md
++++ b/docs/python/how-to-guides/joins-timeseries-range.md
+@@ -47,9 +47,9 @@ For [`aj`](../reference/table-operations/join/aj.md) and [`raj`](../reference/ta
+ 
+ - `joins`: The column(s) in the right table to join to the left table. If not specified, all columns are joined.
+ 
+-For [`range_join`](../reference/table-operations/join/range-join.md), the third argument is also optional:
++For [`range_join`](../reference/table-operations/join/range-join.md), the third argument is required:
+ 
+-- `aggs`: The aggregation(s) to perform over the responsive ranges from the right table for each row from the left table. If not specified, no aggregations are performed. Currently, only the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation is supported.
++- `aggs`: The aggregation(s) to perform over the responsive ranges from the right table for each row from the left table. Currently, only the [`group`](../reference/table-operations/group-and-aggregate/AggGroup.md) aggregation is supported.
+ 
+ ### Multiple match columns
+ 
+@@ -244,7 +244,7 @@ For columns appended to the left table (joins), cell values equal aggregations o
+ > [!NOTE]
+ > Reminders: (i) [`range_join`](../reference/table-operations/join/range-join.md) currently only supports static tables, not yet live, real-time data; and (ii) the only aggregation currently supported is the `group` operation.
+ 
+-The following example joins two tables with [`range_join`](../reference/table-operations/join/range-join.md). The `right` table is joined to `left` on the `Y` column. The **range match expression** specifies that matching rows should contain a value in the `RightValue` column that is greater than the corresponding `LeftStartValue` row and less than the corresponding `LeftEndValue` row. The last argument groups the `result` table's `X` column.
++The following example joins two tables with [`range_join`](../reference/table-operations/join/range-join.md). The example uses no exact match columns, so every `right` row is a candidate for every `left` row. The **range match expression** specifies that matching rows should contain a value in the `RightValue` column that is greater than the corresponding `LeftStartValue` row and less than the corresponding `LeftEndValue` row. The last argument groups the `Y` values of the matching `right` rows into the `result` table's `Y` column.
+ 
+ ```python test-set=1 order=result,left,right
+ from deephaven import empty_table
+@@ -260,7 +260,7 @@ result = left.range_join(
+ )
+ ```
+ 
+-For a detailed explanation of this example, see [`range_join`](../reference/table-operations/join/range-join.md#examples).
++For a detailed explanation of a similar example that also uses an exact match column, see [`range_join`](../reference/table-operations/join/range-join.md#examples).
+ 
+ Queries often follow up a [`range_join`](../reference/table-operations/join/range-join.md) with an [`update`](../reference/table-operations/select/update.md) or [`update_view`](../reference/table-operations/select/update-view.md) that calls a Python function that operates on the result. The following code block updates the `result` table from the previous example with a [Python function](./python-functions.md).
+ 
+@@ -275,7 +275,7 @@ def sum_group(arr) -> int:
+ result_summed = result.update(["SumY = sum_group(Y)"])
+ ```
+ 
+-The following example uses [`range_join`](../reference/table-operations/join/range-join.md) using date-time columns as range keys. This is the most common use case, since it groups all events that happened in a given time frame. Like the previous example, the resultant grouped column is summed.
++The following example uses [`range_join`](../reference/table-operations/join/range-join.md) using date-time columns as range keys. This is the most common use case, since it groups all events that happened in a given time frame. Like the previous example, the resultant grouped column is summed. The grouped output is named `RightY` so that it does not replace the left table's `Y` column.
+ 
+ ```python order=result_summed,result,left,right
+ from deephaven.agg import group
+@@ -294,7 +294,9 @@ right = empty_table(20).update(
+     ["Timestamp = '2024-01-01T08:00:03 ET' + i * SECOND", "X = ii", "Y = X % 6"]
+ )
+ 
+-result = left.range_join(right, ["StartTime < Timestamp < EndTime"], group("Y"))
++result = left.range_join(
++    right, ["StartTime < Timestamp < EndTime"], group("RightY = Y")
++)
+ 
+ 
+ def sum_arr(arr) -> int:
+@@ -304,7 +306,7 @@ def sum_arr(arr) -> int:
+         return sum(arr)
+ 
+ 
+-result_summed = result.update("SumY = sum_arr(Y)")
++result_summed = result.update("SumRightY = sum_arr(RightY)")
+ ```
+ 
+ ## Which method should you use?
