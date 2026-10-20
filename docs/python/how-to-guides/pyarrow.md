@@ -51,6 +51,14 @@ import pyarrow as pa
 import pyarrow.compute as pc
 
 
+def plain_type(arrow_type):
+    if pa.types.is_run_end_encoded(arrow_type):
+        arrow_type = arrow_type.value_type
+    if pa.types.is_dictionary(arrow_type):
+        arrow_type = arrow_type.value_type
+    return arrow_type
+
+
 def decode_column(column):
     chunks = []
     for chunk in column.chunks:
@@ -60,11 +68,11 @@ def decode_column(column):
                 values = values.cast(values.type.value_type)
             chunk = pc.run_end_decode(
                 pa.RunEndEncodedArray.from_arrays(chunk.run_ends, values)
-            )
+            ).slice(chunk.offset, len(chunk))
         if pa.types.is_dictionary(chunk.type):
             chunk = chunk.cast(chunk.type.value_type)
         chunks.append(chunk)
-    return pa.chunked_array(chunks)
+    return pa.chunked_array(chunks, type=plain_type(column.type))
 
 
 def decode(pa_table):
@@ -75,7 +83,7 @@ def decode(pa_table):
 pa_iris = decode(pa_iris)
 ```
 
-The helper turns dictionary-encoded values back into plain values by casting them to their value type, and expands run-end-encoded columns with PyArrow's [`run_end_decode`](https://arrow.apache.org/docs/python/generated/pyarrow.compute.run_end_decode.html). A column can be both, as `Class` is here: its runs hold dictionary-encoded values. `run_end_decode` can't expand runs of dictionary values, so the helper decodes the values inside each run-end-encoded chunk first.
+The helper turns dictionary-encoded values back into plain values by casting them to their value type, and expands run-end-encoded columns with PyArrow's [`run_end_decode`](https://arrow.apache.org/docs/python/generated/pyarrow.compute.run_end_decode.html). A column can be both, as `Class` is here: its runs hold dictionary-encoded values. `run_end_decode` can't expand runs of dictionary values, so the helper decodes the values inside each run-end-encoded chunk first, then keeps only the rows the chunk covers, which matters if you sliced the table. Passing the decoded type to `pa.chunked_array` lets the helper handle a column with no chunks, such as one from an empty table.
 
 Then, use [`to_table`](../reference/arrow/to-table.md) to convert `pa_iris` back to a Deephaven table twice. The first call copies all columns. The second call passes `cols` to copy every column except `Class`.
 
