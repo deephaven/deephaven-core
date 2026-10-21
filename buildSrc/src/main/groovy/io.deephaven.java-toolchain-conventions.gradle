@@ -263,9 +263,12 @@ def START_OPTS = parseJvmArgumentsFromProperty("deephaven.startOpts", parseJvmAr
 //
 // As such, the vmoptions files below do not contain comments.
 
+// An empty override is still an override: it disables the defaults (an empty list is false to Groovy's ?:)
+def withOverride = { List<String> opts -> JAVA_OPTS_OVERRIDE != null ? JAVA_OPTS_OVERRIDE : opts }
+
 // File name -> VM options, for the generic file and each version-specific file
-def vmOptionsFiles = ['dh-default.vmoptions': JAVA_OPTS_OVERRIDE ?: GENERIC_JAVA_OPTS] +
-  VERSIONED_JAVA_OPTS.collectEntries { version, opts -> ["dh-default-${version}.vmoptions".toString(), JAVA_OPTS_OVERRIDE ?: opts] }
+def vmOptionsFiles = ['dh-default.vmoptions': withOverride(GENERIC_JAVA_OPTS)] +
+  VERSIONED_JAVA_OPTS.collectEntries { version, opts -> ["dh-default-${version}.vmoptions".toString(), withOverride(opts)] }
 
 def vmOptionsDir = project.layout.buildDirectory.dir('vmoptions')
 def vmOptionsArgsFor = { int version ->
