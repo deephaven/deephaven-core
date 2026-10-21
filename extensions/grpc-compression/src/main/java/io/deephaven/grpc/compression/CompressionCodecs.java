@@ -14,79 +14,66 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 /**
  * The compression types that Deephaven supports for gRPC messages, named as in gRPC's {@code grpc-encoding} and
  * {@code grpc-accept-encoding} headers; their gRPC registries; and parsers for compression type lists and a client's
- * {@code grpc-accept-encoding}. The supported types are a built-in baseline, {@code zstd}, {@code gzip}, {@code snappy}
- * and {@code deflate}, plus every type that a {@link CompressionCodecProvider} on the classpath adds.
+ * {@code grpc-accept-encoding}. The supported types are the ones that the {@link CompressionCodecProvider}s on the
+ * classpath supply: {@code zstd}, {@code gzip}, {@code snappy} and {@code deflate}, whose providers this module
+ * includes, plus every type that a deployment's own provider adds.
  */
 public final class CompressionCodecs {
 
     /**
-     * The form of a provided compression type's name: lower-case, because names are matched lower-cased, and without
-     * the commas and whitespace that separate names in lists and headers. Declared before {@link #CODECS}, whose
-     * initializer uses it.
+     * The form of a compression type's name: lower-case, because names are matched lower-cased, and without the commas
+     * and whitespace that separate names in lists and headers. Declared before {@link #CODECS}, whose initializer uses
+     * it.
      */
     private static final Pattern NAME = Pattern.compile("[a-z0-9][a-z0-9._+-]*");
 
     /**
-     * The baseline: the codecs that Deephaven includes, which {@link CompressionCodecProvider}s add to. Package-private
-     * for tests of {@link #byEncodingName(List, Iterable)}.
+     * Every supported codec, by its encoding name, sorted by name: the codec of each {@link CompressionCodecProvider}
+     * on the classpath. The registries, {@link #SUPPORTED}, {@link #checkSupported(String)} and {@link #codec(String)}
+     * all read it.
      */
-    static final List<Codec> BUILT_IN =
-            List.of(ZstdCodec.INSTANCE, new Codec.Gzip(), SnappyCodec.INSTANCE, DeflateCodec.INSTANCE);
+    private static final Map<String, Codec> CODECS = byEncodingName(ServiceLoader.load(CompressionCodecProvider.class));
 
     /**
-     * Every supported codec, by its encoding name, in the order of {@link #SUPPORTED}: the {@link #BUILT_IN} baseline,
-     * then the codec of each {@link CompressionCodecProvider} on the classpath. The registries, {@link #SUPPORTED},
-     * {@link #checkSupported(String)} and {@link #codec(String)} all read it.
-     */
-    private static final Map<String, Codec> CODECS =
-            byEncodingName(BUILT_IN, ServiceLoader.load(CompressionCodecProvider.class));
-
-    /**
-     * The name of every supported compression type, excluding {@code identity}: the built-in baseline, then the types
-     * that {@link CompressionCodecProvider}s on the classpath add. The baseline is:
+     * The name of every supported compression type, excluding {@code identity}, sorted by name. The providers this
+     * module includes supply:
      * <ul>
-     * <li>{@code zstd}: Zstandard, which compresses nearly as well as {@code gzip}, and many times faster.</li>
-     * <li>{@code gzip}: compresses slightly smaller than {@code zstd} but much more slowly. Most gRPC clients can
-     * decode it.</li>
-     * <li>{@code snappy}: the fastest of the built-in types, but the one that saves the least.</li>
      * <li>{@code deflate}: the algorithm of {@code gzip} in the zlib format, which compresses to the same size at the
      * same speed and decompresses slightly slower. Clients built on gRPC Core, such as the Python, C++ and R clients,
-     * can decode it and {@code gzip}, but no other built-in type.</li>
+     * can decode it and {@code gzip}, but no other type this module includes.</li>
+     * <li>{@code gzip}: compresses slightly smaller than {@code zstd} but much more slowly. Most gRPC clients can
+     * decode it.</li>
+     * <li>{@code snappy}: the fastest of these types, but the one that saves the least.</li>
+     * <li>{@code zstd}: Zstandard, which compresses nearly as well as {@code gzip}, and many times faster.</li>
      * </ul>
+     * Every other {@link CompressionCodecProvider} on the classpath adds its type.
      */
     public static final List<String> SUPPORTED = List.copyOf(CODECS.keySet());
 
     private CompressionCodecs() {}
 
     /**
-     * @param builtIns the codecs that Deephaven includes
-     * @param providers the providers of more codecs
-     * @return every codec, by encoding name: {@code builtIns} in order, then the codec of each of {@code providers}
+     * @param providers the providers of the codecs
+     * @return the codec of each of {@code providers}, by encoding name, sorted by name
      * @throws IllegalStateException if a provider supplies no codec, or one whose name is malformed, {@code identity},
-     *         or the name of another codec
+     *         or the name of another provider's codec
      */
-    static Map<String, Codec> byEncodingName(
-            final List<Codec> builtIns,
-            final Iterable<CompressionCodecProvider> providers) {
-        final Map<String, Codec> byName = new LinkedHashMap<>();
-        // where each name came from, for errors about a repeated name
+    static Map<String, Codec> byEncodingName(final Iterable<CompressionCodecProvider> providers) {
+        final Map<String, Codec> byName = new TreeMap<>();
+        // which provider supplied each name, for errors about a repeated name
         final Map<String, String> sources = new HashMap<>();
-        for (final Codec codec : builtIns) {
-            byName.put(codec.getMessageEncoding(), codec);
-            sources.put(codec.getMessageEncoding(), "Deephaven");
-        }
         for (final CompressionCodecProvider provider : providers) {
             final String source = provider.getClass().getName();
             final Codec codec = provider.codec();

@@ -6,6 +6,7 @@ package io.deephaven.grpc.compression;
 import com.github.luben.zstd.RecyclingBufferPool;
 import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
 import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
+import com.google.auto.service.AutoService;
 import io.grpc.Codec;
 
 import java.io.IOException;
@@ -49,5 +50,17 @@ public final class ZstdCodec implements Codec {
         // gRPC closes each message stream after parsing it, including when the call is cancelled, so it needs no
         // finalizer
         return new ZstdInputStreamNoFinalizer(is, RecyclingBufferPool.INSTANCE);
+    }
+
+    /**
+     * Supplies {@link ZstdCodec#INSTANCE} as a supported compression type, so that {@link CompressionCodecs} finds it
+     * with {@link java.util.ServiceLoader} like every other type.
+     */
+    @AutoService(CompressionCodecProvider.class)
+    public static final class Provider implements CompressionCodecProvider {
+        @Override
+        public Codec codec() {
+            return INSTANCE;
+        }
     }
 }

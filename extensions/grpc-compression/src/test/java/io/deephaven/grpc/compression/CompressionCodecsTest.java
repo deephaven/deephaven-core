@@ -19,6 +19,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.ServiceLoader;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,45 +29,54 @@ public class CompressionCodecsTest {
 
     @Test
     public void supportedNames() {
-        // no CompressionCodecProvider is registered on this module's test classpath; server-jetty's tests register one
-        assertThat(CompressionCodecs.SUPPORTED).containsExactly("zstd", "gzip", "snappy", "deflate");
+        // the providers this module includes; no other CompressionCodecProvider is on its test classpath
+        assertThat(CompressionCodecs.SUPPORTED).containsExactly("deflate", "gzip", "snappy", "zstd");
     }
 
     @Test
-    public void providedCodecsFollowTheBuiltIns() {
+    public void includedProvidersAreServices() {
+        // the four are found like any deployment's provider, so a missing service entry would drop a type
+        assertThat(ServiceLoader.load(CompressionCodecProvider.class).stream()
+                .map(ServiceLoader.Provider::type)
+                .collect(Collectors.toList()))
+                .containsExactlyInAnyOrder(DeflateCodec.Provider.class, GzipCodecProvider.class,
+                        SnappyCodec.Provider.class, ZstdCodec.Provider.class);
+    }
+
+    @Test
+    public void codecsAreSortedByName() {
         final Codec lz4 = new NamedCodec("lz4");
         final Codec custom = new NamedCodec("x-lz4.v2+raw_1");
-        final Map<String, Codec> codecs = CompressionCodecs.byEncodingName(CompressionCodecs.BUILT_IN,
-                List.of(new FixedProvider(lz4), new FixedProvider(custom)));
-        assertThat(codecs.keySet()).containsExactly("zstd", "gzip", "snappy", "deflate", "lz4", "x-lz4.v2+raw_1");
+        final Map<String, Codec> codecs = CompressionCodecs.byEncodingName(List.of(
+                new ZstdCodec.Provider(), new FixedProvider(custom), new FixedProvider(lz4), new GzipCodecProvider()));
+        assertThat(codecs.keySet()).containsExactly("gzip", "lz4", "x-lz4.v2+raw_1", "zstd");
         assertThat(codecs.get("lz4")).isSameAs(lz4);
         assertThat(codecs.get("x-lz4.v2+raw_1")).isSameAs(custom);
+        assertThat(codecs.get("zstd")).isSameAs(ZstdCodec.INSTANCE);
     }
 
     @Test
     public void providedNamesMustBeWellFormed() {
         // upper case could never match, commas and whitespace separate names, and identity means no compression
         for (final String name : Arrays.asList("LZ4", "lz 4", "lz4,zstd", " lz4", "-lz4", "", "identity", null)) {
-            assertThatThrownBy(() -> CompressionCodecs.byEncodingName(CompressionCodecs.BUILT_IN,
-                    List.of(new FixedProvider(new NamedCodec(name)))))
+            assertThatThrownBy(() -> CompressionCodecs.byEncodingName(List.of(new FixedProvider(new NamedCodec(name)))))
                     .as("'%s'", name)
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining(FixedProvider.class.getName());
         }
-        assertThatThrownBy(
-                () -> CompressionCodecs.byEncodingName(CompressionCodecs.BUILT_IN, List.of(new FixedProvider(null))))
+        assertThatThrownBy(() -> CompressionCodecs.byEncodingName(List.of(new FixedProvider(null))))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage(FixedProvider.class.getName() + " provides no codec");
     }
 
     @Test
     public void providedNamesMustBeNew() {
-        assertThatThrownBy(() -> CompressionCodecs.byEncodingName(CompressionCodecs.BUILT_IN,
-                List.of(new FixedProvider(new NamedCodec("gzip")))))
+        assertThatThrownBy(() -> CompressionCodecs.byEncodingName(
+                List.of(new GzipCodecProvider(), new FixedProvider(new NamedCodec("gzip")))))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage(
-                        "Compression type 'gzip' is provided by both Deephaven and " + FixedProvider.class.getName());
-        assertThatThrownBy(() -> CompressionCodecs.byEncodingName(CompressionCodecs.BUILT_IN,
+                .hasMessage("Compression type 'gzip' is provided by both " + GzipCodecProvider.class.getName() + " and "
+                        + FixedProvider.class.getName());
+        assertThatThrownBy(() -> CompressionCodecs.byEncodingName(
                 List.of(new FixedProvider(new NamedCodec("lz4")), new OtherProvider(new NamedCodec("lz4")))))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Compression type 'lz4' is provided by both " + FixedProvider.class.getName() + " and "
@@ -84,7 +95,7 @@ public class CompressionCodecsTest {
     public void checkSupportedRejectsUnknownNames() {
         assertThatThrownBy(() -> CompressionCodecs.checkSupported("lz4"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Unsupported compression 'lz4'; supported values are zstd, gzip, snappy, deflate");
+                .hasMessage("Unsupported compression 'lz4'; supported values are deflate, gzip, snappy, zstd");
         // a single name cannot hold a list, nor name the absence of compression
         for (final String name : List.of("identity", "", " ", "zstd,gzip")) {
             assertThatThrownBy(() -> CompressionCodecs.checkSupported(name))
@@ -192,7 +203,7 @@ public class CompressionCodecsTest {
         assertThatThrownBy(() -> CompressionCodecs.parseList("zstd,identity"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("identity")
-                .hasMessageContaining("zstd, gzip, snappy, deflate");
+                .hasMessageContaining("deflate, gzip, snappy, zstd");
     }
 
     @Test

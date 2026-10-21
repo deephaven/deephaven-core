@@ -58,6 +58,8 @@ class CompressionTest {
 
     @BeforeAll
     static void setUp() {
+        // both tests loop over the supported types, and would pass without testing anything if there were none
+        assertThat(CompressionCodecs.SUPPORTED).as("no compression types on the classpath to test").isNotEmpty();
         allocator = new RootAllocator();
         scheduler = Executors.newScheduledThreadPool(4);
     }

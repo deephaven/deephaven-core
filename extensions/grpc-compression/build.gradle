@@ -14,6 +14,9 @@ dependencies {
 
   compileOnly libs.jetbrains.annotations
 
+  compileOnly libs.autoservice
+  annotationProcessor libs.autoservice.compiler
+
   testImplementation platform(libs.junit.bom)
   testImplementation libs.junit.jupiter
   testRuntimeOnly libs.junit.jupiter.engine

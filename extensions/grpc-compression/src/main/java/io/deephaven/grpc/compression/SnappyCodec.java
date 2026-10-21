@@ -3,6 +3,7 @@
 //
 package io.deephaven.grpc.compression;
 
+import com.google.auto.service.AutoService;
 import io.grpc.Codec;
 import org.xerial.snappy.SnappyFramedInputStream;
 import org.xerial.snappy.SnappyFramedOutputStream;
@@ -76,6 +77,18 @@ public final class SnappyCodec implements Codec {
         @Override
         public int available() throws IOException {
             return eof ? 0 : Math.max(1, super.available());
+        }
+    }
+
+    /**
+     * Supplies {@link SnappyCodec#INSTANCE} as a supported compression type, so that {@link CompressionCodecs} finds it
+     * with {@link java.util.ServiceLoader} like every other type.
+     */
+    @AutoService(CompressionCodecProvider.class)
+    public static final class Provider implements CompressionCodecProvider {
+        @Override
+        public Codec codec() {
+            return INSTANCE;
         }
     }
 }

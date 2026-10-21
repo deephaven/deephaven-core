@@ -3,6 +3,7 @@
 //
 package io.deephaven.grpc.compression;
 
+import com.google.auto.service.AutoService;
 import io.grpc.Codec;
 
 import java.io.InputStream;
@@ -39,5 +40,17 @@ public final class DeflateCodec implements Codec {
     public InputStream decompress(final InputStream is) {
         // reports available data until the end of the stream, which Arrow Flight's ArrowMessage needs in order to parse
         return new InflaterInputStream(is);
+    }
+
+    /**
+     * Supplies {@link DeflateCodec#INSTANCE} as a supported compression type, so that {@link CompressionCodecs} finds
+     * it with {@link java.util.ServiceLoader} like every other type.
+     */
+    @AutoService(CompressionCodecProvider.class)
+    public static final class Provider implements CompressionCodecProvider {
+        @Override
+        public Codec codec() {
+            return INSTANCE;
+        }
     }
 }

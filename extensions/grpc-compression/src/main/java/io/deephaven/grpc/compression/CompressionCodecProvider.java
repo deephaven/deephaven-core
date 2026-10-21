@@ -8,10 +8,10 @@ import io.grpc.Codec;
 import java.util.ServiceLoader;
 
 /**
- * Adds a compression type to the ones Deephaven supports for gRPC messages, beyond the built-in {@code zstd},
- * {@code gzip}, {@code snappy} and {@code deflate}. {@link CompressionCodecs} finds implementations with
- * {@link ServiceLoader} the first time it is used: list the implementation in
- * {@code META-INF/services/io.deephaven.grpc.compression.CompressionCodecProvider}, or annotate it with
+ * Supplies a compression type that Deephaven supports for gRPC messages. {@link CompressionCodecs} finds every
+ * implementation on the classpath with {@link ServiceLoader} the first time it is used, including the ones this module
+ * includes for {@code zstd}, {@code gzip}, {@code snappy} and {@code deflate}. To add a type, list the implementation
+ * in {@code META-INF/services/io.deephaven.grpc.compression.CompressionCodecProvider}, or annotate it with
  * {@code @AutoService(CompressionCodecProvider.class)}, and put its jar on the classpath of the server and of each Java
  * client that should accept the type. The Java client then accepts it by default.
  * <p>

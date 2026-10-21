@@ -63,7 +63,7 @@ public class BarrageCompressionAttributeTest {
         final Table source = TableTools.emptyTable(10);
         final IllegalArgumentException e =
                 assertThrows(IllegalArgumentException.class, () -> withCompression(source, "zstd", "zsdt"));
-        assertEquals("Unsupported compression 'zsdt'; supported values are zstd, gzip, snappy, deflate",
+        assertEquals("Unsupported compression 'zsdt'; supported values are deflate, gzip, snappy, zstd",
                 e.getMessage());
         // one name cannot smuggle in a list
         assertThrows(IllegalArgumentException.class, () -> withCompression(source, "zstd,gzip"));

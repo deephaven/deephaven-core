@@ -1844,7 +1844,8 @@ public abstract class FlightMessageRoundTripTest {
 
     @Test
     public void testEverySupportedTypeCompressesResponses() throws Exception {
-        // including any type a CompressionCodecProvider adds, such as JettyFlightRoundTripTest's test-gzip
+        // every type, Deephaven's own included, comes from a CompressionCodecProvider on the classpath
+        assertFalse("no compression types to test", CompressionCodecs.SUPPORTED.isEmpty());
         for (final String compression : CompressionCodecs.SUPPORTED) {
             assertEquals(compression, expectedEncodings(compression),
                     fetchWithCompression(compressionTestTable(compression), Set.of(compression)));
@@ -1976,6 +1977,7 @@ public abstract class FlightMessageRoundTripTest {
 
     @Test
     public void testServerAcceptsCompressedRequests() throws Exception {
+        assertFalse("no compression types to test", CompressionCodecs.SUPPORTED.isEmpty());
         final Table table = compressionTestTable(COMPRESSION_UPLOAD_ROWS, null);
         for (final String compression : CompressionCodecs.SUPPORTED) {
             if (serverCompressionTypes().contains(compression)) {

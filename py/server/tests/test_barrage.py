@@ -151,7 +151,7 @@ class BarrageTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             t.with_compression(["zstd", "zsdt"])
         self.assertIn(
-            "Unsupported compression 'zsdt'; supported values are zstd, gzip, snappy, deflate",
+            "Unsupported compression 'zsdt'; supported values are deflate, gzip, snappy, zstd",
             str(cm.exception),
         )
         # one name cannot hold a list
