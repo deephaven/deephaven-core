@@ -58,9 +58,9 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
 
     /**
      * The block that {@link #sizedBlockCardinality} and {@link #sizedBlockRangeCount} describe, or -1 when nothing is
-     * known ahead of time. A subclass that can see what a block will receive before its container is filled should
-     * publish it here, so the container can be created at its final size and in the representation that fits it best;
-     * containers are otherwise grown one range at a time, reallocating their backing storage as they fill. See
+     * known ahead of time. When what a block will receive is known before its container is filled, it is published
+     * here, so the container can be created at its final size and in the representation that fits it best; containers
+     * are otherwise grown one range at a time, reallocating their backing storage as they fill. See
      * {@link Container#emptySizedFor(int, int)}.
      *
      * <p>
@@ -74,13 +74,13 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     /**
      * Declare what {@code blockKey} will receive in total, for use when its container is created.
      */
-    protected final void setSizedBlock(final long blockKey, final int cardinality, final int rangeCount) {
+    private void setSizedBlock(final long blockKey, final int cardinality, final int rangeCount) {
         sizedBlockKey = blockKey;
         sizedBlockCardinality = cardinality;
         sizedBlockRangeCount = rangeCount;
     }
 
-    protected final void clearSizedBlock() {
+    private void clearSizedBlock() {
         sizedBlockKey = -1;
     }
 
