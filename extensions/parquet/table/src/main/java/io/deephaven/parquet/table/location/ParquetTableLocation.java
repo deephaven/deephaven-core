@@ -16,7 +16,6 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
@@ -359,10 +358,27 @@ public class ParquetTableLocation extends AbstractTableLocation {
                     INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
                     INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
                     (final RowSet indexRowSet) -> locationRowSet.subSetForPositions(indexRowSet))));
-            return StandaloneDataIndex.from(adjustedTable, columns, INDEX_ROW_SET_COLUMN_NAME);
+            return new RawTableStandaloneDataIndex(adjustedTable, columns, table.coalesce());
         } catch (final RuntimeException | Error e) {
             SafeCloseable.closeAllDuringFailure(e, locationRowSet);
             throw e;
+        }
+    }
+
+    /**
+     * An extension of {@link StandaloneDataIndex} that allows direct access to the underlying index table, whose row
+     * sets are positions within the location rather than row keys.
+     */
+    private static final class RawTableStandaloneDataIndex extends StandaloneDataIndex {
+        /** The index table as stored, with positions within the location in its row set column. */
+        private final Table rawTable;
+
+        private RawTableStandaloneDataIndex(
+                @NotNull final Table adjustedTable,
+                @NotNull final String[] keyColumnNames,
+                @NotNull final Table rawTable) {
+            super(adjustedTable.coalesce(), keyColumnNames, INDEX_ROW_SET_COLUMN_NAME);
+            this.rawTable = rawTable;
         }
     }
 
@@ -948,11 +964,13 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private static final byte ENTRY_UNSEEN = 0;
     private static final byte ENTRY_MATCHES = 1;
     private static final byte ENTRY_FAILS = 2;
+
     /**
-     * Rows read per window of the dictionary scan: the largest chunk the pools keep, so that a filter behind a barrier
-     * gets large batches, with reusable buffers.
+     * Rows read per window of the dictionary scan. A window hands the filter only the entries it is the first to use,
+     * so the window does not set the filter's batch size; it sets the working set of the row loops, and this keeps a
+     * window's keys and row keys in cache.
      */
-    private static final int DICTIONARY_SCAN_CHUNK_SIZE = ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
+    private static final int DICTIONARY_SCAN_CHUNK_SIZE = 4096;
 
     /**
      * Apply the chunk filter to the row group dictionaries and return the result. Each row's dictionary entry is looked
@@ -1084,19 +1102,22 @@ public class ParquetTableLocation extends AbstractTableLocation {
                         final RowSequence window = it.getNextRowSequenceWithLength(DICTIONARY_SCAN_CHUNK_SIZE);
                         final LongChunk<? extends DictionaryKeys> keys =
                                 valueStore.getChunk(getContext, window).asLongChunk();
+                        // A local bound and count keep the row loops counted loops: a chunk's size is a field, and a
+                        // store to any chunk's size inside the loop would make the bound variable to the JIT.
+                        final int windowSize = keys.size();
 
                         if (barrierActive) {
                             // We need to process newly encountered keys, but should try to chunk them for batch
                             // evaluation for efficiency.
-                            newIds.setSize(0);
-                            for (int ii = 0; ii < keys.size(); ++ii) {
+                            int numNew = 0;
+                            for (int ii = 0; ii < windowSize; ++ii) {
                                 final long key = keys.get(ii);
                                 if (key != NULL_LONG && entryStates[(int) key] == ENTRY_UNSEEN) {
                                     entryStates[(int) key] = ENTRY_FAILS;
-                                    newIds.add((int) key);
+                                    newIds.set(numNew++, (int) key);
                                 }
                             }
-                            final int numNew = newIds.size();
+                            newIds.setSize(numNew);
                             if (numNew > 0) {
                                 // Run the filter on the batch, mark the entries that match.
                                 batchValues.setSize(numNew);
@@ -1114,7 +1135,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
 
                         // Every entry the window uses is now evaluated; append the matching rows in order.
                         final LongChunk<OrderedRowKeys> rowKeys = window.asRowKeyChunk();
-                        for (int ii = 0; ii < keys.size(); ++ii) {
+                        for (int ii = 0; ii < windowSize; ++ii) {
                             final long key = keys.get(ii);
                             if (key == NULL_LONG ? nullsMatch : entryStates[(int) key] == ENTRY_MATCHES) {
                                 matchBuilder.appendKey(subRegionFirstKey + rowKeys.get(ii));
@@ -1143,7 +1164,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
      * matches.
      */
     @NotNull
-    public static PushdownResult pushdownDataIndex(
+    public PushdownResult pushdownDataIndex(
             final RowSet selection,
             final WhereFilter filter,
             final Map<String, String> renameMap,
@@ -1159,51 +1180,23 @@ public class ParquetTableLocation extends AbstractTableLocation {
             // Extract the fundamental filter, ignoring barriers and serial wrappers.
             final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
             final String rowSetColumnName = dataIndex.rowSetColumnName();
-            final RowSet maybeMatch = result.maybeMatch();
             // Apply the filter to the data index table
             try {
-                Table toFilter = dataIndex.table();
-                if (!renameMap.isEmpty()) {
-                    final Collection<Pair> renamePairs = renameMap.entrySet().stream()
-                            .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
-                                    ColumnName.of(entry.getKey())))
-                            .collect(Collectors.toList());
-                    toFilter = toFilter.renameColumns(renamePairs);
-                }
-                if (barrierActive) {
-                    // The row sets are read twice, by the overlap test and again for the index rows that pass the
-                    // filter, and a location with several row groups converts them from positions on every read.
-                    // Materializing the row set column reads and converts each once. Only that column: the key
-                    // columns keep their own sources, and with them the pushdown the filter gets on the index table,
-                    // which a select of every column would lose.
-                    toFilter = toFilter.update(List.of(new SourceColumn(rowSetColumnName)));
-                    // Keep only the index rows whose row sets overlap the rows in question, in one ordered pass. A
-                    // where would make the same overlaps call per row, as there is no chunk kernel for it, only
-                    // through a computed overlap column, a filter and an intermediate table; and the locations are
-                    // already pushed down in parallel, so its parallelism would buy nothing.
-                    final RowSetBuilderSequential overlapping = RowSetFactory.builderSequential();
-                    try (final RowSet.Iterator indexRows = toFilter.getRowSet().iterator();
-                            final CloseableIterator<RowSet> rowSets =
-                                    ColumnVectors.ofObject(toFilter, rowSetColumnName, RowSet.class).iterator()) {
-                        while (rowSets.hasNext()) {
-                            final long indexRow = indexRows.nextLong();
-                            if (rowSets.next().overlaps(maybeMatch)) {
-                                overlapping.appendKey(indexRow);
-                            }
-                        }
+                if (barrierActive && dataIndex instanceof RawTableStandaloneDataIndex) {
+                    // The index stores positions within the location, and reading its row sets as row keys converts
+                    // every one of them, whether it overlaps the rows in question or not. Filter its raw table in
+                    // position space instead: the rows in question are converted to positions once, and the matches
+                    // back to row keys once.
+                    final Table rawTable = ((RawTableStandaloneDataIndex) dataIndex).rawTable;
+                    try (final RowSet locationRowSet = getRowSet();
+                            final WritableRowSet positions = locationRowSet.invert(result.maybeMatch());
+                            final WritableRowSet matchingPositions = executeFilterDataIndex(
+                                    rawTable, rowSetColumnName, renameMap, copiedFilter, true, positions)) {
+                        matching = locationRowSet.subSetForPositions(matchingPositions);
                     }
-                    toFilter = toFilter.getSubTable(overlapping.build().toTracking());
-                }
-                final Table filteredTable = toFilter.where(copiedFilter);
-
-                // One row set per index row that passes the filter. The batcher owns what it gathers, and building
-                // after the iterator is closed leaves nothing that can throw between building and taking the result.
-                try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(filteredTable.size())) {
-                    try (final CloseableIterator<RowSet> it =
-                            ColumnVectors.ofObject(filteredTable, rowSetColumnName, RowSet.class).iterator()) {
-                        it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(maybeMatch)));
-                    }
-                    matching = batcher.build();
+                } else {
+                    matching = executeFilterDataIndex(dataIndex.table(), rowSetColumnName, renameMap, copiedFilter,
+                            barrierActive, result.maybeMatch());
                 }
             } catch (final Exception e) {
                 // A cancelled query must stop, not carry on filtering without the index.
@@ -1221,6 +1214,59 @@ public class ParquetTableLocation extends AbstractTableLocation {
         try (matching; final WritableRowSet empty = RowSetFactory.empty()) {
             matching.insert(result.match());
             return PushdownResult.of(selection, matching, empty);
+        }
+    }
+
+    /**
+     * Apply {@code filter} to {@code indexTable} and return the union of the matching index rows' row sets, each
+     * intersected with {@code rows}. Behind a barrier, the filter is applied only to the index rows whose row sets
+     * overlap {@code rows}. The index's row sets and {@code rows} must be in the same space, row keys or positions.
+     *
+     * @return The matches, in the space of {@code rows}; ownership passes to the caller
+     */
+    private static WritableRowSet executeFilterDataIndex(
+            final Table indexTable,
+            final String rowSetColumnName,
+            final Map<String, String> renameMap,
+            final WhereFilter filter,
+            final boolean barrierActive,
+            final RowSet rows) {
+        Table toFilter = indexTable;
+        if (!renameMap.isEmpty()) {
+            final Collection<Pair> renamePairs = renameMap.entrySet().stream()
+                    .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
+                            ColumnName.of(entry.getKey())))
+                    .collect(Collectors.toList());
+            toFilter = toFilter.renameColumns(renamePairs);
+        }
+        if (barrierActive) {
+            // Keep only the index rows whose row sets overlap the rows in question, in one ordered pass. A where would
+            // make the same overlaps call per row, as there is no chunk kernel for it, only through a computed overlap
+            // column, a filter and an intermediate table; and the locations are already pushed down in parallel, so
+            // its parallelism would buy nothing.
+            final RowSetBuilderSequential overlapping = RowSetFactory.builderSequential();
+            try (final RowSet.Iterator indexRows = toFilter.getRowSet().iterator();
+                    final CloseableIterator<RowSet> rowSets =
+                            ColumnVectors.ofObject(toFilter, rowSetColumnName, RowSet.class).iterator()) {
+                while (rowSets.hasNext()) {
+                    final long indexRow = indexRows.nextLong();
+                    if (rowSets.next().overlaps(rows)) {
+                        overlapping.appendKey(indexRow);
+                    }
+                }
+            }
+            toFilter = toFilter.getSubTable(overlapping.build().toTracking());
+        }
+        final Table filteredTable = toFilter.where(filter);
+
+        // One row set per index row that passes the filter. The batcher owns what it gathers, and building after the
+        // iterator is closed leaves nothing that can throw between building and returning the result.
+        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(filteredTable.size())) {
+            try (final CloseableIterator<RowSet> it =
+                    ColumnVectors.ofObject(filteredTable, rowSetColumnName, RowSet.class).iterator()) {
+                it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(rows)));
+            }
+            return batcher.build();
         }
     }
 

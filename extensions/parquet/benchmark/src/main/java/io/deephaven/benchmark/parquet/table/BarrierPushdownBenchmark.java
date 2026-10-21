@@ -29,16 +29,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * The cost of bounding a barrier respecter's pushdown to the keys of the rows its declarer kept (DH-24083), at each
- * pushdown tier that evaluates a filter over a structure wider than its selection.
+ * The cost of keeping a barrier respecter's pushdown to the keys of the rows its declarer kept, at each pushdown tier
+ * that evaluates a filter over a structure wider than its selection.
  *
  * <p>
  * One {@code where} with two filters over 10M rows: a declarer that models a row ACL (a simple range filter keeping
  * {@code aclPct} percent of the rows) and a respecter that models a user formula ({@link #pass}, keeping half of the
- * keys). {@code CORRELATED} keeps whole keys, so the respecter's rows hold only {@code aclPct} percent of the keys;
- * {@code INDEPENDENT} keeps rows of every key, the worst case for bounding, which then saves nothing. A formula that
- * respects a barrier is bounded; {@code UNBOUNDED} applies the same two filters without a barrier, so that the formula
- * is pushed down as before bounding, and on a build without bounding {@code BOUNDED} measures the same.
+ * keys), which respects a barrier the ACL declares. {@code CORRELATED} keeps whole keys, so the respecter's rows hold
+ * only {@code aclPct} percent of the keys; {@code INDEPENDENT} keeps rows of every key, the worst case for a pushdown
+ * kept to those rows, which then saves nothing. {@code PUSHDOWN} lets the formula be pushed down: on a build that keeps
+ * pushdown behind a barrier to the rows in question it measures that safe pushdown, and on a build that does not, the
+ * unsafe pushdown it replaces. {@code NO_PUSHDOWN} never pushes the formula down, so it runs on every row the ACL kept.
  * </p>
  */
 @State(Scope.Thread)
@@ -72,10 +73,10 @@ public class BarrierPushdownBenchmark {
     }
 
     public enum Pushdown {
-        UNBOUNDED, BOUNDED, NONE
+        NO_PUSHDOWN, PUSHDOWN
     }
 
-    /** The alternative fix: the respecter is never pushed down, so it runs on every row its declarer kept. */
+    /** The respecter is never pushed down, so it runs on every row its declarer kept. */
     private static final class NoPushdownFilter extends WhereFilterDelegatingBase {
         private NoPushdownFilter(final WhereFilter filter) {
             super(filter);
@@ -103,7 +104,7 @@ public class BarrierPushdownBenchmark {
     private int aclPct;
     @Param({"CORRELATED", "INDEPENDENT"})
     private Layout layout;
-    @Param({"UNBOUNDED", "BOUNDED", "NONE"})
+    @Param({"NO_PUSHDOWN", "PUSHDOWN"})
     private Pushdown pushdown;
     @Param({"1000", "20000"})
     private int keys;
@@ -131,12 +132,10 @@ public class BarrierPushdownBenchmark {
                 ? "KeyId < " + (int) ((long) keys * aclPct / 100)
                 : "Bucket < " + aclPct);
         WhereFilter user = WhereFilterFactory.getExpression("BarrierPushdownBenchmark.pass(Key)");
-        if (pushdown == Pushdown.NONE) {
+        if (pushdown == Pushdown.NO_PUSHDOWN) {
             user = new NoPushdownFilter(user);
         }
-        filters = pushdown == Pushdown.UNBOUNDED
-                ? Filter.and(acl, user)
-                : Filter.and(acl.withDeclaredBarriers(barrier), user.withRespectedBarriers(barrier));
+        filters = Filter.and(acl.withDeclaredBarriers(barrier), user.withRespectedBarriers(barrier));
 
         // Settle lazy state (index materialization, parquet metadata) outside the measurement, and check the result.
         resultSize = source.where(filters).size();
