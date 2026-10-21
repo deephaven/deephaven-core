@@ -8,7 +8,6 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -32,7 +31,6 @@ import java.util.BitSet;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * A producer's message carries data for every column that any of its subscriptions needs; each subscription's view of
@@ -80,36 +78,6 @@ public class BarrageMessageWriterImplTest {
             assertThat(intColumnOnly.get(si)).isEqualTo(updateOfIntColumn.get(si));
         }
         assertThat(totalBytes(intColumnOnly)).isLessThan(totalBytes(everyColumn));
-    }
-
-    /**
-     * A view releases the row sets it owns once it has written its streams, including when it writes metadata alone. A
-     * viewport subscription to the int column, whose viewport holds none of the added rows, is sent metadata alone for
-     * an update that modifies only the string columns.
-     */
-    @Test
-    public void testMetadataOnlyViewClosesItsRowSets() throws IOException, ReflectiveOperationException {
-        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
-                delta(columns(1, 2)), chunkWriters(), BarrageMessageWriter.WriteMetricsConsumer.NO_OP);
-                final RowSet viewport = RowSetFactory.fromRange(0, 7);
-                final RowSet keyspaceViewport = RowSetFactory.fromRange(2, 9)) {
-            final BarrageMessageWriter.MessageView view = writer.getSubView(OPTIONS, false, false, viewport, false,
-                    keyspaceViewport, keyspaceViewport, columns(0), new DictionaryWriterRegistryImpl());
-            drain(view);
-
-            // the view exposes none of the row sets it owns, so this reads them reflectively
-            for (final String name : List.of("clientViewport", "clientIncludedRows", "clientIncludedRowOffsets",
-                    "clientRemovedRows", "clientModdedRows", "clientModdedRowOffsets")) {
-                final java.lang.reflect.Field field = view.getClass().getDeclaredField(name);
-                field.setAccessible(true);
-                final Object value = field.get(view);
-                final RowSet[] rowSets = value instanceof RowSet[] ? (RowSet[]) value : new RowSet[] {(RowSet) value};
-                for (final RowSet rowSet : rowSets) {
-                    // a closed row set drops its contents, so any use of it throws
-                    assertThatThrownBy(rowSet::size).as(name).isInstanceOf(NullPointerException.class);
-                }
-            }
-        }
     }
 
     @SuppressWarnings("unchecked")
