@@ -5384,12 +5384,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     public final RspBitmap toRsp() {
-        RspBitmap rsp = new RspBitmap();
-        forEachLongRange((final long start, final long end) -> {
-            rsp.appendRangeUnsafeNoWriteCheck(start, end);
-            return true;
-        });
-        rsp.finishMutations();
+        // Every range is known up front, so each container can be created at its final size.
+        final RspBitmap rsp = RspBitmapBuilderSequential.buildRsp(this);
         sortedRangesToRspConversions.sample(1);
         return rsp;
     }

@@ -4,6 +4,8 @@ title: Group and ungroup data
 
 This guide shows you how to group and ungroup table data in Deephaven.
 
+To compare grouping with Deephaven's aggregation operations, and to choose between them, see [Aggregations in Deephaven](../conceptual/aggregations.md).
+
 > [!TIP]
 > Many Deephaven table operations, such as [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md), group rows internally and calculate summary statistics for each group. To compute a statistic per group, pass the matching [combined aggregation](./combined-aggregations.md) to `aggBy`, such as [`AggSum`](../reference/table-operations/group-and-aggregate/AggSum.md) for a sum or [`AggAvg`](../reference/table-operations/group-and-aggregate/AggAvg.md) for an average. You can also use a [dedicated aggregation](./dedicated-aggregations.md) such as [`sumBy`](../reference/table-operations/group-and-aggregate/sumBy.md). Grouping the data first with [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) or [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md) and then calculating over the grouped [vectors](../conceptual/arrays-vs-vectors.md) is usually slower.
 
@@ -167,6 +169,7 @@ tUngrouped = t.ungroup()
 
 ## Related documentation
 
+- [Aggregations in Deephaven](../conceptual/aggregations.md)
 - [Create a new table](./new-and-empty-table.md#newtable)
 - [Choose the right column selection method](./use-select-view-update.md#choose-the-right-column-selection-method)
 - [Formulas in query strings](./formulas.md)

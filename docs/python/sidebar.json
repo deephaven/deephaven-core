@@ -142,6 +142,10 @@
               {
                 "label": "Column types",
                 "path": "conceptual/column-types.md"
+              },
+              {
+                "label": "Aggregations",
+                "path": "conceptual/aggregations.md"
               }
             ]
           },
@@ -1824,6 +1828,10 @@
                   {
                     "label": "layout_hints",
                     "path": "reference/table-operations/format/layout-hints.md"
+                  },
+                  {
+                    "label": "Named colors",
+                    "path": "reference/table-operations/format/named-colors.md"
                   }
                 ]
               },
