@@ -1821,7 +1821,7 @@ public abstract class FlightMessageRoundTripTest {
         final Table table = TableTools.emptyTable(rows).update("I = i", "S = `sym` + (i % 32)", "D = i * 0.5");
         return allowedCompression == null
                 ? table
-                : table.withAttributes(Map.of(Table.BARRAGE_COMPRESSION_ATTRIBUTE, allowedCompression));
+                : table.withAttributes(Map.of(Table.TRANSPORT_COMPRESSION_ATTRIBUTE, allowedCompression));
     }
 
     /**

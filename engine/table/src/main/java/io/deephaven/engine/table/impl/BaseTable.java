@@ -422,7 +422,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         // kept when the result holds only the opted-in table's values; dropped when an operation computes new values or
         // brings in another table's data
-        tempMap.put(BARRAGE_COMPRESSION_ATTRIBUTE, EnumSet.of(
+        tempMap.put(TRANSPORT_COMPRESSION_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.Filter,

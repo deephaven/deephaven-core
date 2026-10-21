@@ -101,15 +101,15 @@ createJmhTask('jmhRunBarrageGrpcPropagateSmoke',
 createJmhTask('jmhRunBarrageCopyKernel', 'BarrageCopyKernelBenchmark')
 
 // gRPC message compression (each built-in compression type) of a DoGet snapshot; narrow it with JMH options, e.g.
-// --args='BarrageCompressionBenchmark -p shape=MIXED -p numRows=65536'
-createJmhTask('jmhRunBarrageCompression', 'BarrageCompressionBenchmark')
+// --args='TransportCompressionBenchmark -p shape=MIXED -p numRows=65536'
+createJmhTask('jmhRunTransportCompression', 'TransportCompressionBenchmark')
 
-// The wire size of each codec for the data BarrageCompressionBenchmark times, as a Markdown table.
-tasks.register('barrageCompressionSizeReport', JavaExec) { JavaExec task ->
+// The wire size of each codec for the data TransportCompressionBenchmark times, as a Markdown table.
+tasks.register('transportCompressionSizeReport', JavaExec) { JavaExec task ->
     task.doFirst { new File("$rootDir/tmp/workspace").mkdirs() }
     task.workingDir "$rootDir/tmp/workspace"
     task.classpath = sourceSets.main.runtimeClasspath
-    task.mainClass.set 'io.deephaven.benchmark.barrage.BarrageCompressionSizeReport'
+    task.mainClass.set 'io.deephaven.benchmark.barrage.TransportCompressionSizeReport'
     task.jvmArgs '-DConfiguration.rootFile=dh-tests.prop',
             "-Dworkspace=$rootDir/tmp/workspace",
             '-Dconfiguration.quiet=true',

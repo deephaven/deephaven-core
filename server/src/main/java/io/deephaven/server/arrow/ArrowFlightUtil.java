@@ -128,7 +128,7 @@ public class ArrowFlightUtil {
                         metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                         metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
-                        grpcContext.run(() -> BarrageCompression.apply(observer,
+                        grpcContext.run(() -> TransportCompression.apply(observer,
                                 ClientAcceptCompressionInterceptor.acceptedCompression(), table, ticketLogName));
 
                         // create an adapter for the response observer
@@ -570,7 +570,7 @@ public class ArrowFlightUtil {
                 final Object export,
                 final String logName) {
             // handlers call this on the session executor, which does not attach the call's context
-            grpcContext.run(() -> BarrageCompression.apply(responseObserver,
+            grpcContext.run(() -> TransportCompression.apply(responseObserver,
                     ClientAcceptCompressionInterceptor.acceptedCompression(),
                     marshallerForExport.attributesFor(export), logName));
         }

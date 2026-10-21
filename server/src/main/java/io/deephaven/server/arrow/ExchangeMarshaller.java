@@ -66,7 +66,7 @@ public interface ExchangeMarshaller {
 
     /**
      * The attributes that control how responses for {@code export} are sent, in particular its
-     * {@link io.deephaven.engine.table.Table#BARRAGE_COMPRESSION_ATTRIBUTE allowed compression}.
+     * {@link io.deephaven.engine.table.Table#TRANSPORT_COMPRESSION_ATTRIBUTE allowed compression}.
      *
      * @param export an object this marshaller {@link #accept(Object) accepts}
      * @return the attributes for {@code export}, or null if it has none

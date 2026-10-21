@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Times gRPC message compression, with each built-in compression type, of a full {@code DoGet}-style snapshot of a
  * static table. To time a type that a {@code CompressionCodecProvider} adds, put its jar on the classpath and pass
- * {@code -p compression=<name>}. Each invocation processes the whole table; run {@link BarrageCompressionSizeReport}
+ * {@code -p compression=<name>}. Each invocation processes the whole table; run {@link TransportCompressionSizeReport}
  * for the matching wire sizes.
  * <ul>
  * <li>{@link #compress} and {@link #decompress} time only the compression work, starting from and ending at serialized
@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations = 2, time = 2)
 @Measurement(iterations = 3, time = 2)
 @Fork(1)
-public class BarrageCompressionBenchmark {
+public class TransportCompressionBenchmark {
 
     @Param({"RANDOM_DOUBLE", "SEQUENTIAL_LONG", "LOW_CARDINALITY_STRING", "HIGH_CARDINALITY_STRING",
             "NULL_HEAVY_INT", "MIXED"})
@@ -63,7 +63,7 @@ public class BarrageCompressionBenchmark {
     private MessageCodec codec;
 
     private SafeCloseable executionContext;
-    private BarrageCompressionHarness harness;
+    private TransportCompressionHarness harness;
     /** the uncompressed messages {@code DoGet} sends */
     private List<byte[]> flightData;
     /** {@link #flightData} after compression */
@@ -74,9 +74,9 @@ public class BarrageCompressionBenchmark {
         executionContext = TestExecutionContext.createForUnitTests().open();
         codec = MessageCodec.of(compression);
         final Table table = shape.makeTable(numRows);
-        harness = new BarrageCompressionHarness(table);
+        harness = new TransportCompressionHarness(table);
         flightData = harness.serialize();
-        wire = BarrageCompressionHarness.compressAll(flightData, codec);
+        wire = TransportCompressionHarness.compressAll(flightData, codec);
         harness.verify(flightData, wire, codec);
     }
 

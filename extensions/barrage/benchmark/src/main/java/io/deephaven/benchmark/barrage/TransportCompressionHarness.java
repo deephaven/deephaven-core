@@ -25,19 +25,19 @@ import java.util.function.Consumer;
 
 /**
  * The serialize, compress, decompress and deserialize steps the compression benchmarks time, shared with
- * {@link BarrageCompressionSizeReport}.
+ * {@link TransportCompressionSizeReport}.
  * <p>
  * The uncompressed messages are exactly what {@code DoGet} sends for a static table: a schema message followed by the
  * record batches {@link BarrageUtil#createAndSendSnapshot} produces with {@link BarrageUtil#DEFAULT_SNAPSHOT_OPTIONS}.
  * Compression is applied to each whole {@code FlightData} message, as gRPC does.
  */
-final class BarrageCompressionHarness {
+final class TransportCompressionHarness {
     private final Table table;
     private final ChunkType[] wireChunkTypes;
     private final Class<?>[] wireTypes;
     private final Class<?>[] wireComponentTypes;
 
-    BarrageCompressionHarness(final Table table) {
+    TransportCompressionHarness(final Table table) {
         this.table = table;
         final BarrageUtil.ConvertedArrowSchema schema =
                 BarrageUtil.convertArrowSchema(BarrageUtil.schemaFromTable(table));

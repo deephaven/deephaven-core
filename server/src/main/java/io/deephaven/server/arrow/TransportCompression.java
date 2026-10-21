@@ -21,12 +21,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Chooses the compression type for a Barrage response from the table's {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE
+ * Chooses the compression type for a Barrage response from the table's {@link Table#TRANSPORT_COMPRESSION_ATTRIBUTE
  * allowed list}, or the server's {@link #DEFAULT_TYPES_PROPERTY default list}, and the compression types the client
  * accepts.
  */
-public final class BarrageCompression {
-    private static final Logger log = LoggerFactory.getLogger(BarrageCompression.class);
+public final class TransportCompression {
+    private static final Logger log = LoggerFactory.getLogger(TransportCompression.class);
 
     /**
      * The problems already logged, so that each is logged once rather than on every fetch: malformed lists, and the
@@ -38,17 +38,17 @@ public final class BarrageCompression {
 
     /**
      * The compression types the server allows for a {@link Table} or {@link HierarchicalTable} that does not set
-     * {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE}, as an ordered, comma-separated list in the attribute's format, such
-     * as {@code zstd,snappy}. Unset by default, so such tables are never compressed. The server ignores a value it
+     * {@link Table#TRANSPORT_COMPRESSION_ATTRIBUTE}, as an ordered, comma-separated list in the attribute's format,
+     * such as {@code zstd,snappy}. Unset by default, so such tables are never compressed. The server ignores a value it
      * cannot parse, and logs a warning.
      */
-    public static final String DEFAULT_TYPES_PROPERTY = "BarrageCompression.defaultTypes";
+    public static final String DEFAULT_TYPES_PROPERTY = "TransportCompression.defaultTypes";
 
     private static final List<String> DEFAULT_ALLOWED =
             parseOrWarn(Configuration.getInstance().getStringWithDefault(DEFAULT_TYPES_PROPERTY, ""),
                     DEFAULT_TYPES_PROPERTY, List.of());
 
-    private BarrageCompression() {}
+    private TransportCompression() {}
 
     /**
      * Sets the compression of {@code responseObserver} to the first type in {@code attributes}' allowed list that the
@@ -86,10 +86,10 @@ public final class BarrageCompression {
         if (attributes == null) {
             return Optional.empty();
         }
-        final Object value = attributes.getAttribute(Table.BARRAGE_COMPRESSION_ATTRIBUTE);
+        final Object value = attributes.getAttribute(Table.TRANSPORT_COMPRESSION_ATTRIBUTE);
         final List<String> allowed = value == null
                 ? defaultAllowed
-                : parseOrWarn(value.toString(), Table.BARRAGE_COMPRESSION_ATTRIBUTE + " on " + logName,
+                : parseOrWarn(value.toString(), Table.TRANSPORT_COMPRESSION_ATTRIBUTE + " on " + logName,
                         defaultAllowed);
 
         if (!(responseObserver instanceof ServerCallStreamObserver)) {

@@ -16,17 +16,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Sets the {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE} of a table, rollup table or tree table, which allows the server
- * to compress its Barrage snapshots and subscriptions, or removes it, so that the server's default compression types
- * apply.
+ * Sets the {@link Table#TRANSPORT_COMPRESSION_ATTRIBUTE} of a table, rollup table or tree table, which allows the
+ * server to compress its Barrage snapshots and subscriptions, or removes it, so that the server's default compression
+ * types apply.
  */
-public final class BarrageCompressionAttribute {
+public final class TransportCompressionAttribute {
 
     /** Why {@code null} is not a list of compression types, and what to pass instead. */
     private static final String NULL_PREFERENCE = "compression types must not be null; pass none to never compress, "
-            + "or call withDefaultCompression for the server's default compression types";
+            + "or call resetCompression for the server's default compression types";
 
-    private BarrageCompressionAttribute() {}
+    private TransportCompressionAttribute() {}
 
     /**
      * Returns a copy of {@code grid} that allows the server to compress its Barrage snapshots and subscriptions with
@@ -34,12 +34,12 @@ public final class BarrageCompressionAttribute {
      * built-in {@code "zstd"}, {@code "gzip"}, {@code "snappy"} and {@code "deflate"}. Case and surrounding whitespace
      * are ignored. The server uses the first type in {@code preference} that the client accepts, and sends uncompressed
      * data when none match. Repeated types keep their first position. With no types, the result is never compressed,
-     * even when the server has default compression types; {@link #withDefaultCompression(AttributeMap)} returns to
-     * those instead.
+     * even when the server has default compression types; {@link #resetCompression(AttributeMap)} returns to those
+     * instead.
      *
      * @param grid the table, rollup table or tree table to compress
      * @param preference the names of the compression types to allow, most preferred first
-     * @return a copy of {@code grid} with its {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE} set, to an empty list if
+     * @return a copy of {@code grid} with its {@link Table#TRANSPORT_COMPRESSION_ATTRIBUTE} set, to an empty list if
      *         {@code preference} is empty
      * @throws IllegalArgumentException if a name is not a supported compression type
      * @throws NullPointerException if {@code preference} or one of its names is {@code null}
@@ -55,7 +55,7 @@ public final class BarrageCompressionAttribute {
      *
      * @param grid the table, rollup table or tree table to compress
      * @param preference the names of the compression types to allow, most preferred first
-     * @return a copy of {@code grid} with its {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE} set, to an empty list if
+     * @return a copy of {@code grid} with its {@link Table#TRANSPORT_COMPRESSION_ATTRIBUTE} set, to an empty list if
      *         {@code preference} is empty
      * @throws IllegalArgumentException if a name is not a supported compression type
      * @throws NullPointerException if {@code preference} or one of its names is {@code null}
@@ -67,19 +67,19 @@ public final class BarrageCompressionAttribute {
                 .map(name -> CompressionCodecs.checkSupported(Objects.requireNonNull(name, NULL_PREFERENCE)))
                 .distinct()
                 .collect(Collectors.joining(","));
-        return grid.withAttributes(Map.of(Table.BARRAGE_COMPRESSION_ATTRIBUTE, value));
+        return grid.withAttributes(Map.of(Table.TRANSPORT_COMPRESSION_ATTRIBUTE, value));
     }
 
     /**
-     * Returns a copy of {@code grid} without a {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE}, which undoes
+     * Returns a copy of {@code grid} without a {@link Table#TRANSPORT_COMPRESSION_ATTRIBUTE}, which undoes
      * {@link #withCompression(AttributeMap, String...) withCompression}: the server compresses the result's Barrage
-     * snapshots and subscriptions with its default compression types, from the {@code BarrageCompression.defaultTypes}
-     * property, and does not compress them when that property is unset.
+     * snapshots and subscriptions with its default compression types, from the
+     * {@code TransportCompression.defaultTypes} property, and does not compress them when that property is unset.
      *
      * @param grid the table, rollup table or tree table
-     * @return a copy of {@code grid} without a {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE}
+     * @return a copy of {@code grid} without a {@link Table#TRANSPORT_COMPRESSION_ATTRIBUTE}
      */
-    public static <T extends AttributeMap<T>> T withDefaultCompression(@NotNull final T grid) {
-        return grid.withoutAttributes(Set.of(Table.BARRAGE_COMPRESSION_ATTRIBUTE));
+    public static <T extends AttributeMap<T>> T resetCompression(@NotNull final T grid) {
+        return grid.withoutAttributes(Set.of(Table.TRANSPORT_COMPRESSION_ATTRIBUTE));
     }
 }

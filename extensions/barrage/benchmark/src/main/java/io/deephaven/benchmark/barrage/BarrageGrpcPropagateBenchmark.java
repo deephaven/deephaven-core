@@ -386,7 +386,7 @@ public class BarrageGrpcPropagateBenchmark {
             final ServerServiceDefinition service = ServerServiceDefinition.builder(SERVICE_NAME)
                     .addMethod(SERVER_METHOD, ServerCalls.asyncBidiStreamingCall(responseObserver -> {
                         if (!compression.equals("identity")) {
-                            // as BarrageCompression.apply sets it, before the first message
+                            // as TransportCompression.apply sets it, before the first message
                             ((ServerCallStreamObserver<?>) responseObserver).setCompression(compression);
                         }
                         openedStreams.add(responseObserver);

@@ -138,20 +138,20 @@ def _default_cross_join_reserve_bits() -> int:
 
 
 @cache
-def _j_barrage_compression_attribute() -> jpy.JType:
+def _j_transport_compression_attribute() -> jpy.JType:
     # looked up on first use, so that importing this module does not depend on the Barrage extension
-    return jpy.get_type("io.deephaven.extensions.barrage.BarrageCompressionAttribute")
+    return jpy.get_type("io.deephaven.extensions.barrage.TransportCompressionAttribute")
 
 
-def _j_with_compression(
+def _j_with_transport_compression(
     j_grid: jpy.JType, compression_types: Union[str, Sequence[str]]
 ) -> jpy.JType:
-    """Returns a copy of a Java table, rollup table or tree table with its BarrageCompression attribute set to the
+    """Returns a copy of a Java table, rollup table or tree table with its TransportCompression attribute set to the
     given compression type names, which the Java method checks against the supported names."""
     if compression_types is None:
         # None reads as either "never compress" or "the server's default", so it is neither
         raise TypeError(
-            "compression_types must not be None; pass [] to never compress, or call with_default_compression() for "
+            "compression_types must not be None; pass [] to never compress, or call reset_transport_compression() for "
             "the server's default compression types"
         )
     # a string is one name, even an empty one, which the Java method rejects; only an empty sequence means none
@@ -165,17 +165,17 @@ def _j_with_compression(
             raise TypeError(
                 f"expected a compression type name, not {type(name).__name__}: {name!r}"
             )
-    return _j_barrage_compression_attribute().withCompression(
+    return _j_transport_compression_attribute().withCompression(
         j_grid, j_array_list(names)
     )
 
 
-def _j_with_default_compression(j_grid: jpy.JType) -> jpy.JType:
-    """Returns a copy of a Java table, rollup table or tree table without its BarrageCompression attribute, which
-    undoes with_compression: the server compresses the result's Barrage snapshots and subscriptions with its default
-    compression types, from the BarrageCompression.defaultTypes property, and does not compress them when that
-    property is unset."""
-    return _j_barrage_compression_attribute().withDefaultCompression(j_grid)
+def _j_reset_transport_compression(j_grid: jpy.JType) -> jpy.JType:
+    """Returns a copy of a Java table, rollup table or tree table without its TransportCompression attribute, which
+    undoes with_transport_compression: the server compresses the result's Barrage snapshots and subscriptions with
+    its default compression types, from the TransportCompression.defaultTypes property, and does not compress them when
+    that property is unset."""
+    return _j_transport_compression_attribute().resetCompression(j_grid)
 
 
 class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
@@ -525,12 +525,12 @@ class RollupTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "with_node_operations on RollupTable failed.") from e
 
-    def with_compression(
+    def with_transport_compression(
         self, compression_types: Union[str, Sequence[str]]
     ) -> RollupTable:
         """Returns a new RollupTable that allows the server to compress its Barrage snapshots and subscriptions with
-        the given compression types. See :meth:`Table.with_compression`. The compression of the rollup's source table
-        is not used.
+        the given compression types. See :meth:`Table.with_transport_compression`. The compression of the rollup's
+        source table is not used.
 
         Args:
             compression_types (Union[str, Sequence[str]]): the name, or names, of the compression types to allow,
@@ -545,7 +545,7 @@ class RollupTable(JObjectWrapper):
         try:
             return RollupTable(
                 j_rollup_table=jpy.cast(
-                    _j_with_compression(self.j_rollup_table, compression_types),
+                    _j_with_transport_compression(self.j_rollup_table, compression_types),
                     _JRollupTable,
                 ),
                 include_constituents=self.include_constituents,
@@ -553,11 +553,11 @@ class RollupTable(JObjectWrapper):
                 by=self.by,
             )
         except Exception as e:
-            raise DHError(e, "with_compression on RollupTable failed.") from e
+            raise DHError(e, "with_transport_compression on RollupTable failed.") from e
 
-    def with_default_compression(self) -> RollupTable:
+    def reset_transport_compression(self) -> RollupTable:
         """Returns a new RollupTable that the server compresses with its default compression types, which undoes
-        :meth:`with_compression`. See :meth:`Table.with_default_compression`.
+        :meth:`with_transport_compression`. See :meth:`Table.reset_transport_compression`.
 
         Returns:
             a new RollupTable
@@ -568,14 +568,14 @@ class RollupTable(JObjectWrapper):
         try:
             return RollupTable(
                 j_rollup_table=jpy.cast(
-                    _j_with_default_compression(self.j_rollup_table), _JRollupTable
+                    _j_reset_transport_compression(self.j_rollup_table), _JRollupTable
                 ),
                 include_constituents=self.include_constituents,
                 aggs=self.aggs,
                 by=self.by,
             )
         except Exception as e:
-            raise DHError(e, "with_default_compression on RollupTable failed.") from e
+            raise DHError(e, "reset_transport_compression on RollupTable failed.") from e
 
     def with_filters(
         self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]
@@ -709,12 +709,12 @@ class TreeTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "with_node_operations on TreeTable failed.") from e
 
-    def with_compression(
+    def with_transport_compression(
         self, compression_types: Union[str, Sequence[str]]
     ) -> TreeTable:
         """Returns a new TreeTable that allows the server to compress its Barrage snapshots and subscriptions with the
-        given compression types. See :meth:`Table.with_compression`. The compression of the tree's source table is not
-        used.
+        given compression types. See :meth:`Table.with_transport_compression`. The compression of the tree's source
+        table is not used.
 
         Args:
             compression_types (Union[str, Sequence[str]]): the name, or names, of the compression types to allow,
@@ -729,18 +729,18 @@ class TreeTable(JObjectWrapper):
         try:
             return TreeTable(
                 j_tree_table=jpy.cast(
-                    _j_with_compression(self.j_tree_table, compression_types),
+                    _j_with_transport_compression(self.j_tree_table, compression_types),
                     _JTreeTable,
                 ),
                 id_col=self.id_col,
                 parent_col=self.parent_col,
             )
         except Exception as e:
-            raise DHError(e, "with_compression on TreeTable failed.") from e
+            raise DHError(e, "with_transport_compression on TreeTable failed.") from e
 
-    def with_default_compression(self) -> TreeTable:
+    def reset_transport_compression(self) -> TreeTable:
         """Returns a new TreeTable that the server compresses with its default compression types, which undoes
-        :meth:`with_compression`. See :meth:`Table.with_default_compression`.
+        :meth:`with_transport_compression`. See :meth:`Table.reset_transport_compression`.
 
         Returns:
             a new TreeTable
@@ -751,13 +751,13 @@ class TreeTable(JObjectWrapper):
         try:
             return TreeTable(
                 j_tree_table=jpy.cast(
-                    _j_with_default_compression(self.j_tree_table), _JTreeTable
+                    _j_reset_transport_compression(self.j_tree_table), _JTreeTable
                 ),
                 id_col=self.id_col,
                 parent_col=self.parent_col,
             )
         except Exception as e:
-            raise DHError(e, "with_default_compression on TreeTable failed.") from e
+            raise DHError(e, "reset_transport_compression on TreeTable failed.") from e
 
     def with_filters(
         self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]
@@ -1262,7 +1262,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create a table without attributes.") from e
 
-    def with_compression(self, compression_types: Union[str, Sequence[str]]) -> Table:
+    def with_transport_compression(self, compression_types: Union[str, Sequence[str]]) -> Table:
         """Returns a new Table that shares the data of this table and allows the server to compress its Barrage
         snapshots and subscriptions with the given compression types. When a client fetches the table, the server uses
         the first type in the list that the client accepts, and sends uncompressed data when none match.
@@ -1274,15 +1274,15 @@ class Table(JObjectWrapper):
         server also supports any type that a Java io.deephaven.grpc.compression.CompressionCodecProvider on its
         classpath adds.
 
-        This sets the table's "BarrageCompression" attribute. Operations whose result holds only this table's values
+        This sets the table's "TransportCompression" attribute. Operations whose result holds only this table's values
         keep it: filtering, sorting, reversing, flattening, dropping or renaming columns, partition_by constituents,
         first_by and last_by. Operations that compute new values or bring in another table's data drop it, including
         view, update_view, joins, rollups and trees; so do operations such as head, select and update. For a rollup or
-        tree table, call with_compression on the RollupTable or TreeTable rather than on its source. A table with no
-        attribute set uses the server's default compression types, from the BarrageCompression.defaultTypes property,
-        which is unset by default. An empty sequence sets the attribute to an empty list, so the table is never
-        compressed, even when the server has default compression types. To return to the server's default
-        compression types, call :meth:`with_default_compression`.
+        tree table, call with_transport_compression on the RollupTable or TreeTable rather than on its source. A table
+        with no attribute set uses the server's default compression types, from the TransportCompression.defaultTypes
+        property, which is unset by default. An empty sequence sets the attribute to an empty list, so the table is
+        never compressed, even when the server has default compression types. To return to the server's default
+        compression types, call :meth:`reset_transport_compression`.
 
         Args:
             compression_types (Union[str, Sequence[str]]): the name, or names, of the compression types to allow,
@@ -1296,15 +1296,15 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            return Table(j_table=_j_with_compression(self.j_table, compression_types))
+            return Table(j_table=_j_with_transport_compression(self.j_table, compression_types))
         except Exception as e:
             raise DHError(e, "failed to create a table with compression.") from e
 
-    def with_default_compression(self) -> Table:
+    def reset_transport_compression(self) -> Table:
         """Returns a new Table that shares the data of this table and that the server compresses with its default
-        compression types, from the BarrageCompression.defaultTypes property, or not at all when that property is
-        unset. This undoes :meth:`with_compression`, including with_compression([]), by removing the table's
-        "BarrageCompression" attribute.
+        compression types, from the TransportCompression.defaultTypes property, or not at all when that property is
+        unset. This undoes :meth:`with_transport_compression`, including with_transport_compression([]), by removing
+        the table's "TransportCompression" attribute.
 
         Returns:
             a new Table
@@ -1313,7 +1313,7 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            return Table(j_table=_j_with_default_compression(self.j_table))
+            return Table(j_table=_j_reset_transport_compression(self.j_table))
         except Exception as e:
             raise DHError(
                 e, "failed to create a table with default compression."

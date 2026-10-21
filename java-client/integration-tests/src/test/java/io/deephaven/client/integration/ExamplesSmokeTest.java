@@ -147,8 +147,8 @@ class ExamplesSmokeTest {
                 "from deephaven.plot.figure import Figure",
                 STATIC_TABLE + " = empty_table(10).update('I = ii')",
                 TICKING_TABLE + " = time_table('PT0.2S')",
-                COMPRESSED_TABLE + " = " + STATIC_TABLE + ".with_compression(['zstd', 'gzip'])",
-                COMPRESSED_TICKING_TABLE + " = time_table('PT0.2S').with_compression('snappy')",
+                COMPRESSED_TABLE + " = " + STATIC_TABLE + ".with_transport_compression(['zstd', 'gzip'])",
+                COMPRESSED_TICKING_TABLE + " = time_table('PT0.2S').with_transport_compression('snappy')",
                 // A plugin object the server image supports, which exports exactly one table
                 FIGURE + " = Figure().plot_xy(series_name='smoke', t=" + STATIC_TABLE + ", x='I', y='I').show()"));
         assertThat(result.exitCode).as("fixture setup: " + result.describe()).isZero();

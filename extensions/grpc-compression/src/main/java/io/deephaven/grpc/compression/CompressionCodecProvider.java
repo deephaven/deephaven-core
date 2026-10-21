@@ -15,7 +15,7 @@ import java.util.ServiceLoader;
  * {@code @AutoService(CompressionCodecProvider.class)}, and put its jar on the classpath of the server and of each Java
  * client that should accept the type. The Java client then accepts it by default.
  * <p>
- * The codec's {@link Codec#getMessageEncoding() encoding name} names the type in a table's {@code BarrageCompression}
+ * The codec's {@link Codec#getMessageEncoding() encoding name} names the type in a table's {@code TransportCompression}
  * attribute, in {@code withCompression}, and in gRPC's {@code grpc-encoding} and {@code grpc-accept-encoding} headers.
  * It must be lower-case letters, digits, {@code .}, {@code _}, {@code +} and {@code -}, starting with a letter or
  * digit; must not be {@code identity}; and must differ from every other type's name. Otherwise

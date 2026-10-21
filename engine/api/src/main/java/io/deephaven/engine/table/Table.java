@@ -235,11 +235,11 @@ public interface Table extends
      * {@code "zstd,snappy,gzip"}) that allows compressing this table's Barrage snapshots and subscriptions. The server
      * uses the first listed type that the client accepts, as listed in its {@code grpc-accept-encoding} header, and
      * sends uncompressed data when none match. Tables with no attribute set use the server's default list, from the
-     * {@code BarrageCompression.defaultTypes} property; the property is unset by default, so those tables are never
+     * {@code TransportCompression.defaultTypes} property; the property is unset by default, so those tables are never
      * compressed. An attribute set to an empty list means never compress, even when the server has a default list.
      * <p>
-     * Prefer setting it with {@code io.deephaven.extensions.barrage.BarrageCompressionAttribute.withCompression}, which
-     * rejects unsupported names when called, and removing it with {@code withDefaultCompression} in the same class. The
+     * Prefer setting it with {@code io.deephaven.extensions.barrage.TransportCompressionAttribute.withCompression},
+     * which rejects unsupported names when called, and removing it with {@code resetCompression} in the same class. The
      * server ignores a value it cannot parse, using its default list instead, and logs a warning the first time a
      * client fetches a table with that value.
      * <p>
@@ -251,7 +251,7 @@ public interface Table extends
      * so they use the server's default list, even when this table's attribute is an empty list. To compress a rollup or
      * tree table, set the attribute on the rollup or tree table itself.
      */
-    String BARRAGE_COMPRESSION_ATTRIBUTE = "BarrageCompression";
+    String TRANSPORT_COMPRESSION_ATTRIBUTE = "TransportCompression";
 
     // -----------------------------------------------------------------------------------------------------------------
     // ColumnSources for fetching data by row key

@@ -81,7 +81,8 @@ class CompressionTest {
             final List<String> script = new ArrayList<>(List.of("from deephaven import empty_table"));
             for (final String compression : CompressionCodecs.SUPPORTED) {
                 script.add(tableName(compression) + " = empty_table(" + ROWS
-                        + ").update(['I = ii', 'S = `sym` + (ii % 32)']).with_compression('" + compression + "')");
+                        + ").update(['I = ii', 'S = `sym` + (ii % 32)']).with_transport_compression('" + compression
+                        + "')");
             }
             console.executeCode(String.join("\n", script));
 

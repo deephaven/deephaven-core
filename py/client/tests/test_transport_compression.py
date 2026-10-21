@@ -7,7 +7,7 @@ from typing import Sequence, Union
 from tests.testbase import BaseTestCase
 
 
-class BarrageCompressionTestCase(BaseTestCase):
+class TransportCompressionTestCase(BaseTestCase):
     """to_arrow fetches with pyarrow's Flight client, which is built on gRPC Core and lists gzip and deflate in its
     grpc-accept-encoding header. So the server may compress a table with either of those, and with no other type it
     includes. The client cannot see which encoding arrived, so these tests rely on that header to know what the server
@@ -19,7 +19,7 @@ class BarrageCompressionTestCase(BaseTestCase):
         self.session.run_script(
             "from deephaven import empty_table\n"
             f'{name} = empty_table({self.ROWS}).update(["I = i", "S = `sym` + (i % 32)"])'
-            f".with_compression({compression_types!r})"
+            f".with_transport_compression({compression_types!r})"
         )
         arrow = self.session.open_table(name).to_arrow()
         self.assertEqual(self.ROWS, arrow.num_rows)

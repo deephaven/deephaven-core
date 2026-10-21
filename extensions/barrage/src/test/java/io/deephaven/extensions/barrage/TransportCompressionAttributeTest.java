@@ -16,15 +16,15 @@ import org.junit.function.ThrowingRunnable;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.deephaven.engine.table.Table.BARRAGE_COMPRESSION_ATTRIBUTE;
-import static io.deephaven.extensions.barrage.BarrageCompressionAttribute.withCompression;
-import static io.deephaven.extensions.barrage.BarrageCompressionAttribute.withDefaultCompression;
+import static io.deephaven.engine.table.Table.TRANSPORT_COMPRESSION_ATTRIBUTE;
+import static io.deephaven.extensions.barrage.TransportCompressionAttribute.withCompression;
+import static io.deephaven.extensions.barrage.TransportCompressionAttribute.resetCompression;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-public class BarrageCompressionAttributeTest {
+public class TransportCompressionAttributeTest {
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
@@ -34,18 +34,18 @@ public class BarrageCompressionAttributeTest {
         final Table source = TableTools.emptyTable(10);
 
         assertEquals("snappy,zstd,gzip",
-                withCompression(source, "snappy", "zstd", "gzip").getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+                withCompression(source, "snappy", "zstd", "gzip").getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
         assertEquals("gzip,zstd",
-                withCompression(source, List.of("gzip", "zstd")).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+                withCompression(source, List.of("gzip", "zstd")).getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
         assertEquals("zstd,gzip",
-                withCompression(source, "zstd", "gzip", "zstd").getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
-        assertNull(source.getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+                withCompression(source, "zstd", "gzip", "zstd").getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
+        assertNull(source.getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
     }
 
     @Test
     public void namesAreNormalized() {
         assertEquals("zstd,gzip", withCompression(TableTools.emptyTable(10), " ZSTD ", "Gzip", "zstd")
-                .getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+                .getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
     }
 
     @Test
@@ -53,9 +53,9 @@ public class BarrageCompressionAttributeTest {
         final Table compressed = withCompression(TableTools.emptyTable(10), "zstd");
 
         // an empty list, rather than no attribute, so that the server's default compression types do not apply
-        assertEquals("", withCompression(compressed).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
-        assertEquals("", withCompression(compressed, List.of()).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
-        assertEquals("zstd", compressed.getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertEquals("", withCompression(compressed).getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
+        assertEquals("", withCompression(compressed, List.of()).getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
+        assertEquals("zstd", compressed.getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
     }
 
     @Test
@@ -82,26 +82,26 @@ public class BarrageCompressionAttributeTest {
                 () -> withCompression(source, (List<String>) null))) {
             final NullPointerException e = assertThrows(NullPointerException.class, call);
             assertTrue(e.getMessage(), e.getMessage().contains("pass none to never compress"));
-            assertTrue(e.getMessage(), e.getMessage().contains("withDefaultCompression"));
+            assertTrue(e.getMessage(), e.getMessage().contains("resetCompression"));
         }
     }
 
     @Test
-    public void withDefaultCompressionRemovesTheAttribute() {
+    public void resetCompressionRemovesTheAttribute() {
         final Table source = TableTools.emptyTable(10).update("ID = ii", "Parent = ii == 0 ? NULL_LONG : 0L", "B = ii");
 
         final Table compressed = withCompression(source, "zstd");
-        assertNull(withDefaultCompression(compressed).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertNull(resetCompression(compressed).getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
         // also undoes an empty list, which never compresses
-        assertNull(withDefaultCompression(withCompression(source)).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
-        assertNull(withDefaultCompression(source).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
-        assertEquals("zstd", compressed.getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertNull(resetCompression(withCompression(source)).getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
+        assertNull(resetCompression(source).getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
+        assertEquals("zstd", compressed.getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
 
         final RollupTable rollup = withCompression(source.rollup(List.of(Aggregation.AggSum("B")), "ID"), "zstd");
-        assertNull(withDefaultCompression(rollup).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertNull(resetCompression(rollup).getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
 
         final TreeTable tree = withCompression(source.tree("ID", "Parent"), "snappy");
-        assertNull(withDefaultCompression(tree).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertNull(resetCompression(tree).getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
     }
 
     @Test
@@ -109,9 +109,9 @@ public class BarrageCompressionAttributeTest {
         final Table source = TableTools.emptyTable(10).update("ID = ii", "Parent = ii == 0 ? NULL_LONG : 0L", "B = ii");
 
         final RollupTable rollup = withCompression(source.rollup(List.of(Aggregation.AggSum("B")), "ID"), "zstd");
-        assertEquals("zstd", rollup.getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertEquals("zstd", rollup.getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
 
         final TreeTable tree = withCompression(source.tree("ID", "Parent"), "snappy", "gzip");
-        assertEquals("snappy,gzip", tree.getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertEquals("snappy,gzip", tree.getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
     }
 }

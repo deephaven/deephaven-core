@@ -15,16 +15,16 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
-import static io.deephaven.engine.table.Table.BARRAGE_COMPRESSION_ATTRIBUTE;
+import static io.deephaven.engine.table.Table.TRANSPORT_COMPRESSION_ATTRIBUTE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 
 /**
- * {@link Table#BARRAGE_COMPRESSION_ATTRIBUTE} must follow operations whose result holds only the opted-in table's
+ * {@link Table#TRANSPORT_COMPRESSION_ATTRIBUTE} must follow operations whose result holds only the opted-in table's
  * values, and must not follow operations that compute new values or bring in another table's data.
  */
-public class BarrageCompressionAttributeCopyTest {
+public class TransportCompressionAttributeCopyTest {
 
     private static final EnumSet<BaseTable.CopyAttributeOperation> KEPT_BY = EnumSet.of(
             BaseTable.CopyAttributeOperation.Coalesce,
@@ -47,15 +47,15 @@ public class BarrageCompressionAttributeCopyTest {
     }
 
     private static Table compressed(final Table table) {
-        return table.withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,gzip"));
+        return table.withAttributes(Map.of(TRANSPORT_COMPRESSION_ATTRIBUTE, "zstd,gzip"));
     }
 
     private static void assertKept(final Table result) {
-        assertEquals("zstd,gzip", result.getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertEquals("zstd,gzip", result.getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
     }
 
     private static void assertDropped(final Table result) {
-        assertNull(result.getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertNull(result.getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
     }
 
     @Test
@@ -103,17 +103,17 @@ public class BarrageCompressionAttributeCopyTest {
 
         // a rollup or tree must allow compression itself
         assertNull(compressed.rollup(List.of(Aggregation.AggSum("A")), "B")
-                .getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+                .getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
         final Table treeSource = compressed(TableTools.emptyTable(10)
                 .update("ID = ii", "Parent = ii == 0 ? NULL_LONG : 0L"));
-        assertNull(treeSource.tree("ID", "Parent").getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertNull(treeSource.tree("ID", "Parent").getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
     }
 
     @Test
     public void copyOperationsAreExactlyTheKeptSet() {
         for (final BaseTable.CopyAttributeOperation op : BaseTable.CopyAttributeOperation.values()) {
             assertEquals(op.name(), KEPT_BY.contains(op),
-                    BaseTable.shouldCopyAttribute(BARRAGE_COMPRESSION_ATTRIBUTE, op));
+                    BaseTable.shouldCopyAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE, op));
         }
     }
 }

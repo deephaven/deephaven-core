@@ -122,82 +122,82 @@ class BarrageTestCase(BaseTestCase):
             ["ID = ii", "Parent = ii == 0 ? NULL_LONG : 0L", "B = ii"]
         )
 
-        compressed = t.with_compression(["snappy", "gzip"])
-        self.assertEqual("snappy,gzip", compressed.attributes()["BarrageCompression"])
+        compressed = t.with_transport_compression(["snappy", "gzip"])
+        self.assertEqual("snappy,gzip", compressed.attributes()["TransportCompression"])
         self.assertEqual(
-            "zstd", t.with_compression("zstd").attributes()["BarrageCompression"]
+            "zstd", t.with_transport_compression("zstd").attributes()["TransportCompression"]
         )
         self.assertEqual(
             "zstd,gzip",
-            t.with_compression([" ZSTD ", "Gzip", "zstd"]).attributes()[
-                "BarrageCompression"
+            t.with_transport_compression([" ZSTD ", "Gzip", "zstd"]).attributes()[
+                "TransportCompression"
             ],
         )
-        self.assertNotIn("BarrageCompression", t.attributes())
+        self.assertNotIn("TransportCompression", t.attributes())
         self.assertEqual(
-            "", compressed.with_compression([]).attributes()["BarrageCompression"]
+            "", compressed.with_transport_compression([]).attributes()["TransportCompression"]
         )
 
-        rollup = t.rollup(aggs=[agg.sum_("B")], by="ID").with_compression("zstd")
+        rollup = t.rollup(aggs=[agg.sum_("B")], by="ID").with_transport_compression("zstd")
         self.assertIsInstance(rollup, RollupTable)
         self.assertEqual(
-            "zstd", rollup.j_rollup_table.getAttribute("BarrageCompression")
+            "zstd", rollup.j_rollup_table.getAttribute("TransportCompression")
         )
 
-        tree = t.tree(id_col="ID", parent_col="Parent").with_compression(["gzip"])
+        tree = t.tree(id_col="ID", parent_col="Parent").with_transport_compression(["gzip"])
         self.assertIsInstance(tree, TreeTable)
-        self.assertEqual("gzip", tree.j_tree_table.getAttribute("BarrageCompression"))
+        self.assertEqual("gzip", tree.j_tree_table.getAttribute("TransportCompression"))
 
         with self.assertRaises(DHError) as cm:
-            t.with_compression(["zstd", "zsdt"])
+            t.with_transport_compression(["zstd", "zsdt"])
         self.assertIn(
             "Unsupported compression 'zsdt'; supported values are deflate, gzip, snappy, zstd",
             str(cm.exception),
         )
         # one name cannot hold a list
         with self.assertRaises(DHError):
-            t.with_compression("zstd,gzip")
+            t.with_transport_compression("zstd,gzip")
         # an empty string is a name, not an empty list
         with self.assertRaises(DHError):
-            t.with_compression("")
+            t.with_transport_compression("")
         # None could mean "never compress" or "the server's default"; the message names both
         with self.assertRaises(DHError) as cm:
-            t.with_compression(None)
+            t.with_transport_compression(None)
         self.assertIn("pass [] to never compress", str(cm.exception))
-        self.assertIn("with_default_compression()", str(cm.exception))
+        self.assertIn("reset_transport_compression()", str(cm.exception))
         with self.assertRaises(DHError):
-            t.with_compression([1])
+            t.with_transport_compression([1])
 
-    def test_with_default_compression(self):
+    def test_reset_transport_compression(self):
         t = empty_table(10).update(
             ["ID = ii", "Parent = ii == 0 ? NULL_LONG : 0L", "B = ii"]
         )
 
         # undoes a list of types, and an empty list, which never compresses
-        for compressed in [t.with_compression("zstd"), t.with_compression([])]:
+        for compressed in [t.with_transport_compression("zstd"), t.with_transport_compression([])]:
             self.assertNotIn(
-                "BarrageCompression",
-                compressed.with_default_compression().attributes(),
+                "TransportCompression",
+                compressed.reset_transport_compression().attributes(),
             )
         self.assertNotIn(
-            "BarrageCompression", t.with_default_compression().attributes()
+            "TransportCompression", t.reset_transport_compression().attributes()
         )
 
         rollup = (
             t.rollup(aggs=[agg.sum_("B")], by="ID")
-            .with_compression("zstd")
-            .with_default_compression()
+            .with_transport_compression("zstd")
+            .reset_transport_compression()
         )
         self.assertIsInstance(rollup, RollupTable)
-        self.assertIsNone(rollup.j_rollup_table.getAttribute("BarrageCompression"))
+        self.assertIsNone(rollup.j_rollup_table.getAttribute("TransportCompression"))
 
         tree = (
             t.tree(id_col="ID", parent_col="Parent")
-            .with_compression("gzip")
-            .with_default_compression()
+            .with_transport_compression("gzip")
+            .reset_transport_compression()
         )
         self.assertIsInstance(tree, TreeTable)
-        self.assertIsNone(tree.j_tree_table.getAttribute("BarrageCompression"))
+        self.assertIsNone(tree.j_tree_table.getAttribute("TransportCompression"))
 
     def test_subscribe(self):
         session = barrage_session(host="localhost", port=10000, auth_type="Anonymous")

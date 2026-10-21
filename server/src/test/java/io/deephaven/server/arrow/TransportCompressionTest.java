@@ -8,7 +8,7 @@ import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.extensions.barrage.BarrageCompressionAttribute;
+import io.deephaven.extensions.barrage.TransportCompressionAttribute;
 import io.deephaven.server.hierarchicaltable.HierarchicalTableView;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.ServerCallStreamObserver;
@@ -23,15 +23,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static io.deephaven.engine.table.Table.BARRAGE_COMPRESSION_ATTRIBUTE;
+import static io.deephaven.engine.table.Table.TRANSPORT_COMPRESSION_ATTRIBUTE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 /**
- * Covers how {@link BarrageCompression} picks a response compression type, including for rollup and tree views, whose
+ * Covers how {@link TransportCompression} picks a response compression type, including for rollup and tree views, whose
  * attributes come from the hierarchical table rather than from its source.
  */
-public class BarrageCompressionTest {
+public class TransportCompressionTest {
 
     private SafeCloseable executionContext;
 
@@ -48,7 +48,7 @@ public class BarrageCompressionTest {
     @Test
     public void chooseFirstAllowedTypeTheClientAccepts() {
         final Table table = TableTools.emptyTable(10)
-                .withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,snappy,gzip"));
+                .withAttributes(Map.of(TRANSPORT_COMPRESSION_ATTRIBUTE, "zstd,snappy,gzip"));
 
         assertEquals(Optional.of("snappy"), apply(Set.of("gzip", "snappy"), table));
         assertEquals(Optional.of("zstd"), apply(Set.of("identity", "gzip", "zstd"), table));
@@ -58,7 +58,7 @@ public class BarrageCompressionTest {
 
     @Test
     public void typesFromWithCompressionAreChosen() {
-        final Table table = BarrageCompressionAttribute.withCompression(TableTools.emptyTable(10), "snappy", "gzip");
+        final Table table = TransportCompressionAttribute.withCompression(TableTools.emptyTable(10), "snappy", "gzip");
         assertEquals(Optional.of("snappy"), apply(Set.of("gzip", "zstd", "snappy"), table));
         assertEquals(Optional.of("gzip"), apply(Set.of("gzip", "br"), table));
     }
@@ -67,7 +67,7 @@ public class BarrageCompressionTest {
     public void tablesWithoutAValidListAreNotCompressed() {
         assertEquals(Optional.empty(), apply(Set.of("gzip", "zstd"), TableTools.emptyTable(10)));
         final Table malformed =
-                TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,not-a-codec"));
+                TableTools.emptyTable(10).withAttributes(Map.of(TRANSPORT_COMPRESSION_ATTRIBUTE, "zstd,not-a-codec"));
         assertEquals(Optional.empty(), apply(Set.of("gzip", "zstd"), malformed));
         // parsed even for a client that accepts nothing; not logged again, since the first fetch logged this value
         assertEquals(Optional.empty(), apply(Set.of(), malformed));
@@ -83,27 +83,29 @@ public class BarrageCompressionTest {
         assertEquals(Optional.of("gzip"), apply(Set.of("gzip"), TableTools.emptyTable(10), defaults));
         // a malformed attribute is ignored, as if unset
         final Table malformed =
-                TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,not-a-codec"));
+                TableTools.emptyTable(10).withAttributes(Map.of(TRANSPORT_COMPRESSION_ATTRIBUTE, "zstd,not-a-codec"));
         assertEquals(Optional.of("snappy"), apply(Set.of("zstd", "snappy"), malformed, defaults));
         // the table's own list replaces the default
-        final Table zstd = BarrageCompressionAttribute.withCompression(TableTools.emptyTable(10), "zstd");
+        final Table zstd = TransportCompressionAttribute.withCompression(TableTools.emptyTable(10), "zstd");
         assertEquals(Optional.of("zstd"), apply(Set.of("zstd", "snappy"), zstd, defaults));
         assertEquals(Optional.empty(), apply(Set.of("gzip", "snappy"), zstd, defaults));
         // an empty list opts out of the default
-        final Table never = BarrageCompressionAttribute.withCompression(TableTools.emptyTable(10));
+        final Table never = TransportCompressionAttribute.withCompression(TableTools.emptyTable(10));
         assertEquals(Optional.empty(), apply(Set.of("gzip", "snappy"), never, defaults));
-        // withDefaultCompression undoes either, so the default applies again
+        // resetCompression undoes either, so the default applies again
         assertEquals(Optional.of("snappy"),
-                apply(Set.of("gzip", "snappy"), BarrageCompressionAttribute.withDefaultCompression(zstd), defaults));
+                apply(Set.of("gzip", "snappy"), TransportCompressionAttribute.resetCompression(zstd),
+                        defaults));
         assertEquals(Optional.of("snappy"),
-                apply(Set.of("gzip", "snappy"), BarrageCompressionAttribute.withDefaultCompression(never), defaults));
+                apply(Set.of("gzip", "snappy"), TransportCompressionAttribute.resetCompression(never),
+                        defaults));
         // an object without attributes is never compressed
         assertEquals(Optional.empty(), apply(Set.of("gzip", "snappy"), null, defaults));
     }
 
     @Test
     public void onlyServerCallObserversAreCompressed() {
-        final Table table = TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd"));
+        final Table table = TableTools.emptyTable(10).withAttributes(Map.of(TRANSPORT_COMPRESSION_ATTRIBUTE, "zstd"));
         final StreamObserver<InputStream> plain = new StreamObserver<>() {
             @Override
             public void onNext(final InputStream value) {}
@@ -114,12 +116,12 @@ public class BarrageCompressionTest {
             @Override
             public void onCompleted() {}
         };
-        assertEquals(Optional.empty(), BarrageCompression.apply(plain, Set.of("zstd"), table, "plain"));
+        assertEquals(Optional.empty(), TransportCompression.apply(plain, Set.of("zstd"), table, "plain"));
     }
 
     @Test
     public void codecsMissingFromTheServerRegistryAreNotUsed() {
-        final Table table = TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd"));
+        final Table table = TableTools.emptyTable(10).withAttributes(Map.of(TRANSPORT_COMPRESSION_ATTRIBUTE, "zstd"));
         // ServerCallImpl.setCompression throws this when the server's compressor registry has no such codec
         final RecordingObserver noCodecs = new RecordingObserver() {
             @Override
@@ -127,13 +129,13 @@ public class BarrageCompressionTest {
                 throw new IllegalArgumentException("Unable to find compressor by name " + compression);
             }
         };
-        assertEquals(Optional.empty(), BarrageCompression.apply(noCodecs, Set.of("zstd"), table, "noCodecs"));
+        assertEquals(Optional.empty(), TransportCompression.apply(noCodecs, Set.of("zstd"), table, "noCodecs"));
     }
 
     @Test
     public void codecsMissingFromTheServerRegistryFallThroughToTheNextType() {
         final Table table =
-                TableTools.emptyTable(10).withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd,snappy,gzip"));
+                TableTools.emptyTable(10).withAttributes(Map.of(TRANSPORT_COMPRESSION_ATTRIBUTE, "zstd,snappy,gzip"));
         // a server with only gzip, as the Netty server is
         final RecordingObserver gzipOnly = new RecordingObserver() {
             @Override
@@ -145,11 +147,11 @@ public class BarrageCompressionTest {
             }
         };
         assertEquals(Optional.of("gzip"),
-                BarrageCompression.apply(gzipOnly, Set.of("gzip", "zstd", "snappy"), table, "gzipOnly"));
+                TransportCompression.apply(gzipOnly, Set.of("gzip", "zstd", "snappy"), table, "gzipOnly"));
         assertEquals("gzip", gzipOnly.compression);
         // nothing left to fall through to
         assertEquals(Optional.empty(),
-                BarrageCompression.apply(gzipOnly, Set.of("zstd", "snappy"), table, "gzipOnly"));
+                TransportCompression.apply(gzipOnly, Set.of("zstd", "snappy"), table, "gzipOnly"));
     }
 
     @Test
@@ -162,18 +164,18 @@ public class BarrageCompressionTest {
 
         // set on the rollup: used
         final RollupTable rollup = source.rollup(List.of(Aggregation.AggSum("B")), "A")
-                .withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd"));
+                .withAttributes(Map.of(TRANSPORT_COMPRESSION_ATTRIBUTE, "zstd"));
         final HierarchicalTableView rollupView = HierarchicalTableView.makeFromHierarchicalTable(rollup);
-        assertEquals("zstd", marshaller.attributesFor(rollupView).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertEquals("zstd", marshaller.attributesFor(rollupView).getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
         assertEquals(Optional.of("zstd"), apply(Set.of("gzip", "zstd"), marshaller.attributesFor(rollupView)));
 
         // set only on the source: not carried to the rollup, so ignored
         final RollupTable fromCompressedSource = source
-                .withAttributes(Map.of(BARRAGE_COMPRESSION_ATTRIBUTE, "zstd"))
+                .withAttributes(Map.of(TRANSPORT_COMPRESSION_ATTRIBUTE, "zstd"))
                 .rollup(List.of(Aggregation.AggSum("B")), "A");
         final HierarchicalTableView sourceOnlyView =
                 HierarchicalTableView.makeFromHierarchicalTable(fromCompressedSource);
-        assertNull(marshaller.attributesFor(sourceOnlyView).getAttribute(BARRAGE_COMPRESSION_ATTRIBUTE));
+        assertNull(marshaller.attributesFor(sourceOnlyView).getAttribute(TRANSPORT_COMPRESSION_ATTRIBUTE));
         assertEquals(Optional.empty(), apply(Set.of("gzip", "zstd"), marshaller.attributesFor(sourceOnlyView)));
         // so the server's default applies to it
         assertEquals(Optional.of("gzip"),
@@ -187,7 +189,7 @@ public class BarrageCompressionTest {
             final Set<String> accepted,
             final io.deephaven.engine.table.AttributeMap<?> attributes) {
         final RecordingObserver observer = new RecordingObserver();
-        final Optional<String> chosen = BarrageCompression.apply(observer, accepted, attributes, "test");
+        final Optional<String> chosen = TransportCompression.apply(observer, accepted, attributes, "test");
         assertEquals(chosen.orElse(null), observer.compression);
         return chosen;
     }
@@ -202,7 +204,7 @@ public class BarrageCompressionTest {
             final List<String> defaultAllowed) {
         final RecordingObserver observer = new RecordingObserver();
         final Optional<String> chosen =
-                BarrageCompression.apply(observer, accepted, attributes, "test", defaultAllowed);
+                TransportCompression.apply(observer, accepted, attributes, "test", defaultAllowed);
         assertEquals(chosen.orElse(null), observer.compression);
         return chosen;
     }
