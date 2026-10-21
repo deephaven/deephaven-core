@@ -663,6 +663,43 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     @Test
+    public void testDefaultConfigAutoREEThroughSchemaFromTable() {
+        // With the default configuration, an unannotated table with a repetitive column (runs of 4) gets REE on the
+        // wire through the public schema path; the all-distinct column stays plain.
+        final int N = 100;
+        final int[] y = new int[N];
+        final int[] x = new int[N];
+        for (int i = 0; i < N; i++) {
+            y[i] = i / 4; // runs of 4
+            x[i] = i;
+        }
+        final Table table = newTable(intCol("Y", y), intCol("X", x));
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertFieldIsREE(schema, "Y");
+        assertFieldIsNotREE(schema, "X");
+    }
+
+    @Test
+    public void testDefaultConfigAutoDictionaryThroughSchemaFromTable() {
+        // With the default configuration, an unannotated table with a low-cardinality String column that never
+        // repeats adjacently gets dictionary encoding (and not REE) through the public schema path.
+        final int N = 100;
+        final String[] symbols = new String[N];
+        final String[] pool = {"AAPL", "MSFT", "GOOG", "AMZN"};
+        for (int i = 0; i < N; i++) {
+            symbols[i] = pool[i % pool.length];
+        }
+        final Table table = newTable(stringCol("Symbol", symbols));
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertFieldIsDictionary(schema, "Symbol", 32);
+        assertFieldIsNotREE(schema, "Symbol");
+    }
+
+    @Test
     public void testSamplingSkippedForSmallTable() {
         // Tables with fewer than REE_MIN_SAMPLE_SIZE rows return early without sampling.
         final int N = BarrageUtil.REE_MIN_SAMPLE_SIZE - 1;
@@ -784,9 +821,10 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
     }
 
     @Test
-    public void testExplicitReeSchemaHonoredWhenGlobalDisabled() {
-        // Even when REE_AUTO_DETECT_ENABLED is false, a user-supplied BARRAGE_SCHEMA_ATTRIBUTE with
-        // REE columns must be passed through verbatim.
+    public void testExplicitReeEncodingHonored() {
+        // The REE encoding requested by a user-supplied BARRAGE_SCHEMA_ATTRIBUTE must be honored, whatever the
+        // auto-detect switches say. The table is too small to sample and has no structural REE hint, so Symbol can
+        // only come back REE because the attribute asked for it.
         //
         // Build the REE schema the exhaustive way per barrage-schema.md: extract the base schema,
         // reuse the original field's FieldType so deephaven:type metadata is preserved, then
@@ -883,6 +921,41 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
         assertThat(((ArrowType.Int) runEnds.getType()).getBitWidth())
                 .as("field %s run_ends bitWidth", columnName)
                 .isEqualTo(expectedBitWidth);
+    }
+
+    @Test
+    public void testRestrictSortToNoColumnsSchema() {
+        final Table table = newTable(
+                intCol("A", 1, 2),
+                doubleCol("B", 1.0, 2.0))
+                .restrictSortTo();
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertFieldIsNotSortable(schema, "A");
+        assertFieldIsNotSortable(schema, "B");
+    }
+
+    @Test
+    public void testSortableColumnsAttributeWithUnknownColumnSchema() {
+        final Table table = newTable(
+                intCol("A", 1, 2),
+                doubleCol("B", 1.0, 2.0))
+                .withAttributes(Map.of(Table.SORTABLE_COLUMNS_ATTRIBUTE, "A,Missing"));
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertThat(schema.findField("A").getMetadata())
+                .containsEntry(BarrageUtil.ATTR_DH_PREFIX + "isSortable", "true");
+        assertFieldIsNotSortable(schema, "B");
+    }
+
+    private static void assertFieldIsNotSortable(final Schema schema, final String columnName) {
+        final Field field = schema.findField(columnName);
+        assertThat(field).as("field %s", columnName).isNotNull();
+        assertThat(field.getMetadata())
+                .as("field %s should not be sortable", columnName)
+                .doesNotContainKey(BarrageUtil.ATTR_DH_PREFIX + "isSortable");
     }
 
     private static void assertFieldIsNotREE(final Schema schema, final String columnName) {

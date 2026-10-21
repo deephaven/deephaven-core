@@ -37,6 +37,7 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -293,6 +294,10 @@ public class ArrowFlightUtil {
 
         /**
          * Releases what this stream holds, and fails its export with {@code t}, which propagates to the observer.
+         * <p>
+         * A {@link StatusRuntimeException} fails the export as is, so the observer reports its status and description;
+         * wrapped, the export would report only an error id. When {@link #onNext} fails, the error it rethrows closes
+         * the call as well, racing this export failure, so both must report the same status.
          */
         private void failStream(final Throwable t) {
             releaseDictionaries();
@@ -303,6 +308,9 @@ public class ArrowFlightUtil {
             if (resultExportBuilder != null) {
                 // this thrown error propagates to observer
                 resultExportBuilder.submit(() -> {
+                    if (t instanceof StatusRuntimeException) {
+                        throw (StatusRuntimeException) t;
+                    }
                     throw new UncheckedDeephavenException(t);
                 });
                 resultExportBuilder = null;
