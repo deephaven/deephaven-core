@@ -523,4 +523,76 @@ public class OrderedLongSetBuilderSequentialTest {
             }
         }
     }
+
+    /**
+     * A bitmap-only builder's result is a bitmap whatever it holds, so it shares a block-aligned bitmap set's spans
+     * before it has a bitmap of its own, whatever it has pending; an unaligned shift is appended a range at a time.
+     */
+    @Test
+    public void testBitmapOnlyBuilderSharesSetBeforeItHasABitmap() {
+        for (int state = 0; state < 3; ++state) {
+            for (final long shift : new long[] {2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 7}) {
+                final RspBitmapBuilderSequential builder = new RspBitmapBuilderSequential();
+                final List<Long> expected = new java.util.ArrayList<>();
+                if (state >= 1) {
+                    // A pending range.
+                    builder.appendRange(10, 12);
+                    expected.addAll(List.of(10L, 11L, 12L));
+                }
+                if (state == 2) {
+                    // The range before goes to the pending container, and this one is pending.
+                    builder.appendRange(30, 31);
+                    expected.addAll(List.of(30L, 31L));
+                }
+                final RspBitmap set = bitmapOf(BLOCK_SIZE + 3, BLOCK_SIZE + 5, 2 * BLOCK_SIZE + 1);
+                builder.appendOrderedLongSet(shift, set);
+                set.ixRelease();
+                expected.addAll(List.of(BLOCK_SIZE + 3 + shift, BLOCK_SIZE + 5 + shift, 2 * BLOCK_SIZE + 1 + shift));
+                final OrderedLongSet result = builder.getOrderedLongSet();
+                assertKeys(result, expected.stream().mapToLong(Long::longValue).toArray());
+                result.ixRelease();
+            }
+        }
+    }
+
+    /**
+     * The ordered builder keeps a bitmap set that would fit in a {@link SortedRanges} from turning its result into a
+     * bitmap, and commits to one for a set with more ranges than a SortedRanges holds, moving the ranges it collected
+     * before into the bitmap first.
+     */
+    @Test
+    public void testOrderedBuilderCommitsToBitmapOnlyForLargeSets() {
+        final OrderedLongSetBuilderSequential small = new OrderedLongSetBuilderSequential();
+        small.appendRange(1, 2);
+        final RspBitmap smallSet = bitmapOf(10, 20, 3 * BLOCK_SIZE + 5);
+        small.appendOrderedLongSet(0, smallSet);
+        smallSet.ixRelease();
+        final OrderedLongSet smallResult = small.getOrderedLongSet();
+        assertTrue(smallResult.getClass().getName(), smallResult instanceof SortedRanges);
+        assertKeys(smallResult, 1, 2, 10, 20, 3 * BLOCK_SIZE + 5);
+        smallResult.ixRelease();
+
+        // A singleton in every other block: as many ranges as spans, none joined across blocks.
+        final long[] keys = new long[SortedRanges.MAX_CAPACITY + 1];
+        for (int ki = 0; ki < keys.length; ++ki) {
+            keys[ki] = 2 * BLOCK_SIZE * (ki + 1) + 7;
+        }
+        final RspBitmap largeSet = bitmapOf(keys);
+        assertTrue(largeSet.hasMoreRangesThan(SortedRanges.MAX_CAPACITY));
+        final OrderedLongSetBuilderSequential large = new OrderedLongSetBuilderSequential();
+        // A collected SortedRanges and a pending range.
+        large.appendRange(1, 2);
+        large.appendKey(5);
+        large.appendOrderedLongSet(0, largeSet);
+        largeSet.ixRelease();
+        final OrderedLongSet largeResult = large.getOrderedLongSet();
+        assertTrue(largeResult instanceof RspBitmap);
+        final long[] expected = new long[keys.length + 3];
+        expected[0] = 1;
+        expected[1] = 2;
+        expected[2] = 5;
+        System.arraycopy(keys, 0, expected, 3, keys.length);
+        assertKeys(largeResult, expected);
+        largeResult.ixRelease();
+    }
 }

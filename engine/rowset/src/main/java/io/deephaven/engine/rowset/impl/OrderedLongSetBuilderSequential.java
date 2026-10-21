@@ -81,6 +81,21 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
         return ans;
     }
 
+    /**
+     * Only commit to a bitmap when {@code ix} alone certainly has more ranges than a {@link SortedRanges} can hold, so
+     * that the ranges would overflow one anyway; otherwise a result that fits in one stays one.
+     */
+    @Override
+    protected boolean commitToBitmapFor(final RspBitmap ix) {
+        if (!ix.hasMoreRangesThan(SortedRanges.MAX_CAPACITY)) {
+            return false;
+        }
+        if (pendingSr != null) {
+            flushSrToRsp();
+        }
+        return super.commitToBitmapFor(ix);
+    }
+
     @Override
     protected void flushPendingRange() {
         final long pendingStartOnEntry = pendingStart;

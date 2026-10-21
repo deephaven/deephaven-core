@@ -5124,7 +5124,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      * block after our last one. Does not update the cardinality cache.
      *
      * @param shiftAmount The amount to add to every key of {@code other}; a multiple of {@code BLOCK_SIZE}
-     * @param other The keys to append; neither it nor this may be empty
+     * @param other The keys to append; not empty
      * @return Whether the keys were appended; when {@code other}'s first block, shifted, is not after our last block,
      *         nothing is changed
      */
@@ -5137,7 +5137,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
      * {@code otherStartIdx} on.
      *
      * @param shiftAmount The amount to add to every key appended; a multiple of {@code BLOCK_SIZE}
-     * @param other The array whose spans to append; this may not be empty
+     * @param other The array whose spans to append
      * @param otherStartIdx The first of {@code other}'s spans to append; less than {@code other}'s size
      * @return Whether the spans were appended; when the first of them, shifted, does not start after our last block,
      *         nothing is changed
@@ -5145,33 +5145,35 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     public boolean tryAppendShiftedUnsafeNoWriteCheck(
             final long shiftAmount, final RspArray other, final int otherStartIdx) {
         if (RspArray.debug) {
-            if (size == 0 || otherStartIdx < 0 || otherStartIdx >= other.size) {
+            if (otherStartIdx < 0 || otherStartIdx >= other.size) {
                 throw new IllegalArgumentException("Append called with size=" + size + ", otherStartIdx="
                         + otherStartIdx + ", other.size=" + other.size);
             }
         }
-        final long otherFirstSpanInfo = other.spanInfos[otherStartIdx];
-        final long firstOtherBlockKey = spanInfoToKey(otherFirstSpanInfo) + shiftAmount;
-        final long ourLastSpanInfo = spanInfos[size - 1];
-        final Object ourLastSpan = spans[size - 1];
-        final long ourflen = getFullBlockSpanLen(ourLastSpanInfo, ourLastSpan);
-        final long ourLastKey = spanInfoToKey(ourLastSpanInfo);
-        final long ourLastBlockKey = ourLastKey + ((ourflen == 0) ? 0 : (ourflen - 1) * BLOCK_SIZE);
-        if (firstOtherBlockKey <= ourLastBlockKey) {
-            return false;
-        }
         int firstOtherSpan = otherStartIdx;
-        if (ourLastBlockKey + BLOCK_SIZE == firstOtherBlockKey) {
-            if (ourflen > 0) {
-                final Object otherFirstSpan = other.spans[otherStartIdx];
-                final long otherflen = getFullBlockSpanLen(otherFirstSpanInfo, otherFirstSpan);
-                if (otherflen > 0) {
-                    // we need to merge these spans.
-                    setFullBlockSpan(size - 1, ourLastKey, ourflen + otherflen);
-                    ++firstOtherSpan;
+        // When we are empty there is nothing to order against or merge with.
+        if (size > 0) {
+            final long otherFirstSpanInfo = other.spanInfos[otherStartIdx];
+            final long firstOtherBlockKey = spanInfoToKey(otherFirstSpanInfo) + shiftAmount;
+            final long ourLastSpanInfo = spanInfos[size - 1];
+            final Object ourLastSpan = spans[size - 1];
+            final long ourflen = getFullBlockSpanLen(ourLastSpanInfo, ourLastSpan);
+            final long ourLastKey = spanInfoToKey(ourLastSpanInfo);
+            final long ourLastBlockKey = ourLastKey + ((ourflen == 0) ? 0 : (ourflen - 1) * BLOCK_SIZE);
+            if (firstOtherBlockKey <= ourLastBlockKey) {
+                return false;
+            }
+            if (ourLastBlockKey + BLOCK_SIZE == firstOtherBlockKey) {
+                if (ourflen > 0) {
+                    final Object otherFirstSpan = other.spans[otherStartIdx];
+                    final long otherflen = getFullBlockSpanLen(otherFirstSpanInfo, otherFirstSpan);
+                    if (otherflen > 0) {
+                        // we need to merge these spans.
+                        setFullBlockSpan(size - 1, ourLastKey, ourflen + otherflen);
+                        ++firstOtherSpan;
+                    }
                 }
             }
-
         }
         ensureSizeCanGrowBy(other.size - firstOtherSpan);
         for (int i = firstOtherSpan; i < other.size; ++i) {
@@ -5638,6 +5640,45 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return 1;
         }
         return Math.round(estimate);
+    }
+
+    /**
+     * Whether this certainly holds more than {@code n} ranges, judged in one pass over the spans that stops once it can
+     * tell. Every span holds at least one range. A run, single range or two values container knows how many it holds,
+     * and an array container's are counted, which costs a pass over its values; a bitmap container is taken to hold
+     * one. A span's first range may join the previous span's last when it starts in the block right after that span's
+     * last block, so each such boundary counts one range fewer.
+     *
+     * @param n The number of ranges to compare with
+     * @return True only if this holds more than {@code n} ranges; false when it holds no more, or when the bound cannot
+     *         tell
+     */
+    public boolean hasMoreRangesThan(final long n) {
+        long lowerBound = 0;
+        long previousLastBlockKey = -1;
+        for (int idx = 0; idx < size; ++idx) {
+            final Object span = spans[idx];
+            final long spanInfo = spanInfos[idx];
+            final long key = spanInfoToKey(spanInfo);
+            long spanRanges = 1;
+            if (span instanceof short[]) {
+                try (SpanView view = workDataPerThread.get().borrowSpanView(spanInfo, span)) {
+                    spanRanges = view.getContainer().numberOfRanges();
+                }
+            } else if (span instanceof Container && !(span instanceof BitmapContainer)) {
+                spanRanges = ((Container) span).numberOfRanges();
+            }
+            if (idx > 0 && key == previousLastBlockKey + BLOCK_SIZE) {
+                --spanRanges;
+            }
+            lowerBound += spanRanges;
+            if (lowerBound > n) {
+                return true;
+            }
+            final long flen = getFullBlockSpanLen(spanInfo, span);
+            previousLastBlockKey = flen > 0 ? key + (flen - 1) * BLOCK_SIZE : key;
+        }
+        return false;
     }
 
     public long rangesCountUpperBound() {

@@ -177,16 +177,16 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
                 Assert.geqZero(ix.ixLastKey() + shiftAmount, "ix.ixLastKey() + shiftAmount");
             }
         }
-        if (rb == null) {
+        // A bitmap's spans can be shared when the shift keeps them block aligned, from the first one that starts in a
+        // block after everything we hold.
+        final RspBitmap ixRb = ix instanceof RspBitmap && (shiftAmount & BLOCK_LAST) == 0 ? (RspBitmap) ix : null;
+        if (rb == null && (ixRb == null || !commitToBitmapFor(ixRb))) {
             ix.ixForEachLongRange((final long start, final long end) -> {
                 appendRange(start + shiftAmount, end + shiftAmount);
                 return true;
             });
             return;
         }
-        // A bitmap's spans can be shared when the shift keeps them block aligned, from the first one that starts in a
-        // block after everything we hold.
-        final RspBitmap ixRb = ix instanceof RspBitmap && (shiftAmount & BLOCK_LAST) == 0 ? (RspBitmap) ix : null;
         boolean shareAfterFirstSpan = false;
         if (ixRb != null) {
             final long heldLastBlockKey;
@@ -195,10 +195,8 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             } else if (pendingContainerKey != -1) {
                 heldLastBlockKey = highBits(pendingContainerKey);
             } else {
-                // With nothing pending rb is not empty: it is only emptied by taking its last span back out as the
-                // pending container. keyForLastBlock() reads that span.
-                Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
-                heldLastBlockKey = rb.keyForLastBlock();
+                // With nothing pending, rb is empty only when it was just created for ix, and we hold nothing.
+                heldLastBlockKey = rb.isEmpty() ? -1 : rb.keyForLastBlock();
             }
             final long ixFirstBlockKey = ixRb.keyForFirstBlock() + shiftAmount;
             if (ixFirstBlockKey > heldLastBlockKey) {
@@ -252,6 +250,21 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
                 "rb.tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, ixRb, 1)");
         // As above, rb now ends with ix's last span.
         lastFlushedKey = -1;
+    }
+
+    /**
+     * Called when {@code ix}, a bitmap whose spans could be shared, is appended before {@link #rb} exists: create rb
+     * now, so that they are, or leave it and have {@code ix} appended a range at a time.
+     *
+     * <p>
+     * This builder's result is a bitmap whatever it holds, so it always creates rb. A builder that can produce another
+     * representation decides whether giving that up pays.
+     *
+     * @return Whether rb now exists
+     */
+    protected boolean commitToBitmapFor(final RspBitmap ix) {
+        ensureRb();
+        return true;
     }
 
     @Override
