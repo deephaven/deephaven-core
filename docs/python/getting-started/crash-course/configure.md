@@ -17,7 +17,7 @@ For enhanced security, replace the placeholder `YOUR_PASSWORD_HERE` in the `-Dau
 docker run --rm --name deephaven -p 10000:10000 -v "$(pwd)/data:/data" --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE ghcr.io/deephaven/server:latest
 ```
 
-In both cases, Deephaven prints the key in the server logs on startup, so you can find it there if you forget it. With the Get started command, the logs print in the terminal where you ran `docker run`. The key appears in a line like this one from a Docker Compose log:
+In both cases, Deephaven prints the key in the server logs on startup, so you can find it there if you forget it. With the command from [Get started](./get-started.md), the logs print in the terminal where you ran `docker run`. The key appears in a line like this one from a Docker Compose log:
 
 ![Docker Compose logs showing the PSK](../../assets/how-to/9-steps/docker-logs.png)
 
@@ -72,7 +72,7 @@ Fortunately, it's easy to give Deephaven more memory:
 1. On Docker Desktop, raise the memory limit under **Settings > Resources > Advanced**, as described in the [Docker Desktop settings documentation](https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources). Containers can use only as much memory as Docker Desktop allows, which by default is half of your machine's memory.
 2. Add the `-Xmx` flag to the `START_OPTS` environment variable you used in [Get started](./get-started.md). Separate multiple JVM options with spaces. The new `START_OPTS` value replaces the old one, so include your pre-shared key in it too.
 
-Here's the Get started command with a 16 GB maximum heap added:
+Here's the `docker run` command from [Get started](./get-started.md) with a 16 GB maximum heap added:
 
 ```bash skip-test
 docker run --rm --name deephaven -p 10000:10000 -v "$(pwd)/data:/data" --env START_OPTS="-Xmx16g -Dauthentication.psk=YOUR_PASSWORD_HERE" ghcr.io/deephaven/server:latest

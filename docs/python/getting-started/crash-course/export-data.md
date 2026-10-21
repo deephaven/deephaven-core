@@ -155,7 +155,7 @@ iceberg_catalog_adapter = iceberg.adapter(
         "client.region": "us-east-1",
         "s3.access-key-id": "admin",
         "s3.secret-access-key": "password",
-        "s3.endpoint": "http://rustfs:9000",  # use http://minio:9000 in the Iceberg deployment
+        "s3.endpoint": "http://rustfs:9000",
         "io-impl": "org.apache.iceberg.aws.s3.S3FileIO",
     },
 )
