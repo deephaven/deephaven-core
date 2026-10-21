@@ -421,32 +421,29 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             final int maxBatchSize = batchSize();
 
             final MutableInt actualBatchSize = new MutableInt();
-
-            if (numClientIncludedRows == 0 && numClientModRows == 0) {
-                // we still need to send a message containing metadata when there are no rows
-                final List<DefensiveDrainable> messages = getInputStream(this, 0, 0, actualBatchSize, metadata,
-                        BarrageMessageWriterImpl.this::appendAddColumns);
-                for (final DefensiveDrainable msg : messages) {
-                    bytesWritten.add(msg.available());
-                    visitor.accept(msg);
-                }
-                final DictionaryWriterRegistry dictRegistry = dictionaryRegistry();
-                if (dictRegistry != null) {
-                    dictRegistry.resetDeltas();
-                }
-                writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
-                return;
-            }
-
-            // send the add batches (if any)
             try {
-                processBatches(visitor, this, numClientIncludedRows, maxBatchSize, metadata,
-                        BarrageMessageWriterImpl.this::appendAddColumns, bytesWritten);
+                if (numClientIncludedRows == 0 && numClientModRows == 0) {
+                    // we still need to send a message containing metadata when there are no rows
+                    final List<DefensiveDrainable> messages = getInputStream(this, 0, 0, actualBatchSize, metadata,
+                            BarrageMessageWriterImpl.this::appendAddColumns);
+                    for (final DefensiveDrainable msg : messages) {
+                        bytesWritten.add(msg.available());
+                        visitor.accept(msg);
+                    }
+                    final DictionaryWriterRegistry dictRegistry = dictionaryRegistry();
+                    if (dictRegistry != null) {
+                        dictRegistry.resetDeltas();
+                    }
+                } else {
+                    // send the add batches (if any)
+                    processBatches(visitor, this, numClientIncludedRows, maxBatchSize, metadata,
+                            BarrageMessageWriterImpl.this::appendAddColumns, bytesWritten);
 
-                // send the mod batches (if any) but don't send metadata twice
-                processBatches(visitor, this, numClientModRows, maxBatchSize,
-                        numClientIncludedRows > 0 ? null : metadata,
-                        BarrageMessageWriterImpl.this::appendModColumns, bytesWritten);
+                    // send the mod batches (if any) but don't send metadata twice
+                    processBatches(visitor, this, numClientModRows, maxBatchSize,
+                            numClientIncludedRows > 0 ? null : metadata,
+                            BarrageMessageWriterImpl.this::appendModColumns, bytesWritten);
+                }
             } finally {
                 SafeCloseable.closeAll(clientViewport, clientIncludedRows, clientIncludedRowOffsets, clientRemovedRows);
                 if (clientModdedRowOffsets != null) {
