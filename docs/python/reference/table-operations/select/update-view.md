@@ -4,7 +4,7 @@ title: update_view
 
 The `update_view` method creates a new table containing a new formula column for each argument.
 
-A formula column is [not stored in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand). Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
+A formula column is [not stored in memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand). Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
 
 > [!NOTE]
 > `update_view` and [`lazy_update`](./lazy-update.md) accept only [formula strings](../../../how-to-guides/formulas.md). [`update`](./update.md) accepts formula strings and [`Selectable`](../../query-language/types/Selectable.md) objects.

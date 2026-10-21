@@ -3,12 +3,12 @@ title: select
 slug: ./select
 ---
 
-The `select` method creates a new [in-memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand) table that includes one column for each argument. Any columns not specified in the arguments do not appear in the resulting table.
+The `select` method creates a new [in-memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand) table that includes one column for each argument. Any columns not specified in the arguments do not appear in the resulting table.
 
-`select` evaluates the requested columns and [stores them in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand). It reuses columns that are already in memory.
+`select` evaluates the requested columns and [stores them in memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand). It reuses columns that are already in memory.
 
 > [!NOTE]
-> `select` and [`view`](./view.md) take the same arguments: [formula strings](../../../how-to-guides/formulas.md) or a collection of [`Selectable`](../../query-language/types/Selectable.md) objects. Both methods return a table with one column for each argument. `select` stores those columns [in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand), while [`view`](./view.md) stores formulas and recalculates cells on access.
+> `select` and [`view`](./view.md) take the same arguments: [formula strings](../../../how-to-guides/formulas.md) or a collection of [`Selectable`](../../query-language/types/Selectable.md) objects. Both methods return a table with one column for each argument. `select` stores those columns [in memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand), while [`view`](./view.md) stores formulas and recalculates cells on access.
 >
 > `select` fits best when:
 >
@@ -47,11 +47,11 @@ One [`Selectable`](../../query-language/types/Selectable.md) for each column to 
 
 ## Returns
 
-A new [in-memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand) table that includes one column for each argument. If no arguments are provided, the result has one column for each column of the source table.
+A new [in-memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand) table that includes one column for each argument. If no arguments are provided, the result has one column for each column of the source table.
 
 ## Examples
 
-In the following example, `select` has zero arguments, so all columns are selected. Columns that are already [in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand) are reused. Deephaven evaluates and stores any other column.
+In the following example, `select` has zero arguments, so all columns are selected. Columns that are already [in memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand) are reused. Deephaven evaluates and stores any other column.
 
 ```groovy order=source,result
 source = newTable(
@@ -87,7 +87,7 @@ source = newTable(
 result = source.select("X = A", "B")
 ```
 
-In the following example, Deephaven evaluates the mathematical operations and stores the results [in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand) for the new table.
+In the following example, Deephaven evaluates the mathematical operations and stores the results [in memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand) for the new table.
 
 ```groovy order=source,result
 source = newTable(

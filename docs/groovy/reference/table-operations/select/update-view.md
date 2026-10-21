@@ -4,7 +4,7 @@ title: updateView
 
 The `updateView` method creates a new table containing a new formula column for each argument.
 
-A formula column is [not stored in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand). Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
+A formula column is [not stored in memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand). Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
 
 > [!NOTE]
 > `updateView` fits best when:

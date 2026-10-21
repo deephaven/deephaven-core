@@ -2,9 +2,9 @@
 title: update
 ---
 
-The `update` method creates a new table containing a new, [in-memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand) column for each argument.
+The `update` method creates a new table containing a new, [in-memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand) column for each argument.
 
-When using `update`, the new columns are evaluated and [stored in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand). Existing columns are referenced without additional memory allocation.
+When using `update`, the new columns are evaluated and [stored in memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand). Existing columns are referenced without additional memory allocation.
 
 > [!NOTE]
 > `update` fits best when:

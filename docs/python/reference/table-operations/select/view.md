@@ -4,10 +4,10 @@ title: view
 
 The `view` method creates a new table that includes one formula column for each argument.
 
-A formula column is [not stored in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand). Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
+A formula column is [not stored in memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand). Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
 
 > [!NOTE]
-> `view` accepts only [formula strings](../../../how-to-guides/formulas.md). [`select`](./select.md) accepts [formula strings](../../../how-to-guides/formulas.md) and [`Selectable`](../../query-language/types/Selectable.md) objects. Both methods return a table with one column for each argument. `view` stores formulas and recalculates cells on access, while [`select`](./select.md) stores those columns [in memory](../../../how-to-guides/use-select-view-update.md#do-you-want-to-write-new-columns-to-memory-or-calculate-them-on-demand).
+> `view` accepts only [formula strings](../../../how-to-guides/formulas.md). [`select`](./select.md) accepts [formula strings](../../../how-to-guides/formulas.md) and [`Selectable`](../../query-language/types/Selectable.md) objects. Both methods return a table with one column for each argument. `view` stores formulas and recalculates cells on access, while [`select`](./select.md) stores those columns [in memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand).
 >
 > `view` fits best when:
 >
