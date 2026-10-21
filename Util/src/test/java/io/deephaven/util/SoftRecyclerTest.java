@@ -1,0 +1,315 @@
+//
+// Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
+//
+package io.deephaven.util;
+
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
+public class SoftRecyclerTest {
+    /** A recycler of arrays whose windows are ended by hand. */
+    private static final class Fixture {
+        final AtomicInteger constructed = new AtomicInteger();
+        final SoftRecycler<long[]> recycler;
+
+        Fixture(final int capacity, final int maximumCapacity) {
+            this(capacity, maximumCapacity, 0.5);
+        }
+
+        Fixture(final int capacity, final int maximumCapacity, final double shrinkFraction) {
+            recycler = new SoftRecycler<>(capacity, maximumCapacity, () -> {
+                constructed.incrementAndGet();
+                return new long[1];
+            }, null, shrinkFraction, false);
+        }
+
+        /** Grow the capacity to {@code count}, from a bin that starts empty. */
+        void growTo(final int count) {
+            // the first burst turns its shortfall away, and the second grows the capacity by it
+            burst(count);
+            burst(count);
+            assertEquals(count, recycler.getCapacity());
+        }
+
+        /** Borrow {@code count} items and return them all, as an update cycle does with its previous values. */
+        List<long[]> burst(final int count) {
+            final List<long[]> items = borrow(count);
+            returnAll(items);
+            return items;
+        }
+
+        List<long[]> borrow(final int count) {
+            final List<long[]> items = new ArrayList<>();
+            for (int ii = 0; ii < count; ++ii) {
+                items.add(recycler.borrowItem());
+            }
+            return items;
+        }
+
+        void returnAll(final List<long[]> items) {
+            for (final long[] item : items) {
+                recycler.returnItem(item);
+            }
+        }
+
+        void endWindow() {
+            recycler.endWindow();
+        }
+    }
+
+    @Test
+    public void testReusesReturnedItems() {
+        final Fixture fixture = new Fixture(4, 4);
+        final long[] item = fixture.recycler.borrowItem();
+        fixture.recycler.returnItem(item);
+        assertSame(item, fixture.recycler.borrowItem());
+        assertEquals(1, fixture.constructed.get());
+    }
+
+    @Test
+    public void testGrowsToTheBurstThatMissedAfterTurningItemsAway() {
+        final Fixture fixture = new Fixture(10, 1000);
+        // fill the bin, so that the first burst below is not short of every item it needs
+        fixture.burst(10);
+        // the burst needs 25 items but the bin keeps only 10: it constructs 15 and turns 15 away
+        fixture.burst(25);
+        assertEquals(10, fixture.recycler.getCapacity());
+        assertEquals(25, fixture.constructed.get());
+        // the next burst misses after the bin turned 15 away, so it grows by each miss, to the burst and no further
+        fixture.burst(25);
+        assertEquals(25, fixture.recycler.getCapacity());
+
+        // with room for a whole burst, nothing is constructed again
+        final int constructed = fixture.constructed.get();
+        for (int ii = 0; ii < 5; ++ii) {
+            fixture.burst(25);
+        }
+        assertEquals(constructed, fixture.constructed.get());
+    }
+
+    @Test
+    public void testGrowsDuringTheBurstThatMisses() {
+        final Fixture fixture = new Fixture(10, 1000);
+        fixture.burst(10);
+        fixture.burst(25);
+        // the first ten borrows are served; the eleventh misses and grows the capacity at once
+        final List<long[]> items = fixture.borrow(11);
+        assertEquals(11, fixture.recycler.getCapacity());
+        items.addAll(fixture.borrow(14));
+        assertEquals(25, fixture.recycler.getCapacity());
+        fixture.returnAll(items);
+    }
+
+    @Test
+    public void testGrowsToTheBurstFromAnEmptyBin() {
+        // from an empty bin, the first burst constructs every item it needs, which is more than the bin was short of
+        final Fixture fixture = new Fixture(10, 1000);
+        fixture.burst(25);
+        fixture.burst(25);
+        assertEquals(25, fixture.recycler.getCapacity());
+    }
+
+    @Test
+    public void testItemsABurstKeepsNeedNoRoom() {
+        // each burst borrows 5 items it keeps, as storage that stays in use, and 20 it returns
+        final Fixture fixture = new Fixture(10, 1000);
+        for (int ii = 0; ii < 5; ++ii) {
+            fixture.borrow(5);
+            fixture.burst(20);
+        }
+        assertEquals(20, fixture.recycler.getCapacity());
+    }
+
+    @Test
+    public void testGrowsForDemandNoSingleBurstShows() {
+        // each cycle borrows 6, returns 1, and borrows 6 more before returning the rest: it holds 11 at its peak, but
+        // no run of borrows between two returns is longer than 6
+        final Fixture fixture = new Fixture(10, 1000);
+        fixture.burst(10);
+        for (int cycle = 0; cycle < 3; ++cycle) {
+            final List<long[]> items = fixture.borrow(6);
+            fixture.recycler.returnItem(items.remove(0));
+            items.addAll(fixture.borrow(6));
+            fixture.returnAll(items);
+            // a window end per cycle, which growth does not need, but a rule that judged windows would
+            fixture.endWindow();
+        }
+        assertEquals(11, fixture.recycler.getCapacity());
+        final int constructed = fixture.constructed.get();
+        final List<long[]> items = fixture.borrow(6);
+        fixture.recycler.returnItem(items.remove(0));
+        items.addAll(fixture.borrow(6));
+        fixture.returnAll(items);
+        assertEquals(constructed, fixture.constructed.get());
+    }
+
+    @Test
+    public void testGrowsWhileAFastClientInterleaves() {
+        // a slow client borrows 80 items over 8 steps and returns them at the end, while a fast client borrows and
+        // returns 10 every step, so no run of borrows between two returns is longer than 20
+        final Fixture fixture = new Fixture(10, 1000);
+        int constructed = 0;
+        for (int cycle = 0; cycle < 4; ++cycle) {
+            constructed = fixture.constructed.get();
+            final List<long[]> slow = new ArrayList<>();
+            for (int step = 0; step < 8; ++step) {
+                final List<long[]> fast = fixture.borrow(10);
+                slow.addAll(fixture.borrow(10));
+                fixture.returnAll(fast);
+            }
+            fixture.returnAll(slow);
+            // a window end per cycle, which growth does not need, but a rule that judged windows would
+            fixture.endWindow();
+        }
+        assertEquals(90, fixture.recycler.getCapacity());
+        assertEquals(constructed, fixture.constructed.get());
+    }
+
+    @Test
+    public void testGrowsAcrossTheEndOfAWindow() {
+        // every burst borrows in one window and returns in the next, as an update cycle as long as the window might
+        final Fixture fixture = new Fixture(10, 1000);
+        fixture.burst(10);
+        fixture.endWindow();
+        for (int burst = 0; burst < 2; ++burst) {
+            final List<long[]> items = fixture.borrow(25);
+            fixture.endWindow();
+            fixture.returnAll(items);
+            fixture.endWindow();
+        }
+        assertEquals(25, fixture.recycler.getCapacity());
+    }
+
+    @Test
+    public void testGrowthStopsAtTheMaximum() {
+        final Fixture fixture = new Fixture(10, 16);
+        fixture.burst(40);
+        fixture.burst(40);
+        assertEquals(16, fixture.recycler.getCapacity());
+        fixture.burst(40);
+        assertEquals(16, fixture.recycler.getCapacity());
+    }
+
+    @Test
+    public void testConstructionAloneDoesNotGrow() {
+        // items borrowed and kept, as for storage that stays in use, are not a shortfall of the bin
+        final Fixture fixture = new Fixture(10, 1000);
+        fixture.borrow(50);
+        fixture.endWindow();
+        fixture.recycler.borrowItem();
+        assertEquals(10, fixture.recycler.getCapacity());
+    }
+
+    @Test
+    public void testTurningItemsAwayAloneDoesNotGrow() {
+        // the bin is full and is never emptied, so the items it turned away were not missed
+        final Fixture fixture = new Fixture(10, 1000);
+        final List<long[]> items = fixture.borrow(30);
+        fixture.returnAll(items);
+        for (int ii = 0; ii < 5; ++ii) {
+            fixture.burst(5);
+        }
+        assertEquals(10, fixture.recycler.getCapacity());
+    }
+
+    @Test
+    public void testShrinksTowardTheInitialCapacity() {
+        final Fixture fixture = new Fixture(10, 1000);
+        fixture.growTo(90);
+
+        // now the bursts need only 10, so 80 items sit unused through each window
+        fixture.burst(90);
+        fixture.endWindow();
+        fixture.burst(10);
+        int previous = fixture.recycler.getCapacity();
+        for (int window = 0; window < 20; ++window) {
+            fixture.endWindow();
+            fixture.burst(10);
+            final int capacity = fixture.recycler.getCapacity();
+            if (previous > 10) {
+                assertTrue("capacity " + capacity + " after " + previous, capacity < previous);
+            }
+            previous = capacity;
+        }
+        assertEquals(10, fixture.recycler.getCapacity());
+    }
+
+    @Test
+    public void testShrinkFractionZeroKeepsTheCapacity() {
+        final Fixture fixture = new Fixture(10, 1000, 0);
+        fixture.growTo(90);
+        for (int window = 0; window < 5; ++window) {
+            fixture.endWindow();
+            fixture.burst(10);
+        }
+        assertEquals(90, fixture.recycler.getCapacity());
+    }
+
+    @Test
+    public void testShrinkFractionOneGivesUpEveryUnusedItem() {
+        final Fixture fixture = new Fixture(10, 1000, 1);
+        fixture.growTo(90);
+        // a window that needs 20 of the 90 items leaves 70 unused, which are given up at once
+        fixture.burst(90);
+        fixture.endWindow();
+        fixture.burst(20);
+        fixture.endWindow();
+        fixture.burst(20);
+        assertEquals(20, fixture.recycler.getCapacity());
+    }
+
+    @Test
+    public void testShrinksOnlyAtTheEndOfAWindow() {
+        final Fixture fixture = new Fixture(10, 1000);
+        fixture.growTo(90);
+        fixture.burst(90);
+        fixture.endWindow();
+        // however many bursts need only 10, nothing shrinks until the window ends
+        for (int ii = 0; ii < 6; ++ii) {
+            fixture.burst(10);
+        }
+        assertEquals(90, fixture.recycler.getCapacity());
+        fixture.endWindow();
+        assertEquals(50, fixture.recycler.getCapacity());
+    }
+
+    @Test
+    public void testEndWindowsShrinksEveryRegisteredRecycler() {
+        final AtomicInteger constructed = new AtomicInteger();
+        final SoftRecycler<long[]> recycler = new SoftRecycler<>(10, 1000, () -> {
+            constructed.incrementAndGet();
+            return new long[1];
+        }, null);
+        final List<long[]> items = new ArrayList<>();
+        for (int burst = 0; burst < 2; ++burst) {
+            for (int ii = 0; ii < 40; ++ii) {
+                items.add(recycler.borrowItem());
+            }
+            items.forEach(recycler::returnItem);
+            items.clear();
+        }
+        assertEquals(40, recycler.getCapacity());
+        // a window in which nothing is borrowed needed none of the 40 items; the default fraction discards half
+        SoftRecycler.endWindows();
+        SoftRecycler.endWindows();
+        assertEquals(20, recycler.getCapacity());
+    }
+
+    @Test
+    public void testRejectsInvalidParameters() {
+        assertThrows(IllegalArgumentException.class, () -> new SoftRecycler<>(10, 9, () -> new long[1], null));
+        assertThrows(IllegalArgumentException.class, () -> new SoftRecycler<>(-1, 9, () -> new long[1], null));
+        assertThrows(IllegalArgumentException.class,
+                () -> new SoftRecycler<>(1, 1, () -> new long[1], null, 1.5, false));
+        assertThrows(IllegalArgumentException.class,
+                () -> new SoftRecycler<>(1, 1, () -> new long[1], null, Double.NaN, false));
+    }
+}

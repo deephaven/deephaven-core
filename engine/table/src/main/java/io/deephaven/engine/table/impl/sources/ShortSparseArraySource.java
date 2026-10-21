@@ -51,15 +51,19 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short>
     // region recyclers
     private static final SoftRecycler<short[]> recycler =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY,
+                    SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_MAXIMUM_CAPACITY,
                     () -> new short[BLOCK_SIZE], null);
     private static final SoftRecycler<short[][]> recycler2 =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY2,
+                    SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_MAXIMUM_CAPACITY2,
                     () -> new short[BLOCK2_SIZE][], null);
     private static final SoftRecycler<ShortOneOrN.Block2[]> recycler1 =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY1,
+                    SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_MAXIMUM_CAPACITY1,
                     () -> new ShortOneOrN.Block2[BLOCK1_SIZE], null);
     private static final SoftRecycler<ShortOneOrN.Block1[]> recycler0 =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_CAPACITY0,
+                    SparseArrayColumnSourceConfiguration.SHORT_RECYCLER_MAXIMUM_CAPACITY0,
                     () -> new ShortOneOrN.Block1[BLOCK0_SIZE], null);
     // endregion recyclers
 
