@@ -75,13 +75,15 @@ final class BarrageCompressionHarness {
      * @param onMessage receives each completed message; the caller must close it
      */
     void deserialize(final List<byte[]> wire, final MessageCodec codec, final Consumer<BarrageMessage> onMessage) {
-        final BarrageMessageReaderImpl reader = new BarrageMessageReaderImpl();
-        for (final byte[] wireMessage : wire) {
-            final BarrageMessage message = reader.safelyParseFrom(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS,
-                    wireChunkTypes, wireTypes, wireComponentTypes,
-                    new ByteArrayInputStream(codec.decompress(wireMessage)));
-            if (message != null) {
-                onMessage.accept(message);
+        // the reader retains the dictionary values it decodes until it is closed
+        try (final BarrageMessageReaderImpl reader = new BarrageMessageReaderImpl()) {
+            for (final byte[] wireMessage : wire) {
+                final BarrageMessage message = reader.safelyParseFrom(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS,
+                        wireChunkTypes, wireTypes, wireComponentTypes,
+                        new ByteArrayInputStream(codec.decompress(wireMessage)));
+                if (message != null) {
+                    onMessage.accept(message);
+                }
             }
         }
     }
