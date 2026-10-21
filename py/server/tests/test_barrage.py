@@ -98,10 +98,11 @@ class BarrageTestCase(BaseTestCase):
             "compressed_t = empty_table(1000).update(['X = i', 'Y = 2*i'])"
             ".with_transport_compression(['zstd', 'gzip'])"
         )
+        # the shared ticket is valid only while the publishing session's export lives, and pydeephaven releases an
+        # export when its Table is garbage collected, so keep the table in a local for the whole test
+        compressed_t = self.pub_session.open_table("compressed_t")
         compressed_ticket = SharedTicket.random_ticket()
-        self.pub_session.publish_table(
-            compressed_ticket, self.pub_session.open_table("compressed_t")
-        )
+        self.pub_session.publish_table(compressed_ticket, compressed_t)
 
         # a single string is one compression type, not a sequence of characters. The server uses zstd when the
         # session accepts it, zstd again when it accepts gzip and zstd, since zstd is the table's first choice, and
