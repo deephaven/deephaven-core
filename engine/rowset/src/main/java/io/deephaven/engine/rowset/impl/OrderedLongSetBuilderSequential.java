@@ -83,7 +83,7 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
 
     /**
      * Only commit to a bitmap when {@code ix} alone certainly has more ranges than a {@link SortedRanges} can hold, so
-     * that the ranges would overflow one anyway; otherwise a result that fits in one stays one.
+     * that the ranges would overflow one anyway; otherwise a result that fits in SortedRanges stays one.
      */
     @Override
     protected boolean commitToBitmapFor(final RspBitmap ix) {
