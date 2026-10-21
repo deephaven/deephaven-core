@@ -4547,6 +4547,20 @@ public class RspBitmapTest {
         assertTrue(arrays.hasMoreRangesThan(1000 - 9 - 1));
         assertFalse(arrays.hasMoreRangesThan(1000 - 9));
 
+        // Every other block holds single keys two apart, too many for an array container and too many runs for a run
+        // container, so the blocks are bitmap containers.
+        final RspBitmap bitmaps = new RspBitmap();
+        for (int bi = 0; bi < 6; bi += 2) {
+            for (int ki = 0; ki < 5000; ++ki) {
+                final long key = bi * BLOCK_SIZE + 2L * ki;
+                bitmaps.appendRangeUnsafeNoWriteCheck(key, key);
+            }
+        }
+        bitmaps.finishMutationsAndOptimize();
+        assertEquals(15000, countRanges(bitmaps));
+        assertTrue(bitmaps.hasMoreRangesThan(14999));
+        assertFalse(bitmaps.hasMoreRangesThan(15000));
+
         // Every other block holds a run container of 100 ranges, so the bound is the count.
         final RspBitmap runs = new RspBitmap();
         for (int bi = 0; bi < 10; bi += 2) {

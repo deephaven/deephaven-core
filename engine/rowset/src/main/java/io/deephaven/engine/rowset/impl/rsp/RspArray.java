@@ -5644,10 +5644,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     /**
      * Whether this certainly holds more than {@code n} ranges, judged in one pass over the spans that stops once it can
-     * tell. Every span holds at least one range. A run, single range or two values container knows how many it holds,
-     * and an array container's are counted, which costs a pass over its values; a bitmap container is taken to hold
-     * one. A span's first range may join the previous span's last when it starts in the block right after that span's
-     * last block, so each such boundary counts one range fewer.
+     * tell. A full block span or a singleton holds one range, and a container's ranges are counted: a run, single range
+     * or two values container knows how many it holds, and an array or bitmap container's take a pass over its values
+     * or words. A bitmap container is the representation only of a block with too many runs for a run container, so it
+     * contributes the most. A span's first range may join the previous span's last when it starts in the block right
+     * after that span's last block, so each such boundary counts one range fewer.
      *
      * @param n The number of ranges to compare with
      * @return True only if this holds more than {@code n} ranges; false when it holds no more, or when the bound cannot
@@ -5665,7 +5666,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 try (SpanView view = workDataPerThread.get().borrowSpanView(spanInfo, span)) {
                     spanRanges = view.getContainer().numberOfRanges();
                 }
-            } else if (span instanceof Container && !(span instanceof BitmapContainer)) {
+            } else if (span instanceof Container) {
                 spanRanges = ((Container) span).numberOfRanges();
             }
             if (idx > 0 && key == previousLastBlockKey + BLOCK_SIZE) {
