@@ -539,7 +539,7 @@ def function_generated_table(
         refresh_interval_ms (Optional[int]): Interval (in milliseconds) at which the 'table_generator' function is
             rerun. A non-positive interval is treated the same as no trigger at all, producing a static result.
         exec_ctx (Optional[ExecutionContext]): A custom execution context. If 'None', the current
-            execution context is used. If there is no current execution context, a ValueError is raised.
+            execution context is used.
         args (tuple): Optional tuple of positional arguments to pass to table_generator. Defaults to ()
         kwargs (dict): Optional dictionary of keyword arguments to pass to table_generator. Defaults to {}
         copy_data (bool): When True (the default), the generated data is copied into the result's own column sources
@@ -572,10 +572,6 @@ def function_generated_table(
     # If no execution context is provided, assume we want to use the current one.
     if exec_ctx is None:
         exec_ctx = execution_context.get_exec_ctx()
-        if exec_ctx is None:
-            raise ValueError(
-                "No execution context is available and exec_ctx was not provided! "
-            )
 
     def table_generator_function():
         with exec_ctx:
