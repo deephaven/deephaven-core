@@ -155,6 +155,8 @@ plotXYScatter = plot("Speed", source, "Time", "SpeedKPH")\
     .show()
 ```
 
+`pointColor` and `lineColor` also take a color by name, such as `.pointColor("BRIGHT_RED")`. For the full list of available colors, see [Named colors](../../reference/table-operations/format/named-colors.md).
+
 #### XY Series as a step plot
 
 In the example below, the `.plotStyle` argument has the name `("step")`. Other parameters are defined to show the fine tuning detail under control.

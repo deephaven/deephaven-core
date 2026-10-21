@@ -1824,6 +1824,10 @@
                   {
                     "label": "layout_hints",
                     "path": "reference/table-operations/format/layout-hints.md"
+                  },
+                  {
+                    "label": "Named colors",
+                    "path": "reference/table-operations/format/named-colors.md"
                   }
                 ]
               },

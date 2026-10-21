@@ -1649,6 +1649,10 @@
                   {
                     "label": "hide",
                     "path": "reference/table-operations/format/hide.md"
+                  },
+                  {
+                    "label": "Named colors",
+                    "path": "reference/table-operations/format/named-colors.md"
                   }
                 ]
               },

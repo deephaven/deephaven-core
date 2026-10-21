@@ -89,7 +89,7 @@ You can specify a color by name, as a hex string, or with a color function such 
 
 #### Named color values
 
-There are hundreds of predefined color values available in Deephaven. See the [Named Colors Chart](../assets/how-to/colors.pdf) for all of them. Refer to a predefined color by its name in capital letters, such as `VIVID_YELLOW` or `BRIGHT_GREEN`.
+Deephaven has hundreds of predefined colors. For the full list, with a swatch and hex value for each, see [Named colors](../reference/table-operations/format/named-colors.md). Refer to a predefined color by its name in capital letters, such as `VIVID_YELLOW` or `BRIGHT_GREEN`.
 
 > [!NOTE]
 > The `NO_FORMATTING` predefined value applies no format. Use it as the fallback branch of a [ternary](./ternary-if-how-to.md) in [`format_columns`](../reference/table-operations/format/format-columns.md) to leave non-matching cells or rows unformatted. Both branches of a ternary must have the same type. Named colors, `colorRGB`, and `NO_FORMATTING` are colors, while [`bg`](../reference/query-language/query-library/auto-imported/gui.md), [`fg`](../reference/query-language/query-library/auto-imported/gui.md), [`bgfg`](../reference/query-language/query-library/auto-imported/gui.md), [`bgfga`](../reference/query-language/query-library/auto-imported/gui.md), and [`heatmap`](../reference/query-language/query-library/auto-imported/gui.md) return an encoded format. To pair one of those functions with an unformatted branch, use `bg(NO_FORMATTING)`.
