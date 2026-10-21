@@ -10,8 +10,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -137,12 +135,25 @@ class VmOptionsFileTest {
         builder.environment().putAll(env);
         builder.environment().put(optsVariable.group(1), "-XshowSettings:properties -version");
 
-        final Process process = builder.start();
+        // Output goes to a file rather than a pipe, so a stalled launcher cannot block the test before the timeout
+        final Path outputFile = Files.createTempFile("vmoptions-launch", ".out");
+        final Process process;
+        final boolean exited;
         final String output;
-        try (InputStream in = process.getInputStream()) {
-            output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        try {
+            process = builder.redirectOutput(outputFile.toFile()).start();
+            try {
+                exited = process.waitFor(30, TimeUnit.SECONDS);
+            } finally {
+                // The script may have started its own java (to read the version) before exec'ing the JVM
+                process.descendants().forEach(ProcessHandle::destroyForcibly);
+                process.destroyForcibly();
+            }
+            output = Files.readString(outputFile);
+        } finally {
+            Files.deleteIfExists(outputFile);
         }
-        assertThat(process.waitFor(30, TimeUnit.SECONDS)).as("launcher exited").isTrue();
+        assertThat(exited).as("launcher exited within 30 seconds; output: " + output).isTrue();
         assertThat(process.exitValue()).as(output).isZero();
 
         final Matcher shown = SHOWN_PROPERTY.matcher(output);
