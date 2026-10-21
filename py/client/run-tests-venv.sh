@@ -7,7 +7,7 @@
 # image. The distribution has the same start script and jars as the image. Java is the main program and hosts Python
 # from the same venv, so the server and the client both run on that venv's Python.
 #
-# usage: run-tests-embedded.sh [test ...]
+# usage: run-tests-venv.sh [test ...]
 #   test  optional unittest names, for example tests.test_session. Default: all of tests/.
 #
 # Before the first run:
@@ -44,9 +44,9 @@ fi
 
 # The Python version, such as 3.12 or 3.14t for a free-threaded build. It names the build and report folders.
 PY_LABEL="$("${PYTHON}" -c 'import sys, sysconfig; print(f"{sys.version_info[0]}.{sys.version_info[1]}" + ("t" if sysconfig.get_config_var("Py_GIL_DISABLED") else ""))')"
-BUILD="${CLIENT_DIR}/build/test-embedded/${PY_LABEL}"
+BUILD="${CLIENT_DIR}/build/test-venv/${PY_LABEL}"
 WORK="${BUILD}/work"
-RESULTS="${CLIENT_DIR}/build/test-results/test-embedded/${PY_LABEL}"
+RESULTS="${CLIENT_DIR}/build/test-results/test-venv/${PY_LABEL}"
 rm -rf "${BUILD}" "${RESULTS}"
 mkdir -p "${BUILD}/data" "${BUILD}/cache" "${BUILD}/config" "${WORK}" "${RESULTS}"
 "${PYTHON}" -VV

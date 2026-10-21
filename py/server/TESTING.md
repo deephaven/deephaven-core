@@ -3,7 +3,7 @@
 The tests in `py/server/tests` run in two ways:
 
 - **In Docker**, with `./gradlew :Integrations:test-py-deephaven`. This is the suite that `check` runs. It uses the Python version in the server Docker image.
-- **Without Docker**, with `py/server/run-tests-embedded.sh`. It runs the same tests in a venv you set up, on any Python version. The server jars come from the `deephaven-server` package, the embedded server. The `Nightly Python Versions CI` workflow runs it on every supported version, through `.github/scripts/py-versions-test.sh`, which makes a fresh venv for each version.
+- **Without Docker**, with `py/server/run-tests-venv.sh`. It runs the same tests in a venv you set up, on any Python version. The server jars come from the `deephaven-server` package, the embedded server. The `Nightly Python Versions CI` workflow runs it on every supported version, through `.github/scripts/py-versions-test.sh`, which makes a fresh venv for each version.
 
 This page covers the second way. It does not measure coverage. For coverage reports, run the Docker task with `-Pcoverage.enabled=true`. For the client tests, see [`py/client/TESTING.md`](../client/TESTING.md).
 
@@ -36,13 +36,13 @@ This page covers the second way. It does not measure coverage. For coverage repo
 3. With the venv active, run the script, optionally with test names:
 
    ```bash
-   py/server/run-tests-embedded.sh
-   py/server/run-tests-embedded.sh tests.test_csv tests.test_time
+   py/server/run-tests-venv.sh
+   py/server/run-tests-venv.sh tests.test_csv tests.test_time
    ```
 
    Without test names, the script runs all of `tests/`.
 
-The JUnit XML reports go to `py/server/build/test-results/test-embedded/<version>/`. A copy of the tests goes to `py/server/build/test-embedded/<version>/`. The script deletes both at the start of a run. It never installs anything into your venv, or changes or deletes it.
+The JUnit XML reports go to `py/server/build/test-results/test-venv/<version>/`. A copy of the tests goes to `py/server/build/test-venv/<version>/`. The script deletes both at the start of a run. It never installs anything into your venv, or changes or deletes it.
 
 ## What the script does
 

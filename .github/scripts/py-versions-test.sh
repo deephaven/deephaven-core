@@ -5,12 +5,12 @@ set -o pipefail
 set -o nounset
 
 # Runs the Python server or client tests on one Python version, for the Nightly Python Versions CI workflow. It makes a
-# fresh venv, installs the Deephaven packages and the test dependencies, then calls py/<suite>/run-tests-embedded.sh.
+# fresh venv, installs the Deephaven packages and the test dependencies, then calls py/<suite>/run-tests-venv.sh.
 # Developers who want to run the tests in their own venv call that script directly, see py/<suite>/TESTING.md.
 #
 # usage: py-versions-test.sh <server|client> <python-version> [test ...]
 #   python-version  any version uv accepts, for example 3.9, 3.14 or 3.14t (free-threaded)
-#   test            optional unittest names, passed on to run-tests-embedded.sh. Default: all of tests/.
+#   test            optional unittest names, passed on to run-tests-venv.sh. Default: all of tests/.
 #
 # Needs uv and the build outputs: ./gradlew :py-embedded-server:assemble for the server tests,
 # ./gradlew :server-jetty-app:installDist for the client tests.
@@ -69,4 +69,4 @@ done < "${ROOT}/py/${SUITE}/requirements-test.txt"
 
 export VIRTUAL_ENV="${VENV}"
 export PATH="${VENV}/bin:${PATH}"
-exec "${ROOT}/py/${SUITE}/run-tests-embedded.sh" "$@"
+exec "${ROOT}/py/${SUITE}/run-tests-venv.sh" "$@"

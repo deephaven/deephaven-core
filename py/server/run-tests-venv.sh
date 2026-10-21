@@ -7,7 +7,7 @@
 # deephaven-server package in the venv, so the tests run on that venv's Python and on whichever Deephaven packages it
 # has. test_helper starts the JVM the same way as in the Docker image, only with a different classpath.
 #
-# usage: run-tests-embedded.sh [test ...]
+# usage: run-tests-venv.sh [test ...]
 #   test  optional unittest names, for example tests.test_csv. Default: all of tests/.
 #
 # Before the first run, activate a venv that has deephaven-core, deephaven-server and pydeephaven. TESTING.md shows how
@@ -37,9 +37,9 @@ fi
 
 # The Python version, such as 3.12 or 3.14t for a free-threaded build. It names the build and report folders.
 PY_LABEL="$("${PYTHON}" -c 'import sys, sysconfig; print(f"{sys.version_info[0]}.{sys.version_info[1]}" + ("t" if sysconfig.get_config_var("Py_GIL_DISABLED") else ""))')"
-BUILD="${SERVER_DIR}/build/test-embedded/${PY_LABEL}"
+BUILD="${SERVER_DIR}/build/test-venv/${PY_LABEL}"
 WORK="${BUILD}/work"
-RESULTS="${SERVER_DIR}/build/test-results/test-embedded/${PY_LABEL}"
+RESULTS="${SERVER_DIR}/build/test-results/test-venv/${PY_LABEL}"
 rm -rf "${BUILD}" "${RESULTS}"
 mkdir -p "${BUILD}/data" "${BUILD}/cache" "${WORK}" "${RESULTS}"
 "${PYTHON}" -VV

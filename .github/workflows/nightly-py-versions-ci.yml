@@ -84,7 +84,7 @@ jobs:
 
       - name: Unpack the server distribution
         if: ${{ matrix.suite == 'client' }}
-        # py/client/run-tests-embedded.sh expects it where ./gradlew :server-jetty-app:installDist puts it.
+        # py/client/run-tests-venv.sh expects it where ./gradlew :server-jetty-app:installDist puts it.
         run: |
           mkdir -p server/jetty-app/build/install/server-jetty
           tar -xf server/jetty-app/build/distributions/server-jetty-*.tar --strip-components=1 -C server/jetty-app/build/install/server-jetty
@@ -122,7 +122,7 @@ jobs:
           docker compose -f Integrations/docker-compose.yml up -d --wait
 
       - name: Run tests
-        # The script makes a venv, installs the packages, then calls py/<suite>/run-tests-embedded.sh, which developers
+        # The script makes a venv, installs the packages, then calls py/<suite>/run-tests-venv.sh, which developers
         # run in their own venv, see py/<suite>/TESTING.md. On the older Pythons, uv picks older numpy, pandas, pyarrow and
         # numba releases, because the newest ones dropped those Pythons.
         run: .github/scripts/py-versions-test.sh ${{ matrix.suite }} ${{ matrix.python-version }}
@@ -132,7 +132,7 @@ jobs:
         if: always()
         with:
           name: nightly-py-versions-${{ matrix.suite }}-py${{ matrix.python-version }}-ci-results
-          path: py/${{ matrix.suite }}/build/test-results/test-embedded/**
+          path: py/${{ matrix.suite }}/build/test-results/test-venv/**
 
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

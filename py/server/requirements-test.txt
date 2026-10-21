@@ -1,4 +1,4 @@
-# Python packages the tests in tests/ need beyond deephaven-core, deephaven-server and pydeephaven. run-tests-embedded.sh
+# Python packages the tests in tests/ need beyond deephaven-core, deephaven-server and pydeephaven. run-tests-venv.sh
 # warns about any that are missing. Versions are left open, so the tests run against the latest releases.
 unittest-xml-reporting
 numba

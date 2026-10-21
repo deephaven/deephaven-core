@@ -3,7 +3,7 @@
 The tests in `py/client/tests` run in two ways:
 
 - **In Docker**, with `./gradlew :py-client:testPyClient`. This is the suite that `check` runs. It uses the Python version in the `python` registry image.
-- **Without Docker**, with `py/client/run-tests-embedded.sh`. It runs the same tests in a venv you set up, on any Python version, against the `server-jetty` distribution, the same server the Docker image runs. The `Nightly Python Versions CI` workflow runs it on every supported version, through `.github/scripts/py-versions-test.sh`, which makes a fresh venv for each version.
+- **Without Docker**, with `py/client/run-tests-venv.sh`. It runs the same tests in a venv you set up, on any Python version, against the `server-jetty` distribution, the same server the Docker image runs. The `Nightly Python Versions CI` workflow runs it on every supported version, through `.github/scripts/py-versions-test.sh`, which makes a fresh venv for each version.
 
 This page covers the second way. It does not measure coverage. For coverage reports, run the Docker task with `-Pcoverage.enabled=true`. For the server tests, see [`py/server/TESTING.md`](../server/TESTING.md).
 
@@ -34,13 +34,13 @@ This page covers the second way. It does not measure coverage. For coverage repo
 3. With the venv active, run the script, optionally with test names:
 
    ```bash
-   py/client/run-tests-embedded.sh
-   py/client/run-tests-embedded.sh tests.test_session
+   py/client/run-tests-venv.sh
+   py/client/run-tests-venv.sh tests.test_session
    ```
 
    Without test names, the script runs all of `tests/`.
 
-The JUnit XML reports and the server's `server.log` go to `py/client/build/test-results/test-embedded/<version>/`. A copy of the tests goes to `py/client/build/test-embedded/<version>/`. The script deletes both at the start of a run. It never installs anything into your venv, or changes or deletes it.
+The JUnit XML reports and the server's `server.log` go to `py/client/build/test-results/test-venv/<version>/`. A copy of the tests goes to `py/client/build/test-venv/<version>/`. The script deletes both at the start of a run. It never installs anything into your venv, or changes or deletes it.
 
 ## What the script does
 
