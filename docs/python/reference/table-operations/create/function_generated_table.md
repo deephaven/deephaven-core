@@ -51,7 +51,7 @@ This parameter and `source_tables` are mutually exclusive. When neither is speci
 </Param>
 <Param name="exec_ctx" type="ExecutionContext" optional>
 
-A custom [execution context](../../../conceptual/execution-context.md) to use for this operation. If not specified, the current execution context is used. If there is no current execution context, a `ValueError` is raised.
+A custom [execution context](../../../conceptual/execution-context.md) to use for this operation. If not specified, the current execution context is used.
 
 </Param>
 <Param name="args" type="tuple" optional>
