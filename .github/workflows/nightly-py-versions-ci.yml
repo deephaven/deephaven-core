@@ -2,10 +2,10 @@ name: Nightly Python Versions CI
 
 # Runs the py/server and py/client tests on every supported Python version. The Docker-based suites in check cover only
 # the Python in the Docker images. These run the same tests without Docker, so each version needs only Python and a JDK.
-# Both suites use the deephaven-server wheel, the embedded server, in the job's venv:
-# - The server suite runs the engine in the test process, on the wheel's jars.
-# - The client suite starts a server with the wheel's deephaven command and tests against it.
-# The other Python packages install from source.
+# Both suites install the same three wheels, built once by the build job: deephaven-server (the embedded server, with the
+# server jars), deephaven-core and pydeephaven. The last two are pure Python, so one build serves every version.
+# - The server suite runs the engine in the test process, on the deephaven-server jars.
+# - The client suite starts a server with the deephaven-server command and tests against it.
 #
 # Floor: 3.10. python_requires in py/server/setup.py still allows 3.9, which is end of life and on its way out (DH-24055).
 # Ceiling: the newest Python that jpy has a wheel for, 3.15 as of jpy 2.2.0. The free-threaded 3.14t and 3.15t builds
@@ -45,8 +45,8 @@ jobs:
           .github/scripts/gradle-properties.sh 21 >> gradle.properties
           cat gradle.properties
 
-      - name: Build the deephaven-server wheel
-        run: ./gradlew --scan :py-embedded-server:assemble
+      - name: Build the wheels
+        run: ./gradlew --scan :py-embedded-server:assemble :py-server:assemble :py-client:assemble
 
       - name: Upload the build outputs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -54,6 +54,8 @@ jobs:
           name: py-versions-build
           path: |
             py/embedded-server/build/wheel/*.whl
+            py/server/build/wheel/*.whl
+            py/client/build/wheel/*.whl
           retention-days: 1
 
   test:
@@ -77,10 +79,13 @@ jobs:
         with:
           lfs: true
 
-      - name: Download the build outputs
+      - name: Download the wheels
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: py-versions-build
+          # upload-artifact stores the files relative to their deepest common folder, py/. Downloading into py/ puts
+          # each wheel back in the build/wheel folder of its project, where py-versions-test.sh looks for it.
+          path: py
 
       - name: Setup JDKs
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
