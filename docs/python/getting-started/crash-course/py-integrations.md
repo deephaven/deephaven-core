@@ -179,7 +179,7 @@ Aimed at AI/ML practitioners who want to go further, [`deephaven.learn`](../../h
 - **Compute**: run a calculation, such as a model, on that object.
 - **Scatter**: write the calculation's results back into a table.
 
-[`deephaven.learn`](../../how-to-guides/use-deephaven-learn.md) works with these tables:
+`deephaven.learn` works with these tables:
 
 - Any static table.
 - Ticking [add-only](../../conceptual/table-types.md#specialization-2-add-only) tables, including [append-only](../../conceptual/table-types.md#specialization-1-append-only) tables.

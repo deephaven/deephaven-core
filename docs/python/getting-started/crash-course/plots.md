@@ -4,10 +4,10 @@ title: Real-time Plots
 
 Whether your data is static or updating in real time, Deephaven supports plotting via multiple libraries, including [Deephaven Express](/core/plotly/docs/) and Deephaven's built-in [plotting API](/core/pydoc/code/deephaven.plot.html#module-deephaven.plot). Deephaven Express is a real-time version of [Plotly Express](https://plotly.com/python/plotly-express/).
 
+## Deephaven Express
+
 > [!NOTE]
 > Deephaven Express is included in the `ghcr.io/deephaven/server` Docker image used in this crash course. If you installed Deephaven with pip, install Deephaven Express with `pip install deephaven-plugin-plotly-express` in the same Python environment as Deephaven, and then restart the server. Deephaven loads plugins only when the server starts.
-
-## Deephaven Express
 
 [Deephaven Express](/core/plotly/docs/), the recommended plotting library, builds real-time plots directly from Deephaven tables. To create a simple [line plot](https://en.wikipedia.org/wiki/Line_chart) that ticks in lockstep with the source table, pass the table and its column names to [`dx.line`](/core/plotly/docs/line/). Passing a list of columns to `y` plots each column as a separate line with its own legend entry:
 
