@@ -160,6 +160,10 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         final Map<Object, Integer> barrierToLayerIndex = new IdentityHashMap<>();
         final List<Object> implicitSerialBarriers = new ArrayList<>();
 
+        if (context.flatResult) {
+            context.flatResultRowSet = RowSetFactory.flat(rowSet.size()).toTracking();
+        }
+
         // Second pass builds the analyzer and destination columns
         final HashMap<String, ColumnSource<?>> resultAlias = new HashMap<>();
         for (int columnIndex = 0; columnIndex < context.processedCols.size(); ++columnIndex) {
@@ -171,7 +175,12 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     && Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream())
                             .anyMatch(columnName -> context.getLayerIndexFor(columnName) != Layer.PARENT_TABLE_INDEX);
 
-            sc.initInputs(rowSet, useResultKeySpace ? context.allSourcesInResultKeySpace : context.allSources);
+            if (useResultKeySpace) {
+                // the column is evaluated at result row keys, so positional variables such as ii use the result rows
+                sc.initInputs(context.flatResultRowSet, context.allSourcesInResultKeySpace);
+            } else {
+                sc.initInputs(rowSet, context.allSources);
+            }
 
             if (QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS && !sc.isStateless()) {
                 final Object implicitBarrier = new ImplicitBarrier(sc.getName(), columnIndex);
@@ -421,6 +430,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         private List<SelectColumn> remainingCols;
         /** Whether the result should be flat. */
         private boolean flatResult;
+        /** The row set of a flat result. */
+        private TrackingRowSet flatResultRowSet;
         /** The layer that will be used to process redirection, if we have one. */
         private int redirectionLayer = Layer.UNSET_INDEX;
 
@@ -533,6 +544,13 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             if (redirectionLayer != Layer.UNSET_INDEX) {
                 layerDependencies.set(redirectionLayer);
             }
+        }
+
+        /**
+         * @return the row set of a flat result, or null if the result is not flat
+         */
+        public TrackingRowSet getFlatResultRowSet() {
+            return flatResultRowSet;
         }
 
         /**
