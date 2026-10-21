@@ -7,6 +7,8 @@ set -o nounset
 # CI only, for the Nightly Python Versions CI workflow. Makes a fresh venv for one Python version, installs the
 # Deephaven wheels and the test dependencies, then calls py/run-tests-venv.sh. Developers call that script in their own
 # venv, see py/<suite>/TESTING.md.
+# Each run gets the newest patch release of the Python version that uv knows and the newest release of every
+# dependency, so the matrix catches breaking releases early.
 #
 # usage: py-versions-test.sh <server|client> <python-version> [test ...]
 #   python-version  any version uv accepts, for example 3.10, 3.14 or 3.14t (free-threaded)

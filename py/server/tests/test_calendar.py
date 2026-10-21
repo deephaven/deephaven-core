@@ -16,7 +16,7 @@ from deephaven.calendar import (
     set_calendar,
 )
 from deephaven.column import bool_col, string_col
-from tests.testbase import BaseTestCase, get_resource_path
+from tests.testbase import BaseTestCase, java_resource_path
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 _JCalendars = jpy.get_type("io.deephaven.time.calendar.Calendars")
@@ -48,8 +48,8 @@ class CalendarTestCase(BaseTestCase):
         super().tearDown()
 
     def test_add_remove_calendar(self):
-        path1 = get_resource_path("/TEST1.calendar")
-        path2 = get_resource_path("/TEST2.calendar")
+        path1 = java_resource_path("/TEST1.calendar")
+        path2 = java_resource_path("/TEST2.calendar")
 
         cal = jpy.get_type(
             "io.deephaven.time.calendar.BusinessCalendarXMLParser"

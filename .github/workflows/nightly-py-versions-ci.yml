@@ -7,8 +7,8 @@ name: Nightly Python Versions CI
 # - server suite: runs the engine in the test process, on the deephaven-server jars.
 # - client suite: starts a server with the deephaven-server command and tests against it.
 #
-# Floor: 3.10. python_requires still allows 3.9, which is end of life and on its way out (DH-24055).
-# Ceiling: the newest Python jpy has a wheel for, 3.15 as of jpy 2.2.0. 3.14t and 3.15t run with the GIL off.
+# The matrix lists every Python version that python_requires allows and jpy has a wheel for. A version on its way out of
+# python_requires can leave the matrix first. Free-threaded builds, the versions ending in t, run with the GIL off.
 
 on:
   schedule:
@@ -63,12 +63,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 3.14t and 3.15t are the free-threaded builds. 3.13t is left out: grpcio and numba have no 3.13t wheels.
+        # A free-threaded build is listed only when every dependency installs on it, from a wheel or a source build.
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14', '3.14t', '3.15', '3.15t']
         suite: ['server', 'client']
     runs-on: ubuntu-24.04
-    # A normal run takes under 10 minutes. A first 3.14t or 3.15t run adds about 17 to compile grpcio. Without a limit,
-    # a hung test runs for GitHub's default of 6 hours.
+    # A normal run takes under 10 minutes. A free-threaded job's first run also compiles the dependencies that have no
+    # wheel for it, about 20 minutes more. Without a limit, a hung test runs for GitHub's default of 6 hours.
     timeout-minutes: 45
     env:
       DEEPHAVEN_MAXMEM: 2G
@@ -97,8 +97,8 @@ jobs:
         # py-versions-test.sh uses uv to get the Python version and make the venv.
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
-          # grpcio has no Linux wheel for 3.14t or 3.15t, and numba none for 3.15t, so uv compiles them. grpcio takes
-          # about 17 minutes. The cache keeps the built wheels.
+          # uv compiles any dependency that has no wheel for the job's Python, often grpcio and numba on free-threaded
+          # builds. The cache keeps the built wheels for later runs.
           enable-cache: true
           cache-dependency-glob: 'py/*/setup.py'
           cache-suffix: ${{ matrix.suite }}-${{ matrix.python-version }}

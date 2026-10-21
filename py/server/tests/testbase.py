@@ -21,8 +21,9 @@ def table_equals(table_a: Table, table_b: Table) -> bool:
         raise DHError(e, "table equality test failed.") from e
 
 
-def get_resource_path(resource_path: str) -> str:
-    """Returns the file path of a test resource on the JVM classpath, such as "/TEST1.calendar"."""
+def java_resource_path(resource_path: str) -> str:
+    """Returns the file path of a resource the JVM can see, such as "/TEST1.calendar". The test calendars live in
+    Integrations/src/test/resources, which the test runners put on the JVM classpath."""
     url = jpy.get_type("java.lang.ClassLoader").getSystemResource(
         resource_path.lstrip("/")
     )

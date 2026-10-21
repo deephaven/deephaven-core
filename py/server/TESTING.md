@@ -53,6 +53,8 @@ The tests run on the jars installed in the venv, not on the build output. After 
 uv pip install --reinstall-package deephaven-server py/embedded-server/build/wheel/deephaven_server-*.whl
 ```
 
+In a venv made with Python's `venv` module, use `pip install --force-reinstall --no-deps` instead. A venv made by uv has no `pip`.
+
 Without the reinstall, the venv keeps the old jars. Old jars with new Python code in `py/server` can make unrelated tests fail.
 
 ## What the script does

@@ -26,7 +26,7 @@ from deephaven.column import (
 from deephaven.constants import MAX_LONG, NULL_LONG
 from deephaven.jcompat import j_array_list
 from deephaven.numpy import to_np_busdaycalendar, to_numpy, to_table
-from tests.testbase import BaseTestCase, get_resource_path
+from tests.testbase import BaseTestCase, java_resource_path
 
 
 @dataclass
@@ -170,7 +170,7 @@ class NumpyTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             to_np_busdaycalendar("test")
 
-        add_calendar(get_resource_path("/NUMPY_TEST.calendar"))
+        add_calendar(java_resource_path("/NUMPY_TEST.calendar"))
         jcal = calendar("NUMPY_TEST")
 
         # Include partial days
@@ -227,7 +227,7 @@ class NumpyTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             to_np_busdaycalendar("test")
 
-        add_calendar(get_resource_path("/EMPTY.calendar"))
+        add_calendar(java_resource_path("/EMPTY.calendar"))
         jcal = calendar("EMPTY")
 
         # Include partial days
