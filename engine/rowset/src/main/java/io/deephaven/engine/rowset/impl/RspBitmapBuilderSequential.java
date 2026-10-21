@@ -220,7 +220,11 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         // ix's ranges are ordered and disjoint, so they need checking only against the keys we already hold; comparing
         // every one with that same bound is as cheap as tracking which one is first. Past that check they go straight
         // to the containers.
-        final long heldLastKey = check ? (lastFlushedKey != -1 ? lastFlushedKey : rb.lastValue()) : -1;
+        final long heldLastKey = check
+                ? (lastFlushedKey != -1
+                        ? lastFlushedKey
+                        : rb.lastValue())
+                : -1;
         final LongRangeAbortableConsumer appendAfterHeld = (final long start, final long end) -> {
             final long shiftedStart = start + shiftAmount;
             if (shiftedStart <= heldLastKey) {
