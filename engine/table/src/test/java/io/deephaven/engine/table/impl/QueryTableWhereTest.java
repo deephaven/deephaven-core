@@ -2553,6 +2553,22 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
+    public void testNullBarrierRejected() {
+        final WhereFilter filter = WhereFilterFactory.getExpression("A < 50");
+        final IllegalArgumentException declared =
+                assertThrows(IllegalArgumentException.class, () -> filter.withDeclaredBarriers((Object) null));
+        assertTrue(declared.getMessage().contains("may not declare a null barrier"));
+        final IllegalArgumentException respected =
+                assertThrows(IllegalArgumentException.class, () -> filter.withRespectedBarriers(new Object(), null));
+        assertTrue(respected.getMessage().contains("may not respect a null barrier"));
+
+        // A table-api filter reaches the same check when where converts it.
+        final Table source = emptyTable(10).update("A = ii");
+        final Filter apiFilter = RawString.of("A < 5").withDeclaredBarriers((Object) null);
+        assertThrows(IllegalArgumentException.class, () -> source.where(apiFilter));
+    }
+
+    @Test
     public void testDataIndexRespectBarrierThrowsIfNotFound() {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
