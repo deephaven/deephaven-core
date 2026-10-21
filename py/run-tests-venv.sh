@@ -3,17 +3,17 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-# Runs the Python server or client tests in the active venv, without Docker. The venv needs deephaven-core,
-# deephaven-server and pydeephaven, and its Python is the one the tests run on.
-# - server: runs py/server/tests. test_helper starts the JVM in the test process, on the jars of the venv's
-#   deephaven-server package, the same jars the Docker image has in /opt/deephaven/server/lib.
+# Runs the Python server or client tests in the active venv, without Docker. The tests run on the venv's Python, with
+# its deephaven-core, deephaven-server and pydeephaven.
+# - server: runs py/server/tests. test_helper starts the JVM in the test process, on the venv's deephaven-server jars.
+#   The Docker image has the same jars in /opt/deephaven/server/lib.
 # - client: starts a server with the venv's deephaven-server, then runs py/client/tests against it.
 #
 # usage: run-tests-venv.sh <server|client> [test ...]
 #   test  optional unittest names, for example tests.test_csv. Default: all of tests/.
 #
-# The venv also needs the packages in py/<suite>/requirements-test.txt. The script warns about any that are missing. It
-# never installs or changes anything in the venv. See py/server/TESTING.md and py/client/TESTING.md.
+# The venv also needs py/<suite>/requirements-test.txt. The script warns about missing packages and never changes the
+# venv. See py/<suite>/TESTING.md.
 
 set -o errexit
 set -o nounset
@@ -41,7 +41,7 @@ if ! "${PYTHON}" -c "import importlib.util, sys; sys.exit(not all(importlib.util
     exit 1
 fi
 
-# The Python version, such as 3.12 or 3.14t for a free-threaded build. It names the build and report folders.
+# For example 3.12, or 3.14t for a free-threaded build. Names the build and report folders.
 PY_LABEL="$("${PYTHON}" -c 'import sys, sysconfig; print(f"{sys.version_info[0]}.{sys.version_info[1]}" + ("t" if sysconfig.get_config_var("Py_GIL_DISABLED") else ""))')"
 BUILD="${SUITE_DIR}/build/test-venv/${PY_LABEL}"
 WORK="${BUILD}/work"
@@ -50,8 +50,8 @@ rm -rf "${BUILD}" "${RESULTS}"
 mkdir -p "${BUILD}/data" "${BUILD}/cache" "${BUILD}/config" "${WORK}" "${RESULTS}"
 "${PYTHON}" -VV
 
-# Warn about test dependencies the venv lacks. A line with an environment marker is checked only when the packaging
-# library is there to evaluate the marker.
+# Warn about missing test dependencies. A line with an environment marker is checked only if the packaging library is
+# installed to evaluate it.
 "${PYTHON}" - "${SUITE_DIR}/requirements-test.txt" << 'EOF'
 import importlib.metadata, re, sys
 missing = []
@@ -82,13 +82,13 @@ if ! "${PYTHON}" -c "import xmlrunner" 2> /dev/null; then
     exit 1
 fi
 
-# The server and the tests read their directories from these, in place of the Docker image's /data and /cache.
+# Used by the server and the tests in place of the Docker image's /data and /cache.
 export DEEPHAVEN_DATA_DIR="${BUILD}/data"
 export DEEPHAVEN_CACHE_DIR="${BUILD}/cache"
 export DEEPHAVEN_CONFIG_DIR="${BUILD}/config"
 if [[ "${PY_LABEL}" == *t ]]; then
-    # grpcio, which pydeephaven uses, has not declared itself free-thread safe. Importing it turns the GIL back on for
-    # the rest of the run, unless PYTHON_GIL=0 keeps it off.
+    # grpcio hasn't declared free-thread support, so importing it turns the GIL back on for the rest of the run unless
+    # PYTHON_GIL=0.
     export PYTHON_GIL=0
 fi
 
@@ -100,8 +100,7 @@ if [[ "${SUITE}" == server ]]; then
     fi
     export DEEPHAVEN_PROPFILE=dh-defaults.prop
     export DEEPHAVEN_MAXMEM="${DEEPHAVEN_MAXMEM:-4g}"
-    # Beyond the server jars, the tests need the test config, time zones and calendars. These are plain files in the
-    # source tree, so nothing needs building.
+    # The tests also need the test config, time zones and calendars. They are plain files in the source tree.
     export DEEPHAVEN_CLASSPATH="${ROOT}/props/test-configs/src/main/resources:${ROOT}/Integrations/src/test/resources:${JARS}/*"
     # tests/test_time.py expects the JVM default time zone to be named "Etc/UTC", as it is in the Docker image.
     export TZ=Etc/UTC
@@ -111,11 +110,10 @@ if [[ "${SUITE}" == server ]]; then
     DISCOVER=(discover -s tests -t .)
 else
     PORT=10000
-    # Start a server with the settings of the Docker-based testPyClient task: anonymous and PSK logins, PSK
-    # "deephaven". Anonymous logins are on, so it listens on 127.0.0.1 only. The server command keeps running until its
-    # standard input closes, so it reads from a FIFO this script holds open.
-    # Start it from the build directory. Python puts the working directory first on sys.path, and the repository root
-    # has a coverage/ folder that shadows the coverage package numba imports.
+    # Same settings as the Docker-based testPyClient task: anonymous and PSK logins, PSK "deephaven". Anonymous logins
+    # are on, so bind to 127.0.0.1. The server command runs until its stdin closes, so it reads from a FIFO this script
+    # holds open. Start it in the build directory: Python puts the working directory first on sys.path, and the
+    # repository root's coverage/ folder shadows the coverage package numba imports.
     mkfifo "${BUILD}/server.stdin"
     exec 3<> "${BUILD}/server.stdin"
     (cd "${BUILD}" && exec "${VIRTUAL_ENV}/bin/deephaven" server --host 127.0.0.1 --port "${PORT}" --no-browser \

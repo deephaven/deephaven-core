@@ -4,9 +4,9 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-# Runs the Python server or client tests on one Python version, for the Nightly Python Versions CI workflow. It makes a
-# fresh venv, installs the Deephaven wheels and the test dependencies, then calls py/run-tests-venv.sh. Developers who
-# want to run the tests in their own venv call that script directly, see py/<suite>/TESTING.md.
+# CI only, for the Nightly Python Versions CI workflow. Makes a fresh venv for one Python version, installs the
+# Deephaven wheels and the test dependencies, then calls py/run-tests-venv.sh. Developers call that script in their own
+# venv, see py/<suite>/TESTING.md.
 #
 # usage: py-versions-test.sh <server|client> <python-version> [test ...]
 #   python-version  any version uv accepts, for example 3.10, 3.14 or 3.14t (free-threaded)
@@ -25,11 +25,10 @@ shift 2
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 VENV="${ROOT}/py/${SUITE}/build/py-versions/${PY_VERSION}/venv"
 
-# The deephaven-server, deephaven-core and pydeephaven wheels. deephaven-server pins deephaven-core to its own version,
-# so the two must come from the same build.
+# deephaven-server pins deephaven-core to its own version, so all three wheels must come from one build.
 WHEELS=()
 shopt -s nullglob
-# Quote the patterns, so they expand only below, under py/.
+# Quoted, so nullglob doesn't expand them against the current folder, where they match nothing.
 for pattern in 'embedded-server/build/wheel/deephaven_server-*.whl' 'server/build/wheel/deephaven_core-*.whl' \
         'client/build/wheel/pydeephaven-*.whl'; do
     found=("${ROOT}"/py/${pattern})
@@ -43,12 +42,11 @@ done
 shopt -u nullglob
 
 rm -rf "${VENV}"
-# --managed-python makes uv use its own Python build, which it downloads at the newest patch release it knows. Without
-# it, uv takes any matching Python already installed, which can be many patch releases old.
+# --managed-python uses uv's own Python build, at the newest patch release. Without it, uv takes any matching installed
+# Python, which can be many patches old.
 uv venv --quiet --managed-python --python "${PY_VERSION}" "${VENV}"
 uv pip install --quiet --python "${VENV}/bin/python" "${WHEELS[@]}"
-# Install the test dependencies one at a time, so a package with no wheel for this Python does not stop the others.
-# The tests that need a missing one skip or fail on their own.
+# One at a time, so a package with no wheel for this Python doesn't block the rest. Tests that need it skip or fail.
 while IFS= read -r req; do
     req="${req%%#*}"
     [[ -z "${req// /}" ]] && continue

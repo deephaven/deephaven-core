@@ -1,9 +1,9 @@
-# Python packages the tests in tests/ need beyond deephaven-core, deephaven-server and pydeephaven.
-# py/run-tests-venv.sh warns about any that are missing. Versions are left open, so the tests run against the latest
-# releases.
+# Packages the tests need beyond deephaven-core, deephaven-server and pydeephaven. py/run-tests-venv.sh warns about any
+# that are missing. Versions are open, so the tests run against the latest releases. requirements-dev.txt is different:
+# it holds the tools the wheel build uses.
 unittest-xml-reporting
 # tests/test_flightsql.py
 flightsql-dbapi
 adbc-driver-flightsql
-# The server-side script in tests/test_console.py imports numba, as the server Docker image has it.
+# tests/test_console.py runs a server-side script that imports numba.
 numba

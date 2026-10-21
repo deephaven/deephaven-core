@@ -30,8 +30,8 @@ def other():
     return Other(0)
 
 
-# BigInteger's hashCode() for 0 to 3 is the value itself, and its toString() is the value in decimal. jpy returns a
-# java.lang.Integer as a Python int, so an Integer would not stay a Java object here.
+# BigInteger's hashCode() for 0 to 3 is the value, and its toString() is the value in decimal. java.lang.Integer won't
+# do, because jpy returns it as a Python int.
 class MyObject(JObjectWrapper):
     j_object_type = jpy.get_type("java.math.BigInteger")
 
