@@ -7,8 +7,9 @@ name: Nightly Python Versions CI
 #   Docker image. Java hosts Python from the job's venv.
 # The Python packages install from source.
 #
-# Floor: python_requires in py/server/setup.py. Ceiling: the newest Python that jpy has a wheel for, 3.15 as of jpy
-# 2.2.0. The free-threaded 3.14t and 3.15t builds run with the GIL off.
+# Floor: 3.10. python_requires in py/server/setup.py still allows 3.9, which is end of life and on its way out (DH-24055).
+# Ceiling: the newest Python that jpy has a wheel for, 3.15 as of jpy 2.2.0. The free-threaded 3.14t and 3.15t builds
+# run with the GIL off.
 
 on:
   schedule:
@@ -63,7 +64,7 @@ jobs:
       fail-fast: false
       matrix:
         # 3.14t and 3.15t are the free-threaded builds. 3.13t is left out: grpcio and numba have no 3.13t wheels.
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14', '3.14t', '3.15', '3.15t']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14', '3.14t', '3.15', '3.15t']
         suite: ['server', 'client']
     runs-on: ubuntu-24.04
     # A normal run takes under 10 minutes. The first 3.14t or 3.15t run also compiles grpcio, about 17 minutes. Without a
