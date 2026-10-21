@@ -7,6 +7,7 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import elemental2.core.ReadonlyArray;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsTableOperations;
+import io.deephaven.web.client.api.JsTableReference;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import org.jetbrains.annotations.Nullable;
@@ -36,7 +37,7 @@ public class AggByOptions {
      * Only the initial state of this table is used, updates will be ignored.
      */
     @JsNullable
-    public JsTableOperations initialGroups;
+    public JsTableReference initialGroups;
 
     /**
      * The columns to group by. Must be specified if {@link #initialGroups} is non-null. If empty or unspecified, the

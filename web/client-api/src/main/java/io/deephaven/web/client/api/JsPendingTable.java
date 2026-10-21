@@ -16,7 +16,7 @@ import jsinterop.annotations.JsMethod;
  * <p>
  * This interface is "Thenable" / "PromiseLike", it can be awaited or have methods chained to it like a promise to
  * resolve into an object with metadata that can have data fetched from it, and will result in a
- * {@link JsResolvedTable}. If it is awaited, the resulting table must be closed to indicate that it will no longer be
+ * {@link JsImmutableTable}. If it is awaited, the resulting table must be closed to indicate that it will no longer be
  * used and server resources can be freed. A future version of this API could provide "liveness scopes" to claim/release
  * batches of tables at a time automatically.
  * <p>
@@ -27,10 +27,10 @@ import jsinterop.annotations.JsMethod;
  */
 @TsName(namespace = "dh", name = "PendingTable")
 @TsInterface
-public interface JsPendingTable extends JsTableOperations, PromiseLike<JsResolvedTable> {
+public interface JsPendingTable extends JsTableOperations, PromiseLike<JsImmutableTable> {
     @Override
-    default Promise<JsResolvedTable> resolve() {
-        return Promise.resolve((IThenable<JsResolvedTable>) this);
+    default Promise<JsImmutableTable> resolve() {
+        return Promise.resolve((IThenable<JsImmutableTable>) this);
     }
 
     // workaround for a javadoc -> ts issue

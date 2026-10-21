@@ -109,7 +109,7 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
  * </ol>
  */
 @TsName(namespace = "dh", name = "Table")
-public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject {
+public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject, JsResolvedTable {
     /**
      * The table size has updated, so live scrollbars and the like can be updated accordingly.
      */
@@ -292,6 +292,19 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .build();
     }
 
+    /**
+     * The chainable, immutable {@link JsTableOperations} over this table's current server-side state. The view owns
+     * nothing: operations chained on it produce new tables, each retained only once awaited, and this table is
+     * unaffected. The view reads this table's ticket when each operation is called, so a chain started after
+     * {@link #applyFilter} or {@link #applySort} builds on the filtered or sorted state.
+     *
+     * @return an operations view over this table
+     */
+    @JsMethod
+    public JsTableOperations operations() {
+        return new MicrotaskBatchImpl.View(this);
+    }
+
     @JsMethod
     public Promise<JsTable> batch(JsConsumer<RequestBatcher> userCode) {
         boolean rootBatch = batchDepth++ == 0;
@@ -441,14 +454,15 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     /**
      * Gets the names of attributes present on this table.
      *
-     * @return String[] of attribute names.
+     * @return the attribute names.
      */
+    @Override
     @JsMethod
-    public String[] getAttributes() {
+    public JsArray<String> getAttributes() {
         TableAttributesDefinition attrs = lastVisibleState().getTableDef().getAttributes();
-        return Stream.concat(
+        return Js.uncheckedCast(Stream.concat(
                 Arrays.stream(attrs.getKeys()),
-                attrs.getRemainingAttributeKeys().stream()).toArray(String[]::new);
+                attrs.getRemainingAttributeKeys().stream()).toArray(String[]::new));
     }
 
     /**
@@ -1421,7 +1435,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     @JsMethod
-    public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
+    public Promise<JsTable> snapshot(JsTableReference baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> stampColumns) {
         Objects.requireNonNull(baseTable, "Snapshot base table");
         final boolean realDoInitialSnapshot;
@@ -1434,7 +1448,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 "snapshot(" + baseTable + ", " + doInitialSnapshot + ", " + stampColumns + ")";
         return workerConnection.newState((c, state) -> {
             SnapshotWhenTableRequest.Builder request = SnapshotWhenTableRequest.newBuilder()
-                    .setBaseId(baseTable.state().getHandle().makeTableReference())
+                    .setBaseId(TableReference.newBuilder().setTicket(baseTable.typedTicket().getTicket()))
                     .setTriggerId(state().getHandle().makeTableReference())
                     .setResultId(state.getHandle().makeTicket())
                     .setInitial(realDoInitialSnapshot);
@@ -1455,7 +1469,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @Override
     @JsMethod
     @Deprecated
-    public Promise<JsTable> join(String joinType, JoinableTable rightTable,
+    public Promise<JsTable> join(String joinType, JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule) {
@@ -1474,18 +1488,18 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     @JsMethod
-    public Promise<JsTable> asOfJoin(JoinableTable rightTable,
+    public Promise<JsTable> asOfJoin(JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule) {
-        if (rightTable.state().getConnection() != workerConnection) {
+        if (rightTable.getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
         return workerConnection.newState((c, state) -> {
             AsOfJoinTablesRequest.Builder request = AsOfJoinTablesRequest.newBuilder();
             request.setLeftId(state().getHandle().makeTableReference());
-            request.setRightId(rightTable.state().getHandle().makeTableReference());
+            request.setRightId(TableReference.newBuilder().setTicket(rightTable.typedTicket().getTicket()));
             request.setResultId(state.getHandle().makeTicket());
             request.addAllColumnsToMatch(MatchPairUnion.toStringArray(columnsToMatch));
             if (columnsToAdd != null) {
@@ -1502,18 +1516,18 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     @JsMethod
-    public Promise<JsTable> crossJoin(JoinableTable rightTable,
+    public Promise<JsTable> crossJoin(JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable Double reserveBits) {
-        if (rightTable.state().getConnection() != workerConnection) {
+        if (rightTable.getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
         return workerConnection.newState((c, state) -> {
             CrossJoinTablesRequest.Builder request = CrossJoinTablesRequest.newBuilder();
             request.setLeftId(state().getHandle().makeTableReference());
-            request.setRightId(rightTable.state().getHandle().makeTableReference());
+            request.setRightId(TableReference.newBuilder().setTicket(rightTable.typedTicket().getTicket()));
             request.setResultId(state.getHandle().makeTicket());
             request.addAllColumnsToMatch(MatchPairUnion.toStringArray(columnsToMatch));
             if (columnsToAdd != null) {
@@ -1530,17 +1544,17 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     @JsMethod
-    public Promise<JsTable> exactJoin(JoinableTable rightTable,
+    public Promise<JsTable> exactJoin(JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd) {
-        if (rightTable.state().getConnection() != workerConnection) {
+        if (rightTable.getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
         return workerConnection.newState((c, state) -> {
             ExactJoinTablesRequest.Builder request = ExactJoinTablesRequest.newBuilder()
                     .setLeftId(state().getHandle().makeTableReference())
-                    .setRightId(rightTable.state().getHandle().makeTableReference())
+                    .setRightId(TableReference.newBuilder().setTicket(rightTable.typedTicket().getTicket()))
                     .setResultId(state.getHandle().makeTicket())
                     .addAllColumnsToMatch(MatchPairUnion.toStringArray(columnsToMatch));
             if (columnsToAdd != null) {
@@ -1554,17 +1568,17 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     @JsMethod
-    public Promise<JsTable> naturalJoin(JoinableTable rightTable,
+    public Promise<JsTable> naturalJoin(JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd) {
-        if (rightTable.state().getConnection() != workerConnection) {
+        if (rightTable.getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
         return workerConnection.newState((c, state) -> {
             NaturalJoinTablesRequest.Builder request = NaturalJoinTablesRequest.newBuilder()
                     .setLeftId(state().getHandle().makeTableReference())
-                    .setRightId(rightTable.state().getHandle().makeTableReference())
+                    .setRightId(TableReference.newBuilder().setTicket(rightTable.typedTicket().getTicket()))
                     .setResultId(state.getHandle().makeTicket())
                     .addAllColumnsToMatch(MatchPairUnion.toStringArray(columnsToMatch));
             if (columnsToAdd != null) {

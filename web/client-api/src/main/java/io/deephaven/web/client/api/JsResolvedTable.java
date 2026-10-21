@@ -15,27 +15,21 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
 /**
- * A server-side table instance that the JS client has retained a reference to, and must be closed when no longer
- * needed. Provides access to the table's data and metadata. Supports all the methods of {@link JsTableOperations}, but
- * any returned table must again be awaited, closed when finished being used.
+ * A server-side table that the client has retained: its data and metadata can be read, and it must be closed when no
+ * longer needed. This is what every table-producing API hands back, whatever its flavor. A {@link JsTable} is one, with
+ * its own client-side filter/sort state on top; an {@link JsImmutableTable} is one that additionally offers the
+ * chainable {@link JsTableOperations}. Code that only reads a table can accept this type and take either.
  */
 @TsName(namespace = "dh", name = "ResolvedTable")
 @TsInterface
-public interface JsResolvedTable extends JsTableOperations {
-    @Override
-    default Promise<JsResolvedTable> resolve() {
-        return Promise.resolve(this);
-    }
-
+public interface JsResolvedTable {
     /**
      * The total count of rows in the table. If there is a viewport subscription active, this size will be updated when
-     * the subscription updates. If not, and {@link #isUncoalesced()} is true, the size will be
-     * {@link #SIZE_UNCOALESCED}. Otherwise, the size will be updated when the server's update graph processes changes.
-     * <p>
-     * When the size changes, the {@link #EVENT_SIZECHANGED} event will be fired.
+     * the subscription updates. If not, and the table is uncoalesced, the size will be
+     * {@link JsTable#SIZE_UNCOALESCED}. Otherwise, the size will be updated when the server's update graph processes
+     * changes.
      *
-     * @return the size of the table, or {@link #SIZE_UNCOALESCED} if there is no subscription and the table is
-     *         uncoalesced.
+     * @return the size of the table
      */
     @JsProperty
     double getSize();
@@ -48,6 +42,12 @@ public interface JsResolvedTable extends JsTableOperations {
     @JsProperty
     ReadonlyArray<Column> getColumns();
 
+    /**
+     * Finds a column by name.
+     *
+     * @param columnName the name of the column
+     * @return the column
+     */
     @JsMethod
     Column findColumn(String columnName);
 
@@ -60,8 +60,8 @@ public interface JsResolvedTable extends JsTableOperations {
     ReadonlyArray<String> getAttributes();
 
     /**
-     * {@code null} if no property exists, a string if it is an easily serializable property, or a {@code Promise
-     * &lt;ResolvedTable&gt;} that will either resolve with a table or error out if the object can't be passed to JS.
+     * {@code null} if no property exists, a string if it is an easily serializable property, or a promise of a table
+     * that will either resolve with a table or error out if the object can't be passed to JS.
      *
      * @param attributeName the name of the attribute to read
      * @return the value of the attribute or null if none with that name exists
@@ -86,14 +86,6 @@ public interface JsResolvedTable extends JsTableOperations {
     // TODO support Symbol.dispose, if present
     @JsMethod
     void close();
-
-    /**
-     * Returns another instance of this table, allowing either instance to be closed without affecting the other.
-     *
-     * @return a copy of this table, sharing resources on the server
-     */
-    @JsMethod
-    Promise<JsResolvedTable> copy();
 
     // /**
     // * Seek the row matching the data provided

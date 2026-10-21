@@ -89,8 +89,8 @@ public interface ServerObject {
 
         @TsUnionMember
         @JsOverlay
-        default JsResolvedTable asResolvedTable() {
-            return (JsResolvedTable) this;
+        default JsImmutableTable asImmutableTable() {
+            return (JsImmutableTable) this;
         }
     }
 }

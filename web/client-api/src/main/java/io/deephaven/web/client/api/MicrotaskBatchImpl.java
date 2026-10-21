@@ -8,6 +8,7 @@ import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
@@ -25,10 +26,56 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Implements the immutable table API over a single server ticket. Operations called on any instance are collected per
+ * connection and sent as one {@link BatchTableRequest} when the current microtask ends.
+ */
 public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
     /**
-     * Internal thenable implementation that wraps an ongoing promise, and allows new calls to race that operation.
+     * The ownerless {@link JsTableOperations} over an existing table such as a {@link JsTable}, reading the table's
+     * current ticket each time an operation is called. Holds no server resources of its own.
+     */
+    public static class View implements JsTableOperations {
+        private final ServerObject source;
+
+        public View(ServerObject source) {
+            this.source = source;
+        }
+
+        // TODO This should not touch the server at all: the view should hold the source's ClientTableState, retain
+        // it, and resolve() should wrap that state in a Resolved. That lands when Resolved is backed by a CTS; until
+        // then, a fetch_table op in the current batch exports the same table again, at one round trip.
+        @Override
+        public Promise<JsImmutableTable> resolve() {
+            Ticket ticket = getConnection().getTickets().newExportTicket();
+            return call(ticket, BatchTableRequest.Operation.newBuilder()
+                    .setFetchTable(FetchTableRequest.newBuilder()
+                            .setSourceId(TableReference.newBuilder()
+                                    .setTicket(typedTicket().getTicket()))
+                            .setResultId(ticket)))
+                    .resolve();
+        }
+
+        @Override
+        public JsPendingTable call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
+            return enqueue(getConnection(), resultId, operation);
+        }
+
+        @Override
+        public TypedTicket typedTicket() {
+            return source.typedTicket();
+        }
+
+        @Override
+        public WorkerConnection getConnection() {
+            return source.getConnection();
+        }
+    }
+
+    /**
+     * Internal thenable implementation that wraps an ongoing operation, and allows new calls to race that operation.
+     * Retained only once awaited; if never awaited, released as soon as the server reports it created.
      */
     private static class Pending extends MicrotaskBatchImpl implements JsPendingTable {
         private final BatchTableRequest.Operation operation;
@@ -38,14 +85,24 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             this.operation = operation.build();
         }
 
+        /**
+         * The promise of the table the caller will receive; calling this retains the result.
+         */
+        private Promise<JsImmutableTable> result() {
+            retained = true;
+            return promise.asPromise().then(etcr -> Promise.resolve(new Resolved(connection, ticket)));
+        }
+
         @Override
         public <V> PromiseLike<V> then(
-                @Nullable ThenOnFulfilledCallbackFn<? super JsResolvedTable, ? extends V> onFulfilled,
+                @Nullable ThenOnFulfilledCallbackFn<? super JsImmutableTable, ? extends V> onFulfilled,
                 @Nullable ThenOnRejectedCallbackFn<? extends V> onRejected) {
-            retained = true;
-            return Js.cast(promise.asPromise().then(etcr -> {
-                return Promise.resolve(new Resolved(connection, ticket, operation.toBuilder()));
-            }).then(Js.cast(onFulfilled), Js.cast(onRejected)));
+            return Js.cast(result().then(Js.cast(onFulfilled), Js.cast(onRejected)));
+        }
+
+        @Override
+        public Promise<JsImmutableTable> resolve() {
+            return result();
         }
 
         @Override
@@ -62,12 +119,9 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
     // TODO this all needs to be done, either by wrapping JsTable or otherwise sharing details about how
     // to interact with a CTS
-    private static class Resolved extends MicrotaskBatchImpl implements JsResolvedTable {
-        private final BatchTableRequest.Operation operation;
-
-        public Resolved(WorkerConnection connection, Ticket ticket, BatchTableRequest.Operation.Builder operation) {
+    private static class Resolved extends MicrotaskBatchImpl implements JsImmutableTable {
+        public Resolved(WorkerConnection connection, Ticket ticket) {
             super(connection, ticket);
-            this.operation = operation.build();
         }
 
         @Override
@@ -118,8 +172,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        public Promise<JsResolvedTable> copy() {
-            return Promise.resolve(new Resolved(connection, ticket, operation.toBuilder()));
+        public Promise<JsImmutableTable> copy() {
+            return Promise.resolve(new Resolved(connection, ticket));
         }
     }
 
@@ -130,7 +184,10 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     protected final LazyPromise<ExportedTableCreationResponse> promise = new LazyPromise<>();
     protected State state = State.ENQUEUED;
     protected boolean retained;
-    private static @Nullable List<Pending> enqueued;
+    /**
+     * Operations waiting for the current microtask to end, per connection: each connection gets its own batch request.
+     */
+    private static final Map<WorkerConnection, List<Pending>> enqueued = new HashMap<>();
     protected final WorkerConnection connection;
     protected final Ticket ticket;
 
@@ -155,19 +212,30 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     @Override
     public JsPendingTable call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
         checkRetained();
-        if (enqueued == null) {
-            ArrayList<Pending> tasks = new ArrayList<>();
-            enqueued = tasks;
+        return enqueue(connection, resultId, operation);
+    }
+
+    /**
+     * Queues an operation on the given connection's next batch.
+     */
+    public static JsPendingTable enqueue(WorkerConnection connection, Ticket resultId,
+            BatchTableRequest.Operation.Builder operation) {
+        Pending pending = new Pending(connection, resultId, operation);
+        List<Pending> tasks = enqueued.get(connection);
+        if (tasks == null) {
+            tasks = new ArrayList<>();
+            enqueued.put(connection, tasks);
+            List<Pending> batch = tasks;
 
             // Wait a microtask, then send all accumulated requests in a single gRPC call
             Promise.resolve((Object) null).then(ignore -> {
-                assert tasks == enqueued;
-                enqueued = null;
+                List<Pending> removed = enqueued.remove(connection);
+                assert removed == batch;
 
                 BatchTableRequest.Builder request = BatchTableRequest.newBuilder();
                 Map<Ticket, Pending> ticketToTask = new HashMap<>();
-                for (int i = 0; i < tasks.size(); i++) {
-                    Pending task = tasks.get(i);
+                for (int i = 0; i < batch.size(); i++) {
+                    Pending task = batch.get(i);
                     if (task.state != State.ENQUEUED) {
                         throw new IllegalStateException("Task " + i + " was not in ENQUEUED state, but " + task.state);
                     }
@@ -179,30 +247,30 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 // Create a single stream for all operations, notify each individual operation of the result when it
                 // finishes
                 ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper.of(observer -> {
-                    getConnection().tableServiceClient().batch(request.build(), observer);
+                    connection.tableServiceClient().batch(request.build(), observer);
                 });
                 stream.onData(etcr -> {
-                    Pending pending = ticketToTask.remove(etcr.getResultId().getTicket());
+                    Pending task = ticketToTask.remove(etcr.getResultId().getTicket());
                     if (etcr.getSuccess()) {
-                        if (pending.retained) {
-                            pending.state = State.RESOLVED;
-                            pending.promise.succeed(etcr);
+                        if (task.retained) {
+                            task.state = State.RESOLVED;
+                            task.promise.succeed(etcr);
                         } else {
-                            pending.state = State.RELEASED;
-                            pending.promise.fail("Resolved, but was never retained, cannot be retained now");
+                            task.state = State.RELEASED;
+                            task.promise.fail("Resolved, but was never retained, cannot be retained now");
                             // TODO this is probably too early, other operations could still be using it. CTS has
                             // some tooling to handle this for us, probably defer to that
-                            pending.connection.releaseTicket(pending.ticket);
+                            task.connection.releaseTicket(task.ticket);
                         }
                     } else {
-                        pending.state = State.FAILED;
-                        pending.promise.fail(etcr.getErrorInfo());
+                        task.state = State.FAILED;
+                        task.promise.fail(etcr.getErrorInfo());
                     }
                 });
                 stream.onEnd(status -> {
-                    for (Pending pending : ticketToTask.values()) {
-                        pending.state = State.FAILED;
-                        pending.promise.fail(status.getDescription());
+                    for (Pending task : ticketToTask.values()) {
+                        task.state = State.FAILED;
+                        task.promise.fail(status.getDescription());
                     }
                     ticketToTask.clear();
                 });
@@ -210,8 +278,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 return null;
             });
         }
-        Pending pending = new Pending(connection, resultId, operation);
-        enqueued.add(pending);
+        tasks.add(pending);
         return pending;
     }
 

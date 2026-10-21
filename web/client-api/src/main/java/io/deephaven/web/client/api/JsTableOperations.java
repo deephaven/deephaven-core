@@ -23,6 +23,7 @@ import io.deephaven.proto.backplane.grpc.FlattenRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SliceRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
@@ -44,7 +45,7 @@ import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import jsinterop.base.Js;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
@@ -88,7 +89,7 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
  * class SwapFilters() {
  *     constructor(table: dh.TableOperations) {
  *         this.filters: ReadonlyArray&lt;dh.FilterCondition> = [];
- *         this.table: Promise&lt;dh.ResolvedTable> = table.resolve();
+ *         this.table: Promise&lt;dh.ImmutableTable> = table.resolve();
  *         this.filteredTable: null|Promise&lt;dh.ResolvedTable> = null;
  *     }
  *     changeFilters(filters: ReadonlyArray&lt;dh.FilterCondition>) {
@@ -125,14 +126,14 @@ import static io.deephaven.web.client.api.JsTableOperations.NaturalJoinType.*;
 public interface JsTableOperations extends ServerObject {
 
     /**
-     * When unsure if this is a {@link JsPendingTable} or a {@link JsResolvedTable}, this will unambiguously provide a
-     * promise that results in a {@link JsResolvedTable}. Alternatively, one could simply await this instance and assume
-     * the result is a ResolvedTable, but this is a type-safe alternative to that.
+     * Provides a promise of a retained {@link JsImmutableTable} for this table, whatever this instance is: a
+     * {@link JsPendingTable} resolves, a {@link JsImmutableTable} copies itself, and the operations view of a
+     * {@link JsTable} exports the table again. The caller owns the result and must close it.
      *
-     * @return a promise that resolves to a retained ResolvedTable instance
+     * @return a promise that resolves to a retained ImmutableTable instance
      */
     @JsMethod
-    Promise<JsResolvedTable> resolve();
+    Promise<JsImmutableTable> resolve();
 
     /**
      * Internal method to make the async call to the server.
@@ -183,6 +184,12 @@ public interface JsTableOperations extends ServerObject {
                                 .setDirection(SortDescriptor.SortDirection.REVERSE))));
     }
 
+    /**
+     * A server-side snapshot of the entire table as of the time the request is processed. The result does not update.
+     * This is what {@link JsTable#freeze()} does; the name here follows the other Deephaven clients.
+     *
+     * @return a new, non-ticking table with the same contents as this table at that moment
+     */
     @JsMethod
     default JsPendingTable snapshot() {
         Ticket ticket = getConnection().getTickets().newExportTicket();
@@ -240,7 +247,8 @@ public interface JsTableOperations extends ServerObject {
      * @return the snapshot table
      */
     @JsMethod
-    default JsPendingTable snapshotWhen(JsTableOperations trigger, SnapshotWhenOptions options) {
+    default JsPendingTable snapshotWhen(JsTableReference trigger,
+            SnapshotWhenOptions options) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setSnapshotWhen(SnapshotWhenTableRequest
@@ -259,6 +267,12 @@ public interface JsTableOperations extends ServerObject {
                         options.stampColumns != null ? options.stampColumns.asList() : Collections.emptyList())));
     }
 
+    /**
+     * Sorts the table by the given columns.
+     *
+     * @param sorts the sorts to apply, in order of precedence
+     * @return a sorted table
+     */
     // omitting sortDescending, sort objects have this for us
     @JsMethod
     default JsPendingTable sort(ReadonlyArray<Sort.SortUnion> sorts) {
@@ -302,7 +316,8 @@ public interface JsTableOperations extends ServerObject {
      * @return a new filtered table
      */
     @JsMethod
-    default JsPendingTable whereIn(JsTableOperations rightTable, ReadonlyArray<Column.ColumnOrName> columnsToMatch) {
+    default JsPendingTable whereIn(JsTableReference rightTable,
+            ReadonlyArray<Column.ColumnOrName> columnsToMatch) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setWhereIn(WhereInRequest.newBuilder()
@@ -327,7 +342,8 @@ public interface JsTableOperations extends ServerObject {
      * @return a new filtered table
      */
     @JsMethod
-    default JsPendingTable whereNotIn(JsTableOperations rightTable, ReadonlyArray<Column.ColumnOrName> columnsToMatch) {
+    default JsPendingTable whereNotIn(JsTableReference rightTable,
+            ReadonlyArray<Column.ColumnOrName> columnsToMatch) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setWhereIn(WhereInRequest.newBuilder()
@@ -416,7 +432,8 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with those columns appended
      */
     @JsMethod
-    default JsPendingTable updateView(ReadonlyArray<JsTable.CustomColumnArgUnionType> columns) {
+    default JsPendingTable updateView(
+            ReadonlyArray<JsTable.CustomColumnArgUnionType> columns) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setUpdateView(selectOrUpdate(columns)
@@ -452,7 +469,8 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with those columns appended
      */
     @JsMethod
-    default JsPendingTable lazyUpdate(ReadonlyArray<JsTable.CustomColumnArgUnionType> columns) {
+    default JsPendingTable lazyUpdate(
+            ReadonlyArray<JsTable.CustomColumnArgUnionType> columns) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setLazyUpdate(selectOrUpdate(columns)
@@ -526,21 +544,33 @@ public interface JsTableOperations extends ServerObject {
      */
     // TODO add an options type for these various flags?
     @JsMethod
-    default JsPendingTable naturalJoin(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
-            @JsOptional @JsNullable ReadonlyArray<String> columnsToAdd,
+    default JsPendingTable naturalJoin(JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable NaturalJoinType joinType) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
+        return call(ticket, naturalJoinOperation(ticket, rightTable, columnsToMatch, columnsToAdd, joinType));
+    }
 
+    /**
+     * Builds the request for {@link #naturalJoin}, so implementations that return a different pending type can share
+     * it.
+     */
+    private BatchTableRequest.Operation.Builder naturalJoinOperation(Ticket resultId, JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @Nullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
+            @Nullable NaturalJoinType joinType) {
         NaturalJoinTablesRequest.Builder join = NaturalJoinTablesRequest.newBuilder()
-                .setResultId(ticket)
+                .setResultId(resultId)
                 .setLeftId(TableReference.newBuilder()
                         .setTicket(typedTicket().getTicket())
                         .build())
                 .setRightId(TableReference.newBuilder()
                         .setTicket(rightTable.typedTicket().getTicket())
                         .build())
-                .addAllColumnsToMatch(columnsToMatch.asList())
-                .addAllColumnsToAdd(columnsToAdd != null ? columnsToAdd.asList() : Collections.emptyList());
+                .addAllColumnsToMatch(JsTable.MatchPairUnion.toStringArray(columnsToMatch))
+                .addAllColumnsToAdd(columnsToAdd != null ? JsTable.MatchPairUnion.toStringArray(columnsToAdd)
+                        : Collections.emptyList());
         if (joinType != null) {
             switch (joinType.toString()) {
                 case ERROR_ON_DUPLICATE:
@@ -557,7 +587,7 @@ public interface JsTableOperations extends ServerObject {
                     break;
             }
         }
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setNaturalJoin(join));
+        return BatchTableRequest.Operation.newBuilder().setNaturalJoin(join);
     }
 
     /**
@@ -570,21 +600,31 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the joined columns
      */
     @JsMethod
-    default JsPendingTable exactJoin(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
-            @JsOptional @JsNullable ReadonlyArray<String> columnsToAdd) {
+    default JsPendingTable exactJoin(JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
+        return call(ticket, exactJoinOperation(ticket, rightTable, columnsToMatch, columnsToAdd));
+    }
 
+    /**
+     * Builds the request for {@link #exactJoin}.
+     */
+    private BatchTableRequest.Operation.Builder exactJoinOperation(Ticket resultId, JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @Nullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
         ExactJoinTablesRequest.Builder request = ExactJoinTablesRequest.newBuilder()
-                .setResultId(ticket)
+                .setResultId(resultId)
                 .setLeftId(TableReference.newBuilder()
                         .setTicket(typedTicket().getTicket())
                         .build())
                 .setRightId(TableReference.newBuilder()
                         .setTicket(rightTable.typedTicket().getTicket())
                         .build())
-                .addAllColumnsToMatch(columnsToMatch.asList())
-                .addAllColumnsToAdd(columnsToAdd != null ? columnsToAdd.asList() : Collections.emptyList());
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setExactJoin(request));
+                .addAllColumnsToMatch(JsTable.MatchPairUnion.toStringArray(columnsToMatch))
+                .addAllColumnsToAdd(columnsToAdd != null ? JsTable.MatchPairUnion.toStringArray(columnsToAdd)
+                        : Collections.emptyList());
+        return BatchTableRequest.Operation.newBuilder().setExactJoin(request);
     }
 
     /**
@@ -598,25 +638,36 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the joined columns
      */
     @JsMethod
-    default JsPendingTable join(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
-            @JsOptional @JsNullable ReadonlyArray<String> columnsToAdd,
+    default JsPendingTable crossJoin(JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable Double reserveBits) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
+        return call(ticket, crossJoinOperation(ticket, rightTable, columnsToMatch, columnsToAdd, reserveBits));
+    }
 
+    /**
+     * Builds the request for {@link #crossJoin}.
+     */
+    private BatchTableRequest.Operation.Builder crossJoinOperation(Ticket resultId, JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @Nullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
+            @Nullable Double reserveBits) {
         CrossJoinTablesRequest.Builder request = CrossJoinTablesRequest.newBuilder()
-                .setResultId(ticket)
+                .setResultId(resultId)
                 .setLeftId(TableReference.newBuilder()
                         .setTicket(typedTicket().getTicket())
                         .build())
                 .setRightId(TableReference.newBuilder()
                         .setTicket(rightTable.typedTicket().getTicket())
                         .build())
-                .addAllColumnsToMatch(columnsToMatch.asList())
-                .addAllColumnsToAdd(columnsToAdd != null ? columnsToAdd.asList() : Collections.emptyList());
+                .addAllColumnsToMatch(JsTable.MatchPairUnion.toStringArray(columnsToMatch))
+                .addAllColumnsToAdd(columnsToAdd != null ? JsTable.MatchPairUnion.toStringArray(columnsToAdd)
+                        : Collections.emptyList());
         if (reserveBits != null) {
             request.setReserveBits((int) (double) reserveBits);
         }
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setCrossJoin(request));
+        return BatchTableRequest.Operation.newBuilder().setCrossJoin(request);
     }
 
     /**
@@ -655,50 +706,97 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the joined columns
      */
     @JsMethod
-    default JsPendingTable asOfJoin(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
-            @JsOptional @JsNullable ReadonlyArray<String> columnsToAdd,
+    default JsPendingTable asOfJoin(JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable AsOfMatchRule asOfMatchRule) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
-        AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, ticket);
+        return call(ticket, asOfJoinOperation(ticket, rightTable, columnsToMatch, columnsToAdd, asOfMatchRule));
+    }
 
-        BatchTableRequest.Operation.Builder batch = BatchTableRequest.Operation.newBuilder();
-        String inferredMatchRule = inferMatchRule(builder.getAsOfColumn());
+    /**
+     * Builds the request for {@link #asOfJoin}: an aj or raj depending on the match rule.
+     * <p>
+     * The rule names follow the legacy JS API (and the deprecated {@code AsOfJoinTablesRequest}), where
+     * {@code LESS_THAN_EQUAL} means an aj whose match column reads {@code "L >= R"}: the right-hand value is less than
+     * or equal to the left. So {@code LESS_THAN_EQUAL}/{@code LESS_THAN} are an aj with {@code >=}/{@code >}, and
+     * {@code GREATER_THAN_EQUAL}/{@code GREATER_THAN} are a raj with {@code <=}/{@code <}.
+     * <p>
+     * If the last match column carries an operator, the rule is read from it and must agree with any rule given. If it
+     * is a bare name or a legacy {@code "L=R"} pair, the rule given (default {@code LESS_THAN_EQUAL}) supplies the
+     * operator, so strict rules are honored either way.
+     */
+    private BatchTableRequest.Operation.Builder asOfJoinOperation(Ticket resultId, JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @Nullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
+            @Nullable AsOfMatchRule asOfMatchRule) {
+        AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, resultId);
+
+        String asOfColumn = builder.getAsOfColumn();
+        String inferredMatchRule = inferMatchRule(asOfColumn);
+        String rule;
         if (asOfMatchRule != null) {
-            if (inferredMatchRule != null && !asOfMatchRule.toString().equals(inferredMatchRule)) {
-                throw new IllegalArgumentException(
-                        "Formula " + builder.getAsOfColumn() + " doesn't match rule " + asOfMatchRule);
+            rule = asOfMatchRule.toString();
+            if (inferredMatchRule != null && !rule.equals(inferredMatchRule)) {
+                throw new IllegalArgumentException("Formula " + asOfColumn + " doesn't match rule " + rule);
             }
         } else {
-            if (inferredMatchRule == null) {
-                throw new IllegalArgumentException("Cannot infer match rule for column " + builder.getAsOfColumn()
-                        + ", specify asOfMatchRule argument or clarify the formula");
-            }
-            asOfMatchRule = Js.cast(inferredMatchRule);
+            rule = inferredMatchRule != null ? inferredMatchRule : AsOfMatchRule.LESS_THAN_EQUAL;
         }
-        switch (asOfMatchRule.toString()) {
-            case AsOfMatchRule.GREATER_THAN:
-            case AsOfMatchRule.GREATER_THAN_EQUAL:
-                batch.setRaj(builder);
-                break;
+        if (inferredMatchRule == null) {
+            // No operator in the column; write the one the rule implies, splitting a legacy "L=R" pair if present
+            int eq = asOfColumn.indexOf('=');
+            String left = eq < 0 ? asOfColumn : asOfColumn.substring(0, eq);
+            String right = eq < 0 ? asOfColumn : asOfColumn.substring(eq + 1);
+            builder.setAsOfColumn(left.trim() + operatorForRule(rule) + right.trim());
+        }
+
+        BatchTableRequest.Operation.Builder batch = BatchTableRequest.Operation.newBuilder();
+        switch (rule) {
             case AsOfMatchRule.LESS_THAN:
             case AsOfMatchRule.LESS_THAN_EQUAL:
                 batch.setAj(builder);
                 break;
+            case AsOfMatchRule.GREATER_THAN:
+            case AsOfMatchRule.GREATER_THAN_EQUAL:
+                batch.setRaj(builder);
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown as-of match rule: " + rule);
         }
-        return call(ticket, batch);
+        return batch;
     }
 
-    private String inferMatchRule(String asOfColumn) {
-        if (asOfColumn.contains(">=")) {
-            return AsOfMatchRule.GREATER_THAN_EQUAL;
+    private static String operatorForRule(String rule) {
+        switch (rule) {
+            case AsOfMatchRule.LESS_THAN_EQUAL:
+                return ">=";
+            case AsOfMatchRule.LESS_THAN:
+                return ">";
+            case AsOfMatchRule.GREATER_THAN_EQUAL:
+                return "<=";
+            case AsOfMatchRule.GREATER_THAN:
+                return "<";
+            default:
+                throw new IllegalArgumentException("Unknown as-of match rule: " + rule);
         }
-        if (asOfColumn.contains("<=")) {
+    }
+
+    /**
+     * Reads the rule implied by the operator in a match column, with the legacy naming described on
+     * {@link #asOfJoinOperation}; {@code null} if the column has no operator.
+     */
+    private static String inferMatchRule(String asOfColumn) {
+        if (asOfColumn.contains(">=")) {
             return AsOfMatchRule.LESS_THAN_EQUAL;
         }
-        if (asOfColumn.contains("<")) {
-            return AsOfMatchRule.LESS_THAN;
+        if (asOfColumn.contains("<=")) {
+            return AsOfMatchRule.GREATER_THAN_EQUAL;
         }
         if (asOfColumn.contains(">")) {
+            return AsOfMatchRule.LESS_THAN;
+        }
+        if (asOfColumn.contains("<")) {
             return AsOfMatchRule.GREATER_THAN;
         }
         return null;
@@ -715,8 +813,9 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
     @JsMethod
-    default JsPendingTable aj(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
-            @JsNullable @JsOptional ReadonlyArray<String> columnsToAdd) {
+    default JsPendingTable aj(JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsNullable @JsOptional ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, ticket);
@@ -734,16 +833,18 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
     @JsMethod
-    default JsPendingTable raj(JsTableOperations rightTable, ReadonlyArray<String> columnsToMatch,
-            @JsNullable @JsOptional ReadonlyArray<String> columnsToAdd) {
+    default JsPendingTable raj(JsTableReference rightTable,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
+            @JsNullable @JsOptional ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, ticket);
         return call(ticket, BatchTableRequest.Operation.newBuilder().setRaj(builder));
     }
 
-    private AjRajTablesRequest.Builder makeAjReq(JsTableOperations table, ReadonlyArray<String> matches,
-            ReadonlyArray<String> columnsToAdd, Ticket ticket) {
+    private AjRajTablesRequest.Builder makeAjReq(JsTableReference table,
+            ReadonlyArray<JsTable.MatchPairUnion> matches,
+            ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd, Ticket ticket) {
         AjRajTablesRequest.Builder builder = AjRajTablesRequest.newBuilder()
                 .setResultId(ticket)
                 .setLeftId(TableReference.newBuilder()
@@ -752,12 +853,14 @@ public interface JsTableOperations extends ServerObject {
                 .setRightId(TableReference.newBuilder()
                         .setTicket(table.typedTicket().getTicket())
                         .build());
-        for (int i = 0; i < matches.getLength() - 1; i++) {
-            builder.addExactMatchColumns(matches.getAt(i));
+        List<String> matchStrings = JsTable.MatchPairUnion.toStringArray(matches);
+        if (matchStrings.isEmpty()) {
+            throw new IllegalArgumentException("asOfJoin requires at least one match column");
         }
-        builder.setAsOfColumn(matches.getAt(matches.getLength() - 1));
+        builder.addAllExactMatchColumns(matchStrings.subList(0, matchStrings.size() - 1));
+        builder.setAsOfColumn(matchStrings.get(matchStrings.size() - 1));
         if (columnsToAdd != null) {
-            builder.addAllColumnsToAdd(columnsToAdd.asList());
+            builder.addAllColumnsToAdd(JsTable.MatchPairUnion.toStringArray(columnsToAdd));
         }
         return builder;
     }
@@ -812,7 +915,8 @@ public interface JsTableOperations extends ServerObject {
     }
 
     @JsMethod
-    default JsPendingTable rangeJoin(JsTableOperations rightTable, ReadonlyArray<String> exactMatches,
+    default JsPendingTable rangeJoin(JsTableReference rightTable,
+            ReadonlyArray<String> exactMatches,
             RangeJoinMatch rangeMatch, ReadonlyArray<AggregationUnion> aggregations) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
@@ -863,7 +967,8 @@ public interface JsTableOperations extends ServerObject {
      * @return a table with one row per group
      */
     @JsMethod
-    default JsPendingTable groupBy(@JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+    default JsPendingTable groupBy(
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
 
         return call(ticket, BatchTableRequest.Operation.newBuilder().setAggregateAll(AggregateAllRequest.newBuilder()
@@ -994,15 +1099,23 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with only the distinct values of the specified columns
      */
     @JsMethod
-    default JsPendingTable selectDistinct(@JsNullable @JsOptional ReadonlyArray<Column.ColumnOrName> columnNames) {
+    default JsPendingTable selectDistinct(
+            @JsNullable @JsOptional ReadonlyArray<Column.ColumnOrName> columnNames) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
+        return call(ticket, selectDistinctOperation(ticket, columnNames));
+    }
 
-        return call(ticket, BatchTableRequest.Operation.newBuilder().setSelect(SelectOrUpdateRequest.newBuilder()
-                .addAllColumnSpecs(columnNames == null ? Collections.emptyList() : columnsToNameList(columnNames))
+    /**
+     * Builds the request for {@link #selectDistinct}.
+     */
+    private BatchTableRequest.Operation.Builder selectDistinctOperation(Ticket resultId,
+            @Nullable ReadonlyArray<Column.ColumnOrName> columnNames) {
+        return BatchTableRequest.Operation.newBuilder().setSelectDistinct(SelectDistinctRequest.newBuilder()
+                .addAllColumnNames(columnNames == null ? Collections.emptyList() : columnsToNameList(columnNames))
                 .setSourceId(TableReference.newBuilder()
                         .setTicket(typedTicket().getTicket())
                         .build())
-                .setResultId(ticket)));
+                .setResultId(resultId));
     }
 
     /**
@@ -1038,7 +1151,8 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the first row from each group
      */
     @JsMethod
-    default JsPendingTable firstBy(@JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
+    default JsPendingTable firstBy(
+            @JsOptional @JsNullable ReadonlyArray<Column.ColumnOrName> groupByColumns) {
         return aggAllBySpec(AggSpec.newBuilder().setFirst(AggSpec.AggSpecFirst.getDefaultInstance()), groupByColumns);
     }
 

@@ -33,7 +33,7 @@ public interface JoinableTable {
      * @return A promise that resolves to the snapshot table.
      */
     @JsMethod
-    Promise<JsTable> snapshot(JsTable baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
+    Promise<JsTable> snapshot(JsTableReference baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> stampColumns);
 
     /**
@@ -63,7 +63,7 @@ public interface JoinableTable {
      */
     @JsMethod
     @Deprecated
-    Promise<JsTable> join(String joinType, JoinableTable rightTable,
+    Promise<JsTable> join(String joinType, JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule);
@@ -88,7 +88,7 @@ public interface JoinableTable {
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    Promise<JsTable> asOfJoin(JoinableTable rightTable,
+    Promise<JsTable> asOfJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule);
@@ -108,7 +108,7 @@ public interface JoinableTable {
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    Promise<JsTable> crossJoin(JoinableTable rightTable,
+    Promise<JsTable> crossJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable Double reserveBits);
@@ -125,7 +125,7 @@ public interface JoinableTable {
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    Promise<JsTable> exactJoin(JoinableTable rightTable,
+    Promise<JsTable> exactJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd);
 
@@ -141,7 +141,7 @@ public interface JoinableTable {
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    Promise<JsTable> naturalJoin(JoinableTable rightTable,
+    Promise<JsTable> naturalJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd);
 }
