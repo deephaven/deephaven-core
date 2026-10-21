@@ -298,6 +298,28 @@ def to_sequence(v: Optional[Any] = None, wrapped: bool = False) -> Sequence[Any]
         return tuple(unwrap(o) for o in v)
 
 
+def to_str_sequence(v: Union[str, Sequence[str]], what: str = "value") -> Sequence[str]:
+    """Returns one value, or a sequence of values, as a sequence of strings. Unlike :func:`to_sequence`, a lone
+    string is one value even when it is empty, so that an empty string reaches the Java method as a value for it to
+    reject rather than as an empty sequence, and every element must be a string.
+
+    Args:
+        v (Union[str, Sequence[str]]): one string, or a sequence of strings
+        what (str): what each value is, for the error message. Defaults to "value"
+
+    Returns:
+        Sequence[str]: the values
+
+    Raises:
+        TypeError: if an element is not a string
+    """
+    values = (v,) if isinstance(v, str) else to_sequence(v)
+    for value in values:
+        if not isinstance(value, str):
+            raise TypeError(f"expected a {what}, not {type(value).__name__}: {value!r}")
+    return values
+
+
 def _j_array_to_sequence(j_array: jpy.JType) -> Sequence[Any]:
     """Converts a Java array to a Python sequence of wrapped objects.
 

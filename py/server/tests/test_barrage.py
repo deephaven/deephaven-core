@@ -89,7 +89,23 @@ class BarrageTestCase(BaseTestCase):
         self.assertIsNotNone(session)
 
     def test_barrage_session_with_accept_compression(self):
-        # a single string is one compression type, not a sequence of characters
+        from pydeephaven.session import SharedTicket
+
+        # a table that allows compression, so that the server compresses its snapshots for a session that accepts
+        # zstd or gzip; the table from setUp has no TransportCompression attribute, so it is never compressed
+        self.pub_session.run_script(
+            "from deephaven import empty_table\n"
+            "compressed_t = empty_table(1000).update(['X = i', 'Y = 2*i'])"
+            ".with_transport_compression(['zstd', 'gzip'])"
+        )
+        compressed_ticket = SharedTicket.random_ticket()
+        self.pub_session.publish_table(
+            compressed_ticket, self.pub_session.open_table("compressed_t")
+        )
+
+        # a single string is one compression type, not a sequence of characters. The server uses zstd when the
+        # session accepts it, zstd again when it accepts gzip and zstd, since zstd is the table's first choice, and
+        # sends the data uncompressed when the session accepts nothing
         for accept_compression in ["zstd", ["gzip", "zstd"], []]:
             with self.subTest(accept_compression=accept_compression):
                 with barrage_session(
@@ -98,8 +114,9 @@ class BarrageTestCase(BaseTestCase):
                     auth_type="Anonymous",
                     accept_compression=accept_compression,
                 ) as session:
-                    t = session.snapshot(ticket=self.shared_ticket.bytes)
+                    t = session.snapshot(ticket=compressed_ticket.bytes)
                     self.assertEqual(t.size, 1000)
+                    self.assertEqual(["X", "Y"], t.column_names)
 
         with self.assertRaises(DHError):
             barrage_session(
@@ -116,6 +133,17 @@ class BarrageTestCase(BaseTestCase):
                 auth_type="Anonymous",
                 accept_compression="",
             )
+        # a name must be a string
+        with self.assertRaises(DHError) as cm:
+            barrage_session(
+                host="localhost",
+                port=10000,
+                auth_type="Anonymous",
+                accept_compression=[1],
+            )
+        self.assertIn(
+            "expected a compression type name, not int: 1", cm.exception.root_cause
+        )
 
     def test_with_compression(self):
         t = empty_table(10).update(
@@ -160,11 +188,11 @@ class BarrageTestCase(BaseTestCase):
         # an empty string is a name, not an empty list
         with self.assertRaises(DHError):
             t.with_transport_compression("")
-        # None could mean "never compress" or "the server's default"; the message names both
-        with self.assertRaises(DHError) as cm:
-            t.with_transport_compression(None)
-        self.assertIn("pass [] to never compress", str(cm.exception))
-        self.assertIn("reset_transport_compression()", str(cm.exception))
+        # None restores the server's default compression types by removing the attribute
+        self.assertNotIn(
+            "TransportCompression",
+            compressed.with_transport_compression(None).attributes(),
+        )
         with self.assertRaises(DHError):
             t.with_transport_compression([1])
 

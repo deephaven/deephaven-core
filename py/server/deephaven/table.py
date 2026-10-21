@@ -39,6 +39,7 @@ from deephaven.jcompat import (
     j_map_to_dict,
     j_unary_operator,
     to_sequence,
+    to_str_sequence,
 )
 from deephaven.time import DurationLike, to_j_duration
 from deephaven.update_graph import UpdateGraph, auto_locking_ctx
@@ -128,6 +129,9 @@ _JSortingOrder = jpy.get_type("io.deephaven.engine.table.impl.SortingOrder")
 _JTableAssertions = jpy.get_type(
     "io.deephaven.engine.table.impl.verify.TableAssertions"
 )
+_JTransportCompressionAttribute = jpy.get_type(
+    "io.deephaven.extensions.barrage.TransportCompressionAttribute"
+)
 
 
 @cache
@@ -137,37 +141,16 @@ def _default_cross_join_reserve_bits() -> int:
     ).DEFAULT_NUM_RIGHT_BITS_TO_RESERVE
 
 
-@cache
-def _j_transport_compression_attribute() -> jpy.JType:
-    # looked up on first use, so that importing this module does not depend on the Barrage extension
-    return jpy.get_type("io.deephaven.extensions.barrage.TransportCompressionAttribute")
-
-
 def _j_with_transport_compression(
-    j_grid: jpy.JType, compression_types: Union[str, Sequence[str]]
+    j_grid: jpy.JType, compression_types: Optional[Union[str, Sequence[str]]]
 ) -> jpy.JType:
     """Returns a copy of a Java table, rollup table or tree table with its TransportCompression attribute set to the
-    given compression type names, which the Java method checks against the supported names."""
+    given compression type names, which the Java method checks against the supported names, or without the attribute
+    when the names are None, so that the server's default compression types apply."""
     if compression_types is None:
-        # None reads as either "never compress" or "the server's default", so it is neither
-        raise TypeError(
-            "compression_types must not be None; pass [] to never compress, or call reset_transport_compression() for "
-            "the server's default compression types"
-        )
-    # a string is one name, even an empty one, which the Java method rejects; only an empty sequence means none
-    names = (
-        (compression_types,)
-        if isinstance(compression_types, str)
-        else to_sequence(compression_types)
-    )
-    for name in names:
-        if not isinstance(name, str):
-            raise TypeError(
-                f"expected a compression type name, not {type(name).__name__}: {name!r}"
-            )
-    return _j_transport_compression_attribute().withCompression(
-        j_grid, j_array_list(names)
-    )
+        return _JTransportCompressionAttribute.resetCompression(j_grid)
+    names = to_str_sequence(compression_types, "compression type name")
+    return _JTransportCompressionAttribute.withCompression(j_grid, j_array_list(names))
 
 
 def _j_reset_transport_compression(j_grid: jpy.JType) -> jpy.JType:
@@ -175,7 +158,7 @@ def _j_reset_transport_compression(j_grid: jpy.JType) -> jpy.JType:
     undoes with_transport_compression: the server compresses the result's Barrage snapshots and subscriptions with
     its default compression types, from the TransportCompression.defaultTypes property, and does not compress them when
     that property is unset."""
-    return _j_transport_compression_attribute().resetCompression(j_grid)
+    return _JTransportCompressionAttribute.resetCompression(j_grid)
 
 
 class Selectable(ConcurrencyControl["Selectable"], JObjectWrapper):
@@ -526,15 +509,16 @@ class RollupTable(JObjectWrapper):
             raise DHError(e, "with_node_operations on RollupTable failed.") from e
 
     def with_transport_compression(
-        self, compression_types: Union[str, Sequence[str]]
+        self, compression_types: Optional[Union[str, Sequence[str]]]
     ) -> RollupTable:
         """Returns a new RollupTable that allows the server to compress its Barrage snapshots and subscriptions with
         the given compression types. See :meth:`Table.with_transport_compression`. The compression of the rollup's
         source table is not used.
 
         Args:
-            compression_types (Union[str, Sequence[str]]): the name, or names, of the compression types to allow,
-                most preferred first; an empty sequence returns a RollupTable that is never compressed
+            compression_types (Optional[Union[str, Sequence[str]]]): the name, or names, of the compression types to
+                allow, most preferred first; an empty sequence returns a RollupTable that is never compressed, and
+                None one that uses the server's default compression types
 
         Returns:
             a new RollupTable
@@ -710,15 +694,16 @@ class TreeTable(JObjectWrapper):
             raise DHError(e, "with_node_operations on TreeTable failed.") from e
 
     def with_transport_compression(
-        self, compression_types: Union[str, Sequence[str]]
+        self, compression_types: Optional[Union[str, Sequence[str]]]
     ) -> TreeTable:
         """Returns a new TreeTable that allows the server to compress its Barrage snapshots and subscriptions with the
         given compression types. See :meth:`Table.with_transport_compression`. The compression of the tree's source
         table is not used.
 
         Args:
-            compression_types (Union[str, Sequence[str]]): the name, or names, of the compression types to allow,
-                most preferred first; an empty sequence returns a TreeTable that is never compressed
+            compression_types (Optional[Union[str, Sequence[str]]]): the name, or names, of the compression types to
+                allow, most preferred first; an empty sequence returns a TreeTable that is never compressed, and
+                None one that uses the server's default compression types
 
         Returns:
             a new TreeTable
@@ -1262,7 +1247,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create a table without attributes.") from e
 
-    def with_transport_compression(self, compression_types: Union[str, Sequence[str]]) -> Table:
+    def with_transport_compression(self, compression_types: Optional[Union[str, Sequence[str]]]) -> Table:
         """Returns a new Table that shares the data of this table and allows the server to compress its Barrage
         snapshots and subscriptions with the given compression types. When a client fetches the table, the server uses
         the first type in the list that the client accepts, and sends uncompressed data when none match.
@@ -1282,12 +1267,12 @@ class Table(JObjectWrapper):
         with no attribute set uses the server's default compression types, from the TransportCompression.defaultTypes
         property, which is unset by default. An empty sequence sets the attribute to an empty list, so the table is
         never compressed, even when the server has default compression types. To return to the server's default
-        compression types, call :meth:`reset_transport_compression`.
+        compression types, pass None, or call :meth:`reset_transport_compression`.
 
         Args:
-            compression_types (Union[str, Sequence[str]]): the name, or names, of the compression types to allow,
-                most preferred first, ignoring case; an empty sequence returns a table that is never compressed. None
-                is not accepted, because it could mean either never compressing or the server's default
+            compression_types (Optional[Union[str, Sequence[str]]]): the name, or names, of the compression types to
+                allow, most preferred first, ignoring case; an empty sequence returns a table that is never
+                compressed, and None one that uses the server's default compression types
 
         Returns:
             a new Table
@@ -1304,7 +1289,7 @@ class Table(JObjectWrapper):
         """Returns a new Table that shares the data of this table and that the server compresses with its default
         compression types, from the TransportCompression.defaultTypes property, or not at all when that property is
         unset. This undoes :meth:`with_transport_compression`, including with_transport_compression([]), by removing
-        the table's "TransportCompression" attribute.
+        the table's "TransportCompression" attribute, as with_transport_compression(None) does.
 
         Returns:
             a new Table

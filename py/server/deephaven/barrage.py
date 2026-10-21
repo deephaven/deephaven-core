@@ -12,7 +12,7 @@ from typing import Optional, Union
 import jpy
 
 from deephaven import DHError
-from deephaven.jcompat import j_hashset, to_sequence
+from deephaven.jcompat import j_hashset, to_str_sequence
 from deephaven.table import Table
 
 _JURI = jpy.get_type("java.net.URI")
@@ -263,12 +263,7 @@ def _build_client_config(
         for header, value in extra_headers.items():
             j_client_config_builder.putExtraHeaders(header, value)
     if accept_compression is not None:
-        # a string is one name, even an empty one, which ClientConfig rejects; only an empty sequence accepts none
-        names = (
-            (accept_compression,)
-            if isinstance(accept_compression, str)
-            else to_sequence(accept_compression)
-        )
+        names = to_str_sequence(accept_compression, "compression type name")
         j_client_config_builder.acceptCompression(j_hashset(set(names)))
     if tls_root_certs:
         j_ssl_config = (
