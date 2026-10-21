@@ -18,7 +18,7 @@ Now that you're more familiar with the table API and visualizing data, it's time
 `deephaven.ui` exposes many [React Spectrum](https://react-spectrum.adobe.com/react-spectrum/index.html) components to Python. React Spectrum is Adobe's implementation of the [Spectrum design system](https://spectrum.adobe.com/). Component names and arguments generally match React Spectrum's, except that Python uses `snake_case` instead of `camelCase`. For example, `onPress` becomes `on_press`, and `defaultValue` becomes `default_value`.
 
 > [!NOTE]
-> `deephaven.ui` and [Deephaven Express](/core/plotly/docs/) are plugins, not part of the core `deephaven` Python package. The `ghcr.io/deephaven/server` Docker image used in this crash course includes both. If you installed Deephaven with pip, install them with `pip install deephaven-plugin-ui deephaven-plugin-plotly-express`. See [Install and use plugins](../../how-to-guides/install-use-plugins.md) for details.
+> `deephaven.ui` and [Deephaven Express](/core/plotly/docs/) are plugins, not part of the core `deephaven` Python package. The `ghcr.io/deephaven/server` Docker image used in this crash course includes both. If you installed Deephaven with pip, install them with `pip install deephaven-plugin-ui deephaven-plugin-plotly-express` in the same Python environment as Deephaven, and then restart the server. Deephaven loads plugins only when the server starts. See [Install and use plugins](../../how-to-guides/install-use-plugins.md) for details.
 
 ## Components
 

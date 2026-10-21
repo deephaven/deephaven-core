@@ -68,7 +68,7 @@ As an example, you can create a new static table on the server using [`empty_tab
 table_ref = client_session.empty_table(10).update(["X = i", "Y = X / 2"])
 ```
 
-`table_ref` is not a Deephaven table itself, but a _reference_ to a Deephaven table on the server. See this [overview of the Python client design](../getting-started/pyclient-quickstart.md#2-a-brief-overview-of-the-python-client-design) for more information on table references.
+`table_ref` is not a Deephaven table itself, but a _reference_ to a Deephaven table on the server. See [Python client tables are references to server tables](../getting-started/pyclient-quickstart.md#2-python-client-tables-are-references-to-server-tables) for more information on table references.
 
 Similarly, you can use [`time_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.time_table) to create a ticking table on the server:
 

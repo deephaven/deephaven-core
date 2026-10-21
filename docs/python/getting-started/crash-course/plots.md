@@ -5,7 +5,7 @@ title: Real-time Plots
 Whether your data is static or updating in real time, Deephaven supports plotting via multiple libraries, including [Deephaven Express](/core/plotly/docs/) and Deephaven's built-in [plotting API](/core/pydoc/code/deephaven.plot.html#module-deephaven.plot). Deephaven Express is a real-time version of [Plotly Express](https://plotly.com/python/plotly-express/).
 
 > [!NOTE]
-> Deephaven Express is included in the `ghcr.io/deephaven/server` Docker image used in this crash course. If you installed Deephaven with pip, install Deephaven Express with `pip install deephaven-plugin-plotly-express`.
+> Deephaven Express is included in the `ghcr.io/deephaven/server` Docker image used in this crash course. If you installed Deephaven with pip, install Deephaven Express with `pip install deephaven-plugin-plotly-express` in the same Python environment as Deephaven, and then restart the server. Deephaven loads plugins only when the server starts.
 
 ## Deephaven Express
 
