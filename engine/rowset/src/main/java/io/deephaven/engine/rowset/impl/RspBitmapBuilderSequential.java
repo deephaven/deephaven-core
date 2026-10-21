@@ -7,11 +7,14 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.util.LongChunkIterator;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.impl.rsp.DisposableRspBitmap;
 import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.rsp.container.Container;
+import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.*;
 import static io.deephaven.engine.rowset.impl.rsp.RspBitmap.*;
@@ -23,8 +26,21 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     protected long pendingEnd = -1;
     protected long pendingContainerKey = -1;
     protected Container pendingContainer;
+
+    /**
+     * Whether {@link #pendingContainer} was taken back out of {@link #rb}, rather than started for a block rb did not
+     * yet have.
+     */
+    private boolean pendingContainerReopened;
     protected RspBitmap rb;
     protected long maxKeyHint = -1;
+
+    /**
+     * The greatest key moved out of the pending range, into {@link #pendingContainer} or {@link #rb}, or -1 when it is
+     * not known. Order checks against {@link #rb} use this rather than {@code rb.lastValue()}, which has to scan a
+     * bitmap container backward over the words past its last value.
+     */
+    protected long lastFlushedKey = -1;
 
     private boolean built;
 
@@ -42,9 +58,9 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
 
     /**
      * The block that {@link #sizedBlockCardinality} and {@link #sizedBlockRangeCount} describe, or -1 when nothing is
-     * known ahead of time. A subclass that can see what a block will receive before its container is filled should
-     * publish it here, so the container can be created at its final size and in the representation that fits it best;
-     * containers are otherwise grown one range at a time, which reallocates their backing storage on every append. See
+     * known ahead of time. When what a block will receive is known before its container is filled, it is published
+     * here, so the container can be created at its final size and in the representation that fits it best; containers
+     * are otherwise grown one range at a time, reallocating their backing storage as they fill. See
      * {@link Container#emptySizedFor(int, int)}.
      *
      * <p>
@@ -58,13 +74,13 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     /**
      * Declare what {@code blockKey} will receive in total, for use when its container is created.
      */
-    protected final void setSizedBlock(final long blockKey, final int cardinality, final int rangeCount) {
+    private void setSizedBlock(final long blockKey, final int cardinality, final int rangeCount) {
         sizedBlockKey = blockKey;
         sizedBlockCardinality = cardinality;
         sizedBlockRangeCount = rangeCount;
     }
 
-    protected final void clearSizedBlock() {
+    private void clearSizedBlock() {
         sizedBlockKey = -1;
     }
 
@@ -147,29 +163,112 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             return;
         }
         // A negative shift can move the first key below zero; a positive one can carry the last past Long.MAX_VALUE.
+        // For a bitmap, the bounds of its first and last blocks usually settle that; its exact first or last key may
+        // require scanning a bitmap container.
         if (shiftAmount < 0) {
-            Assert.geqZero(ix.ixFirstKey() + shiftAmount, "ix.ixFirstKey() + shiftAmount");
-        } else {
-            Assert.geqZero(ix.ixLastKey() + shiftAmount, "ix.ixLastKey() + shiftAmount");
+            final long firstKeyBound = ix instanceof RspBitmap ? ((RspBitmap) ix).keyForFirstBlock() : ix.ixFirstKey();
+            if (firstKeyBound + shiftAmount < 0) {
+                Assert.geqZero(ix.ixFirstKey() + shiftAmount, "ix.ixFirstKey() + shiftAmount");
+            }
+        } else if (shiftAmount > 0) {
+            final long lastKeyBound =
+                    ix instanceof RspBitmap ? ((RspBitmap) ix).keyForLastBlock() + BLOCK_LAST : ix.ixLastKey();
+            if (lastKeyBound + shiftAmount < 0) {
+                Assert.geqZero(ix.ixLastKey() + shiftAmount, "ix.ixLastKey() + shiftAmount");
+            }
         }
-        if (!(ix instanceof RspBitmap) || rb == null) {
+        // A bitmap's spans can be shared when the shift keeps them block aligned, from the first one that starts in a
+        // block after everything we hold.
+        final RspBitmap ixRb = ix instanceof RspBitmap && (shiftAmount & BLOCK_LAST) == 0 ? (RspBitmap) ix : null;
+        if (rb == null && (ixRb == null || !commitToBitmapFor(ixRb))) {
             ix.ixForEachLongRange((final long start, final long end) -> {
                 appendRange(start + shiftAmount, end + shiftAmount);
                 return true;
             });
             return;
         }
+        boolean shareAfterFirstSpan = false;
+        if (ixRb != null) {
+            final long heldLastBlockKey;
+            if (pendingStart != -1) {
+                heldLastBlockKey = highBits(pendingEnd);
+            } else if (pendingContainerKey != -1) {
+                heldLastBlockKey = highBits(pendingContainerKey);
+            } else {
+                // With nothing pending, rb is empty only when it was just created for ix, and we hold nothing.
+                heldLastBlockKey = rb.isEmpty() ? -1 : rb.keyForLastBlock();
+            }
+            final long ixFirstBlockKey = ixRb.keyForFirstBlock() + shiftAmount;
+            if (ixFirstBlockKey > heldLastBlockKey) {
+                if (pendingStart != -1) {
+                    flushPendingRange();
+                }
+                if (pendingContainerKey != -1) {
+                    flushPendingContainer();
+                }
+                if (rb.tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, ixRb)) {
+                    // rb now ends with ix's last span; its last key is looked up only if an order check needs it.
+                    lastFlushedKey = -1;
+                    return;
+                }
+            }
+            shareAfterFirstSpan = ixFirstBlockKey == heldLastBlockKey;
+        }
         if (pendingStart != -1) {
             flushPendingRange();
         }
-        if (pendingContainerKey != -1) {
-            flushPendingContainer();
+        // ix's ranges are ordered and disjoint, so they need checking only against the keys we already hold; comparing
+        // every one with that same bound is as cheap as tracking which one is first. Past that check they go straight
+        // to the containers.
+        final long heldLastKey = check
+                ? (lastFlushedKey != -1
+                        ? lastFlushedKey
+                        : rb.lastValue())
+                : -1;
+        final LongRangeAbortableConsumer appendAfterHeld = (final long start, final long end) -> {
+            final long shiftedStart = start + shiftAmount;
+            if (shiftedStart <= heldLastKey) {
+                throw new IllegalArgumentException(outOfOrderKeyErrorMsg +
+                        "last=" + heldLastKey + " while appending value=" + shiftedStart);
+            }
+            flushRangeToPendingContainer(shiftedStart, end + shiftAmount);
+            return true;
+        };
+        if (!shareAfterFirstSpan) {
+            ix.ixForEachLongRange(appendAfterHeld);
+            return;
         }
-        // Every path that creates rb appends to it immediately, so rb is never empty here. That matters
-        // because appendShiftedUnsafeNoWriteCheck reads rb's last span (lastValue(), spanInfos[size - 1]),
-        // which is not valid on an empty bitmap.
-        Assert.eqFalse(rb.isEmpty(), "rb.isEmpty()");
-        rb.appendShiftedUnsafeNoWriteCheck(shiftAmount, (RspBitmap) ix);
+        // Only ix's first span starts in the block we end with. Its ranges go in one at a time; every later span
+        // starts in a later block, so those are shared.
+        ixRb.forEachLongRangeInSpanWithOffset(0, 0, appendAfterHeld);
+        if (ixRb.keyForLastBlock() + shiftAmount == highBits(lastFlushedKey)) {
+            // ix has no later span. Its last block stays pending for whatever is appended next.
+            return;
+        }
+        // ix's first span lies in a block we already hold, so its ranges went into the pending container: either the
+        // one already open, or rb's last span taken back out. A full block span cannot start in such a block without
+        // overlapping a key we hold.
+        Assert.neq(pendingContainerKey, "pendingContainerKey", -1);
+        flushPendingContainer();
+        Assert.eqTrue(rb.tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, ixRb, 1),
+                "rb.tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, ixRb, 1)");
+        // As above, rb now ends with ix's last span.
+        lastFlushedKey = -1;
+    }
+
+    /**
+     * Called when {@code ix}, a bitmap whose spans could be shared, is appended before {@link #rb} exists: create rb
+     * now, so that they are, or leave it and have {@code ix} appended a range at a time.
+     *
+     * <p>
+     * This builder's result is a bitmap whatever it holds, so it always creates rb. A builder that can produce another
+     * representation decides whether giving that up pays.
+     *
+     * @return Whether rb now exists
+     */
+    protected boolean commitToBitmapFor(final RspBitmap ix) {
+        ensureRb();
+        return true;
     }
 
     @Override
@@ -177,7 +276,7 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
         if (length == 0) {
             return;
         }
-        // The keys are ordered, so the first one is the least. Once rb exists they go into it unchecked.
+        // The keys are ordered, so the first one is the least, and checking it covers the whole chunk.
         Assert.geqZero(chunk.get(offset), "chunk.get(offset)");
 
         if (rb != null) {
@@ -193,19 +292,32 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             flushPendingRange();
         }
         if (pendingContainerKey != -1) {
-            flushPendingContainer();
+            // The chunk may add to the pending container's block, and later ranges may take the block back out as the
+            // pending container, so it is not optimized on every such round trip. Moving on to a later block
+            // optimizes it.
+            movePendingContainerToRb();
         }
+
+        // The keys are ordered, so the first one is the least and the last one the greatest.
+        final long first = chunk.get(offset);
+        if (check) {
+            final long heldLastKey = lastFlushedKey != -1 ? lastFlushedKey : rb.lastValue();
+            if (first <= heldLastKey) {
+                throw new IllegalArgumentException(outOfOrderKeyErrorMsg +
+                        "last=" + heldLastKey + " while appending value=" + first);
+            }
+        }
+        final int lastOffsetInclusive = offset + length - 1;
+        final long last = chunk.get(lastOffsetInclusive);
+        lastFlushedKey = last;
 
         // single key?
         if (length == 1) {
-            rb.appendUnsafeNoWriteCheck(chunk.get(offset));
+            rb.appendUnsafeNoWriteCheck(last);
             return;
         }
 
         // single range?
-        final int lastOffsetInclusive = offset + length - 1;
-        final long first = chunk.get(offset);
-        final long last = chunk.get(lastOffsetInclusive);
         if (last - first + 1 == length) {
             rb.appendRangeUnsafeNoWriteCheck(first, last);
             return;
@@ -243,29 +355,49 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     }
 
     protected void flushRangeToPendingContainer(final long start, final long end) {
+        final long lastFlushedKeyOnEntry = lastFlushedKey;
+        // A pending container is only ever filled from here, so lastFlushedKey is its last key. Ranges reach this
+        // point unchecked when nothing was pending in the range, and the container appends below do not check order.
+        if (check && pendingContainerKey != -1 && start <= lastFlushedKeyOnEntry) {
+            throw new IllegalStateException(outOfOrderKeyErrorMsg +
+                    "last=" + lastFlushedKeyOnEntry + " while appending value=" + start);
+        }
+        // Every path below leaves end as the greatest key held outside the pending range.
+        lastFlushedKey = end;
         final long highStart = highBits(start);
         final int lowStart = RspArray.lowBitsAsInt(start);
         final long highEnd = highBits(end);
         final int lowEnd = RspArray.lowBitsAsInt(end);
         final boolean singleBlock = highStart == highEnd;
         if (pendingContainerKey == -1 && rb != null && !rb.isEmpty()) {
-            // A key chunk or an RSP-backed row sequence appended in bitmap mode goes straight into rb and leaves
-            // nothing pending, so the block this range starts in may be the one rb already ends with. Appending a
-            // container to rb for that block would give the block a second span; the part of the range inside it is
-            // added to rb's last span instead.
+            // A key chunk or a set appended in bitmap mode can go straight into rb and leave nothing pending, so the
+            // block this range starts in may be the one rb already ends with. Appending a container to rb for that
+            // block would give the block a second span. Instead the block's span is taken back out of rb to be the
+            // pending container, extended like any other, and optimized when it is flushed back.
             final long lastBlockKey = rb.keyForLastBlock();
             if (lastBlockKey >= highStart) {
-                if (check && (lastBlockKey > highStart || start <= rb.lastValue())) {
-                    throw new IllegalStateException(outOfOrderKeyErrorMsg +
-                            "last=" + rb.lastValue() + " while appending value=" + start);
+                if (check) {
+                    final long rbLastKey = lastFlushedKeyOnEntry != -1 ? lastFlushedKeyOnEntry : rb.lastValue();
+                    if (lastBlockKey > highStart || start <= rbLastKey) {
+                        throw new IllegalStateException(outOfOrderKeyErrorMsg +
+                                "last=" + rbLastKey + " while appending value=" + start);
+                    }
                 }
-                if (singleBlock) {
-                    rb.appendRangeUnsafeNoWriteCheck(start, end);
+                final Container lastSpan = lastBlockKey == highStart ? rb.removeLastSpanUnsafeNoWriteCheck() : null;
+                if (lastSpan == null) {
+                    // rb ends with a full block span, or, when order is not checked, past this range's start; rb is
+                    // extended in place.
+                    if (singleBlock) {
+                        rb.appendRangeUnsafeNoWriteCheck(start, end);
+                        return;
+                    }
+                    rb.appendRangeUnsafeNoWriteCheck(start, highStart | BLOCK_LAST);
+                    flushRangeToPendingContainer(highStart + BLOCK_SIZE, end);
                     return;
                 }
-                rb.appendRangeUnsafeNoWriteCheck(start, highStart | BLOCK_LAST);
-                flushRangeToPendingContainer(highStart + BLOCK_SIZE, end);
-                return;
+                pendingContainerKey = lastBlockKey;
+                pendingContainer = lastSpan;
+                pendingContainerReopened = true;
             }
         }
         if (singleBlock) { // short path.
@@ -281,15 +413,6 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
                 return;
             }
             if (pendingContainerKey != -1) {
-                if (check && pendingContainerKey > highStart) {
-                    // When pendingContainer is null the pending span is a singleton and pendingContainerKey is
-                    // its full value; otherwise pendingContainerKey holds the high bits only.
-                    final long pendingLast = (pendingContainer == null)
-                            ? pendingContainerKey
-                            : (highBits(pendingContainerKey) | pendingContainer.last());
-                    throw new IllegalStateException(outOfOrderKeyErrorMsg +
-                            "last=" + pendingLast + " while appending value=" + start);
-                }
                 flushPendingContainer();
             }
             if (lowStart == 0 && lowEnd == BLOCK_LAST) {
@@ -402,6 +525,85 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     }
 
     /**
+     * Append the ranges of {@code sr}, which must all come after every key this builder holds.
+     *
+     * <p>
+     * Every range is already known, so rather than growing each container one range at a time -- which reallocates its
+     * backing storage as it fills, and may pass through representations it does not end in -- we walk two cursors over
+     * the ranges. One feeds ranges to the builder; the other runs ahead to the end of the block being started, so the
+     * container for it can be created at its final size and in the representation that suits it.
+     */
+    protected final void appendSortedRangesSizingBlocks(final SortedRanges sr) {
+        try (final RowSet.RangeIterator appendIter = sr.getRangeIterator();
+                final RowSet.RangeIterator lookaheadIter = sr.getRangeIterator()) {
+            // The range the lookahead is currently sitting on. It is only partially consumed when it carries over into
+            // a later block, in which case lookStart is advanced to that block and the range is measured again there.
+            boolean lookValid = false;
+            long lookStart = 0;
+            long lookEnd = 0;
+            long sizedBlock = -1;
+            while (appendIter.hasNext()) {
+                appendIter.next();
+                final long start = appendIter.currentRangeStart();
+                final long end = appendIter.currentRangeEnd();
+                // A range that spans blocks leaves a container pending for the block its *end* falls in; any container
+                // for an earlier block is appended whole and never grown, so needs no sizing.
+                final long blockKey = highBits(end);
+                if (blockKey != sizedBlock) {
+                    final long blockLast = blockKey + BLOCK_LAST;
+                    int cardinality = 0;
+                    int rangeCount = 0;
+                    while (true) {
+                        if (!lookValid) {
+                            if (!lookaheadIter.hasNext()) {
+                                break;
+                            }
+                            lookaheadIter.next();
+                            lookStart = lookaheadIter.currentRangeStart();
+                            lookEnd = lookaheadIter.currentRangeEnd();
+                            lookValid = true;
+                        }
+                        if (lookStart > blockLast) {
+                            break;
+                        }
+                        if (lookEnd < blockKey) {
+                            // Entirely behind the block being measured; nothing here to count.
+                            lookValid = false;
+                            continue;
+                        }
+                        // Clip a range that began in an earlier block; only its part in this block belongs here.
+                        lookStart = Math.max(lookStart, blockKey);
+                        cardinality += (int) (Math.min(lookEnd, blockLast) - lookStart + 1);
+                        ++rangeCount;
+                        if (lookEnd > blockLast) {
+                            // Carries over; leave it current, positioned at the start of the next block.
+                            lookStart = blockLast + 1;
+                            break;
+                        }
+                        lookValid = false;
+                    }
+                    setSizedBlock(blockKey, cardinality, rangeCount);
+                    sizedBlock = blockKey;
+                }
+                flushRangeToPendingContainer(start, end);
+            }
+        } finally {
+            clearSizedBlock();
+        }
+    }
+
+    /**
+     * An {@link RspBitmap} holding the keys of {@code sr}, with each container created at its final size and in the
+     * representation that suits it.
+     */
+    public static RspBitmap buildRsp(final SortedRanges sr) {
+        final RspBitmapBuilderSequential builder = new RspBitmapBuilderSequential();
+        builder.appendSortedRangesSizingBlocks(sr);
+        final OrderedLongSet result = builder.getOrderedLongSet();
+        return result instanceof RspBitmap ? (RspBitmap) result : new RspBitmap();
+    }
+
+    /**
      * Create the container that will accumulate {@code blockKey}, initially holding {@code [lowStart, lowEnd]}.
      *
      * <p>
@@ -440,11 +642,22 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
     }
 
     protected void flushPendingContainer() {
-        ensureRb();
         if (pendingContainer != null) {
             pendingContainer = pendingContainer.runOptimize();
         }
-        rb.appendContainerUnsafeNoWriteCheck(pendingContainerKey, pendingContainer);
+        movePendingContainerToRb();
+    }
+
+    private void movePendingContainerToRb() {
+        ensureRb();
+        if (pendingContainerReopened) {
+            // Appending would optimize the span before it again, which costs a pass over that span on every round
+            // trip through the pending container.
+            rb.restoreLastSpanUnsafeNoWriteCheck(pendingContainerKey, pendingContainer);
+            pendingContainerReopened = false;
+        } else {
+            rb.appendContainerUnsafeNoWriteCheck(pendingContainerKey, pendingContainer);
+        }
         pendingContainerKey = -1;
         pendingContainer = null;
     }
