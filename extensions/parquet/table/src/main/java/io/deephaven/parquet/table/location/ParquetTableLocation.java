@@ -1102,8 +1102,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
                         final RowSequence window = it.getNextRowSequenceWithLength(DICTIONARY_SCAN_CHUNK_SIZE);
                         final LongChunk<? extends DictionaryKeys> keys =
                                 valueStore.getChunk(getContext, window).asLongChunk();
-                        // A local bound and count keep the row loops counted loops: a chunk's size is a field, and a
-                        // store to any chunk's size inside the loop would make the bound variable to the JIT.
                         final int windowSize = keys.size();
 
                         if (barrierActive) {
