@@ -42,24 +42,32 @@ def _vmoptions_args(vmoptions: pathlib.Path) -> List[str]:
     ]
 
 
-def _java_major_version(
+def _find_jvm_dll(
     java_home: Optional[str], config: Optional[types.ModuleType]
-) -> Optional[int]:
-    """Best-effort major version of the JVM that jpy will load, read from that JDK's release file. Returns None
-    when it cannot be determined."""
+) -> Optional[str]:
+    """The JVM shared library that jpyutil.init_jvm would load for these arguments, found with its precedence: the
+    configuration's jvm_dll (the given config, else jpyconfig or JPY_PY_CONFIG), then a search from java_home or the
+    configuration's java_home. Returns None when it cannot be determined, leaving the search to jpyutil.init_jvm."""
     try:
-        java_home = java_home or getattr(config, "java_home", None)
-        if java_home:
-            homes = [pathlib.Path(java_home)]
-        else:
-            # Find the JVM the same way jpyutil.init_jvm will; the shared library sits a few directories below the
-            # java home, for example <java_home>/lib/server/libjvm.so
-            jvm_dll = getattr(config, "jvm_dll", None)
-            if not jvm_dll:
-                import jpyutil
+        import jpyutil
 
-                jvm_dll = jpyutil.find_jvm_dll_file()
-            homes = list(pathlib.Path(jvm_dll).parents)[:4] if jvm_dll else []
+        config = config or jpyutil._get_python_api_config()
+        jvm_dll = getattr(config, "jvm_dll", None)
+        if not jvm_dll:
+            jvm_dll = jpyutil.find_jvm_dll_file(
+                java_home_dir=java_home or getattr(config, "java_home", None)
+            )
+        return jvm_dll
+    except Exception:
+        return None
+
+
+def _java_major_version(jvm_dll: Optional[str]) -> Optional[int]:
+    """Best-effort major version of the JDK that holds a JVM shared library, read from that JDK's release file.
+    Returns None when it cannot be determined."""
+    try:
+        # The shared library sits a few directories below the java home, for example <java_home>/lib/server/libjvm.so
+        homes = list(pathlib.Path(jvm_dll).parents)[:4] if jvm_dll else []
         for home in homes:
             release = home / "release"
             if release.is_file():
@@ -132,8 +140,10 @@ def start_jvm(
             a JPY configuration module for the jpyutil module to load and config the JVM.
     """
     java_home = java_home or os.environ.get("JAVA_HOME", None)
+    # Resolve the JVM once and pass it to init_jvm, so the VM options are chosen for the JVM that is loaded
+    jvm_dll = _find_jvm_dll(java_home, config)
     default_jvm_args = default_jvm_args or _BASE_JVM_ARGS + _vmoptions_args(
-        _default_vmoptions(_java_major_version(java_home, config))
+        _default_vmoptions(_java_major_version(jvm_dll))
     )
     jvm_args = default_jvm_args + jvm_args if jvm_args else default_jvm_args
 
@@ -179,7 +189,7 @@ def start_jvm(
 
     jvm.init_jvm(
         java_home=java_home,
-        # jvm_dll=jvm_dll,
+        jvm_dll=jvm_dll,
         jvm_classpath=jvm_classpath,
         jvm_properties=system_properties,
         jvm_options=jvm_args,
