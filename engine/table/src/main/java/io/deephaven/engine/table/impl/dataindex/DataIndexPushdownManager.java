@@ -6,11 +6,13 @@ package io.deephaven.engine.table.impl.dataindex;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.context.StandaloneQueryScope;
 import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetUnionBatcher;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -36,6 +38,9 @@ import java.util.stream.Collectors;
  * the cost ceiling is too low to use the DataIndex.
  */
 public class DataIndexPushdownManager implements PushdownPredicateManager {
+
+    /** The query scope name of the rows in question, for the formula that finds the index rows overlapping them. */
+    private static final String ROWS_IN_QUESTION_PARAM = "dh_rows_in_question";
 
     private final DataIndex dataIndex;
     private final PushdownFilterMatcher wrappedMatcher;
@@ -281,22 +286,14 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                     }
                     try {
                         if (barrierActive) {
-                            // Keep only the index rows whose row sets overlap the rows in question, in one ordered
-                            // pass. A where would make the same overlaps call per row, as there is no chunk kernel
-                            // for it, only through a computed overlap column, a filter and an intermediate table.
-                            final RowSetBuilderSequential overlapping = RowSetFactory.builderSequential();
-                            try (final RowSet.Iterator indexRows = toFilter.getRowSet().iterator();
-                                    final CloseableIterator<RowSet> rowSets =
-                                            ColumnVectors.ofObject(toFilter, rowSetColumnName, RowSet.class)
-                                                    .iterator()) {
-                                while (rowSets.hasNext()) {
-                                    final long indexRow = indexRows.nextLong();
-                                    if (rowSets.next().overlaps(result.maybeMatch())) {
-                                        overlapping.appendKey(indexRow);
-                                    }
-                                }
+                            // Keep only the index rows whose row sets overlap the rows in question.
+                            final QueryScope scope = new StandaloneQueryScope();
+                            scope.putParam(ROWS_IN_QUESTION_PARAM, result.maybeMatch());
+                            try (final SafeCloseable ignoredScope =
+                                    ExecutionContext.getContext().withQueryScope(scope).open()) {
+                                toFilter = toFilter.where(
+                                        rowSetColumnName + ".overlaps(" + ROWS_IN_QUESTION_PARAM + ")");
                             }
-                            toFilter = toFilter.getSubTable(overlapping.build().toTracking());
                         }
                         final Table filteredTable = toFilter.where(copiedFilter);
                         try (final CloseableIterator<RowSet> it =

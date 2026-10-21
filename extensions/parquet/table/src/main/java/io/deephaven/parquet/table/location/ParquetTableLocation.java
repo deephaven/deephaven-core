@@ -16,6 +16,9 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.context.StandaloneQueryScope;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
@@ -81,6 +84,9 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public class ParquetTableLocation extends AbstractTableLocation {
 
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
+
+    /** The query scope name of the rows in question, for the formula that finds the index rows overlapping them. */
+    private static final String ROWS_IN_QUESTION_PARAM = "dh_rows_in_question";
 
     private static final Logger log = LoggerFactory.getLogger(ParquetTableLocation.class);
 
@@ -354,11 +360,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
         // The adjusted table maps positions to row keys lazily, so it keeps the location's row set for its lifetime.
         // If the index cannot be built, nothing owns the row set, so close it here.
         try {
-            final Table adjustedTable = table.updateView(List.of(new FunctionalColumn<>(
+            final Table rawTable = table.coalesce();
+            final Table adjustedTable = rawTable.updateView(List.of(new FunctionalColumn<>(
                     INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
                     INDEX_ROW_SET_COLUMN_NAME, RowSet.class,
                     (final RowSet indexRowSet) -> locationRowSet.subSetForPositions(indexRowSet))));
-            return new RawTableStandaloneDataIndex(adjustedTable, columns, table.coalesce());
+            return new RawTableStandaloneDataIndex(adjustedTable, columns, rawTable);
         } catch (final RuntimeException | Error e) {
             SafeCloseable.closeAllDuringFailure(e, locationRowSet);
             throw e;
@@ -373,11 +380,16 @@ public class ParquetTableLocation extends AbstractTableLocation {
         /** The index table as stored, with positions within the location in its row set column. */
         private final Table rawTable;
 
+        /**
+         * @param adjustedTable The index table with row keys in its row set column, already coalesced
+         * @param keyColumnNames The names of the key columns
+         * @param rawTable The index table as stored, already coalesced
+         */
         private RawTableStandaloneDataIndex(
                 @NotNull final Table adjustedTable,
                 @NotNull final String[] keyColumnNames,
                 @NotNull final Table rawTable) {
-            super(adjustedTable.coalesce(), keyColumnNames, INDEX_ROW_SET_COLUMN_NAME);
+            super(adjustedTable, keyColumnNames, INDEX_ROW_SET_COLUMN_NAME);
             this.rawTable = rawTable;
         }
     }
@@ -1229,42 +1241,36 @@ public class ParquetTableLocation extends AbstractTableLocation {
             final WhereFilter filter,
             final boolean barrierActive,
             final RowSet rows) {
-        Table toFilter = indexTable;
-        if (!renameMap.isEmpty()) {
-            final Collection<Pair> renamePairs = renameMap.entrySet().stream()
-                    .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
-                            ColumnName.of(entry.getKey())))
-                    .collect(Collectors.toList());
-            toFilter = toFilter.renameColumns(renamePairs);
-        }
-        if (barrierActive) {
-            // Keep only the index rows whose row sets overlap the rows in question, in one ordered pass. A where would
-            // make the same overlaps call per row, as there is no chunk kernel for it, only through a computed overlap
-            // column, a filter and an intermediate table; and the locations are already pushed down in parallel, so
-            // its parallelism would buy nothing.
-            final RowSetBuilderSequential overlapping = RowSetFactory.builderSequential();
-            try (final RowSet.Iterator indexRows = toFilter.getRowSet().iterator();
-                    final CloseableIterator<RowSet> rowSets =
-                            ColumnVectors.ofObject(toFilter, rowSetColumnName, RowSet.class).iterator()) {
-                while (rowSets.hasNext()) {
-                    final long indexRow = indexRows.nextLong();
-                    if (rowSets.next().overlaps(rows)) {
-                        overlapping.appendKey(indexRow);
-                    }
+        // The tables made here are released before returning, so that none still refers to rows once the caller
+        // closes it.
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            Table toFilter = indexTable;
+            if (!renameMap.isEmpty()) {
+                final Collection<Pair> renamePairs = renameMap.entrySet().stream()
+                        .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
+                                ColumnName.of(entry.getKey())))
+                        .collect(Collectors.toList());
+                toFilter = toFilter.renameColumns(renamePairs);
+            }
+            if (barrierActive) {
+                // Keep only the index rows whose row sets overlap the rows in question.
+                final QueryScope scope = new StandaloneQueryScope();
+                scope.putParam(ROWS_IN_QUESTION_PARAM, rows);
+                try (final SafeCloseable ignoredScope = ExecutionContext.getContext().withQueryScope(scope).open()) {
+                    toFilter = toFilter.where(rowSetColumnName + ".overlaps(" + ROWS_IN_QUESTION_PARAM + ")");
                 }
             }
-            toFilter = toFilter.getSubTable(overlapping.build().toTracking());
-        }
-        final Table filteredTable = toFilter.where(filter);
+            final Table filteredTable = toFilter.where(filter);
 
-        // One row set per index row that passes the filter. The batcher owns what it gathers, and building after the
-        // iterator is closed leaves nothing that can throw between building and returning the result.
-        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(filteredTable.size())) {
-            try (final CloseableIterator<RowSet> it =
-                    ColumnVectors.ofObject(filteredTable, rowSetColumnName, RowSet.class).iterator()) {
-                it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(rows)));
+            // One row set per index row that passes the filter. The batcher owns what it gathers, and building after
+            // the iterator is closed leaves nothing that can throw between building and returning the result.
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(filteredTable.size())) {
+                try (final CloseableIterator<RowSet> it =
+                        ColumnVectors.ofObject(filteredTable, rowSetColumnName, RowSet.class).iterator()) {
+                    it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(rows)));
+                }
+                return batcher.build();
             }
-            return batcher.build();
         }
     }
 
