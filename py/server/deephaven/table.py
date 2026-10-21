@@ -529,7 +529,9 @@ class RollupTable(JObjectWrapper):
         try:
             return RollupTable(
                 j_rollup_table=jpy.cast(
-                    _j_with_transport_compression(self.j_rollup_table, compression_types),
+                    _j_with_transport_compression(
+                        self.j_rollup_table, compression_types
+                    ),
                     _JRollupTable,
                 ),
                 include_constituents=self.include_constituents,
@@ -559,7 +561,9 @@ class RollupTable(JObjectWrapper):
                 by=self.by,
             )
         except Exception as e:
-            raise DHError(e, "reset_transport_compression on RollupTable failed.") from e
+            raise DHError(
+                e, "reset_transport_compression on RollupTable failed."
+            ) from e
 
     def with_filters(
         self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]
@@ -1247,7 +1251,9 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create a table without attributes.") from e
 
-    def with_transport_compression(self, compression_types: Optional[Union[str, Sequence[str]]]) -> Table:
+    def with_transport_compression(
+        self, compression_types: Optional[Union[str, Sequence[str]]]
+    ) -> Table:
         """Returns a new Table that shares the data of this table and allows the server to compress its Barrage
         snapshots and subscriptions with the given compression types. When a client fetches the table, the server uses
         the first type in the list that the client accepts, and sends uncompressed data when none match.
@@ -1281,7 +1287,9 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            return Table(j_table=_j_with_transport_compression(self.j_table, compression_types))
+            return Table(
+                j_table=_j_with_transport_compression(self.j_table, compression_types)
+            )
         except Exception as e:
             raise DHError(e, "failed to create a table with compression.") from e
 

@@ -153,7 +153,8 @@ class BarrageTestCase(BaseTestCase):
         compressed = t.with_transport_compression(["snappy", "gzip"])
         self.assertEqual("snappy,gzip", compressed.attributes()["TransportCompression"])
         self.assertEqual(
-            "zstd", t.with_transport_compression("zstd").attributes()["TransportCompression"]
+            "zstd",
+            t.with_transport_compression("zstd").attributes()["TransportCompression"],
         )
         self.assertEqual(
             "zstd,gzip",
@@ -163,16 +164,23 @@ class BarrageTestCase(BaseTestCase):
         )
         self.assertNotIn("TransportCompression", t.attributes())
         self.assertEqual(
-            "", compressed.with_transport_compression([]).attributes()["TransportCompression"]
+            "",
+            compressed.with_transport_compression([]).attributes()[
+                "TransportCompression"
+            ],
         )
 
-        rollup = t.rollup(aggs=[agg.sum_("B")], by="ID").with_transport_compression("zstd")
+        rollup = t.rollup(aggs=[agg.sum_("B")], by="ID").with_transport_compression(
+            "zstd"
+        )
         self.assertIsInstance(rollup, RollupTable)
         self.assertEqual(
             "zstd", rollup.j_rollup_table.getAttribute("TransportCompression")
         )
 
-        tree = t.tree(id_col="ID", parent_col="Parent").with_transport_compression(["gzip"])
+        tree = t.tree(id_col="ID", parent_col="Parent").with_transport_compression(
+            ["gzip"]
+        )
         self.assertIsInstance(tree, TreeTable)
         self.assertEqual("gzip", tree.j_tree_table.getAttribute("TransportCompression"))
 
@@ -202,7 +210,10 @@ class BarrageTestCase(BaseTestCase):
         )
 
         # undoes a list of types, and an empty list, which never compresses
-        for compressed in [t.with_transport_compression("zstd"), t.with_transport_compression([])]:
+        for compressed in [
+            t.with_transport_compression("zstd"),
+            t.with_transport_compression([]),
+        ]:
             self.assertNotIn(
                 "TransportCompression",
                 compressed.reset_transport_compression().attributes(),
