@@ -237,7 +237,7 @@ source_meta = source.meta_table
 - [Python classes and objects in query strings](./python-classes.md)
 - [PyObjects in tables](./pyobjects.md)
 - [Data types in Deephaven and Python](./data-types.md)
-- [Null, infinity, and NaN values](./null-inf-nan.md)
+- [Null, NaN, and infinity values](./null-inf-nan.md)
 - [Arrays](./work-with-arrays.md)
 - [Casting](./casting.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
