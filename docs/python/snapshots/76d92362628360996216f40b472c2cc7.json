@@ -1,0 +1,1 @@
+{"file":"how-to-guides/formulas.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Celsius","type":"double"},{"name":"Fahrenheit","type":"long"}],"rows":[[{"value":"0.0000"},{"value":"32"}],[{"value":"7.5000"},{"value":"46"}],[{"value":"15.0000"},{"value":"59"}],[{"value":"22.5000"},{"value":"73"}],[{"value":"30.0000"},{"value":"86"}]]}}}}

@@ -137,6 +137,6 @@ for (offset in offsets) {
 - [Filters in query strings](./filters.md)
 - [Operators in query strings](./operators.md)
 - [Groovy variables in query strings](./groovy-variables.md)
-- [Groovy closures in query strings](./groovy-closures.md)
+- [Groovy closures in queries](./groovy-closures.md)
 - [Groovy classes in query strings](./groovy-classes.md)
 - [Think like a Deephaven ninja](../conceptual/ninja.md)

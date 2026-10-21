@@ -36,7 +36,7 @@ This crash course is a starting point. To continue learning about Deephaven, che
 - [Capture table history with snapshots](../../how-to-guides/capture-table-history.md)
 - [Work with time](../../conceptual/time-in-deephaven.md)
 - [Query string overview](../../how-to-guides/query-string-overview.md)
-- [User-defined functions](../../how-to-guides/groovy-closures.md)
+- [Groovy closures in queries](../../how-to-guides/groovy-closures.md)
 - [Programmatically generate query strings](../../how-to-guides/generate-query-strings.md)
 - [Built-in plotting API](../../how-to-guides/plotting/api-plotting.md)
 
