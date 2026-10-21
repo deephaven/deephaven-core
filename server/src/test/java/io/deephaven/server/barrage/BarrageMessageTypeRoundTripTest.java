@@ -78,6 +78,7 @@ import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -665,6 +666,52 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
             updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
             nugget.validate("step " + step);
         }
+    }
+
+    /**
+     * A full subscription that leaves out a dictionary encoded column shares the column's dictionary with a full
+     * subscription that does not. It is sent the dictionary only to define it, without values, however many values the
+     * other subscription's updates add; {@link RemoteClient} checks that its replicated column holds none.
+     */
+    @Test
+    public void testDictionaryEncodedColumnLeftOutOfFullSubscription() {
+        final int steps = 20;
+        final int size = 100;
+        final Random random = new Random(6);
+        // enough distinct values that most updates add some to the dictionary
+        final ColumnInfo<?, ?>[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "intCol"},
+                new SetGenerator<>(IntStream.range(0, 1000).mapToObj(ii -> "v" + ii).toArray(String[]::new)),
+                new IntGenerator(0, 100));
+        final QueryTable sourceTable = getTable(size / 4, random, columnInfo);
+        sourceTable.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE,
+                buildDictEncodedSchema(sourceTable.getDefinition(), "Sym"));
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+        final BitSet intCol = new BitSet();
+        intCol.set(1);
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient withSym = nugget.newClient(null, allCols, "full-with-dict");
+        final RemoteClient withoutSym = nugget.newClient(null, intCol, "full-without-dict");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step < steps; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("step " + step);
+        }
+
+        assertTrue("the subscription that includes Sym is sent its dictionary's values",
+                withSym.dummyObserver.observedDictionaryBatchLengths.stream().anyMatch(length -> length > 0));
+        final List<Long> lengths = withoutSym.dummyObserver.observedDictionaryBatchLengths;
+        assertFalse("the subscription that leaves out Sym is sent its dictionary's definition", lengths.isEmpty());
+        assertTrue("the subscription that leaves out Sym is sent none of its dictionary's values: " + lengths,
+                lengths.stream().allMatch(length -> length == 0));
     }
 
     /**
