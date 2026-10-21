@@ -203,3 +203,5 @@ In the output, `A` holds 0 through 9 and `B` holds 10 through 19, so the two ran
 Most queries just work. If your formulas use only column values and built-in functions, parallelization handles everything automatically, with no extra code required.
 
 For more detail, including [Barriers](../../conceptual/query-engine/parallelization.md#barriers) and other concurrency-control tools, see [query parallelization](../../conceptual/query-engine/parallelization.md).
+
+Next, [Recipes, not loops!](./vectorization-vs-loops.md) explains why Deephaven queries describe calculations as column formulas rather than loops over rows.

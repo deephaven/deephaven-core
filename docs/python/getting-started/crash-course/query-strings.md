@@ -539,4 +539,4 @@ Python's [LEGB](https://realpython.com/python-scope-legb-rule/) rules resolve na
 
 For those cases and more examples, see [scoping rules](../../how-to-guides/query-scope.md).
 
-This chapter covered the building blocks of query strings: literals, special variables and constants, operators, built-in functions, Java methods, arrays, and Python objects. It also showed how query strings resolve variables. Next, [Recipes, not loops!](./vectorization-vs-loops.md) explains why Deephaven queries describe calculations as column formulas rather than loops over rows.
+This chapter covered the building blocks of query strings: literals, special variables and constants, operators, built-in functions, Java methods, arrays, and Python objects. It also showed how query strings resolve variables. Next, [Query parallelization](./parallelization.md) explains how Deephaven runs queries on multiple CPU cores and when a formula needs to run in order.
