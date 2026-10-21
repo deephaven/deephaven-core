@@ -39,8 +39,8 @@ import java.util.stream.Collectors;
  */
 public class DataIndexPushdownManager implements PushdownPredicateManager {
 
-    /** The query scope name of the rows in question, for the formula that finds the index rows overlapping them. */
-    private static final String ROWS_IN_QUESTION_PARAM = "dh_rows_in_question";
+    /** The query scope name of the maybe-match rows, for the formula that finds the index rows overlapping them. */
+    private static final String MAYBE_MATCH_ROWS_PARAM = "__DH_MAYBE_MATCH_ROWS__";
 
     private final DataIndex dataIndex;
     private final PushdownFilterMatcher wrappedMatcher;
@@ -288,11 +288,11 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                         if (barrierActive) {
                             // Keep only the index rows whose row sets overlap the rows in question.
                             final QueryScope scope = new StandaloneQueryScope();
-                            scope.putParam(ROWS_IN_QUESTION_PARAM, result.maybeMatch());
+                            scope.putParam(MAYBE_MATCH_ROWS_PARAM, result.maybeMatch());
                             try (final SafeCloseable ignoredScope =
                                     ExecutionContext.getContext().withQueryScope(scope).open()) {
                                 toFilter = toFilter.where(
-                                        rowSetColumnName + ".overlaps(" + ROWS_IN_QUESTION_PARAM + ")");
+                                        rowSetColumnName + ".overlaps(" + MAYBE_MATCH_ROWS_PARAM + ")");
                             }
                         }
                         final Table filteredTable = toFilter.where(copiedFilter);
