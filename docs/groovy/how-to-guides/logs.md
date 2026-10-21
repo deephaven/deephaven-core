@@ -115,7 +115,7 @@ Deephaven keeps a record of the commands you've run in the console, how long eac
 
 Hover over a command to see its details.
 
-The command in the image below was successful and took one second.
+The command in the image below was successful and took 1.24 seconds.
 
 ![A successful command's details in the Command History panel](../assets/how-to/logs2groovy.png)
 
