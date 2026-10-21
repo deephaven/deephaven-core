@@ -184,12 +184,12 @@ Choose the list based on what the server's CPU can afford. The following figures
 
 | Compression type | Size after compression | Compression speed (M1 Max / i9-14900KS) | Decompression speed (M1 Max / i9-14900KS) |
 | ---------------- | ---------------------- | --------------------------------------- | ----------------------------------------- |
-| `zstd`           | 31% of the original    | 380 / 600 MB/s                          | 1010 / 1350 MB/s                          |
-| `gzip`           | 28% of the original    | 18 / 30 MB/s                            | 400 / 550 MB/s                            |
-| `snappy`         | 59% of the original    | 800 / 1100 MB/s                         | 1460 / 1380 MB/s                          |
-| `deflate`        | 28% of the original    | 18 MB/s / not measured                  | 360 MB/s / not measured                   |
+| `zstd`           | 31% of the original    | 380 / 550 MB/s                          | 1010 / 1270 MB/s                          |
+| `gzip`           | 28% of the original    | 18 / 30 MB/s                            | 400 / 600 MB/s                            |
+| `snappy`         | 59% of the original    | 800 / 880 MB/s                          | 1460 / 1080 MB/s                          |
+| `deflate`        | 28% of the original    | 18 / 30 MB/s                            | 360 / 550 MB/s                            |
 
-`zstd` suits most tables. `gzip` compresses slightly smaller but is about 20 times slower to compress, so list it last, and only when clients that cannot decode `zstd`, such as `pydeephaven`, should also receive compressed data. `deflate` is the algorithm of `gzip` in the zlib format: it compresses to the same size at the same speed, and decompresses slightly slower. Every client that decodes `deflate` also decodes `gzip`, so there is little reason to list `deflate` ahead of `gzip`. `snappy` is the fastest but saves the least, and it saves nothing on data that is already close to random.
+`zstd` suits most tables. `gzip` compresses slightly smaller but is about 20 times slower to compress, so list it last, and only when clients that cannot decode `zstd`, such as `pydeephaven`, should also receive compressed data. `deflate` is the algorithm of `gzip` in the zlib format: it compresses to the same size at the same speed, and decompresses slightly slower. Every client that decodes `deflate` also decodes `gzip`, so there is little reason to list `deflate` ahead of `gzip`. `snappy` compresses fastest but saves the least, and it saves nothing on data that is already close to random.
 
 To narrow the compression types a client lists, use the setting for that client. An empty list asks for uncompressed data.
 
