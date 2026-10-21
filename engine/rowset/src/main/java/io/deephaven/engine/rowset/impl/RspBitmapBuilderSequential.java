@@ -243,9 +243,11 @@ public class RspBitmapBuilderSequential implements BuilderSequential {
             // ix has no later span. Its last block stays pending for whatever is appended next.
             return;
         }
-        if (pendingContainerKey != -1) {
-            flushPendingContainer();
-        }
+        // ix's first span lies in a block we already hold, so its ranges went into the pending container: either the
+        // one already open, or rb's last span taken back out. A full block span cannot start in such a block without
+        // overlapping a key we hold.
+        Assert.neq(pendingContainerKey, "pendingContainerKey", -1);
+        flushPendingContainer();
         Assert.eqTrue(rb.tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, ixRb, 1),
                 "rb.tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, ixRb, 1)");
         // As above, rb now ends with ix's last span.
