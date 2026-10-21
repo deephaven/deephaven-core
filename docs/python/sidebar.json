@@ -2799,7 +2799,7 @@
                 "label": "Install and upgrade",
                 "items": [
                   {
-                    "label": "How can I find which Core version to which a feature or fix was added?",
+                    "label": "How can I find which Core version added a feature or fix?",
                     "path": "reference/community-questions/how-do-i-find-a-specific-build.md"
                   },
                   {
