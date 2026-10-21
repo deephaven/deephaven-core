@@ -150,7 +150,7 @@ To see the records arrive, run `docker compose exec redpanda rpk topic consume t
 
 [Apache Iceberg](https://iceberg.apache.org/) is a high-performance, open table format for huge analytic datasets. Deephaven's [`io.deephaven.iceberg.util`](/core/javadoc/io/deephaven/iceberg/util/package-summary.html) package reads and writes Iceberg tables. For more on Deephaven's Iceberg integration, see the [Iceberg user guide](../../how-to-guides/data-import-export/iceberg.md).
 
-Both Iceberg examples need the custom Docker deployment described in [A Deephaven deployment for Iceberg](../../how-to-guides/data-import-export/iceberg.md#a-deephaven-deployment-for-iceberg). That deployment runs its object store at `http://minio:9000`, so before you run the first example, change the `"s3.endpoint"` value in the adapter call from `http://rustfs:9000` to `http://minio:9000`.
+Both Iceberg examples need the custom Docker deployment described in [A Deephaven deployment for Iceberg](../../how-to-guides/data-import-export/iceberg.md#a-deephaven-deployment-for-iceberg).
 
 An Iceberg catalog adapter connects Deephaven to an Iceberg catalog. The following example creates one with [`IcebergTools.createAdapter`](/core/javadoc/io/deephaven/iceberg/util/IcebergTools.html#createAdapter(java.lang.String,java.util.Map)) and uses it to read an existing Iceberg table into a Deephaven table.
 
