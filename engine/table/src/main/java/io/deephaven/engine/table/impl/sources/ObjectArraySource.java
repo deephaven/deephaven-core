@@ -458,10 +458,10 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                 dest.set(ii, null);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
             if (fromIndex > maxIndex) {
                 dest.set(ii, null);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final T[] currentBlock = blocks[blockNo];
                 dest.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
             }
@@ -481,12 +481,12 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
                 continue;
             }
 
-            final int blockNo = getBlockNo(fromIndex);
             if (fromIndex > maxIndex) {
                 dest.set(ii, null);
                 continue;
             }
 
+            final int blockNo = getBlockNo(fromIndex);
             final T[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             dest.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
         }

@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.ResettableLongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -14,6 +15,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
+import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer.BoxerKernel;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.qst.array.Array;
@@ -170,8 +172,11 @@ public class ArrayBackedColumnSourceTest {
     }
 
     private static void assertNulls(final String read, final Chunk<? extends Values> chunk) {
-        for (int ii = 0; ii < chunk.size(); ++ii) {
-            assertThat((Object) ChunkBoxer.boxedGet(chunk, ii)).as(read + " at " + ii).isNull();
+        try (final BoxerKernel boxer = ChunkBoxer.getBoxer(chunk.getChunkType(), chunk.size())) {
+            final ObjectChunk<?, ? extends Values> boxed = boxer.box(chunk);
+            for (int ii = 0; ii < boxed.size(); ++ii) {
+                assertThat(boxed.get(ii)).as(read + " at " + ii).isNull();
+            }
         }
     }
 

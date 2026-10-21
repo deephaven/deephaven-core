@@ -331,10 +331,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                 dest.set(ii, null);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
             if (fromIndex > maxIndex) {
                 dest.set(ii, null);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final byte[] currentBlock = blocks[blockNo];
                 dest.set(ii, BooleanUtils.byteAsBoolean(currentBlock[(int) (fromIndex & INDEX_MASK)]));
             }
@@ -353,11 +353,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                 dest.set(ii, null);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
             if (fromIndex > maxIndex) {
                 dest.set(ii, null);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final byte[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             dest.set(ii, BooleanUtils.byteAsBoolean(currentBlock[(int) (fromIndex & INDEX_MASK)]));
         }
@@ -676,10 +676,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
-                final int blockNo = getBlockNo(fromIndex);
                 if (fromIndex > maxIndex) {
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                 } else {
+                    final int blockNo = getBlockNo(fromIndex);
                     final byte[] currentBlock = blocks[blockNo];
                     dest.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
                 }
@@ -697,11 +697,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
-                final int blockNo = getBlockNo(fromIndex);
                 if (fromIndex > maxIndex) {
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
+                final int blockNo = getBlockNo(fromIndex);
                 final byte[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
                 dest.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
             }

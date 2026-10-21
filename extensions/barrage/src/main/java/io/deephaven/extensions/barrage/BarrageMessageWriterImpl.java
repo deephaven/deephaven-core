@@ -87,9 +87,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
          * @param col the column's index in the message
          * @return whether the view writes the column's added and modified rows
          */
-        default boolean isColumnIncluded(final int col) {
-            return true;
-        }
+        boolean isColumnIncluded(int col);
 
         /**
          * Returns the {@link DictionaryWriterRegistry} for this stream, or {@code null} if no columns use dictionary
@@ -676,6 +674,11 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             }
 
             numClientAddRows = clientAddedRowOffsets.size();
+        }
+
+        @Override
+        public boolean isColumnIncluded(final int col) {
+            return subscribedColumns == null || subscribedColumns.get(col);
         }
 
         @Override
