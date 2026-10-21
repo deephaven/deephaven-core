@@ -16,16 +16,30 @@ from deephaven.calendar import (
     set_calendar,
 )
 from deephaven.column import bool_col, string_col
-from tests.testbase import BaseTestCase
+from tests.testbase import BaseTestCase, get_resource_path
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
+_JCalendars = jpy.get_type("io.deephaven.time.calendar.Calendars")
+
+_calendars_registered = False
+
+
+def _register_config_calendars() -> None:
+    """Registers the calendars from the configuration once per JVM. Registering them again fails, because
+    Calendars.addCalendar rejects a second calendar with the same name."""
+    global _calendars_registered
+    if not _calendars_registered:
+        cals = _JCalendars.calendarsFromConfiguration()
+        for i in range(cals.size()):
+            _JCalendars.addCalendar(cals.get(i))
+        _calendars_registered = True
 
 
 class CalendarTestCase(BaseTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
-        jpy.get_type("io.deephaven.time.calendar.CalendarInit").init()
+        _register_config_calendars()
 
     def setUp(self) -> None:
         super().setUp()
@@ -33,19 +47,9 @@ class CalendarTestCase(BaseTestCase):
     def tearDown(self) -> None:
         super().tearDown()
 
-    def get_resource_path(self, resource_path) -> str:
-        obj = jpy.get_type(
-            "io.deephaven.integrations.python.PythonTimeComponentsTest"
-        )()
-        Paths = jpy.get_type("java.nio.file.Paths")
-        Objects = jpy.get_type("java.util.Objects")
-        return Paths.get(
-            Objects.requireNonNull(obj.getClass().getResource(resource_path)).toURI()
-        ).toString()
-
     def test_add_remove_calendar(self):
-        path1 = self.get_resource_path("/TEST1.calendar")
-        path2 = self.get_resource_path("/TEST2.calendar")
+        path1 = get_resource_path("/TEST1.calendar")
+        path2 = get_resource_path("/TEST2.calendar")
 
         cal = jpy.get_type(
             "io.deephaven.time.calendar.BusinessCalendarXMLParser"

@@ -54,26 +54,14 @@ def start_jvm_for_tests(jvm_props: Optional[dict[str, str]] = None):
 
         # Start up the JVM
         jpy.VerboseExceptions.enabled = True
-        if os.environ.get("DEEPHAVEN_TEST_EMBEDDED", "").lower() in ("1", "true"):
-            # Use the server jars bundled in the deephaven-server wheel, so the tests can run on any Python version
-            # that has the wheels installed, without the server Docker image. DEEPHAVEN_CLASSPATH adds the test-only
-            # resources, such as the test calendars.
-            from deephaven_server.start_jvm import start_jvm
-
-            start_jvm(
-                jvm_args=[f"-Xmx{jvm_maxmem}"],
-                jvm_properties=jvm_properties,
-                extra_classpath=[e for e in jvm_classpath.split(os.path.pathsep) if e],
-            )
-        else:
-            jvm.init_jvm(
-                jvm_maxmem=jvm_maxmem,
-                jvm_classpath=_expand_wildcards_in_list(
-                    jvm_classpath.split(os.path.pathsep)
-                ),
-                jvm_properties=jvm_properties,
-                jvm_options=jvm_options,
-            )
+        jvm.init_jvm(
+            jvm_maxmem=jvm_maxmem,
+            jvm_classpath=_expand_wildcards_in_list(
+                jvm_classpath.split(os.path.pathsep)
+            ),
+            jvm_properties=jvm_properties,
+            jvm_options=jvm_options,
+        )
 
         # Set up a Deephaven Python session
         py_scope_jpy = jpy.get_type(

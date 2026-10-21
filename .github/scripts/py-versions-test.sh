@@ -12,8 +12,8 @@ set -o nounset
 #   python-version  any version uv accepts, for example 3.9, 3.14 or 3.14t (free-threaded)
 #   test            optional unittest names, passed on to run-tests-embedded.sh. Default: all of tests/.
 #
-# Needs uv and the build outputs: ./gradlew :py-embedded-server:assemble :Integrations:testClasses
-# :engine-time:testClasses for the server tests, ./gradlew :server-jetty-app:installDist for the client tests.
+# Needs uv and the build outputs: ./gradlew :py-embedded-server:assemble for the server tests,
+# ./gradlew :server-jetty-app:installDist for the client tests.
 
 if [[ $# -lt 2 || ( "$1" != server && "$1" != client ) ]]; then
     echo "usage: $0 <server|client> <python-version> [test ...]" >&2

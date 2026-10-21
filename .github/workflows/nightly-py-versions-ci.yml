@@ -2,7 +2,7 @@ name: Nightly Python Versions CI
 
 # Runs the py/server and py/client tests on every supported Python version. The Docker-based suites in check cover only
 # the Python in the Docker images. These run the same tests without Docker, so each version needs only Python and a JDK.
-# - The server suite starts its JVM from the deephaven-server wheel.
+# - The server suite runs on the server jars in the deephaven-server wheel.
 # - The client suite tests against the server-jetty distribution, which has the start script and jars of the server
 #   Docker image. Java hosts Python from the job's venv.
 # The Python packages install from source.
@@ -44,10 +44,8 @@ jobs:
           .github/scripts/gradle-properties.sh 21 >> gradle.properties
           cat gradle.properties
 
-      - name: Build the deephaven-server wheel, the server distribution and the test classes
-        # The server tests load a few Java test classes: CalendarInit from engine-time, and MyObject and
-        # PythonTimeComponentsTest from Integrations.
-        run: ./gradlew --scan :py-embedded-server:assemble :server-jetty-app:distTar :Integrations:testClasses :engine-time:testClasses
+      - name: Build the deephaven-server wheel and the server distribution
+        run: ./gradlew --scan :py-embedded-server:assemble :server-jetty-app:distTar
 
       - name: Upload the build outputs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -56,8 +54,6 @@ jobs:
           path: |
             py/embedded-server/build/wheel/*.whl
             server/jetty-app/build/distributions/server-jetty-*.tar
-            Integrations/build/classes/java/test/
-            engine/time/build/classes/java/test/
           retention-days: 1
 
   test:

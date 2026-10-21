@@ -3,7 +3,7 @@
 The tests in `py/server/tests` run in two ways:
 
 - **In Docker**, with `./gradlew :Integrations:test-py-deephaven`. This is the suite that `check` runs. It uses the Python version in the server Docker image.
-- **Without Docker**, with `py/server/run-tests-embedded.sh`. It runs the same tests in a venv you set up, on any Python version. The JVM starts from the embedded server, the `deephaven-server` package. The `Nightly Python Versions CI` workflow runs it on every supported version, through `.github/scripts/py-versions-test.sh`, which makes a fresh venv for each version.
+- **Without Docker**, with `py/server/run-tests-embedded.sh`. It runs the same tests in a venv you set up, on any Python version. The server jars come from the `deephaven-server` package, the embedded server. The `Nightly Python Versions CI` workflow runs it on every supported version, through `.github/scripts/py-versions-test.sh`, which makes a fresh venv for each version.
 
 This page covers the second way. It does not measure coverage. For coverage reports, run the Docker task with `-Pcoverage.enabled=true`. For the client tests, see [`py/client/TESTING.md`](../client/TESTING.md).
 
@@ -15,10 +15,10 @@ This page covers the second way. It does not measure coverage. For coverage repo
 
 ## Run the tests
 
-1. Build the `deephaven-server` wheel and the Java test classes. Rebuild after you change Java code.
+1. Build the `deephaven-server` wheel. Rebuild after you change Java code.
 
    ```bash
-   ./gradlew :py-embedded-server:assemble :Integrations:testClasses :engine-time:testClasses
+   ./gradlew :py-embedded-server:assemble
    ```
 
 2. Make a venv with the Deephaven packages and the test dependencies, once per Python version. `py/server/setup.py` and `py/client/setup.py` read their version from `DEEPHAVEN_VERSION`, which must match the wheel, because `deephaven-server` pins `deephaven-core` to it.
@@ -46,9 +46,9 @@ The JUnit XML reports go to `py/server/build/test-results/test-embedded/<version
 
 ## What the script does
 
-1. Checks that a venv is active, that it has `deephaven-core`, `deephaven-server` and `pydeephaven`, and that the Java test classes are built.
+1. Checks that a venv is active, that it has `deephaven-core`, `deephaven-server` and `pydeephaven`.
 2. Warns about any package from `requirements-test.txt` that the venv lacks. The tests that need it skip or fail on their own. Only `unittest-xml-reporting` is required, because it writes the reports.
-3. Sets `DEEPHAVEN_TEST_EMBEDDED=true`, so `test_helper` starts the JVM from the `deephaven-server` package instead of a Docker classpath. `DEEPHAVEN_CLASSPATH` adds the test config, the test calendars and three Java test classes.
+3. Puts the jars from the venv's `deephaven-server` package on `DEEPHAVEN_CLASSPATH`, where the Docker image has `/opt/deephaven/server/lib`. `test_helper` then starts the JVM the same way in both. The classpath also gets the test config and the test calendars, which are plain files in the source tree. `DEEPHAVEN_DATA_DIR` and `DEEPHAVEN_CACHE_DIR` point at folders under `build/`, instead of the image's `/data` and `/cache`.
 4. Sets `TZ=Etc/UTC`, because `tests/test_time.py` expects that time zone name.
 5. For a free-threaded Python, sets `PYTHON_GIL=0`. Without it, importing `grpcio` through `pydeephaven` turns the GIL back on for the rest of the run.
 6. Runs the tests from a fresh copy of `tests/`, because some tests write files into the working directory, and leftovers from an earlier run make them fail.
