@@ -1,5 +1,6 @@
-# Python packages the tests in tests/ need beyond pydeephaven and deephaven-core. run-tests-venv.sh warns about any
-# that are missing. Versions are left open, so the tests run against the latest releases.
+# Python packages the tests in tests/ need beyond deephaven-core, deephaven-server and pydeephaven.
+# py/run-tests-venv.sh warns about any that are missing. Versions are left open, so the tests run against the latest
+# releases.
 unittest-xml-reporting
 # tests/test_flightsql.py
 flightsql-dbapi
