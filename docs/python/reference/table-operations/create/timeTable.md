@@ -31,7 +31,7 @@ The time interval between new row additions. Can be given as:
 </Param>
 <Param name="start_time" type="Optional[InstantLike]" optional>
 
-The value of the [date-time](../../query-language/types/date-time.md) in the first row of the table. Can be an `Instant`, `int` (nanoseconds since the Epoch), `str`, `datetime.datetime`, `numpy.datetime64`, or `pandas.Timestamp`. String inputs must be given in syntax matching `YYYY-MM-DDThh:mm:ss.dddddddd TZ`. See the [details on the `start_time` parameter](#details-on-the-start_time-parameter) for information on default behavior.
+The value of the [date-time](../../query-language/types/date-time.md) in the first row of the table. Can be an `Instant`, `int` (nanoseconds since the Epoch), `str`, `datetime.datetime`, `numpy.datetime64`, or `pandas.Timestamp`. String inputs can use any format that [`DateTimeUtils.parseInstant`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#parseInstant(java.lang.String)) accepts, such as `YYYY-MM-DDThh:mm:ss.dddddddd TZ`, or an integer number of seconds, milliseconds, microseconds, or nanoseconds since the Epoch. See the [details on the `start_time` parameter](#details-on-the-start_time-parameter) for information on default behavior.
 
 > [!WARNING]
 > Setting `start_time` sufficiently far in the past, coupled with a short `period`, can cause the time table to instantly populate with a very large number of rows.

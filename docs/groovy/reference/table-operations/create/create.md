@@ -3,7 +3,7 @@ title: FunctionGeneratedTableFactory
 ---
 
 The [`FunctionGeneratedTableFactory`](/core/javadoc/io/deephaven/engine/table/impl/util/FunctionGeneratedTableFactory.html)'s `create` method is useful for creating tables that are dependent on one or more ticking tables, or for creating tables that need to be refreshed at a regular interval.
-The method creates a table by running the user-defined `tableGenerator` function. This function runs once when the table is created, and then again when either the `sourceTables...` tick or when `refreshIntervalMs` milliseconds have elapsed.
+The method creates a table by running the user-defined `tableGenerator` function. This function runs once when the table is created, and then again whenever any of the `sourceTables` ticks or `refreshIntervalMs` milliseconds elapse.
 
 > [!NOTE]
 > The `tableGenerator` may access data in the `sourceTables`, but should not perform any further operations on them without careful handling. Since table operations may be memoized, a table operation may return a table created by a previous invocation of the same operation. Since that result will not have been included in the `sourceTables`, it is not automatically treated as a dependency for purposes of determining when it is safe to invoke `tableGenerator`.
