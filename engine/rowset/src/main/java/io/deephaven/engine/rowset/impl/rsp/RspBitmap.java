@@ -785,18 +785,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     }
 
     public void appendContainerUnsafeNoWriteCheck(final long k, final Container c) {
-        if (c != null) {
-            if (c.isAllOnes()) {
-                appendFullBlockSpan(k, 1);
-                return;
-            }
-            if (c.isSingleElement()) {
-                final long value = k | c.first();
-                appendSingletonSpan(value);
-                return;
-            }
-        }
-        appendContainer(k, c);
+        appendSpan(k, c, true);
     }
 
     public void appendFullBlockSpanUnsafeNoWriteCheck(final long k, final long slen) {

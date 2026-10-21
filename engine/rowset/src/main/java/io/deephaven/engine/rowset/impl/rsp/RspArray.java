@@ -1108,26 +1108,36 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     /**
      * Append back a span taken out by {@link #removeLastSpanUnsafeNoWriteCheck()}, possibly holding more keys now. The
      * span before it is as it was when the removed span was first appended after it, so unlike the other appends this
-     * does not optimize it again. Does not update the cardinality cache.
+     * does not optimize it again.
      *
      * @param k The span's block key
      * @param c The span's keys, without their block's high bits; not empty
      */
     public void restoreLastSpanUnsafeNoWriteCheck(final long k, final Container c) {
-        if (c.isAllOnes()) {
-            if (tryMergeLeftFullBlockSpan(size, k, 1)) {
+        appendSpan(k, c, false);
+    }
+
+    /**
+     * Append the span for block {@code k}, in the form that suits {@code c}: a full block span when it holds every key,
+     * a singleton span when it holds one, and {@code c} itself otherwise.
+     *
+     * @param k The span's block key, or, when {@code c} is null, the single key of a singleton span
+     * @param c The span's keys, without their block's high bits, or null for a singleton span
+     * @param optimizePrevious Whether to optimize the span before it, as appending normally does; a span that will not
+     *        change again is optimized once the next span is appended after it
+     */
+    protected void appendSpan(final long k, final Container c, final boolean optimizePrevious) {
+        if (c != null) {
+            if (c.isAllOnes()) {
+                appendFullBlockSpan(k, 1, optimizePrevious);
                 return;
             }
-            ensureSizeCanGrowBy(1);
-            setFullBlockSpanRaw(size, k, 1);
-        } else if (c.isSingleElement()) {
-            ensureSizeCanGrowBy(1);
-            setSingletonSpanRaw(size, k | c.first());
-        } else {
-            ensureSizeCanGrowBy(1);
-            setContainerSpanRaw(size, k, c);
+            if (c.isSingleElement()) {
+                appendSingletonSpan(k | c.first(), optimizePrevious);
+                return;
+            }
         }
-        ++size;
+        appendContainer(k, c, optimizePrevious);
     }
 
     public long keyForLastBlock() {
@@ -1979,7 +1989,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     public void appendSingletonSpan(final long v) {
-        if (size > 0) {
+        appendSingletonSpan(v, true);
+    }
+
+    private void appendSingletonSpan(final long v, final boolean optimizePrevious) {
+        if (optimizePrevious && size > 0) {
             tryOptimizeContainer(size - 1);
         }
         ensureSizeCanGrowBy(1);
@@ -1988,7 +2002,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     public void appendContainer(final long k, final Container c) {
-        if (size > 0) {
+        appendContainer(k, c, true);
+    }
+
+    private void appendContainer(final long k, final Container c, final boolean optimizePrevious) {
+        if (optimizePrevious && size > 0) {
             tryOptimizeContainer(size - 1);
         }
         ensureSizeCanGrowBy(1);
@@ -1997,11 +2015,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     public void appendFullBlockSpan(final long k, final long slen) {
+        appendFullBlockSpan(k, slen, true);
+    }
+
+    private void appendFullBlockSpan(final long k, final long slen, final boolean optimizePrevious) {
         // we may need to merge with a full block span to our left.
         if (tryMergeLeftFullBlockSpan(size, k, slen)) {
             return;
         }
-        if (size > 0) {
+        if (optimizePrevious && size > 0) {
             tryOptimizeContainer(size - 1);
         }
         ensureSizeCanGrowBy(1);
