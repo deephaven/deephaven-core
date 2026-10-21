@@ -29,9 +29,9 @@ class BarrageTestCase(BaseTestCase):
             env.update(dict(os.environ))
         else:
             # Outside the Docker image, use the deephaven-server wheel's "server" command. It runs until stdin closes,
-            # so the stdin pipe below keeps it alive until it is killed. Anonymous logins are on, so bind to 127.0.0.1.
-            # The cache dir goes through the environment, because the command splits --jvm-args on whitespace, which
-            # breaks a path with spaces.
+            # so stdin=subprocess.PIPE below keeps it alive until it is killed. Only stdout and stderr go to DEVNULL.
+            # Anonymous logins are on, so bind to 127.0.0.1. The cache dir goes through the environment, because the
+            # command splits --jvm-args on whitespace, which breaks a path with spaces.
             cmd = [
                 sys.executable,
                 "-c",
