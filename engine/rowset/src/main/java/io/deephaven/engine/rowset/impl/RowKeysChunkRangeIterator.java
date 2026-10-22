@@ -47,14 +47,39 @@ public final class RowKeysChunkRangeIterator implements RowSet.RangeIterator {
             currentStart = Math.max(currentStart, v);
             return true;
         }
-        while (hasNext()) {
-            next();
-            if (currentEnd >= v) {
-                currentStart = Math.max(currentStart, v);
-                return true;
+        final int size = keys.size();
+        if (nextOffset >= size) {
+            return false;
+        }
+        // Find the first key at or after v. Every key before it is less than v, so the range that contains v (if any)
+        // begins there, and next() reads it from that offset.
+        if (keys.get(nextOffset) < v) {
+            // gallop until we pass v, then binary search the last step; keys.get(below) < v throughout
+            int below = nextOffset;
+            int step = 1;
+            int above = below + 1;
+            while (above < size && keys.get(above) < v) {
+                below = above;
+                step <<= 1;
+                above = (int) Math.min((long) below + step, size);
+            }
+            int low = below + 1;
+            int high = Math.min(above, size);
+            while (low < high) {
+                final int mid = (low + high) >>> 1;
+                if (keys.get(mid) < v) {
+                    low = mid + 1;
+                } else {
+                    high = mid;
+                }
+            }
+            nextOffset = low;
+            if (nextOffset >= size) {
+                return false;
             }
         }
-        return false;
+        next();
+        return true;
     }
 
     @Override
