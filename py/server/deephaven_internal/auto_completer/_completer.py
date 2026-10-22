@@ -6,7 +6,7 @@ from __future__ import annotations
 import sys
 import warnings
 from enum import Enum
-from typing import Any, Union
+from typing import Any
 
 from jedi import Interpreter, Script
 from jedi.api.classes import Completion, Signature
@@ -43,7 +43,7 @@ _JEDI_COMPLETION_TYPE_MAP = {
 
 
 """
-For Python 3.9 and 3.10, there is a bug in recursion which can result in a segfault. Lowering this
+For Python 3.10, there is a bug in recursion which can result in a segfault. Lowering this
 limit to 2000 or less seems to mitigate it.
 """
 MAX_RECURSION_LIMIT = 2000
@@ -135,7 +135,7 @@ class Completer:
     def set_scope(self, scope: dict) -> None:
         self.__scope = scope
 
-    def get_completer(self, uri: str) -> Union[Interpreter, Script]:
+    def get_completer(self, uri: str) -> Interpreter | Script:
         txt = self.get_doc(uri)
         if self.__mode == Mode.SAFE:
             # The Script completer is static analysis only, so we should actually be feeding it a whole document at once
@@ -272,7 +272,7 @@ class Completer:
         Tests for python+jedi+numpy versions that are susceptible to a RecursionError/segfault issue, and lowers
         the recursion limit, warning if the limit is raised externally.
         """
-        if sys.version_info < (3, 9) or sys.version_info >= (3, 11):
+        if sys.version_info >= (3, 11):
             return
 
         if sys.getrecursionlimit() <= MAX_RECURSION_LIMIT:
@@ -285,7 +285,7 @@ class Completer:
         # way we've seen to cause this issue.
         if not suppress_warning and not self.recursion_limit_already_warned:
             self.recursion_limit_already_warned = True
-            warnings.warn(f"""Recursion limit has been set to {MAX_RECURSION_LIMIT} to avoid a known segfault in Python 3.9 and 3.10
+            warnings.warn(f"""Recursion limit has been set to {MAX_RECURSION_LIMIT} to avoid a known segfault in Python 3.10
 related to RecursionErrors. This limit will be set to {MAX_RECURSION_LIMIT} whenever autocomplete takes place
 to avoid this, because the jedi library sets this to 3000, above the safe limit. Disabling autocomplete
 will prevent this check, as it will also prevent jedi from raising the limit.

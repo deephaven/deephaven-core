@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from inspect import Parameter
-from typing import Any, TypedDict, Union
+from typing import Any, TypedDict
 
 from docstring_parser import Docstring, parse
 from jedi.api.classes import Signature
@@ -33,17 +33,17 @@ class ParameterDetails(TypedDict):
     Name of the parameter
     """
 
-    description: Union[str, None]
+    description: str | None
     """
     Description of the parameter
     """
 
-    type: Union[str, None]
+    type: str | None
     """
     Type of the parameter
     """
 
-    default: Union[str, None]
+    default: str | None
     """
     Default value of the parameter
     """

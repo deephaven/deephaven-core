@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import datetime
 from abc import ABC, abstractmethod
-from typing import Sequence, Union
+from collections.abc import Sequence
+from typing import TypeAlias
 
 import numpy as np
 import pandas as pd
@@ -30,12 +31,9 @@ from deephaven_core.proto.table_pb2 import (
 )
 
 # Type alias for datetime-like types
-DatetimeLike = Union[
-    datetime.datetime,
-    datetime.date,
-    np.datetime64,
-    pd.Timestamp,
-]
+DatetimeLike: TypeAlias = (
+    datetime.datetime | datetime.date | np.datetime64 | pd.Timestamp
+)
 
 
 def _datetime_to_nanos(dt: DatetimeLike) -> int:
@@ -67,7 +65,7 @@ def _datetime_to_nanos(dt: DatetimeLike) -> int:
         raise TypeError(f"Unsupported datetime type: {type(dt)}")
 
 
-def _to_proto_value(v: Union[bool, int, float, str, DatetimeLike, ColumnName]) -> Value:
+def _to_proto_value(v: bool | int | float | str | DatetimeLike | ColumnName) -> Value:
     if isinstance(v, ColumnName):
         return Value(reference=Reference(column_name=v))
     elif isinstance(v, str):
@@ -106,8 +104,8 @@ class _CompareFilter(Filter):
     def __init__(
         self,
         op: CompareCondition.CompareOperation.ValueType,
-        left: Union[bool, int, float, str, DatetimeLike, ColumnName],
-        right: Union[bool, int, float, str, DatetimeLike, ColumnName],
+        left: bool | int | float | str | DatetimeLike | ColumnName,
+        right: bool | int | float | str | DatetimeLike | ColumnName,
         case_sensitive: bool = True,
     ):
         self._lhs = _to_proto_value(left)
@@ -135,7 +133,7 @@ class _InFilter(Filter):
     def __init__(
         self,
         col: str,
-        values: Sequence[Union[bool, int, float, str]],
+        values: Sequence[bool | int | float | str],
         case_sensitive: bool = True,
     ):
         self._col = col
@@ -372,7 +370,7 @@ def contains(
 
 def in_(
     col: str,
-    values: Sequence[Union[bool, int, float, str]],
+    values: Sequence[bool | int | float | str],
     case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the column's value is in the given values.
@@ -392,8 +390,8 @@ def in_(
 
 
 def eq(
-    left: Union[bool, int, float, str, DatetimeLike, ColumnName],
-    right: Union[bool, int, float, str, DatetimeLike, ColumnName],
+    left: bool | int | float | str | DatetimeLike | ColumnName,
+    right: bool | int | float | str | DatetimeLike | ColumnName,
     case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is equal to the right operand.
@@ -415,8 +413,8 @@ def eq(
 
 
 def ne(
-    left: Union[bool, int, float, str, DatetimeLike, ColumnName],
-    right: Union[bool, int, float, str, DatetimeLike, ColumnName],
+    left: bool | int | float | str | DatetimeLike | ColumnName,
+    right: bool | int | float | str | DatetimeLike | ColumnName,
     case_sensitive: bool = True,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is not equal to the right operand.
@@ -438,8 +436,8 @@ def ne(
 
 
 def lt(
-    left: Union[int, float, str, DatetimeLike, ColumnName],
-    right: Union[int, float, str, DatetimeLike, ColumnName],
+    left: int | float | str | DatetimeLike | ColumnName,
+    right: int | float | str | DatetimeLike | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is less than the right operand.
 
@@ -458,8 +456,8 @@ def lt(
 
 
 def gt(
-    left: Union[int, float, str, DatetimeLike, ColumnName],
-    right: Union[int, float, str, DatetimeLike, ColumnName],
+    left: int | float | str | DatetimeLike | ColumnName,
+    right: int | float | str | DatetimeLike | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is greater than the right operand.
 
@@ -478,8 +476,8 @@ def gt(
 
 
 def le(
-    left: Union[int, float, str, DatetimeLike, ColumnName],
-    right: Union[int, float, str, DatetimeLike, ColumnName],
+    left: int | float | str | DatetimeLike | ColumnName,
+    right: int | float | str | DatetimeLike | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is less than or equal to the right operand.
 
@@ -498,8 +496,8 @@ def le(
 
 
 def ge(
-    left: Union[int, float, str, DatetimeLike, ColumnName],
-    right: Union[int, float, str, DatetimeLike, ColumnName],
+    left: int | float | str | DatetimeLike | ColumnName,
+    right: int | float | str | DatetimeLike | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is greater than or equal to the right operand.
 

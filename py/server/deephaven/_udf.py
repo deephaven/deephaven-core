@@ -8,11 +8,11 @@ import sys
 import types
 import typing
 import warnings
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import partial, wraps
-from typing import Any, Callable, Optional, Union, get_args, get_origin
+from typing import Any, Union, get_args, get_origin
 
 import jpy
 import numpy
@@ -62,18 +62,18 @@ def _is_lossless_convertible(from_type: str, to_type: str) -> bool:
 
 @dataclass
 class _ParsedParam:
-    name: Union[str, int] = field(init=True)
-    orig_types: list[Union[type, DType]] = field(default_factory=list)
+    name: str | int = field(init=True)
+    orig_types: list[type | DType] = field(default_factory=list)
     effective_types: list[type] = field(default_factory=list)
     encoded_types: list[str] = field(default_factory=list)
     none_allowed: bool = False
     has_array: bool = False
-    arg_converter: Optional[Callable] = None
+    arg_converter: Callable | None = None
 
     def setup_arg_converter(self, arg_type_str: str) -> None:
         """Set up the converter function for the parameter based on the encoded argument type string."""
         for param_type_str, effective_type in zip(
-            self.encoded_types, self.effective_types
+            self.encoded_types, self.effective_types, strict=True
         ):
             # unsupported type is treated as object type, no conversion. We'll let the runtime handle them
             # since we want to trust that the user knows what they are doing.
@@ -171,10 +171,10 @@ class _ParsedParam:
 
 class _ParsedReturnAnnotation:
     encoded_type: str
-    orig_type: Optional[type] = None
+    orig_type: type | None = None
     none_allowed: bool = False
     has_array: bool = False
-    ret_converter: Optional[Callable] = None
+    ret_converter: Callable | None = None
 
     def setup_return_converter(self) -> None:
         """Set the converter function for the return value of UDF based on the return type annotation."""
@@ -304,7 +304,7 @@ def _encode_param_type(t: type) -> str:
     return tc
 
 
-def _np_dtype_char(t: Union[type, str]) -> str:
+def _np_dtype_char(t: type | str) -> str:
     """Returns the numpy dtype character code for the given type."""
     if t is None:
         return "O"
@@ -350,7 +350,7 @@ def _resolve_origin(t: type) -> Any:
     return get_origin(origin) or origin
 
 
-def _component_np_dtype_char(t: type) -> Optional[str]:
+def _component_np_dtype_char(t: type) -> str | None:
     """Returns the numpy dtype character code for the given type's component type if the type is a Sequence type or
     numpy ndarray, otherwise return None."""
     t = _unwrap_type_alias(t)
@@ -369,7 +369,7 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
         return None
 
 
-def _py_sequence_component_type(t: type) -> Optional[type]:
+def _py_sequence_component_type(t: type) -> type | None:
     """Returns the component type of a Python subscripted sequence type, otherwise return None."""
     component_type = None
 
@@ -386,7 +386,7 @@ def _py_sequence_component_type(t: type) -> Optional[type]:
     return component_type
 
 
-def _np_ndarray_component_type(t: type) -> Optional[type]:
+def _np_ndarray_component_type(t: type) -> type | None:
     """Returns the numpy ndarray component type if the type is a numpy ndarray, otherwise return None."""
 
     component_type = None
@@ -407,11 +407,7 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
 
 def _is_union_type(t: type) -> bool:
     """Return True if the type is a Union type"""
-    if get_origin(t) is Union:
-        return True
-    if sys.version_info >= (3, 10):  # novermin
-        return get_origin(t) is types.UnionType
-    return False
+    return get_origin(t) in (Union, types.UnionType)
 
 
 def _parse_param(name: str, annotation: type) -> _ParsedParam:
@@ -434,7 +430,7 @@ def _parse_param(name: str, annotation: type) -> _ParsedParam:
 
 
 def _parse_type_no_nested(
-    annotation: Any, p_param: _ParsedParam, t: Union[type, dtypes.DType]
+    annotation: Any, p_param: _ParsedParam, t: type | dtypes.DType
 ) -> None:
     """Parse a specific type (top level or nested in a top-level Union annotation) without handling nested types
     (e.g. a nested Union). The result is stored in the given _ParsedAnnotation object.
@@ -496,7 +492,7 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
 if numba:
 
     def _parse_numba_signature(
-        fn: Union[numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc],  # type: ignore[name-defined]
+        fn: numba.np.ufunc.gufunc.GUFunc | numba.np.ufunc.dufunc.DUFunc,  # type: ignore[name-defined]
     ) -> _ParsedSignature:
         """Parse a numba function's signature"""
         sigs = fn.types  # in the format of ll->l, ff->f,dd->d,OO->O, etc.
@@ -565,7 +561,7 @@ def _parse_np_ufunc_signature(fn: numpy.ufunc) -> _ParsedSignature:
     return p_sig
 
 
-def _parse_signature(fn: Callable) -> Optional[_ParsedSignature]:
+def _parse_signature(fn: Callable) -> _ParsedSignature | None:
     """Parse the signature of a function"""
 
     if numba:
@@ -577,35 +573,19 @@ def _parse_signature(fn: Callable) -> Optional[_ParsedSignature]:
     else:
         p_sig = _ParsedSignature(fn=fn)
         try:
-            if sys.version_info >= (3, 10):
-                sig = inspect.signature(fn, eval_str=True)  # novermin
-            else:
-                sig = inspect.signature(fn)
+            sig = inspect.signature(fn, eval_str=True)
         except ValueError:
             # some built-in functions don't have a signature, neither do some functions from C extensions
             return None
 
         for n, p in sig.parameters.items():
-            # when from __future__ import annotations is used, the annotation is a string, we need to eval it to get
-            # the type when the minimum Python version is bumped to 3.10, we'll always use eval_str in _parse_signature,
-            # so that annotation is already a type, and we can skip this step.
-            t = (
-                eval(p.annotation, fn.__globals__)
-                if isinstance(p.annotation, str)
-                else p.annotation
-            )
-            p_sig.params.append(_parse_param(n, t))
+            p_sig.params.append(_parse_param(n, p.annotation))
 
-        t = (
-            eval(sig.return_annotation, fn.__globals__)
-            if isinstance(sig.return_annotation, str)
-            else sig.return_annotation
-        )
-        p_sig.ret_annotation = _parse_return_annotation(t)
+        p_sig.ret_annotation = _parse_return_annotation(sig.return_annotation)
         return p_sig
 
 
-def _udf_parser(fn: Callable) -> Optional[Callable]:
+def _udf_parser(fn: Callable) -> Callable | None:
     """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
     Python and Java. This decorator is intended for internal use by the Deephaven query engine and should not be used by
     users.

@@ -29,7 +29,7 @@ pip-installed Deephaven requires:
 | Software | Recommended version | Required version |
 | -------- | ------------------- | ---------------- |
 | Java     | latest LTS          | >= 17            |
-| Python   | 3.13                | >= 3.9           |
+| Python   | 3.13                | >= 3.10          |
 
 After installing Java and Python, set the `JAVA_HOME` environment variable to your Java installation.
 

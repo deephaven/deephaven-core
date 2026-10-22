@@ -17,7 +17,7 @@ Deephaven is only supported on:
 
 ## Prerequisites
 
-[Java](https://www.java.com/en/) is the only required packages to run Deephaven's production application. If you wish to run a Deephaven Python server, you will also need [Python](https://www.python.org/) 3.9 or later.
+[Java](https://www.java.com/en/) is the only required packages to run Deephaven's production application. If you wish to run a Deephaven Python server, you will also need [Python](https://www.python.org/) 3.10 or later.
 
 | Package | Recommended version | Required version |
 | ------- | ------------------- | ---------------- |

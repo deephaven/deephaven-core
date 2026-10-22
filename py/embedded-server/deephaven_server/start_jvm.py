@@ -7,7 +7,7 @@ import itertools
 import os
 import pathlib
 import types
-from typing import Dict, Iterator, List, Optional
+from collections.abc import Iterator
 
 from deephaven_internal import jvm
 
@@ -55,13 +55,13 @@ DEFAULT_JVM_ARGS = [
 
 # Provide a util func to start the JVM, will use its own defaults if none are offered
 def start_jvm(
-    jvm_args: Optional[List[str]] = None,
-    default_jvm_args: Optional[List[str]] = None,
-    jvm_properties: Optional[Dict[str, str]] = None,
-    java_home: Optional[str] = None,
-    extra_classpath: Optional[List[str]] = None,
-    prop_file: Optional[str] = None,
-    config: Optional[types.ModuleType] = None,
+    jvm_args: list[str] | None = None,
+    default_jvm_args: list[str] | None = None,
+    jvm_properties: dict[str, str] | None = None,
+    java_home: str | None = None,
+    extra_classpath: list[str] | None = None,
+    prop_file: str | None = None,
+    config: types.ModuleType | None = None,
 ) -> None:
     """This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
     Script session.
