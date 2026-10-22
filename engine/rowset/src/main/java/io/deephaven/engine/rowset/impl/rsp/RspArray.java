@@ -1075,6 +1075,71 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return getKey(0);
     }
 
+    /**
+     * Remove the last span, so that a sequential builder can go on adding to its block elsewhere and append the block
+     * back when it is done. Does not update the cardinality cache.
+     *
+     * @return The span's keys, without their block's high bits, as a container that may be shared, and so may only be
+     *         changed through operations that copy a shared container; or null, leaving this unchanged, when the last
+     *         span is a full block span
+     */
+    public Container removeLastSpanUnsafeNoWriteCheck() {
+        final int lastIdx = size - 1;
+        final Object span = spans[lastIdx];
+        final long spanInfo = spanInfos[lastIdx];
+        final Container container;
+        if (isSingletonSpan(span)) {
+            container = Container.singleton(lowBits(spanInfoToSingletonSpanValue(spanInfo)));
+        } else if (span instanceof short[]) {
+            // A packed ArrayContainer keeps its shared flag in the array itself, so wrapping the array preserves it.
+            container = ArrayContainer.makeByWrapping(
+                    (short[]) span, (int) (spanInfo & SPANINFO_ARRAYCONTAINER_CARDINALITY_BITMASK));
+        } else if (span instanceof Container) {
+            container = (Container) span;
+        } else {
+            return null;
+        }
+        spans[lastIdx] = null;
+        size = lastIdx;
+        modifiedSpan(lastIdx);
+        return container;
+    }
+
+    /**
+     * Append back a span taken out by {@link #removeLastSpanUnsafeNoWriteCheck()}, possibly holding more keys now. The
+     * span before it is as it was when the removed span was first appended after it, so unlike the other appends this
+     * does not optimize it again.
+     *
+     * @param k The span's block key
+     * @param c The span's keys, without their block's high bits; not empty
+     */
+    public void restoreLastSpanUnsafeNoWriteCheck(final long k, final Container c) {
+        appendSpan(k, c, false);
+    }
+
+    /**
+     * Append the span for block {@code k}, in the form that suits {@code c}: a full block span when it holds every key,
+     * a singleton span when it holds one, and {@code c} itself otherwise.
+     *
+     * @param k The span's block key, or, when {@code c} is null, the single key of a singleton span
+     * @param c The span's keys, without their block's high bits, or null for a singleton span
+     * @param optimizePrevious Whether to optimize the span before it, as appending normally does; a span that will not
+     *        change again is optimized once the next span is appended after it
+     */
+    protected void appendSpan(final long k, final Container c, final boolean optimizePrevious) {
+        if (c != null) {
+            if (c.isAllOnes()) {
+                appendFullBlockSpan(k, 1, optimizePrevious);
+                return;
+            }
+            if (c.isSingleElement()) {
+                appendSingletonSpan(k | c.first(), optimizePrevious);
+                return;
+            }
+        }
+        appendContainer(k, c, optimizePrevious);
+    }
+
     public long keyForLastBlock() {
         final Object span = spans[size - 1];
         final long spanInfo = spanInfos[size - 1];
@@ -1924,7 +1989,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     public void appendSingletonSpan(final long v) {
-        if (size > 0) {
+        appendSingletonSpan(v, true);
+    }
+
+    private void appendSingletonSpan(final long v, final boolean optimizePrevious) {
+        if (optimizePrevious && size > 0) {
             tryOptimizeContainer(size - 1);
         }
         ensureSizeCanGrowBy(1);
@@ -1933,7 +2002,11 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     public void appendContainer(final long k, final Container c) {
-        if (size > 0) {
+        appendContainer(k, c, true);
+    }
+
+    private void appendContainer(final long k, final Container c, final boolean optimizePrevious) {
+        if (optimizePrevious && size > 0) {
             tryOptimizeContainer(size - 1);
         }
         ensureSizeCanGrowBy(1);
@@ -1942,11 +2015,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     public void appendFullBlockSpan(final long k, final long slen) {
+        appendFullBlockSpan(k, slen, true);
+    }
+
+    private void appendFullBlockSpan(final long k, final long slen, final boolean optimizePrevious) {
         // we may need to merge with a full block span to our left.
         if (tryMergeLeftFullBlockSpan(size, k, slen)) {
             return;
         }
-        if (size > 0) {
+        if (optimizePrevious && size > 0) {
             tryOptimizeContainer(size - 1);
         }
         ensureSizeCanGrowBy(1);
@@ -4633,7 +4710,14 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return true;
     }
 
-    boolean forEachLongRangeInSpanWithOffset(final int i, final long offset,
+    /**
+     * Pass the ranges of span {@code i}, starting {@code offset} into its first block, to {@code larc}. Unlike
+     * {@link #forEachLongRange(LongRangeAbortableConsumer)}, a range is not joined to the adjacent ranges of the spans
+     * on either side.
+     *
+     * @return False if {@code larc} asked to stop, true otherwise
+     */
+    public boolean forEachLongRangeInSpanWithOffset(final int i, final long offset,
             final LongRangeAbortableConsumer larc) {
         try (SpanView view = workDataPerThread.get().borrowSpanView(this, i)) {
             if (view.isSingletonSpan()) {
@@ -5035,37 +5119,61 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
     }
 
-    // Neither this nor other can be empty.
-    // shiftAmount should be a multiple of BLOCK_SIZE.
-    boolean tryAppendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other) {
+    /**
+     * Append every key of {@code other}, plus {@code shiftAmount}, by sharing its spans, provided that it starts in a
+     * block after our last one. Does not update the cardinality cache.
+     *
+     * @param shiftAmount The amount to add to every key of {@code other}; a multiple of {@code BLOCK_SIZE}
+     * @param other The keys to append; not empty
+     * @return Whether the keys were appended; when {@code other}'s first block, shifted, is not after our last block,
+     *         nothing is changed
+     */
+    public boolean tryAppendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other) {
+        return tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, other, 0);
+    }
+
+    /**
+     * As {@link #tryAppendShiftedUnsafeNoWriteCheck(long, RspArray)}, for {@code other}'s spans from
+     * {@code otherStartIdx} on.
+     *
+     * @param shiftAmount The amount to add to every key appended; a multiple of {@code BLOCK_SIZE}
+     * @param other The array whose spans to append
+     * @param otherStartIdx The first of {@code other}'s spans to append; less than {@code other}'s size
+     * @return Whether the spans were appended; when the first of them, shifted, does not start after our last block,
+     *         nothing is changed
+     */
+    public boolean tryAppendShiftedUnsafeNoWriteCheck(
+            final long shiftAmount, final RspArray other, final int otherStartIdx) {
         if (RspArray.debug) {
-            if (size == 0 || other.size == 0) {
-                throw new IllegalArgumentException(
-                        "Append called for empty argument: size=" + size + ", other.size=" + other.size);
+            if (otherStartIdx < 0 || otherStartIdx >= other.size) {
+                throw new IllegalArgumentException("Append called with size=" + size + ", otherStartIdx="
+                        + otherStartIdx + ", other.size=" + other.size);
             }
         }
-        final long otherFirstSpanInfo = other.spanInfos[0];
-        final long firstOtherBlockKey = spanInfoToKey(otherFirstSpanInfo) + shiftAmount;
-        final long ourLastSpanInfo = spanInfos[size - 1];
-        final Object ourLastSpan = spans[size - 1];
-        final long ourflen = getFullBlockSpanLen(ourLastSpanInfo, ourLastSpan);
-        final long ourLastKey = spanInfoToKey(ourLastSpanInfo);
-        final long ourLastBlockKey = ourLastKey + ((ourflen == 0) ? 0 : (ourflen - 1) * BLOCK_SIZE);
-        if (firstOtherBlockKey <= ourLastBlockKey) {
-            return false;
-        }
-        int firstOtherSpan = 0;
-        if (ourLastBlockKey + BLOCK_SIZE == firstOtherBlockKey) {
-            if (ourflen > 0) {
-                final Object otherFirstSpan = other.spans[0];
-                final long otherflen = getFullBlockSpanLen(otherFirstSpanInfo, otherFirstSpan);
-                if (otherflen > 0) {
-                    // we need to merge these spans.
-                    setFullBlockSpan(size - 1, ourLastKey, ourflen + otherflen);
-                    firstOtherSpan = 1;
+        int firstOtherSpan = otherStartIdx;
+        // When we are empty there is nothing to order against or merge with.
+        if (size > 0) {
+            final long otherFirstSpanInfo = other.spanInfos[otherStartIdx];
+            final long firstOtherBlockKey = spanInfoToKey(otherFirstSpanInfo) + shiftAmount;
+            final long ourLastSpanInfo = spanInfos[size - 1];
+            final Object ourLastSpan = spans[size - 1];
+            final long ourflen = getFullBlockSpanLen(ourLastSpanInfo, ourLastSpan);
+            final long ourLastKey = spanInfoToKey(ourLastSpanInfo);
+            final long ourLastBlockKey = ourLastKey + ((ourflen == 0) ? 0 : (ourflen - 1) * BLOCK_SIZE);
+            if (firstOtherBlockKey <= ourLastBlockKey) {
+                return false;
+            }
+            if (ourLastBlockKey + BLOCK_SIZE == firstOtherBlockKey) {
+                if (ourflen > 0) {
+                    final Object otherFirstSpan = other.spans[otherStartIdx];
+                    final long otherflen = getFullBlockSpanLen(otherFirstSpanInfo, otherFirstSpan);
+                    if (otherflen > 0) {
+                        // we need to merge these spans.
+                        setFullBlockSpan(size - 1, ourLastKey, ourflen + otherflen);
+                        ++firstOtherSpan;
+                    }
                 }
             }
-
         }
         ensureSizeCanGrowBy(other.size - firstOtherSpan);
         for (int i = firstOtherSpan; i < other.size; ++i) {
@@ -5532,6 +5640,46 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return 1;
         }
         return Math.round(estimate);
+    }
+
+    /**
+     * Whether this certainly holds more than {@code n} ranges, judged in one pass over the spans that stops once it can
+     * tell. A full block span or a singleton holds one range, and a container's ranges are counted: a run, single range
+     * or two values container knows how many it holds, and an array or bitmap container's take a pass over its values
+     * or words. A bitmap container is the representation only of a block with too many runs for a run container, so it
+     * contributes the most. A span's first range may join the previous span's last when it starts in the block right
+     * after that span's last block, so each such boundary counts one range fewer.
+     *
+     * @param n The number of ranges to compare with
+     * @return True only if this holds more than {@code n} ranges; false when it holds no more, or when the bound cannot
+     *         tell
+     */
+    public boolean hasMoreRangesThan(final long n) {
+        long lowerBound = 0;
+        long previousLastBlockKey = -1;
+        for (int idx = 0; idx < size; ++idx) {
+            final Object span = spans[idx];
+            final long spanInfo = spanInfos[idx];
+            final long key = spanInfoToKey(spanInfo);
+            long spanRanges = 1;
+            if (span instanceof short[]) {
+                try (SpanView view = workDataPerThread.get().borrowSpanView(spanInfo, span)) {
+                    spanRanges = view.getContainer().numberOfRanges();
+                }
+            } else if (span instanceof Container) {
+                spanRanges = ((Container) span).numberOfRanges();
+            }
+            if (idx > 0 && key == previousLastBlockKey + BLOCK_SIZE) {
+                --spanRanges;
+            }
+            lowerBound += spanRanges;
+            if (lowerBound > n) {
+                return true;
+            }
+            final long flen = getFullBlockSpanLen(spanInfo, span);
+            previousLastBlockKey = flen > 0 ? key + (flen - 1) * BLOCK_SIZE : key;
+        }
+        return false;
     }
 
     public long rangesCountUpperBound() {

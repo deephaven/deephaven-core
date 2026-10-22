@@ -22,6 +22,7 @@ import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
@@ -2890,14 +2891,20 @@ public final class ParquetTableFilterTest {
         }
     }
 
-    private static PushdownResult pushdownDataIndexFailingWith(final RuntimeException failure) {
+    private PushdownResult pushdownDataIndexFailingWith(final RuntimeException failure) {
         final Table table = TableTools.emptyTable(1000).update("A = ii % 10");
+        // The index is the engine's, so the location is only the receiver: any location will do.
+        final File file = new File(rootFile, "pushdownDataIndexFailingWith.parquet");
+        writeTable(table, file.getPath());
+        final ParquetTableLocation location = new ParquetTableLocation(StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(file.toURI(), 0, null, ParquetInstructions.EMPTY),
+                ParquetInstructions.EMPTY);
         final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(table, "A");
         final WhereFilter filter = new FailingFilter(failure);
         filter.init(table.getDefinition());
         try (final RowSet selection = table.getRowSet().copy();
                 final PushdownResult input = PushdownResult.allMaybeMatch(selection)) {
-            return ParquetTableLocation.pushdownDataIndex(selection, filter, Map.of(), dataIndex, input);
+            return location.pushdownDataIndex(selection, filter, Map.of(), dataIndex, input);
         }
     }
 
@@ -2919,7 +2926,7 @@ public final class ParquetTableFilterTest {
                 new TableDataException("reading the index", new ClosedByInterruptException()));
     }
 
-    private static void assertPushdownDataIndexPropagates(final RuntimeException failure) {
+    private void assertPushdownDataIndexPropagates(final RuntimeException failure) {
         final Exception thrown = Assert.assertThrows(Exception.class,
                 () -> pushdownDataIndexFailingWith(failure).close());
         Throwable cause = thrown;

@@ -2,14 +2,14 @@
 title: read
 ---
 
-The `read` method will read a single Parquet file, metadata file, or directory with a recognized layout into an in-memory table.
+The `read` method reads a single Parquet file, metadata file, or directory with a recognized layout into a table.
 
 ## Syntax
 
 ```python syntax
 read(
     path: str,
-    col_instructions: str = None,
+    col_instructions: Optional[list[ColumnInstruction]] = None,
     is_legacy_parquet: bool = False,
     is_refreshing: bool = False,
     file_layout: Optional[ParquetFileLayout] = None,
@@ -23,7 +23,7 @@ read(
 <ParamTable>
 <Param name="path" type="str">
 
-The file to load into a table. The file should exist and end with the `.parquet` extension.
+The Parquet file, metadata file, or directory to read, as a local path or URI (such as `s3://...`).
 
 </Param>
 <Param name="col_instructions" type="list[ColumnInstruction]" optional>
@@ -48,7 +48,7 @@ The Parquet file layout. The default is `None`, which infers the layout.
 </Param>
 <Param name="table_definition" type="Union[Dict[str, DType], List[Column], None]" optional>
 
-The table definition. The default is `None`, which infers the table definition from the Parquet file(s). If set, `file_layout` must also be set.
+The table definition. The default is `None`, which infers the table definition from the Parquet file(s).
 
 </Param>
 <Param name="special_instructions" type="Optional[s3.S3Instructions]" optional>
@@ -60,7 +60,7 @@ Special instructions for reading Parquet files. Mostly used when reading from no
 
 ## Returns
 
-A new in-memory table from a Parquet file, metadata file, or directory with a recognized layout.
+A new table from a Parquet file, metadata file, or directory with a recognized layout.
 
 ## Examples
 

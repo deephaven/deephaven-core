@@ -62,6 +62,7 @@ class NaturalJoinHelper {
 
     private static QueryTable naturalJoinInternal(QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, NaturalJoinType joinType, JoinControl control) {
+        QueryTable.checkJoinInputsNotFailed(leftTable, rightTable);
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         // A join that errors on duplicates needs a state per right row, so the right row count sizes the hash table
@@ -148,8 +149,7 @@ class NaturalJoinHelper {
                 leftRecorder.setMergedListener(mergedJoinListener);
                 rightRecorder.setMergedListener(mergedJoinListener);
 
-                leftTable.addUpdateListener(leftRecorder);
-                rightTable.addUpdateListener(rightRecorder);
+                mergedJoinListener.addRecordersToParents();
 
                 result.addParentReference(mergedJoinListener);
 
@@ -376,8 +376,7 @@ class NaturalJoinHelper {
 
                 leftRecorder.setMergedListener(mergedListener);
                 rightRecorder.setMergedListener(mergedListener);
-                leftTable.addUpdateListener(leftRecorder);
-                rightTable.addUpdateListener(rightRecorder);
+                mergedListener.addRecordersToParents();
                 result.addParentReference(mergedListener);
 
             } else {

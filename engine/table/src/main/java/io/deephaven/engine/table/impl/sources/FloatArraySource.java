@@ -581,10 +581,10 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
                 chunk.set(ii, NULL_FLOAT);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_FLOAT);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final float[] currentBlock = blocks[blockNo];
                 // region conversion
                 chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
@@ -611,11 +611,11 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
                 chunk.set(ii, NULL_FLOAT);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_FLOAT);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final float[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             // region conversion
             chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);

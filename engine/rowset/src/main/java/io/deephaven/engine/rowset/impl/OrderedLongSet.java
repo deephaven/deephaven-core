@@ -12,6 +12,7 @@ import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
@@ -187,6 +188,15 @@ public interface OrderedLongSet {
      * @return the inverse of {@code keys}
      */
     OrderedLongSet ixInvertOnNew(OrderedLongSet keys, long maximumPosition);
+
+    /**
+     * Fill {@code positions} with the position of each of {@code keys}, all of which must be in this set.
+     *
+     * @param keys the keys to find positions for
+     * @param positions the chunk to fill with the positions of {@code keys}; its capacity must be at least the size of
+     *        {@code keys}
+     */
+    void ixInvert(LongChunk<OrderedRowKeys> keys, WritableLongChunk<? super OrderedRowKeys> positions);
 
     OrderedLongSet ixCompact();
 
@@ -469,6 +479,16 @@ public interface OrderedLongSet {
                 throw new IllegalArgumentException("invert for non-existing key:" + keys.ixFirstKey());
             }
             return this;
+        }
+
+        @Override
+        public void ixInvert(
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<? super OrderedRowKeys> positions) {
+            if (keys.size() > 0) {
+                throw new IllegalArgumentException("invert for non-existing key:" + keys.get(0));
+            }
+            positions.setSize(0);
         }
 
         @Override

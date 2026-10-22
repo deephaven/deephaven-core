@@ -17,6 +17,7 @@ from deephaven import (
     time_table,
     update_graph,
 )
+from deephaven._query_scope import query_scope_ctx
 from deephaven.agg import (
     abs_sum,
     avg,
@@ -531,6 +532,13 @@ class TableTestCase(BaseTestCase):
         with self.subTest("with no join keys"):
             result_table = left_table.join(right_table, joins="e", reserve_bits=2)
             self.assertTrue(result_table.size > left_table.size)
+        for reserve_bits in [0, 63]:
+            with self.subTest("out of range reserve_bits", reserve_bits=reserve_bits):
+                with self.assertRaises(DHError) as cm:
+                    left_table.join(
+                        right_table, on="a", joins="e", reserve_bits=reserve_bits
+                    )
+                self.assertIn("reserveBits must be between 1 and 62", str(cm.exception))
 
     def test_as_of_join(self):
         left_table = self.test_table.drop_columns(["d", "e"])
@@ -1105,6 +1113,24 @@ class TableTestCase(BaseTestCase):
             for k, rt in rt_dict.items():
                 v = a_dict[k]
                 self.verify_table_data(rt, [v, v * 10])
+
+    def test_scope_through_helper(self):
+        # A private helper in table.py that enters query_scope_ctx for a public method must still see the user's
+        # locals. Label both functions with table.py's file name, so they count as Deephaven frames.
+        def public_update(t, formulas):
+            return _helper(t, formulas)
+
+        def _helper(t, formulas):
+            with query_scope_ctx():
+                return Table(j_table=t.j_table.update(*formulas))
+
+        table_py = Table.update.__code__.co_filename
+        public_update.__code__ = public_update.__code__.replace(co_filename=table_py)
+        _helper.__code__ = _helper.__code__.replace(co_filename=table_py)
+
+        offset = 7
+        rt = public_update(empty_table(1), ["X = i + offset"])
+        self.verify_table_data(rt, [7])
 
     def test_scope_lambda(self):
         t = empty_table(1)

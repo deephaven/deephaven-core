@@ -805,7 +805,7 @@ public class ArrayContainer extends Container {
          */
         final ArrayContainer ans;
         if (newcardinality > capacity()) {
-            short[] destination = newContent(calculateCapacity(newcardinality));
+            short[] destination = newContent(growthCapacity(newcardinality));
             // if b > 0, we copy from 0 to b. Do nothing otherwise.
             System.arraycopy(content, 0, destination, 0, indexstart);
             // set values from b to e
@@ -861,7 +861,7 @@ public class ArrayContainer extends Container {
         final int firstIndexNewRange = cardinality;
         final boolean shared = isShared();
         if (shared || newCardinality > capacity()) {
-            short[] destination = newContent(appendCapacity(newCardinality));
+            short[] destination = newContent(growthCapacity(newCardinality));
             System.arraycopy(content, 0, destination, 0, cardinality);
             if (shared) {
                 ans = makeByWrapping(destination, newCardinality);
@@ -961,22 +961,23 @@ public class ArrayContainer extends Container {
     }
 
     /**
-     * The capacity, in shorts, to allocate when {@link #iappend(int, int) iappend} has to grow the backing array.
+     * The capacity, in shorts, to allocate when {@link #iappend(int, int) iappend}, {@link #iadd(int, int) iadd} or
+     * {@link #inot(int, int) inot} has to grow the backing array in place.
      *
      * <p>
      * Enough to hold {@code newCardinality}, but also geometric in the current capacity, so that a container filled by
-     * repeated appends of a few values at a time does not reallocate and copy on every single one of them -- which
+     * repeated additions of a few values at a time does not reallocate and copy on every single one of them -- which
      * would make filling it quadratic in its cardinality rather than linear.
      *
      * <p>
-     * Appending is the fast path for builders, and they {@link #runOptimize() optimize} the container once it is
-     * finished, which trims whatever capacity this left spare. Callers that append without optimizing afterwards, and
-     * that retain the result, will hold that spare capacity.
+     * Builders fill containers this way, and they {@link #runOptimize() optimize} a container once it is finished,
+     * which trims whatever capacity this left spare. Callers that add without optimizing afterwards, and that retain the
+     * result, will hold that spare capacity.
      *
-     * @param newCardinality The cardinality the container will have after the append
+     * @param newCardinality The cardinality the container will have after the addition
      * @return The capacity to allocate, always at least {@code newCardinality}
      */
-    private int appendCapacity(final int newCardinality) {
+    private int growthCapacity(final int newCardinality) {
         final int newCapacity = Math.max(newCardinality, nextCapacity(capacity()));
         // Within ~1/16th of the max there is no point holding back room to grow.
         return newCapacity > DEFAULT_MAX_SIZE - 256 ? DEFAULT_MAX_SIZE : newCapacity;
@@ -1021,7 +1022,7 @@ public class ArrayContainer extends Container {
             } else {
                 ans = this;
                 if (newCardinality > capacity()) {
-                    content = newContent(calculateCapacity(newCardinality));
+                    content = newContent(growthCapacity(newCardinality));
                     System.arraycopy(src, 0, content, 0, lastIndex + 1);
                 }
             }

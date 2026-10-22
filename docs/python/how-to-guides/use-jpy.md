@@ -302,7 +302,7 @@ too_many_args = _JMath.hypot(3, 4, 5)
 wrong_type_given = _JMath.abs("hello!")
 
 # the most subtle error
-# incrementExact only accepts an int, but a float cannot be auto-converted to an int
+# incrementExact accepts only an int or a long, and a Python float cannot be auto-converted to either
 wrong_type_converted = _JMath.incrementExact(5.0)
 ```
 

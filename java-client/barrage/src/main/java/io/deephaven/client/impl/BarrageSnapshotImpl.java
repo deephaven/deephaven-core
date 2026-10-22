@@ -143,7 +143,9 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 // override server-supplied data and regenerate flattened rowsets
                 barrageMessage.rowsAdded.close();
                 barrageMessage.rowsIncluded.close();
-                barrageMessage.rowsAdded = RowSetFactory.fromRange(rowsReceived, rowsReceived + resultSize - 1);
+                barrageMessage.rowsAdded = resultSize == 0
+                        ? RowSetFactory.empty()
+                        : RowSetFactory.fromRange(rowsReceived, rowsReceived + resultSize - 1);
                 barrageMessage.rowsIncluded = barrageMessage.rowsAdded.copy();
                 try (final RowSet ignored = barrageMessage.snapshotRowSet) {
                     barrageMessage.snapshotRowSet = null;

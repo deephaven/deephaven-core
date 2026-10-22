@@ -1,0 +1,1 @@
+{"file":"how-to-guides/table-listeners-python.md","objects":{"orders":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"OrderId","type":"long"}],"rows":[[{"value":"2026-10-12 12:40:49.000"},{"value":"0"}]]}},":log":{"type":"Log","data":"Send order 0 to the broker\n"}}}

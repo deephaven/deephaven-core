@@ -115,7 +115,7 @@ result = KafkaTools.consumeToTable(
 
 ![The above `result` table](../../../assets/reference/data-import-export/kafka2.png)
 
-The following example sets the `deephaven.partition.column.name` as `null`, which ignores it.
+The following example sets the `deephaven.partition.column.name` to an empty string (`''`), which ignores it.
 
 - This results in the table not having a column for the partition field.
 - The key specification is also set to `IGNORE`, so `result` does not contain the Kafka key column.
@@ -125,7 +125,7 @@ import io.deephaven.kafka.KafkaTools
 
 kafkaProps = new Properties()
 kafkaProps.put('bootstrap.servers', 'redpanda:9092')
-kafkaProps.put('deephaven.partition.column.name', null)
+kafkaProps.put('deephaven.partition.column.name', '')
 
 result = KafkaTools.consumeToTable(
     kafkaProps,

@@ -5,21 +5,21 @@ isort:skip_file
 Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 """
 
-import builtins
-import google.protobuf.descriptor
-import google.protobuf.message
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+import builtins as _builtins
 import sys
-import typing
+import typing as _typing
 
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
-@typing.final
-class Ticket(google.protobuf.message.Message):
+@_typing.final
+class Ticket(_message.Message):
     """
     This file only contains arrow's Ticket type, so that we don't need to
     regenerate the entire flight.proto for other languages, since arrow
@@ -32,41 +32,45 @@ class Ticket(google.protobuf.message.Message):
     portion of a stream.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    TICKET_FIELD_NUMBER: builtins.int
-    ticket: builtins.bytes
+    TICKET_FIELD_NUMBER: _builtins.int
+    ticket: _builtins.bytes
     def __init__(
         self,
         *,
-        ticket: builtins.bytes = ...,
+        ticket: _builtins.bytes = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["ticket", b"ticket"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["ticket", b"ticket"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___Ticket: typing_extensions.TypeAlias = Ticket
+Global___Ticket: _TypeAlias = Ticket  # noqa: Y015
 
-@typing.final
-class TypedTicket(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class TypedTicket(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    TICKET_FIELD_NUMBER: builtins.int
-    TYPE_FIELD_NUMBER: builtins.int
-    type: builtins.str
+    TICKET_FIELD_NUMBER: _builtins.int
+    TYPE_FIELD_NUMBER: _builtins.int
+    type: _builtins.str
     """
     The type. An empty string means that it is not known, not that the server chose to not set it.
     """
-    @property
+    @_builtins.property
     def ticket(self) -> Global___Ticket: ...
     def __init__(
         self,
         *,
         ticket: Global___Ticket | None = ...,
-        type: builtins.str = ...,
+        type: _builtins.str = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["ticket", b"ticket"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["ticket", b"ticket", "type", b"type"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["ticket", b"ticket"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["ticket", b"ticket", "type", b"type"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___TypedTicket: typing_extensions.TypeAlias = TypedTicket
+Global___TypedTicket: _TypeAlias = TypedTicket  # noqa: Y015

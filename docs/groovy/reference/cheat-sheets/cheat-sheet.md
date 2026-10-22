@@ -1208,7 +1208,7 @@ numberAndColor = staticSource1.formatColumns(
 )
 ```
 
-You will find an itemization of stock colors in [the docs](../../assets/deephaven-colors.pdf).
+For the full list of stock colors, see [Named colors](../table-operations/format/named-colors.md).
 
 ## Plot programmatically
 

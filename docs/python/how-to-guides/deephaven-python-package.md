@@ -64,10 +64,12 @@ t = kc.consume(
 from deephaven.dbc import read_sql
 import os
 
-my_query = "SELECT t_ts as Timestamp, CAST(t_id AS text) as Id, " +
-    "CAST(t_instrument as text) as Instrument, " +
-    "t_exchange as Exchange, t_price as Price, t_size as Size " +
+my_query = (
+    "SELECT t_ts as Timestamp, CAST(t_id AS text) as Id, "
+    "CAST(t_instrument as text) as Instrument, "
+    "t_exchange as Exchange, t_price as Price, t_size as Size "
     "FROM CRYPTO TRADES"
+)
 
 username = os.environ["POSTGRES_USERNAME"]
 password = os.environ["POSTGRES_PASSWORD"]
@@ -81,7 +83,7 @@ crypto_trades = read_sql(conn=sql_uri, query=my_query, driver="connectorx")
 
 ### Export tables to Parquet, CSV, Kafka, and more
 
-Table data can be exported to a wide variety of formats including [Parquet](./data-import-export/parquet-import.md), [CSV](./data-import-export/csv-export.md), [Kafka](./data-import-export/kafka-stream.md#write-to-a-kafka-stream), [Uniform Resource Identifiers (URIs)](./use-uris.md), and many more. The following code block specifically writes a table to CSV and Parquet for later use.
+Table data can be exported to a wide variety of formats including [Parquet](./data-import-export/parquet-export.md), [CSV](./data-import-export/csv-export.md), [Kafka](./data-import-export/kafka-stream.md#write-to-a-kafka-stream), [Uniform Resource Identifiers (URIs)](./use-uris.md), and many more. The following code block specifically writes a table to CSV and Parquet for later use.
 
 ```python order=my_table
 from deephaven.parquet import write as write_pq

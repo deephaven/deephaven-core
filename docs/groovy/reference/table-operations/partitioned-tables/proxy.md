@@ -34,7 +34,7 @@ Whether to check that proxied join operations will only find a given join key in
 > [!CAUTION]
 > `PartitionedTable` transforms and proxies produce different results than on a single-table join (e.g., `naturalJoin`), `whereIn`, or `whereNotIn` when the filter or join keys span partitions. You must ensure that your data's keys map to appropriate partitions to enable correct answers.
 >
-> When `sanityCheckJoins` to the `proxy` method is true, the engine validates that join keys exist only in a single partition, but it does not validate that a key exists in the same partition in both the left and right table.
+> When the `sanityCheckJoinOperations` argument to the `proxy` method is `true`, the engine validates that join keys exist only in a single partition. This check also applies to `whereIn` and `whereNotIn`. As of Deephaven Core 42.0, the check is off by default: `proxy()` is the same as `proxy(true, false)`. The engine does not validate that a key exists in the same partition in both the left and right table.
 
 ## Returns
 

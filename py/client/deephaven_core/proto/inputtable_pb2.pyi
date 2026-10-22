@@ -5,165 +5,180 @@ isort:skip_file
 Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 """
 
-import builtins
-import collections.abc
-import deephaven_core.proto.ticket_pb2
-import google.protobuf.any_pb2
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.internal.enum_type_wrapper
-import google.protobuf.message
+from collections import abc as _abc
+from deephaven_core.proto import ticket_pb2 as _ticket_pb2
+from google.protobuf import any_pb2 as _any_pb2
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
+import builtins as _builtins
 import sys
-import typing
+import typing as _typing
 
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
-@typing.final
-class AddTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class AddTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    INPUT_TABLE_FIELD_NUMBER: builtins.int
-    TABLE_TO_ADD_FIELD_NUMBER: builtins.int
-    @property
-    def input_table(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
-    def table_to_add(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
+    INPUT_TABLE_FIELD_NUMBER: _builtins.int
+    TABLE_TO_ADD_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def input_table(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
+    def table_to_add(self) -> _ticket_pb2.Ticket: ...
     def __init__(
         self,
         *,
-        input_table: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        table_to_add: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        input_table: _ticket_pb2.Ticket | None = ...,
+        table_to_add: _ticket_pb2.Ticket | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["input_table", b"input_table", "table_to_add", b"table_to_add"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["input_table", b"input_table", "table_to_add", b"table_to_add"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["input_table", b"input_table", "table_to_add", b"table_to_add"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["input_table", b"input_table", "table_to_add", b"table_to_add"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___AddTableRequest: typing_extensions.TypeAlias = AddTableRequest
+Global___AddTableRequest: _TypeAlias = AddTableRequest  # noqa: Y015
 
-@typing.final
-class InputTableValidationError(google.protobuf.message.Message):
+@_typing.final
+class InputTableValidationError(_message.Message):
     """An error indicating invalid values were passed to AddTableRequest, optionally annotated with the input row and column
     that caused the error.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    MESSAGE_FIELD_NUMBER: builtins.int
-    ROW_FIELD_NUMBER: builtins.int
-    COLUMN_FIELD_NUMBER: builtins.int
-    message: builtins.str
+    MESSAGE_FIELD_NUMBER: _builtins.int
+    ROW_FIELD_NUMBER: _builtins.int
+    COLUMN_FIELD_NUMBER: _builtins.int
+    message: _builtins.str
     """the error message"""
-    row: builtins.int
+    row: _builtins.int
     """the row position in the table_to_add that caused this error, not present when unknown"""
-    column: builtins.str
+    column: _builtins.str
     """the column name in the table_to_add that caused this error, not present when unknown"""
     def __init__(
         self,
         *,
-        message: builtins.str = ...,
-        row: builtins.int | None = ...,
-        column: builtins.str | None = ...,
+        message: _builtins.str = ...,
+        row: _builtins.int | None = ...,
+        column: _builtins.str | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_column", b"_column", "_row", b"_row", "column", b"column", "row", b"row"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_column", b"_column", "_row", b"_row", "column", b"column", "message", b"message", "row", b"row"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_column", b"_column", "_row", b"_row", "column", b"column", "row", b"row"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_column", b"_column", "_row", b"_row", "column", b"column", "message", b"message", "row", b"row"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType__column: typing_extensions.TypeAlias = typing.Literal["column"]
-    _WhichOneofArgType__column: typing_extensions.TypeAlias = typing.Literal["_column", b"_column"]
-    _WhichOneofReturnType__row: typing_extensions.TypeAlias = typing.Literal["row"]
-    _WhichOneofArgType__row: typing_extensions.TypeAlias = typing.Literal["_row", b"_row"]
-    @typing.overload
+    _WhichOneofReturnType__column: _TypeAlias = _typing.Literal["column"]  # noqa: Y015
+    _WhichOneofArgType__column: _TypeAlias = _typing.Literal["_column", b"_column"]  # noqa: Y015
+    _WhichOneofReturnType__row: _TypeAlias = _typing.Literal["row"]  # noqa: Y015
+    _WhichOneofArgType__row: _TypeAlias = _typing.Literal["_row", b"_row"]  # noqa: Y015
+    @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__column) -> _WhichOneofReturnType__column | None: ...
-    @typing.overload
+    @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__row) -> _WhichOneofReturnType__row | None: ...
 
-Global___InputTableValidationError: typing_extensions.TypeAlias = InputTableValidationError
+Global___InputTableValidationError: _TypeAlias = InputTableValidationError  # noqa: Y015
 
-@typing.final
-class InputTableValidationErrorList(google.protobuf.message.Message):
+@_typing.final
+class InputTableValidationErrorList(_message.Message):
     """A list of validation errors encountered when processing an AddTableRequest or DeleteTableRequest.  This message is
     not directly used in the service definition, but may be packed in the headers of error responses using a googlerpc
     status.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    VALIDATION_ERRORS_FIELD_NUMBER: builtins.int
-    @property
-    def validation_errors(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___InputTableValidationError]:
+    VALIDATION_ERRORS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def validation_errors(self) -> _containers.RepeatedCompositeFieldContainer[Global___InputTableValidationError]:
         """The errors encountered when processing the request."""
 
     def __init__(
         self,
         *,
-        validation_errors: collections.abc.Iterable[Global___InputTableValidationError] | None = ...,
+        validation_errors: _abc.Iterable[Global___InputTableValidationError] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["validation_errors", b"validation_errors"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["validation_errors", b"validation_errors"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___InputTableValidationErrorList: typing_extensions.TypeAlias = InputTableValidationErrorList
+Global___InputTableValidationErrorList: _TypeAlias = InputTableValidationErrorList  # noqa: Y015
 
-@typing.final
-class AddTableResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class AddTableResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___AddTableResponse: typing_extensions.TypeAlias = AddTableResponse
+Global___AddTableResponse: _TypeAlias = AddTableResponse  # noqa: Y015
 
-@typing.final
-class DeleteTableRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class DeleteTableRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    INPUT_TABLE_FIELD_NUMBER: builtins.int
-    TABLE_TO_REMOVE_FIELD_NUMBER: builtins.int
-    @property
-    def input_table(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
-    @property
-    def table_to_remove(self) -> deephaven_core.proto.ticket_pb2.Ticket: ...
+    INPUT_TABLE_FIELD_NUMBER: _builtins.int
+    TABLE_TO_REMOVE_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def input_table(self) -> _ticket_pb2.Ticket: ...
+    @_builtins.property
+    def table_to_remove(self) -> _ticket_pb2.Ticket: ...
     def __init__(
         self,
         *,
-        input_table: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        table_to_remove: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        input_table: _ticket_pb2.Ticket | None = ...,
+        table_to_remove: _ticket_pb2.Ticket | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["input_table", b"input_table", "table_to_remove", b"table_to_remove"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["input_table", b"input_table", "table_to_remove", b"table_to_remove"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["input_table", b"input_table", "table_to_remove", b"table_to_remove"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["input_table", b"input_table", "table_to_remove", b"table_to_remove"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___DeleteTableRequest: typing_extensions.TypeAlias = DeleteTableRequest
+Global___DeleteTableRequest: _TypeAlias = DeleteTableRequest  # noqa: Y015
 
-@typing.final
-class DeleteTableResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class DeleteTableResponse(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___DeleteTableResponse: typing_extensions.TypeAlias = DeleteTableResponse
+Global___DeleteTableResponse: _TypeAlias = DeleteTableResponse  # noqa: Y015
 
-@typing.final
-class InputTableColumnInfo(google.protobuf.message.Message):
+@_typing.final
+class InputTableColumnInfo(_message.Message):
     """Information about a column in an input table"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     class _Kind:
-        ValueType = typing.NewType("ValueType", builtins.int)
-        V: typing_extensions.TypeAlias = ValueType
+        ValueType = _typing.NewType("ValueType", _builtins.int)
+        V: _TypeAlias = ValueType  # noqa: Y015
 
-    class _KindEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[InputTableColumnInfo._Kind.ValueType], builtins.type):
-        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    class _KindEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[InputTableColumnInfo._Kind.ValueType], _builtins.type):
+        DESCRIPTOR: _descriptor.EnumDescriptor
         KIND_UNKNOWN: InputTableColumnInfo._Kind.ValueType  # 0
         KIND_KEY: InputTableColumnInfo._Kind.ValueType  # 1
         """this column is a key column"""
@@ -179,11 +194,11 @@ class InputTableColumnInfo(google.protobuf.message.Message):
     KIND_VALUE: InputTableColumnInfo.Kind.ValueType  # 2
     """this column is a value column"""
 
-    KIND_FIELD_NUMBER: builtins.int
-    RESTRICTIONS_FIELD_NUMBER: builtins.int
+    KIND_FIELD_NUMBER: _builtins.int
+    RESTRICTIONS_FIELD_NUMBER: _builtins.int
     kind: Global___InputTableColumnInfo.Kind.ValueType
-    @property
-    def restrictions(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[google.protobuf.any_pb2.Any]:
+    @_builtins.property
+    def restrictions(self) -> _containers.RepeatedCompositeFieldContainer[_any_pb2.Any]:
         """Any restrictions on the column's values, which are implementation specific.  The server enforces these
         constraints, but they are included in the metadata so that the UI can display them to the user.
         """
@@ -192,23 +207,26 @@ class InputTableColumnInfo(google.protobuf.message.Message):
         self,
         *,
         kind: Global___InputTableColumnInfo.Kind.ValueType = ...,
-        restrictions: collections.abc.Iterable[google.protobuf.any_pb2.Any] | None = ...,
+        restrictions: _abc.Iterable[_any_pb2.Any] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["kind", b"kind", "restrictions", b"restrictions"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["kind", b"kind", "restrictions", b"restrictions"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___InputTableColumnInfo: typing_extensions.TypeAlias = InputTableColumnInfo
+Global___InputTableColumnInfo: _TypeAlias = InputTableColumnInfo  # noqa: Y015
 
-@typing.final
-class DeephavenTableMetadata(google.protobuf.message.Message):
+@_typing.final
+class DeephavenTableMetadata(_message.Message):
     """Wrapper around the InputTableMetadata, so that we can include more non-input table information later if desired.  At
     that point, this message definition would need to move.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    INPUT_TABLE_METADATA_FIELD_NUMBER: builtins.int
-    @property
+    INPUT_TABLE_METADATA_FIELD_NUMBER: _builtins.int
+    @_builtins.property
     def input_table_metadata(self) -> Global___InputTableMetadata:
         """Input table metadata, if this table is an input table"""
 
@@ -217,42 +235,44 @@ class DeephavenTableMetadata(google.protobuf.message.Message):
         *,
         input_table_metadata: Global___InputTableMetadata | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["input_table_metadata", b"input_table_metadata"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["input_table_metadata", b"input_table_metadata"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["input_table_metadata", b"input_table_metadata"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["input_table_metadata", b"input_table_metadata"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___DeephavenTableMetadata: typing_extensions.TypeAlias = DeephavenTableMetadata
+Global___DeephavenTableMetadata: _TypeAlias = DeephavenTableMetadata  # noqa: Y015
 
-@typing.final
-class InputTableMetadata(google.protobuf.message.Message):
+@_typing.final
+class InputTableMetadata(_message.Message):
     """metadata for the input table, encoded into the Barrage meta-data as a base64 encoded protobuf"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    @typing.final
-    class ColumnInfoEntry(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    @_typing.final
+    class ColumnInfoEntry(_message.Message):
+        DESCRIPTOR: _descriptor.Descriptor
 
-        KEY_FIELD_NUMBER: builtins.int
-        VALUE_FIELD_NUMBER: builtins.int
-        key: builtins.str
-        @property
+        KEY_FIELD_NUMBER: _builtins.int
+        VALUE_FIELD_NUMBER: _builtins.int
+        key: _builtins.str
+        @_builtins.property
         def value(self) -> Global___InputTableColumnInfo: ...
         def __init__(
             self,
             *,
-            key: builtins.str = ...,
+            key: _builtins.str = ...,
             value: Global___InputTableColumnInfo | None = ...,
         ) -> None: ...
-        _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["value", b"value"]
-        def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-        _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["key", b"key", "value", b"value"]
+        _HasFieldArgType: _TypeAlias = _typing.Literal["value", b"value"]  # noqa: Y015
+        def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+        _ClearFieldArgType: _TypeAlias = _typing.Literal["key", b"key", "value", b"value"]  # noqa: Y015
         def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+        def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-    COLUMN_INFO_FIELD_NUMBER: builtins.int
-    @property
-    def column_info(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, Global___InputTableColumnInfo]:
+    COLUMN_INFO_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def column_info(self) -> _containers.MessageMap[_builtins.str, Global___InputTableColumnInfo]:
         """a map from column name to column info, each column that participates in input table updates is included in the
         map.  Additional columns are not part of the input table update
         """
@@ -260,116 +280,132 @@ class InputTableMetadata(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        column_info: collections.abc.Mapping[builtins.str, Global___InputTableColumnInfo] | None = ...,
+        column_info: _abc.Mapping[_builtins.str, Global___InputTableColumnInfo] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_info", b"column_info"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["column_info", b"column_info"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___InputTableMetadata: typing_extensions.TypeAlias = InputTableMetadata
+Global___InputTableMetadata: _TypeAlias = InputTableMetadata  # noqa: Y015
 
-@typing.final
-class IntegerRangeRestriction(google.protobuf.message.Message):
+@_typing.final
+class IntegerRangeRestriction(_message.Message):
     """An example restriction indicating that integer values must be within the given range (inclusive)"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    MIN_INCLUSIVE_FIELD_NUMBER: builtins.int
-    MAX_INCLUSIVE_FIELD_NUMBER: builtins.int
-    min_inclusive: builtins.int
-    max_inclusive: builtins.int
+    MIN_INCLUSIVE_FIELD_NUMBER: _builtins.int
+    MAX_INCLUSIVE_FIELD_NUMBER: _builtins.int
+    min_inclusive: _builtins.int
+    max_inclusive: _builtins.int
     def __init__(
         self,
         *,
-        min_inclusive: builtins.int | None = ...,
-        max_inclusive: builtins.int | None = ...,
+        min_inclusive: _builtins.int | None = ...,
+        max_inclusive: _builtins.int | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_max_inclusive", b"_max_inclusive", "_min_inclusive", b"_min_inclusive", "max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_max_inclusive", b"_max_inclusive", "_min_inclusive", b"_min_inclusive", "max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_max_inclusive", b"_max_inclusive", "_min_inclusive", b"_min_inclusive", "max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_max_inclusive", b"_max_inclusive", "_min_inclusive", b"_min_inclusive", "max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType__max_inclusive: typing_extensions.TypeAlias = typing.Literal["max_inclusive"]
-    _WhichOneofArgType__max_inclusive: typing_extensions.TypeAlias = typing.Literal["_max_inclusive", b"_max_inclusive"]
-    _WhichOneofReturnType__min_inclusive: typing_extensions.TypeAlias = typing.Literal["min_inclusive"]
-    _WhichOneofArgType__min_inclusive: typing_extensions.TypeAlias = typing.Literal["_min_inclusive", b"_min_inclusive"]
-    @typing.overload
+    _WhichOneofReturnType__max_inclusive: _TypeAlias = _typing.Literal["max_inclusive"]  # noqa: Y015
+    _WhichOneofArgType__max_inclusive: _TypeAlias = _typing.Literal["_max_inclusive", b"_max_inclusive"]  # noqa: Y015
+    _WhichOneofReturnType__min_inclusive: _TypeAlias = _typing.Literal["min_inclusive"]  # noqa: Y015
+    _WhichOneofArgType__min_inclusive: _TypeAlias = _typing.Literal["_min_inclusive", b"_min_inclusive"]  # noqa: Y015
+    @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__max_inclusive) -> _WhichOneofReturnType__max_inclusive | None: ...
-    @typing.overload
+    @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__min_inclusive) -> _WhichOneofReturnType__min_inclusive | None: ...
 
-Global___IntegerRangeRestriction: typing_extensions.TypeAlias = IntegerRangeRestriction
+Global___IntegerRangeRestriction: _TypeAlias = IntegerRangeRestriction  # noqa: Y015
 
-@typing.final
-class DoubleRangeRestriction(google.protobuf.message.Message):
+@_typing.final
+class DoubleRangeRestriction(_message.Message):
     """An example restriction indicating that double values must be within the given range (inclusive)"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    MIN_INCLUSIVE_FIELD_NUMBER: builtins.int
-    MAX_INCLUSIVE_FIELD_NUMBER: builtins.int
-    min_inclusive: builtins.float
-    max_inclusive: builtins.float
+    MIN_INCLUSIVE_FIELD_NUMBER: _builtins.int
+    MAX_INCLUSIVE_FIELD_NUMBER: _builtins.int
+    min_inclusive: _builtins.float
+    max_inclusive: _builtins.float
     def __init__(
         self,
         *,
-        min_inclusive: builtins.float | None = ...,
-        max_inclusive: builtins.float | None = ...,
+        min_inclusive: _builtins.float | None = ...,
+        max_inclusive: _builtins.float | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_max_inclusive", b"_max_inclusive", "_min_inclusive", b"_min_inclusive", "max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_max_inclusive", b"_max_inclusive", "_min_inclusive", b"_min_inclusive", "max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_max_inclusive", b"_max_inclusive", "_min_inclusive", b"_min_inclusive", "max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_max_inclusive", b"_max_inclusive", "_min_inclusive", b"_min_inclusive", "max_inclusive", b"max_inclusive", "min_inclusive", b"min_inclusive"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType__max_inclusive: typing_extensions.TypeAlias = typing.Literal["max_inclusive"]
-    _WhichOneofArgType__max_inclusive: typing_extensions.TypeAlias = typing.Literal["_max_inclusive", b"_max_inclusive"]
-    _WhichOneofReturnType__min_inclusive: typing_extensions.TypeAlias = typing.Literal["min_inclusive"]
-    _WhichOneofArgType__min_inclusive: typing_extensions.TypeAlias = typing.Literal["_min_inclusive", b"_min_inclusive"]
-    @typing.overload
+    _WhichOneofReturnType__max_inclusive: _TypeAlias = _typing.Literal["max_inclusive"]  # noqa: Y015
+    _WhichOneofArgType__max_inclusive: _TypeAlias = _typing.Literal["_max_inclusive", b"_max_inclusive"]  # noqa: Y015
+    _WhichOneofReturnType__min_inclusive: _TypeAlias = _typing.Literal["min_inclusive"]  # noqa: Y015
+    _WhichOneofArgType__min_inclusive: _TypeAlias = _typing.Literal["_min_inclusive", b"_min_inclusive"]  # noqa: Y015
+    @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__max_inclusive) -> _WhichOneofReturnType__max_inclusive | None: ...
-    @typing.overload
+    @_typing.overload
     def WhichOneof(self, oneof_group: _WhichOneofArgType__min_inclusive) -> _WhichOneofReturnType__min_inclusive | None: ...
 
-Global___DoubleRangeRestriction: typing_extensions.TypeAlias = DoubleRangeRestriction
+Global___DoubleRangeRestriction: _TypeAlias = DoubleRangeRestriction  # noqa: Y015
 
-@typing.final
-class NotNullRestriction(google.protobuf.message.Message):
+@_typing.final
+class NotNullRestriction(_message.Message):
     """An example restriction indicating that the value must not be null"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___NotNullRestriction: typing_extensions.TypeAlias = NotNullRestriction
+Global___NotNullRestriction: _TypeAlias = NotNullRestriction  # noqa: Y015
 
-@typing.final
-class NonEmptyRestriction(google.protobuf.message.Message):
+@_typing.final
+class NonEmptyRestriction(_message.Message):
     """An example restriction indicating that the value must not be empty"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___NonEmptyRestriction: typing_extensions.TypeAlias = NonEmptyRestriction
+Global___NonEmptyRestriction: _TypeAlias = NonEmptyRestriction  # noqa: Y015
 
-@typing.final
-class StringListRestriction(google.protobuf.message.Message):
+@_typing.final
+class StringListRestriction(_message.Message):
     """An example restriction indicating that the string value must belong to the provided set of values (or Null), to
     forbid null values, include both a StringListRestriction and NotNullRestriction.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    ALLOWED_VALUES_FIELD_NUMBER: builtins.int
-    @property
-    def allowed_values(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    ALLOWED_VALUES_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def allowed_values(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]: ...
     def __init__(
         self,
         *,
-        allowed_values: collections.abc.Iterable[builtins.str] | None = ...,
+        allowed_values: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["allowed_values", b"allowed_values"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["allowed_values", b"allowed_values"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___StringListRestriction: typing_extensions.TypeAlias = StringListRestriction
+Global___StringListRestriction: _TypeAlias = StringListRestriction  # noqa: Y015

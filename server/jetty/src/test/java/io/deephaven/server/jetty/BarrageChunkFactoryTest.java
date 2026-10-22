@@ -32,6 +32,7 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkReaderFactory;
@@ -81,6 +82,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerInterceptor;
+import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.AsyncPutListener;
 import org.apache.arrow.flight.CallHeaders;
 import org.apache.arrow.flight.CallStatus;
@@ -180,6 +182,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class BarrageChunkFactoryTest {
@@ -1402,6 +1405,8 @@ public class BarrageChunkFactoryTest {
 
     @Test
     public void testUnsupportedWireTypePropagation() throws Exception {
+        // the upload publishes its export under the next ticket
+        final int ticket = nextTicket;
         try {
             new RoundTripTest<ViewVarCharVector>(String.class) {
                 @Override
@@ -1412,21 +1417,27 @@ public class BarrageChunkFactoryTest {
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
             assertTrue(fre.getMessage().contains("No known Barrage ChunkReader"));
+            assertExportFailedWith(ticket, "No known Barrage ChunkReader");
         }
     }
 
     @Test
     public void testUnsupportedMappingPropagation() throws Exception {
+        // the upload publishes its export under the next ticket
+        final int ticket = nextTicket;
         try {
             new Utf8RoundTripTest(BarrageChunkFactoryTest.class, new ArrowType.Utf8()).runTest();
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
             assertTrue(fre.getMessage().contains("cannot be serialized directly. Consider an updateView()"));
+            assertExportFailedWith(ticket, "cannot be serialized directly. Consider an updateView()");
         }
     }
 
     @Test
     public void testNotAListDestinationPropagation() throws Exception {
+        // the upload publishes its export under the next ticket
+        final int ticket = nextTicket;
         try {
             new RoundTripTest<>(Collection.class, Long.class) {
                 @Override
@@ -1445,11 +1456,14 @@ public class BarrageChunkFactoryTest {
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
             assertTrue(fre.getMessage().contains("No known Barrage ChunkReader"));
+            assertExportFailedWith(ticket, "No known Barrage ChunkReader");
         }
     }
 
     @Test
     public void testDestClassNotFoundPropagation() throws Exception {
+        // the upload publishes its export under the next ticket
+        final int ticket = nextTicket;
         try {
             new RoundTripTest<>(BarrageChunkFactoryTest.class) {
                 @Override
@@ -1464,11 +1478,14 @@ public class BarrageChunkFactoryTest {
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
             assertTrue(fre.getMessage().contains("could not find class"));
+            assertExportFailedWith(ticket, "could not find class");
         }
     }
 
     @Test
     public void testComponentDestClassNotFoundPropagation() throws Exception {
+        // the upload publishes its export under the next ticket
+        final int ticket = nextTicket;
         try {
             new RoundTripTest<>(BarrageChunkFactoryTest.class) {
                 @Override
@@ -1485,7 +1502,23 @@ public class BarrageChunkFactoryTest {
             Assert.statementNeverExecuted("Should have thrown an exception");
         } catch (FlightRuntimeException fre) {
             assertTrue(fre.getMessage().contains("could not find class"));
+            assertExportFailedWith(ticket, "could not find class");
         }
+    }
+
+    /**
+     * Asserts that the export a failed upload published fails with {@code expected}. The server reports a failed DoPut
+     * message both by failing this export and by closing the call, and the client sees whichever reaches it first.
+     */
+    private void assertExportFailedWith(final int ticket, final String expected) throws Exception {
+        final CompletableFuture<StatusRuntimeException> failure = new CompletableFuture<>();
+        final SessionState.ExportObject<Table> export = currentSession.getExport(ticket);
+        currentSession.nonExport()
+                .onErrorHandler(failure::complete)
+                .require(export)
+                .submit(() -> failure.completeExceptionally(new AssertionError("Upload export did not fail")));
+        final String message = failure.get(30, java.util.concurrent.TimeUnit.SECONDS).getMessage();
+        assertTrue(message, message.contains(expected));
     }
 
     @SafeVarargs
@@ -3781,6 +3814,218 @@ public class BarrageChunkFactoryTest {
             assertNotNull("Expected dictionary id=0 in download stream", downloadedDict);
             assertTrue("Dict values vector must be non-empty",
                     downloadedDict.getVector().getValueCount() > 0);
+        }
+    }
+
+    /**
+     * Verifies Arrow Flight interop for dictionary-encoded Timestamp columns, which Deephaven reinterprets to
+     * {@code long} on the wire:
+     * <ol>
+     * <li>Upload a dictionary-encoded nanosecond Timestamp from stock Arrow via DoPut and confirm DH decodes it into an
+     * {@link Instant} (UTC) or {@link ZonedDateTime} (other time zone) column.</li>
+     * <li>Annotate the table with a BARRAGE_SCHEMA_ATTRIBUTE requesting dictionary encoding for the column, download
+     * it, and confirm stock Arrow decodes the dictionary back to the original timestamps.</li>
+     * </ol>
+     */
+    @Test
+    public void testDictionaryEncodedTimestampInterop() throws Exception {
+        runDictionaryEncodedTimestampInterop("UTC", Instant.class);
+        runDictionaryEncodedTimestampInterop("America/New_York", ZonedDateTime.class);
+    }
+
+    private void runDictionaryEncodedTimestampInterop(
+            final String timeZone,
+            final Class<?> expectedType) throws Exception {
+        final long t0 = 1_700_000_000_000_000_000L;
+        final Long[] logicalNanos = {t0, null, t0 + 1_000, t0, t0 + 2_000, null, t0 + 1_000, t0};
+        final int numRows = logicalNanos.length;
+        final ArrowType.Timestamp timestampType = new ArrowType.Timestamp(TimeUnit.NANOSECOND, timeZone);
+
+        // --- Step 1: Upload dictionary-encoded Timestamp via DoPut (DictionaryBatch + index RecordBatch) ---
+        final List<Long> distinct = new ArrayList<>();
+        for (final Long v : logicalNanos) {
+            if (v != null && !distinct.contains(v)) {
+                distinct.add(v);
+            }
+        }
+        final int rawTicket = nextTicket++;
+        try (final TimeStampNanoTZVector dictVec =
+                new TimeStampNanoTZVector("values", FieldType.nullable(timestampType), allocator);
+                final TimeStampNanoTZVector plainVec =
+                        new TimeStampNanoTZVector(COLUMN_NAME, FieldType.nullable(timestampType), allocator)) {
+            dictVec.allocateNew();
+            for (int i = 0; i < distinct.size(); ++i) {
+                dictVec.setSafe(i, distinct.get(i));
+            }
+            dictVec.setValueCount(distinct.size());
+
+            plainVec.allocateNew();
+            for (int i = 0; i < numRows; ++i) {
+                if (logicalNanos[i] == null) {
+                    plainVec.setNull(i);
+                } else {
+                    plainVec.setSafe(i, logicalNanos[i]);
+                }
+            }
+            plainVec.setValueCount(numRows);
+
+            final Dictionary dictionary =
+                    new Dictionary(dictVec, new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)));
+            final DictionaryProvider.MapDictionaryProvider provider =
+                    new DictionaryProvider.MapDictionaryProvider(dictionary);
+
+            try (final IntVector encodedVec = (IntVector) DictionaryEncoder.encode(plainVec, dictionary);
+                    final VectorSchemaRoot source = VectorSchemaRoot.of(encodedVec)) {
+                source.setRowCount(numRows);
+                final FlightDescriptor descriptor =
+                        FlightDescriptor.path("export", Integer.toString(rawTicket));
+                final FlightClient.ClientStreamListener putStream =
+                        flightClient.startPut(descriptor, source, provider, new AsyncPutListener());
+                putStream.putNext();
+                putStream.completed();
+                putStream.getResult();
+            }
+        }
+
+        // --- Step 2: Verify DH decoded the dictionary into a timestamp column ---
+        final CompletableFuture<Table> rawFuture = new CompletableFuture<>();
+        final SessionState.ExportObject<Table> rawExport = currentSession.getExport(rawTicket);
+        currentSession.nonExport()
+                .onErrorHandler(e -> rawFuture.cancel(true))
+                .require(rawExport)
+                .submit(() -> rawFuture.complete(rawExport.get()));
+        final Table uploadedTable = rawFuture.get();
+
+        assertEquals(numRows, uploadedTable.size());
+        assertEquals(expectedType, uploadedTable.getColumnSource(COLUMN_NAME).getType());
+        final ColumnSource<?> src = uploadedTable.getColumnSource(COLUMN_NAME);
+        for (int i = 0; i < numRows; ++i) {
+            final Object value = src.get(i);
+            final Long actualNanos = value == null ? null
+                    : value instanceof Instant
+                            ? DateTimeUtils.epochNanos((Instant) value)
+                            : DateTimeUtils.epochNanos((ZonedDateTime) value);
+            assertEquals("Value mismatch at row " + i, logicalNanos[i], actualNanos);
+        }
+
+        // --- Step 3: Create annotated export with BARRAGE_SCHEMA_ATTRIBUTE requesting dictionary encoding ---
+        final Schema dictSchema = new Schema(Collections.singletonList(new Field(
+                COLUMN_NAME,
+                new FieldType(true, timestampType,
+                        new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)), null),
+                Collections.emptyList())));
+
+        final int annotatedTicket = nextTicket++;
+        currentSession.newExport(annotatedTicket)
+                .require(rawExport)
+                .submit(() -> rawExport.get().withAttributes(
+                        Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, dictSchema)));
+
+        // --- Step 4: Download and confirm stock Arrow decodes the dictionary back to the original timestamps ---
+        try (final FlightStream stream = flightClient.getStream(flightTicketFor(annotatedTicket))) {
+            final Field downloadField = stream.getSchema().findField(COLUMN_NAME);
+            assertNotNull("Field not found in download schema: " + COLUMN_NAME, downloadField);
+            assertNotNull(
+                    "Expected DictionaryEncoding on downloaded field " + COLUMN_NAME,
+                    downloadField.getDictionary());
+
+            assertTrue("Expected at least one payload on download", stream.next());
+            assertEquals("Row count mismatch on download", numRows, stream.getRoot().getRowCount());
+
+            final Dictionary downloadedDict =
+                    stream.getDictionaryProvider().lookup(downloadField.getDictionary().getId());
+            assertNotNull("Expected dictionary in download stream", downloadedDict);
+            try (final ValueVector decoded =
+                    DictionaryEncoder.decode(stream.getRoot().getVector(COLUMN_NAME), downloadedDict)) {
+                final TimeStampVector decodedTs = (TimeStampVector) decoded;
+                for (int i = 0; i < numRows; ++i) {
+                    if (logicalNanos[i] == null) {
+                        assertTrue("Expected null at row " + i, decodedTs.isNull(i));
+                    } else {
+                        assertFalse("Unexpected null at row " + i, decodedTs.isNull(i));
+                        assertEquals("Value mismatch at row " + i, (long) logicalNanos[i], decodedTs.get(i));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Uploads a run-end encoded nanosecond Timestamp with a non-UTC time zone from stock Arrow via DoPut, and confirms
+     * DH decodes it into a {@link ZonedDateTime} column holding the original instants in the field's time zone. The
+     * time zone is on the REE {@code values} child rather than the column's top-level field.
+     */
+    @Test
+    public void testRunEndEncodedTimestampZoneInterop() throws Exception {
+        // a zone that is unlikely to be the system default, which is what a lost time zone falls back to
+        final ZoneId zone = ZoneId.of("Asia/Kathmandu");
+        final long t0 = 1_700_000_000_000_000_000L;
+        final Long[] runValues = {t0, null, t0 + 1_000, t0};
+        final int[] runEnds = {3, 5, 6, 8};
+        final int numRuns = runValues.length;
+        final int numRows = runEnds[numRuns - 1];
+
+        final Field runEndsField = new Field("run_ends",
+                new FieldType(false, new ArrowType.Int(32, true), null, null), Collections.emptyList());
+        final Field valuesField = new Field("values",
+                FieldType.nullable(new ArrowType.Timestamp(TimeUnit.NANOSECOND, zone.getId())),
+                Collections.emptyList());
+        final Field reeField = new Field(COLUMN_NAME,
+                new FieldType(true, ArrowType.RunEndEncoded.INSTANCE, null, null),
+                Arrays.asList(runEndsField, valuesField));
+        final Schema uploadSchema = new Schema(Collections.singletonList(reeField));
+
+        final int rawTicket = nextTicket++;
+        try (final VectorSchemaRoot source = VectorSchemaRoot.create(uploadSchema, allocator)) {
+            source.allocateNew();
+            final RunEndEncodedVector reeVec = (RunEndEncodedVector) source.getVector(0);
+            final IntVector runEndsVec = (IntVector) reeVec.getRunEndsVector();
+            final TimeStampNanoTZVector valuesVec = (TimeStampNanoTZVector) reeVec.getValuesVector();
+            for (int r = 0; r < numRuns; ++r) {
+                runEndsVec.setSafe(r, runEnds[r]);
+                if (runValues[r] == null) {
+                    valuesVec.setNull(r);
+                } else {
+                    valuesVec.setSafe(r, runValues[r]);
+                }
+            }
+            runEndsVec.setValueCount(numRuns);
+            valuesVec.setValueCount(numRuns);
+            reeVec.setValueCount(numRows);
+            source.setRowCount(numRows);
+
+            final FlightDescriptor descriptor = FlightDescriptor.path("export", Integer.toString(rawTicket));
+            final FlightClient.ClientStreamListener putStream =
+                    flightClient.startPut(descriptor, source, new AsyncPutListener());
+            putStream.putNext();
+            putStream.completed();
+            putStream.getResult();
+        }
+
+        final CompletableFuture<Table> rawFuture = new CompletableFuture<>();
+        final SessionState.ExportObject<Table> rawExport = currentSession.getExport(rawTicket);
+        currentSession.nonExport()
+                .onErrorHandler(e -> rawFuture.cancel(true))
+                .require(rawExport)
+                .submit(() -> rawFuture.complete(rawExport.get()));
+        final Table uploadedTable = rawFuture.get();
+
+        assertEquals(numRows, uploadedTable.size());
+        assertEquals(ZonedDateTime.class, uploadedTable.getColumnSource(COLUMN_NAME).getType());
+        final ColumnSource<?> src = uploadedTable.getColumnSource(COLUMN_NAME);
+        int run = 0;
+        for (int i = 0; i < numRows; ++i) {
+            if (i == runEnds[run]) {
+                ++run;
+            }
+            final ZonedDateTime value = (ZonedDateTime) src.get(i);
+            if (runValues[run] == null) {
+                assertNull("Expected null at row " + i, value);
+            } else {
+                assertNotNull("Unexpected null at row " + i, value);
+                assertEquals("Value mismatch at row " + i, (long) runValues[run], DateTimeUtils.epochNanos(value));
+                assertEquals("Zone mismatch at row " + i, zone, value.getZone());
+            }
         }
     }
 

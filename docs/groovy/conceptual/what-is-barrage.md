@@ -34,18 +34,21 @@ Barrage supports two primary modes of retrieving data:
 
 - **Subscription**: Opens a persistent connection that streams updates as the source table changes. The client receives an initial snapshot followed by incremental updates. Use this for ticking tables you want to monitor in real time.
 
-- **Snapshot**: Retrieves a one-time, static copy of the table. The connection closes after the data is delivered. Use this for static tables or when you need a point-in-time capture.
+- **Snapshot**: Retrieves a one-time, static copy of the table. The table doesn't update after the data is delivered, but `BarrageTableResolver` keeps its connection to the remote server open for later requests. Use this for static tables or when you need a point-in-time capture.
 
-```python skip-test
-from deephaven.barrage import barrage_session
+```groovy skip-test
+import io.deephaven.qst.table.TableSpec
+import io.deephaven.server.uri.BarrageTableResolver
 
-session = barrage_session(host="remote-server", port=10000)
+remoteTarget = "dh+plain://remote-server:10000"
+// Replace with the hex bytes of a shared ticket published on the remote server
+ticketSpec = TableSpec.ticket("<shared ticket hex>".decodeHex())
 
-# Subscription: receives ongoing updates
-streaming_table = session.subscribe(ticket_bytes)
+// Subscription: receives ongoing updates
+streamingTable = BarrageTableResolver.get().subscribe(remoteTarget, ticketSpec).get()
 
-# Snapshot: one-time static copy
-static_table = session.snapshot(ticket_bytes)
+// Snapshot: one-time static copy
+staticTable = BarrageTableResolver.get().snapshot(remoteTarget, ticketSpec).get()
 ```
 
 ### Shared tickets
@@ -71,8 +74,7 @@ A viewport defines a window over a table — a range of row positions and a subs
 Viewports are automatically managed by Deephaven's web UI and JavaScript client. When a user scrolls or resizes a table view, the client updates its viewport subscription accordingly.
 
 > [!NOTE]
-> The Python `BarrageSession` API currently supports full-table subscriptions. Viewport functionality is available through the JavaScript client or by subscribing to pre-filtered tables.
-> The Python `BarrageSession` API currently supports full-table subscriptions. Viewport functionality is available through the JavaScript client.
+> Viewports are also available from Groovy through `BarrageTableResolver`'s `subscribe` and `snapshot` overloads that take a viewport `RowSet` and a column `BitSet`, and from the Java client through `BarrageSubscription.partialTable`.
 
 ### Update intervals and batching
 
@@ -87,12 +89,12 @@ A shorter interval reduces latency but increases network traffic. A longer inter
 
 ![Barrage architecture](../assets/conceptual/remote_and_local_server.png)
 
-1. **Remote server** hosts a table referenced by a ticket — the ticket is just a reference, not the data itself. Tickets can be scope tickets (variables in the global scope), export tickets, or shared tickets for cross-session access.
+1. **Remote server** hosts a table referenced by a ticket — the ticket is just a reference, not the data itself. Tickets can be scope tickets (variables in the global scope) or shared tickets for cross-session access. An export ticket belongs to the client session that created it, so the local server's Barrage session can't use it.
 2. **Barrage protocol** transports the actual data using Arrow Flight with incremental update metadata.
-3. **Local server** subscribes via `BarrageSession` and receives a full local copy of the data that stays synchronized with the source. This local table can participate in downstream queries (joins, filters, aggregations) that execute on the local server.
+3. **Local server** subscribes via `BarrageTableResolver` and receives a full local copy of the data that stays synchronized with the source. This local table can participate in downstream queries (joins, filters, aggregations) that execute on the local server.
 
 > [!NOTE]
-> Java and Groovy clients are unique among Deephaven clients — they can perform downstream computation locally because they run the full Deephaven engine. Other clients (e.g., JavaScript, C++, and Python) receive data but rely on the server for query execution.
+> Clients that run the full Deephaven engine, such as the Java client or a Deephaven server (Python or Groovy) that captures tables over Barrage, can perform downstream computation locally. Other clients (the Python client `pydeephaven`, JavaScript, C++) receive data but rely on the server for query execution.
 
 ## Barrage vs. Arrow Flight
 
@@ -119,7 +121,7 @@ Barrage is fully compatible with Arrow Flight — you can use a standard Flight 
 
 ## Related documentation
 
-- [Capture Python client tables](../how-to-guides/capture-tables.md) - Complete tutorial for using Barrage with the Python client
+- [Capture Python client tables with Barrage](../how-to-guides/capture-tables.md)
 - [Barrage metrics](../how-to-guides/performance/barrage-performance.md) - Monitor Barrage performance
 - [Interpret Barrage metrics](./barrage-metrics.md) - Understand what the metrics mean
 - [Barrage schema annotation](../how-to-guides/data-import-export/barrage-schema.md) - Annotate schemas for complex types

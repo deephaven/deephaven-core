@@ -45,9 +45,12 @@ def evaluate(
         DHError
     """
     try:
-        callers_frame_info = inspect.stack()[1]
-        globals = callers_frame_info.frame.f_globals
-        locals = callers_frame_info.frame.f_locals
+        # Do not use inspect.stack(). It calls inspect.getmodule() on every frame, which can rescan all of sys.modules.
+        frame = inspect.currentframe()
+        assert frame is not None and frame.f_back is not None
+        callers_frame = frame.f_back
+        globals = callers_frame.f_globals
+        locals = callers_frame.f_locals
         with _scope(globals, locals):
             if dry_run:
                 # No JObjectWrapper for TableSpec

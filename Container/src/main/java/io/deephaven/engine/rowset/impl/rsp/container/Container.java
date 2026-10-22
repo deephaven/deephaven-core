@@ -207,10 +207,10 @@ public abstract class Container {
      * its backing storage along the way.
      *
      * <p>
-     * {@code iappend} sizes its backing array to exactly what is needed, so growing a container one range at a time
-     * reallocates and copies on every append, which is quadratic in the container's final cardinality. Callers that
-     * know what a container will hold before they start filling it (for example, when converting an
-     * already-materialized ordered set into containers) should start from this instead.
+     * Growing a container one range at a time reallocates and copies its backing storage each time it fills, may pass
+     * through representations it does not end in, and can leave spare capacity behind. Callers that know what a
+     * container will hold before they start filling it (for example, when converting an already-materialized ordered
+     * set into containers) should start from this instead.
      *
      * <p>
      * Both arguments are only hints and neither can affect contents: too small merely reverts to growing as needed, and

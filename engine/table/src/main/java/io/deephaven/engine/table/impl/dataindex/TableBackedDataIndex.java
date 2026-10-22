@@ -6,8 +6,12 @@ package io.deephaven.engine.table.impl.dataindex;
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.Table;
@@ -17,6 +21,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
@@ -144,10 +149,20 @@ public class TableBackedDataIndex extends AbstractDataIndex {
     @NotNull
     public RowKeyLookup rowKeyLookup(final DataIndexOptions options) {
         table(options);
-        return (final Object key, final boolean usePrev) -> {
-            // Pass the object to the aggregation lookup, then return the resulting row key. This index will be
-            // correct in prev or current space because of the aggregation's hash-based lookup.
-            return lookupFunction.get(key);
+        // The aggregation's hash-based lookup is correct in prev or current space alike.
+        return new RowKeyLookup() {
+            @Override
+            public long apply(@Nullable final Object key, final boolean usePrev) {
+                return lookupFunction.get(key);
+            }
+
+            @Override
+            public void apply(
+                    @NotNull final Chunk<? extends Values>[] keyChunks,
+                    @NotNull final WritableLongChunk<RowKeys> rowKeys,
+                    final boolean usePrev) {
+                lookupFunction.get(keyChunks, rowKeys);
+            }
         };
     }
 

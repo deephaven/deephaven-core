@@ -1,0 +1,1 @@
+{"file":"how-to-guides/table-listeners-groovy.md","objects":{"t1":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"int"}],"rows":[[{"value":"2026-10-12 11:17:21.000"},{"value":"0"}]]}},":log":{"type":"Log","data":"LISTENER: counter=1 update={added={0}, removed={}, modified={}, shifted={}, modifiedColumnSet={}}\n"}}}

@@ -64,7 +64,7 @@
                 "path": "getting-started/crash-course/export-data.md"
               },
               {
-                "label": "Configure your Instance",
+                "label": "Configure your instance",
                 "path": "getting-started/crash-course/configure.md"
               },
               {
@@ -118,6 +118,10 @@
               {
                 "label": "Column types",
                 "path": "conceptual/column-types.md"
+              },
+              {
+                "label": "Aggregations",
+                "path": "conceptual/aggregations.md"
               }
             ]
           },
@@ -796,17 +800,8 @@
             ]
           },
           {
-            "label": "Development tools",
-            "items": [
-              {
-                "label": "MCP",
-                "path": "how-to-guides/mcp.md"
-              },
-              {
-                "label": "Copilot extension",
-                "path": "how-to-guides/copilot-extension.md"
-              }
-            ]
+            "label": "MCP",
+            "path": "how-to-guides/mcp.md"
           },
           {
             "label": "Best practices and troubleshooting",
@@ -1658,6 +1653,10 @@
                   {
                     "label": "hide",
                     "path": "reference/table-operations/format/hide.md"
+                  },
+                  {
+                    "label": "Named colors",
+                    "path": "reference/table-operations/format/named-colors.md"
                   }
                 ]
               },

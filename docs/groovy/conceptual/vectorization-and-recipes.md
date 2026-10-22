@@ -207,7 +207,7 @@ Under the hood, Deephaven:
 
 1. **Parses** your query string into an Abstract Syntax Tree (AST).
 2. **Analyzes** the AST to determine dependencies and types.
-3. **Generates** optimized Java code (or uses pre-compiled classes for simple operations).
+3. **Generates** Java code for the formula.
 4. **Compiles** the generated code.
 5. **Executes** the compiled code on chunks of data.
 
@@ -230,6 +230,8 @@ This compiled code:
 - Can be JIT-optimized by the JVM.
 - Can be vectorized by the CPU.
 - Runs at native speed.
+
+A formula whose entire right-hand side is the name of an existing column, such as `Y = X`, skips formula parsing and code generation: Deephaven recognizes it as a column reference and compiles no code. Any other expression, even one that uses only that column, such as `Y = X * 2`, is compiled.
 
 ## Real-time processing: The killer feature
 
@@ -316,7 +318,7 @@ Recipe approach stays in native memory:
 
 ```groovy order=null test-set=groovy-memory-no-objects
 // No intermediate objects created for data!
-result = emptyTable(1_000_000).update("XSquared = i * i")
+result = emptyTable(1_000_000).update("XSquared = ii * ii")
 ```
 
 ### Column sharing and copy-on-write
@@ -524,7 +526,7 @@ result = emptyTable(100)
 ```groovy order=result test-set=groovy-best-practice-5
 // Filter first to minimize data processed
 result = emptyTable(1_000_000)
-    .update("X = i")
+    .update("X = ii")
     .where("X > 900000")  // Filter early!
     .update("Y = X * X")  // Only processes 100k rows
 ```

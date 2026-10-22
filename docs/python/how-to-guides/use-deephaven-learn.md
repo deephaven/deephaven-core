@@ -125,16 +125,16 @@ Deephaven has a submodule for gathering data called `learn.gather`. This submodu
 
 The function `table_to_numpy_2d` can take up to four inputs:
 
-- `rows`: A set of rows that will be copied in to the `ndarray`.
-- `columns`: A set of columns that will be copied into the `ndarray`.
+- `row_set`: The rows to copy into the `ndarray`.
+- `col_set`: The column sources to copy into the `ndarray`.
 - `order`: How the array is stored in memory. Can be either column-major or row-major.
   - The default value is row-major.
-  - Specifying the memory layout is done with an enumeration called `gather.MemoryLayout`. There are four accepted values:
+  - The `gather.MemoryLayout` enumeration specifies the memory layout. There are four accepted values:
     - `gather.MemoryLayout.ROW_MAJOR`: row-major order.
     - `gather.MemoryLayout.COLUMN_MAJOR`: column-major order.
     - `gather.MemoryLayout.C`: C memory layout (row-major).
     - `gather.MemoryLayout.FORTRAN`: Fortran memory layout (column-major).
-- `np_type`: The data type of all values in the output `ndarray`. Any non-NumPy data types will be cast to the corresponding NumPy `dtype`.
+- `np_type`: The NumPy `dtype` of all values in the output `ndarray`. Supported types are `np.byte`, `np.short`, `np.intc`, `np.int_`, `np.single`, and `np.double`. The Python types `int` and `float` are converted to `np.intc` and `np.double`, respectively. The default is `np.intc`, so pass `np_type` explicitly for floating-point data.
 
 In this example, we'll use row-major order. If we were to use column-major order, the resulting NumPy `ndarray` would still look the same.
 

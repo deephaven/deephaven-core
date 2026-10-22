@@ -238,10 +238,13 @@ public class TailInitializationFilter {
      * Get the most recent rows from each partition in source table.
      *
      * @param table the source table to filter
-     * @param rowCount the number of rows to include per partition
+     * @param rowCount the number of rows to include per partition, which must not be negative
      * @return a table with only the most recent values in each partition
      */
     public static Table mostRecentRows(final Table table, final long rowCount) {
+        if (rowCount < 0) {
+            throw new IllegalArgumentException("rowCount must not be negative, rowCount=" + rowCount);
+        }
         return QueryPerformanceRecorder.withNugget("TailInitializationFilter(rows=" + rowCount + ")", () -> {
             final QueryTable source = validateInputTable(table);
 
@@ -249,7 +252,9 @@ public class TailInitializationFilter {
                     source.getColumnSourceMap().values().stream().anyMatch(RegionedColumnSource.class::isInstance);
 
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-            if (isRegioned) {
+            if (rowCount == 0) {
+                // Nothing to keep. Checked up front: lastRow - rowCount + 1 below would wrap at Long.MAX_VALUE.
+            } else if (isRegioned) {
                 try (final RowSequence.Iterator it = source.getRowSet().getRowSequenceIterator()) {
                     while (it.hasMore()) {
                         final long nextRowKey = it.peekNextKey();

@@ -3280,6 +3280,31 @@ public class TestRunContainer extends TestContainerBase {
         assertFalse(new RunContainer().contains(new BitmapContainer().iset((short) MAX_VALUE)));
     }
 
+    /**
+     * Adding ranges that each start a new run turns the container into a bitmap once it has as many runs as a bitmap
+     * has room for, whether the new runs go at the end or the front, and whether the add is in place or not.
+     */
+    @Test
+    public void testAddRangePastMaxRunsBecomesBitmap() {
+        final int maxRuns = DEFAULT_MAX_SIZE / 2;
+        for (final boolean ascending : new boolean[] {true, false}) {
+            for (final boolean inPlace : new boolean[] {true, false}) {
+                Container container = new RunContainer();
+                for (int ri = 0; ri <= maxRuns; ++ri) {
+                    final int start = 3 * (ascending ? ri : maxRuns - ri);
+                    container = inPlace ? container.iadd(start, start + 2) : container.add(start, start + 2);
+                    assertEquals(ri < maxRuns, container instanceof RunContainer);
+                }
+                assertTrue(container instanceof BitmapContainer);
+                assertEquals(2 * (maxRuns + 1), container.getCardinality());
+                for (int ri = 0; ri <= maxRuns; ++ri) {
+                    assertTrue(container.contains(3 * ri, 3 * ri + 2));
+                    assertFalse(container.contains((short) (3 * ri + 2)));
+                }
+            }
+        }
+    }
+
     public Supplier<Container> makeContainer() {
         return RunContainer::new;
     }

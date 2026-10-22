@@ -124,6 +124,10 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
             }
             head = Math.max(head, minPos.get());
             tail = Math.min(tail, maxPos);
+            if (head > tail) {
+                // A window that excludes the current row can be empty for a short range.
+                return;
+            }
             builder.appendRange(head, tail);
             minPos.set(tail + 1);
         });

@@ -5,96 +5,105 @@ isort:skip_file
 Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 """
 
-import builtins
-import collections.abc
-import deephaven_core.proto.ticket_pb2
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.message
+from collections import abc as _abc
+from deephaven_core.proto import ticket_pb2 as _ticket_pb2
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+import builtins as _builtins
 import sys
-import typing
+import typing as _typing
 
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
-@typing.final
-class ListFieldsRequest(google.protobuf.message.Message):
+@_typing.final
+class ListFieldsRequest(_message.Message):
     """Intentionally empty and is here for backwards compatibility should this API change."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___ListFieldsRequest: typing_extensions.TypeAlias = ListFieldsRequest
+Global___ListFieldsRequest: _TypeAlias = ListFieldsRequest  # noqa: Y015
 
-@typing.final
-class FieldsChangeUpdate(google.protobuf.message.Message):
+@_typing.final
+class FieldsChangeUpdate(_message.Message):
     """
     Represents a batch of fields.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    CREATED_FIELD_NUMBER: builtins.int
-    UPDATED_FIELD_NUMBER: builtins.int
-    REMOVED_FIELD_NUMBER: builtins.int
-    @property
-    def created(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FieldInfo]: ...
-    @property
-    def updated(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FieldInfo]: ...
-    @property
-    def removed(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___FieldInfo]: ...
+    CREATED_FIELD_NUMBER: _builtins.int
+    UPDATED_FIELD_NUMBER: _builtins.int
+    REMOVED_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def created(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldInfo]: ...
+    @_builtins.property
+    def updated(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldInfo]: ...
+    @_builtins.property
+    def removed(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldInfo]: ...
     def __init__(
         self,
         *,
-        created: collections.abc.Iterable[Global___FieldInfo] | None = ...,
-        updated: collections.abc.Iterable[Global___FieldInfo] | None = ...,
-        removed: collections.abc.Iterable[Global___FieldInfo] | None = ...,
+        created: _abc.Iterable[Global___FieldInfo] | None = ...,
+        updated: _abc.Iterable[Global___FieldInfo] | None = ...,
+        removed: _abc.Iterable[Global___FieldInfo] | None = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["created", b"created", "removed", b"removed", "updated", b"updated"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["created", b"created", "removed", b"removed", "updated", b"updated"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___FieldsChangeUpdate: typing_extensions.TypeAlias = FieldsChangeUpdate
+Global___FieldsChangeUpdate: _TypeAlias = FieldsChangeUpdate  # noqa: Y015
 
-@typing.final
-class FieldInfo(google.protobuf.message.Message):
+@_typing.final
+class FieldInfo(_message.Message):
     """
     A lightweight object describing the exposed field.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    TYPED_TICKET_FIELD_NUMBER: builtins.int
-    FIELD_NAME_FIELD_NUMBER: builtins.int
-    FIELD_DESCRIPTION_FIELD_NUMBER: builtins.int
-    APPLICATION_NAME_FIELD_NUMBER: builtins.int
-    APPLICATION_ID_FIELD_NUMBER: builtins.int
-    field_name: builtins.str
-    field_description: builtins.str
-    application_name: builtins.str
+    TYPED_TICKET_FIELD_NUMBER: _builtins.int
+    FIELD_NAME_FIELD_NUMBER: _builtins.int
+    FIELD_DESCRIPTION_FIELD_NUMBER: _builtins.int
+    APPLICATION_NAME_FIELD_NUMBER: _builtins.int
+    APPLICATION_ID_FIELD_NUMBER: _builtins.int
+    field_name: _builtins.str
+    field_description: _builtins.str
+    application_name: _builtins.str
     """display-friendly identification"""
-    application_id: builtins.str
+    application_id: _builtins.str
     """computer-friendly identification"""
-    @property
-    def typed_ticket(self) -> deephaven_core.proto.ticket_pb2.TypedTicket: ...
+    @_builtins.property
+    def typed_ticket(self) -> _ticket_pb2.TypedTicket: ...
     def __init__(
         self,
         *,
-        typed_ticket: deephaven_core.proto.ticket_pb2.TypedTicket | None = ...,
-        field_name: builtins.str = ...,
-        field_description: builtins.str = ...,
-        application_name: builtins.str = ...,
-        application_id: builtins.str = ...,
+        typed_ticket: _ticket_pb2.TypedTicket | None = ...,
+        field_name: _builtins.str = ...,
+        field_description: _builtins.str = ...,
+        application_name: _builtins.str = ...,
+        application_id: _builtins.str = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["typed_ticket", b"typed_ticket"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["application_id", b"application_id", "application_name", b"application_name", "field_description", b"field_description", "field_name", b"field_name", "typed_ticket", b"typed_ticket"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["typed_ticket", b"typed_ticket"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["application_id", b"application_id", "application_name", b"application_name", "field_description", b"field_description", "field_name", b"field_name", "typed_ticket", b"typed_ticket"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___FieldInfo: typing_extensions.TypeAlias = FieldInfo
+Global___FieldInfo: _TypeAlias = FieldInfo  # noqa: Y015

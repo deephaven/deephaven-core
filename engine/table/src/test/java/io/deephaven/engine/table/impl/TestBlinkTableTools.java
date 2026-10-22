@@ -74,6 +74,17 @@ public class TestBlinkTableTools {
     }
 
     @Test
+    public void testSizeLimitZero() {
+        final QueryTable blinkTable = TstUtils.testRefreshingTable(i(1).toTracking(), intCol("I", 7));
+        blinkTable.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+
+        final Table appendOnly = BlinkTableTools.blinkToAppendOnly(blinkTable, 0);
+        assertFalse(appendOnly.isRefreshing());
+        assertEquals(blinkTable.getDefinition(), appendOnly.getDefinition());
+        assertTableEquals(TableTools.newTable(blinkTable.getDefinition()), appendOnly);
+    }
+
+    @Test
     public void testBlinkTableHasPrevData() throws InterruptedException {
         // we need to tell the UG that we intend to modify source tables mid-cycle
         final boolean sourceTablesAlreadySatisfied = false;

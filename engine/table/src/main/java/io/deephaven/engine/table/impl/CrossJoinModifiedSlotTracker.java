@@ -41,7 +41,6 @@ class CrossJoinModifiedSlotTracker {
     RowSet leftModified;
 
     boolean hasLeftModifies = false;
-    boolean hasRightModifies = false;
     boolean finishedRightProcessing = false;
 
     private final RightIncrementalChunkedCrossJoinStateManager jsm;
@@ -293,7 +292,6 @@ class CrossJoinModifiedSlotTracker {
             rightRemoved = removedBuilder.build();
             rightModified = modifiedBuilder.build();
             innerShifted = shiftBuilder.build();
-            hasRightModifies |= rightModified.isNonempty();
 
             this.keyChunk.close();
             this.flagChunk.close();
@@ -358,7 +356,6 @@ class CrossJoinModifiedSlotTracker {
         leftModified = null;
 
         hasLeftModifies = false;
-        hasRightModifies = false;
         finishedRightProcessing = false;
 
         return needToResetCookies;
@@ -624,15 +621,17 @@ class CrossJoinModifiedSlotTracker {
                 if (keySize > 0) {
                     final WritableLongChunk<RowKeys> keyChunk = slotState.keyChunk.get();
                     final WritableByteChunk<Values> flagChunk = slotState.flagChunk.get();
+                    // the result rows of the slot's added right rows are added rather than modified; a slot has no
+                    // right added rows unless the right table changed
+                    final boolean rightRowsRetained =
+                            slotState.rightAdded == null || slotState.rightAdded.size() < size;
                     for (int ii = 0; ii < keySize; ++ii) {
-                        final long key = keyChunk.get(ii);
+                        // the chunk also holds the left rows moved into this slot, which flushLeftAdds adds
                         if (flagChunk.get(ii) == FLAG_MOD) {
-                            final long currOffset = key << jsm.getNumShiftBits();
+                            final long currOffset = keyChunk.get(ii) << jsm.getNumShiftBits();
                             modBuilder.addRange(currOffset, currOffset + size - 1);
+                            hasLeftModifies |= rightRowsRetained;
                         }
-                        // must be a modify
-                        final long currOffset = key << jsm.getNumShiftBits();
-                        modBuilder.addRange(currOffset, currOffset + size - 1);
                     }
                 }
             } else if (jsm.leftOuterJoin() && sizePrev == 0 && size == 0) {
@@ -645,6 +644,7 @@ class CrossJoinModifiedSlotTracker {
                         if (flagChunk.get(ii) == FLAG_MOD) {
                             final long currOffset = key << jsm.getNumShiftBits();
                             modBuilder.addKey(currOffset);
+                            hasLeftModifies = true;
                         }
                     }
                 }
@@ -654,6 +654,5 @@ class CrossJoinModifiedSlotTracker {
             leftRemoved.subsume(toRemove);
         }
         leftModified = modBuilder.build();
-        hasLeftModifies = leftModified.isNonempty();
     }
 }

@@ -4,13 +4,21 @@
 package io.deephaven.engine.table.impl.indexer;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -20,6 +28,7 @@ import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.SafeCloseableArray;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -485,6 +494,39 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
                 assertNotNull(fullRowSet);
 
                 assertTrue(fullRowSet.containsRange(rowKey, rowKey));
+            }
+        }
+
+        // The chunked lookup, a few rows at a time so that it is used repeatedly, finds each row's index row too.
+        final ColumnSource<?>[] reinterpretedColumns = Arrays.stream(columns)
+                .map(ReinterpretUtils::maybeConvertToPrimitive)
+                .toArray(ColumnSource[]::new);
+        final int chunkSize = 64;
+        // noinspection unchecked
+        final WritableChunk<Values>[] keyChunks = new WritableChunk[columns.length];
+        final ChunkSource.FillContext[] fillContexts = new ChunkSource.FillContext[columns.length];
+        try (final SafeCloseableArray<WritableChunk<Values>> ignoredChunks = new SafeCloseableArray<>(keyChunks);
+                final SafeCloseableArray<ChunkSource.FillContext> ignoredContexts =
+                        new SafeCloseableArray<>(fillContexts);
+                final WritableLongChunk<RowKeys> indexRowKeys = WritableLongChunk.makeWritableChunk(chunkSize);
+                final RowSequence.Iterator rowsIt = sourceTable.getRowSet().getRowSequenceIterator()) {
+            for (int ci = 0; ci < columns.length; ++ci) {
+                keyChunks[ci] = reinterpretedColumns[ci].getChunkType().makeWritableChunk(chunkSize);
+                fillContexts[ci] = reinterpretedColumns[ci].makeFillContext(chunkSize);
+            }
+            while (rowsIt.hasMore()) {
+                final RowSequence rows = rowsIt.getNextRowSequenceWithLength(chunkSize);
+                for (int ci = 0; ci < columns.length; ++ci) {
+                    reinterpretedColumns[ci].fillChunk(fillContexts[ci], keyChunks[ci], rows);
+                }
+                fullIndexRowKeyLookup.apply(keyChunks, indexRowKeys, false);
+                final LongChunk<OrderedRowKeys> rowKeys = rows.asRowKeyChunk();
+                assertEquals(rowKeys.size(), indexRowKeys.size());
+                for (int ii = 0; ii < rowKeys.size(); ++ii) {
+                    final RowSet fullRowSet = fullIndexRowSetColumn.get(indexRowKeys.get(ii));
+                    assertNotNull(fullRowSet);
+                    assertTrue(fullRowSet.containsRange(rowKeys.get(ii), rowKeys.get(ii)));
+                }
             }
         }
     }

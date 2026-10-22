@@ -94,7 +94,7 @@ public class ColorPaletteArray implements ColorPalette, Serializable {
                 new Color(0.4940f, 0.1840f, 0.5560f), // purple
                 new Color(0.4660f, 0.6740f, 0.1880f), // green
                 new Color(0.3010f, 0.7450f, 0.9330f), // light blue
-                new Color(0.6350f, 0.0780f, 0.1840f), // red
+                new Color(0.6350f, 0.0780f, 0.1840f),// red
         }),
 
         /**
@@ -110,7 +110,7 @@ public class ColorPaletteArray implements ColorPalette, Serializable {
                 new Color("#17becf"), // sky blue
                 new Color("#e377c2"), // pink
                 new Color("#7f7f7f"), // grey
-                new Color("#bcbd22"), // mustard yellow
+                new Color("#bcbd22"),// mustard yellow
         });
 
         private final Color[] colors;

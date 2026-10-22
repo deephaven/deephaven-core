@@ -6,9 +6,8 @@ package io.deephaven.extensions.s3.testlib;
 import io.deephaven.extensions.s3.Credentials;
 import io.deephaven.extensions.s3.S3Instructions.Builder;
 import org.testcontainers.DockerClientFactory;
-import org.testcontainers.containers.MinIOContainer;
-import org.testcontainers.containers.localstack.LocalStackContainer;
-import org.testcontainers.containers.localstack.LocalStackContainer.Service;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -24,13 +23,23 @@ public final class SingletonContainers {
     // https://java.testcontainers.org/test_framework_integration/manual_lifecycle_control/#singleton-containers
     // https://testcontainers.com/guides/testcontainers-container-lifecycle/#_using_singleton_containers
 
-    public static final class LocalStack {
-        private static final LocalStackContainer LOCALSTACK_S3 =
-                new LocalStackContainer(DockerImageName.parse(System.getProperty("testcontainers.localstack.image"))
-                        .asCompatibleSubstituteFor("localstack/localstack"), false)
-                        .withServices(Service.S3);
+    public static final class RustFS {
+        private static final int S3_PORT = 9000;
+        private static final String ACCESS_KEY = "deephaven-test-access-key";
+        private static final String SECRET_KEY = "deephaven-test-secret-key";
+
+        // RUSTFS_SERVER_DOMAINS is set so RustFS will accept virtual-host style requests; see virtual-host style
+        // implementation comments in S3Instructions.
+        private static final GenericContainer<?> RUSTFS =
+                new GenericContainer<>(DockerImageName.parse(System.getProperty("testcontainers.rustfs.image")))
+                        .withExposedPorts(S3_PORT)
+                        .withEnv("RUSTFS_ACCESS_KEY", ACCESS_KEY)
+                        .withEnv("RUSTFS_SECRET_KEY", SECRET_KEY)
+                        .withEnv("RUSTFS_SERVER_DOMAINS", DockerClientFactory.instance().dockerHostIpAddress())
+                        // /health returns 200 before storage is ready; /health/ready waits until S3 requests succeed
+                        .waitingFor(Wait.forHttp("/health/ready").forPort(S3_PORT).forStatusCode(200));
         static {
-            LOCALSTACK_S3.start();
+            RUSTFS.start();
         }
 
         public static void init() {
@@ -39,85 +48,35 @@ public final class SingletonContainers {
 
         public static Builder s3Instructions(Builder builder) {
             return builder
-                    .endpointOverride(LOCALSTACK_S3.getEndpoint())
-                    .regionName(LOCALSTACK_S3.getRegion())
-                    .credentials(Credentials.basic(LOCALSTACK_S3.getAccessKey(), LOCALSTACK_S3.getSecretKey()));
+                    .endpointOverride(URI.create(s3Endpoint()))
+                    .regionName(region())
+                    .credentials(Credentials.basic(ACCESS_KEY, SECRET_KEY));
         }
 
         public static S3AsyncClient s3AsyncClient() {
             return S3AsyncClient
                     .builder()
-                    .endpointOverride(LOCALSTACK_S3.getEndpoint())
-                    .region(Region.of(LOCALSTACK_S3.getRegion()))
+                    .endpointOverride(URI.create(s3Endpoint()))
+                    .region(Region.of(region()))
                     .credentialsProvider(StaticCredentialsProvider.create(
-                            AwsBasicCredentials.create(LOCALSTACK_S3.getAccessKey(), LOCALSTACK_S3.getSecretKey())))
+                            AwsBasicCredentials.create(ACCESS_KEY, SECRET_KEY)))
                     .build();
         }
 
         public static String s3Endpoint() {
-            return LOCALSTACK_S3.getEndpoint().toString();
+            return String.format("http://%s:%d", RUSTFS.getHost(), RUSTFS.getMappedPort(S3_PORT));
         }
 
         public static String region() {
-            return LOCALSTACK_S3.getRegion();
+            return Region.US_EAST_1.id();
         }
 
         public static String accessKey() {
-            return LOCALSTACK_S3.getAccessKey();
+            return ACCESS_KEY;
         }
 
         public static String secretAccessKey() {
-            return LOCALSTACK_S3.getSecretKey();
-        }
-    }
-
-    public static final class MinIO {
-        // MINIO_DOMAIN is set so MinIO will accept virtual-host style requests; see virtual-host style implementation
-        // comments in S3Instructions.
-        // https://min.io/docs/minio/linux/reference/minio-server/settings/core.html#domain
-        private static final MinIOContainer MINIO =
-                new MinIOContainer(DockerImageName.parse(System.getProperty("testcontainers.minio.image"))
-                        .asCompatibleSubstituteFor("minio/minio"))
-                        .withEnv("MINIO_DOMAIN", DockerClientFactory.instance().dockerHostIpAddress());
-        static {
-            MINIO.start();
-        }
-
-        public static void init() {
-            // no-op, ensures this class is initialized
-        }
-
-        public static Builder s3Instructions(Builder builder) {
-            return builder
-                    .endpointOverride(URI.create(MINIO.getS3URL()))
-                    .regionName(Region.AWS_GLOBAL.id())
-                    .credentials(Credentials.basic(MINIO.getUserName(), MINIO.getPassword()));
-        }
-
-        public static S3AsyncClient s3AsyncClient() {
-            return S3AsyncClient
-                    .builder()
-                    .endpointOverride(URI.create(MINIO.getS3URL()))
-                    .region(Region.AWS_GLOBAL)
-                    .credentialsProvider(StaticCredentialsProvider.create(
-                            AwsBasicCredentials.create(MINIO.getUserName(), MINIO.getPassword())))
-                    .build();
-        }
-
-        public static String s3Endpoint() {
-            return MINIO.getS3URL();
-        }
-
-        public static String region() {
-            return Region.AWS_GLOBAL.toString();
-        }
-
-        public static String accessKey() {
-            return MINIO.getUserName();
-        }
-
-        public static String secretAccessKey() {
-            return MINIO.getPassword();
+            return SECRET_KEY;
         }
     }
 }

@@ -52,7 +52,7 @@ client_session.publish_table(client_ticket, client_table)
 
 # Create a barrage session that listens to the server on port 9999
 my_barrage_session = barrage_session(host="host.docker.internal", port=9999)
-# Subscribe to the client table ticking data
+# Take a snapshot of the client table
 local_table = my_barrage_session.snapshot(client_ticket.bytes)
 # Perform operations on this now-local table
 new_local_table = local_table.where("X > 5")

@@ -9,7 +9,7 @@ If locking is not explicitly specified, this method will automatically lock to e
 ## Syntax
 
 ```python syntax
-iter_chunk_dict(cols: Optional[Union[str, Sequence[str]]] = None, chunk_size: int = 2048) -> Generator[Tuple[Any, ...], None, None]
+iter_chunk_dict(cols: Optional[Union[str, Sequence[str]]] = None, chunk_size: int = 2048) -> Generator[Dict[str, np.ndarray], None, None]
 ```
 
 ## Parameters

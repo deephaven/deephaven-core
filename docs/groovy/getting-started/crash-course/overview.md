@@ -1,6 +1,6 @@
 ---
 title: Crash Course Overview
-description: A crash course in Deephaven that covers the basics of working with tables and plots.
+description: A crash course in Deephaven that covers tables, time and calendars, query strings, plots, data I/O, and configuration.
 hide_table_of_contents: true
 ---
 
@@ -8,7 +8,7 @@ import { CoreTutorialCard } from '@theme/deephaven/core-docs-components';
 
 <div className="comment-title">
 
-A crash course in Deephaven that covers the basics of working with tables and plots.
+This crash course takes you from starting a Deephaven server to building real-time queries and plots. Each chapter builds on the ones before it, so work through them in order.
 
 </div>
 
@@ -16,83 +16,91 @@ A crash course in Deephaven that covers the basics of working with tables and pl
 
 <div className="row">
 
-<CoreTutorialCard to="/core/docs/getting-started/crash-course/get-started/">
+<CoreTutorialCard to="/core/groovy/docs/getting-started/crash-course/get-started/">
 
 ## Get started
 
-This guide provides a broad, clear, and technically informative overview of Deephaven's capabilities. Dive in and unlock the potential of this powerful platform.
+Start a Deephaven server with Docker, open the IDE, and get familiar with the console and workspace. Dive in and unlock the potential of this powerful platform.
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/getting-started/crash-course/architecture-overview/">
+<CoreTutorialCard to="/core/groovy/docs/getting-started/crash-course/architecture-overview/">
 
 ## Architecture overview
 
-Deephaven's central concept is that everything is a table.
+Learn how Deephaven's tables, table operations, engine, and user interface fit together, starting from the central idea that everything is a table.
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/getting-started/crash-course/create-tables/">
+<CoreTutorialCard to="/core/groovy/docs/getting-started/crash-course/create-tables/">
 
 ## Create tables
 
-Learn to create tables from scratch with synthetic data or by importing data from external sources.
+Learn to create static tables from scratch, read CSV data from a file or URL into a table, create ticking tables that update in real time, and replay static data as a ticking table.
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/getting-started/crash-course/table-ops/">
+<CoreTutorialCard to="/core/groovy/docs/getting-started/crash-course/table-ops/">
 
 ## Table operations
 
-This section covers some table operations that appear in almost all queries.
+Learn the table operations that appear in almost every query: add, select, and drop columns; filter and sort rows; group and aggregate data; and merge and join tables.
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/getting-started/crash-course/query-strings/">
+<CoreTutorialCard to="/core/groovy/docs/getting-started/crash-course/time-calendars/">
+
+## Time and calendars
+
+Work with date-time types, time zones, time arithmetic, and business calendars.
+
+</CoreTutorialCard>
+
+<CoreTutorialCard to="/core/groovy/docs/getting-started/crash-course/query-strings/">
 
 ## Query strings
 
-Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They translate the user's intention into compiled code that the engine can execute.
+Deephaven query strings are the primary way of expressing commands directly to the Deephaven engine. They tell the engine what to compute, and the engine turns them into filters and formulas, compiling code where needed. Learn the query-string syntax that table operations use to filter rows and compute new columns, and how to call built-in and user-defined functions from inside a query string.
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/getting-started/crash-course/vectorization-vs-loops/">
+<CoreTutorialCard to="/core/groovy/docs/getting-started/crash-course/vectorization-vs-loops/">
 
 ## Recipes, not loops!
 
-Understand why Deephaven uses declarative recipes instead of loops. Learn the paradigm shift that unlocks automatic real-time updates.
+Understand why Deephaven uses declarative recipes instead of loops. Learn the paradigm shift that unlocks automatic real-time updates: a recipe lets query results update in real time as new data arrives, without re-running your code.
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/getting-started/crash-course/plots/">
+<CoreTutorialCard to="/core/groovy/docs/getting-started/crash-course/plots/">
 
 ## Real-time plots
 
-Whether your data is static or updating in real time, Deephaven supports plotting through its built-in plot package.
+Whether your data is static or updating in real time, Deephaven can plot it. Build basic plots, plots with multiple axes, and subplots with the built-in plotting API.
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/getting-started/crash-course/export-data/">
+<CoreTutorialCard to="/core/groovy/docs/getting-started/crash-course/export-data/">
 
 ## Data I/O
 
-Data I/O is mission-critical for any real-time data analysis platform. Deephaven supports a wide variety of data sources and formats, including CSV, Parquet, Kafka, and more.
+Data I/O is mission-critical for any real-time data analysis platform. Read data into Deephaven and write it back out in common formats and systems, including CSV, Parquet, Kafka, and Iceberg.
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/getting-started/crash-course/configure/">
+<CoreTutorialCard to="/core/groovy/docs/getting-started/crash-course/configure/">
 
-## Configure your Deephaven Instance
+## Configure your Deephaven instance
 
-This section covers configuration details needed to take your Deephaven instance beyond the defaults.
+Take your Deephaven instance beyond the defaults: change authentication, choose a deployment, install Java packages, set memory limits, and keep your instance up to date.
 
 </CoreTutorialCard>
 
-<CoreTutorialCard to="/core/docs/getting-started/crash-course/crash-course-wrap-up/">
+<CoreTutorialCard to="/core/groovy/docs/getting-started/crash-course/crash-course-wrap-up/">
 
-## Wrapping Up
+## Wrapping up
 
-Where to go from here.
+Find out where to go next in the documentation and where to get help from the Deephaven community.
 
 </CoreTutorialCard>
 

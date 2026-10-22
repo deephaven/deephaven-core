@@ -4,7 +4,7 @@ title: Use Numba in Deephaven queries
 
 This guide will show you how to use [Numba](https://numba.pydata.org/) in your Python queries in Deephaven.
 
-[Numba](https://numba.pydata.org/) is an open-source just-in-time (JIT) compiler for Python. It can be used to translate portions of Python code into optimized machine code using [LLVM](https://llvm.org/). The use of [Numba](https://numba.pydata.org/) can make your queries faster and more responsive.
+[Numba](https://numba.pydata.org/) is an open-source just-in-time (JIT) compiler for Python. It can be used to translate portions of Python code into optimized machine code using [LLVM](https://llvm.org/). The use of [Numba](https://numba.pydata.org/) can make some Python code faster.
 
 > [!IMPORTANT]
 > Numba currently supports NumPy 2.4 and earlier, but Deephaven ships with NumPy 2.5. As a result, the Numba examples on this page do not run in a default Deephaven deployment. To run them, reconfigure Deephaven to use a NumPy version below 2.5 (for example, by building a custom Docker image that installs `numpy<2.5`).
@@ -274,7 +274,7 @@ print("Execution time (JIT) = %s" % (end - start))
 
 To show how the performance of `@jit` and `@vectorize` differ when applied to Deephaven tables, we will create identical functions that use these decorators. We then measure the performance of creating new columns in a 625,000 row table when using the functions.
 
-```python order=t,t2,t3,t4,t5,t6 docker-config=numba
+```python order=t,t2,t3,t4,t5,t6,t7 docker-config=numba
 from deephaven import empty_table
 import os
 
@@ -339,20 +339,18 @@ print("cubic polynomial - Execution time (without Numba) = %s" % (end - start))
 
 # Time cubic polynomial with jit
 start = time.time()
-t5 = t2.update(formulas=["D = jit_cubic_func(C)"])
+t6 = t2.update(formulas=["D = jit_cubic_func(C)"])
 end = time.time()
 print("cubic polynomial - Execution time (jit) = %s" % (end - start))
 
 # Time a cubic polynomial with vectorize
 start = time.time()
-t6 = t2.update(formulas=["D = vectorize_cubic_func(C)"])
+t7 = t2.update(formulas=["D = vectorize_cubic_func(C)"])
 end = time.time()
 print("cubic polynomial - Execution time (vectorize) = %s" % (end - start))
 ```
 
-The use of `@jit` with functions operating on Deephaven tables results in a very small performance increase over its standard counterparts. This performance increase is small enough to make the additional overhead of compiling the function into optimized machine code not worth it.
-
-The use of `@vectorize` with functions operating on Deephaven tables results in a large performance increase over its standard counterparts. This performance increase is large enough to warrant the additional overhead associated with compiling the function into optimized machine code.
+When you use a `@vectorize` function in a query string, Deephaven passes it whole chunks of column data, so the compiled function handles many rows in each call. Deephaven calls a `@jit` function once per row, the same way it calls a plain Python function. How much either decorator speeds up a formula depends on the workload, so benchmark your own queries before you decide to use Numba.
 
 ### @guvectorize
 
