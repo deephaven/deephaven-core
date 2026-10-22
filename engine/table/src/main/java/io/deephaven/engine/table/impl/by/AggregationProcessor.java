@@ -2039,7 +2039,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         private BigDecimalChunkedSumOperator addAndGetBigDecimalSumOperator(@NotNull final String inputColumnName) {
-            return getAndAddBasicOperator(n -> new BigDecimalChunkedSumOperator(false, n), inputColumnName);
+            return getAndAddBasicOperator(n -> new BigDecimalChunkedSumOperator(false, false, n), inputColumnName);
         }
 
         private BigIntegerChunkedSumOperator addAndGetBigIntegerSumOperator(@NotNull final String inputColumnName) {
@@ -2189,7 +2189,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         } else if (type == BigInteger.class) {
             return new BigIntegerChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == BigDecimal.class) {
-            return new BigDecimalChunkedSumOperator(isAbsolute, name);
+            return new BigDecimalChunkedSumOperator(isAbsolute, onlyAdds, name);
         }
         throw new UnsupportedOperationException("Unsupported type " + type);
     }
