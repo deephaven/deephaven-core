@@ -89,6 +89,11 @@ test {
     // Make netty track every buffer and report leaks; TransportTest fails if any are reported
     systemProperty 'io.netty.leakDetection.level', 'paranoid'
 
+    // A deephaven.javaOpts / JAVA_OPTS override replaces the default VM options; VmOptionsFileTest expects it instead
+    if (project.deephavenJavaOptsOverride != null) {
+        systemProperty 'dh.javaOptsOverride', project.deephavenJavaOptsOverride.join(' ')
+    }
+
     dependsOn deephavenDocker.portTask
     finalizedBy deephavenDocker.endTask
     doFirst {

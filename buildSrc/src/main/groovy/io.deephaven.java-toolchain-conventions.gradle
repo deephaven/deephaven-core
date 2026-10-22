@@ -235,6 +235,8 @@ def VERSIONED_JAVA_OPTS = [
 
 // When set, the user's options replace the Deephaven defaults for every Java version
 def JAVA_OPTS_OVERRIDE = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmArgumentsFromEnv('JAVA_OPTS', null))
+// Published for the tests that check the default options, which expect the override instead when there is one
+project.ext.deephavenJavaOptsOverride = JAVA_OPTS_OVERRIDE
 
 // Utility to add jvm args to all executions, whether intellij or from a application script or gradle javaexec
 def START_OPTS = parseJvmArgumentsFromProperty("deephaven.startOpts", parseJvmArgumentsFromEnv('START_OPTS', [

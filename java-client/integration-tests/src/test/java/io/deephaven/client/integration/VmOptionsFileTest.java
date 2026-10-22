@@ -32,7 +32,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Checks the default VM options each Java major version gets from the launchers, against the options written out below.
  * Changing the options in {@code buildSrc/src/main/groovy/io.deephaven.java-toolchain-conventions.gradle} without
- * updating them here fails these tests.
+ * updating them here fails these tests. When the build overrides the defaults ({@code deephaven.javaOpts} or
+ * {@code JAVA_OPTS}), every version gets the override instead, which the build passes as {@code dh.javaOptsOverride}.
  *
  * <p>
  * The start script cases run it with a stand-in {@code java} that prints the arguments it is given, and check the
@@ -43,6 +44,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Timeout(120)
 class VmOptionsFileTest {
+
+    /** A version with no file of its own. */
+    private static final int UNLISTED_VERSION = 22;
+
+    /** The build's override of the default options, possibly empty; null when there is none. */
+    private static final List<String> OVERRIDE =
+            Optional.ofNullable(System.getProperty("dh.javaOptsOverride")).map(VmOptionsFileTest::split).orElse(null);
 
     private static final List<String> GENERIC_OPTIONS = List.of(
             "-XX:+UseG1GC",
@@ -57,6 +65,9 @@ class VmOptionsFileTest {
 
     /** The options a Java major version gets by default. */
     private static List<String> expectedOptions(int javaVersion) {
+        if (OVERRIDE != null) {
+            return OVERRIDE;
+        }
         return switch (javaVersion) {
             case 17, 21 -> concat(GENERIC_OPTIONS, GC_LOCKER_OPTIONS);
             default -> GENERIC_OPTIONS;
@@ -65,7 +76,7 @@ class VmOptionsFileTest {
 
     /** Each file the distribution ships, with its options. */
     private static final Map<String, List<String>> EXPECTED_FILES = Map.of(
-            "dh-default.vmoptions", GENERIC_OPTIONS,
+            "dh-default.vmoptions", expectedOptions(UNLISTED_VERSION),
             "dh-default-17.vmoptions", expectedOptions(17),
             "dh-default-21.vmoptions", expectedOptions(21),
             "dh-default-25.vmoptions", expectedOptions(25));
@@ -74,9 +85,6 @@ class VmOptionsFileTest {
             "The start script is POSIX-only; a Windows launcher needs its own VM options tests";
 
     private static final String VM_OPTIONS_FILE_ARG = "-XX:VMOptionsFile=";
-
-    /** A version with no file of its own. */
-    private static final int UNLISTED_VERSION = 22;
 
     /** Any launcher will do; they all come from the same start script template. */
     private static final String LAUNCHER = "connect-check";
@@ -93,9 +101,13 @@ class VmOptionsFileTest {
         return Stream.concat(first.stream(), second.stream()).collect(Collectors.toList());
     }
 
+    private static List<String> split(String options) {
+        return options.isBlank() ? List.of() : Arrays.asList(options.trim().split("\\s+"));
+    }
+
     /** The options in a VM options file. */
     private static List<String> optionsIn(Path vmOptionsFile) throws IOException {
-        return Arrays.asList(Files.readString(vmOptionsFile).trim().split("\\s+"));
+        return split(Files.readString(vmOptionsFile));
     }
 
     @Test
@@ -114,7 +126,7 @@ class VmOptionsFileTest {
     @Test
     void gradleTestJvm() {
         final List<String> args = ManagementFactory.getRuntimeMXBean().getInputArguments();
-        for (String option : ALL_OPTIONS) {
+        for (String option : concat(ALL_OPTIONS, expectedOptions(JAVA_VERSION))) {
             if (expectedOptions(JAVA_VERSION).contains(option)) {
                 assertThat(args).contains(option);
             } else {

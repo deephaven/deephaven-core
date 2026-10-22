@@ -24,17 +24,32 @@ GENERIC_OPTIONS = [
     "--enable-native-access=ALL-UNNAMED",
 ]
 GC_LOCKER_OPTIONS = ["-XX:GCLockerRetryAllocationCount=128"]
-ALL_OPTIONS = GENERIC_OPTIONS + GC_LOCKER_OPTIONS
+
+# When the build overrides the defaults (deephaven.javaOpts or JAVA_OPTS), every version gets the override instead,
+# which the build passes as DH_JAVA_OPTS_OVERRIDE. Possibly empty; None when there is none.
+_override = os.environ.get("DH_JAVA_OPTS_OVERRIDE")
+OVERRIDE = None if _override is None else _override.split()
 
 # Versions to check, including one with no file of its own (22)
 VERSIONS = (17, 21, 22, 25)
 
+
+def _expected_options(java_version: Optional[int]) -> List[str]:
+    if OVERRIDE is not None:
+        return OVERRIDE
+    if java_version in (17, 21):
+        return GENERIC_OPTIONS + GC_LOCKER_OPTIONS
+    return GENERIC_OPTIONS
+
+
+ALL_OPTIONS = GENERIC_OPTIONS + GC_LOCKER_OPTIONS + (OVERRIDE or [])
+
 # Each file the wheel ships, with its options
 EXPECTED_FILES = {
-    "dh-default.vmoptions": GENERIC_OPTIONS,
-    "dh-default-17.vmoptions": GENERIC_OPTIONS + GC_LOCKER_OPTIONS,
-    "dh-default-21.vmoptions": GENERIC_OPTIONS + GC_LOCKER_OPTIONS,
-    "dh-default-25.vmoptions": GENERIC_OPTIONS,
+    "dh-default.vmoptions": _expected_options(22),
+    "dh-default-17.vmoptions": _expected_options(17),
+    "dh-default-21.vmoptions": _expected_options(21),
+    "dh-default-25.vmoptions": _expected_options(25),
 }
 
 # Environment variables jpyutil consults when looking for the JVM
@@ -49,12 +64,6 @@ JPY_ENV_VARS = (
     "JRE_HOME",
     "JAVA_JRE",
 )
-
-
-def _expected_options(java_version: Optional[int]) -> List[str]:
-    if java_version in (17, 21):
-        return GENERIC_OPTIONS + GC_LOCKER_OPTIONS
-    return GENERIC_OPTIONS
 
 
 def _options_in(vmoptions: pathlib.Path) -> List[str]:
