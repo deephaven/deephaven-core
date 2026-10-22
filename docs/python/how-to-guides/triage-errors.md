@@ -2,7 +2,7 @@
 title: Triage errors in queries
 ---
 
-Everyone makes mistakes when writing queries in the Deephaven Query Language, as in any programming language. Mistakes often result in queries failing to start up properly or crashing at some point during their runtime. This guide shows you how to:
+Everyone makes mistakes when writing queries in the Deephaven Query Language (DQL), as in any programming language. Mistakes often cause queries to fail to start properly or to crash during runtime. This guide shows you how to:
 
 - Read a stack trace to find the root cause.
 - Recognize and fix common mistakes, including problems that produce wrong results or pauses instead of an exception.

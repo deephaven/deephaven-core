@@ -2,7 +2,7 @@
 title: Triage errors in queries
 ---
 
-Everyone makes mistakes when writing queries in the Deephaven Query Language, as in any programming language. Mistakes often result in queries failing to start up properly or crashing at some point during their runtime. This guide shows you how to:
+Everyone makes mistakes when writing queries in the Deephaven Query Language (DQL), as in any programming language. Mistakes often cause queries to fail to start properly or to crash during runtime. This guide shows you how to:
 
 - Read a stack trace to find the root cause.
 - Recognize and fix common mistakes, including problems that produce wrong results or pauses instead of an exception.
@@ -122,7 +122,7 @@ Caused by: java.lang.IllegalStateException: Error: 0
 
 Deephaven stack traces tend to be very large, but they open with a summary of the failing operation. The block below is the trace above with the `at ...` frames removed. Its first line names the operation that failed. The remaining lines are the `Caused by:` lines:
 
-```none {2-4}
+```none {2,4}
 r-Scheduler-Serial-1 | .c.ConsoleServiceGrpcImpl | Error running script: io.deephaven.engine.exceptions.TableInitializationException: Error while initializing Update([X]): an exception occurred while performing the initial select or update
 Caused by: io.deephaven.engine.table.impl.select.FormulaEvaluationException: In formula: X = throwFunc(i)
 Caused by: java.lang.RuntimeException: java.lang.IllegalStateException: Error: 0

@@ -12,9 +12,9 @@ This guide starts with the recipe model. Instead of writing step-by-step instruc
 
 ## The paradigm shift: Imperative vs declarative
 
-### Traditional programming: Imperative, one value at a time
+### Traditional programming: Imperative SISD
 
-In traditional Python, you write **imperative** code that processes one data element at a time. Each instruction operates on a single value:
+In traditional Python, you write **imperative** code that processes one data element at a time. This is Single Instruction, Single Data (SISD): each instruction operates on a single value:
 
 ```python skip-test
 # Traditional Python: Imperative, one value at a time

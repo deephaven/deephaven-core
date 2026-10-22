@@ -31,12 +31,13 @@ DQL [query strings](../how-to-guides/query-string-overview.md) are [strings](../
 result = emptyTable(10).update("X = i", 'Y = X * X')
 ```
 
-The two quote styles aren't fully interchangeable, though. If a [query string](../how-to-guides/query-string-overview.md) contains single quotes, as the date-time and character literals later in this section do, wrap it in double quotes. In this example, `s1` is a valid string, but `s2` is not:
+There is one catch. You need to use double quotes for your [query strings](../how-to-guides/query-string-overview.md) if you are going to use single quotes within the [query strings](../how-to-guides/query-string-overview.md), as the date-time and character literals later in this section do.
 
-```groovy syntax
-s1 = "This is 'OK'"
-s2 = 'This is 'NOT''  // Fails: the second single quote ends the string, so Groovy reads the rest as code
-```
+For example:
+
+`s1 = "This is 'OK'"`
+
+`s2 = 'This is 'NOT''`
 
 Double quotes are the safer default for [query strings](../how-to-guides/query-string-overview.md). When in doubt, use double quotes. You can use single quotes with escapes, but they are more difficult to read.
 
@@ -70,6 +71,8 @@ In this example, the query sets column `X` to a [date-time](../reference/query-l
 Common programming languages, such as Python, Java, C, C++, and Go, have instructions that operate upon a single piece of data at a time. To operate upon multiple pieces of data, users must write loops. Like NumPy, TensorFlow, and PyTorch, Deephaven uses [vectorized operations](./vectorization-and-recipes.md), where a single command operates upon a whole column of data.
 
 Because looping is so common in standard programming languages, new Deephaven users rely on loops to perform calculations. Their code often looks like:
+
+<!--(This block intentionally shows the slow loop pattern a user would write instead of table operations. It is skip-test on purpose. This block does not need to be fixed.)-->
 
 ```groovy skip-test
 import static io.deephaven.csv.CsvTools.readCsv
@@ -108,7 +111,13 @@ result = readCsv("https://media.githubusercontent.com/media/deephaven/examples/m
     .maxBy("Date", "coin")
 ```
 
-This version is easier to read, runs faster, and keeps its results current when the source table ticks. Win, win, win.
+This piece of code is:
+
+1. much easier to read ✅
+2. faster ✅
+3. updates when the source table ticks ✅
+
+Win, Win, Win.
 
 Every time you write a loop or pull values out of a table, as the [`ColumnVectors`](../how-to-guides/iterate-table-vectors.md) calls above do, ask yourself how you can accomplish the same goal without the loop and without directly accessing the contents of the Deephaven table. Most changes involve using key columns in [aggregations](../how-to-guides/dedicated-aggregations.md) and join columns in [joins](../how-to-guides/joins-exact-relational.md). At first, these changes seem foreign, but they soon become natural.
 

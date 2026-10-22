@@ -39,5 +39,5 @@ This prints the same value that the **Version** entry in the **Settings** menu s
 - [Navigate the GUI](./user-interface/navigating-the-ui.md)
 - [Retrieve logs](./logs.md)
 - [Triage errors in queries](./triage-errors.md)
-- [How can I find which Core version added a feature or fix?](../reference/community-questions/how-do-i-find-a-specific-build.md)
+- [How can I find which Core version added a particular feature or fix?](../reference/community-questions/how-do-i-find-a-specific-build.md)
 - [Javadoc](/core/javadoc/io/deephaven/engine/table/Table.html)
