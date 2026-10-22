@@ -327,4 +327,11 @@ public class AddOnlyAggregationTest {
     public void testFloatingPointWeightedSum() {
         testKeyedAndUnkeyed(List.of(AggWSum("DWeight", "WD=Double1", "WF=Float1", "WL=Long1")));
     }
+
+    @Test
+    public void testWeightedAverage() {
+        testKeyedAndUnkeyed(List.of(
+                AggWAvg("DWeight", "AD=Double1", "AF=Float1", "AL=Long1"),
+                AggWAvg("LongWeight", "BD=Double1", "BL=Long1")));
+    }
 }

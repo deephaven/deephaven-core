@@ -729,8 +729,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                                 r.source.getChunkType(), doubleWeightOperator, onlyAdds, r.pair.output().name());
                     }
                 } else {
-                    resultOperator = new ChunkedWeightedAverageOperator(
-                            r.source.getChunkType(), doubleWeightOperator, r.pair.output().name(), exposeInternal);
+                    resultOperator = new ChunkedWeightedAverageOperator(r.source.getChunkType(),
+                            doubleWeightOperator, r.pair.output().name(), exposeInternal, onlyAdds);
                 }
                 addOperator(resultOperator, r.source, r.pair.input().name(), weightName);
             });
@@ -1982,7 +1982,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
                 // The sum of weights column is directly usable as the weights for the WAvg re-aggregation.
                 final IterativeChunkedAggregationOperator resultOperator = new ChunkedWeightedAverageOperator(
-                        weightedAveragesSource.getChunkType(), doubleWeightOperator, resultName, true);
+                        weightedAveragesSource.getChunkType(), doubleWeightOperator, resultName, true, false);
 
                 addOperator(resultOperator, weightedAveragesSource, resultName, sumOfWeightsName);
             }
