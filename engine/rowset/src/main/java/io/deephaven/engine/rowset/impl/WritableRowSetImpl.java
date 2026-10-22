@@ -390,6 +390,13 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         return new WritableRowSetImpl(innerSet.ixInvertOnNew(getInnerSet(keys), maximumPosition));
     }
 
+    @Override
+    public final void invert(
+            final LongChunk<OrderedRowKeys> keys,
+            final WritableLongChunk<? super OrderedRowKeys> positions) {
+        innerSet.ixInvert(keys, positions);
+    }
+
     @NotNull
     @Override
     public final WritableRowSet intersect(@NotNull final RowSet range) {
