@@ -578,10 +578,23 @@ def _parse_signature(fn: Callable) -> _ParsedSignature | None:
             # some built-in functions don't have a signature, neither do some functions from C extensions
             return None
 
+        # eval_str evaluates one layer of strings. Under `from __future__ import annotations`, a hint quoted by hand,
+        # like "int | None", is a string inside a string and stays a string. Evaluate it again, or the parsers see a
+        # str and lose null handling and array return types.
         for n, p in sig.parameters.items():
-            p_sig.params.append(_parse_param(n, p.annotation))
+            t = (
+                eval(p.annotation, fn.__globals__)
+                if isinstance(p.annotation, str)
+                else p.annotation
+            )
+            p_sig.params.append(_parse_param(n, t))
 
-        p_sig.ret_annotation = _parse_return_annotation(sig.return_annotation)
+        t = (
+            eval(sig.return_annotation, fn.__globals__)
+            if isinstance(sig.return_annotation, str)
+            else sig.return_annotation
+        )
+        p_sig.ret_annotation = _parse_return_annotation(t)
         return p_sig
 
 

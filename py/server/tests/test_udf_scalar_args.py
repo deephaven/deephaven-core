@@ -463,6 +463,20 @@ def test_udf(x: {np_type}) -> bool:
             t = empty_table(10).update("X = test_udf((float)i)")
             self.assertEqual(10, t.to_string().count("true"))
 
+    def test_future_annotations_with_quoted_hints(self):
+        # Under `from __future__ import annotations`, a hand-quoted hint is a string inside a string, so a single
+        # eval_str pass leaves it a string.
+        func_str = """
+from __future__ import annotations
+
+def test_udf(col: "np.int32 | None") -> "list[int] | None":
+    return None if col is None else [col]
+"""
+        exec(func_str, globals())
+        t = empty_table(10).update(["Y = i % 2 == 0? NULL_INT : i", "Z = test_udf(Y)"])
+        self.assertEqual(t.columns[1].data_type, dtypes.long_array)
+        self.assertEqual(5, t.to_string(cols="Z").count("null"))
+
     def test_positional_keyword_parameters(self):
         with self.subTest("positional only params"):
 
