@@ -160,18 +160,30 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         final Map<Object, Integer> barrierToLayerIndex = new IdentityHashMap<>();
         final List<Object> implicitSerialBarriers = new ArrayList<>();
 
+        if (context.flatResult) {
+            context.flatResultRowSet = RowSetFactory.flat(rowSet.size()).toTracking();
+        }
+
         // Second pass builds the analyzer and destination columns
         final HashMap<String, ColumnSource<?>> resultAlias = new HashMap<>();
         for (int columnIndex = 0; columnIndex < context.processedCols.size(); ++columnIndex) {
             SelectColumn sc = context.processedCols.get(columnIndex);
 
-            // if this select column depends on result column then its updates must happen in result-key-space
+            // A column that depends on a result column, or that uses i, ii or k, is evaluated at the result's row keys,
+            // so that it reads result columns where they are and k is the result's row key.
             // note: if flatResult is true then we are not preserving any parent columns
             final boolean useResultKeySpace = context.flatResult
-                    && Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream())
-                            .anyMatch(columnName -> context.getLayerIndexFor(columnName) != Layer.PARENT_TABLE_INDEX);
+                    && (sc.hasVirtualRowVariables()
+                            || Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream())
+                                    .anyMatch(columnName -> context
+                                            .getLayerIndexFor(columnName) != Layer.PARENT_TABLE_INDEX));
 
-            sc.initInputs(rowSet, useResultKeySpace ? context.allSourcesInResultKeySpace : context.allSources);
+            if (useResultKeySpace) {
+                // the column is evaluated at result row keys, so positional variables such as ii use the result rows
+                sc.initInputs(context.flatResultRowSet, context.allSourcesInResultKeySpace);
+            } else {
+                sc.initInputs(rowSet, context.allSources);
+            }
 
             if (QueryTable.SERIAL_SELECT_IMPLICIT_BARRIERS && !sc.isStateless()) {
                 final Object implicitBarrier = new ImplicitBarrier(sc.getName(), columnIndex);
@@ -421,6 +433,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         private List<SelectColumn> remainingCols;
         /** Whether the result should be flat. */
         private boolean flatResult;
+        /** The row set of a flat result. */
+        private TrackingRowSet flatResultRowSet;
         /** The layer that will be used to process redirection, if we have one. */
         private int redirectionLayer = Layer.UNSET_INDEX;
 
@@ -533,6 +547,13 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             if (redirectionLayer != Layer.UNSET_INDEX) {
                 layerDependencies.set(redirectionLayer);
             }
+        }
+
+        /**
+         * @return the row set of a flat result, or null if the result is not flat
+         */
+        public TrackingRowSet getFlatResultRowSet() {
+            return flatResultRowSet;
         }
 
         /**
