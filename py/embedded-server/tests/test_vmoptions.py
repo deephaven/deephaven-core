@@ -13,7 +13,7 @@ from unittest import mock
 
 from deephaven_server import start_jvm
 
-PROPERTY = "deephaven.vmoptions.file"
+VM_OPTIONS_FILE_ARG = "-XX:VMOptionsFile="
 GENERIC_FILE = "dh-default.vmoptions"
 
 # The file each Java major version loads, including one with no file of its own. Mirrors VERSIONED_JAVA_OPTS in
@@ -94,11 +94,6 @@ class VmOptionsFileTest(unittest.TestCase):
                 jvm_dll = start_jvm._find_jvm_dll(str(home), None)
                 self.assertEqual(jvm_dll, self._jvm_dll(home))
                 self._assert_selects(jvm_dll, java_version)
-                vmoptions = start_jvm._default_vmoptions(java_version)
-                self.assertEqual(
-                    start_jvm._vmoptions_args(vmoptions),
-                    [f"-XX:VMOptionsFile={vmoptions}", f"-D{PROPERTY}={vmoptions}"],
-                )
 
     def test_config_java_home_is_used_without_java_home(self):
         home = self._java_home(21)
@@ -144,15 +139,23 @@ class VmOptionsFileTest(unittest.TestCase):
             start_jvm.start_jvm(java_home=str(home_17), config=config)
         kwargs = init_jvm.call_args.kwargs
         self.assertEqual(kwargs["jvm_dll"], self._jvm_dll(home_25))
-        vmoptions = start_jvm._default_vmoptions(25)
-        self.assertIn(f"-XX:VMOptionsFile={vmoptions}", kwargs["jvm_options"])
-        self.assertIn(f"-D{PROPERTY}={vmoptions}", kwargs["jvm_options"])
+        vmoptions_args = [
+            arg for arg in kwargs["jvm_options"] if arg.startswith(VM_OPTIONS_FILE_ARG)
+        ]
+        self.assertEqual(
+            vmoptions_args,
+            [f"{VM_OPTIONS_FILE_ARG}{start_jvm._default_vmoptions(25)}"],
+        )
+        self.assertEqual(
+            start_jvm._default_vmoptions(25).name, "dh-default-25.vmoptions"
+        )
 
 
 class StartedServerVmOptionsFileTest(unittest.TestCase):
-    """The VM options file recorded by the embedded server's JVM, in this test's real environment."""
+    """The options the embedded server's JVM started with, in this test's real environment. The JVM replaces
+    -XX:VMOptionsFile with the file's contents, so this checks that the expected file's options are there."""
 
-    def test_started_jvm_records_its_file(self):
+    def test_started_jvm_has_its_files_options(self):
         from deephaven_server import Server
 
         if Server.instance is None:
@@ -161,9 +164,15 @@ class StartedServerVmOptionsFileTest(unittest.TestCase):
         import jpy
 
         java_version = jpy.get_type("java.lang.Runtime").version().feature()
-        loaded = jpy.get_type("java.lang.System").getProperty(PROPERTY)
-        self.assertIsNotNone(loaded, f"{PROPERTY} is not set")
-        self.assertEqual(pathlib.Path(loaded).name, _expected_file(java_version))
+        input_args = list(
+            jpy.get_type("java.lang.management.ManagementFactory")
+            .getRuntimeMXBean()
+            .getInputArguments()
+            .toArray()
+        )
+        expected = start_jvm._jars_path() / _expected_file(java_version)
+        for option in expected.read_text().split():
+            self.assertIn(option, input_args, f"{option} from {expected.name}")
 
 
 if __name__ == "__main__":

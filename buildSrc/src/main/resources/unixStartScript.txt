@@ -194,7 +194,6 @@ fi
 # If users explicitly set JAVA_OPTS, they will be opting out of the dh-default vm options.
 # etc/dh-default-<major>.vmoptions is used when it exists for the Java major version, otherwise etc/dh-default.vmoptions.
 # The major version comes from the JDK's release file, or from the java command itself when there is no release file.
-# The JVM keeps no record of the file it read, so deephaven.vmoptions.file records it as a system property.
 if [ -z "\$JAVA_OPTS" ] ; then
     if [ -n "\$JAVA_HOME" ] ; then
         DH_JAVA_HOME=\$JAVA_HOME
@@ -210,7 +209,7 @@ if [ -z "\$JAVA_OPTS" ] ; then
     if [ -z "\$DH_JAVA_MAJOR" ] || [ ! -f "\$DH_DEFAULT_VMOPTIONS_FILE" ] ; then
         DH_DEFAULT_VMOPTIONS_FILE="\${APP_HOME}/etc/dh-default.vmoptions"
     fi
-    JAVA_OPTS="-XX:VMOptionsFile=\"\${DH_DEFAULT_VMOPTIONS_FILE}\" -Ddeephaven.vmoptions.file=\"\${DH_DEFAULT_VMOPTIONS_FILE}\""
+    JAVA_OPTS="-XX:VMOptionsFile=\"\${DH_DEFAULT_VMOPTIONS_FILE}\""
 fi
 
 # Increase the maximum file descriptors if we can.

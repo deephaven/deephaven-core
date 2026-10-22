@@ -33,15 +33,6 @@ def _default_vmoptions(java_major_version: Optional[int] = None) -> pathlib.Path
     return _jars_path() / "dh-default.vmoptions"
 
 
-def _vmoptions_args(vmoptions: pathlib.Path) -> List[str]:
-    """The JVM arguments that load a VM options file. The JVM keeps no record of the file it read, so the
-    deephaven.vmoptions.file system property records it."""
-    return [
-        f"-XX:VMOptionsFile={vmoptions}",
-        f"-Ddeephaven.vmoptions.file={vmoptions}",
-    ]
-
-
 def _find_jvm_dll(
     java_home: Optional[str], config: Optional[types.ModuleType]
 ) -> Optional[str]:
@@ -107,7 +98,7 @@ _BASE_JVM_ARGS = [
 ]
 # The defaults with the generic VM options file. start_jvm uses the VM options file for the Java version it starts
 # instead, when there is one.
-DEFAULT_JVM_ARGS = _BASE_JVM_ARGS + _vmoptions_args(_default_vmoptions())
+DEFAULT_JVM_ARGS = _BASE_JVM_ARGS + [f"-XX:VMOptionsFile={_default_vmoptions()}"]
 
 
 # Provide a util func to start the JVM, will use its own defaults if none are offered
@@ -142,9 +133,9 @@ def start_jvm(
     java_home = java_home or os.environ.get("JAVA_HOME", None)
     # Resolve the JVM once and pass it to init_jvm, so the VM options are chosen for the JVM that is loaded
     jvm_dll = _find_jvm_dll(java_home, config)
-    default_jvm_args = default_jvm_args or _BASE_JVM_ARGS + _vmoptions_args(
-        _default_vmoptions(_java_major_version(jvm_dll))
-    )
+    default_jvm_args = default_jvm_args or _BASE_JVM_ARGS + [
+        f"-XX:VMOptionsFile={_default_vmoptions(_java_major_version(jvm_dll))}"
+    ]
     jvm_args = default_jvm_args + jvm_args if jvm_args else default_jvm_args
 
     jvm_properties = jvm_properties or DEFAULT_JVM_PROPERTIES

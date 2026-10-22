@@ -209,11 +209,6 @@ def parseJvmArgumentsFromProperty = { String propertyName, List<String> orElse -
 // listed in VERSIONED_JAVA_OPTS. Every launcher (the gradle tasks below, the application start script, and the
 // embedded python server) uses dh-default-<major>.vmoptions when it exists for the Java major version it runs, and
 // falls back to dh-default.vmoptions otherwise, including when the version cannot be determined.
-//
-// The JVM replaces -XX:VMOptionsFile with the file's contents at startup and keeps no record of the file, so each
-// launcher also passes -Ddeephaven.vmoptions.file=<the same path>. That records which file was used as a system
-// property (for example, in the server's process info log). The start script passes neither when the user sets
-// JAVA_OPTS.
 
 // The generic defaults, used for any Java version without its own entry in VERSIONED_JAVA_OPTS. Only options that
 // every supported JDK accepts belong here; anything that is valid for some versions only belongs in
@@ -272,9 +267,8 @@ def vmOptionsFiles = ['dh-default.vmoptions': withOverride(GENERIC_JAVA_OPTS)] +
   VERSIONED_JAVA_OPTS.collectEntries { version, opts -> ["dh-default-${version}.vmoptions".toString(), withOverride(opts)] }
 
 def vmOptionsDir = project.layout.buildDirectory.dir('vmoptions')
-def vmOptionsArgsFor = { int version ->
-  def path = vmOptionsDir.get().file(VERSIONED_JAVA_OPTS.containsKey(version) ? "dh-default-${version}.vmoptions" : 'dh-default.vmoptions').asFile.path
-  ["-XX:VMOptionsFile=${path}".toString(), "-Ddeephaven.vmoptions.file=${path}".toString()]
+def vmOptionsFileFor = { int version ->
+  vmOptionsDir.get().file(VERSIONED_JAVA_OPTS.containsKey(version) ? "dh-default-${version}.vmoptions" : 'dh-default.vmoptions').asFile.path
 }
 
 def createVmOptions = tasks.register('createVmOptions') {
@@ -295,7 +289,7 @@ tasks.withType(JavaExec).configureEach {
   javaLauncher.set runtimeLauncher
   // Note: we _could_ have the vmOptionsFile constituents directly listed instead of using -XX:VMOptionsFile.
   // That said, the current approach used here more closely matches how the application start script is defined.
-  jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + vmOptionsArgsFor(runtimeVersion) + START_OPTS
+  jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + ["-XX:VMOptionsFile=${vmOptionsFileFor(runtimeVersion)}"] + START_OPTS
 }
 
 tasks.withType(Test).configureEach {
@@ -305,7 +299,7 @@ tasks.withType(Test).configureEach {
   javaLauncher.set testRuntimeLauncher
   // Note: we _could_ have the vmOptionsFile constituents directly listed instead of using -XX:VMOptionsFile.
   // That said, the current approach used here more closely matches how the application start script is defined.
-  jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + vmOptionsArgsFor(testRuntimeVersion) + START_OPTS
+  jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + ["-XX:VMOptionsFile=${vmOptionsFileFor(testRuntimeVersion)}"] + START_OPTS
 }
 
 JavaApplication application = extensions.findByType(JavaApplication)
