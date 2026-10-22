@@ -79,6 +79,7 @@ public class AddOnlyAggregationTest {
                 "BigInt1 = isNull(Long1) ? (java.math.BigInteger) null : java.math.BigInteger.valueOf(Long1)",
                 "BigDec1 = isNull(Long1) ? (java.math.BigDecimal) null : java.math.BigDecimal.valueOf(Long1, 1)",
                 "Weight = ii % 19 == 0 ? NULL_INT : (int) (ii % 7) - 3",
+                "LongWeight = isNull(Weight) ? NULL_LONG : (long) Weight",
                 "DWeight = isNull(Weight) ? NULL_DOUBLE : ii % 23 == 0 ? Double.NaN : Weight / 2.0",
                 "Uniq = Bucket < 40 ? (ii % 31 == 0 ? NULL_LONG : (long) Bucket) : ii % 5",
                 "UniqNull = Bucket < 5 ? NULL_LONG : Uniq",
@@ -315,5 +316,10 @@ public class AddOnlyAggregationTest {
     @Test
     public void testFloatingPointSum() {
         testKeyedAndUnkeyed(List.of(AggSum("SD=Double1", "SF=Float1"), AggAbsSum("AD=Double1", "AF=Float1")));
+    }
+
+    @Test
+    public void testIntegralWeightedSum() {
+        testKeyedAndUnkeyed(List.of(AggWSum("LongWeight", "WL=Long1")));
     }
 }

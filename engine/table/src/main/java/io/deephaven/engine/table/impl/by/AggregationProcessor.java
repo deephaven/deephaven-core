@@ -660,7 +660,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         final void addWeightedAvgOrSumOperator(
                 @NotNull final String weightName,
                 final boolean isSum,
-                final boolean exposeInternal) {
+                final boolean exposeInternal,
+                final boolean onlyAdds) {
             final ColumnSource<?> weightSource = table.getColumnSource(weightName);
             final boolean weightSourceIsFloatingPoint;
             if (isInteger(weightSource.getChunkType())) {
@@ -722,7 +723,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 if (isSum) {
                     if (r.type == WeightedOpResultType.INTEGER) {
                         resultOperator = new LongChunkedWeightedSumOperator(
-                                r.source.getChunkType(), longWeightOperator, r.pair.output().name());
+                                r.source.getChunkType(), longWeightOperator, onlyAdds, r.pair.output().name());
                     } else {
                         resultOperator = new DoubleChunkedWeightedSumOperator(
                                 r.source.getChunkType(), doubleWeightOperator, r.pair.output().name());
@@ -1180,12 +1181,12 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecWAvg wAvg) {
-            addWeightedAvgOrSumOperator(wAvg.weight().name(), false, false);
+            addWeightedAvgOrSumOperator(wAvg.weight().name(), false, false, onlyAdds);
         }
 
         @Override
         public void visit(@NotNull final AggSpecWSum wSum) {
-            addWeightedAvgOrSumOperator(wSum.weight().name(), true, false);
+            addWeightedAvgOrSumOperator(wSum.weight().name(), true, false, onlyAdds);
         }
 
         @Override
@@ -1552,13 +1553,13 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecWSum wSum) {
             // Weighted sum does not need to expose internal columns to re-aggregate.
-            addWeightedAvgOrSumOperator(wSum.weight().name(), true, false);
+            addWeightedAvgOrSumOperator(wSum.weight().name(), true, false, false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecWAvg wAvg) {
             // Weighted average needs access internal columns to re-aggregate.
-            addWeightedAvgOrSumOperator(wAvg.weight().name(), false, true);
+            addWeightedAvgOrSumOperator(wAvg.weight().name(), false, true, false);
         }
 
         @Override
