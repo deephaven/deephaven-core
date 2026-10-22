@@ -70,20 +70,28 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ObjectChunked
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ObjectRollupDistinctOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ShortChunkedDistinctOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ShortRollupDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ByteChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ByteChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ByteRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.CharChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.CharChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.CharRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.DoubleChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.DoubleChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.DoubleRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.FloatChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.FloatChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.FloatRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.IntChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.IntChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.IntRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.LongChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.LongChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.LongRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ObjectChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ObjectChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ObjectRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
@@ -1176,7 +1184,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
             addBasicOperators((t, n) -> makeUniqueOperator(t, compareConsistentWithEquality(t), n,
-                    unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), false, false, null));
+                    unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), false, onlyAdds, false,
+                    null));
         }
 
         @Override
@@ -1547,7 +1556,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
             addBasicOperators((t, n) -> makeUniqueOperator(t, compareConsistentWithEquality(t), n,
-                    unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), true, false, null));
+                    unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), true, false, false, null));
         }
 
         @Override
@@ -1838,7 +1847,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final Class<?> rawValueType = rawValueSource.getType();
                 final IterativeChunkedAggregationOperator operator = makeUniqueOperator(rawValueType,
                         compareConsistentWithEquality(rawValueType), resultName, unique.includeNulls(), null,
-                        unique.nonUniqueSentinel().orElse(null), true, true, singletonCountSource);
+                        unique.nonUniqueSentinel().orElse(null), true, false, true, singletonCountSource);
                 addOperator(operator, valueSource, resultName, singletonCountName);
             }
         }
@@ -2330,6 +2339,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             @SuppressWarnings("SameParameterValue") final UnionObject onlyNullsSentinel,
             final UnionObject nonUniqueSentinel,
             final boolean exposeInternal,
+            final boolean onlyAdds,
             final boolean reaggregated,
             final ColumnSource<?> constituentSingletonCount) {
         checkType(resultName, "Only Nulls Sentinel", type, onlyNullsSentinel);
@@ -2339,31 +2349,46 @@ public class AggregationProcessor implements AggregationContextFactory {
             final byte nusAsType = UnionObjectUtils.byteValue(nonUniqueSentinel);
             return reaggregated
                     ? new ByteRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new ByteChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+                    : onlyAdds
+                            ? new ByteChunkedAddOnlyUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                            : new ByteChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         } else if (type == Character.class || type == char.class) {
             final char onsAsType = UnionObjectUtils.charValue(onlyNullsSentinel);
             final char nusAsType = UnionObjectUtils.charValue(nonUniqueSentinel);
             return reaggregated
                     ? new CharRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new CharChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+                    : onlyAdds
+                            ? new CharChunkedAddOnlyUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                            : new CharChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         } else if (type == Double.class || type == double.class) {
             final double onsAsType = UnionObjectUtils.doubleValue(onlyNullsSentinel);
             final double nusAsType = UnionObjectUtils.doubleValue(nonUniqueSentinel);
             return reaggregated
                     ? new DoubleRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new DoubleChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+                    : onlyAdds
+                            ? new DoubleChunkedAddOnlyUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                            : new DoubleChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         } else if (type == Float.class || type == float.class) {
             final float onsAsType = UnionObjectUtils.floatValue(onlyNullsSentinel);
             final float nusAsType = UnionObjectUtils.floatValue(nonUniqueSentinel);
             return reaggregated
                     ? new FloatRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new FloatChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+                    : onlyAdds
+                            ? new FloatChunkedAddOnlyUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                            : new FloatChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         } else if (type == Integer.class || type == int.class) {
             final int onsAsType = UnionObjectUtils.intValue(onlyNullsSentinel);
             final int nusAsType = UnionObjectUtils.intValue(nonUniqueSentinel);
             return reaggregated
                     ? new IntRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new IntChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+                    : onlyAdds
+                            ? new IntChunkedAddOnlyUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                            : new IntChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         } else if (type == Long.class || type == long.class || type == Instant.class) {
             final long onsAsType;
             final long nusAsType;
@@ -2376,22 +2401,30 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
             return reaggregated
                     ? new LongRollupUniqueOperator(type, resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new LongChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onsAsType,
-                            nusAsType);
+                    : onlyAdds
+                            ? new LongChunkedAddOnlyUniqueOperator(type, resultName, includeNulls, onsAsType, nusAsType)
+                            : new LongChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         } else if (type == Short.class || type == short.class) {
             final short onsAsType = UnionObjectUtils.shortValue(onlyNullsSentinel);
             final short nusAsType = UnionObjectUtils.shortValue(nonUniqueSentinel);
             return reaggregated
                     ? new ShortRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new ShortChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+                    : onlyAdds
+                            ? new ShortChunkedAddOnlyUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                            : new ShortChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         }
         final Object onsAsType = maybeConvertType(type, onlyNullsSentinel);
         final Object nusAsType = maybeConvertType(type, nonUniqueSentinel);
         return reaggregated
                 ? new ObjectRollupUniqueOperator(type, equalsConsistent, resultName, onsAsType, nusAsType,
                         constituentSingletonCount)
-                : new ObjectChunkedUniqueOperator(type, equalsConsistent, resultName, includeNulls, exposeInternal,
-                        onsAsType, nusAsType);
+                : onlyAdds
+                        ? new ObjectChunkedAddOnlyUniqueOperator(type, equalsConsistent, resultName, includeNulls,
+                                onsAsType, nusAsType)
+                        : new ObjectChunkedUniqueOperator(type, equalsConsistent, resultName, includeNulls,
+                                exposeInternal, onsAsType, nusAsType);
     }
 
     private static long instantNanosValue(UnionObject obj) {

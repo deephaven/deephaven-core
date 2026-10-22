@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.object.UnionObject;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -83,6 +84,7 @@ public class AddOnlyAggregationTest {
                 "DWeight = isNull(Weight) ? NULL_DOUBLE : ii % 23 == 0 ? Double.NaN : Weight / 2.0",
                 "Uniq = Bucket < 40 ? (ii % 31 == 0 ? NULL_LONG : (long) Bucket) : ii % 5",
                 "UniqNull = Bucket < 5 ? NULL_LONG : Uniq",
+                "UniqInstant = epochNanosToInstant(Uniq)",
                 "UniqD = Bucket < 40 ? (Bucket == 7 ? Double.NaN : Bucket == 8 ? (ii % 2 == 0 ? -0.0 : 0.0)"
                         + " : (double) Bucket) : (double) (ii % 5)",
                 "UniqS = Bucket < 40 ? Sym : Long.toString(ii % 5)"));
@@ -333,5 +335,17 @@ public class AddOnlyAggregationTest {
         testKeyedAndUnkeyed(List.of(
                 AggWAvg("DWeight", "AD=Double1", "AF=Float1", "AL=Long1"),
                 AggWAvg("LongWeight", "BD=Double1", "BL=Long1")));
+    }
+
+    @Test
+    public void testUnique() {
+        final String[] pairs = {"U=Uniq", "UN=UniqNull", "UI=UniqInstant", "UD=UniqD", "US=UniqS", "UL=Long1",
+                "UB=Byte1", "UC=Char1", "UF=Float1", "UBool=Bool1"};
+        testKeyedAndUnkeyed(List.of(AggUnique(pairs)));
+        testKeyedAndUnkeyed(List.of(AggUnique(true, pairs)));
+        testKeyedAndUnkeyed(List.of(
+                AggUnique(false, UnionObject.of(-1L), "U=Uniq", "UN=UniqNull"),
+                AggUnique(true, UnionObject.of(-1.0), "UD=UniqD"),
+                AggUnique(false, UnionObject.from("Many"), "US=UniqS")));
     }
 }
