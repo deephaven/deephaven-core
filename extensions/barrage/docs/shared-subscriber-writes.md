@@ -293,9 +293,9 @@ over that fork's iterations. Each pair ran with the property on and off, back to
 else loading the machine: no tests or other benchmarks ran during either.
 
 **Hardware**: Apple M1 Max, 10 cores, 64 GiB, macOS 26.6.2 (arm64). **JVM**: OpenJDK 21.0.1
-(`21.0.1+12-LTS`), G1. JMH 1.37. **Code**: this change on main `4bc6b7bb1`, which includes
-DH-24095. Measured 2026-10-21; an earlier run on 2026-10-18, before DH-24095, agreed to within the
-noise.
+(`21.0.1+12-LTS`), G1. JMH 1.37. **Code**: this change at `435a7ee82`, on main `4bc6b7bb1`, which
+includes DH-24095. Measured 2026-10-22; runs on 2026-10-18 and 2026-10-21 agreed to within the
+noise, except as noted below.
 
 ### In process
 
@@ -307,18 +307,18 @@ a pool of 1,000 values, dictionary encoded. Milliseconds per tick:
 
 | Columns | Threads | Subscribers | Dedup off | Dedup on | Speedup | Allocated per tick, off / on |
 | --- | --- | --- | --- | --- | --- | --- |
-| `long` | 1 | 1 | 5.8 ± 0.6 | 6.0 ± 0.6 | 1.0x | 420 / 420 MB |
-| `long` | 1 | 4 | 22.6 ± 0.5 | 7.0 ± 0.9 | 3.2x | 421 / 428 MB |
-| `long` | 1 | 16 | 93.4 ± 35.9 | 9.7 ± 5.8 | 9.7x | 427 / 428 MB |
-| `long` | 4 | 1 | 6.0 ± 1.1 | 5.9 ± 0.6 | 1.0x | 420 / 420 MB |
-| `long` | 4 | 4 | 6.0 ± 0.3 | 6.9 ± 0.8 | 0.9x | 421 / 428 MB |
-| `long` | 4 | 16 | 25.8 ± 6.2 | 9.1 ± 0.7 | 2.8x | 427 / 428 MB |
-| `dictString` | 1 | 1 | 22.0 ± 2.2 | 21.9 ± 1.0 | 1.0x | 315 / 315 MB |
-| `dictString` | 1 | 4 | 84.9 ± 6.7 | 22.3 ± 0.3 | 3.8x | 317 / 319 MB |
-| `dictString` | 1 | 16 | 323.7 ± 14.1 | 23.1 ± 0.3 | 14.0x | 322 / 319 MB |
-| `dictString` | 4 | 1 | 22.6 ± 2.1 | 22.7 ± 4.2 | 1.0x | 315 / 315 MB |
-| `dictString` | 4 | 4 | 24.3 ± 3.7 | 22.7 ± 2.3 | 1.1x | 317 / 319 MB |
-| `dictString` | 4 | 16 | 88.3 ± 6.6 | 23.2 ± 0.5 | 3.8x | 322 / 319 MB |
+| `long` | 1 | 1 | 5.8 ± 0.6 | 5.9 ± 0.7 | 1.0x | 420 / 420 MB |
+| `long` | 1 | 4 | 21.5 ± 0.6 | 6.9 ± 0.2 | 3.1x | 421 / 428 MB |
+| `long` | 1 | 16 | 86.4 ± 2.2 | 9.2 ± 0.2 | 9.4x | 427 / 428 MB |
+| `long` | 4 | 1 | 5.7 ± 0.6 | 5.8 ± 0.8 | 1.0x | 420 / 420 MB |
+| `long` | 4 | 4 | 5.9 ± 0.1 | 6.9 ± 0.1 | 0.9x | 421 / 428 MB |
+| `long` | 4 | 16 | 22.5 ± 0.1 | 9.1 ± 1.2 | 2.5x | 427 / 428 MB |
+| `dictString` | 1 | 1 | 21.4 ± 0.4 | 22.6 ± 2.0 | 0.9x | 315 / 315 MB |
+| `dictString` | 1 | 4 | 83.9 ± 5.4 | 22.1 ± 0.6 | 3.8x | 317 / 319 MB |
+| `dictString` | 1 | 16 | 320.0 ± 10.3 | 23.8 ± 4.7 | 13.4x | 323 / 319 MB |
+| `dictString` | 4 | 1 | 22.2 ± 0.9 | 21.8 ± 2.2 | 1.0x | 315 / 315 MB |
+| `dictString` | 4 | 4 | 22.9 ± 1.8 | 21.8 ± 0.2 | 1.0x | 317 / 319 MB |
+| `dictString` | 4 | 16 | 84.1 ± 6.9 | 23.0 ± 0.2 | 3.7x | 322 / 319 MB |
 
 Most of the allocation is the benchmark's own table update; the capture arrays add about one message
 per write, about 7 MB per tick for `long`.
@@ -328,36 +328,38 @@ per write, about 7 MB per tick for `long`.
 `BarrageGrpcPropagateBenchmark.tick`: 1M rows of 30 mixed columns, including a dictionary encoded
 and a run-end encoded column, 100,000 rows modified per tick, about 16 MB per subscriber, written
 through a real gRPC Netty transport to clients on the loopback interface. `-Xmx12g`, 2×5 s warmup,
-3×5 s measurement. The table reports the producer's job time per tick, averaged over 24–54
+3×5 s measurement. The table reports the producer's job time per tick, averaged over 24–53
 invocations; the overall tick also includes the clients receiving the bytes, on the same cores, and
 its confidence intervals are too wide to compare.
 
 | Threads | Subscribers | Dedup off (ms) | Dedup on (ms) | Speedup |
 | --- | --- | --- | --- | --- |
-| 1 | 1 | 30.7 | 34.0 | 0.90x |
-| 1 | 4 | 106.4 | 37.5 | 2.84x |
-| 1 | 16 | 401.2 | 59.0 | 6.80x |
-| 8 | 1 | 31.6 | 33.0 | 0.96x |
-| 8 | 4 | 33.0 | 38.0 | 0.87x |
-| 8 | 16 | 89.3 | 58.4 | 1.53x |
+| 1 | 1 | 31.4 | 31.1 | 1.01x |
+| 1 | 4 | 111.7 | 38.2 | 2.92x |
+| 1 | 16 | 369.7 | 65.6 | 5.63x |
+| 8 | 1 | 30.9 | 31.0 | 1.00x |
+| 8 | 4 | 32.8 | 36.7 | 0.89x |
+| 8 | 16 | 71.8 | 56.4 | 1.27x |
 
 ### What the numbers show
 
-- **CPU per extra identical subscriber drops by about 94%.** On one thread, where job time is close
-  to CPU time, each extra subscriber costs about 25 ms without dedup and 1.2–1.7 ms with it through
-  gRPC. In process it falls from 5.8 to 0.25 ms for `long` and from 20.1 to 0.08 ms for
+- **CPU per extra identical subscriber drops by about 90%.** On one thread, where job time is close
+  to CPU time, each extra subscriber costs about 23–27 ms without dedup and about 2.3 ms with it
+  through gRPC. In process it falls from 5.4 to 0.22 ms for `long` and from 19.9 to 0.08 ms for
   `dictString`. The saving grows with the number of identical subscribers; extending the gRPC line,
-  128 of them would cost about 3.2 s of CPU per tick without dedup and about 0.2 s with it.
+  128 of them would cost about 2.9 s of CPU per tick without dedup and about 0.3 s with it.
 - **One subscriber is not affected.** It takes the per-subscriber path, so the differences in those
   rows are noise.
 - **Elapsed time can be slightly worse when threads are plentiful.** With about as many threads as
   subscribers, the per-subscriber writes ran fully in parallel, while a group does one encode and
-  then copies serially. That shows as 0.87–0.9x for `long` columns and through gRPC at 4
-  subscribers with 4 or 8 threads, while the group uses about a third of the CPU: 37.5 ms against
-  106.4 ms on one thread.
+  then copies serially. That shows as 0.86x for `long` columns at 4 subscribers on 4 threads and
+  0.89x through gRPC at 4 subscribers on 8 threads, while the group uses about a third of the CPU:
+  38.2 ms against 111.7 ms on one thread.
 - **Noise.** One fork per configuration is enough for effects of 3–14x but not for differences of
-  10%. The 16-subscriber, 8-thread gRPC run without dedup varied most between the two runs: 118.1 ms
-  on 2026-10-18, 89.3 ms here.
+  10%. The 16-subscriber, 8-thread gRPC run without dedup varied most between runs: 118.1 ms on
+  2026-10-18, 89.3 ms on 2026-10-21 and 71.8 ms here. With dedup, the 16-subscriber, 1-thread gRPC
+  run moved from 59.0 to 65.6 ms between the last two runs, while the in-process runs, which share
+  its code path but leave out the transport and the clients, did not move.
 
 ## Decisions recorded
 
