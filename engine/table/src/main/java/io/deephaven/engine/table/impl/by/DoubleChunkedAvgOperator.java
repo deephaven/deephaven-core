@@ -28,12 +28,25 @@ class DoubleChunkedAvgOperator extends FpChunkedNonNormalCounter implements Iter
     private final String name;
     private final boolean exposeInternalColumns;
     private final DoubleArraySource resultColumn = new DoubleArraySource();
+    /**
+     * The running sum of each destination. An operator that receives removals sums only the normal values here, and
+     * counts the NaN and infinite values separately; an add-only operator sums every non-null value and keeps no such
+     * counts.
+     */
     private final DoubleArraySource runningSum = new DoubleArraySource();
     private final NonNullCounter nonNullCounter = new NonNullCounter();
+    /**
+     * Whether the operator only receives additions, so that a NaN or infinite value never leaves a destination.
+     */
+    private final boolean addOnly;
 
-    DoubleChunkedAvgOperator(String name, boolean exposeInternalColumns) {
+    DoubleChunkedAvgOperator(String name, boolean exposeInternalColumns, boolean addOnly) {
+        if (addOnly && exposeInternalColumns) {
+            throw new IllegalArgumentException("An add-only average operator cannot expose its internal columns");
+        }
         this.name = name;
         this.exposeInternalColumns = exposeInternalColumns;
+        this.addOnly = addOnly;
     }
 
     @Override
@@ -83,6 +96,12 @@ class DoubleChunkedAvgOperator extends FpChunkedNonNormalCounter implements Iter
         final double sum = SumDoubleChunk.sumDoubleChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount,
                 chunkInfinityCount, chunkMinusInfinityCount);
 
+        if (addOnly) {
+            addOnlyAverage(destination, sum, chunkNormalCount.get(), chunkNanCount.get(), chunkInfinityCount.get(),
+                    chunkMinusInfinityCount.get());
+            return true;
+        }
+
         final long totalNormal = nonNullCounter.addNonNullUnsafe(destination, chunkNormalCount.get());
         final long totalNanCount = updateNanCount(destination, chunkNanCount.get());
         final long totalPositiveInfinityCount = updatePositiveInfinityCount(destination, chunkInfinityCount.get());
@@ -101,7 +120,34 @@ class DoubleChunkedAvgOperator extends FpChunkedNonNormalCounter implements Iter
         return true;
     }
 
+    /**
+     * Fold a chunk into an add-only destination: its IEEE running sum carries any NaN or infinite value, and the
+     * average divides it by the number of normal values.
+     */
+    private void addOnlyAverage(long destination, double normalSum, int normalCount, int nanCount,
+            int positiveInfinityCount, int negativeInfinityCount) {
+        final double chunkSum;
+        if (nanCount > 0 || (positiveInfinityCount > 0 && negativeInfinityCount > 0)) {
+            chunkSum = Double.NaN;
+        } else if (positiveInfinityCount > 0) {
+            chunkSum = Double.POSITIVE_INFINITY;
+        } else if (negativeInfinityCount > 0) {
+            chunkSum = Double.NEGATIVE_INFINITY;
+        } else if (normalCount > 0) {
+            chunkSum = normalSum;
+        } else {
+            return;
+        }
+        final long totalNormal = nonNullCounter.addNonNullUnsafe(destination, normalCount);
+        final double newSum = plusDouble(runningSum.getUnsafe(destination), chunkSum);
+        runningSum.set(destination, newSum);
+        resultColumn.set(destination, totalNormal == 0 ? newSum : newSum / totalNormal);
+    }
+
     private boolean removeChunk(DoubleChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
+        if (addOnly) {
+            throw new UnsupportedOperationException("Add-only average operators do not support removals");
+        }
         final MutableInt chunkNormalCount = new MutableInt(0);
         final MutableInt chunkNanCount = new MutableInt(0);
         final MutableInt chunkInfinityCount = new MutableInt(0);

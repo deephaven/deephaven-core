@@ -348,4 +348,10 @@ public class AddOnlyAggregationTest {
                 AggUnique(true, UnionObject.of(-1.0), "UD=UniqD"),
                 AggUnique(false, UnionObject.from("Many"), "US=UniqS")));
     }
+
+    @Test
+    public void testAverage() {
+        testKeyedAndUnkeyed(List.of(AggAvg("AD=Double1", "AF=Float1", "AL=Long1", "AI=Int1", "ABI=BigInt1",
+                "ABD=BigDec1")));
+    }
 }

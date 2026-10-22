@@ -1075,7 +1075,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAvg avg) {
-            addBasicOperators((t, n) -> makeAvgOperator(t, n, false));
+            addBasicOperators((t, n) -> makeAvgOperator(t, n, false, onlyAdds));
         }
 
         @Override
@@ -1498,7 +1498,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAvg avg) {
-            addBasicOperators((t, n) -> makeAvgOperator(t, n, true));
+            addBasicOperators((t, n) -> makeAvgOperator(t, n, true, false));
         }
 
         @Override
@@ -2614,18 +2614,22 @@ public class AggregationProcessor implements AggregationContextFactory {
         return !Double.isFinite(value.doubleValue());
     }
 
+    /**
+     * @param onlyAdds whether the operator only ever receives additions, so it may omit the state that removals need
+     */
     private static IterativeChunkedAggregationOperator makeAvgOperator(
             @NotNull final Class<?> type,
             @NotNull final String name,
-            final boolean exposeInternal) {
+            final boolean exposeInternal,
+            final boolean onlyAdds) {
         if (type == Byte.class || type == byte.class) {
             return new ByteChunkedAvgOperator(name, exposeInternal);
         } else if (type == Character.class || type == char.class) {
             return new CharChunkedAvgOperator(name, exposeInternal);
         } else if (type == Double.class || type == double.class) {
-            return new DoubleChunkedAvgOperator(name, exposeInternal);
+            return new DoubleChunkedAvgOperator(name, exposeInternal, onlyAdds);
         } else if (type == Float.class || type == float.class) {
-            return new FloatChunkedAvgOperator(name, exposeInternal);
+            return new FloatChunkedAvgOperator(name, exposeInternal, onlyAdds);
         } else if (type == Integer.class || type == int.class) {
             return new IntChunkedAvgOperator(name, exposeInternal);
         } else if (type == Long.class || type == long.class) {
