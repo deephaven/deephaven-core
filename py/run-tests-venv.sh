@@ -107,8 +107,11 @@ setup_server_suite() {
     local jars
     jars="$("${PYTHON}" -c 'import importlib.util, os; print(os.path.join(os.path.dirname(importlib.util.find_spec("deephaven_server").origin), "jars"))')"
     if ! compgen -G "${jars}/*.jar" > /dev/null; then
+        local version
+        version="$("${PYTHON}" -c 'import importlib.metadata; print(importlib.metadata.version("deephaven-server"))')"
         echo "Found no jars in ${jars}. Reinstall deephaven-server:" >&2
-        echo "${PIP_INSTALL} --force-reinstall --no-deps py/embedded-server/build/wheel/deephaven_server-*.whl" >&2
+        echo "${PIP_INSTALL} --force-reinstall --no-deps --find-links py/embedded-server/build/wheel" \
+            "deephaven-server==${version}" >&2
         exit 1
     fi
     export DEEPHAVEN_PROPFILE=dh-defaults.prop

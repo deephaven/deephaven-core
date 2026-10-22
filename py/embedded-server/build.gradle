@@ -65,3 +65,14 @@ def testEmbeddedServer = Docker.registerDockerTask(project, 'testEmbeddedServer'
 }
 
 tasks.getByName('check').dependsOn(testEmbeddedServer)
+
+// Prints the version of the deephaven-server wheel this build makes, in Python's form: 43.0-SNAPSHOT becomes
+// 43.0+snapshot. It mirrors _normalize_version in setup.py. Use it to pin the local wheels when installing them, for
+// example "deephaven-server==$(./gradlew -q :py-embedded-server:printWheelVersion)".
+tasks.register('printWheelVersion') {
+    def javaVersion = project.version.toString()
+    doLast {
+        def parts = javaVersion.split('-', 2)
+        println(parts.length == 2 ? "${parts[0]}+${parts[1].toLowerCase().replaceAll('[-_]', '.')}" : parts[0])
+    }
+}
