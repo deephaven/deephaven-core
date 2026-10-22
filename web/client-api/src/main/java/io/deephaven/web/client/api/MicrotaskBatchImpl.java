@@ -122,7 +122,9 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 BatchTableRequest.Operation.Builder operation) {
             super(connection, handle.makeTicket());
             this.operation = operation.build();
-            // The fetcher re-issues this one operation, which is what a reconnect needs
+            // The fetcher re-issues this one operation. That only works while the source ticket still exists on the
+            // server, i.e. a reconnect within the same session; a new session is not supported, as for
+            // JsTable.refetch() (deephaven-core#3604).
             this.state = connection.newState((callback, cts) -> {
                 sent = true;
                 ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper.of(observer -> {
@@ -130,12 +132,24 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                             .addOps(this.operation)
                             .build(), observer);
                 });
-                stream.onData(callback::onNext);
+                boolean[] failed = {false};
+                stream.onData(etcr -> {
+                    // A batch reports a failed operation in-band, unlike the unary table RPCs
+                    if (etcr.getSuccess()) {
+                        callback.onNext(etcr);
+                    } else {
+                        failed[0] = true;
+                        callback.onError(new RuntimeException(etcr.getErrorInfo()));
+                    }
+                });
                 stream.onEnd(status -> {
+                    if (failed[0]) {
+                        return;
+                    }
                     if (status.isOk()) {
                         callback.onCompleted();
                     } else {
-                        callback.onError(new RuntimeException(status.getDescription()));
+                        callback.onError(new RuntimeException(String.valueOf(status.getDescription())));
                     }
                 });
             }, "batch operation", handle);
@@ -156,6 +170,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                     owner.close();
                     promise.fail(failure);
                 }, () -> {
+                    owner.close();
                     promise.fail("Table was released before it was created");
                 });
                 resolved = promise.asPromise();
@@ -235,11 +250,15 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             state.retain(this);
         }
 
-        @Override
-        public JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
+        private void checkOpen() {
             if (closed) {
                 throw new IllegalStateException("Table is closed");
             }
+        }
+
+        @Override
+        public JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
+            checkOpen();
             return enqueue(connection, resultId, operation, state);
         }
 
@@ -274,11 +293,13 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
         @Override
         public Promise<TableData> createSnapshot(Object options) {
+            checkOpen();
             return AbstractTableSubscription.createSnapshot(connection, state, options);
         }
 
         @Override
         public TableViewportSubscription createViewportSubscription(Object options) {
+            checkOpen();
             DataOptions.ViewportSubscriptionOptions copy = DataOptions.ViewportSubscriptionOptions.of(options);
             if (copy.columns == null) {
                 throw new IllegalArgumentException("Missing 'columns' property in viewport subscription options");
@@ -292,6 +313,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
         @Override
         public TableSubscription createSubscription(Object options) {
+            checkOpen();
             return TableSubscription.createTableSubscription(DataOptions.SubscriptionOptions.of(options), connection,
                     state);
         }
@@ -308,6 +330,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
         @Override
         public Promise<JsResolvedTable> copy() {
+            checkOpen();
             return Promise.resolve(new Resolved(connection, state));
         }
     }
@@ -336,15 +359,6 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
-     * As {@link #wrap(WorkerConnection, ClientTableState, Supplier)} when the state does not exist yet: the ticket must
-     * be the one the promised table will have, and dependents retain the state once the promise produces it.
-     */
-    public static <T extends JsITable> JsPendingTable<T> wrap(WorkerConnection connection, Ticket ticket,
-            Supplier<Promise<T>> fetch, Promise<ClientTableState> sourceState) {
-        return new Fetched<>(connection, ticket, fetch, dependent -> retainUntilSettled(sourceState, dependent));
-    }
-
-    /**
      * As {@link #wrap(WorkerConnection, ClientTableState, Supplier)} for a {@link JsTable} fetch that has already been
      * issued into a known state.
      */
@@ -354,13 +368,16 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
-     * As {@link #wrap(WorkerConnection, Ticket, Supplier, Promise)} for a {@link JsTable} fetch that has already been
-     * issued; the source state is the fetched table's.
+     * As {@link #wrap(WorkerConnection, ClientTableState, Supplier)} for a {@link JsTable} fetch that has already been
+     * issued but whose state does not exist yet: the ticket must be the one the promised table will have, and
+     * dependents retain the fetched table's state once the promise produces it.
      */
     public static JsPendingTable<JsTable> wrapTable(WorkerConnection connection, Ticket ticket,
             Promise<JsTable> table) {
-        Promise<ClientTableState> sourceState = table.<ClientTableState>then(t -> Promise.resolve(t.state()));
-        return wrap(connection, ticket, () -> table, sourceState);
+        // The state promise is derived only when a dependent needs it, so a failed fetch that nothing chains on has no
+        // unobserved rejection; the caller observes the fetch promise itself.
+        return new Fetched<>(connection, ticket, () -> table, dependent -> retainUntilSettled(
+                table.<ClientTableState>then(t -> Promise.resolve(t.state())), dependent));
     }
 
     /**
@@ -399,9 +416,13 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
-     * Has {@code dependent} retain {@code source} until the dependent is running, failed, or released.
+     * Has {@code dependent} retain {@code source} until the dependent is running, failed, or released. A dependent that
+     * has already settled (possible when the source arrived through a promise) retains nothing.
      */
     private static void retainUntilSettled(ClientTableState source, ClientTableState dependent) {
+        if (dependent.getResolution() != ClientTableState.ResolutionState.UNRESOLVED) {
+            return;
+        }
         source.retain(dependent);
         dependent.onRunning(
                 ignore -> source.unretain(dependent),
@@ -411,14 +432,16 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
     /**
      * As {@link #retainUntilSettled(ClientTableState, ClientTableState)} for a source that may not exist yet: the
-     * retain happens when it does, and a dependent that has already settled by then releases it again at once.
+     * retain happens when it does, and a dependent that has already settled by then retains nothing.
      */
     private static void retainUntilSettled(Promise<ClientTableState> source, ClientTableState dependent) {
         source.then(sourceState -> {
             retainUntilSettled(sourceState, dependent);
             return null;
         }, failure -> {
-            // The source never came to be; the dependent will fail on the server in its own right
+            // The source never came to be. Nothing here fails the dependent: it has been (or will be) sent referencing
+            // a ticket the server never sees exported, and the server keeps a placeholder export waiting for it.
+            // TODO BEFORE MERGE: fail the dependents of a failed source client-side instead of sending them.
             return null;
         });
     }
