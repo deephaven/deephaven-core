@@ -647,6 +647,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             Assert.assertion(upstream.removed().isEmpty(), "upstream.removed().isEmpty()");
             Assert.assertion(upstream.modified().isEmpty(), "upstream.modified().isEmpty()");
             Assert.assertion(upstream.shifted().empty(), "upstream.shifted().empty()");
+            Assert.assertion(upstream.added().isNonempty(), "upstream.added().isNonempty()");
             try (final RowSequence addedPositions = RowSequenceFactory.forRange(
                     firstAddedPosition, firstAddedPosition + upstream.added().size() - 1)) {
                 ((WritableSourceWithPrepareForParallelPopulation) (writableSource))
