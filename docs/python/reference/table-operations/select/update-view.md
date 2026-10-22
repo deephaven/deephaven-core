@@ -4,20 +4,25 @@ title: update_view
 
 The `update_view` method creates a new table containing a new formula column for each argument.
 
-When using `update_view`, the new columns are not stored in memory. Rather, a formula is stored that is used to recalculate each cell every time it is accessed.
+A formula column is [not stored in memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand). Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
 
 > [!NOTE]
-> The syntax for the `update_view`, [`update`](./update.md), and [`lazy_update`](./lazy-update.md) methods is identical, as is the resulting table. `update_view` is recommended when:
+> `update_view` and [`lazy_update`](./lazy-update.md) accept only [formula strings](../../../how-to-guides/formulas.md). [`update`](./update.md) accepts formula strings and [`Selectable`](../../query-language/types/Selectable.md) objects.
+>
+> `update_view` fits best when:
 >
 > 1. the formula is fast to compute,
 > 2. only a small portion of the data is being accessed,
 > 3. cells are accessed very few times, or
 > 4. memory usage must be minimized.
 >
-> For other cases, consider using `select`, `view`, `update`, or `lazy_update`. These methods have different memory and computation expenses.
+> [`select`](./select.md), [`view`](./view.md), [`update`](./update.md), and [`lazy_update`](./lazy-update.md) differ from `update_view` in memory and computation costs.
 
 > [!CAUTION]
-> When using [`view`](./view.md) or `update_view`, non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods should use [`select`](./select.md) or [`update`](./update.md) instead.
+> When using [`view`](./view.md) or `update_view`, non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods belong in [`select`](./select.md) or [`update`](./update.md) instead.
+
+> [!CAUTION]
+> [`view`](./view.md) and `update_view` compute cells when a reader accesses them, on any thread and in any order, so they cannot guarantee [evaluation order](../../../conceptual/query-engine/parallelization.md#serial-execution). A formula that must run in order belongs in [`select`](./select.md) or [`update`](./update.md) instead.
 
 ## Syntax
 
@@ -41,7 +46,7 @@ A new table that includes all the original columns from the source table and the
 
 ## Examples
 
-In the following example, a new table containing the columns from the source table plus two new columns, `X` and `Y`, is created.
+In the following example, `update_view` creates a table that contains the columns from the source table plus two new columns, `X` and `Y`. The result looks the same as the result of [`update`](./update.md). The column `X = B` refers to the data of column `B`, so it needs no calculation. `Y = sqrt(C)` is a formula column: `update_view` stores no values for it and recalculates it when a reader accesses a cell.
 
 ```python order=source,result
 from deephaven import new_table
@@ -60,7 +65,15 @@ result = source.update_view(formulas=["X = B", "Y = sqrt(C)"])
 
 ## Related documentation
 
+- [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
+- [Formulas](../../../how-to-guides/formulas.md)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Selectable](../../query-language/types/Selectable.md)
+- [select](./select.md)
+- [view](./view.md)
+- [update](./update.md)
+- [lazy_update](./lazy-update.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#updateView(java.lang.String...))
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.update_view)

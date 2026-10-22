@@ -6,28 +6,32 @@ Predicate pushdown is a powerful feature in Deephaven that allows you to filter 
 
 ## Overview
 
-The filtering engine processes user-supplied filters sequentially in the order you specify. The first filter evaluates the rows of the full table and produces a subset of passing rows. The engine then passes this subset to subsequent filters, refining the data until only rows that satisfy every filter remain.
+Predicate pushdown lets a data source rule out data before Deephaven reads it. A filter no longer has to read every row to decide whether the row passes, so queries on large datasets finish sooner and load less data.
 
-Storage systems often divide tables into multiple regions. For instance, multiple files frequently compose a Parquet dataset, and multiple row groups further divide each individual file. Storage engines can apply specific optimization techniques to individual files and even to distinct data regions within those files.
+Storage systems divide a table into regions. A [Parquet](./data-import-export/parquet-import.md) dataset, for example, is usually many files, and each file is divided into row groups. A region is one such file or row group. Each region can carry information about its contents, such as the minimum and maximum value of a column, that a filter can check without reading the data.
 
-Predicate pushdown enhances row elimination by leveraging these underlying data structures. For example, match and range filters may use storage file metadata (such as min/max statistics) to eliminate entire row groups or files. Consequently, the engine avoids loading unnecessary data from storage — a massive advantage for large datasets in formats like Parquet and Iceberg. Although the engine generally processes filters sequentially, the pushdown mechanism may reorder them to maximize efficiency based on the capabilities of the data sources. Therefore, you cannot guarantee the final execution order of pushed-down filters. To enforce a specific order, use [barriers and serial execution](https://deephaven.io/core/docs/conceptual/query-engine/parallelization/#controlling-concurrency-for-select-update-and-where).
+For example, a [match](./use-filters.md#match-filters) or [range](./use-filters.md#range-filters) filter can use a row group's min/max statistics to skip the whole row group, or a whole file, when no value in it can pass. The engine never loads that data from storage, which is a major advantage for large datasets in formats such as [Parquet](./data-import-export/parquet-import.md) and [Iceberg](./data-import-export/iceberg.md).
 
-## Filter Priority
+Pushdown can also change the order in which filters run. Without pushdown, the engine runs user-supplied filters one after another in the order you specify. The first filter to run decides which rows of the full table pass, and the engine hands only those rows to the next filter. This continues until only rows that satisfy every filter remain.
+
+With pushdown, the engine can run a filter that a data source can answer cheaply before a filter listed earlier, so the argument order of pushed-down filters is not guaranteed. Parallelism also happens inside a single filter, which can split its rows across threads, so a filter that Deephaven treats as stateless has no guaranteed order in which it sees rows. [Filter evaluation order](../reference/table-operations/filter/where.md#control-filter-evaluation-order) describes the guarantees that do hold, and [Barriers and serial execution](../conceptual/query-engine/parallelization.md#controlling-execution-order) shows how to enforce an order.
+
+## Filter priority
 
 Filters are prioritized for pushdown in the following order (from highest to lowest):
 
 - Filtering [single value columns](#single-value-columns-and-regions).
-- Range and match filtering of a sorted column using [sorted data binary search](#sorted-data-binary-search).
+- [Range](./use-filters.md#range-filters) and [match](./use-filters.md#match-filters) filtering of a sorted column using [sorted data binary search](#sorted-data-binary-search).
 - Filtering columns with a materialized Deephaven [data index](#deephaven-data-indexes).
 - Filtering [single value regions](#single-value-columns-and-regions).
 - Filtering regions with a materialized Deephaven [data index](#deephaven-data-indexes).
-- Range and match filtering of Parquet data regions using [row group metadata](#parquet-row-group-metadata).
+- [Range](./use-filters.md#range-filters) and [match](./use-filters.md#match-filters) filtering of [Parquet](./data-import-export/parquet-import.md) data regions using [row group metadata](#parquet-row-group-metadata).
 - Filtering regions with an un-cached Deephaven [data index](#deephaven-data-indexes).
-- Range and match filtering of a sorted region using [sorted data binary search](#sorted-data-binary-search).
+- [Range](./use-filters.md#range-filters) and [match](./use-filters.md#match-filters) filtering of a sorted region using [sorted data binary search](#sorted-data-binary-search).
 - Filtering regions with [dictionary encoding](#dictionary-encoding).
 
 > [!IMPORTANT]
-> Where multiple filters have the same pushdown priority, the user-supplied order will generally be maintained. Stateful filters and filter barriers are always respected during pushdown operations.
+> Where multiple filters have the same pushdown priority, the user-supplied order will generally be maintained. Stateful filters and filter [Barriers](../conceptual/query-engine/parallelization.md#barriers) are always respected during pushdown operations.
 
 ## Single value columns and regions
 
@@ -40,11 +44,11 @@ source = empty_table(1_000).update_view(formulas=["X = i", "Value = 42"])
 result = source.where(filters="Value = 42")
 ```
 
-When working with partitioned data, such as Parquet files, regions of the overall table will have a constant value. The engine will also filter these regions efficiently with a single comparison of the constant value,
+When working with [partitioned data](./partitioned-tables.md), such as [Parquet](./data-import-export/parquet-import.md) files, regions of the overall table will have a constant value. The engine will also filter these regions efficiently with a single comparison of the constant value.
 
 ## Sorted data binary search
 
-Columns or regions with data stored in sorted order (ascending or descending) can efficiently evaluate range and match filters. Rather than scanning every row to evaluate the filter, the engine performs binary search, drastically reducing the number of values to be examined.
+Columns or regions with data stored in sorted order (ascending or descending) can efficiently evaluate [range](./use-filters.md#range-filters) and [match](./use-filters.md#match-filters) filters. Rather than scanning every row to evaluate the filter, the engine performs binary search, drastically reducing the number of values to be examined.
 
 Deephaven detects sorted order for a column or region using table metadata. When the Deephaven engine sorts a table or loads a table from storage, the metadata will automatically be set.
 
@@ -71,7 +75,7 @@ When sorted-column metadata is missing, you can explicitly annotate the table us
 > [!NOTE]
 > These methods only annotate the table — they do not sort the data. If the column is not actually sorted in the declared order, filters may return incorrect results.
 
-**Prefer `assert_sorted`**: unlike `with_order_for_column`, it validates the sort order at call time for static tables and installs a listener that re-validates every subsequent update for refreshing tables. This catches data errors before they cause silent query bugs.
+**Prefer [`assert_sorted`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Table.assert_sorted)**: unlike [`with_order_for_column`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Table.with_order_for_column), it validates the sort order at call time for static tables and installs a listener that re-validates every subsequent update for refreshing tables. This catches data errors before they cause silent query bugs.
 
 ```python order=source,asserted,result_range,result_match
 from deephaven import empty_table
@@ -88,7 +92,7 @@ result_range = asserted.where(filters=["X > 50", "X < 75"])
 result_match = asserted.where(filters=["X in 50,51,52,53,54,55,56,57,58,59"])
 ```
 
-If you are certain the data is sorted and want to skip validation entirely, use `with_order_for_column` instead:
+If you are certain the data is sorted and want to skip validation entirely, use [`with_order_for_column`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Table.with_order_for_column) instead:
 
 ```python order=source,annotated,result_range,result_match
 from deephaven import empty_table
@@ -106,9 +110,9 @@ If desired, you can [disable](#disabling-predicate-pushdown-features) the use of
 
 ## Deephaven data indexes
 
-Deephaven allows users to create data indexes for any table. These indexes can be retained in memory or written to storage and can speed up filtering operations significantly by applying the filter to the index instead of the larger table.
+Deephaven allows users to create [data indexes](./data-indexes.md) for any table. These indexes can be retained in memory or written to storage and can speed up filtering operations significantly by applying the filter to the index instead of the larger table.
 
-Starting in Deephaven v0.40.0, the predicate pushdown framework enables data indexes to be used with most filter types (not just exact matches). When a materialized (in-memory) data index for a table exists, the engine can leverage it during `where` operations. To avoid unexpected memory usage, filter operations do not automatically materialize table-level data indexes. However, if an individual file-level data index is available on disk, the engine will use it to filter data without loading the entire index into memory.
+Starting in Deephaven v0.40.0, the predicate pushdown framework enables [data indexes](./data-indexes.md) to be used with most filter types (not just exact matches). When a materialized (in-memory) [data index](./data-indexes.md) for a table exists, the engine can leverage it during [`where`](../reference/table-operations/filter/where.md) operations. To avoid unexpected memory usage, filter operations do not automatically materialize table-level [data indexes](./data-indexes.md). However, if an individual file-level [data index](./data-indexes.md) is available on disk, the engine will use it to filter data without loading the entire index into memory.
 
 This technique is effective even if only a subset of the data files are indexed. The engine will filter non-indexed files using the standard method.
 
@@ -132,11 +136,11 @@ filtered_1 = disk_table.where(filters="X = 5")
 filtered_2 = disk_table.where(filters="X <= 3 && Y > 10")
 ```
 
-If desired, you can [disable](#disabling-predicate-pushdown-features) the use of these file-level data indexes during pushdown operations:
+If desired, you can [disable](#disabling-predicate-pushdown-features) the use of these file-level [data indexes](./data-indexes.md) during pushdown operations:
 
 ## Parquet row group metadata
 
-When processing range or match filters and the source data is loaded from Parquet files, Deephaven can use the Parquet metadata to eliminate entire row groups or files. This is done by checking the minimum and maximum values of the columns in each row group against the filter criteria. If a row group does not contain any rows that match the filter, it is skipped entirely.
+When processing [range](./use-filters.md#range-filters) or [match](./use-filters.md#match-filters) filters and the source data is loaded from [Parquet](./data-import-export/parquet-import.md) files, Deephaven can use the [Parquet](./data-import-export/parquet-import.md) metadata to eliminate entire row groups or files. This is done by checking the minimum and maximum values of the columns in each row group against the filter criteria. If a row group does not contain any rows that match the filter, it is skipped entirely.
 
 This is especially efficient for ordered data, such as sequential timestamps.
 
@@ -148,7 +152,7 @@ source = parquet.read(path="/data/examples/ParquetExamples/grades/grades.parquet
 result = source.where(filters="Test1 > 90")
 ```
 
-Parquet metadata is optional, and not all Parquet files will have it. If the metadata is not available, Deephaven will fall back to scanning the data in the row groups to apply the filter. If Parquet metadata is malformed or incorrect, it may lead to incorrect filtering results. In such cases, you can [disable](#disabling-predicate-pushdown-features) this optimization.
+[Parquet](./data-import-export/parquet-import.md) metadata is optional, and not all [Parquet](./data-import-export/parquet-import.md) files will have it. If the metadata is not available, Deephaven will fall back to scanning the data in the row groups to apply the filter. If [Parquet](./data-import-export/parquet-import.md) metadata is malformed or incorrect, it may lead to incorrect filtering results. In such cases, you can [disable](#disabling-predicate-pushdown-features) this optimization.
 
 ## Dictionary encoding
 
@@ -172,17 +176,17 @@ If desired, you can [disable](#disabling-predicate-pushdown-features) the use of
 
 Under certain circumstances, you may want to disable specific predicate pushdown features. These settings are global and will affect all pushdown operations across the Deephaven engine. The following properties affect pushdown:
 
-- [`QueryTable.useDataIndexForWhere`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#USE_DATA_INDEX_FOR_WHERE) — enables the use of Deephaven table-level data indexes when filtering.
-- [`QueryTable.disableWherePushdownParquetRowGroupMetadata`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA) — disables consideration of Parquet row group metadata when filtering.
-- [`QueryTable.disableWherePushdownDataIndex`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DATA_INDEX) — disables the use of file-level Deephaven data indexes when filtering.
-- [`QueryTable.disableWherePushdownDictionary`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DICTIONARY) — disables the use of dictionary encoding when filtering.
-- [`QueryTable.disableWherePushdownSortedColumn`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION) — disables the use of sorted column binary search when filtering.
+- [`QueryTable.useDataIndexForWhere`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#USE_DATA_INDEX_FOR_WHERE) — enables the use of Deephaven table-level [data indexes](./data-indexes.md) when filtering.
+- [`QueryTable.disableWherePushdownParquetRowGroupMetadata`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_PARQUET_ROW_GROUP_METADATA) — disables consideration of [Parquet](./data-import-export/parquet-import.md) row group metadata when filtering.
+- [`QueryTable.disableWherePushdownDataIndex`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DATA_INDEX) — disables the use of file-level Deephaven [data indexes](./data-indexes.md) when filtering.
+- [`QueryTable.disableWherePushdownDictionary`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_DICTIONARY) — disables the use of [dictionary encoding](#dictionary-encoding) when filtering.
+- [`QueryTable.disableWherePushdownSortedColumn`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DISABLE_WHERE_PUSHDOWN_SORTED_COLUMN_LOCATION) — disables the use of [sorted column binary search](#sorted-data-binary-search) when filtering.
 
 ## Tuning predicate pushdown features
 
-Some pushdown techniques must build or scan an auxiliary structure (such as a data index table or a dictionary) before they can eliminate rows. That work is only worthwhile when the structure is small relative to the data it filters, so the engine applies a size-ratio test before using it. Both properties below are doubles that bound the size of the auxiliary structure as a fraction of the remaining rows to be filtered; when the structure is too large for its threshold, the engine skips the optimization and filters the rows directly.
+Some pushdown techniques must build or scan an auxiliary structure (such as a [data index](./data-indexes.md) table or a dictionary) before they can eliminate rows. That work is only worthwhile when the structure is small relative to the data it filters, so the engine applies a size-ratio test before using it. Both properties below are doubles that bound the size of the auxiliary structure as a fraction of the remaining rows to be filtered; when the structure is too large for its threshold, the engine skips the optimization and filters the rows directly.
 
-- [`QueryTable.dataIndexForWhereThreshold`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DATA_INDEX_FOR_WHERE_THRESHOLD) (default `0.0625`) — the maximum ratio of data index table size to remaining row count for the engine to use a [data index](#deephaven-data-indexes) when filtering.
+- [`QueryTable.dataIndexForWhereThreshold`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DATA_INDEX_FOR_WHERE_THRESHOLD) (default `0.0625`) — the maximum ratio of [data index](./data-indexes.md) table size to remaining row count for the engine to use a [data index](#deephaven-data-indexes) when filtering.
 - [`QueryTable.dictionaryForWhereThreshold`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/QueryTable.html#DICTIONARY_FOR_WHERE_THRESHOLD) (default `0.25`) — the ratio of dictionary size to remaining row count that the dictionary must fall below for the engine to use [dictionary encoding](#dictionary-encoding) when filtering.
 
 Raising a threshold toward `1.0` makes the engine more willing to use the optimization on columns with many distinct values; lowering it restricts the optimization to highly repetitive data. Setting a threshold to `0` effectively disables that pushdown technique.

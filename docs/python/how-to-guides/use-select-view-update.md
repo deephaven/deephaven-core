@@ -176,12 +176,12 @@ from deephaven import empty_table
 
 source = empty_table(5).update(formulas=["Column1 = i"])
 
-# select() and view() have identical syntax
+# select() and view() have identical syntax for formula strings
 # These create a table only with Column2
 t_select = source.select(formulas=["Column2 = Column1 * Column1"])
 t_view = source.view(formulas=["Column2 = Column1 * Column1"])
 
-# update(), update_view(), and lazy_update() have identical syntax
+# update(), update_view(), and lazy_update() have identical syntax for formula strings
 # These create a table with the original set of columns (i.e., Column1) plus Column2
 t_update = source.update(formulas=["Column2 = Column1 * Column1"])
 t_update_view = source.update_view(formulas=["Column2 = Column1 * Column1"])
