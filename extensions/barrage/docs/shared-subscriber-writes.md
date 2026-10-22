@@ -116,7 +116,7 @@ propagated message:
 
 | Part | Why it decides the bytes |
 | --- | --- |
-| `effectiveOptions(options)` | Batch size, maximum message size, null encoding, `columnsAsList` and the list preview limit all change the encoding. `BarrageSubscriptionOptions` is an Immutables value, so `equals` covers them. It also covers `minUpdateIntervalMs`, which doesn't change the bytes; that only splits a group unnecessarily, and subscriptions with different intervals usually use different producers anyway |
+| `effectiveOptions(options)` | Batch size, maximum message size, null encoding, `columnsAsList` and the list preview limit all change the encoding. `BarrageSubscriptionOptions` is an Immutables value, so `equals` covers them. It also covers `minUpdateIntervalMs`, which doesn't change the bytes; see [Decisions recorded](#decisions-recorded) |
 | `reverseViewport` | Reported in every update's metadata |
 | `subscribedColumns` | A view writes an empty field node and no modified rows for every column its subscription leaves out |
 
@@ -366,6 +366,7 @@ its confidence intervals are too wide to compare.
 | Decision | Why |
 | --- | --- |
 | Group by options, viewport direction and columns | Those are exactly what decide a full view's bytes; columns do because each view writes only its subscription's columns (DH-24095) |
+| Compare whole options, `minUpdateIntervalMs` included | Comparing the options' `equals` covers any option added later that changes the bytes, where a hand-picked list that missed one would group subscribers needing different bytes. `minUpdateIntervalMs` is the one field that doesn't change them, and it rarely splits a group: producers are memoized per table and update interval, with an unset interval resolved to the default first, so subscriptions on one producer differ in it only when one leaves it unset and another sends the default explicitly |
 | Rebuild groups every phase | No group state to keep in step with subscriptions; hashing the key is trivial next to an encode |
 | Capture and deliver one message at a time | Bounds a group's extra memory to one message, never a whole update |
 | A new array per message | `StreamObserver` doesn't promise a synchronous drain, so a reused buffer could be overwritten while a listener still holds it |
@@ -379,8 +380,8 @@ its confidence intervals are too wide to compare.
 
 ## Open questions
 
-- **Parallel copies within a group.** Through gRPC a copy costs about 1.2–1.7 ms per member, so at 16
-  members on 8 threads the serial copies are about 18–25 ms of a 58 ms job. They could run in
+- **Parallel copies within a group.** Through gRPC a copy costs about 1.7–2.3 ms per member, so at 16
+  members on 8 threads the serial copies are about 25–35 ms of a 56 ms job. They could run in
   parallel: after capturing message k, helper jobs on the propagation scheduler claim members from a
   per-round counter and copy to them. With pipelining, the group's thread returns to encode message
   k+1 while round k is still copying, and before starting round k+1 it claims any members of round k
@@ -393,8 +394,6 @@ its confidence intervals are too wide to compare.
   implemented.
 - **Clients not tested.** No Python ticking, C++, C# or JS test exercises two dictionary batches for
   one id back to back; the C# reader's support for dictionary deltas at all is unknown.
-- **`minUpdateIntervalMs` in the key.** It never changes the bytes, so leaving it out would merge the
-  rare groups it splits.
 
 ## Re-running
 
