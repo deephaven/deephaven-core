@@ -68,10 +68,13 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
      */
     private final ObjectArraySource<WritableChunk<Values>> stagedRemoves;
     /**
-     * The destinations with staged values, in the order they were first staged.
+     * The destinations with staged values, in the order they were first staged. It grows with the most destinations one
+     * cycle touches, rather than with every output position ever assigned.
      */
     private final IntegerArraySource touchedDestinations = new IntegerArraySource();
     private int touchedCount;
+    /** The capacity of {@link #touchedDestinations}. */
+    private long touchedCapacity;
 
     /**
      * @param type the data type of the values
@@ -277,6 +280,10 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         WritableChunk<Values> chunk = staged.getUnsafe(destination);
         if (chunk == null) {
             if (stagedAdds.getUnsafe(destination) == null && stagedRemoves.getUnsafe(destination) == null) {
+                if (touchedCount == touchedCapacity) {
+                    touchedCapacity = Math.max(1, 2 * touchedCapacity);
+                    touchedDestinations.ensureCapacity(touchedCapacity);
+                }
                 touchedDestinations.getAndSetUnsafe(touchedCount++, destination);
             }
             chunk = chunkType.makeWritableChunk(length);
@@ -501,7 +508,6 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         ssms.ensureCapacity(tableSize * 2);
         stagedAdds.ensureCapacity(tableSize);
         stagedRemoves.ensureCapacity(tableSize);
-        touchedDestinations.ensureCapacity(tableSize);
     }
 
     @Override
@@ -580,6 +586,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         }
         ssms.shift(expandedShiftBuilder.build());
         internalResult.shift(shiftData);
+        // the staged values were all applied by propagateUpdates, so the staging sources hold only nulls
     }
 
     @Override
@@ -587,5 +594,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         // each output position holds two SSMs
         ssms.releaseBlocks(firstOutputPosition * 2, lastOutputPosition * 2 + 1);
         internalResult.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        stagedAdds.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        stagedRemoves.releaseBlocks(firstOutputPosition, lastOutputPosition);
     }
 }
