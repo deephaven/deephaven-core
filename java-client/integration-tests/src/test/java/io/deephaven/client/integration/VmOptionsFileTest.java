@@ -162,6 +162,17 @@ class VmOptionsFileTest {
         assertThat(vmOptionsFile(args)).as("%s in %s", VM_OPTIONS_FILE_ARG, args).isEmpty();
     }
 
+    /**
+     * With CDPATH set, cd prints the directory it changes to, which once corrupted the script's APP_HOME
+     * (https://github.com/gradle/gradle/issues/25036).
+     */
+    @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = START_SCRIPT_ON_WINDOWS)
+    void startScriptIgnoresCdPath(@TempDir Path dir) throws Exception {
+        final Path home = standInJavaHome(dir, Release.COPY);
+        assertPasses(launchArgs(Map.of("JAVA_HOME", home.toString(), "CDPATH", ".")), JAVA_VERSION);
+    }
+
     private static Path etcDir() {
         return Project.SESSION.binDir().resolveSibling("etc");
     }
@@ -237,14 +248,20 @@ class VmOptionsFileTest {
         }
     }
 
-    /** Runs the launcher with {@code launcherOpts} in its options variable, capturing stdout and stderr together. */
+    /**
+     * Runs the launcher as {@code bin/<launcher>} from its distribution directory, the way users run it, with
+     * {@code launcherOpts} in its options variable, capturing stdout and stderr together.
+     */
     private static Launch launch(Map<String, String> env, String launcherOpts) throws IOException,
             InterruptedException {
-        final Path script = Project.SESSION.binDir().resolve(LAUNCHER);
+        final Path binDir = Project.SESSION.binDir();
+        final Path script = binDir.resolve(LAUNCHER);
         final Matcher optsVariable = OPTS_VARIABLE.matcher(Files.readString(script));
         assertThat(optsVariable.find()).as("options variable in " + script).isTrue();
 
-        final ProcessBuilder builder = new ProcessBuilder(script.toString()).redirectErrorStream(true);
+        final ProcessBuilder builder = new ProcessBuilder(binDir.getFileName().resolve(LAUNCHER).toString())
+                .directory(binDir.getParent().toFile())
+                .redirectErrorStream(true);
         builder.environment().keySet().removeAll(List.of("JAVA_HOME", "JAVA_OPTS", optsVariable.group(1)));
         builder.environment().putAll(env);
         builder.environment().put(optsVariable.group(1), launcherOpts);
