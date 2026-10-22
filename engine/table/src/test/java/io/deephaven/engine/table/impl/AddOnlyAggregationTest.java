@@ -369,4 +369,10 @@ public class AddOnlyAggregationTest {
                 AggMed(false, "NL=Long1", "NI=Int1"),
                 AggPct(0.25, "PD=Double1", "PL=Long1", "PB=Bool1")));
     }
+
+    @Test
+    public void testFreeze() {
+        doOperatorTest(table -> table.aggBy(List.of(AggFreeze("FD=Double1", "FL=Long1", "FS=Sym", "FB=Bool1")), "Row"),
+                true);
+    }
 }

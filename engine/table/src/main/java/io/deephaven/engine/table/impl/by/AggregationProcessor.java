@@ -541,13 +541,13 @@ public class AggregationProcessor implements AggregationContextFactory {
                     inputName);
         }
 
-        final void addFreezeOperators() {
+        final void addFreezeOperators(final boolean onlyAdds) {
             final FreezeByCountOperator countOperator;
             if (freezeByCountIndex >= 0) {
                 countOperator = (FreezeByCountOperator) operators.get(freezeByCountIndex);
             } else {
                 freezeByCountIndex = operators.size();
-                addNoInputOperator(countOperator = new FreezeByCountOperator());
+                addNoInputOperator(countOperator = new FreezeByCountOperator(onlyAdds));
             }
             addBasicOperators((t, n) -> new FreezeByOperator(t, n, countOperator));
         }
@@ -1110,7 +1110,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(AggSpecFreeze freeze) {
-            addFreezeOperators();
+            addFreezeOperators(onlyAdds);
         }
 
         @Override
