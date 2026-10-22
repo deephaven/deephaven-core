@@ -738,7 +738,6 @@ public class TableTools {
      * @return an empty Deephaven Table
      */
     public static Table newTable(TableDefinition definition) {
-        definition.checkHasValidColumnNames();
         Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             columns.put(columnDefinition.getName(), NullValueColumnSource.getInstance(
@@ -772,7 +771,6 @@ public class TableTools {
 
     public static Table newTable(TableDefinition definition, @Nullable Map<String, Object> attributes,
             ColumnHolder<?>... columnHolders) {
-        definition.checkHasValidColumnNames();
         checkSizes(columnHolders);
         final WritableRowSet rowSet = getRowSet(columnHolders);
         final LinkedHashMap<String, ColumnSource<?>> columns =
