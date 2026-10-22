@@ -1875,7 +1875,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
 
                         final TrackingRowSet resultRowSet = analyzer.flatResult() && !rowSet.isFlat()
-                                ? RowSetFactory.flat(rowSet.size()).toTracking()
+                                ? analyzerContext.getFlatResultRowSet()
                                 : rowSet;
                         final Map<String, ColumnSource<?>> newMap = analyzerContext.getPublishedColumnSources();
                         final TableDefinition resultDef = TableDefinition.inferFrom(this, newMap);
