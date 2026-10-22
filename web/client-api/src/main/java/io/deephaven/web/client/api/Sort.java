@@ -100,12 +100,15 @@ public class Sort {
             if (this instanceof Sort s) {
                 return s.makeDescriptor();
             } else if (Js.typeof(this).equals("string")) {
+                // A bare name sorts ascending; the proto default direction is UNKNOWN, which the server rejects
                 return SortDescriptor.newBuilder()
                         .setColumnName(this.toString())
+                        .setDirection(SortDescriptor.SortDirection.ASCENDING)
                         .build();
             } else if (this instanceof Column c) {
                 return SortDescriptor.newBuilder()
                         .setColumnName(c.getName())
+                        .setDirection(SortDescriptor.SortDirection.ASCENDING)
                         .build();
             } else {
                 SimpleSort s = asSimpleSort();

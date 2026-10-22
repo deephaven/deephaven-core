@@ -76,13 +76,15 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     delayTestFinish(10_000);
                     JsPendingTable<JsResolvedTable> pending =
                             session.getTable("source", null).head(Js.uncheckedCast(2.0));
-                    return Promise.all(pending.resolve(), pending.resolve()).then(both -> {
-                        assertSame(both[0], both[1]);
-                        JsResolvedTable resolved = (JsResolvedTable) both[0];
-                        assertEquals(2., resolved.getSize(), 0);
-                        resolved.close();
+                    Promise<JsResolvedTable> first = pending.resolve();
+                    Promise<JsResolvedTable> second = pending.resolve();
+                    assertSame(first, second);
+                    return first.then(a -> second.then(b -> {
+                        assertSame(a, b);
+                        assertEquals(2., a.getSize(), 0);
+                        a.close();
                         return Promise.resolve(session);
-                    });
+                    }));
                 })
                 .then(this::finish).catch_(this::report);
     }
