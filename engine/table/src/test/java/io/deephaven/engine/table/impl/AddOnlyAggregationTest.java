@@ -390,4 +390,35 @@ public class AddOnlyAggregationTest {
         doOperatorTest(table -> table.aggBy(List.of(AggFormula("max(each)", "each", "ML=Long1", "MD=Double1")),
                 "Sym"), false);
     }
+
+    @Test
+    public void testPartition() {
+        doOperatorTest(table -> table.partitionBy("Sym").merge(), false);
+        doOperatorTest(table -> table.partitionBy(false, "Sym").merge(), false);
+        doOperatorTest(table -> table.where("Bucket < 20").partitionBy("Sym").merge(), false);
+    }
+
+    @Test
+    public void testPartitionInitialGroups() {
+        final Table initialGroups = TableTools.newTable(TableTools.stringCol("Sym", "S3", "Missing", "S50"));
+        for (final boolean preserveEmpty : new boolean[] {false, true}) {
+            // view formulas read each constituent's current row set
+            doOperatorTest(table -> table.aggBy(List.of(AggPartition("Constituent")), preserveEmpty, initialGroups,
+                    List.of(ColumnName.of("Sym"))).view("Sym", "Size = Constituent.size()",
+                            "First = Constituent.getRowSet().firstRowKey()",
+                            "Last = Constituent.getRowSet().lastRowKey()"),
+                    false, preserveEmpty);
+        }
+    }
+
+    @Test
+    public void testRollupRoot() {
+        final List<Aggregation> aggregations = List.of(AggSum("S=Long1"), AggAvg("A=Double1"), AggGroup("G=Long1"),
+                AggUnique("U=Uniq"), AggCountDistinct("CD=Uniq"), AggMin("Mn=Long1"), AggVar("V=Double1"),
+                AggWAvg("LongWeight", "W=Long1"), AggCount("N"));
+        for (final boolean includeConstituents : new boolean[] {false, true}) {
+            doOperatorTest(table -> table.rollup(aggregations, includeConstituents, "Sym", "Byte1").getRoot()
+                    .select("S", "A", "G", "U", "CD", "Mn", "V", "W", "N"), false);
+        }
+    }
 }
