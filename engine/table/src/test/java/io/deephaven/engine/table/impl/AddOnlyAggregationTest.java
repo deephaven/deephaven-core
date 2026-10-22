@@ -296,4 +296,9 @@ public class AddOnlyAggregationTest {
                 AggSum("SL=Long1", "SI=Int1", "SS=Short1", "SB=Byte1", "SC=Char1"),
                 AggAbsSum("AL=Long1", "AI=Int1", "AS=Short1", "AB=Byte1", "AC=Char1")));
     }
+
+    @Test
+    public void testBigIntegerSum() {
+        testKeyedAndUnkeyed(List.of(AggSum("S=BigInt1"), AggAbsSum("A=BigInt1")));
+    }
 }
