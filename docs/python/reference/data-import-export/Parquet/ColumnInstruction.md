@@ -27,7 +27,7 @@ The name of the column to apply these instructions to.
 </Param>
 <Param name="parquet_column_name" type="str" optional>
 
-The name of the column in the resulting Parquet file.
+The corresponding column name in the Parquet file. Required when reading.
 
 </Param>
 <Param name="codec_name" type="str" optional>
@@ -56,7 +56,7 @@ An implementation-specific argument string passed to the codec named by `codec_n
 </Param>
 <Param name="use_dictionary" type="bool" optional>
 
-Whether or not to use [dictionary-based encoding](https://en.wikipedia.org/wiki/Dictionary_coder) for string columns.
+Whether or not to use [dictionary-based encoding](https://en.wikipedia.org/wiki/Dictionary_coder) for string columns. This applies only when writing.
 
 </Param>
 <Param name="unsigned_long_target" type="UnsignedLongTarget" optional>

@@ -10,7 +10,7 @@ The [`deephaven.learn`](/core/pydoc/code/deephaven.learn.html#module-deephaven.l
 
 For Artificial Intelligence / Machine Learning (AI/ML) applications, data is gathered into tensors. Calculations then either (1) optimize the AI/ML model using the input tensors, or (2) generate predictions from the model using the input tensors. Predicted and other output values are then scattered into columns of the output table.
 
-The [`deephaven.learn`](/core/pydoc/code/deephaven.learn.html#module-deephaven.learn) gather-scatter operations work on both static and dynamic real-time tables. For static tables, the rows of the table are separated into batches. These batches are processed in sequence. For real-time tables, only the rows of the table that changed during the most recent update cycle are separated into batches and processed. Because of this, AI/ML predictions are only computed on input data that has changed, minimizing how much computational power is needed to predict streaming data.
+The [`deephaven.learn`](/core/pydoc/code/deephaven.learn.html#module-deephaven.learn) gather-scatter operations work on static tables and on ticking tables that are add-only (including append-only) or blink, because they use row keys internally. They throw an error on other ticking tables, such as ones that modify or remove rows. For static tables, the rows of the table are separated into batches. For ticking tables, only the rows added during the most recent update cycle are separated into batches and processed. Because of this, AI/ML predictions are only computed on new input data, minimizing how much computational power is needed to predict streaming data.
 
 <!-- TODO: https://github.com/deephaven/deephaven.io/issues/785 Link to deephaven.learn REF doc -->
 
@@ -88,7 +88,7 @@ The gather step of [`learn`](/core/pydoc/code/deephaven.learn.html#module-deepha
 
 ### Input table
 
-Real-world applications of AI use data sets that contain information from one or more of a vast array of sources. Sensors, observations, and experimental results cover only a small portion of the data sources that AI models use. In a real application, this data will be contained in a Deephaven table. The static or real-time nature of the data will not affect how [`learn`](/core/pydoc/code/deephaven.learn.html#module-deephaven.learn) is used.
+Real-world applications of AI use data sets that contain information from one or more of a vast array of sources. Sensors, observations, and experimental results cover only a small portion of the data sources that AI models use. In a real application, this data will be contained in a Deephaven table. You call [`learn`](/core/pydoc/code/deephaven.learn.html#module-deephaven.learn) the same way on a static table and on a ticking table, but a ticking table must be add-only (including append-only) or blink.
 
 For our toy problem, we'll create a static table called `source` using [`empty_table`](../reference/table-operations/create/emptyTable.md) and fill it with data using [`update`](../reference/table-operations/select/update.md). `source` serves as our input table.
 
@@ -125,16 +125,16 @@ Deephaven has a submodule for gathering data called `learn.gather`. This submodu
 
 The function `table_to_numpy_2d` can take up to four inputs:
 
-- `rows`: A set of rows that will be copied in to the `ndarray`.
-- `columns`: A set of columns that will be copied into the `ndarray`.
+- `row_set`: The rows to copy into the `ndarray`.
+- `col_set`: The column sources to copy into the `ndarray`.
 - `order`: How the array is stored in memory. Can be either column-major or row-major.
   - The default value is row-major.
-  - Specifying the memory layout is done with an enumeration called `gather.MemoryLayout`. There are four accepted values:
+  - The `gather.MemoryLayout` enumeration specifies the memory layout. There are four accepted values:
     - `gather.MemoryLayout.ROW_MAJOR`: row-major order.
     - `gather.MemoryLayout.COLUMN_MAJOR`: column-major order.
     - `gather.MemoryLayout.C`: C memory layout (row-major).
     - `gather.MemoryLayout.FORTRAN`: Fortran memory layout (column-major).
-- `np_type`: The data type of all values in the output `ndarray`. Any non-NumPy data types will be cast to the corresponding NumPy `dtype`.
+- `np_type`: The NumPy `dtype` of all values in the output `ndarray`. Supported types are `np.byte`, `np.short`, `np.intc`, `np.int_`, `np.single`, and `np.double`. The Python types `int` and `float` are converted to `np.intc` and `np.double`, respectively. The default is `np.intc`, so pass `np_type` explicitly for floating-point data.
 
 In this example, we'll use row-major order. If we were to use column-major order, the resulting NumPy `ndarray` would still look the same.
 

@@ -147,7 +147,7 @@ plot_shared_twin_x_colors = (
 )
 ```
 
-You can find the full list of available colors [here](../../assets/deephaven-colors.pdf).
+For the full list of available colors, see [Named colors](../../reference/table-operations/format/named-colors.md).
 
 ### Plot styles
 

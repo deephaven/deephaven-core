@@ -122,6 +122,21 @@ public class ReplicateSegmentedSortedMultiset {
         updateDoublePercentileHelper(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/DoublePercentileTypeMedianHelper.java");
 
+        for (final String netChangeKernel : charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharNetChangeKernel.java")) {
+            if (netChangeKernel.contains("Float")) {
+                fixupNetChangeRepresentation(netChangeKernel,
+                        "return Float.floatToIntBits(lhs) == Float.floatToIntBits(rhs);");
+            } else if (netChangeKernel.contains("Double")) {
+                fixupNetChangeRepresentation(netChangeKernel,
+                        "return Double.doubleToLongBits(lhs) == Double.doubleToLongBits(rhs);");
+            }
+        }
+        final String objectNetChangeKernel = charToObject(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharNetChangeKernel.java");
+        fixupChunkAttributes(objectNetChangeKernel);
+        fixupNetChangeRepresentation(objectNetChangeKernel, "return Objects.equals(lhs, rhs);");
+
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
         objectSsm = charToObject(TASK,
@@ -225,6 +240,21 @@ public class ReplicateSegmentedSortedMultiset {
         lines = replaceRegion(lines, "clearSingletonValue",
                 indent(Collections.singletonList("singletonValue.set(destination, null);"), 8));
         FileUtils.writeLines(objectFile, lines);
+    }
+
+    /**
+     * Net only values with the same representation: floating point zeros of either sign, and Objects that compare equal
+     * without being equal, are kept in both the removals and the additions.
+     */
+    private static void fixupNetChangeRepresentation(final String path, final String sameRepresentation)
+            throws IOException {
+        final File file = new File(path);
+        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        lines = replaceRegion(lines, "sameRepresentation", List.of("        " + sameRepresentation));
+        if (sameRepresentation.contains("Objects.")) {
+            lines = addImport(lines, "import java.util.Objects;");
+        }
+        FileUtils.writeLines(file, lines);
     }
 
     private static void updateFloatPercentileHelper(String file) throws IOException {

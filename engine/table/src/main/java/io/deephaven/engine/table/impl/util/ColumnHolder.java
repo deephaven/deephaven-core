@@ -294,7 +294,7 @@ public class ColumnHolder<T> {
                 chunkData.size(), dataType, componentType);
         try (
                 final ChunkSink.FillFromContext ffc = cs.makeFillFromContext(chunkData.size());
-                final RowSequence rs = RowSequenceFactory.forRange(0, chunkData.size() - 1)) {
+                final RowSequence rs = RowSequenceFactory.flat(chunkData.size())) {
             cs.fillFromChunk(ffc, chunkData, rs);
         }
         return cs;

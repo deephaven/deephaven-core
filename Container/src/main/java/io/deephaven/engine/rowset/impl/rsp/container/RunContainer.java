@@ -1396,7 +1396,14 @@ public final class RunContainer extends Container {
         return toIntUnsigned(getValue(index));
     }
 
-    public RunContainer iaddUnsafe(final int begin, final int end, final int searchBeginRunIndex) {
+    /**
+     * Add {@code [begin, end)} to this container in place, searching for it from run {@code searchBeginRunIndex}. This
+     * container must not be shared.
+     *
+     * @return This container, or a bitmap container holding the result when one more run would leave this larger than
+     *         a bitmap
+     */
+    public Container iaddUnsafe(final int begin, final int end, final int searchBeginRunIndex) {
         int bIndex = unsignedInterleavedBinarySearch(valueslength, searchBeginRunIndex, nbrruns, (short) begin);
         int eIndex;
         if (bIndex >= 0) {
@@ -1452,6 +1459,9 @@ public final class RunContainer extends Container {
                             prependValueLength(begin, eIndex + 1);
                             return this;
                         }
+                        if (nbrruns >= ArrayContainer.DEFAULT_MAX_SIZE / 2) {
+                            return toBitmapContainer().iadd(begin, end);
+                        }
                         makeRoomAtIndex(eIndex + 1);
                         setValue(eIndex + 1, (short) begin);
                         final int d = end - begin;
@@ -1481,6 +1491,9 @@ public final class RunContainer extends Container {
         if (canPrependValueLength(end - 1, 0)) {
             prependValueLength(begin, 0);
         } else {
+            if (nbrruns >= ArrayContainer.DEFAULT_MAX_SIZE / 2) {
+                return toBitmapContainer().iadd(begin, end);
+            }
             makeRoomAtIndex(0);
             setValue(0, (short) begin);
             final int d = end - begin;
