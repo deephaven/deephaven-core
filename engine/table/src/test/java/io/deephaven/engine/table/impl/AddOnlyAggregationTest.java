@@ -361,4 +361,12 @@ public class AddOnlyAggregationTest {
                 AggVar("VD=Double1", "VF=Float1", "VL=Long1", "VBD=BigDec1"),
                 AggStd("SD=Double1", "SF=Float1", "SL=Long1")));
     }
+
+    @Test
+    public void testPercentile() {
+        testKeyedAndUnkeyed(List.of(
+                AggMed("MD=Double1", "MF=Float1", "ML=Long1", "MS=UniqS", "MI=UniqInstant"),
+                AggMed(false, "NL=Long1", "NI=Int1"),
+                AggPct(0.25, "PD=Double1", "PL=Long1", "PB=Bool1")));
+    }
 }

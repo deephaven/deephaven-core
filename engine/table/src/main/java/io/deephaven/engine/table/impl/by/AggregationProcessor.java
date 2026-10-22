@@ -588,13 +588,13 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         final IterativeChunkedAggregationOperator makePercentileOperator(final Class<?> type, final String name,
-                final double percentile, final boolean averageEvenlyDivided) {
+                final double percentile, final boolean averageEvenlyDivided, final boolean onlyAdds) {
             if (!table.isRefreshing()) {
                 return StaticPercentileOperator.make(type, compareConsistentWithEquality(type), percentile,
                         averageEvenlyDivided, name);
             }
             return new SsmChunkedPercentileOperator(type, compareConsistentWithEquality(type), percentile,
-                    averageEvenlyDivided, name);
+                    averageEvenlyDivided, onlyAdds, name);
         }
 
         final void addFirstOrLastOperators(final boolean isFirst, final String exposeRedirectionAs) {
@@ -1142,7 +1142,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecMedian median) {
-            addBasicOperators((t, n) -> makePercentileOperator(t, n, 0.50d, median.averageEvenlyDivided()));
+            addBasicOperators(
+                    (t, n) -> makePercentileOperator(t, n, 0.50d, median.averageEvenlyDivided(), onlyAdds));
         }
 
         @Override
@@ -1152,7 +1153,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecPercentile pct) {
-            addBasicOperators((t, n) -> makePercentileOperator(t, n, pct.percentile(), pct.averageEvenlyDivided()));
+            addBasicOperators(
+                    (t, n) -> makePercentileOperator(t, n, pct.percentile(), pct.averageEvenlyDivided(), onlyAdds));
         }
 
         @Override
