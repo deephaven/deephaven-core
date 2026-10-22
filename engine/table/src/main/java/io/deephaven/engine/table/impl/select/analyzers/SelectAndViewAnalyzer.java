@@ -161,6 +161,10 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         final Map<Object, Integer> barrierToLayerIndex = new IdentityHashMap<>();
         final List<Object> implicitSerialBarriers = new ArrayList<>();
 
+        if (context.shiftColumn != null) {
+            // the intermediate table for a shift column publishes the parent's columns, so it keeps the parent's rows
+            context.flatResult = false;
+        }
         if (context.flatResult) {
             context.flatResultRowSet = RowSetFactory.flat(rowSet.size()).toTracking();
         }

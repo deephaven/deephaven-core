@@ -1241,6 +1241,24 @@ public class QueryTableSelectUpdateTest {
     }
 
     @Test
+    public void testFlatSelectWithShiftedColumn() {
+        final Table parent = emptyTable(10).update("A = (int) ii").where("A % 2 == 0");
+        assertTableEquals(newTable(intCol("P", NULL_INT, 0, 2, 4, 6)), parent.select("P = A_[i - 1]"));
+
+        final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(), intCol("A", 1, 2, 3));
+        source.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        final Table shifted = source.select("P = A_[i - 1]");
+        assertTableEquals(newTable(intCol("P", NULL_INT, 1, 2)), shifted);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(40, 50), intCol("A", 4, 5));
+            source.notifyListeners(i(40, 50), i(), i());
+        });
+        assertTableEquals(newTable(intCol("P", NULL_INT, 1, 2, 3, 4)), shifted);
+    }
+
+    @Test
     public void testAppendOnlySelect() {
         final IntegerSparseArraySource aSource = new IntegerSparseArraySource();
         aSource.ensureCapacity(31);
