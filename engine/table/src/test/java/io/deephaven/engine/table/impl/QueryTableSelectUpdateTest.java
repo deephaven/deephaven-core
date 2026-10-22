@@ -1259,6 +1259,24 @@ public class QueryTableSelectUpdateTest {
     }
 
     @Test
+    public void testAppendOnlyFlatSelectRowKey() {
+        final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(), intCol("A", 1, 2, 3));
+        source.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        final Table result = source.select("C = A * 100", "KP = k", "KR = C + k");
+        Assert.assertTrue(result.isFlat());
+        assertTableEquals(newTable(intCol("C", 100, 200, 300), longCol("KP", 0, 1, 2), longCol("KR", 100, 201, 302)),
+                result);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(40, 50), intCol("A", 4, 5));
+            source.notifyListeners(i(40, 50), i(), i());
+        });
+        assertTableEquals(newTable(intCol("C", 100, 200, 300, 400, 500), longCol("KP", 0, 1, 2, 3, 4),
+                longCol("KR", 100, 201, 302, 403, 504)), result);
+    }
+
+    @Test
     public void testAppendOnlySelect() {
         final IntegerSparseArraySource aSource = new IntegerSparseArraySource();
         aSource.ensureCapacity(31);
