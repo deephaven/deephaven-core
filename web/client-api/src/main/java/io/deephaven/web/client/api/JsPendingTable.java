@@ -45,7 +45,10 @@ public interface JsPendingTable<T extends JsITable> extends JsTableOperations, P
     void foo();
 
     /**
-     * Cancels the operation, potentially causing downstream promises to fail. All resources will be released.
+     * Cancels the operation: the promise from {@link #resolve()} rejects with "Operation canceled", the table this
+     * pending would have produced is released, and operations chained on it afterward throw. A table that was already
+     * delivered is unaffected; close it instead. The server cancels work it has not started, but work it has already
+     * begun runs to completion there, so callers that cancel often should debounce.
      */
     // also happens to be a workaround for a javadoc -> ts bug
     @JsMethod

@@ -25,7 +25,22 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
             .script("from datetime import datetime, timedelta")
             // One row from the start (the backfilled rows collapse into it), replaced twice a second
             .script("ticking", "time_table(\"PT0.5S\", start_time=datetime.now() - timedelta(seconds=10))"
-                    + ".update([\"X = i\", \"Y = 0\"]).last_by(by=\"Y\")");
+                    + ".update([\"X = i\", \"Y = 0\"]).last_by(by=\"Y\")")
+            .script("import time")
+            .script("def slow(x) -> int:\n    time.sleep(1.0)\n    return x")
+            // S costs a second per row to evaluate, so an operation that reads it is slow on the server
+            .script("slowsource", "empty_table(2).update_view([\"X = i\", \"S = slow(X)\"])");
+
+    private static final String SLOW = "Z = S + 1";
+
+    /** Resolves once {@code promise} has rejected with the cancellation message, fails otherwise. */
+    private static Promise<Object> expectCanceled(Promise<?> promise) {
+        return promise.then(ignore -> Promise.reject("Expected the promise to reject"), err -> {
+            String message = String.valueOf(err);
+            assertTrue(message, message.contains("Operation canceled"));
+            return Promise.resolve((Object) null);
+        });
+    }
 
     private static ReadonlyArray<JsTable.CustomColumnArgUnionType> cols(String... exprs) {
         return Js.uncheckedCast(JsArray.of(exprs));
@@ -167,6 +182,119 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                                 sub.close();
                                 resolved.close();
                                 return Promise.resolve(resolved);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCancelBeforeSend() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_000);
+                    return session.getTable("source", null).resolve();
+                })
+                .then(table -> {
+                    WorkerConnection connection = table.getConnection();
+                    JsPendingTable<JsResolvedTable> pending = table.operations().update(cols("Z = X + Y"));
+                    pending.cancel();
+                    try {
+                        pending.sort(sorts("Z"));
+                        fail("Expected chaining on a canceled operation to throw");
+                    } catch (IllegalStateException expected) {
+                        // nothing was sent for the canceled operation, so nothing may reference its ticket
+                    }
+                    return expectCanceled(pending.resolve())
+                            .then(ignore -> delay(200))
+                            .then(ignore -> {
+                                assertEquals(0, batchStates(connection));
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCancelAfterResolve() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(15_000);
+                    return session.getTable("slowsource", null).resolve();
+                })
+                .then(table -> {
+                    WorkerConnection connection = table.getConnection();
+                    JsPendingTable<JsResolvedTable> pending = table.operations().update(cols(SLOW));
+                    Promise<JsResolvedTable> resolved = pending.resolve();
+                    // Let the batch go out, then cancel while the server is busy with it
+                    return delay(0)
+                            .then(ignore -> {
+                                pending.cancel();
+                                return expectCanceled(resolved);
+                            })
+                            // The state failed and was released at once, well before the server would have answered
+                            .then(ignore -> delay(200))
+                            .then(ignore -> {
+                                assertEquals(0, batchStates(connection));
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCancelSentButNotAwaited() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(15_000);
+                    return session.getTable("slowsource", null).resolve();
+                })
+                .then(table -> {
+                    WorkerConnection connection = table.getConnection();
+                    JsPendingTable<JsResolvedTable> pending = table.operations().update(cols(SLOW));
+                    return delay(0)
+                            .then(ignore -> {
+                                pending.cancel();
+                                // Awaiting after the cancel rejects the same way
+                                return expectCanceled(pending.resolve());
+                            })
+                            .then(ignore -> delay(200))
+                            .then(ignore -> {
+                                assertEquals(0, batchStates(connection));
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testCancelOneOperationOfABatch() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(15_000);
+                    return session.getTable("slowsource", null).resolve();
+                })
+                .then(table -> {
+                    WorkerConnection connection = table.getConnection();
+                    // Both go out in one batch, on one stream
+                    JsPendingTable<JsResolvedTable> slow = table.operations().update(cols(SLOW));
+                    JsPendingTable<JsResolvedTable> quick = table.operations().head(Js.uncheckedCast(1.0));
+                    return delay(0)
+                            .then(ignore -> {
+                                // Canceling one must not cut off the other's response
+                                slow.cancel();
+                                return quick.resolve();
+                            })
+                            .then(head -> {
+                                assertEquals(1., head.getSize(), 0);
+                                // Canceling after delivery is a no-op; the table is closed instead
+                                quick.cancel();
+                                assertEquals(1., head.getSize(), 0);
+                                head.close();
+                                return delay(200);
+                            })
+                            .then(ignore -> {
+                                assertEquals(0, batchStates(connection));
+                                table.close();
+                                return Promise.resolve(table);
                             });
                 })
                 .then(this::finish).catch_(this::report);

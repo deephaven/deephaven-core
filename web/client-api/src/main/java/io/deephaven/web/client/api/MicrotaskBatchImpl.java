@@ -109,13 +109,15 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     /**
      * A pending operation sent in a batch. Its {@link ClientTableState} exists from construction; the first
      * {@link #resolve()} creates the one {@link Resolved} that retains it, and a state nobody retains is released as
-     * soon as its response arrives and no dependent needs it any more.
+     * soon as its response arrives and no dependent needs it any more. {@link #cancel()} fails the state at once: the
+     * refcount then releases the ticket, and the batch stops waiting for the response.
      */
     private static class Operation extends Pending<JsResolvedTable> {
         private final BatchTableRequest.Operation operation;
         private final ClientTableState state;
         private boolean sent;
         private boolean cancelled;
+        private @Nullable Batch batch;
         private @Nullable Promise<JsResolvedTable> resolved;
 
         public Operation(WorkerConnection connection, TableTicket handle,
@@ -179,22 +181,33 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        public void cancel() {
+        public JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
             if (cancelled) {
+                // Sending the dependent would reference a ticket the server may never see defined, and it would wait
+                // on a placeholder export forever
+                throw new IllegalStateException("Operation was canceled");
+            }
+            return super.call(resultId, operation);
+        }
+
+        @Override
+        public void cancel() {
+            if (cancelled || state.getResolution() != ClientTableState.ResolutionState.UNRESOLVED) {
+                // Already canceled, or already settled: a table that was delivered is closed, not canceled
                 return;
             }
             cancelled = true;
-            if (resolved != null) {
-                // The caller holds (or will hold) the Resolved and closes it themselves; cancellation of an operation
-                // that was awaited is a no-op beyond that.
-                return;
-            }
             if (!sent) {
-                // Never sent: nothing on the server; let the state go
-                state.setResolution(ClientTableState.ResolutionState.FAILED, "Operation canceled");
+                // Never reached the server, so there is no ticket to release there; sendBatch skips it
+                state.getHandle().setConnected(false);
+            } else if (batch != null) {
+                // Stop waiting for the response; the batch closes its stream once nobody on it is waiting
+                batch.settled(this);
             }
-            // Sent and never retained: released when the response arrives, like any unretained operation.
-            // TODO after the CTS rework: an AbortController-style signal passed to resolve(), reaching the server.
+            // Fails the promise from resolve() and closes its owner, if any; the refcount then releases the ticket,
+            // which cancels the work on the server if it has not begun. Work the server has already started runs to
+            // completion there, so callers that cancel often should debounce.
+            state.setResolution(ClientTableState.ResolutionState.FAILED, "Operation canceled");
             connection.scheduleCheck(state);
         }
     }
@@ -336,9 +349,33 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
+     * One batch request: the operations collected in a microtask, and once sent, those still waiting for a response and
+     * the stream the responses arrive on. The stream is a browser resource (idle HTTP/2 streams are limited), so it is
+     * closed as soon as no operation on it is still wanted, even while the server is working on canceled ones.
+     */
+    private static class Batch {
+        private final List<Operation> ops = new ArrayList<>();
+        private final Map<Ticket, Operation> outstanding = new HashMap<>();
+        private @Nullable ResponseStreamWrapper<ExportedTableCreationResponse> stream;
+
+        /**
+         * {@code op} no longer needs a response, because it was answered or canceled. Closes the stream once nothing on
+         * it does.
+         */
+        void settled(Operation op) {
+            outstanding.remove(op.ticket);
+            if (outstanding.isEmpty() && stream != null) {
+                ResponseStreamWrapper<?> open = stream;
+                stream = null;
+                open.cancel();
+            }
+        }
+    }
+
+    /**
      * Operations waiting for the current microtask to end, per connection: each connection gets its own batch request.
      */
-    private static final Map<WorkerConnection, List<Operation>> enqueued = new HashMap<>();
+    private static final Map<WorkerConnection, Batch> enqueued = new HashMap<>();
     protected final WorkerConnection connection;
     protected final Ticket ticket;
 
@@ -398,20 +435,20 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         Operation pending = new Operation(connection, new TableTicket(resultId), operation);
         retainSource.accept(pending.state);
 
-        List<Operation> tasks = enqueued.get(connection);
-        if (tasks == null) {
-            tasks = new ArrayList<>();
-            enqueued.put(connection, tasks);
-            List<Operation> batch = tasks;
+        Batch batch = enqueued.get(connection);
+        if (batch == null) {
+            batch = new Batch();
+            enqueued.put(connection, batch);
+            Batch flushing = batch;
 
             // Wait a microtask, then send all accumulated requests in a single gRPC call, once the server is ready
             LazyPromise.runLater(() -> {
-                List<Operation> removed = enqueued.remove(connection);
-                assert removed == batch;
-                sendBatch(connection, batch);
+                Batch removed = enqueued.remove(connection);
+                assert removed == flushing;
+                sendBatch(connection, flushing);
             });
         }
-        tasks.add(pending);
+        batch.ops.add(pending);
         return pending;
     }
 
@@ -446,31 +483,34 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         });
     }
 
-    private static void sendBatch(WorkerConnection connection, List<Operation> batch) {
-        BatchTableRequest.Builder request = BatchTableRequest.newBuilder();
-        Map<Ticket, Operation> ticketToTask = new HashMap<>();
-        for (Operation task : batch) {
-            if (task.cancelled) {
-                continue;
-            }
-            task.sent = true;
-            request.addOps(task.operation);
-            ticketToTask.put(task.ticket, task);
-        }
-        if (ticketToTask.isEmpty()) {
-            return;
-        }
-
+    private static void sendBatch(WorkerConnection connection, Batch batch) {
         connection.whenServerReady("batch table operations").then(ready -> {
+            // Operations canceled before this point, including while waiting for the server, are never sent
+            BatchTableRequest.Builder request = BatchTableRequest.newBuilder();
+            for (Operation task : batch.ops) {
+                if (task.cancelled) {
+                    continue;
+                }
+                task.sent = true;
+                task.batch = batch;
+                request.addOps(task.operation);
+                batch.outstanding.put(task.ticket, task);
+            }
+            if (batch.outstanding.isEmpty()) {
+                return null;
+            }
+
             // Create a single stream for all operations, notify each individual operation of the result when it
             // finishes
             ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper.of(observer -> {
                 connection.tableServiceClient().batch(request.build(), observer);
             });
+            batch.stream = stream;
             stream.onData(etcr -> {
-                Operation task = ticketToTask.remove(etcr.getResultId().getTicket());
+                Operation task = batch.outstanding.get(etcr.getResultId().getTicket());
                 if (task == null) {
-                    JsLog.warn("Batch response for an unknown ticket", etcr.getResultId());
+                    // A canceled operation's response; its state already failed and its ticket is being released
+                    JsLog.debug("Batch response for a ticket no longer waited on", etcr.getResultId());
                     return;
                 }
                 if (etcr.getSuccess()) {
@@ -478,26 +518,31 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 } else {
                     task.state.setResolution(ClientTableState.ResolutionState.FAILED, etcr.getErrorInfo());
                 }
-                // If nothing retains the state (never awaited, or cancelled in flight), this releases it
+                // If nothing retains the state (never awaited), this releases it
                 connection.scheduleCheck(task.state);
+                batch.settled(task);
             });
             stream.onEnd(status -> {
-                for (Operation task : ticketToTask.values()) {
+                // Operations still waiting here were cut off by a stream failure; a stream the client closed has none
+                for (Operation task : batch.outstanding.values()) {
                     task.state.setResolution(ClientTableState.ResolutionState.FAILED, status.getDescription());
                     connection.scheduleCheck(task.state);
                 }
-                ticketToTask.clear();
+                batch.outstanding.clear();
+                batch.stream = null;
             });
-            // TODO support cancelation? Otherwise we're okay losing the reference to this stream
             return null;
         }).catch_(err -> {
             // The server was not ready, or setting up the stream threw: nothing else observes this, so the states
             // must carry the failure
-            for (Operation task : ticketToTask.values()) {
+            for (Operation task : batch.ops) {
+                if (task.cancelled) {
+                    continue;
+                }
                 task.state.setResolution(ClientTableState.ResolutionState.FAILED, String.valueOf(err));
                 connection.scheduleCheck(task.state);
             }
-            ticketToTask.clear();
+            batch.outstanding.clear();
             return null;
         });
     }
