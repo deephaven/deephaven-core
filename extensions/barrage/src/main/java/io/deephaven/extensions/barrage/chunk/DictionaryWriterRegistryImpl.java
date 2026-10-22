@@ -110,9 +110,7 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
     @Override
     public void resetDeltas() {
         for (final Entry e : entries.values()) {
-            if (e.state.hasDelta()) {
-                e.state.resetDelta();
-            }
+            e.state.resetDelta();
         }
     }
 

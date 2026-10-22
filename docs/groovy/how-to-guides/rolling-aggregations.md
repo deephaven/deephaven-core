@@ -4,6 +4,8 @@ title: Rolling aggregations
 
 This guide shows how to use the [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) table operation for rolling calculations and aggregations. It returns a new table that adds columns calculated by one or more [`UpdateByOperation`](/core/javadoc/io/deephaven/api/updateby/UpdateByOperation.html) objects. The calculations can be cumulative, windowed by rows (ticks) or by time, or exponentially weighted.
 
+To compare rolling aggregations with the other ways Deephaven summarizes data, and to choose between them, see [Aggregations in Deephaven](../conceptual/aggregations.md).
+
 [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) takes one or more [`UpdateByOperations`](/core/javadoc/io/deephaven/api/updateby/UpdateByOperation.html) and zero or more key columns. The result contains every source column plus any new columns the operations create. An operation whose output column has the same name as an existing column replaces that column. Without key columns, each operation runs over all rows. With key columns (also called grouping columns), each operation runs separately on each unique group.
 
 For the full list of [`UpdateByOperations`](/core/javadoc/io/deephaven/api/updateby/UpdateByOperation.html) you can pass to [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md), see the [`updateBy` parameters reference](../reference/table-operations/update-by-operations/updateBy.md#parameters).
@@ -747,6 +749,7 @@ See [Handling erroneous data](#handling-erroneous-data).
 
 ## Related documentation
 
+- [Aggregations in Deephaven](../conceptual/aggregations.md)
 - [Create an empty table](./new-and-empty-table.md#emptytable)
 - [Create a time table](./time-table.md)
 - [Dedicated aggregations](./dedicated-aggregations.md)
