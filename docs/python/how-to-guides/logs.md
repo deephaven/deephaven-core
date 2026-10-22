@@ -167,6 +167,9 @@ To share the raw console output, right-click within the **Console** and choose *
 
 Ask questions in our [GitHub Discussions](https://github.com/deephaven/deephaven-core/discussions/categories/q-a) forum or in our [Community Slack](/slack). Attach the logs you collected with the steps above to help others find the cause.
 
+> [!WARNING]
+> Server logs can contain credentials. With [pre-shared key authentication](./authentication/auth-psk.md), the server logs its key and a login URL that includes the key (`?psk=`) when it starts. Remove these lines, and any other secrets, before you share a log publicly.
+
 ## Related documentation
 
 - [Triage errors in queries](./triage-errors.md)
