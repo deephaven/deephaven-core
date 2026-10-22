@@ -109,8 +109,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         this.original = existingTable;
 
         if (existingTable == null) {
-            // No owning table: nothing to forward events to, and nothing to follow on reconnect yet
-            // TODO reconnect for subscriptions owned by a ResolvedTable, once batch-created states revive
+            // No owning table: nothing to forward events to. The reviver revives this subscription directly, as a
+            // retainer of the state, once the state is usable again.
             originalActive = false;
             initialState = state;
             reconnectSubscription = null;

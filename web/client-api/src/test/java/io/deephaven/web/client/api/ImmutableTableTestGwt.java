@@ -20,8 +20,12 @@ import java.util.stream.StreamSupport;
  */
 public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
     private final TableSourceBuilder tables = new TableSourceBuilder()
-            .script("from deephaven import empty_table")
-            .script("source", "empty_table(5).update([\"X = i\", \"Y = i * 2\"])");
+            .script("from deephaven import empty_table, time_table")
+            .script("source", "empty_table(5).update([\"X = i\", \"Y = i * 2\"])")
+            .script("from datetime import datetime, timedelta")
+            // One row from the start (the backfilled rows collapse into it), replaced twice a second
+            .script("ticking", "time_table(\"PT0.5S\", start_time=datetime.now() - timedelta(seconds=10))"
+                    + ".update([\"X = i\", \"Y = 0\"]).last_by(by=\"Y\")");
 
     private static ReadonlyArray<JsTable.CustomColumnArgUnionType> cols(String... exprs) {
         return Js.uncheckedCast(JsArray.of(exprs));
@@ -127,6 +131,39 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     TableViewportSubscription sub = resolved.createViewportSubscription(opts);
                     return assertUpdateReceived(sub, viewport -> assertEquals(5, viewport.getRows().length), 5000)
                             .then(ignore -> {
+                                sub.close();
+                                resolved.close();
+                                return Promise.resolve(resolved);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testSubscriptionSurvivesReconnect() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(20_000);
+                    return session.getTable("ticking", null).update(cols("Z = X * 2")).resolve();
+                })
+                .then(resolved -> {
+                    DataOptions.ViewportSubscriptionOptions opts = new DataOptions.ViewportSubscriptionOptions();
+                    opts.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 0));
+                    opts.columns = Js.cast(resolved.getColumns());
+                    TableViewportSubscription sub = resolved.createViewportSubscription(opts);
+                    WorkerConnection connection = resolved.getConnection();
+                    return assertUpdateReceived(sub, viewport -> assertEquals(1, viewport.getRows().length), 5000)
+                            .then(ignore -> {
+                                // Same session, new transport: the batch-created state must be revived like any other
+                                connection.forceReconnect();
+                                return connection.whenServerReady("reconnect in test");
+                            })
+                            .then(ignore -> assertUpdateReceived(sub,
+                                    viewport -> assertEquals(1, viewport.getRows().length), 5000))
+                            // The revived ticket is still usable as a source for further operations
+                            .then(ignore -> resolved.head(Js.uncheckedCast(1.0)).resolve())
+                            .then(head -> {
+                                assertEquals(1., head.getSize(), 0);
+                                head.close();
                                 sub.close();
                                 resolved.close();
                                 return Promise.resolve(resolved);
