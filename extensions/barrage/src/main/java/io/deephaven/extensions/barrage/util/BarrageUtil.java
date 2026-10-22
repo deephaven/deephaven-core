@@ -866,7 +866,9 @@ public class BarrageUtil {
             final String[] restrictedSortColumns =
                     attributes.get(GridAttributes.SORTABLE_COLUMNS_ATTRIBUTE).toString().split(",");
             sortableColumns = Arrays.stream(restrictedSortColumns)
-                    .filter(columnName -> isDataTypeSortable(tableDefinition.getColumn(columnName).getDataType()))
+                    .map(tableDefinition::getColumn)
+                    .filter(column -> column != null && isDataTypeSortable(column.getDataType()))
+                    .map(ColumnDefinition::getName)
                     .collect(Collectors.toSet());
         } else {
             sortableColumns = columnDefinitions.stream()

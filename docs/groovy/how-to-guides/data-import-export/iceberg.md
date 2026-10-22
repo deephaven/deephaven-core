@@ -30,7 +30,7 @@ The user-facing classes of Deephaven's Iceberg integration are in the [`io.deeph
 
 ## A Deephaven deployment for Iceberg
 
-The examples in this guide use the Docker deployment found in the [Deephaven example Iceberg REST catalog deployment](https://github.com/deephaven-examples/deephaven-iceberg-rest-catalog/). It includes a Deephaven server, Iceberg REST catalog, MinIO object store, MinIO client, and an Apache Spark server that creates the sample Iceberg table and then shuts down. The repository's README contains a full description of the deployment.
+The examples in this guide use the Docker deployment found in the [Deephaven example Iceberg REST catalog deployment](https://github.com/deephaven-examples/deephaven-iceberg-rest-catalog/). It includes a Deephaven server, an Iceberg REST catalog, a [RustFS](https://rustfs.com/) S3-compatible object store, and an Apache Spark server that creates the sample Iceberg table and then shuts down. The repository's README contains a full description of the deployment.
 
 For this guide, you need only clone the repository, `cd` into the `Groovy` directory, and run `docker compose up`:
 
@@ -42,7 +42,7 @@ docker compose up
 
 The deployment creates an Iceberg catalog with one table, `taxis`, in the `nyc` namespace. This guide reads that table.
 
-The deployment also uses [application mode](../application-mode.md) to define the connection variables that the examples use: `catalogUri`, `awsRegion`, `awsAccessKeyId`, `awsSecretAccessKey`, and `s3Endpoint`. Their values come from the deployment's environment variables, so `s3Endpoint` points to the deployment's MinIO server. If you use a different deployment, define these variables yourself before running the examples.
+The deployment also uses [application mode](../application-mode.md) to define the connection variables that the examples use: `catalogUri`, `awsRegion`, `awsAccessKeyId`, `awsSecretAccessKey`, and `s3Endpoint`. Their values come from the deployment's environment variables, so `s3Endpoint` points to the deployment's RustFS server. If you use a different deployment, define these variables yourself before running the examples.
 
 After the deployment starts, open the Deephaven IDE at `http://localhost:10000/ide` to run the examples.
 
