@@ -36,6 +36,16 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.extensions.barrage.util.BarrageMessageReaderImpl;
+import java.io.ByteArrayInputStream;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -230,6 +240,84 @@ public class BarrageMessageWriterImplTest {
             assertThat(messages.get(0).length).isLessThan(limit);
             assertThat(messages.get(1).length).isGreaterThan(limit);
             assertThat(messages.get(2).length).isLessThan(limit);
+        }
+    }
+
+    /**
+     * Closing a reader while it parses a message waits for that parse, and every parse after it returns nothing, as a
+     * subscription cancelled from another thread needs: closing releases the message the reader had only partly read,
+     * so it must not run while the parser still writes into that message.
+     */
+    @Test
+    public void testClosingTheReaderWaitsForAParseInProgress() throws Exception {
+        final List<byte[]> schema = drain(new BarrageMessageWriterImpl.Factory().getSchemaView(SCHEMA::getSchema));
+        final List<byte[]> update;
+        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
+                delta(columns(0, 1, 2)), chunkWriters(), BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
+            // batches of four rows, so the update's six added and three modified rows take several record batches
+            update = drain(writer.getSubView(BarrageSubscriptionOptions.builder().batchSize(4).build(), false, true,
+                    null, false, null, null, columns(0, 1, 2), new DictionaryWriterRegistryImpl()));
+        }
+        int firstRecordBatch = 0;
+        while (flightMessage(update.get(firstRecordBatch)).headerType() != MessageHeader.RecordBatch) {
+            ++firstRecordBatch;
+        }
+        final int recordBatchIndex = firstRecordBatch;
+        assertThat(update.stream().skip(recordBatchIndex + 1)
+                .filter(bytes -> headerType(bytes) == MessageHeader.RecordBatch).count()).isPositive();
+
+        // the reader reports each record batch's parse time before it returns; that report holds one parse in progress
+        final AtomicBoolean holdNextParse = new AtomicBoolean();
+        final CountDownLatch parsing = new CountDownLatch(1);
+        final CountDownLatch finishParse = new CountDownLatch(1);
+        final BarrageMessageReaderImpl reader = new BarrageMessageReaderImpl(nanos -> {
+            if (holdNextParse.getAndSet(false)) {
+                parsing.countDown();
+                try {
+                    finishParse.await();
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
+        final ExecutorService threads = Executors.newFixedThreadPool(2);
+        try {
+            assertThat(parse(reader, schema.get(0))).isNull();
+            for (int mi = 0; mi < recordBatchIndex; ++mi) {
+                assertThat(parse(reader, update.get(mi))).isNull();
+            }
+
+            holdNextParse.set(true);
+            final Future<BarrageMessage> parse = threads.submit(() -> parse(reader, update.get(recordBatchIndex)));
+            assertThat(parsing.await(10, TimeUnit.SECONDS)).isTrue();
+            final Future<?> closing = threads.submit(reader::close);
+            assertThatThrownBy(() -> closing.get(200, TimeUnit.MILLISECONDS)).isInstanceOf(TimeoutException.class);
+
+            finishParse.countDown();
+            // the first of several record batches: the message is not complete yet
+            assertThat(parse.get(10, TimeUnit.SECONDS)).isNull();
+            closing.get(10, TimeUnit.SECONDS);
+
+            // closed: the rest of the update, which would complete the message, parses to nothing
+            for (int mi = recordBatchIndex + 1; mi < update.size(); ++mi) {
+                assertThat(parse(reader, update.get(mi))).isNull();
+            }
+        } finally {
+            finishParse.countDown();
+            threads.shutdownNow();
+        }
+    }
+
+    private static BarrageMessage parse(final BarrageMessageReaderImpl reader, final byte[] flightData) {
+        return reader.safelyParseFrom(OPTIONS, new ChunkType[] {ChunkType.Int, ChunkType.Object, ChunkType.Object},
+                TYPES, new Class<?>[TYPES.length], new ByteArrayInputStream(flightData));
+    }
+
+    private static byte headerType(final byte[] flightData) {
+        try {
+            return flightMessage(flightData).headerType();
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
         }
     }
 

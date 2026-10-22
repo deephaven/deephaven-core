@@ -70,8 +70,20 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
     private final List<ChunkReader<?>> readers = new ArrayList<>();
     private final DictionaryReaderRegistry dictionaryRegistry = new DictionaryReaderRegistry();
 
+    /** Set by {@link #close}; a closed reader parses nothing more. */
+    private boolean closed;
+
+    /**
+     * Releases what this reader holds: its dictionaries, and a message it had only partly read when its stream ended. A
+     * subscription can be cancelled from another thread while a response is still being parsed, so this waits for a
+     * parse in progress, and every parse after it returns {@code null} without reading.
+     */
     @Override
-    public void close() {
+    public synchronized void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
         dictionaryRegistry.close();
         // a stream that ended part way through a message leaves what was read of it
         if (msg != null) {
@@ -96,11 +108,15 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
     }
 
     @Override
-    public BarrageMessage safelyParseFrom(final BarrageOptions options,
+    public synchronized BarrageMessage safelyParseFrom(final BarrageOptions options,
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
             final InputStream stream) {
+        if (closed) {
+            // a cancelled subscription can still be handed responses already in flight; nothing will apply them
+            return null;
+        }
         final long startDeserTm = System.nanoTime();
         Message header = null;
         try {
