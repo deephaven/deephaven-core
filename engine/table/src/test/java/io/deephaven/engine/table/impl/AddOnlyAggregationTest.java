@@ -375,4 +375,19 @@ public class AddOnlyAggregationTest {
         doOperatorTest(table -> table.aggBy(List.of(AggFreeze("FD=Double1", "FL=Long1", "FS=Sym", "FB=Bool1")), "Row"),
                 true);
     }
+
+    @Test
+    public void testGroup() {
+        doOperatorTest(table -> table.groupBy("Sym"), false);
+        doOperatorTest(Table::groupBy, false);
+        doOperatorTest(table -> table.aggBy(List.of(AggGroup("GL=Long1", "GD=Double1"), AggSum("SL=Long1")), "Sym"),
+                false);
+    }
+
+    @Test
+    public void testFormula() {
+        doOperatorTest(table -> table.aggBy(List.of(AggFormula("F=sum(Long1) + count(Double1)")), "Sym"), false);
+        doOperatorTest(table -> table.aggBy(List.of(AggFormula("max(each)", "each", "ML=Long1", "MD=Double1")),
+                "Sym"), false);
+    }
 }
