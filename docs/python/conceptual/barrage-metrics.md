@@ -41,6 +41,7 @@ Full-table subscribers that would receive identical bytes share one write of eac
 
 - Barrage records `WriteNanos` once, including the time to copy the bytes to every subscriber that shares the write.
 - Barrage records `WriteBytes` once, as the size of one copy. Multiply it by the number of subscribers that share the write to find the bytes sent over the network.
+- When a table has dictionary-encoded columns, the dictionary values sent before a shared write to a subscriber that was behind the others are recorded as a write of their own.
 
 6. Receiver bundles gRPC messages into an update (coalesced or snapshot)
 

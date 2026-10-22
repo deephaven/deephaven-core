@@ -808,9 +808,11 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             final ChunkWriter<Chunk<Values>> valuesWriter,
             final WritableChunk<Values> values,
             final boolean isDelta) {
+        final long startTm = System.nanoTime();
         try {
             return new DictionaryBatchView(
-                    buildDictionaryBatchStreams(dictId, valuesWriter, values, isDelta, options));
+                    buildDictionaryBatchStreams(dictId, valuesWriter, values, isDelta, options), writeConsumer,
+                    startTm);
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("unexpected IOException while building a dictionary batch", e);
         }
@@ -818,18 +820,28 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
 
     /**
      * A view of the DictionaryBatches carrying one dictionary's values, built in advance and handed to the view's one
-     * visitor in order.
+     * visitor in order. Like the writer's other views, it records a write: the bytes it hands over, and the time from
+     * building them to handing over the last.
      */
     private static final class DictionaryBatchView extends SingleUseMessageView {
         private final List<DefensiveDrainable> messages;
+        private final WriteMetricsConsumer writeConsumer;
+        private final long startTm;
 
-        private DictionaryBatchView(final List<DefensiveDrainable> messages) {
+        private DictionaryBatchView(
+                final List<DefensiveDrainable> messages,
+                final WriteMetricsConsumer writeConsumer,
+                final long startTm) {
             this.messages = messages;
+            this.writeConsumer = writeConsumer;
+            this.startTm = startTm;
         }
 
         @Override
         protected void encodeBatches(final Consumer<DefensiveDrainable> visitor) throws IOException {
-            visitMessages(messages, visitor, null);
+            final MutableLong bytesWritten = new MutableLong();
+            visitMessages(messages, visitor, bytesWritten);
+            writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
         }
     }
 
@@ -1266,17 +1278,16 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
      * order. If the visitor throws, the messages it was not yet handed are closed, so that the column data they refer
      * to returns to its pool; the message it threw on is the visitor's to close, as every message it accepts is.
      *
-     * @param bytesWritten if not {@code null}, accumulates the size of each message before it is handed over
+     * @param bytesWritten accumulates the size of each message before it is handed over, so that a write's metrics
+     *        count every message it sends, DictionaryBatches included
      */
     private static void visitMessages(
             final List<DefensiveDrainable> messages,
             final Consumer<DefensiveDrainable> visitor,
-            @Nullable final MutableLong bytesWritten) throws IOException {
+            @NotNull final MutableLong bytesWritten) throws IOException {
         for (int ii = 0; ii < messages.size(); ++ii) {
             final DefensiveDrainable msg = messages.get(ii);
-            if (bytesWritten != null) {
-                bytesWritten.add(msg.available());
-            }
+            bytesWritten.add(msg.available());
             try {
                 visitor.accept(msg);
             } catch (final Throwable t) {
@@ -1316,14 +1327,13 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 // row then we must send and let it potentially fail)
                 if (bytesToWrite < maxMessageSize || batchSize == 1) {
                     // let's write the data — DictionaryBatch messages must precede the RecordBatch
-                    visitMessages(messages, visitor, null);
+                    visitMessages(messages, visitor, bytesWritten);
                     // accepted without error, so reset the dictionary deltas
                     final DictionaryWriterRegistry dictRegistry = view.dictionaryRegistry();
                     if (dictRegistry != null) {
                         dictRegistry.resetDeltas();
                     }
 
-                    bytesWritten.add(bytesToWrite);
                     offset += actualBatchSize.get();
                     metadata = null;
                 } else {

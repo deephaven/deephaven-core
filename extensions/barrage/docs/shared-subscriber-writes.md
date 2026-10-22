@@ -263,7 +263,9 @@ What this means in practice:
 
 The shared view calls `onWrite` once, so `WriteNanos` and `WriteBytes` are recorded once per write:
 the count is the number of writes, `WriteBytes` is the size of one copy, and `WriteNanos` includes
-copying to every member. Catch-ups are not recorded as separate writes.
+copying to every member. Each catch-up records a write of its own, from building it to delivering it
+to the members owed it. Every write's `WriteBytes` counts all the messages it sends, dictionary
+batches included; before this change, a write with rows counted only its record batches.
 
 | Property | Default | Effect |
 | --- | --- | --- |

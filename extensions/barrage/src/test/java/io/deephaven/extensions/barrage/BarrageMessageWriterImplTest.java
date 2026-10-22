@@ -8,6 +8,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -194,6 +195,44 @@ public class BarrageMessageWriterImplTest {
                 total += batch.data().length();
             }
             assertThat(total).isEqualTo(values.length);
+        }
+    }
+
+    /**
+     * A write records every byte it sends, its dictionary batches included, whether it carries rows or not, and a
+     * standalone dictionary batch view records a write of its own.
+     */
+    @Test
+    public void testAWriteRecordsEveryByteItSends() throws IOException {
+        final List<Long> recorded = new ArrayList<>();
+        final ChunkWriter<Chunk<Values>>[] writers = chunkWriters();
+        final DictionaryChunkWriter dictionaryWriter = (DictionaryChunkWriter) (ChunkWriter<?>) writers[2];
+        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
+                delta(columns(0, 1, 2)), writers, (bytes, nanos) -> recorded.add(bytes))) {
+            // a fresh registry sends a dictionary batch ahead of the first record batch
+            final List<byte[]> withRows = drain(writer.getSubView(OPTIONS, false, true, null, false, null, null,
+                    columns(0, 1, 2), new DictionaryWriterRegistryImpl()));
+            assertThat(withRows.stream().map(BarrageMessageWriterImplTest::headerType))
+                    .contains(MessageHeader.DictionaryBatch, MessageHeader.RecordBatch);
+            assertThat(recorded).containsExactly(totalBytes(withRows));
+
+            // an empty viewport includes no rows, so the write takes the path for a message with no data
+            recorded.clear();
+            final List<byte[]> withoutRows;
+            try (final RowSet viewport = RowSetFactory.empty();
+                    final RowSet keyspaceViewportPrev = RowSetFactory.empty();
+                    final RowSet keyspaceViewport = RowSetFactory.empty()) {
+                withoutRows = drain(writer.getSubView(OPTIONS, false, false, viewport, false,
+                        keyspaceViewportPrev, keyspaceViewport, columns(0, 1, 2), new DictionaryWriterRegistryImpl()));
+            }
+            assertThat(withoutRows.stream().map(BarrageMessageWriterImplTest::headerType))
+                    .contains(MessageHeader.DictionaryBatch);
+            assertThat(recorded).containsExactly(totalBytes(withoutRows));
+
+            recorded.clear();
+            final List<byte[]> catchUp = drain(writer.getDictionaryBatchView(OPTIONS, DICT_ID,
+                    dictionaryWriter.getValuesWriter(), strings("x", "y"), true));
+            assertThat(recorded).containsExactly(totalBytes(catchUp));
         }
     }
 

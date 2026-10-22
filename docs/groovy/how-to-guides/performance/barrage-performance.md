@@ -175,7 +175,7 @@ When a table has dictionary-encoded columns, subscribers that share a write may 
 - `-DBarrageMessageProducer.dedupIdenticalSubscribers`: When `true` (the default), identical full-table subscribers share one write of each update. When `false`, every subscriber gets a write of its own.
 
 > [!NOTE]
-> A shared write records one `WriteNanos` sample and one `WriteBytes` sample for all of the subscribers that share it. `WriteBytes` is the size of one copy, so multiply it by the number of subscribers that share the write to estimate the bytes sent over the network.
+> A shared write records one `WriteNanos` sample and one `WriteBytes` sample for all of the subscribers that share it. `WriteBytes` is the size of one copy, so multiply it by the number of subscribers that share the write to estimate the bytes sent over the network. The dictionary values sent before a shared write to a subscriber that was behind are recorded as a write of their own.
 
 ## Additional Barrage configuration
 
