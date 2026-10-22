@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -57,7 +58,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
         @Override
         public JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
-            return enqueue(source.getConnection(), resultId, operation, Promise.resolve(source.state()));
+            return enqueue(source.getConnection(), resultId, operation, source.state());
         }
 
         @Override
@@ -83,13 +84,13 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         /**
-         * The state this pending table will occupy, for a dependent operation to retain while it is created.
+         * Has {@code dependent} retain the state this pending table occupies until the dependent has settled.
          */
-        protected abstract Promise<ClientTableState> sourceState();
+        protected abstract void retainUntilSettled(ClientTableState dependent);
 
         @Override
         public JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
-            return enqueue(connection, resultId, operation, sourceState());
+            return enqueue(connection, resultId, operation, this::retainUntilSettled);
         }
 
         @Override
@@ -141,8 +142,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        protected Promise<ClientTableState> sourceState() {
-            return Promise.resolve(state);
+        protected void retainUntilSettled(ClientTableState dependent) {
+            MicrotaskBatchImpl.retainUntilSettled(state, dependent);
         }
 
         @Override
@@ -187,23 +188,23 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
      * A pending table from an API that has always produced a {@link JsTable} (or another retained table) through a
      * promise: the same promise, with a ticket known up front so operations can be chained before it resolves. The
      * table is created on first await, so a pending that is only chained on retains nothing of its own; dependents
-     * retain the state the promise will produce.
+     * retain the state the promise will produce, synchronously when that state already exists.
      */
     private static class Fetched<T extends JsITable> extends Pending<T> {
         private final Supplier<Promise<T>> fetch;
-        private final Promise<ClientTableState> sourceState;
+        private final Consumer<ClientTableState> retainSource;
         private @Nullable Promise<T> table;
 
         public Fetched(WorkerConnection connection, Ticket ticket, Supplier<Promise<T>> fetch,
-                Promise<ClientTableState> sourceState) {
+                Consumer<ClientTableState> retainSource) {
             super(connection, ticket);
             this.fetch = fetch;
-            this.sourceState = sourceState;
+            this.retainSource = retainSource;
         }
 
         @Override
-        protected Promise<ClientTableState> sourceState() {
-            return sourceState;
+        protected void retainUntilSettled(ClientTableState dependent) {
+            retainSource.accept(dependent);
         }
 
         @Override
@@ -239,7 +240,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             if (closed) {
                 throw new IllegalStateException("Table is closed");
             }
-            return enqueue(connection, resultId, operation, Promise.resolve(state));
+            return enqueue(connection, resultId, operation, state);
         }
 
         @Override
@@ -325,12 +326,31 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
     /**
      * Presents a table that an existing API produces through a promise as a pending table, so operations can be chained
-     * on it before it resolves. The ticket must be the one the promised table will have, and {@code sourceState} the
-     * state it will occupy, so that dependents can retain it. The supplier is invoked at most once, on the first await.
+     * on it before it resolves. {@code sourceState} is the state the promised table will occupy; dependents retain it
+     * from the moment they are created. The supplier is invoked at most once, on the first await.
+     */
+    public static <T extends JsITable> JsPendingTable<T> wrap(WorkerConnection connection,
+            ClientTableState sourceState, Supplier<Promise<T>> fetch) {
+        return new Fetched<>(connection, sourceState.getHandle().makeTicket(), fetch,
+                dependent -> retainUntilSettled(sourceState, dependent));
+    }
+
+    /**
+     * As {@link #wrap(WorkerConnection, ClientTableState, Supplier)} when the state does not exist yet: the ticket must
+     * be the one the promised table will have, and dependents retain the state once the promise produces it.
      */
     public static <T extends JsITable> JsPendingTable<T> wrap(WorkerConnection connection, Ticket ticket,
             Supplier<Promise<T>> fetch, Promise<ClientTableState> sourceState) {
-        return new Fetched<>(connection, ticket, fetch, sourceState);
+        return new Fetched<>(connection, ticket, fetch, dependent -> retainUntilSettled(sourceState, dependent));
+    }
+
+    /**
+     * As {@link #wrap(WorkerConnection, ClientTableState, Supplier)} for a {@link JsTable} fetch that has already been
+     * issued into a known state.
+     */
+    public static JsPendingTable<JsTable> wrapTable(WorkerConnection connection, ClientTableState sourceState,
+            Promise<JsTable> table) {
+        return wrap(connection, sourceState, () -> table);
     }
 
     /**
@@ -340,17 +360,26 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     public static JsPendingTable<JsTable> wrapTable(WorkerConnection connection, Ticket ticket,
             Promise<JsTable> table) {
         Promise<ClientTableState> sourceState = table.<ClientTableState>then(t -> Promise.resolve(t.state()));
-        return new Fetched<JsTable>(connection, ticket, () -> table, sourceState);
+        return wrap(connection, ticket, () -> table, sourceState);
     }
 
     /**
-     * Queues an operation on the given connection's next batch. The new state retains {@code sourceState} until it has
-     * been created or has failed, so the source is not released out from under it.
+     * Queues an operation whose source state exists; the new state retains it until it has been created or has failed,
+     * so the source is not released out from under it.
      */
-    public static JsPendingTable<JsResolvedTable> enqueue(WorkerConnection connection, Ticket resultId,
-            BatchTableRequest.Operation.Builder operation, Promise<ClientTableState> sourceState) {
+    private static JsPendingTable<JsResolvedTable> enqueue(WorkerConnection connection, Ticket resultId,
+            BatchTableRequest.Operation.Builder operation, ClientTableState sourceState) {
+        return enqueue(connection, resultId, operation, dependent -> retainUntilSettled(sourceState, dependent));
+    }
+
+    /**
+     * Queues an operation on the given connection's next batch. {@code retainSource} is called with the new state
+     * before this returns, so the source is retained before anything else can run.
+     */
+    private static JsPendingTable<JsResolvedTable> enqueue(WorkerConnection connection, Ticket resultId,
+            BatchTableRequest.Operation.Builder operation, Consumer<ClientTableState> retainSource) {
         Operation pending = new Operation(connection, new TableTicket(resultId), operation);
-        retainUntilSettled(sourceState, pending.state);
+        retainSource.accept(pending.state);
 
         List<Operation> tasks = enqueued.get(connection);
         if (tasks == null) {
@@ -359,18 +388,10 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             List<Operation> batch = tasks;
 
             // Wait a microtask, then send all accumulated requests in a single gRPC call, once the server is ready
-            Promise.resolve((Object) null).then(ignore -> {
+            LazyPromise.runLater(() -> {
                 List<Operation> removed = enqueued.remove(connection);
                 assert removed == batch;
-                try {
-                    sendBatch(connection, batch);
-                } catch (Throwable t) {
-                    // Nothing else observes this callback; the states must carry the failure
-                    for (Operation task : batch) {
-                        task.state.setResolution(ClientTableState.ResolutionState.FAILED, String.valueOf(t));
-                    }
-                }
-                return null;
+                sendBatch(connection, batch);
             });
         }
         tasks.add(pending);
@@ -378,17 +399,23 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
-     * Has {@code dependent} retain {@code source} until the dependent is running, failed, or released. The source may
-     * not exist yet (a fetch that has not been issued), in which case the retain happens when it does; a dependent that
-     * has already settled by then releases it again at once.
+     * Has {@code dependent} retain {@code source} until the dependent is running, failed, or released.
+     */
+    private static void retainUntilSettled(ClientTableState source, ClientTableState dependent) {
+        source.retain(dependent);
+        dependent.onRunning(
+                ignore -> source.unretain(dependent),
+                failure -> source.unretain(dependent),
+                () -> source.unretain(dependent));
+    }
+
+    /**
+     * As {@link #retainUntilSettled(ClientTableState, ClientTableState)} for a source that may not exist yet: the
+     * retain happens when it does, and a dependent that has already settled by then releases it again at once.
      */
     private static void retainUntilSettled(Promise<ClientTableState> source, ClientTableState dependent) {
         source.then(sourceState -> {
-            sourceState.retain(dependent);
-            dependent.onRunning(
-                    ignore -> sourceState.unretain(dependent),
-                    failure -> sourceState.unretain(dependent),
-                    () -> sourceState.unretain(dependent));
+            retainUntilSettled(sourceState, dependent);
             return null;
         }, failure -> {
             // The source never came to be; the dependent will fail on the server in its own right
@@ -440,7 +467,9 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             });
             // TODO support cancelation? Otherwise we're okay losing the reference to this stream
             return null;
-        }, err -> {
+        }).catch_(err -> {
+            // The server was not ready, or setting up the stream threw: nothing else observes this, so the states
+            // must carry the failure
             for (Operation task : ticketToTask.values()) {
                 task.state.setResolution(ClientTableState.ResolutionState.FAILED, String.valueOf(err));
                 connection.scheduleCheck(task.state);

@@ -986,7 +986,7 @@ public class WorkerConnection {
     public Promise<Object> whenServerReady(String operationName) {
         switch (state) {
             case Disconnected:
-                throw new IllegalStateException("Can't " + operationName + " while connection is closed");
+                return Promise.reject("Can't " + operationName + " while connection is closed");
             case Failed:
                 state = State.Reconnecting;
                 newSessionReconnect.initialConnection();
@@ -1505,9 +1505,9 @@ public class WorkerConnection {
      * the fetch is issued, so operations can be chained on the result immediately.
      */
     public JsPendingTable<JsTable> pendingTable(JsTableFetch fetcher, String fetchSummary) {
-        TableTicket handle = tickets.newTableTicket();
-        return MicrotaskBatchImpl.wrapTable(this, handle.makeTicket(), newState(fetcher, fetchSummary, handle).refetch()
-                .then(cts -> Promise.resolve(new JsTable(this, cts))));
+        ClientTableState state = newState(fetcher, fetchSummary, tickets.newTableTicket());
+        return MicrotaskBatchImpl.wrapTable(this, state,
+                state.refetch().then(cts -> Promise.resolve(new JsTable(this, cts))));
     }
 
     /**
