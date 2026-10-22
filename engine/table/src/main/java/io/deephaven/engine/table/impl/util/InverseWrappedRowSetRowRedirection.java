@@ -64,9 +64,7 @@ public class InverseWrappedRowSetRowRedirection implements RowRedirection {
             @NotNull final FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap) {
-        try (final RowSet prevWrappedRowSet = wrappedRowSet.trackingCast().copyPrev()) {
-            doMapping(mappedKeysOut.asWritableLongChunk(), keysToMap, prevWrappedRowSet);
-        }
+        doMapping(mappedKeysOut.asWritableLongChunk(), keysToMap, wrappedRowSet.trackingCast().prev());
     }
 
     /**
