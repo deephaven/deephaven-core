@@ -16,7 +16,7 @@ Deephaven's Docker images run on the following operating systems:
 - Windows 10 or 11 with [Windows Subsystem for Linux 2 (WSL 2)](https://learn.microsoft.com/en-us/windows/wsl/install)
 
 > [!WARNING]
-> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven [ticking tables](./crash-course/create-tables.md#ticking-tables). Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
+> WSL 2's default time-sync setup can cause spurious 10–20-second clock jumps that stall Deephaven [ticking tables](./crash-course/create-tables.md#create-ticking-tables). Before running Deephaven on WSL 2, apply one of the [time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md).
 
 ## Prerequisites
 
@@ -32,7 +32,7 @@ The following shell command downloads and runs the `server` image:
 docker run --name deephaven -p 10000:10000 ghcr.io/deephaven/server:latest
 ```
 
-Once the container is running, [open the Deephaven IDE](#open-the-deephaven-ide) and log in with the [pre-shared key](../how-to-guides/authentication/auth-psk.md) that Deephaven prints to the Docker logs. To set your own key, see [Set a pre-shared key](#set-a-pre-shared-key).
+Once the container is running, [open the Deephaven IDE](#open-the-deephaven-ide) and log in. That section explains where to find your key, and [Set a pre-shared key](#set-a-pre-shared-key) shows how to choose your own.
 
 > [!WARNING]
 > [`docker run`](https://docs.docker.com/reference/cli/docker/container/run/) creates a new container from an image every time you call it. To reuse a container that `docker run` created, use [`docker start`](https://docs.docker.com/reference/cli/docker/container/start/).
@@ -112,7 +112,7 @@ After you run a `docker create` command or edit the file, see [Start the applica
 
 ### Set a pre-shared key
 
-By default, Deephaven uses a [pre-shared key](../how-to-guides/authentication/auth-psk.md) to authenticate users. If you don't set a key, Deephaven generates a random one and prints it to the Docker logs.
+By default, Deephaven uses a [pre-shared key](../how-to-guides/authentication/auth-psk.md) to authenticate users. Set your own key so you don't have to [look up the generated one](#open-the-deephaven-ide) each time the server starts.
 
 The following deployment sets the pre-shared key to `YOUR_PASSWORD_HERE`.
 
@@ -363,7 +363,7 @@ Once Deephaven is running, you can open the Deephaven IDE in your web browser. T
 
 If you [changed the port](#change-the-port), replace `10000` with that port.
 
-Unless you [disabled authentication](#disable-authentication), the IDE asks for a key when it opens. Enter the [pre-shared key](#set-a-pre-shared-key) you set. If you didn't set one, use the key that Deephaven prints to the container's logs. To see the logs, run [`docker logs deephaven`](https://docs.docker.com/reference/cli/docker/container/logs/), or [`docker compose logs`](https://docs.docker.com/reference/cli/docker/compose/logs/) for a Compose deployment.
+Unless you [disabled authentication](#disable-authentication), the IDE asks for a key when it opens. Enter the [pre-shared key](#set-a-pre-shared-key) you set. If you didn't set one, Deephaven generates a random key each time it starts and prints it to the container's logs. To see the logs, run [`docker logs deephaven`](https://docs.docker.com/reference/cli/docker/container/logs/), or [`docker compose logs`](https://docs.docker.com/reference/cli/docker/compose/logs/) for a Compose deployment.
 
 ![The Deephaven IDE upon startup](../assets/tutorials/launch/ide_startup.png)
 

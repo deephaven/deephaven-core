@@ -40,7 +40,7 @@ groovy = "3.0.25"
 # Only bump this in concert with netty (which will update boringssl). See the dependency matrix
 # for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 grpc = "1.84.0"
-netty = "4.2.18.Final"
+netty = "4.2.19.Final"
 
 protobuf-gwt='4.33.4-1'
 grpc-gwt='1.84.0-1'
@@ -66,7 +66,7 @@ javax-validation = "2.0.1.Final"
 jdom2 = "2.0.6.1"
 jetbrains = "26.1.0"
 jetty = "12.1.14"
-jpy = "2.1.0"
+jpy = "2.2.0"
 jsinterop = "2.1.0"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.2.0"
@@ -84,7 +84,7 @@ randelshofer = "2.0.1"
 rdblue = "0.1.1"
 rewrite-java = "8.90.4"
 # When bumping selenium, also bump the docker image in docker/registry/selenium/gradle.properties to the same version
-selenium = "4.49.0"
+selenium = "4.51.0"
 slf4j = "2.0.20"
 snappy = "1.1.10.12"
 javapoet = "0.20.0"

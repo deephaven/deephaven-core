@@ -595,10 +595,10 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]>
                 chunk.set(ii, NULL_SHORT);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_SHORT);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final short[] currentBlock = blocks[blockNo];
                 // region conversion
                 chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
@@ -625,11 +625,11 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]>
                 chunk.set(ii, NULL_SHORT);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_SHORT);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final short[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             // region conversion
             chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);

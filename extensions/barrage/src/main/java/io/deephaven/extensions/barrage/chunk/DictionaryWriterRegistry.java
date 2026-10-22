@@ -61,7 +61,10 @@ public interface DictionaryWriterRegistry {
     /** Returns {@code true} if any registered dictionary has a pending delta that needs a DictionaryBatch message. */
     boolean hasAnyDelta();
 
-    /** Advances the delta boundary for every registered state that currently has a pending delta. */
+    /**
+     * Accepts the batch just written, calling {@link DictionaryWriterState#resetDelta()} on every registered state,
+     * whether or not the batch carried a DictionaryBatch for it.
+     */
     void resetDeltas();
 
     /**

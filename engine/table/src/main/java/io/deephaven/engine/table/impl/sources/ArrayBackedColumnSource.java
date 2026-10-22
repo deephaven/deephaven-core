@@ -46,6 +46,9 @@ import java.util.Collection;
  * <p>
  * The column source is dense with keys from 0 to capacity, there can be no holes. Arrays are divided into blocks so
  * that the column source can be incrementally expanded without copying data from one array to another.
+ * <p>
+ * A row key at or past the capacity holds no value: every read of such a row key, current or previous, by key or by
+ * chunk, returns null. Writing such a row key requires a call to {@link #ensureCapacity(long)} first.
  */
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractColumnSource<T>
@@ -108,7 +111,8 @@ public abstract class ArrayBackedColumnSource<T>
     }
 
     /**
-     * The highest slot that can be used without a call to {@link #ensureCapacity(long)}.
+     * The highest slot that can be written without a call to {@link #ensureCapacity(long)}. Reads of higher slots
+     * return null.
      */
     long maxIndex;
 
@@ -565,7 +569,8 @@ public abstract class ArrayBackedColumnSource<T>
             final long first = rowSequence.firstRowKey();
             final long last = rowSequence.lastRowKey();
 
-            if (getBlockNo(first) == getBlockNo(last)) {
+            // rows past maxIndex have no block to point into; filling reads them as null
+            if (getBlockNo(first) == getBlockNo(last) && last <= maxIndex) {
                 // Optimization if the caller requests a single range which happens to fall within a single block
                 final int blockPos = getBlockNo(first);
                 return DefaultGetContext.resetChunkFromArray(context,

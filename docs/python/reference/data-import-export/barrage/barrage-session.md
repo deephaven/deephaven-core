@@ -2,7 +2,7 @@
 title: barrage_session
 ---
 
-The `barrage_session` method returns a cached Deephaven gRPC session ([`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession)) to a remote server if one is available; otherwise, it creates a new [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession).
+The `barrage_session` function creates a new [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession), a Deephaven gRPC session to a remote server. Each call opens a new gRPC channel.
 
 <!--TODO: Add information about client mutual TLS authentication when it's added. -->
 
@@ -15,7 +15,8 @@ barrage_session(
   auth_type: str = 'Anonymous',
   auth_token: str = '',
   use_tls: bool = False,
-  tls_root_certs: bytes = None
+  tls_root_certs: bytes = None,
+  extra_headers: dict[str, str] = None,
 ) -> BarrageSession
 ```
 
@@ -34,12 +35,12 @@ The port number that the remote Deephaven server is listening on. The default va
 </Param>
 <Param name="auth_type" type="str" optional>
 
-The authentication type string. Can be "Anonymous", "Basic", or any custom-built authenticator in the server, such as "io.deephaven.authentication.psk.PskAuthenticationHandler". The default is "Anonymous"
+The authentication type string. Can be `"Anonymous"`, `"Basic"`, or any custom-built authenticator in the server, such as `"io.deephaven.authentication.psk.PskAuthenticationHandler"`. The default is `"Anonymous"`.
 
 </Param>
 <Param name="auth_token" type="str" optional>
 
-The authentication token string. When auth_type is Basic, it must be "user:password". When `auth_type` is Anonymous, `auth_token` will be ignored. When `auth_type` is a custom-built authenticator, `auth_token` must conform to the specific requirements of the authenticator.
+The authentication token string. When `auth_type` is `"Basic"`, it must be `"user:password"`. When `auth_type` is `"Anonymous"`, `auth_token` will be ignored. When `auth_type` is a custom-built authenticator, `auth_token` must conform to the specific requirements of the authenticator.
 
 </Param>
 <Param name="use_tls" type="bool" optional>
@@ -49,7 +50,12 @@ If `True`, the connection will be encrypted using TLS. The default is `False`.
 </Param>
 <Param name="tls_root_certs" type="bytes" optional>
 
-The PEM-encoded root certificates to use for TLS connection, or `None` to use system defaults. `True` implies the use of a TLS connection and the `use_tls` argument should be passed as `True`. Defaults to `None`.
+The PEM-encoded root certificates to use for TLS connection, or `None` to use system defaults. If you pass non-empty certificate bytes, you must also set `use_tls` to `True`; otherwise, `barrage_session` raises a `DHError`. Defaults to `None`.
+
+</Param>
+<Param name="extra_headers" type="dict[str, str]" optional>
+
+Extra headers to set when configuring the gRPC channel. Defaults to `None`.
 
 </Param>
 </ParamTable>
@@ -59,6 +65,9 @@ The PEM-encoded root certificates to use for TLS connection, or `None` to use sy
 A [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession).
 
 ## Examples
+
+> [!NOTE]
+> The first three examples use the default anonymous authentication, so the server must accept [anonymous authentication](../../../how-to-guides/authentication/auth-anon.md). A default Deephaven server uses [pre-shared key authentication](../../../how-to-guides/authentication/auth-psk.md) instead; for that, pass `auth_type` and `auth_token` as the last example does.
 
 The following example creates a [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) on a Deephaven server running on `localhost` at port `10000`.
 

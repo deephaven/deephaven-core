@@ -592,10 +592,10 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
                 chunk.set(ii, NULL_CHAR);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_CHAR);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final char[] currentBlock = blocks[blockNo];
                 // region conversion
                 chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
@@ -622,11 +622,11 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
                 chunk.set(ii, NULL_CHAR);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_CHAR);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final char[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             // region conversion
             chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);

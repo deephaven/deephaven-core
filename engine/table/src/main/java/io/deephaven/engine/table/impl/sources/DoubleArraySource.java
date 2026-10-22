@@ -595,10 +595,10 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
                 chunk.set(ii, NULL_DOUBLE);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_DOUBLE);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final double[] currentBlock = blocks[blockNo];
                 // region conversion
                 chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
@@ -625,11 +625,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]>
                 chunk.set(ii, NULL_DOUBLE);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_DOUBLE);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final double[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             // region conversion
             chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);

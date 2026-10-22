@@ -16,8 +16,14 @@ public class WhereFilterWithDeclaredBarriersImpl extends WhereFilterDelegatingBa
      * @param filter the filter to wrap
      * @param declaredBarriers the barrier objects that this filter declares
      * @return a new {@code WhereFilterBarrierImpl} instance that declares the barrier
+     * @throws IllegalArgumentException if any barrier is null
      */
     public static WhereFilter of(WhereFilter filter, Object... declaredBarriers) {
+        for (final Object barrier : declaredBarriers) {
+            if (barrier == null) {
+                throw new IllegalArgumentException("A filter may not declare a null barrier: " + filter);
+            }
+        }
         return new WhereFilterWithDeclaredBarriersImpl(filter, declaredBarriers);
     }
 

@@ -106,6 +106,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     protected long capacity = 0;
     /** the reinterpreted destination writable sources */
     protected final WritableColumnSource<?>[] destSources;
+    /** The most rows {@link #ensureSourceCapacity()} has grown the subscribed columns' sources to hold. */
+    private long allocatedCapacity = 0;
 
     /**
      * The client and the server update asynchronously with respect to one another. The client requests a viewport, the
@@ -329,6 +331,9 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         serverColumns = finalColumns;
         serverReverseViewport = reverseViewport;
 
+        // a column subscribed for the first time needs storage for the rows this table already holds
+        ensureSourceCapacity();
+
         if (viewportChangedCallback == null) {
             return;
         }
@@ -347,6 +352,24 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
     protected boolean isSubscribedColumn(int i) {
         return serverColumns == null || serverColumns.get(i);
+    }
+
+    /**
+     * Grows the source of each subscribed column to hold {@link #capacity} rows, or more if a source was grown larger
+     * before. The source of a column that is not subscribed does not grow, as nothing is written to it: an array-backed
+     * source reads as null at every row past its capacity, so a column that has never been subscribed holds no values
+     * at all, and costs no storage.
+     */
+    protected void ensureSourceCapacity() {
+        allocatedCapacity = Math.max(allocatedCapacity, capacity);
+        if (allocatedCapacity == 0) {
+            return;
+        }
+        for (int ii = 0; ii < destSources.length; ++ii) {
+            if (isSubscribedColumn(ii)) {
+                destSources[ii].ensureCapacity(allocatedCapacity);
+            }
+        }
     }
 
     private synchronized void realRefresh() {

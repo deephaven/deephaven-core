@@ -91,8 +91,8 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     }
 
     /**
-     * Get the capacity of this column source. This number is one higher than the highest key that may be accessed (read
-     * or written).
+     * Get the capacity of this column source. This number is one higher than the highest key that may be written; reads
+     * of higher keys return null.
      *
      * @return The capacity of this column source
      */

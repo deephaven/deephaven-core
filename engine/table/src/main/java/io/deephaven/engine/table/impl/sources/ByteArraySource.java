@@ -595,10 +595,10 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
                 chunk.set(ii, NULL_BYTE);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_BYTE);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final byte[] currentBlock = blocks[blockNo];
                 // region conversion
                 chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
@@ -625,11 +625,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
                 chunk.set(ii, NULL_BYTE);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_BYTE);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final byte[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             // region conversion
             chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);

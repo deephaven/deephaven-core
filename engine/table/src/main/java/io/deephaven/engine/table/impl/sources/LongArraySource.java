@@ -887,10 +887,10 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 chunk.set(ii, NULL_LONG);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_LONG);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final long[] currentBlock = blocks[blockNo];
                 // region conversion
                 chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
@@ -914,10 +914,10 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 chunk.set(ii, null);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, null);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final long[] currentBlock = blocks[blockNo];
                 // region conversion
                 chunk.set(ii,converter.apply( currentBlock[(int) (fromIndex & INDEX_MASK)]));
@@ -944,11 +944,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 chunk.set(ii, NULL_LONG);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_LONG);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final long[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             // region conversion
             chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
@@ -971,11 +971,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 chunk.set(ii, null);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, null);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final long[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             // region conversion
             chunk.set(ii,converter.apply( currentBlock[(int) (fromIndex & INDEX_MASK)]));

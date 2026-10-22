@@ -595,10 +595,10 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
                 chunk.set(ii, NULL_INT);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_INT);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final int[] currentBlock = blocks[blockNo];
                 // region conversion
                 chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
@@ -625,11 +625,11 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
                 chunk.set(ii, NULL_INT);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_INT);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final int[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             // region conversion
             chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
