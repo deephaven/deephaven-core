@@ -1,5 +1,5 @@
 ---
-title: Liveness scopes
+title: Liveness Scopes
 ---
 
 This guide discusses liveness scopes. It covers why queries can benefit from a liveness scope, how liveness scopes work, and how to create and use one.

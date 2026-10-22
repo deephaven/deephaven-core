@@ -1,5 +1,5 @@
 ---
-title: Systemic object marking
+title: Systemic Object Marking
 ---
 
 In Deephaven, a **systemic object** is an object whose failure the engine reports to the server, in addition to logging it. The engine logs every failure, but it reports only failures of systemic objects.
@@ -160,7 +160,7 @@ session.run_script(critical_script, systemic=True)
 
 - [Live DAG](./dag.md)
 - [Table types](./table-types.md)
-- [Execution context](./execution-context.md)
+- [Execution Context](./execution-context.md)
 - [Table listeners](../how-to-guides/table-listeners-python.md)
 - [Partitioned tables](../how-to-guides/partitioned-tables.md)
 - [Formulas](../how-to-guides/formulas.md)

@@ -48,6 +48,6 @@ table_from_func = None
 
 ## Related documentation
 
-- [Liveness scopes](../../conceptual/liveness-scope-concept.md)
+- [Liveness Scopes](../../conceptual/liveness-scope-concept.md)
 - [`liveness_scope`](./liveness-scope.md)
 - [Pydoc](/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.LivenessScope)

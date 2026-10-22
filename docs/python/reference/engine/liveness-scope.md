@@ -66,6 +66,6 @@ def get_current_values(source_table):
 
 ## Related documentation
 
-- [Liveness scopes](../../conceptual/liveness-scope-concept.md)
+- [Liveness Scopes](../../conceptual/liveness-scope-concept.md)
 - [`LivenessScope`](./LivenessScope.md)
 - [Pydoc](/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.liveness_scope)

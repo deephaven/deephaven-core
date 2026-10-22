@@ -1,5 +1,5 @@
 ---
-title: Execution context
+title: Execution Context
 ---
 
 An [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.ExecutionContext) is the environment the engine evaluates a query in. It bundles four things:
@@ -244,6 +244,9 @@ execution_context = (
 update_graph.start()
 ```
 
+> [!NOTE]
+> When creating a new update graph, you must provide a unique name. If you're running this in a Deephaven server where a "DEFAULT" update graph already exists, use a different name like "MyCustomGraph" to avoid conflicts. If you run the example a second time, the name is already taken, so call [`existingOrBuild`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.Builder.html#existingOrBuild() instead of `build` to reuse the graph you created the first time.
+
 A context also has an operation initializer, which controls whether operations parallelize their initial work. It also carries the [`AuthContext`](/core/javadoc/io/deephaven/auth/AuthContext.html) that was current when the context was built. Deephaven records that [`AuthContext`](/core/javadoc/io/deephaven/auth/AuthContext.html) with the work done in that context, for example in the performance logs.
 
 The builder lets you specify each component:
@@ -272,13 +275,6 @@ with ctx:
 Because the [query scope](../how-to-guides/query-scope.md) is new and empty, query strings in this context can't see the script's Python variables or functions. Query strings that use them fail with a `Cannot find variable or class` or `Cannot find method` error. Put any values they need in the context's [query scope](../how-to-guides/query-scope.md) first, for example with `execution_context.getQueryScope().putParam("my_value", my_value)`.
 
 Refreshing tables that belong to different [update graphs](./dag.md#update-graph-ug-cycles) can't be used together in one table operation. For example, a [join](../how-to-guides/joins-exact-relational.md) between a table that ticks on `MyCustomGraph` and a table that ticks on the server's main [update graph](./dag.md#update-graph-ug-cycles) fails.
-
-> [!NOTE]
-> [Update graph](./dag.md#update-graph-ug-cycles) names must be unique within the JVM.
->
-> - Building a graph with a name that's already in use, including re-running this example, throws an `IllegalStateException`.
-> - The Deephaven server's own [update graph](./dag.md#update-graph-ug-cycles) is named `"DEFAULT"`, so don't use that name.
-> - To reuse an existing graph when you re-run the code, call the graph builder's [`existingOrBuild`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.Builder.html#existingOrBuild()) method instead of [`build`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.Builder.html#build()). Both [`PeriodicUpdateGraph.Builder`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.Builder.html) and [`EventDrivenUpdateGraph.Builder`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.Builder.html) provide it.
 
 To refresh only on demand, build an [`EventDrivenUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html) instead of the [`PeriodicUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html) and pass it to [`setUpdateGraph`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#setUpdateGraph(io.deephaven.engine.updategraph.UpdateGraph)) in the builder chain above. An event-driven graph has no `start` method, so leave out the [`start`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html#start()) call. Instead, it runs one update cycle each time you call its [`requestRefresh`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html#requestRefresh()) method:
 

@@ -52,6 +52,6 @@ scope.release()
 
 ## Related documentation
 
-- [Liveness scopes](../../conceptual/liveness-scope-concept.md)
+- [Liveness Scopes](../../conceptual/liveness-scope-concept.md)
 - [Execution Context](../../conceptual/execution-context.md)
 - [Javadoc](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html)
