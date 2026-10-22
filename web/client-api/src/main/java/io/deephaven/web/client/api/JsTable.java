@@ -1010,9 +1010,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsMethod
     public JsPendingTable<JsTable> copy() {
-        // The copy is only created on await, so a copy that is only chained on retains nothing.
-        // TODO BEFORE MERGE: once pending tables hold a ClientTableState instead of a raw ticket, this becomes a plain
-        // retain of the current state and the deferred construction goes away.
+        // The copy is only created on await, so a copy that is only chained on binds nothing; operations chained on
+        // it retain the current state directly while they are created.
         final ClientTableState current = state();
         return MicrotaskBatchImpl.wrap(workerConnection, current.getHandle().makeTicket(),
                 () -> Promise.resolve(new JsTable(this)), Promise.resolve(current));

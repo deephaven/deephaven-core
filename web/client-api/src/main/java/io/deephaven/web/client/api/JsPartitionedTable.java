@@ -307,10 +307,9 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                     .refetch()
                     .then(state -> Promise.resolve(new JsTable(state.getConnection(), state)));
         }
-        // Each caller gets its own copy, all sharing the one key table's ticket. The copies are JsTable bindings on
-        // one ClientTableState, so closing one leaves the others alive and the state is released with the last.
-        // TODO BEFORE MERGE: re-verify once pending tables are backed by a CTS; any ticket shared between closeable
-        // instances without that refcount (see Resolved.copy()) is a one-close-kills-all bug.
+        // Each caller gets its own copy, all sharing the one key table's state. The copies are JsTable bindings on
+        // that state and chained operations retain it directly, so closing any one leaves the others alive and the
+        // state is released with the last.
         Promise<ClientTableState> keysState = keys.<ClientTableState>then(table -> Promise.resolve(table.state()));
         return MicrotaskBatchImpl.<JsTable>wrap(connection, keysHandle.makeTicket(),
                 () -> keys.<JsTable>then(table -> table.copy().resolve()), keysState);
