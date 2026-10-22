@@ -2047,7 +2047,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         private DoubleChunkedSumOperator addAndGetDoubleSumOperator(@NotNull final String inputColumnName) {
-            return getAndAddBasicOperator(n -> new DoubleChunkedSumOperator(false, n), inputColumnName);
+            return getAndAddBasicOperator(n -> new DoubleChunkedSumOperator(false, false, n), inputColumnName);
         }
 
         private LongChunkedSumOperator addAndGetLongSumOperator(@NotNull final String inputColumnName) {
@@ -2177,9 +2177,9 @@ public class AggregationProcessor implements AggregationContextFactory {
         } else if (type == Character.class || type == char.class) {
             return new CharChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Double.class || type == double.class) {
-            return new DoubleChunkedSumOperator(isAbsolute, name);
+            return new DoubleChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Float.class || type == float.class) {
-            return new FloatChunkedSumOperator(isAbsolute, name);
+            return new FloatChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Integer.class || type == int.class) {
             return new IntChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Long.class || type == long.class) {

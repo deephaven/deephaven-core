@@ -311,4 +311,9 @@ public class AddOnlyAggregationTest {
     public void testBooleanSum() {
         testKeyedAndUnkeyed(List.of(AggSum("S=Bool1"), AggAbsSum("A=Bool1")));
     }
+
+    @Test
+    public void testFloatingPointSum() {
+        testKeyedAndUnkeyed(List.of(AggSum("SD=Double1", "SF=Float1"), AggAbsSum("AD=Double1", "AF=Float1")));
+    }
 }
