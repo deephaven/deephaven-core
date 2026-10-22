@@ -289,4 +289,11 @@ public class AddOnlyAggregationTest {
         doOperatorTest(table -> table.aggBy(List.of(AggSum("Long1")), true, null, List.of(ColumnName.of("Sym"))),
                 true);
     }
+
+    @Test
+    public void testIntegralSum() {
+        testKeyedAndUnkeyed(List.of(
+                AggSum("SL=Long1", "SI=Int1", "SS=Short1", "SB=Byte1", "SC=Char1"),
+                AggAbsSum("AL=Long1", "AI=Int1", "AS=Short1", "AB=Byte1", "AC=Char1")));
+    }
 }

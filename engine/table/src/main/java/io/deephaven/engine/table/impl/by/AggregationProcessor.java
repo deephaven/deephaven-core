@@ -973,11 +973,18 @@ public class AggregationProcessor implements AggregationContextFactory {
      * {@link AggregationContext} for standard aggregations. Accumulates state by visiting each aggregation.
      */
     private final class NormalConverter extends Converter {
+        /**
+         * Whether the operators only ever receive additions: static and add-only inputs never remove or modify rows,
+         * and aggregations of blink inputs ignore removals. Operators may then omit the state those changes need.
+         */
+        private final boolean onlyAdds;
+
         private NormalConverter(
                 @NotNull final Table table,
                 final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
             super(table, requireStateChangeRecorder, groupByColumnNames);
+            onlyAdds = isAddOnly || isBlink;
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -1048,7 +1055,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAbsSum absSum) {
-            addBasicOperators((t, n) -> makeSumOperator(t, n, true));
+            addBasicOperators((t, n) -> makeSumOperator(t, n, true, onlyAdds));
         }
 
         @Override
@@ -1156,7 +1163,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecSum sum) {
-            addBasicOperators((t, n) -> makeSumOperator(t, n, false));
+            addBasicOperators((t, n) -> makeSumOperator(t, n, false, onlyAdds));
         }
 
         public void visit(@NotNull final AggSpecTDigest tDigest) {
@@ -1476,7 +1483,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAbsSum absSum) {
-            addBasicOperators((t, n) -> makeSumOperator(t, n, true));
+            addBasicOperators((t, n) -> makeSumOperator(t, n, true, false));
         }
 
         @Override
@@ -1533,7 +1540,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecSum sum) {
-            addBasicOperators((t, n) -> makeSumOperator(t, n, false));
+            addBasicOperators((t, n) -> makeSumOperator(t, n, false, false));
         }
 
         @Override
@@ -1596,14 +1603,14 @@ public class AggregationProcessor implements AggregationContextFactory {
         public void visit(@NotNull final Count count) {
             final String resultName = count.column().name();
             final ColumnSource<?> resultSource = table.getColumnSource(resultName);
-            addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
+            addOperator(makeSumOperator(resultSource.getType(), resultName, false, false), resultSource, resultName);
         }
 
         @Override
         public void visit(@NotNull final CountWhere countWhere) {
             final String resultName = countWhere.column().name();
             final ColumnSource<?> resultSource = table.getColumnSource(resultName);
-            addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
+            addOperator(makeSumOperator(resultSource.getType(), resultName, false, false), resultSource, resultName);
         }
 
         @Override
@@ -1856,7 +1863,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final String resultName = pair.output().name();
                 final ColumnSource<?> resultSource = table.getColumnSource(resultName);
 
-                addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
+                addOperator(makeSumOperator(resultSource.getType(), resultName, false, false), resultSource,
+                        resultName);
             }
         }
 
@@ -2043,7 +2051,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         private LongChunkedSumOperator addAndGetLongSumOperator(@NotNull final String inputColumnName) {
-            return getAndAddBasicOperator(n -> new LongChunkedSumOperator(false, n), inputColumnName);
+            return getAndAddBasicOperator(n -> new LongChunkedSumOperator(false, false, n), inputColumnName);
         }
 
         private <OP_TYPE extends IterativeChunkedAggregationOperator> OP_TYPE getAndAddBasicOperator(
@@ -2153,26 +2161,31 @@ public class AggregationProcessor implements AggregationContextFactory {
     // Operator Construction Helpers (e.g. to multiplex on input/output data type)
     // -----------------------------------------------------------------------------------------------------------------
 
+    /**
+     * @param onlyAdds whether the operator only ever receives additions, so it may omit the state that removals and
+     *        modifications need
+     */
     private static IterativeChunkedAggregationOperator makeSumOperator(
             @NotNull final Class<?> type,
             @NotNull final String name,
-            final boolean isAbsolute) {
+            final boolean isAbsolute,
+            final boolean onlyAdds) {
         if (type == Boolean.class || type == boolean.class) {
             return new BooleanChunkedSumOperator(name);
         } else if (type == Byte.class || type == byte.class) {
-            return new ByteChunkedSumOperator(isAbsolute, name);
+            return new ByteChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Character.class || type == char.class) {
-            return new CharChunkedSumOperator(isAbsolute, name);
+            return new CharChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Double.class || type == double.class) {
             return new DoubleChunkedSumOperator(isAbsolute, name);
         } else if (type == Float.class || type == float.class) {
             return new FloatChunkedSumOperator(isAbsolute, name);
         } else if (type == Integer.class || type == int.class) {
-            return new IntChunkedSumOperator(isAbsolute, name);
+            return new IntChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Long.class || type == long.class) {
-            return new LongChunkedSumOperator(isAbsolute, name);
+            return new LongChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Short.class || type == short.class) {
-            return new ShortChunkedSumOperator(isAbsolute, name);
+            return new ShortChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == BigInteger.class) {
             return new BigIntegerChunkedSumOperator(isAbsolute, name);
         } else if (type == BigDecimal.class) {
