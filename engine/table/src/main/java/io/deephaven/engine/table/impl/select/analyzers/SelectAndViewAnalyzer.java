@@ -49,7 +49,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
     };
 
     public enum Mode {
-        VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING, SELECT_REDIRECTED_STATIC
+        VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING, SELECT_REDIRECTED_POSITIONAL
     }
     public enum UpdateFlavor {
         Select, View, Update, UpdateView, LazyUpdate
@@ -88,14 +88,15 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         final TrackingRowSet rowSet = parentTable.getRowSet();
 
         final boolean parentIsFlat = parentTable.isFlat();
+        // a positional result may be flat, because the rows of its static or append-only parent never move
         final boolean flatResult = !parentIsFlat
                 && (columnSources.isEmpty() || !publishParentSources)
-                && mode == Mode.SELECT_STATIC;
+                && (mode == Mode.SELECT_STATIC || mode == Mode.SELECT_REDIRECTED_POSITIONAL);
         final AnalyzerContext context = new AnalyzerContext(parentTable, publishParentSources, flatResult);
 
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final RowRedirection rowRedirection;
-        if (mode == Mode.SELECT_REDIRECTED_STATIC) {
+        if (mode == Mode.SELECT_REDIRECTED_POSITIONAL) {
             rowRedirection = new InverseWrappedRowSetRowRedirection(rowSet);
         } else if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
             final WritableRowRedirection writableRowRedirection =
@@ -302,19 +303,35 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     layer = new SelectColumnLayer(
                             updateGraph, rowSet, context, sc, scs, null, distinctDeps, execDeps.toIntArray(),
                             mcsBuilder,
-                            false, useResultKeySpace);
+                            false, false, useResultKeySpace);
                     break;
                 }
-                case SELECT_REDIRECTED_STATIC: {
+                case SELECT_REDIRECTED_POSITIONAL: {
+                    if (context.flatResult) {
+                        // result row keys are positions, so the column needs no redirection
+                        final WritableColumnSource<?> scs = parentTable.isRefreshing()
+                                ? sc.newDestInstance(targetDestinationCapacity)
+                                : sc.newFlatDestInstance(targetDestinationCapacity);
+                        if (!parentTable.isRefreshing()) {
+                            maybeSetStaticColumnSourceImmutable(scs);
+                        }
+                        maybeCreateAlias.accept(scs);
+                        layer = new SelectColumnLayer(
+                                updateGraph, rowSet, context, sc, scs, null, distinctDeps, execDeps.toIntArray(),
+                                mcsBuilder, false, false, useResultKeySpace);
+                        break;
+                    }
                     final WritableColumnSource<?> underlyingSource = sc.newDestInstance(rowSet.size());
                     final WritableColumnSource<?> scs = WritableRedirectedColumnSource.maybeRedirect(
                             rowRedirection, underlyingSource, rowSet.size());
-                    maybeSetStaticColumnSourceImmutable(scs);
+                    if (!parentTable.isRefreshing()) {
+                        maybeSetStaticColumnSourceImmutable(scs);
+                    }
                     maybeCreateAlias.accept(scs);
                     layer = new SelectColumnLayer(
                             updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps,
                             execDeps.toIntArray(),
-                            mcsBuilder, true, useResultKeySpace);
+                            mcsBuilder, false, true, useResultKeySpace);
                     break;
                 }
                 case SELECT_REDIRECTED_REFRESHING:
@@ -332,7 +349,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     layer = new SelectColumnLayer(
                             updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps,
                             execDeps.toIntArray(),
-                            mcsBuilder, rowRedirection != null, useResultKeySpace);
+                            mcsBuilder, rowRedirection != null, false, useResultKeySpace);
                     break;
                 }
                 default:
@@ -433,7 +450,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         private List<SelectColumn> remainingCols;
         /** Whether the result should be flat. */
         private boolean flatResult;
-        /** The row set of a flat result. */
+        /** The row set of a flat result, which a refreshing result grows as its parent appends rows. */
         private TrackingRowSet flatResultRowSet;
         /** The layer that will be used to process redirection, if we have one. */
         private int redirectionLayer = Layer.UNSET_INDEX;
@@ -822,15 +839,20 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         /**
-         * Flatten the upstream update from the parent key space to the destination key space. We are guaranteed to be
-         * in STATIC_SELECT mode.
+         * Flatten the upstream update from the parent key space to the destination key space. The result is flat, so
+         * the parent is static or append-only, and the upstream update consists only of adds, which occupy the final
+         * positions of the parent.
          *
          * @return the flattened update
          */
         synchronized TableUpdate resultKeySpaceUpdate() {
             if (upstreamInResultSpace == null) {
+                final long addedSize = upstream.added().size();
+                final long firstAddedPosition = parentRowSet.size() - addedSize;
                 upstreamInResultSpace = new TableUpdateImpl(
-                        RowSetFactory.flat(upstream.added().size()), RowSetFactory.empty(), RowSetFactory.empty(),
+                        addedSize == 0 ? RowSetFactory.empty()
+                                : RowSetFactory.fromRange(firstAddedPosition, firstAddedPosition + addedSize - 1),
+                        RowSetFactory.empty(), RowSetFactory.empty(),
                         RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
             }
             return upstreamInResultSpace;

@@ -10,6 +10,7 @@ import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.testing.Asserts;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
@@ -22,10 +23,12 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
+import io.deephaven.engine.table.impl.util.InverseWrappedRowSetRowRedirection;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
@@ -766,6 +769,80 @@ public class QueryTableSelectUpdateTest {
     }
 
     @Test
+    public void testAppendOnlySparseIncremental() {
+        for (int seed = 0; seed < 3; ++seed) {
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                testAppendOnlySparseIncremental(seed);
+            }
+        }
+    }
+
+    @Test
+    public void testAppendOnlySparseIncrementalParallel() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 2, 1);
+        final boolean oldForceParallel = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
+        final long oldMinimumRows = QueryTable.MINIMUM_PARALLEL_SELECT_ROWS;
+        try {
+            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+            // spread the adds of each column across several jobs
+            QueryTable.MINIMUM_PARALLEL_SELECT_ROWS = 4;
+            for (int seed = 0; seed < 3; ++seed) {
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    testAppendOnlySparseIncremental(seed);
+                }
+            }
+        } finally {
+            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = oldForceParallel;
+            QueryTable.MINIMUM_PARALLEL_SELECT_ROWS = oldMinimumRows;
+        }
+    }
+
+    private void testAppendOnlySparseIncremental(final int seed) {
+        final Random random = new Random(seed);
+        final int size = 100;
+        final ColumnInfo<?, ?>[] columnInfo;
+        final QueryTable queryTable = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                        new SetGenerator<>("a", "b", "c", "d", "e"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1)));
+        queryTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        final QueryTable sparse = (QueryTable) queryTable.where("intCol % 3 != 0");
+        Assert.assertTrue(sparse.isAppendOnly());
+        Assert.assertFalse(sparse.isFlat());
+
+        final Table updated = sparse.update("X = intCol * 2", "Y = X + doubleCol", "S = Sym + X");
+        Assert.assertTrue(sparse.select("X = intCol * 2").isFlat());
+        final ColumnSource<?> xSource = updated.getColumnSource("X");
+        Assert.assertTrue(xSource instanceof RedirectedColumnSource);
+        Assert.assertTrue(((RedirectedColumnSource<?>) xSource)
+                .getRowRedirection() instanceof InverseWrappedRowSetRowRedirection);
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.from(() -> sparse.update("X = intCol * 2", "Y = X + doubleCol", "S = Sym + X")),
+                EvalNugget.from(() -> sparse.select("Sym", "X = intCol * doubleCol", "UC = Sym.toUpperCase()",
+                        "Concat = UC + X")),
+                EvalNugget.from(
+                        () -> sparse.update("Time = DateTimeUtils.epochNanosToInstant(0) + intCol * MINUTE")),
+                EvalNugget.from(() -> sparse.update("X = intCol", "PX = X_[i - 1]")),
+                new TableComparator(updated,
+                        sparse.flatten().update("X = intCol * 2", "Y = X + doubleCol", "S = Sym + X")),
+                new UpdateValidatorNugget(updated),
+                new TableComparator(sparse.select("X = intCol * 2", "Y = X + ii", "S = Sym + X"),
+                        sparse.flatten().select("X = intCol * 2", "Y = X + ii", "S = Sym + X")),
+                new UpdateValidatorNugget(sparse.select("X = intCol * 2", "Y = X + ii", "S = Sym + X")),
+        };
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step < 50; ++step) {
+            updateGraph.runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateAppends(size, random, queryTable, columnInfo));
+            TstUtils.validate("step " + step, en);
+        }
+    }
+
+    @Test
     public void testUpdateIncrementalWithI() {
         final Random random = new Random(0);
         final ColumnInfo<?, ?>[] columnInfo;
@@ -1108,6 +1185,44 @@ public class QueryTableSelectUpdateTest {
     }
 
     @Test
+    public void testAppendOnlyPositionalRedirection() {
+        final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(), intCol("A", 1, 2, 3));
+        source.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        final Table updated = source.update("B = A * 10");
+
+        final ColumnSource<Integer> bSource = updated.getColumnSource("B", int.class);
+        Assert.assertTrue(bSource instanceof RedirectedColumnSource);
+        Assert.assertTrue(((RedirectedColumnSource<?>) bSource)
+                .getRowRedirection() instanceof InverseWrappedRowSetRowRedirection);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests();
+        try {
+            addToTable(source, i(40, 50), intCol("A", 4, 5));
+            source.notifyListeners(i(40, 50), i(), i());
+            updateGraph.flushAllNormalNotificationsForUnitTests();
+
+            Assert.assertEquals(40, bSource.getInt(40));
+            Assert.assertEquals(20, bSource.getPrevInt(20));
+
+            final RowSet prevRows = updated.getRowSet().prev();
+            try (final ChunkSource.FillContext fillContext = bSource.makeFillContext(prevRows.intSize());
+                    final WritableIntChunk<Values> prevValues =
+                            WritableIntChunk.makeWritableChunk(prevRows.intSize())) {
+                bSource.fillPrevChunk(fillContext, prevValues, prevRows);
+                Assert.assertEquals(3, prevValues.size());
+                Assert.assertEquals(10, prevValues.get(0));
+                Assert.assertEquals(20, prevValues.get(1));
+                Assert.assertEquals(30, prevValues.get(2));
+            }
+        } finally {
+            updateGraph.completeCycleForUnitTests();
+        }
+
+        assertTableEquals(newTable(intCol("A", 1, 2, 3, 4, 5), intCol("B", 10, 20, 30, 40, 50)), updated);
+    }
+
+    @Test
     public void testStaticFlatSelectPositionWithResultColumn() {
         final Table parent = emptyTable(10).update("A = (int) ii").where("A % 2 == 0");
         final Table result = parent.select("C = A * 100", "D = C + ii", "E = C + i");
@@ -1123,6 +1238,64 @@ public class QueryTableSelectUpdateTest {
         Assert.assertTrue(result.isFlat());
         assertTableEquals(newTable(intCol("C", 0, 200, 400, 600, 800), longCol("KP", 0, 1, 2, 3, 4),
                 longCol("KR", 0, 201, 402, 603, 804), longCol("KA", 0, 3, 6, 9, 12)), result);
+    }
+
+    @Test
+    public void testAppendOnlySelect() {
+        final IntegerSparseArraySource aSource = new IntegerSparseArraySource();
+        aSource.ensureCapacity(31);
+        aSource.set(10, 1);
+        aSource.set(20, 2);
+        aSource.set(30, 3);
+        final QueryTable source = new QueryTable(i(10, 20, 30).toTracking(), Map.of("A", aSource));
+        source.setRefreshing(true);
+        source.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        aSource.startTrackingPrevValues();
+
+        // preserving A keeps the parent row set, so B is redirected by position
+        final Table preserved = source.select("A", "B = A * 10");
+        Assert.assertSame(source.getRowSet(), preserved.getRowSet());
+        Assert.assertSame(aSource, preserved.getColumnSource("A"));
+        final ColumnSource<Integer> bSource = preserved.getColumnSource("B", int.class);
+        Assert.assertTrue(bSource instanceof RedirectedColumnSource);
+        Assert.assertTrue(((RedirectedColumnSource<?>) bSource)
+                .getRowRedirection() instanceof InverseWrappedRowSetRowRedirection);
+
+        // preserving nothing produces a flat result that needs no redirection
+        final QueryTable flat = (QueryTable) source.select("C = A * 100", "D = C + ii");
+        Assert.assertTrue(flat.isFlat());
+        Assert.assertTrue(flat.isAppendOnly());
+        Assert.assertEquals(i(0, 1, 2), flat.getRowSet());
+        final ColumnSource<Integer> cSource = flat.getColumnSource("C", int.class);
+        Assert.assertFalse(cSource instanceof RedirectedColumnSource);
+        final ListenerWithGlobals flatListener = base.newListenerWithGlobals(flat);
+        flat.addUpdateListener(flatListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests();
+        try {
+            aSource.ensureCapacity(51);
+            aSource.set(40, 4);
+            aSource.set(50, 5);
+            source.getRowSet().writableCast().insert(i(40, 50));
+            source.notifyListeners(i(40, 50), i(), i());
+            updateGraph.flushAllNormalNotificationsForUnitTests();
+
+            Assert.assertEquals(50, bSource.getInt(50));
+            Assert.assertEquals(500, cSource.getInt(4));
+            Assert.assertEquals(300, cSource.getPrevInt(2));
+            Assert.assertEquals(i(0, 1, 2), flat.getRowSet().prev());
+        } finally {
+            updateGraph.completeCycleForUnitTests();
+        }
+
+        Assert.assertEquals(i(0, 1, 2, 3, 4), flat.getRowSet());
+        Assert.assertEquals(i(3, 4), base.added);
+        Assert.assertEquals(i(), base.removed);
+        Assert.assertEquals(i(), base.modified);
+        assertTableEquals(newTable(intCol("A", 1, 2, 3, 4, 5), intCol("B", 10, 20, 30, 40, 50)), preserved);
+        assertTableEquals(newTable(intCol("C", 100, 200, 300, 400, 500), longCol("D", 100, 201, 302, 403, 504)),
+                flat);
     }
 
     @Test

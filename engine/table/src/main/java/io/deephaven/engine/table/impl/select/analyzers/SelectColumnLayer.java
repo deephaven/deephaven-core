@@ -49,10 +49,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private final UpdateGraph updateGraph;
     /** Our parent row set, used for ensuring capacity */
     private final RowSet parentRowSet;
-    /** Whether our result is redirected */
+    /** Whether our result is redirected through the redirection maintained by the RedirectionLayer */
     private final boolean isRedirected;
-    /** Whether our result is flattened */
-    private final boolean flattenedResult;
+    /**
+     * Whether rows are written to {@link #writableSource} at their position in the parent row set rather than at their
+     * row key; true for flattened results and for results redirected by position.
+     */
+    private final boolean writesByPosition;
     /** Whether our dependencies are in the result key space instead of parent key space */
     private final boolean sourcesAreInResultKeySpace;
     /** Which layers we depend on */
@@ -81,11 +84,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             final int[] executionDependencies,
             final ModifiedColumnSet mcsBuilder,
             final boolean isRedirected,
+            final boolean isRedirectedByPosition,
             final boolean sourcesAreInResultKeySpace) {
         super(context, sc, ws, underlying, recomputeDependencies, mcsBuilder);
         this.updateGraph = updateGraph;
         this.parentRowSet = parentRowSet;
-        this.writableSource = ReinterpretUtils.maybeConvertToWritablePrimitive(ws);
+        this.writableSource =
+                ReinterpretUtils.maybeConvertToWritablePrimitive(isRedirectedByPosition ? underlying : ws);
         this.isRedirected = isRedirected;
         this.sourcesAreInResultKeySpace = sourcesAreInResultKeySpace;
 
@@ -108,7 +113,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             context.setRedirectionLayer(dependencyBitSet);
         }
 
-        this.flattenedResult = context.isFlatResult();
+        this.writesByPosition = context.isFlatResult() || isRedirectedByPosition;
 
         // We can only parallelize this column if we are not redirected, our destination provides ensure previous, and
         // the select column is stateless
@@ -130,6 +135,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // effect of our parallelism.
         resultTypeIsTableOrRowSet = Table.class.isAssignableFrom(ws.getType())
                 || RowSet.class.isAssignableFrom(ws.getType());
+    }
+
+    @Override
+    public void startTrackingPrev() {
+        // A row written by position is never rewritten, so there are no previous values to track
+        if (!writesByPosition) {
+            super.startTrackingPrev();
+        }
     }
 
     private ChunkSource<Values> getChunkSource() {
@@ -167,9 +180,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         if (!sourcesAreInResultKeySpace) {
             upstream = originalUpdate;
         } else {
-            // This better be the static fake update.
-            Assert.eqTrue(originalUpdate.added().size() == parentRowSet.size(),
-                    "originalUpdate.added().size() == parentRowSet.size()");
+            // A flat result has a static or append-only parent, so the update consists only of adds.
             Assert.eqTrue(originalUpdate.removed().isEmpty(), "originalUpdate.removed.isEmpty()");
             Assert.eqTrue(originalUpdate.modified().isEmpty(), "originalUpdate.modified.isEmpty()");
             Assert.eqTrue(originalUpdate.shifted().empty(), "originalUpdate.shifted.empty()");
@@ -192,6 +203,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
             // If we have shifts, that makes everything nasty; so we do not want to deal with it
             final boolean hasShifts = upstream.shifted().nonempty();
+
+            // When writing by position, the only changes are adds, which occupy the final positions of the parent
+            final long firstAddedPosition = writesByPosition ? parentRowSet.size() - upstream.added().size() : 0;
 
             // liveResultOwner is only null when we are static; in the static case there is no need to
             // worry about serial table operation checking
@@ -241,13 +255,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 jobScheduler.submit(
                         executionContext,
                         () -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper, liveResultOwner, onSuccess,
-                                onError, updates, serialTableOperationsSafe),
+                                onError, updates, serialTableOperationsSafe, firstAddedPosition),
                         SelectColumnLayer.this, onError);
             } else {
                 jobScheduler.submit(
                         executionContext,
                         () -> doSerialApplyUpdate(upstream, toClear, helper, liveResultOwner, onSuccess,
-                                serialTableOperationsSafe),
+                                serialTableOperationsSafe, firstAddedPosition),
                         SelectColumnLayer.this, onError);
             }
         };
@@ -262,18 +276,19 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             final Runnable onSuccess,
             final Consumer<Exception> onError,
             final List<TableUpdate> splitUpdates,
-            final boolean serialTableOperationsSafe) {
+            final boolean serialTableOperationsSafe,
+            final long firstAddedPosition) {
         // we have to do removal and previous initialization before we can do any of the actual filling in multiple
         // threads to avoid concurrency problems with our destination column sources
         doEnsureCapacity();
 
-        prepareSourcesForParallelPopulation(upstream);
+        prepareSourcesForParallelPopulation(upstream, firstAddedPosition);
 
         final int numTasks = splitUpdates.size();
         final long[] destinationOffsets = new long[numTasks];
-        if (flattenedResult) {
+        if (writesByPosition) {
             // Note that prepareSourcesForParallelPopulation asserts that upstream has no removes, modifies, or shifts
-            long destinationOffset = 0;
+            long destinationOffset = firstAddedPosition;
             for (int ti = 0; ti < numTasks; ++ti) {
                 final TableUpdate splitUpdate = splitUpdates.get(ti);
                 Assert.assertion(splitUpdate.removed().isEmpty(), "splitUpdate.removed().isEmpty()");
@@ -304,12 +319,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             final SelectAndViewAnalyzer.UpdateHelper helper,
             @Nullable final LivenessNode liveResultOwner,
             final Runnable onSuccess,
-            final boolean serialTableOperationsSafe) {
+            final boolean serialTableOperationsSafe,
+            final long firstAddedPosition) {
         doEnsureCapacity();
         final boolean oldSafe = updateGraph.setSerialTableOperationsSafe(serialTableOperationsSafe);
         try {
             SystemicObjectTracker.executeSystemically(isSystemic,
-                    () -> doApplyUpdate(upstream, helper, liveResultOwner, 0));
+                    () -> doApplyUpdate(upstream, helper, liveResultOwner, firstAddedPosition));
         } finally {
             updateGraph.setSerialTableOperationsSafe(oldSafe);
         }
@@ -373,7 +389,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
             // apply shifts!
             if (!isRedirected && preMoveKeys.isNonempty()) {
-                assert !flattenedResult;
+                Assert.eqFalse(writesByPosition, "writesByPosition");
                 assert destContext != null;
                 // note: we cannot use a get context here as destination is identical to source
                 final int shiftContextSize = contextSize.applyAsInt(preMoveKeys.size());
@@ -395,7 +411,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
             // apply modifies!
             if (modifiesAffectUs) {
-                assert !flattenedResult;
+                Assert.eqFalse(writesByPosition, "writesByPosition");
                 assert chunkSourceContext != null;
                 final boolean needToUnmanagePrevValues = resultTypeIsLivenessReferent && liveResultOwner != null;
                 try (final RowSequence.Iterator keyIter = upstream.modified().getRowSequenceIterator();
@@ -423,7 +439,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 if (isBackingChunkExposed) {
                     final ChunkedBackingStoreExposedWritableSource exposedWritableSource =
                             (ChunkedBackingStoreExposedWritableSource) this.writableSource;
-                    if (flattenedResult && chunkSourceFillContext.supportsUnboundedFill()) {
+                    if (writesByPosition && chunkSourceFillContext.supportsUnboundedFill()) {
                         // drive the fill operation off of the destination rather than the source, because we want to
                         // fill as much as possible as quickly as possible
                         long destinationOffset = startOffset;
@@ -442,7 +458,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         }
                     } else {
                         try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
-                                final RowSequence.Iterator destIter = flattenedResult
+                                final RowSequence.Iterator destIter = writesByPosition
                                         ? RowSequenceFactory
                                                 .forRange(startOffset, startOffset + upstream.added().size() - 1)
                                                 .getRowSequenceIterator()
@@ -457,7 +473,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                 } else {
                                     destKeys = keys;
                                 }
-                                if (keys.isContiguous() || flattenedResult) {
+                                if (keys.isContiguous() || writesByPosition) {
                                     long firstDest = destKeys.firstRowKey();
                                     final long lastDest = destKeys.lastRowKey();
                                     final long destCapacity = exposedWritableSource
@@ -494,13 +510,19 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         }
                     }
                 } else {
-                    Assert.eqFalse(flattenedResult, "flattenedResult");
-                    try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator()) {
+                    try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
+                            final RowSequence.Iterator destIter = writesByPosition
+                                    ? RowSequenceFactory
+                                            .forRange(startOffset, startOffset + upstream.added().size() - 1)
+                                            .getRowSequenceIterator()
+                                    : null) {
                         while (keyIter.hasMore()) {
                             final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                            final RowSequence destKeys =
+                                    destIter != null ? destIter.getNextRowSequenceWithLength(PAGE_SIZE) : keys;
                             writableSource.fillFromChunk(destContext,
                                     maybeManageAdds(chunkSource.getChunk(chunkSourceContext, keys), liveResultOwner),
-                                    keys);
+                                    destKeys);
                         }
                     }
                 }
@@ -605,29 +627,30 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private void doEnsureCapacity() {
         if (parentRowSet.isEmpty())
             return;
-        if (flattenedResult || isRedirected) {
-            // This is our "fake" update, the only thing that matters is the size of the addition; because we
-            // are going to write the data into the column source flat ignoring the original row set.
+        if (writesByPosition || isRedirected) {
+            // The destination is addressed by position rather than by the parent's row keys, so it needs exactly one
+            // slot for each row of the parent.
             writableSource.ensureCapacity(parentRowSet.size(), false);
         } else {
             writableSource.ensureCapacity(parentRowSet.lastRowKey() + 1, false);
         }
     }
 
-    void prepareSourcesForParallelPopulation(@NotNull final TableUpdate upstream) {
+    void prepareSourcesForParallelPopulation(@NotNull final TableUpdate upstream, final long firstAddedPosition) {
         // We do not permit in-column parallelization with redirected results, so do not need to worry about how this
         // interacts with the previous clearing of the RowRedirection that has occurred at the start of applyUpdate.
         Assert.eqFalse(isRedirected, "isRedirected");
 
-        if (flattenedResult) {
-            // For flattened results the input table must be static; upstream is a "fake" update, and is not permitted
-            // to have removes, modifies, or shifts.
+        if (writesByPosition) {
+            // Results are written by position only for static and append-only inputs, so upstream is not permitted to
+            // have removes, modifies, or shifts; the adds occupy the positions following the existing rows.
             Assert.assertion(upstream.removed().isEmpty(), "upstream.removed().isEmpty()");
             Assert.assertion(upstream.modified().isEmpty(), "upstream.modified().isEmpty()");
             Assert.assertion(upstream.shifted().empty(), "upstream.shifted().empty()");
-            try (final RowSequence flattenedChanges = RowSequenceFactory.forRange(0, upstream.added().size() - 1)) {
+            try (final RowSequence addedPositions = RowSequenceFactory.forRange(
+                    firstAddedPosition, firstAddedPosition + upstream.added().size() - 1)) {
                 ((WritableSourceWithPrepareForParallelPopulation) (writableSource))
-                        .prepareForParallelPopulation(flattenedChanges);
+                        .prepareForParallelPopulation(addedPositions);
             }
         } else {
             // Upstream is not permitted to have shifts for parallel update processing.
