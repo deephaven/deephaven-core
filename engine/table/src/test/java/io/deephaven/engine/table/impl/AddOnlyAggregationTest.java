@@ -306,4 +306,9 @@ public class AddOnlyAggregationTest {
     public void testBigDecimalSum() {
         testKeyedAndUnkeyed(List.of(AggSum("S=BigDec1"), AggAbsSum("A=BigDec1")));
     }
+
+    @Test
+    public void testBooleanSum() {
+        testKeyedAndUnkeyed(List.of(AggSum("S=Bool1"), AggAbsSum("A=Bool1")));
+    }
 }

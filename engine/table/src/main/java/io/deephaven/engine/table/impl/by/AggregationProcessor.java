@@ -2171,7 +2171,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             final boolean isAbsolute,
             final boolean onlyAdds) {
         if (type == Boolean.class || type == boolean.class) {
-            return new BooleanChunkedSumOperator(name);
+            return new BooleanChunkedSumOperator(onlyAdds, name);
         } else if (type == Byte.class || type == byte.class) {
             return new ByteChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Character.class || type == char.class) {
