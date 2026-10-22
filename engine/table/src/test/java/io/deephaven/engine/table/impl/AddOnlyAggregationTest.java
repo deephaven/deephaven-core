@@ -322,4 +322,9 @@ public class AddOnlyAggregationTest {
     public void testIntegralWeightedSum() {
         testKeyedAndUnkeyed(List.of(AggWSum("LongWeight", "WL=Long1")));
     }
+
+    @Test
+    public void testFloatingPointWeightedSum() {
+        testKeyedAndUnkeyed(List.of(AggWSum("DWeight", "WD=Double1", "WF=Float1", "WL=Long1")));
+    }
 }

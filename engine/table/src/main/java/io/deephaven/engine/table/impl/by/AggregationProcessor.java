@@ -726,7 +726,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                                 r.source.getChunkType(), longWeightOperator, onlyAdds, r.pair.output().name());
                     } else {
                         resultOperator = new DoubleChunkedWeightedSumOperator(
-                                r.source.getChunkType(), doubleWeightOperator, r.pair.output().name());
+                                r.source.getChunkType(), doubleWeightOperator, onlyAdds, r.pair.output().name());
                     }
                 } else {
                     resultOperator = new ChunkedWeightedAverageOperator(
