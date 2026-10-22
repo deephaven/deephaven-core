@@ -25,9 +25,9 @@ public class InverseWrappedRowSetRowRedirection implements RowRedirection {
     private final TrackingRowSet trackingRowSet;
 
     /**
-     * This class accepts a {@link RowSet} or a {@link TrackingRowSet}. Only a TrackingRowSet provides previous values,
-     * so {@link #getPrev(long)} and {@link #fillPrevChunk(FillContext, WritableChunk, RowSequence)} must not be called
-     * for a RowSet that is not tracking.
+     * The passed in {@link RowSet} may or may not be a {@link TrackingRowSet}. If you pass in a TrackingRowSet, then
+     * the getPrev and fillPrevChunk correctly provide previous values. If you pass in a RowSet that is not tracking,
+     * getPrev and fillPrevChunk have undefined results.
      *
      * @param wrappedRowSet the RowSet (or TrackingRowSet) to use as the redirection source
      */
