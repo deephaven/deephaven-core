@@ -70,10 +70,15 @@ result1 = makeTableAndScope(1)
 t1 = result1[0]
 // ... wait for a while
 result1[1].release()
+// The released table no longer updates. Drop the variable too, so nothing refers to it.
+t1 = null
+result1 = null
 result2 = makeTableAndScope(2)
 t2 = result2[0]
 // ... wait for a while again
 result2[1].release()
+t2 = null
+result2 = null
 ```
 
 Call [`LivenessScopeStack.open`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#open()) with no arguments to create an anonymous scope, one that [`open`](/core/javadoc/io/deephaven/engine/liveness/LivenessScopeStack.html#open()) creates for you and that you hold no variable for. It is released when the block exits.
@@ -137,6 +142,9 @@ try ( SafeCloseable ignored = LivenessScopeStack.open() ) {
     // evens is released here, and outerScope still manages ticks
     consoleScope.manage(ticks)
 }
+
+// The released table no longer updates. Drop the variable too, so nothing refers to it.
+evens = null
 ```
 
 `evens` is released when the inner block exits, so it stops updating. `ticks` keeps ticking, because `outerScope` manages it before the inner scope is released, and the console's scope manages it before `outerScope` is released.
@@ -252,6 +260,8 @@ try ( SafeCloseable ignored = LivenessScopeStack.open(scope, false) ) {
 
 // ... later, when you no longer need everyThird
 scope.release()
+// The released table no longer updates. Drop the variable too, so nothing refers to it.
+everyThird = null
 ```
 
 After [`release`](/core/javadoc/io/deephaven/engine/liveness/LivenessScope.html#release()), `everyThird` stops updating, because nothing you kept depends on it. `latest` and its parent `trades` keep ticking, because the console's scope manages `latest`, which depends on `trades`. As in the [`makeTableAndScope` example](#how-to-use-a-livenessscope), a table that is open in the UI keeps updating until you close it.

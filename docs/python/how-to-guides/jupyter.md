@@ -167,9 +167,7 @@ To display a table you create through the session, pass it to `DeephavenWidget`.
 ```python skip-test
 from deephaven_ipywidgets import DeephavenWidget
 
-my_time_table = session.time_table(period="PT1S").update(
-    ["X = 0.1 * i", "Y = sin(X)"]
-)
+my_time_table = session.time_table(period="PT1S").update(["X = 0.1 * i", "Y = sin(X)"])
 session.bind_table(name="my_time_table", table=my_time_table)
 display(DeephavenWidget(my_time_table))
 ```

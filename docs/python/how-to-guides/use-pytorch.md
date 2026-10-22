@@ -10,7 +10,7 @@ The two examples below solve the same problem: classifying the [Iris dataset](ht
 
 ## Install PyTorch
 
-[PyTorch](https://pytorch.org) is not included in Deephaven's base `server` Docker image. To use it within Deephaven, you can [install it yourself](./install-and-use-python-packages.md) or choose one of the [Deephaven Docker deployments](../getting-started/docker-install.md#choose-a-deployment) that includes it:
+[PyTorch](https://pytorch.org) is not included in Deephaven's default `server` Docker image. To use it within Deephaven, you can [install it yourself](./install-and-use-python-packages.md) or choose one of the [Deephaven Docker deployments](../getting-started/docker-install.md#choose-a-deployment) that includes it:
 
 - Without example data:
   - [Python with PyTorch](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python/PyTorch/docker-compose.yml)

@@ -24,7 +24,7 @@ Both examples below classify the [Iris dataset](https://en.wikipedia.org/wiki/Ir
 
 This first example shows how to use [TensorFlow](https://www.tensorflow.org/) to classify Iris flowers from measurements.
 
-The Iris flower dataset is common in introductory machine learning applications. R.A. Fisher introduced the dataset in his 1936 paper *The use of multiple measurements in taxonomic problems*. It contains 150 samples, 50 from each of three species of Iris flower. For each Iris-setosa, Iris-virginica, and Iris-versicolor flower, the dataset records these measurements in centimeters:
+The Iris flower dataset is common in introductory machine learning applications. R.A. Fisher introduced the dataset in his 1936 paper _The use of multiple measurements in taxonomic problems_. It contains 150 samples, 50 from each of three species of Iris flower. For each Iris-setosa, Iris-virginica, and Iris-versicolor flower, the dataset records these measurements in centimeters:
 
 - Petal length
 - Petal width

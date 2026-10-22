@@ -42,6 +42,8 @@ with scope.open():
 
 # After a while...
 scope.release()
+# The released table no longer updates. Drop the variable too, so nothing refers to it.
+table_from_func = None
 ```
 
 ## Related documentation

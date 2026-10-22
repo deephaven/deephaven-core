@@ -236,9 +236,7 @@ The same [`learn`](/core/pydoc/code/deephaven.learn.html#deephaven.learn.learn) 
 ```python test-set=2 ticking-table order=result_live
 from deephaven import time_table
 
-source_live = time_table("PT1s").update(
-    formulas=["A = sqrt(i)", "B = -sqrt(sqrt(i))"]
-)
+source_live = time_table("PT1s").update(formulas=["A = sqrt(i)", "B = -sqrt(sqrt(i))"])
 
 result_live = learn.learn(
     table=source_live,

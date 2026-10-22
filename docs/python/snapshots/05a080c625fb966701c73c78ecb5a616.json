@@ -1,0 +1,1 @@
+{"file":"how-to-guides/use-pandas.md","objects":{"with_null":{"type":"Table","data":{"columns":[{"name":"Ints","type":"int"}],"rows":[[{"value":"1"}],[{"value":""}]]}},":log":{"type":"Log","data":"conv_null=True (default):\n   Ints\n0     1\n1  <NA>\nconv_null=False:\n         Ints\n0           1\n1 -2147483648\n"}}}

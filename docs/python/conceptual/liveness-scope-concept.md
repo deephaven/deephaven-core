@@ -113,9 +113,12 @@ def make_table_and_scope(a: int):
 t1, s1 = make_table_and_scope(1)
 # ... wait for a while
 s1.release()
+# The released table no longer updates. Drop the variable too, so nothing refers to it.
+t1 = None
 t2, s2 = make_table_and_scope(2)
 # ... wait for a while again
 s2.release()
+t2 = None
 ```
 
 ## Multiple liveness scopes
@@ -135,6 +138,9 @@ with liveness_scope() as outer_scope:
         inner_scope.preserve(ticks)
     # evens is released here, and outer_scope now manages ticks
     outer_scope.preserve(ticks)
+
+# The released table no longer updates. Drop the variable too, so nothing refers to it.
+evens = None
 ```
 
 `evens` is released when the inner block exits, so it stops updating. `ticks` keeps ticking, because each scope preserved it before it closed.
@@ -256,6 +262,8 @@ with scope.open():
 
 # ... later, when you no longer need every_third
 scope.release()
+# The released table no longer updates. Drop the variable too, so nothing refers to it.
+every_third = None
 ```
 
 After [`release`](/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.LivenessScope.release), `every_third` stops updating, because nothing you kept depends on it. `latest` and its parent `trades` keep ticking, because the preserved `latest` depends on `trades`. As in the [`LivenessScope` class](#the-livenessscope-class) example, a table that is open in the UI keeps updating until you close it.
