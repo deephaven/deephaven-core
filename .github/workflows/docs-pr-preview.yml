@@ -14,7 +14,9 @@ on:
     branches: [main, 'rc/**']
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # pull_request_target runs in the context of the base branch, so github.ref is the same for every PR.
+  # Key the group on the PR number so a new run cancels only an earlier run of the same PR.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -77,7 +79,7 @@ jobs:
       - name: Sync core Python to the salmon bucket
         id: sync-python
         if: ${{ needs.doc-changes.outputs.python == 'true' }}
-        uses: deephaven/salmon-sync@65084289d6aee0ce30df0a826a9650155e028609 # v1.3.0
+        uses: deephaven/salmon-sync@b2d4e7f0032bbefe013e2e410bcbeb5fbba6735b # v1.4.0
         with:
           source: docs/python
           destination: deephaven/deephaven-core/docs/pr-${{ github.event.number }}
@@ -95,7 +97,7 @@ jobs:
       - name: Sync core Groovy to the salmon bucket
         id: sync-groovy
         if: ${{ needs.doc-changes.outputs.groovy == 'true' }}
-        uses: deephaven/salmon-sync@65084289d6aee0ce30df0a826a9650155e028609 # v1.3.0
+        uses: deephaven/salmon-sync@b2d4e7f0032bbefe013e2e410bcbeb5fbba6735b # v1.4.0
         with:
           source: docs/groovy
           destination: deephaven/deephaven-core/groovy/docs/pr-${{ github.event.number }}

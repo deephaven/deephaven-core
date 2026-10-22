@@ -3,10 +3,10 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "This parallelization concept guide feels hard to follow. Review its structure and organization: .claude/skills/eval-fixtures/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
+      "prompt": "This parallelization concept guide feels hard to follow. Review its structure and organization: .claude/skills/deephaven-doc-structure-review/evals/files/parallelization-pre-review.md. The file is a snapshot of docs/python/conceptual/query-engine/parallelization.md from the DOC-857 PR (commit f2ef483084); treat it as that path when judging category and links. Review the Python file only; the Groovy sibling is out of scope. Report only — don't edit anything.",
       "expected_output": "A structure critique that states the page's purpose and flags the intro/heading terminology mismatch, misplaced GIL/config detail, the mixed-category quick-reference table, and lists that don't match their section.",
       "files": [
-        "../eval-fixtures/parallelization-pre-review.md"
+        "evals/files/parallelization-pre-review.md"
       ],
       "expectations": [
         "States the page's purpose (what the reader will be able to do) in one sentence, or flags that it can't be stated",
@@ -29,13 +29,14 @@
         "States the rule as a section's first paragraph making sense without the previous section, or pointing to an earlier section only by naming the target and restating what it needs from it (regardless of how far up the target is), not as 'every section must repeat its prerequisites'",
         "Control: does not list the 'Building on the counter example above' opener of 'Example: extending the counter with a barrier' as a defect, or marks it as acceptable because it names the example and restates the setup"
       ],
-      "id": 2
+      "id": 2,
+      "notes": "The rule expectation accepts a pointer to any earlier section that names its target and restates what it needs, regardless of distance, matching the control that accepts 'Building on the counter example above'."
     },
     {
-      "prompt": "Do a structure review of the 'Barriers' section (from '### Barriers' to just before '## Configuration') of this deephaven-core concept guide: .claude/skills/eval-fixtures/parallelization-609b-chip-round2.md. Treat the file as docs/python/conceptual/query-engine/parallelization.md. Report only — don't edit anything.",
+      "prompt": "Do a structure review of the 'Barriers' section (from '### Barriers' to just before '## Configuration') of this deephaven-core concept guide: .claude/skills/deephaven-doc-structure-review/evals/files/parallelization-609b-chip-round2.md. Treat the file as docs/python/conceptual/query-engine/parallelization.md. Report only — don't edit anything.",
       "expected_output": "Finds that 'stateless mode / stateful mode' are unexplained labels (with 'stateless' defined earlier on the page with a different meaning) and that 'this setting' has no antecedent in the section; ranks the undefined terminology among the most serious findings and proposes explaining the terms at first use without moving a configuration property into the narrative.",
       "files": [
-        "../eval-fixtures/parallelization-609b-chip-round2.md"
+        "evals/files/parallelization-609b-chip-round2.md"
       ],
       "expectations": [
         "Flags 'Stateless mode (default)' and 'Stateful mode' as undefined labels, and notes that 'stateless' is defined earlier on the page with a different meaning (rows independent of each other)",
@@ -47,10 +48,10 @@
       "id": 3
     },
     {
-      "prompt": "Do a structure review of this draft Crash Course chapter: .claude/skills/eval-fixtures/crash-course-parallelization-pre-review.md. Report only — don't edit anything.",
+      "prompt": "Do a structure review of this draft Crash Course chapter: .claude/skills/deephaven-doc-structure-review/evals/files/crash-course-parallelization-pre-review.md. Report only — don't edit anything.",
       "expected_output": "Held-out fixture, not used to write the new rules: finds terms used without being defined on the page.",
       "files": [
-        "../eval-fixtures/crash-course-parallelization-pre-review.md"
+        "evals/files/crash-course-parallelization-pre-review.md"
       ],
       "expectations": [
         "Flags 'stateless' in the Key takeaways ('requires stateless code') as a term the page never defines or introduces by that name",
@@ -60,10 +61,10 @@
       "id": 4
     },
     {
-      "prompt": "Do a structure review of this deephaven-core concept guide: .claude/skills/eval-fixtures/parallelization-3748-chip-round4.md. Treat it as docs/python/conceptual/query-engine/parallelization.md (resolve relative links from that path). Report only; don't edit anything.",
+      "prompt": "Do a structure review of this deephaven-core concept guide: .claude/skills/deephaven-doc-structure-review/evals/files/parallelization-3748-chip-round4.md. Treat it as docs/python/conceptual/query-engine/parallelization.md (resolve relative links from that path). Report only; don't edit anything.",
       "expected_output": "Chip Kent's 2026-10-12 review of PR #7457: the page's mental model (three levels, two controls) is never stated in one place; the intro counts 'three ways' while a later section counts 'two levels'; the Deferred evaluation block sits under 'What you can control' although it is not a control; the heading 'Serialization' reads as data serialization; a hand-written table of wrong output is not introduced as illustrative; a Default cell carries a relationship as well as the value.",
       "files": [
-        "../eval-fixtures/parallelization-3748-chip-round4.md"
+        "evals/files/parallelization-3748-chip-round4.md"
       ],
       "expectations": [
         "Reports that the page never states its model (the levels at which work is parallelized and what controls each) in one place, and proposes stating it once early, for example as a table or list under 'What is and isn't parallelized' that pairs each level with its default behavior and its control",
@@ -73,7 +74,23 @@
         "Flags the hand-written ID table of wrong output (around lines 199-205) as not introduced as illustrative, says that the existing lead-in 'You may see results like:' names the content but not the form, and proposes a lead-in that says the table is hand-written or illustrative rather than a rendered result",
         "Flags the Default cell '`false` (opposite of `statelessSelectByDefault`)' in the Configuration table (around line 390) as holding more than the value, and proposes moving the relationship to the description column or the linked page"
       ],
-      "id": 5
+      "id": 5,
+      "notes": "DOC-1990 round 5 (PR #8897): 3 blind-graded runs per configuration scored new 15/18, baseline 3/18. Every new run missed expectation 3 as worded: each flagged the 'Two other cases' block by its signal words and moved the controls text out of the mechanism section instead of naming deferred evaluation as a behavior mislabeled as a control. The rule's intent is met by that fix; the expectation asks for a particular diagnosis."
+    },
+    {
+      "prompt": "Do a structure review of the attached excerpt, report only; don't edit anything. Treat it as docs/python/reference/table-operations/filter/where.md (a Reference page; resolve relative links from that path). The excerpt is the one section Chip Kent commented on, so review that section's storyline and its Related documentation: .claude/skills/deephaven-doc-structure-review/evals/files/where-partition-section-pre-rework.md",
+      "expected_output": "Chip Kent's review of PR #7457 said of this section: it \"lacks a cohesive storyline,\" a paragraph \"threw in vocab and drew conclusions on it,\" and a closing sentence reads as advice. The review should state each paragraph's purpose, find the paragraph that uses stateful-by-default vocabulary before defining it, find the advice sentence and the missing payoff, and propose an order or rewrite.",
+      "files": [
+        "evals/files/where-partition-section-pre-rework.md"
+      ],
+      "expectations": [
+        "States a one-sentence purpose for the section (or says the section never states one) and reports that the section lacks a cohesive storyline, with a concrete proposed order (for example: what the optimization does and why it is fast, then the exception, then when it does not apply, then the cost)",
+        "Flags the second paragraph (Date = today(), \"stateful by default\") as using vocabulary the reader has not been given (stateful by default, configured) and as drawing a conclusion from it, with a proposed fix such as defining the term, linking the configuration page, or moving the paragraph",
+        "Flags the final sentence (\"Mark a filter on partitioning columns serial only when...\") as advice or a trailing caveat that does not end by answering the reader's question",
+        "Notes that the Related documentation list is missing pages the section discusses (for example Barrier, Parallelization or the stateless-by-default configuration section, Filter evaluation order), rather than treating it as complete, and does not report the Filter page as missing (the fixture already links it)"
+      ],
+      "id": 6,
+      "notes": "Fixture is the 'Filters on partitioning columns' section of where.md at da80684afe, the section Chip Kent said lacked a cohesive storyline. One run each, author-graded: the changed skill meets 4 of 4 expectations and so does the baseline, so this eval does NOT discriminate; the existing structure checks already find the undefined stateful vocabulary and the trailing advice. It stays as a regression guard for the new storyline and Related documentation checks."
     }
   ]
 }

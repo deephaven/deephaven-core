@@ -9,5 +9,10 @@ with the following changes:
    so as not to conflict with any other flatbuffers being indirectly linked
    from some other library (such as the one inside Arrow).
 3. The patch representing step 2 is in the file patch.001 in this directory.
+4. In stl_emulation.h, the 'count_' member of flatbuffers::span is no longer
+   const. This backports upstream flatbuffers PR #7227 (released in v2.0.8):
+   span's copy assignment writes to count_, which GCC 15 rejects at
+   definition time (-Wtemplate-body) even though nothing instantiates it.
+   The patch is in the file patch.002 in this directory.
 
 

@@ -38,26 +38,28 @@ or an [R Data Frame](https://stat.ethz.ch/R-manual/R-devel/library/base/html/dat
 
 ## Installation
 
-Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be built from source.
+Currently, the R client is only supported on Ubuntu 22.04, 24.04 or 26.04 and must be built from source.
 
 0. We need a working installation of R on the machine where the R client will be built,
    plus the necessary dependencies for building and creating vignettes.
-   The R client requires R 4.1.2 or newer; you can install R from the standard packages
-   made available by Ubuntu 22.04.  If you want a newer R version or if you are running in
-   Ubuntu 20.04, you should install R from CRAN:
-
+   The R client requires R 4.2 or newer: it depends on the `arrow` R package,
+   whose current CRAN release (25.0.1) requires R 4.2, and `install.packages`
+   only offers the current release. Ubuntu 24.04's (4.3.3) and 26.04's (4.5.2) packaged R are recent enough:
+   ```
+   $ sudo apt -y install r-base r-recommended
+   ```
+   Ubuntu 22.04's packaged R (4.1.2) is too old; there (or if you want a
+   newer R) install R from CRAN's repository for your release of Ubuntu:
    ```
    # Download the key and install it
-   $ wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | \
+   $ sudo apt -y install curl gnupg
+   $ curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | \
        sudo gpg --dearmor -o /usr/share/keyrings/r-project.gpg
-
-   # Add the R source list to apt's sources list
-   $ echo "deb [signed-by=/usr/share/keyrings/r-project.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" | \
-       sudo tee -a /etc/apt/sources.list.d/r-project.list
-
+   # Add CRAN's source list for this release of Ubuntu to apt's sources
+   $ echo "deb [signed-by=/usr/share/keyrings/r-project.gpg] https://cloud.r-project.org/bin/linux/ubuntu $(. /etc/os-release; echo $VERSION_CODENAME)-cran40/" | \
+       sudo tee /etc/apt/sources.list.d/r-project.list
    # update the apt package list
-   $ apt -y update
-
+   $ sudo apt -y update
    # install R
    $ sudo apt -y install r-base r-recommended
    ```

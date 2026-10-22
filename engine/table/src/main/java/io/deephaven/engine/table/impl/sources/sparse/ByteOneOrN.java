@@ -14,7 +14,6 @@ import io.deephaven.util.annotations.TestUseOnly;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.LongConsumer;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
@@ -212,23 +211,6 @@ public final class ByteOneOrN {
             }
         }
 
-        public void enumerate(byte nullValue, LongConsumer consumer) {
-            if (oneIndex == ONE_UNINITIALIZED) {
-                return;
-            }
-            if (oneIndex != HAVE_MORE_THAN_ONE) {
-                if (oneValue != null) {
-                    oneValue.enumerate(nullValue, consumer, (long) oneIndex << BLOCK0_SHIFT);
-                }
-                return;
-            }
-            for (int ii = 0; ii < BLOCK0_SIZE; ++ii) {
-                if (array[ii] != null) {
-                    array[ii].enumerate(nullValue, consumer, (long)ii << BLOCK0_SHIFT);
-                }
-            }
-        }
-
         @TestUseOnly
         public long estimateSize() {
             if (oneIndex == ONE_UNINITIALIZED) {
@@ -287,23 +269,6 @@ public final class ByteOneOrN {
         public void maybeRecycle(SoftRecycler<Block2[]> recycler) {
             if (array != null) {
                 recycler.returnItem(array);
-            }
-        }
-
-        void enumerate(byte nullValue, LongConsumer consumer, long offset) {
-            if (oneIndex == ONE_UNINITIALIZED) {
-                return;
-            }
-            if (oneIndex != HAVE_MORE_THAN_ONE) {
-                if (oneValue != null) {
-                    oneValue.enumerate(nullValue, consumer, offset + ((long)oneIndex << BLOCK1_SHIFT));
-                }
-                return;
-            }
-            for (int ii = 0; ii < BLOCK1_SIZE; ++ii) {
-                if (array[ii] != null) {
-                    array[ii].enumerate(nullValue, consumer, offset + ((long)ii << BLOCK1_SHIFT));
-                }
             }
         }
 
@@ -386,31 +351,6 @@ public final class ByteOneOrN {
         public void maybeRecycle(SoftRecycler<byte [][]> recycler) {
             if (array != null) {
                 recycler.returnItem(array);
-            }
-        }
-
-        void enumerate(byte nullValue, LongConsumer consumer, long offset) {
-            if (oneIndex == ONE_UNINITIALIZED) {
-                return;
-            }
-            if (oneIndex != HAVE_MORE_THAN_ONE) {
-                if (oneValue != null) {
-                    enumerateInner(nullValue, oneValue, consumer, offset + ((long)oneIndex << BLOCK2_SHIFT));
-                }
-                return;
-            }
-            for (int ii = 0; ii < BLOCK2_SIZE; ++ii) {
-                if (array[ii] != null) {
-                    enumerateInner(nullValue, array[ii], consumer, offset + ((long)ii << BLOCK2_SHIFT));
-                }
-            }
-        }
-
-        private static void enumerateInner(byte nullValue, byte[] inner, LongConsumer consumer, long offset) {
-            for (int ii = 0; ii < inner.length; ++ii) {
-                if (inner[ii] != nullValue) {
-                    consumer.accept(offset + ii);
-                }
             }
         }
 

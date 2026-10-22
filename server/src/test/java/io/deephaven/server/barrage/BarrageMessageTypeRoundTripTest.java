@@ -67,6 +67,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.ObjIntConsumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import org.apache.arrow.flatbuf.Message;
@@ -77,6 +78,7 @@ import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.table.impl.remote.ConstructSnapshot.SNAPSHOT_CHUNK_SIZE;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -344,6 +346,16 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
      * attributes.
      */
     private static Schema buildDictEncodedSchema(final TableDefinition def, final String dictColumnName) {
+        return buildDictEncodedSchema(def, dictColumnName, 32);
+    }
+
+    /**
+     * Like {@link #buildDictEncodedSchema(TableDefinition, String)}, but with an index of {@code indexBitWidth} bits.
+     */
+    private static Schema buildDictEncodedSchema(
+            final TableDefinition def,
+            final String dictColumnName,
+            final int indexBitWidth) {
         // Build the natural schema using an empty attributes map so getAttributes() is never called on the live table.
         final Schema natural = BarrageUtil.makeSchema(
                 BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, def, Map.of(), false);
@@ -353,9 +365,34 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
             }
             return new Field(f.getName(),
                     new FieldType(f.isNullable(), f.getType(),
-                            new DictionaryEncoding(0L, false, new ArrowType.Int(32, true)),
+                            new DictionaryEncoding(0L, false, new ArrowType.Int(indexBitWidth, true)),
                             f.getMetadata()),
                     f.getChildren());
+        }).collect(Collectors.toList());
+        return new Schema(fields, natural.getCustomMetadata());
+    }
+
+    /**
+     * Like {@link #buildDictEncodedSchema(TableDefinition, String, int)}, but for a list column whose elements, rather
+     * than the column itself, are dictionary encoded.
+     */
+    private static Schema buildListElementDictEncodedSchema(
+            final TableDefinition def,
+            final String listColumnName,
+            final int indexBitWidth) {
+        final Schema natural = BarrageUtil.makeSchema(
+                BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, def, Map.of(), false);
+        final List<Field> fields = natural.getFields().stream().map(f -> {
+            if (!listColumnName.equals(f.getName())) {
+                return f;
+            }
+            final Field element = f.getChildren().get(0);
+            final Field dictElement = new Field(element.getName(),
+                    new FieldType(element.isNullable(), element.getType(),
+                            new DictionaryEncoding(0L, false, new ArrowType.Int(indexBitWidth, true)),
+                            element.getMetadata()),
+                    element.getChildren());
+            return new Field(f.getName(), f.getFieldType(), List.of(dictElement));
         }).collect(Collectors.toList());
         return new Schema(fields, natural.getCustomMetadata());
     }
@@ -632,6 +669,52 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
     }
 
     /**
+     * A full subscription that leaves out a dictionary encoded column shares the column's dictionary with a full
+     * subscription that does not. It is sent the dictionary only to define it, without values, however many values the
+     * other subscription's updates add; {@link RemoteClient} checks that its replicated column holds none.
+     */
+    @Test
+    public void testDictionaryEncodedColumnLeftOutOfFullSubscription() {
+        final int steps = 20;
+        final int size = 100;
+        final Random random = new Random(6);
+        // enough distinct values that most updates add some to the dictionary
+        final ColumnInfo<?, ?>[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "intCol"},
+                new SetGenerator<>(IntStream.range(0, 1000).mapToObj(ii -> "v" + ii).toArray(String[]::new)),
+                new IntGenerator(0, 100));
+        final QueryTable sourceTable = getTable(size / 4, random, columnInfo);
+        sourceTable.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE,
+                buildDictEncodedSchema(sourceTable.getDefinition(), "Sym"));
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+        final BitSet intCol = new BitSet();
+        intCol.set(1);
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        final RemoteClient withSym = nugget.newClient(null, allCols, "full-with-dict");
+        final RemoteClient withoutSym = nugget.newClient(null, intCol, "full-without-dict");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int step = 0; step < steps; step++) {
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("step " + step);
+        }
+
+        assertTrue("the subscription that includes Sym is sent its dictionary's values",
+                withSym.dummyObserver.observedDictionaryBatchLengths.stream().anyMatch(length -> length > 0));
+        final List<Long> lengths = withoutSym.dummyObserver.observedDictionaryBatchLengths;
+        assertFalse("the subscription that leaves out Sym is sent its dictionary's definition", lengths.isEmpty());
+        assertTrue("the subscription that leaves out Sym is sent none of its dictionary's values: " + lengths,
+                lengths.stream().allMatch(length -> length == 0));
+    }
+
+    /**
      * Verifies that two columns sharing the same Arrow dictionary id (id=0) are correctly encoded and decoded through a
      * full ticking subscription. The shared {@link io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistry} must
      * emit exactly one {@code DictionaryBatch} per id per update even though two columns reference it, and both columns
@@ -843,6 +926,254 @@ public class BarrageMessageTypeRoundTripTest extends BarrageMessageRoundTripTest
             nugget.flushClientEvents();
             updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
             nugget.validate("step " + step);
+        }
+    }
+
+    /**
+     * Verifies that an Int8 dictionary does not overflow from value churn alone. The table has more rows than the index
+     * can address but never more distinct live values, while every cycle replaces one value with one never seen before;
+     * the cumulative dictionary therefore passes the index width, and the server must compact it before it overflows
+     * rather than disconnect the subscribers. The viewport is also wider than the index, so its private dictionary is
+     * not compacted by the live-row-count rule either.
+     */
+    @Test
+    public void testDictionaryEncodedInt8ValueChurn() {
+        final int indexBitWidth = 8;
+        final int numRows = 1_000;
+        final int viewportSize = 200;
+        final int indexCapacity = 1 << (indexBitWidth - 1);
+        final int churnedRows = 10;
+
+        final String[] initialValues = new String[numRows];
+        Arrays.fill(initialValues, "initial");
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(RowSetFactory.flat(numRows).toTracking(),
+                TableTools.stringCol("Sym", initialValues), TableTools.intCol("intCol", new int[numRows]));
+        sourceTable.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE,
+                buildDictEncodedSchema(sourceTable.getDefinition(), "Sym", indexBitWidth));
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "churn-full-" + indexBitWidth);
+        nugget.newClient(RowSetFactory.flat(viewportSize), allCols, "churn-viewport-" + indexBitWidth);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        flushProducerTable();
+        nugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("initial snapshot");
+
+        // Each step writes a never-seen value to one of the first few rows, so at most churnedRows + 1 distinct values
+        // are ever live, while the number of values ever sent grows by one per step until it exceeds the index width.
+        for (int step = 0; step < indexCapacity + churnedRows; step++) {
+            final long rowKey = step % churnedRows;
+            final String value = "churn" + step;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(sourceTable, i(rowKey), TableTools.stringCol("Sym", value),
+                        TableTools.intCol("intCol", 0));
+                final ModifiedColumnSet modified = sourceTable.getModifiedColumnSetForUpdates();
+                modified.clear();
+                modified.setAll("Sym");
+                sourceTable.notifyListeners(new TableUpdateImpl(
+                        RowSetFactory.empty(), RowSetFactory.empty(), i(rowKey), RowSetShiftData.EMPTY, modified));
+            });
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("Int" + indexBitWidth + " churn step " + step);
+        }
+    }
+
+    /**
+     * Like {@link #testDictionaryEncodedInt8ValueChurn()}, but the Int8 dictionary encodes the elements of a list
+     * column, where a single row may add several values to it. The server must still compact the dictionary before it
+     * overflows rather than disconnect the subscribers.
+     */
+    @Test
+    public void testDictionaryEncodedInt8ListValueChurn() {
+        final int indexBitWidth = 8;
+        final int numRows = 1_000;
+        final int viewportSize = 200;
+        final int indexCapacity = 1 << (indexBitWidth - 1);
+        final int churnedRows = 10;
+
+        final String[][] initialValues = new String[numRows][];
+        Arrays.fill(initialValues, new String[] {"initial", "other"});
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(RowSetFactory.flat(numRows).toTracking(),
+                col("Syms", initialValues), TableTools.intCol("intCol", new int[numRows]));
+        sourceTable.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE,
+                buildListElementDictEncodedSchema(sourceTable.getDefinition(), "Syms", indexBitWidth));
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "list-churn-full-" + indexBitWidth);
+        nugget.newClient(RowSetFactory.flat(viewportSize), allCols, "list-churn-viewport-" + indexBitWidth);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        flushProducerTable();
+        nugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("initial snapshot");
+
+        // Each step writes two never-seen values to one of the first few rows, so at most 2 * churnedRows + 2 distinct
+        // values are ever live, while the number of values ever sent grows by two per step past the index width.
+        for (int step = 0; step < indexCapacity / 2 + churnedRows; step++) {
+            final long rowKey = step % churnedRows;
+            final String[] value = {"churnA" + step, "churnB" + step};
+            updateGraph.runWithinUnitTestCycle(() -> {
+                TstUtils.addToTable(sourceTable, i(rowKey), col("Syms", new String[][] {value}),
+                        TableTools.intCol("intCol", 0));
+                final ModifiedColumnSet modified = sourceTable.getModifiedColumnSetForUpdates();
+                modified.clear();
+                modified.setAll("Syms");
+                sourceTable.notifyListeners(new TableUpdateImpl(
+                        RowSetFactory.empty(), RowSetFactory.empty(), i(rowKey), RowSetShiftData.EMPTY, modified));
+            });
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("Int" + indexBitWidth + " list churn step " + step);
+        }
+    }
+
+    /**
+     * Like {@link #testDictionaryEncodedInt8ValueChurn()}, but for an Int16 dictionary, where each cycle rewrites
+     * thousands of rows. The dictionary must be compacted once the values a cycle may add would take it past the index
+     * width, well before the cumulative count reaches the live row count; the viewport is likewise wider than the
+     * index.
+     */
+    @Test
+    public void testDictionaryEncodedInt16ValueChurn() {
+        final int indexBitWidth = 16;
+        final int numRows = 100_000;
+        final int viewportSize = 40_000;
+        final int indexCapacity = 1 << (indexBitWidth - 1);
+        final int churnedRows = 4_000;
+
+        final String[] initialValues = new String[numRows];
+        Arrays.fill(initialValues, "initial");
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(RowSetFactory.flat(numRows).toTracking(),
+                TableTools.stringCol("Sym", initialValues), TableTools.intCol("intCol", new int[numRows]));
+        sourceTable.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE,
+                buildDictEncodedSchema(sourceTable.getDefinition(), "Sym", indexBitWidth));
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "churn-full-" + indexBitWidth);
+        nugget.newClient(RowSetFactory.flat(viewportSize), allCols, "churn-viewport-" + indexBitWidth);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        flushProducerTable();
+        nugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("initial snapshot");
+
+        // Each step writes never-seen values to the first churnedRows rows, so at most churnedRows + 1 distinct values
+        // are ever live, while the number of values ever sent grows by churnedRows per step until it exceeds the index
+        // width.
+        final int numSteps = indexCapacity / churnedRows + 2;
+        for (int step = 0; step < numSteps; step++) {
+            final String[] values = new String[churnedRows];
+            for (int ii = 0; ii < churnedRows; ++ii) {
+                values[ii] = "churn" + step + "_" + ii;
+            }
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet churned = RowSetFactory.flat(churnedRows);
+                TstUtils.addToTable(sourceTable, churned, TableTools.stringCol("Sym", values),
+                        TableTools.intCol("intCol", new int[churnedRows]));
+                final ModifiedColumnSet modified = sourceTable.getModifiedColumnSetForUpdates();
+                modified.clear();
+                modified.setAll("Sym");
+                sourceTable.notifyListeners(new TableUpdateImpl(
+                        RowSetFactory.empty(), RowSetFactory.empty(), churned, RowSetShiftData.EMPTY, modified));
+            });
+            flushProducerTable();
+            nugget.flushClientEvents();
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+            nugget.validate("Int" + indexBitWidth + " churn step " + step);
+        }
+    }
+
+    /**
+     * Compacting a dictionary cannot help when a single message holds more distinct values than its index can address.
+     * A message with exactly as many values as the index allows still replicates. One with a single value more must
+     * fail the subscribers that would receive it, each once, and send them nothing more.
+     */
+    @Test
+    public void testDictionaryEncodedInt8MessageWiderThanIndexFailsSubscribers() {
+        final int indexBitWidth = 8;
+        final int numRows = 1_000;
+        final int indexCapacity = 1 << (indexBitWidth - 1);
+
+        final String[] initialValues = new String[numRows];
+        Arrays.fill(initialValues, "initial");
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(RowSetFactory.flat(numRows).toTracking(),
+                TableTools.stringCol("Sym", initialValues), TableTools.intCol("intCol", new int[numRows]));
+        sourceTable.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE,
+                buildDictEncodedSchema(sourceTable.getDefinition(), "Sym", indexBitWidth));
+
+        final BitSet allCols = new BitSet();
+        allCols.set(0, sourceTable.numColumns());
+
+        final RemoteNugget nugget = new RemoteNugget(() -> sourceTable);
+        nugget.newClient(null, allCols, "wide-full");
+        nugget.newClient(RowSetFactory.flat(2 * indexCapacity + 2), allCols, "wide-viewport");
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        flushProducerTable();
+        nugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("initial snapshot");
+
+        // Writes a distinct, never-seen value to each of the first numValues rows, in one cycle.
+        final ObjIntConsumer<String> writeDistinctValues = (prefix, numValues) -> {
+            final String[] values = new String[numValues];
+            for (int ii = 0; ii < numValues; ++ii) {
+                values[ii] = prefix + ii;
+            }
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet changed = RowSetFactory.flat(numValues);
+                TstUtils.addToTable(sourceTable, changed, TableTools.stringCol("Sym", values),
+                        TableTools.intCol("intCol", new int[numValues]));
+                final ModifiedColumnSet modified = sourceTable.getModifiedColumnSetForUpdates();
+                modified.clear();
+                modified.setAll("Sym");
+                sourceTable.notifyListeners(new TableUpdateImpl(
+                        RowSetFactory.empty(), RowSetFactory.empty(), changed, RowSetShiftData.EMPTY, modified));
+            });
+            flushProducerTable();
+        };
+
+        writeDistinctValues.accept("fits", indexCapacity);
+        nugget.flushClientEvents();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
+        nugget.validate("a message with as many values as the index allows");
+        for (final RemoteClient client : nugget.clients) {
+            assertTrue(client.name + ": " + client.dummyObserver.errors, client.dummyObserver.errors.isEmpty());
+        }
+
+        writeDistinctValues.accept("wide", indexCapacity + 1);
+        final int[] messagesBeforeFailing = new int[nugget.clients.size()];
+        for (int ci = 0; ci < nugget.clients.size(); ++ci) {
+            final RemoteClient client = nugget.clients.get(ci);
+            final List<Throwable> errors = client.dummyObserver.errors;
+            assertEquals(client.name + ": expected exactly one error, got " + errors, 1, errors.size());
+            assertTrue(client.name + ": expected a gRPC status, got " + errors.get(0),
+                    errors.get(0) instanceof StatusRuntimeException);
+            messagesBeforeFailing[ci] = client.pendingMessageCount();
+        }
+
+        writeDistinctValues.accept("after", indexCapacity + 1);
+        for (int ci = 0; ci < nugget.clients.size(); ++ci) {
+            final RemoteClient client = nugget.clients.get(ci);
+            assertEquals(client.name + ": sent nothing after failing", messagesBeforeFailing[ci],
+                    client.pendingMessageCount());
+            assertEquals(client.name + ": failed only once", 1, client.dummyObserver.errors.size());
         }
     }
 
