@@ -35,7 +35,12 @@ Each delta and snapshot is then propagated to its subscribers. When a message go
 
 5. Writing to the OutputStream
 
-Another thread writes the resulting bytes to the actual gRPC stream. Barrage records `WriteNanos`, the time it took to drain the subscriber-specific filtered view of the update (including coalesced and snapshots) to the OutputStream. Barrage records `WriteBytes`, the number of bytes that were written on a single message. To compare against the bandwidth allowed by the connected hardware, convert to megabits in a query: `Megabits = WriteBytes * 8 / 1e6`.
+Another thread writes the resulting bytes to the actual gRPC stream. Barrage records `WriteNanos`, the time it took to drain one write of the update (coalesced or snapshot) to the OutputStream, and `WriteBytes`, the number of bytes in that write. To compare against the bandwidth allowed by the connected hardware, convert to megabits in a query: `Megabits = WriteBytes * 8 / 1e6`.
+
+Full-table subscribers that would receive identical bytes share one write of each update (see [Share one write among identical subscribers](../how-to-guides/performance/barrage-performance.md#share-one-write-among-identical-subscribers)). For a shared write:
+
+- Barrage records `WriteNanos` once, including the time to copy the bytes to every subscriber that shares the write.
+- Barrage records `WriteBytes` once, as the size of one copy. Multiply it by the number of subscribers that share the write to find the bytes sent over the network.
 
 6. Receiver bundles gRPC messages into an update (coalesced or snapshot)
 

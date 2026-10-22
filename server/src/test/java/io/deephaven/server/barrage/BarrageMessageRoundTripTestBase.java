@@ -187,6 +187,34 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
         scheduler.runUntilQueueEmpty();
     }
 
+    /** The options a {@link RemoteClient} subscribes with unless it is given others. */
+    BarrageSubscriptionOptions defaultSubscriptionOptions() {
+        return BarrageSubscriptionOptions.builder()
+                .useDeephavenNulls(useDeephavenNulls)
+                .build();
+    }
+
+    /**
+     * The natural schema of {@code definition}, with each named column dictionary encoded under its own id: its
+     * position among {@code columns}.
+     */
+    static Schema dictionaryEncodedSchema(final TableDefinition definition, final String... columns) {
+        final List<String> encoded = List.of(columns);
+        final Schema natural =
+                BarrageUtil.makeSchema(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, definition, Map.of(), false);
+        final List<Field> fields = natural.getFields().stream().map(field -> {
+            final int id = encoded.indexOf(field.getName());
+            if (id < 0) {
+                return field;
+            }
+            return new Field(field.getName(),
+                    new FieldType(field.isNullable(), field.getType(),
+                            new DictionaryEncoding(id, false, new ArrowType.Int(32, true)), field.getMetadata()),
+                    field.getChildren());
+        }).collect(Collectors.toList());
+        return new Schema(fields, natural.getCustomMetadata());
+    }
+
     // We should listen for failures on the table, and if we get any, the test case is no good.
     class FailureListener extends InstrumentedTableUpdateListener {
         final String tableName;
@@ -268,6 +296,8 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
         boolean subscribed = false;
         final Queue<BarrageMessage> commandQueue = new ArrayDeque<>();
         final DummyObserver dummyObserver;
+        /** the options this client subscribes, and reads what it is sent, with */
+        final BarrageSubscriptionOptions options;
 
         UnaryOperator<QueryTable> transform = null;
 
@@ -284,6 +314,16 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
                 final BarrageMessageProducer barrageMessageProducer,
                 final Table sourceTable,
                 final String name, final boolean reverseViewport, final boolean deferSubscription) {
+            this(viewport, subscribedColumns, barrageMessageProducer, sourceTable, name, reverseViewport,
+                    deferSubscription, defaultSubscriptionOptions());
+        }
+
+        RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
+                final BarrageMessageProducer barrageMessageProducer,
+                final Table sourceTable,
+                final String name, final boolean reverseViewport, final boolean deferSubscription,
+                final BarrageSubscriptionOptions options) {
+            this.options = options;
             this.viewport = viewport;
             this.reverseViewport = reverseViewport;
             this.subscribedColumns = subscribedColumns;
@@ -322,9 +362,6 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
                             });
             this.barrageTable.addSourceToRegistrar();
 
-            final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
-                    .useDeephavenNulls(useDeephavenNulls)
-                    .build();
             final BarrageMessageReaderImpl messageReader =
                     new BarrageMessageReaderImpl(barrageTable.getDeserializationTmConsumer());
             openMessageReaders.add(messageReader);
@@ -349,9 +386,6 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
 
         public void doSubscribe() {
             subscribed = true;
-            final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
-                    .useDeephavenNulls(useDeephavenNulls)
-                    .build();
             barrageMessageProducer.addSubscription(dummyObserver, options, subscribedColumns,
                     viewport == null ? null : viewport.copy(), reverseViewport);
         }

@@ -13,9 +13,14 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.chunk.ChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkWriterFactory;
+import io.deephaven.extensions.barrage.chunk.DictionaryChunkWriter;
 import io.deephaven.extensions.barrage.chunk.DictionaryWriterRegistryImpl;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.proto.flight.util.SchemaHelper;
+import org.apache.arrow.flatbuf.DictionaryBatch;
+import org.apache.arrow.flatbuf.Message;
+import org.apache.arrow.flatbuf.MessageHeader;
+import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -25,16 +30,19 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * A producer's message carries data for every column that any of its subscriptions needs; each subscription's view of
- * it writes only that subscription's columns.
+ * it writes only that subscription's columns. A standalone DictionaryBatch, which a producer sends to bring a member of
+ * a group of subscriptions level with the others, is the same message the writer builds for those values in a stream.
  */
 public class BarrageMessageWriterImplTest {
 
@@ -78,6 +86,85 @@ public class BarrageMessageWriterImplTest {
             assertThat(intColumnOnly.get(si)).isEqualTo(updateOfIntColumn.get(si));
         }
         assertThat(totalBytes(intColumnOnly)).isLessThan(totalBytes(everyColumn));
+    }
+
+    /** A standalone DictionaryBatch is byte for byte the batch the writer sends before a RecordBatch needing it. */
+    @Test
+    public void testDictionaryBatchViewMatchesTheStreamsDictionaryBatch() throws IOException {
+        final ChunkWriter<Chunk<Values>>[] writers = chunkWriters();
+        final DictionaryChunkWriter dictionaryWriter = (DictionaryChunkWriter) (ChunkWriter<?>) writers[2];
+        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
+                delta(columns(0, 1, 2)), writers, BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
+            // a fresh registry sends every value its first batch refers to as a replacement, before that batch
+            final List<byte[]> streams = drain(writer.getSubView(OPTIONS, false, true, null, false, null, null,
+                    columns(0, 1, 2), new DictionaryWriterRegistryImpl()));
+            assertThat(flightMessage(streams.get(0)).headerType()).isEqualTo(MessageHeader.DictionaryBatch);
+
+            final List<byte[]> standalone = drain(writer.getDictionaryBatchView(OPTIONS, DICT_ID,
+                    dictionaryWriter.getValuesWriter(), strings("x", "y", "z"), false));
+            assertThat(standalone).hasSize(1);
+            assertThat(standalone.get(0)).isEqualTo(streams.get(0));
+
+            final DictionaryBatch delta = dictionaryBatch(drain(writer.getDictionaryBatchView(OPTIONS, DICT_ID,
+                    dictionaryWriter.getValuesWriter(), strings("w"), true)).get(0));
+            assertThat(delta.id()).isEqualTo(DICT_ID);
+            assertThat(delta.isDelta()).isTrue();
+            assertThat(delta.data().length()).isEqualTo(1);
+        }
+    }
+
+    /** The Arrow IPC writer frames a standalone DictionaryBatch as an IPC message, like its other messages. */
+    @Test
+    public void testArrowFactoryFramesDictionaryBatchViewAsIpc() throws IOException {
+        final ChunkWriter<Chunk<Values>>[] writers = chunkWriters();
+        final DictionaryChunkWriter dictionaryWriter = (DictionaryChunkWriter) (ChunkWriter<?>) writers[2];
+        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl.ArrowFactory()
+                .newMessageWriter(delta(columns(0, 1, 2)), writers, BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
+            final List<byte[]> streams = drain(writer.getDictionaryBatchView(OPTIONS, DICT_ID,
+                    dictionaryWriter.getValuesWriter(), strings("x", "y"), true));
+            assertThat(streams).hasSize(1);
+            final ByteBuffer ipc = ByteBuffer.wrap(streams.get(0)).order(ByteOrder.LITTLE_ENDIAN);
+            assertThat(ipc.getInt()).isEqualTo(-1); // the continuation marker
+            final int metadataLength = ipc.getInt();
+            final ByteBuffer metadata = ipc.slice().order(ByteOrder.LITTLE_ENDIAN);
+            metadata.limit(metadataLength);
+            final Message message = Message.getRootAsMessage(metadata);
+            assertThat(message.headerType()).isEqualTo(MessageHeader.DictionaryBatch);
+            final DictionaryBatch batch = (DictionaryBatch) message.header(new DictionaryBatch());
+            assertThat(batch.id()).isEqualTo(DICT_ID);
+            assertThat(batch.isDelta()).isTrue();
+            assertThat(batch.data().length()).isEqualTo(2);
+        }
+    }
+
+    /** A view writes its message once; a second visit fails, rather than reading what the first released. */
+    @Test
+    public void testAViewMayBeVisitedOnlyOnce() throws IOException {
+        final ChunkWriter<Chunk<Values>>[] writers = chunkWriters();
+        final DictionaryChunkWriter dictionaryWriter = (DictionaryChunkWriter) (ChunkWriter<?>) writers[2];
+        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
+                delta(columns(0, 1, 2)), writers, BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
+            final BarrageMessageWriter.MessageView subView = writer.getSubView(OPTIONS, false, true, null, false, null,
+                    null, columns(0, 1, 2), new DictionaryWriterRegistryImpl());
+            assertThat(drain(subView)).isNotEmpty();
+            assertThatThrownBy(() -> drain(subView)).isInstanceOf(IllegalStateException.class);
+
+            final BarrageMessageWriter.MessageView dictionaryView = writer.getDictionaryBatchView(OPTIONS, DICT_ID,
+                    dictionaryWriter.getValuesWriter(), strings("x"), true);
+            assertThat(drain(dictionaryView)).hasSize(1);
+            assertThatThrownBy(() -> drain(dictionaryView)).isInstanceOf(IllegalStateException.class);
+        }
+    }
+
+    private static Message flightMessage(final byte[] flightData) throws IOException {
+        final Flight.FlightData data = Flight.FlightData.parseFrom(flightData);
+        return Message.getRootAsMessage(data.getDataHeader().asReadOnlyByteBuffer());
+    }
+
+    private static DictionaryBatch dictionaryBatch(final byte[] flightData) throws IOException {
+        final Message message = flightMessage(flightData);
+        assertThat(message.headerType()).isEqualTo(MessageHeader.DictionaryBatch);
+        return (DictionaryBatch) message.header(new DictionaryBatch());
     }
 
     @SuppressWarnings("unchecked")

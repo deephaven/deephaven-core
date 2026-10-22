@@ -73,6 +73,11 @@ public class BarrageMessageReaderImpl implements BarrageMessageReader {
     @Override
     public void close() {
         dictionaryRegistry.close();
+        // a stream that ended part way through a message leaves what was read of it
+        if (msg != null) {
+            msg.close();
+            msg = null;
+        }
     }
 
     private final Map<Long, ChunkReader<? extends WritableChunk<Values>>> dictValuesReaders = new HashMap<>();

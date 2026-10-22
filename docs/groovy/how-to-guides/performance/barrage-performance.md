@@ -150,6 +150,33 @@ Each time the server propagates an update to a table's subscribers, it writes ea
 > [!NOTE]
 > `PropagateNanos` measures the elapsed time of one propagation phase: writing one message to the subscribers it goes to. An update can take several phases, such as a snapshot for new subscribers and a delta for the others, and each records its own sample. With parallel writes a phase can take much less than the sum of its writes' `WriteNanos`. A single subscriber's write still runs on one thread.
 
+## Share one write among identical subscribers
+
+A subscriber to a whole table, rather than to a viewport of it, is a full-table subscriber. Full-table subscribers that would receive identical bytes share one write of each update. The server writes the update once and copies the bytes to each of them, which saves the processor time of writing it again for every subscriber.
+
+Full-table subscribers share a write when they:
+
+- Have received the whole table, rather than still receiving it in parts (see [Control subscription snapshot size](#control-subscription-snapshot-size)).
+- Use the same subscription options, such as the batch size, the maximum message size, and how nulls are sent.
+- Use the same viewport direction.
+- Subscribe to the same columns.
+
+Viewport subscribers always get a write of their own.
+
+The server copies a shared write to its subscribers one message at a time:
+
+- Each message holds exactly one batch, either a record batch or a dictionary batch. A message never holds both.
+- For a table with dictionary-encoded columns, each dictionary batch is its own message, sent ahead of the record batch that uses its values.
+- The server copies each message to every subscriber before it writes the next, so sharing holds at most one extra batch in memory for each write in progress.
+- A record batch is no larger than the subscriber's maximum message size, which is `BarrageMessageWriterImpl.maxOutboundMessageSize` unless the subscriber sets its own (see [Message batching](#message-batching)). The exception is a single row too large to fit, which the server sends anyway.
+
+When a table has dictionary-encoded columns, subscribers that share a write may have been sent different amounts of each dictionary, for example when one of them subscribed more recently. Before the shared write, the server sends each subscriber that is behind one message per dictionary with the values it lacks. After that, subscribers that share a write stay level, so they need no more of these messages until another subscriber joins them.
+
+- `-DBarrageMessageProducer.dedupIdenticalSubscribers`: When `true` (the default), identical full-table subscribers share one write of each update. When `false`, every subscriber gets a write of its own.
+
+> [!NOTE]
+> A shared write records one `WriteNanos` sample and one `WriteBytes` sample for all of the subscribers that share it. `WriteBytes` is the size of one copy, so multiply it by the number of subscribers that share the write to estimate the bytes sent over the network.
+
 ## Additional Barrage configuration
 
 The following properties control other aspects of Barrage behavior:
@@ -189,6 +216,7 @@ If `WriteNanos` is high or `WriteBytes` is large:
 If `PropagateNanos` is consistently high:
 
 - Many subscribers may be connected to the same table. Their writes overlap only as far as `BarrageMessageProducer.propagationThreads` and idle processors allow: check that the property is above `1` and not well below the number of subscribers (see [Write to subscribers in parallel](#write-to-subscribers-in-parallel)), and whether the server's processors are already busy. Consider load balancing across multiple server instances.
+- Subscribers whose options or viewports differ each need a write of their own. Full-table subscribers with matching options share one (see [Share one write among identical subscribers](#share-one-write-among-identical-subscribers)).
 - The server may be under memory pressure. Check JVM heap usage and garbage collection metrics.
 
 ### Subscription errors

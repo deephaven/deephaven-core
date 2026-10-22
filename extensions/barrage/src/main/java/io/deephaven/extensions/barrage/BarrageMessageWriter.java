@@ -5,6 +5,7 @@ package io.deephaven.extensions.barrage;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -30,6 +31,11 @@ public interface BarrageMessageWriter extends SafeCloseable {
     /**
      * Represents a single update, which might be sent as multiple distinct payloads as necessary based in the
      * implementation.
+     *
+     * <p>
+     * A view of a message, from {@link BarrageMessageWriter#getSubView}, {@link BarrageMessageWriter#getSnapshotView}
+     * or {@link BarrageMessageWriter#getDictionaryBatchView}, may be visited only once: visiting it writes the message,
+     * and releases what the message was written from.
      */
     interface MessageView {
         void forEachStream(Consumer<DefensiveDrainable> visitor) throws IOException;
@@ -128,7 +134,7 @@ public interface BarrageMessageWriter extends SafeCloseable {
      * @param dictionaryRegistry the persistent dictionary registry for this subscription, or {@code null} if unused
      * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
      */
-    default MessageView getSubView(
+    MessageView getSubView(
             BarrageSubscriptionOptions options,
             boolean isInitialSnapshot,
             boolean isFullSubscription,
@@ -137,10 +143,7 @@ public interface BarrageMessageWriter extends SafeCloseable {
             @Nullable RowSet keyspaceViewportPrev,
             @Nullable RowSet keyspaceViewport,
             BitSet subscribedColumns,
-            @Nullable DictionaryWriterRegistry dictionaryRegistry) {
-        return getSubView(options, isInitialSnapshot, isFullSubscription, viewport, reverseViewport,
-                keyspaceViewportPrev, keyspaceViewport, subscribedColumns);
-    }
+            @Nullable DictionaryWriterRegistry dictionaryRegistry);
 
     /**
      * Obtain a Full-Snapshot {@link MessageView} of this {@code BarrageMessageWriter} that can be sent to a single
@@ -181,15 +184,34 @@ public interface BarrageMessageWriter extends SafeCloseable {
      * @param dictionaryRegistry the dictionary registry for this snapshot, or {@code null} if unused
      * @return a MessageView filtered by the snapshot properties that can be sent to that requestor
      */
-    default MessageView getSnapshotView(
+    MessageView getSnapshotView(
             BarrageSnapshotOptions options,
             @Nullable RowSet viewport,
             boolean reverseViewport,
             @Nullable RowSet keyspaceViewport,
             BitSet snapshotColumns,
-            @Nullable DictionaryWriterRegistry dictionaryRegistry) {
-        return getSnapshotView(options, viewport, reverseViewport, keyspaceViewport, snapshotColumns);
-    }
+            @Nullable DictionaryWriterRegistry dictionaryRegistry);
+
+    /**
+     * Obtain a {@link MessageView} of one standalone DictionaryBatch carrying {@code values} for dictionary
+     * {@code dictId}, framed like this writer's other messages. A producer that writes one message for several
+     * subscribers sends these first, to bring each subscriber's dictionary level with the others'.
+     * <p>
+     * Takes ownership of {@code values}. The returned view must be visited exactly once.
+     *
+     * @param options serialization options for the values
+     * @param dictId the dictionary id
+     * @param valuesWriter the writer for the dictionary's values
+     * @param values the values to send
+     * @param isDelta whether the values append to the dictionary the subscriber holds, rather than replace it
+     * @return a MessageView of one DictionaryBatch
+     */
+    MessageView getDictionaryBatchView(
+            BarrageOptions options,
+            long dictId,
+            ChunkWriter<Chunk<Values>> valuesWriter,
+            WritableChunk<Values> values,
+            boolean isDelta);
 
     /**
      * Optional metrics API to track how many bytes a barrage message consumed, and how many nanoseconds it took to
