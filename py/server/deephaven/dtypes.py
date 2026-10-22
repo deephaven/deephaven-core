@@ -260,7 +260,7 @@ def null_remap(dtype: DType) -> Callable[[Any], Any]:
         a Callable
 
     Raises:
-        TypeError
+        TypeError: If null_remap() is not called with a primitive DType.
     """
     null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)
     if null_value is None:
@@ -332,7 +332,7 @@ def array(
         a Java array
 
     Raises:
-        DHError
+        DHError: If unable to create a Java array.
     """
     if seq is None:
         return None

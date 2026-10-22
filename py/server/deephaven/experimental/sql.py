@@ -42,7 +42,7 @@ def evaluate(
         a new Table, or a java TableSpec if dry_run is True
 
     Raises:
-        DHError
+        DHError: If unable to execute SQL.
     """
     try:
         # Do not use inspect.stack(). It calls inspect.getmodule() on every frame, which can rescan all of sys.modules.
