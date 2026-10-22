@@ -734,7 +734,7 @@ public class WorkerConnection {
     public JsPendingObject getObject(JsVariableDefinition definition, @Nullable TableTicket handle) {
         if (JsVariableType.TABLE.equalsIgnoreCase(definition.getType())) {
             TableTicket tableHandle = handle != null ? handle : tickets.newTableTicket();
-            return JsPendingObject.of(MicrotaskBatchImpl.wrap(this, tableHandle.makeTicket(),
+            return JsPendingObject.of(MicrotaskBatchImpl.wrapTable(this, tableHandle.makeTicket(),
                     getTable(definition, null, tableHandle)));
         }
         return JsPendingObject.of(getNonTableObject(definition));
@@ -800,7 +800,7 @@ public class WorkerConnection {
             Promise<JsVariableDefinition> lookup = getVariableDefinition(name, type);
             if (JsVariableType.TABLE.equalsIgnoreCase(type)) {
                 TableTicket tableHandle = handle != null ? handle : tickets.newTableTicket();
-                return JsPendingObject.of(MicrotaskBatchImpl.wrap(this, tableHandle.makeTicket(),
+                return JsPendingObject.of(MicrotaskBatchImpl.wrapTable(this, tableHandle.makeTicket(),
                         lookup.then(definition -> getTable(definition, null, tableHandle))));
             }
             return JsPendingObject.of(lookup.then(definition -> getNonTableObject(definition)));
@@ -1506,7 +1506,7 @@ public class WorkerConnection {
      */
     public JsPendingTable<JsTable> pendingTable(JsTableFetch fetcher, String fetchSummary) {
         TableTicket handle = tickets.newTableTicket();
-        return MicrotaskBatchImpl.wrap(this, handle.makeTicket(), newState(fetcher, fetchSummary, handle).refetch()
+        return MicrotaskBatchImpl.wrapTable(this, handle.makeTicket(), newState(fetcher, fetchSummary, handle).refetch()
                 .then(cts -> Promise.resolve(new JsTable(this, cts))));
     }
 
@@ -1516,7 +1516,7 @@ public class WorkerConnection {
      */
     public JsPendingTable<JsTable> pendingTable(String operationName, JsTableFetch fetcher, String fetchSummary) {
         TableTicket handle = tickets.newTableTicket();
-        return MicrotaskBatchImpl.wrap(this, handle.makeTicket(), whenServerReady(operationName)
+        return MicrotaskBatchImpl.wrapTable(this, handle.makeTicket(), whenServerReady(operationName)
                 .then(server -> newState(fetcher, fetchSummary, handle).refetch())
                 .then(cts -> Promise.resolve(new JsTable(this, cts))));
     }

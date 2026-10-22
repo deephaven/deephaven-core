@@ -144,7 +144,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         // Allocate the ticket now, so operations can be chained on the result before the fetch has been sent
         final WorkerConnection workerConnection = connection.get();
         final TableTicket handle = workerConnection.getTickets().newTableTicket();
-        return MicrotaskBatchImpl.wrap(workerConnection, handle.makeTicket(),
+        return MicrotaskBatchImpl.wrapTable(workerConnection, handle.makeTicket(),
                 workerConnection.getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
                     final Promise<JsTable> table = workerConnection.getTable(varDef, applyPreviewColumns, handle);
                     fireEvent(EVENT_TABLE_OPENED, table);
@@ -164,7 +164,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         if (JsVariableType.TABLE.equalsIgnoreCase(type)) {
             // Allocate the ticket now, so operations can be chained on the table before we have even connected
             TableTicket handle = conn.getTickets().newTableTicket();
-            return JsPendingObject.of(MicrotaskBatchImpl.wrap(conn, handle.makeTicket(),
+            return JsPendingObject.of(MicrotaskBatchImpl.wrapTable(conn, handle.makeTicket(),
                     onConnected().then(e -> conn.getJsObject(definitionObject, handle).asPendingTable().resolve())));
         }
         return JsPendingObject.of(onConnected().then(e -> conn.getJsObject(definitionObject).asPromise()));

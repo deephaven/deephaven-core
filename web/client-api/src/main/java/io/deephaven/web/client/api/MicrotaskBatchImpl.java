@@ -4,65 +4,59 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
-import elemental2.core.ReadonlyArray;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
+import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
+import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.fu.PromiseLike;
+import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.base.Js;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
- * Implements the immutable table API over a single server ticket. Operations called on any instance are collected per
- * connection and sent as one {@link BatchTableRequest} when the current microtask ends.
+ * Implements the immutable table API over {@link ClientTableState}s. Operations called on any instance are collected
+ * per connection and sent as one {@link BatchTableRequest} when the current microtask ends; each operation owns a state
+ * from the moment it is created, and the state's retainers decide when its ticket is released.
  */
 public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
     /**
      * The ownerless {@link JsTableOperations} over an existing table such as a {@link JsTable}, reading the table's
-     * current ticket each time an operation is called. Holds no server resources of its own.
-     * <p>
-     * Because it reads the live ticket, a chain started on a {@link JsTable} between two client-side changes in the
-     * same tick (an {@code applyFilter} followed by another before the batch flushes) can reference a state that the
-     * table abandons before it is ever fetched; the server then fails the chained operation with a released dependency.
-     * Chain off the state you mean to keep.
+     * current ticket each time an operation is called. Holds no server resources of its own; an operation chained on it
+     * retains the table's state of that moment until the operation has been created on the server.
      */
-    // TODO Should hold and retain the source's ClientTableState once Resolved is backed by one.
     public static class View implements JsTableOperations {
-        private final ServerObject source;
-        private final Supplier<Promise<? extends JsITable>> resolver;
+        private final JsTable source;
 
-        /**
-         * @param source the table whose current ticket operations build on
-         * @param resolver produces a retained, independently closeable instance of the source for {@link #resolve()};
-         *        for a {@link JsTable} that is {@code copy()}, a client-side retain with no server round trip
-         */
-        public View(ServerObject source, Supplier<Promise<? extends JsITable>> resolver) {
+        public View(JsTable source) {
             this.source = source;
-            this.resolver = resolver;
         }
 
         @Override
         public Promise<? extends JsITable> resolve() {
-            return resolver.get();
+            return source.copy().resolve();
         }
 
         @Override
         public JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
-            return enqueue(getConnection(), resultId, operation);
+            return enqueue(source.getConnection(), resultId, operation, Promise.resolve(source.state()));
         }
 
         @Override
@@ -87,6 +81,16 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             super(connection, ticket);
         }
 
+        /**
+         * The state this pending table will occupy, for a dependent operation to retain while it is created.
+         */
+        protected abstract Promise<ClientTableState> sourceState();
+
+        @Override
+        public JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
+            return enqueue(connection, resultId, operation, sourceState());
+        }
+
         @Override
         public <V> PromiseLike<V> then(
                 @Nullable ThenOnFulfilledCallbackFn<? super T, ? extends V> onFulfilled,
@@ -101,46 +105,58 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
-     * A pending operation sent in a batch. Retained only once awaited; if never awaited, released as soon as the server
-     * reports it created.
+     * A pending operation sent in a batch. Its {@link ClientTableState} exists from construction; the first
+     * {@link #resolve()} creates the one {@link Resolved} that retains it, and a state nobody retains is released as
+     * soon as its response arrives and no dependent needs it any more.
      */
     private static class Operation extends Pending<JsResolvedTable> {
         private final BatchTableRequest.Operation operation;
-        /**
-         * Where this operation was created, for the error when it is used after it should have been retained.
-         */
-        private final Exception trace = new Exception();
-        /**
-         * The one resolved table this operation hands out, however many times it is awaited: one ticket, one owner.
-         * TODO BEFORE MERGE: this memo, Resolved.copy() and View's deferred copy() all stand in for the reference
-         * counting ClientTableState already does; back Resolved with a CTS and drop them.
-         */
-        private @Nullable Promise<JsResolvedTable> resolved;
+        private final ClientTableState state;
+        private boolean sent;
         private boolean cancelled;
+        private @Nullable Promise<JsResolvedTable> resolved;
 
-        public Operation(WorkerConnection connection, Ticket ticket, BatchTableRequest.Operation.Builder operation) {
-            super(connection, ticket);
+        public Operation(WorkerConnection connection, TableTicket handle,
+                BatchTableRequest.Operation.Builder operation) {
+            super(connection, handle.makeTicket());
             this.operation = operation.build();
+            // The fetcher re-issues this one operation, which is what a reconnect needs
+            this.state = connection.newState((callback, cts) -> {
+                sent = true;
+                ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper.of(observer -> {
+                    connection.tableServiceClient().batch(BatchTableRequest.newBuilder()
+                            .addOps(this.operation)
+                            .build(), observer);
+                });
+                stream.onData(callback::onNext);
+                stream.onEnd(status -> {
+                    if (status.isOk()) {
+                        callback.onCompleted();
+                    } else {
+                        callback.onError(new RuntimeException(status.getDescription()));
+                    }
+                });
+            }, "batch operation", handle);
         }
 
         @Override
-        public JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
-            if (!retained && state != State.ENQUEUED) {
-                // While this ticket might still be valid, the user had their chance to use it, notify them they should
-                // have retained it earlier
-                throw new IllegalStateException("Ticket " + ticket.getTicket()
-                        + " was not retained, but is now in state " + state
-                        + ". See the nested trace for where it was created - it should have been retained at that time",
-                        trace);
-            }
-            return super.call(resultId, operation);
+        protected Promise<ClientTableState> sourceState() {
+            return Promise.resolve(state);
         }
 
         @Override
         public Promise<JsResolvedTable> resolve() {
             if (resolved == null) {
-                retained = true;
-                resolved = promise.asPromise().then(etcr -> Promise.resolve(new Resolved(connection, ticket)));
+                // The Resolved retains the state from now on; the caller owns it and must close it
+                Resolved owner = new Resolved(connection, state);
+                LazyPromise<JsResolvedTable> promise = new LazyPromise<>();
+                state.onRunning(cts -> promise.succeed(owner), failure -> {
+                    owner.close();
+                    promise.fail(failure);
+                }, () -> {
+                    promise.fail("Table was released before it was created");
+                });
+                resolved = promise.asPromise();
             }
             return resolved;
         }
@@ -151,38 +167,42 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 return;
             }
             cancelled = true;
-            // TODO after the CTS rework: cancellation should come from an AbortController-style signal passed to
-            // resolve(), and reach the server; until then, an in-flight operation still completes there and is
-            // released as soon as it reports.
-            switch (state) {
-                case ENQUEUED:
-                    // Not sent yet: the flush skips cancelled tasks
-                    state = State.RELEASED;
-                    break;
-                case RESOLVED:
-                    state = State.RELEASED;
-                    connection.releaseTicket(ticket);
-                    break;
-                default:
-                    // RUNNING: released when the response arrives; RELEASED/FAILED: nothing to do
-                    break;
+            if (resolved != null) {
+                // The caller holds (or will hold) the Resolved and closes it themselves; cancellation of an operation
+                // that was awaited is a no-op beyond that.
+                return;
             }
-            promise.fail("Operation canceled");
+            if (!sent) {
+                // Never sent: nothing on the server; let the state go
+                state.setResolution(ClientTableState.ResolutionState.FAILED, "Operation canceled");
+            }
+            // Sent and never retained: released when the response arrives, like any unretained operation.
+            // TODO after the CTS rework: an AbortController-style signal passed to resolve(), reaching the server.
+            connection.scheduleCheck(state);
         }
     }
 
     /**
      * A pending table from an API that has always produced a {@link JsTable} (or another retained table) through a
      * promise: the same promise, with a ticket known up front so operations can be chained before it resolves. The
-     * table is created on first await, so a pending that is only chained on retains nothing.
+     * table is created on first await, so a pending that is only chained on retains nothing of its own; dependents
+     * retain the state the promise will produce.
      */
     private static class Fetched<T extends JsITable> extends Pending<T> {
         private final Supplier<Promise<T>> fetch;
+        private final Promise<ClientTableState> sourceState;
         private @Nullable Promise<T> table;
 
-        public Fetched(WorkerConnection connection, Ticket ticket, Supplier<Promise<T>> fetch) {
+        public Fetched(WorkerConnection connection, Ticket ticket, Supplier<Promise<T>> fetch,
+                Promise<ClientTableState> sourceState) {
             super(connection, ticket);
             this.fetch = fetch;
+            this.sourceState = sourceState;
+        }
+
+        @Override
+        protected Promise<ClientTableState> sourceState() {
+            return sourceState;
         }
 
         @Override
@@ -199,76 +219,90 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
     }
 
-    // TODO this all needs to be done, either by wrapping JsTable or otherwise sharing details about how
-    // to interact with a CTS
+    /**
+     * An owned, readable immutable table: one retainer on a {@link ClientTableState}. {@link #close()} drops the
+     * retainer; the state and its ticket are released once nobody retains it.
+     */
     private static class Resolved extends MicrotaskBatchImpl implements JsResolvedTable {
-        public Resolved(WorkerConnection connection, Ticket ticket) {
-            super(connection, ticket);
+        private final ClientTableState state;
+        private boolean closed;
+
+        public Resolved(WorkerConnection connection, ClientTableState state) {
+            super(connection, state.getHandle().makeTicket());
+            this.state = state;
+            state.retain(this);
+        }
+
+        @Override
+        public JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
+            if (closed) {
+                throw new IllegalStateException("Table is closed");
+            }
+            return enqueue(connection, resultId, operation, Promise.resolve(state));
         }
 
         @Override
         public double getSize() {
-            return 0;
+            return state.getSize();
         }
 
         @Override
-        public ReadonlyArray<Column> getColumns() {
-            return null;
+        public JsArray<Column> getColumns() {
+            return Js.uncheckedCast(state.getColumns());
         }
 
         @Override
         public Column findColumn(String columnName) {
-            return null;
+            return state.findColumn(columnName);
         }
 
         @Override
         public JsArray<String> getAttributes() {
-            return null;
+            TableAttributesDefinition attrs = state.getTableDef().getAttributes();
+            return Js.uncheckedCast(Stream.concat(
+                    Arrays.stream(attrs.getKeys()),
+                    attrs.getRemainingAttributeKeys().stream()).toArray(String[]::new));
         }
 
         @Override
-        public Object getAttribute(String name) {
-            return null;
+        public Object getAttribute(String attributeName) {
+            // Table-valued attributes are not supported yet, as on JsTable
+            return state.getTableDef().getAttributes().getValue(attributeName);
         }
 
         @Override
         public Promise<TableData> createSnapshot(Object options) {
-            return null;
+            return AbstractTableSubscription.createSnapshot(connection, state, options);
         }
 
         @Override
         public TableViewportSubscription createViewportSubscription(Object options) {
-            return null;
+            // TODO step 4 of the CTS plan: subscriptions over a state without a JsTable
+            throw new UnsupportedOperationException("createViewportSubscription on a ResolvedTable");
         }
 
         @Override
         public TableSubscription createSubscription(Object options) {
-            return null;
+            // TODO step 4 of the CTS plan: subscriptions over a state without a JsTable
+            throw new UnsupportedOperationException("createSubscription on a ResolvedTable");
         }
 
         @Override
         public void close() {
-            state = State.RELEASED;
-            retained = false;
-            getConnection().releaseTicket(ticket);
+            if (closed) {
+                JsLog.warn("ResolvedTable.close() called twice, second call being ignored", this);
+                return;
+            }
+            closed = true;
+            state.unretain(this);
         }
 
         @Override
         public Promise<JsResolvedTable> copy() {
-            // TODO BEFORE MERGE: one ticket, two closers, no refcount: closing either copy releases the ticket for
-            // both. Backing Resolved with a ClientTableState (whose bindings are refcounted, as JsTable.copy() relies
-            // on) is the fix; until then this is a one-close-kills-all bug.
-            return Promise.resolve(new Resolved(connection, ticket));
+            return Promise.resolve(new Resolved(connection, state));
         }
     }
 
-    protected enum State {
-        ENQUEUED, RUNNING, RESOLVED, RELEASED, FAILED
-    }
-
-    protected final LazyPromise<ExportedTableCreationResponse> promise = new LazyPromise<>();
-    protected State state = State.ENQUEUED;
-    protected boolean retained;
     /**
      * Operations waiting for the current microtask to end, per connection: each connection gets its own batch request.
      */
@@ -281,35 +315,35 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         this.ticket = ticket;
     }
 
-    @Override
-    public JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
-        return enqueue(connection, resultId, operation);
-    }
-
     /**
      * Presents a table that an existing API produces through a promise as a pending table, so operations can be chained
-     * on it before it resolves. The ticket must be the one the promised table will have. The supplier is invoked at
-     * most once, on the first await, so a pending that is only chained on creates nothing.
+     * on it before it resolves. The ticket must be the one the promised table will have, and {@code sourceState} the
+     * state it will occupy, so that dependents can retain it. The supplier is invoked at most once, on the first await.
      */
     public static <T extends JsITable> JsPendingTable<T> wrap(WorkerConnection connection, Ticket ticket,
-            Supplier<Promise<T>> fetch) {
-        return new Fetched<>(connection, ticket, fetch);
+            Supplier<Promise<T>> fetch, Promise<ClientTableState> sourceState) {
+        return new Fetched<>(connection, ticket, fetch, sourceState);
     }
 
     /**
-     * As {@link #wrap(WorkerConnection, Ticket, Supplier)} for a fetch that has already been issued.
+     * As {@link #wrap(WorkerConnection, Ticket, Supplier, Promise)} for a {@link JsTable} fetch that has already been
+     * issued; the source state is the fetched table's.
      */
-    public static <T extends JsITable> JsPendingTable<T> wrap(WorkerConnection connection, Ticket ticket,
-            Promise<T> table) {
-        return new Fetched<>(connection, ticket, () -> table);
+    public static JsPendingTable<JsTable> wrapTable(WorkerConnection connection, Ticket ticket,
+            Promise<JsTable> table) {
+        Promise<ClientTableState> sourceState = table.<ClientTableState>then(t -> Promise.resolve(t.state()));
+        return new Fetched<JsTable>(connection, ticket, () -> table, sourceState);
     }
 
     /**
-     * Queues an operation on the given connection's next batch.
+     * Queues an operation on the given connection's next batch. The new state retains {@code sourceState} until it has
+     * been created or has failed, so the source is not released out from under it.
      */
     public static JsPendingTable<JsResolvedTable> enqueue(WorkerConnection connection, Ticket resultId,
-            BatchTableRequest.Operation.Builder operation) {
-        Operation pending = new Operation(connection, resultId, operation);
+            BatchTableRequest.Operation.Builder operation, Promise<ClientTableState> sourceState) {
+        Operation pending = new Operation(connection, new TableTicket(resultId), operation);
+        retainUntilSettled(sourceState, pending.state);
+
         List<Operation> tasks = enqueued.get(connection);
         if (tasks == null) {
             tasks = new ArrayList<>();
@@ -323,10 +357,9 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 try {
                     sendBatch(connection, batch);
                 } catch (Throwable t) {
-                    // Nothing else observes this callback; the tasks must carry the failure
+                    // Nothing else observes this callback; the states must carry the failure
                     for (Operation task : batch) {
-                        task.state = State.FAILED;
-                        task.promise.fail(t);
+                        task.state.setResolution(ClientTableState.ResolutionState.FAILED, String.valueOf(t));
                     }
                 }
                 return null;
@@ -336,18 +369,33 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         return pending;
     }
 
+    /**
+     * Has {@code dependent} retain {@code source} until the dependent is running, failed, or released. The source may
+     * not exist yet (a fetch that has not been issued), in which case the retain happens when it does; a dependent that
+     * has already settled by then releases it again at once.
+     */
+    private static void retainUntilSettled(Promise<ClientTableState> source, ClientTableState dependent) {
+        source.then(sourceState -> {
+            sourceState.retain(dependent);
+            dependent.onRunning(
+                    ignore -> sourceState.unretain(dependent),
+                    failure -> sourceState.unretain(dependent),
+                    () -> sourceState.unretain(dependent));
+            return null;
+        }, failure -> {
+            // The source never came to be; the dependent will fail on the server in its own right
+            return null;
+        });
+    }
+
     private static void sendBatch(WorkerConnection connection, List<Operation> batch) {
         BatchTableRequest.Builder request = BatchTableRequest.newBuilder();
         Map<Ticket, Operation> ticketToTask = new HashMap<>();
-        for (int i = 0; i < batch.size(); i++) {
-            Operation task = batch.get(i);
+        for (Operation task : batch) {
             if (task.cancelled) {
                 continue;
             }
-            if (task.state != State.ENQUEUED) {
-                throw new IllegalStateException("Task " + i + " was not in ENQUEUED state, but " + task.state);
-            }
-            task.state = State.RUNNING;
+            task.sent = true;
             request.addOps(task.operation);
             ticketToTask.put(task.ticket, task);
         }
@@ -363,25 +411,22 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             });
             stream.onData(etcr -> {
                 Operation task = ticketToTask.remove(etcr.getResultId().getTicket());
-                if (!etcr.getSuccess()) {
-                    task.state = State.FAILED;
-                    task.promise.fail(etcr.getErrorInfo());
-                } else if (task.retained && !task.cancelled) {
-                    task.state = State.RESOLVED;
-                    task.promise.succeed(etcr);
-                } else {
-                    // Never retained, or cancelled while in flight: nobody can use it now
-                    task.state = State.RELEASED;
-                    task.promise.fail("Resolved, but was never retained, cannot be retained now");
-                    // TODO this is probably too early, other operations could still be using it. CTS has some
-                    // tooling to handle this for us, probably defer to that
-                    task.connection.releaseTicket(task.ticket);
+                if (task == null) {
+                    JsLog.warn("Batch response for an unknown ticket", etcr.getResultId());
+                    return;
                 }
+                if (etcr.getSuccess()) {
+                    task.state.applyTableCreationResponse(etcr);
+                } else {
+                    task.state.setResolution(ClientTableState.ResolutionState.FAILED, etcr.getErrorInfo());
+                }
+                // If nothing retains the state (never awaited, or cancelled in flight), this releases it
+                connection.scheduleCheck(task.state);
             });
             stream.onEnd(status -> {
                 for (Operation task : ticketToTask.values()) {
-                    task.state = State.FAILED;
-                    task.promise.fail(status.getDescription());
+                    task.state.setResolution(ClientTableState.ResolutionState.FAILED, status.getDescription());
+                    connection.scheduleCheck(task.state);
                 }
                 ticketToTask.clear();
             });
@@ -389,8 +434,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             return null;
         }, err -> {
             for (Operation task : ticketToTask.values()) {
-                task.state = State.FAILED;
-                task.promise.fail(err);
+                task.state.setResolution(ClientTableState.ResolutionState.FAILED, String.valueOf(err));
+                connection.scheduleCheck(task.state);
             }
             ticketToTask.clear();
             return null;

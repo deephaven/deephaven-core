@@ -138,7 +138,7 @@ public class IdeSession extends HasEventHandling {
         }
         // Allocate the ticket now, so operations can be chained on the result before the fetch has been sent
         final TableTicket handle = connection.getTickets().newTableTicket();
-        return MicrotaskBatchImpl.wrap(connection, handle.makeTicket(),
+        return MicrotaskBatchImpl.wrapTable(connection, handle.makeTicket(),
                 connection.getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
                     final Promise<JsTable> table = connection.getTable(varDef, applyPreviewColumns, handle);
                     fireEvent(EVENT_TABLE_OPENED, table);

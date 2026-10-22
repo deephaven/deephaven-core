@@ -302,7 +302,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsMethod
     public JsTableOperations operations() {
-        return new MicrotaskBatchImpl.View(this, () -> copy().resolve());
+        return new MicrotaskBatchImpl.View(this);
     }
 
     @JsMethod
@@ -990,15 +990,16 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         // We are going to forget all configuration for the current state
         // by just creating a new, fresh state. This should be an optional flatten()/copy() step instead.
         List<String> columnNames = Arrays.stream(columns).map(Column::getName).collect(Collectors.toList());
-        return MicrotaskBatchImpl.wrap(workerConnection, handle.makeTicket(), workerConnection.newState((c, cts) -> {
-            SelectDistinctRequest request = SelectDistinctRequest.newBuilder()
-                    .setSourceId(state.getHandle().makeTableReference())
-                    .setResultId(cts.getHandle().makeTicket())
-                    .addAllColumnNames(columnNames)
-                    .build();
-            workerConnection.tableServiceClient().selectDistinct(request, c);
-        }, "selectDistinct " + columnNames, handle).refetch()
-                .then(cts -> Promise.resolve(new JsTable(workerConnection, cts))));
+        return MicrotaskBatchImpl.wrapTable(workerConnection, handle.makeTicket(),
+                workerConnection.newState((c, cts) -> {
+                    SelectDistinctRequest request = SelectDistinctRequest.newBuilder()
+                            .setSourceId(state.getHandle().makeTableReference())
+                            .setResultId(cts.getHandle().makeTicket())
+                            .addAllColumnNames(columnNames)
+                            .build();
+                    workerConnection.tableServiceClient().selectDistinct(request, c);
+                }, "selectDistinct " + columnNames, handle).refetch()
+                        .then(cts -> Promise.resolve(new JsTable(workerConnection, cts))));
     }
 
     /**
@@ -1012,8 +1013,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         // The copy is only created on await, so a copy that is only chained on retains nothing.
         // TODO BEFORE MERGE: once pending tables hold a ClientTableState instead of a raw ticket, this becomes a plain
         // retain of the current state and the deferred construction goes away.
-        return MicrotaskBatchImpl.wrap(workerConnection, state().getHandle().makeTicket(),
-                () -> Promise.resolve(new JsTable(this)));
+        final ClientTableState current = state();
+        return MicrotaskBatchImpl.wrap(workerConnection, current.getHandle().makeTicket(),
+                () -> Promise.resolve(new JsTable(this)), Promise.resolve(current));
     }
 
     public Promise<JsTable> copy(boolean resolved) {

@@ -49,7 +49,7 @@ public class JsWidgetExportedObject implements ServerObject {
             }
             if (getType().equals(JsVariableType.TABLE)) {
                 // The ticket is already known, so the table can be chained on before its schema arrives
-                return JsPendingObject.of(MicrotaskBatchImpl.wrap(connection, ticket.getTicket(),
+                return JsPendingObject.of(MicrotaskBatchImpl.wrapTable(connection, ticket.getTicket(),
                         Callbacks.<ExportedTableCreationResponse>grpcUnaryPromise(c -> {
                             connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
                                     c);

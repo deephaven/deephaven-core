@@ -1442,7 +1442,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     public JsPendingTable<JsTable> selectDistinct(Column[] columns) {
         // Allocate the result's ticket now, so operations can be chained before the source table has even resolved
         TableTicket handle = connection.getTickets().newTableTicket();
-        return MicrotaskBatchImpl.wrap(connection, handle.makeTicket(), sourceTable.get().then(t -> {
+        return MicrotaskBatchImpl.wrapTable(connection, handle.makeTicket(), sourceTable.get().then(t -> {
             // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
             // up.
             if (!t.getFilter().asList().equals(getFilter().asList())) {
