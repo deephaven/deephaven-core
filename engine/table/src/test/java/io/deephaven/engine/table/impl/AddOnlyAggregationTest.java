@@ -354,4 +354,11 @@ public class AddOnlyAggregationTest {
         testKeyedAndUnkeyed(List.of(AggAvg("AD=Double1", "AF=Float1", "AL=Long1", "AI=Int1", "ABI=BigInt1",
                 "ABD=BigDec1")));
     }
+
+    @Test
+    public void testVarianceAndStd() {
+        testKeyedAndUnkeyed(List.of(
+                AggVar("VD=Double1", "VF=Float1", "VL=Long1", "VBD=BigDec1"),
+                AggStd("SD=Double1", "SF=Float1", "SL=Long1")));
+    }
 }

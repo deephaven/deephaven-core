@@ -1167,7 +1167,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecStd std) {
-            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, true, false));
+            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, true, false, onlyAdds));
         }
 
         @Override
@@ -1200,7 +1200,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecVar var) {
-            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, false, false));
+            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, false, false, onlyAdds));
         }
     }
 
@@ -1545,7 +1545,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecStd std) {
-            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, true, true));
+            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, true, true, false));
         }
 
         @Override
@@ -1573,7 +1573,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecVar var) {
-            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, false, true));
+            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, false, true, false));
         }
     }
 
@@ -2644,19 +2644,23 @@ public class AggregationProcessor implements AggregationContextFactory {
         throw new UnsupportedOperationException("Unsupported type " + type);
     }
 
+    /**
+     * @param onlyAdds whether the operator only ever receives additions, so it may omit the state that removals need
+     */
     private static IterativeChunkedAggregationOperator makeVarOrStdOperator(
             @NotNull final Class<?> type,
             @NotNull final String name,
             final boolean isStd,
-            final boolean exposeInternal) {
+            final boolean exposeInternal,
+            final boolean onlyAdds) {
         if (type == Byte.class || type == byte.class) {
             return new ByteChunkedVarOperator(isStd, name, exposeInternal);
         } else if (type == Character.class || type == char.class) {
             return new CharChunkedVarOperator(isStd, name, exposeInternal);
         } else if (type == Double.class || type == double.class) {
-            return new DoubleChunkedVarOperator(isStd, name, exposeInternal);
+            return new DoubleChunkedVarOperator(isStd, name, exposeInternal, onlyAdds);
         } else if (type == Float.class || type == float.class) {
-            return new FloatChunkedVarOperator(isStd, name, exposeInternal);
+            return new FloatChunkedVarOperator(isStd, name, exposeInternal, onlyAdds);
         } else if (type == Integer.class || type == int.class) {
             return new IntChunkedVarOperator(isStd, name, exposeInternal);
         } else if (type == Long.class || type == long.class) {
