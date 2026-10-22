@@ -20,14 +20,20 @@ public class InverseWrappedRowSetRowRedirection implements RowRedirection {
     private final RowSet wrappedRowSet;
 
     /**
-     * This class accepts a {@link RowSet} and attempts to cast to a {@link TrackingRowSet} if {@link #getPrev(long)} or
-     * {@link #fillPrevChunk(FillContext, WritableChunk, RowSequence)} is called. Calling these functions on a
-     * non-tracking RowSet will result in a {@link ClassCastException}.
+     * {@code wrappedRowSet} as a {@link TrackingRowSet}, used to map previous row keys; null if it is not tracking.
+     */
+    private final TrackingRowSet trackingRowSet;
+
+    /**
+     * This class accepts a {@link RowSet} or a {@link TrackingRowSet}. Only a TrackingRowSet provides previous values,
+     * so {@link #getPrev(long)} and {@link #fillPrevChunk(FillContext, WritableChunk, RowSequence)} must not be called
+     * for a RowSet that is not tracking.
      *
      * @param wrappedRowSet the RowSet (or TrackingRowSet) to use as the redirection source
      */
     public InverseWrappedRowSetRowRedirection(final RowSet wrappedRowSet) {
         this.wrappedRowSet = wrappedRowSet;
+        this.trackingRowSet = wrappedRowSet.isTracking() ? wrappedRowSet.trackingCast() : null;
     }
 
     @Override
@@ -45,10 +51,10 @@ public class InverseWrappedRowSetRowRedirection implements RowRedirection {
 
     @Override
     public long getPrev(long key) {
-        if (key < 0 || key > wrappedRowSet.trackingCast().lastRowKeyPrev()) {
+        if (key < 0 || key > trackingRowSet.lastRowKeyPrev()) {
             return RowSet.NULL_ROW_KEY;
         }
-        return wrappedRowSet.trackingCast().findPrev(key);
+        return trackingRowSet.findPrev(key);
     }
 
     @Override
@@ -64,7 +70,7 @@ public class InverseWrappedRowSetRowRedirection implements RowRedirection {
             @NotNull final FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap) {
-        doMapping(mappedKeysOut.asWritableLongChunk(), keysToMap, wrappedRowSet.trackingCast().prev());
+        doMapping(mappedKeysOut.asWritableLongChunk(), keysToMap, trackingRowSet.prev());
     }
 
     /**
