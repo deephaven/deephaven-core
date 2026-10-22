@@ -383,7 +383,7 @@ def write(
             before switching to non-dictionary encoding, never evaluated for non-String columns, defaults to 2^20 (1,048,576)
         max_dictionary_size (Optional[int]): the maximum number of bytes the writer should add to the dictionary before
             switching to non-dictionary encoding, never evaluated for non-String columns, defaults to 2^20 (1,048,576)
-        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
+        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^16 bytes (64 KiB)
         generate_metadata_files (Optional[bool]): whether to generate parquet _metadata and _common_metadata files,
             defaults to False. Generating these files can help speed up reading of partitioned parquet data because these
             files contain metadata (including schema) about the entire dataset, which can be used to skip reading some
@@ -458,7 +458,7 @@ def write_partitioned(
             before switching to non-dictionary encoding; never evaluated for non-String columns , defaults to 2^20 (1,048,576)
         max_dictionary_size (Optional[int]): the maximum number of bytes the writer should add to the dictionary before
             switching to non-dictionary encoding, never evaluated for non-String columns, defaults to 2^20 (1,048,576)
-        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
+        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^16 bytes (64 KiB)
         base_name (Optional[str]): The base name for the individual partitioned tables, if not specified, defaults to
             `{uuid}`, so files will have names of the format `<uuid>.parquet` where `uuid` is a randomly generated UUID.
             Users can provide the following tokens in the base_name:
@@ -545,7 +545,7 @@ def batch_write(
             before switching to non-dictionary encoding; never evaluated for non-String columns , defaults to 2^20 (1,048,576)
         max_dictionary_size (Optional[int]): the maximum number of bytes the writer should add to the dictionary before
             switching to non-dictionary encoding, never evaluated for non-String columns, defaults to 2^20 (1,048,576)
-        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
+        target_page_size (Optional[int]): the target page size in bytes, if not specified, defaults to 2^16 bytes (64 KiB)
         generate_metadata_files (Optional[bool]): whether to generate parquet _metadata and _common_metadata files,
             defaults to False. Generating these files can help speed up reading of partitioned parquet data because these
             files contain metadata (including schema) about the entire dataset, which can be used to skip reading some

@@ -1,13 +1,13 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
-    id 'com.google.protobuf' version '0.9.6'
+    id 'com.google.protobuf' version '0.10.0'
 }
 
 def kafka_images = [
         'cp-kafka',
         'kafka',
-        // Disabling kafka-native for now, as it occasionally has segmentation fault on startup
+        // Disabled because kafka-native can occasionally segfault on startup; fixed upstream in Kafka 4.4.0.
         // https://issues.apache.org/jira/browse/KAFKA-20314
         // 'kafka-native',
         'redpanda'

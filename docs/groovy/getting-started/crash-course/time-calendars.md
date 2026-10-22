@@ -2,33 +2,36 @@
 title: Time and Calendars
 ---
 
-This section covers working with time and calendars in Deephaven queries. Since Deephaven specializes in real-time operations, understanding how to work with time is crucial to building effective analyses.
+This chapter covers working with time and calendars in Deephaven queries. Since Deephaven specializes in real-time operations, understanding how to work with time is crucial to building effective analyses.
 
-Critical concepts covered in this crash course include:
+Critical concepts covered in this chapter include:
 
-- [Data types](#time-data-types)
-- [Constants](#time-constants)
-- [Creating temporal data](#create-temporal-data)
-- [Time arithmetic](#time-arithmetic-and-filtering)
+- [Time data types](#time-data-types)
+- [Time constants](#time-constants)
+- [Create temporal data](#create-temporal-data)
+- [Time arithmetic and filtering](#time-arithmetic-and-filtering)
 - [Time zones](#time-zones)
 - [Business calendars](#business-calendars)
-- [Common time operations](#common-time-operations)
+- [Aggregate by time](#aggregate-by-time)
+- [Put it all together](#put-it-all-together)
 
 ## Time data types
 
-Deephaven tables natively support all data types found in the [`java.time`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/package-summary.html) package.
+Deephaven natively supports the following [`java.time`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/package-summary.html) types:
 
-Commonly used types include:
+- [**`Instant`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html): A specific point in time.
+- [**`ZonedDateTime`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/ZonedDateTime.html): A specific point in time with time zone information.
+- [**`LocalDate`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/LocalDate.html): A date without time zone information.
+- [**`LocalTime`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/LocalTime.html): A time of day without date or time zone information.
+- [**`Duration`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html): A length of time, such as 5 minutes or 1 hour.
+- [**`Period`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Period.html): A date-based amount of time, such as 2 months.
+- [**`ZoneId`**](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/ZoneId.html): A time zone, such as `America/New_York`.
 
-- [**`Instant`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Instant.html): A specific point in time.
-- [**`ZonedDateTime`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/ZonedDateTime.html): A specific point in time with time zone information.
-- [**`LocalDate`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/LocalDate.html): A date without time zone information.
-- [**`Duration`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Duration.html): A length of time; e.g. 5 minutes, 1 hour, etc.
-- [**`Period`**](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Period.html): A date-based amount of time (like "2 months").
+This chapter works mostly with [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html), plus [`ZonedDateTime`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/ZonedDateTime.html), [`LocalDate`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/LocalDate.html), and [`Duration`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html). See [Work with time](../../conceptual/time-in-deephaven.md#natively-supported-date-time-types) for details on all of them.
 
 ## Time constants
 
-Deephaven offers a set of built-in constants for common time periods. All of the following values are expressed in nanoseconds:
+Deephaven offers built-in constants for common time periods, defined in [`DateTimeUtils`](/core/javadoc/io/deephaven/time/DateTimeUtils.html). Each constant is a number of nanoseconds:
 
 ```groovy test-set=1
 // Several of the constants available
@@ -45,7 +48,7 @@ timeConstants = emptyTable(1).update(
 
 ## Create temporal data
 
-You can create temporal data with [query string](./query-strings.md) methods. For instance, you can construct columns with a single timestamp, sequences of timestamps, and more:
+You can create temporal data with built-in [query string](./query-strings.md) methods. For instance, [`now`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#now()) returns the current time as an [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html), and adding a time constant to an `Instant` gives a sequence of later `Instant`s:
 
 ```groovy test-set=2
 temporalDataTable = emptyTable(10).update(
@@ -57,7 +60,9 @@ temporalDataTable = emptyTable(10).update(
 
 ## Time arithmetic and filtering
 
-Time arithmetic in tables should always be done with built-in methods. See [`DateTimeUtils`](https://docs.deephaven.io/core/javadoc/io/deephaven/time/DateTimeUtils.html) for the available constants and methods.
+Time arithmetic in tables uses built-in methods, either called directly or through the `+` and `-` operators. See [`DateTimeUtils`](/core/javadoc/io/deephaven/time/DateTimeUtils.html) for the available constants and methods.
+
+In a query string, a date-time value goes in single quotes and ends with its time zone, such as `'2025-06-01T09:30Z'` or `'2025-06-01T09:30 ET'`. The `Z` suffix means UTC, and `ET` means US Eastern Time; [Time zones](#time-zones) covers time zone names. A duration also goes in single quotes, such as `'PT1H'` for one hour. A string goes in backticks, such as `` `A` ``. [Query strings](./query-strings.md#literals) covers literals in full.
 
 ```groovy test-set=3
 timeArithmeticTable = emptyTable(10).update(
@@ -70,7 +75,16 @@ timeArithmeticTable = emptyTable(10).update(
 )
 ```
 
-Filtering temporal data isn't much different from filtering numeric data:
+[`epochMillis`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#epochMillis(java.time.Instant)) converts a timestamp to milliseconds since 1970-01-01 UTC. [`upperBin`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#upperBin(java.time.Instant,long)) and [`lowerBin`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)) round a timestamp up or down to a multiple of an interval. The [Aggregations over time buckets](#aggregations-over-time-buckets) section uses `lowerBin` to group rows into 15-minute buckets.
+
+[`plus`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#plus(java.time.Instant,long)), [`minus`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#minus(java.time.Instant,long)), [`upperBin`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#upperBin(java.time.Instant,long)), and [`lowerBin`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)) all accept a length of time in either of these forms:
+
+- A time constant expression, such as `15 * MINUTE`, which is a count of nanoseconds.
+- An ISO 8601 duration string, such as `'PT15M'`, which is a [`Duration`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html).
+
+[`plus`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#plus(java.time.Instant,java.time.Period)) and [`minus`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#minus(java.time.Instant,java.time.Period)) also accept a date-based [`Period`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Period.html), such as `'P1D'`.
+
+Filtering temporal data with [`where`](../../reference/table-operations/filter/where.md) isn't much different from filtering numeric data:
 
 ```groovy test-set=3 order=timesGreaterThan,timesLessThan,timesInRange
 timesGreaterThan = timeArithmeticTable.where("Timestamp >= '2025-06-01T09:34Z'")
@@ -83,7 +97,14 @@ timesInRange = timeArithmeticTable.where(
 
 ## Time zones
 
-Time zones are a critical part of temporal data. For example, if it's 6 PM in Los Angeles, it's 3 AM the next day in Shanghai. There are many methods that require time zone information because the answer is dependent on the time zone.
+Time zones are a critical part of temporal data. The same instant can have a different local date and time in different time zones. For example, if it's 6 PM in Los Angeles during daylight saving time, it's 9 AM the next day in Shanghai. Methods that extract a date or time component, such as [`secondOfDay`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#secondOfDay(java.time.Instant,java.time.ZoneId,boolean)), [`dayOfYear`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#dayOfYear(java.time.Instant,java.time.ZoneId)), and [`hourOfDay`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#hourOfDay(java.time.Instant,java.time.ZoneId,boolean)), take a time zone because their result depends on it.
+
+Pass a time zone in single quotes, in either of these forms:
+
+- A full name, such as `'Asia/Shanghai'`.
+- A short alias, such as `'PT'` for Pacific Time (`America/Los_Angeles`) or `'ET'` for Eastern Time (`America/New_York`).
+
+The alias `'PT'` is unrelated to the `PT` prefix of duration strings such as `'PT1H'`.
 
 ```groovy test-set=4
 timeZoneArithmeticTable = emptyTable(10).update(
@@ -97,10 +118,12 @@ timeZoneArithmeticTable = emptyTable(10).update(
 )
 ```
 
-All of the previous operations use [`Instant`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/Instant.html) values, which contain no time zone information - hence the need to pass time zones like `'PT'` and `'Asia/Shanghai'`. Instead, you can bake the time zone information into the data by using [`ZonedDateTime`](https://docs.oracle.com/en/java/javase/17/docs//api/java.base/java/time/ZonedDateTime.html):
+The final `true` argument to [`secondOfDay`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#secondOfDay(java.time.Instant,java.time.ZoneId,boolean)) and [`hourOfDay`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#hourOfDay(java.time.Instant,java.time.ZoneId,boolean)) sets `asLocalTime`. With `asLocalTime` set to `true`, they measure from local midnight by the wall clock, so a 9:30 AM local timestamp gives the same result on every day, including days when daylight saving time starts or ends.
+
+The previous operations use [`Instant`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Instant.html) values. An `Instant` contains no time zone information, so each method call needs a time zone argument such as `'PT'` or `'Asia/Shanghai'`. Instead, you can bake the time zone into the data by converting to a [`ZonedDateTime`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/ZonedDateTime.html) with [`toZonedDateTime`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#toZonedDateTime(java.time.Instant,java.time.ZoneId)):
 
 ```groovy test-set=5
-timeZoneArithmeticTable = emptyTable(10)
+zonedTimeTable = emptyTable(10)
         .update(
                 "Timestamp = '2025-06-01T09:30Z' + 2 * ii * HOUR",
                 "TimestampLosAngeles = toZonedDateTime(Timestamp, 'PT')",
@@ -117,10 +140,32 @@ timeZoneArithmeticTable = emptyTable(10)
 
 ## Business calendars
 
-Business calendars help you work with trading days, business hours, and holidays. Deephaven comes with built-in calendars for major exchanges.
+[Business calendars](../../how-to-guides/business-calendar.md) help you work with trading days, business hours, and holidays.
+
+### Built-in calendars
+
+Deephaven includes three built-in calendars: `UTC` and the example calendars `USNYSE_EXAMPLE` and `USBANK_EXAMPLE`. [`calendarNames`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendarNames()) lists the available calendars, and [`calendar`](/core/javadoc/io/deephaven/time/calendar/Calendars.html#calendar(java.lang.String)) gets one by name:
+
+```groovy test-set=6 order=:log
+println calendarNames()
+nyseCal = calendar("USNYSE_EXAMPLE")
+```
+
+> [!NOTE]
+> The `USNYSE_EXAMPLE` and `USBANK_EXAMPLE` calendars are examples. For any production system, use a custom calendar. See [Work with calendars](../../how-to-guides/business-calendar.md#create-a-calendar) to create one.
+
+### Filter and count with a calendar
+
+You can use a calendar to:
+
+- [Filter](../../reference/table-operations/filter/where.md) data to business days with [`isBusinessDay`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html#isBusinessDay(java.time.Instant)).
+- [Filter](../../reference/table-operations/filter/where.md) data to business hours with [`isBusinessTime`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html#isBusinessTime(java.time.Instant)).
+- Count business days with [`numberBusinessDates`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html#numberBusinessDates(java.time.Instant,java.time.Instant)).
+
+The following examples use a table of synthetic trades. It has one trade every 30 seconds around the clock for five days, starting on Monday, July 14, 2025. The data therefore includes nights and a Saturday morning:
 
 ```groovy test-set=6
-// The table will have 5 days' worth of trading data, one every 30 seconds
+// 5 days of trading data, one trade every 30 seconds
 numTrades = 5 * 24 * 60 * 2
 
 tradingData = emptyTable(numTrades).update(
@@ -131,99 +176,85 @@ tradingData = emptyTable(numTrades).update(
 )
 ```
 
-### Built-in calendars
+A query string can use a Groovy variable by name and call its methods, so `nyseCal.isBusinessDay(Timestamp)` calls the calendar's [`isBusinessDay`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html#isBusinessDay(java.time.Instant)) method for each row. [Query strings](./query-strings.md#groovy-in-query-strings) covers this in full.
 
-Deephaven comes with a few built-in calendars.
-
-> [!NOTE]
-> The built-in calendars are examples. For any production system, a custom or other pre-defined calendar should be used.
-
-```groovy test-set=6
-import static io.deephaven.time.calendar.Calendars.calendar
-import static io.deephaven.time.calendar.Calendars.calendarNames
-
-println calendarNames()
-nyseCal = calendar("USNYSE_EXAMPLE")
-```
-
-### Filter by business days and hours
-
-A common use of calendars is to filter data based on whether or not it falls within business hours or on business days.
+The following example [filters](../../reference/table-operations/filter/where.md) the trades to business days and to business hours, then counts business days. [`numberBusinessDates`](/core/javadoc/io/deephaven/time/calendar/BusinessCalendar.html#numberBusinessDates(java.time.Instant,java.time.Instant)) counts the business dates between two times, including both ends. `BizDaysFromStart` is 1 for Monday's trades and rises to 5 for Friday's trades. Saturday isn't a business day, so Saturday's trades also get 5:
 
 ```groovy test-set=6 order=businessDaysOnly,businessHoursOnly,businessDayCounts
 businessDaysOnly = tradingData.where("nyseCal.isBusinessDay(Timestamp)")
 businessHoursOnly = tradingData.where("nyseCal.isBusinessTime(Timestamp)")
 
 businessDayCounts = tradingData.update(
-        "BizDaysFromStart = nyseCal.numberBusinessDates('2024-01-01T00:00:00 ET', Timestamp)"
+        "BizDaysFromStart = nyseCal.numberBusinessDates('2025-07-14T00:00:00 ET', Timestamp)"
 )
 ```
 
-## Common time operations
+## Aggregate by time
 
-Aggregations over windows of time are essential for time-series analysis.
+Grouping rows by date or by fixed intervals of time, then [aggregating](../../how-to-guides/combined-aggregations.md) each group, is the core of most time-series analysis.
 
 ### Daily summaries
 
-Combine time operations with aggregations for powerful analysis. For example, the following query calculates the daily sum of trades for each ticker:
+Combine time operations with aggregations for powerful analysis. To summarize data by day, convert each timestamp to a date with [`toLocalDate`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#toLocalDate(java.time.Instant,java.time.ZoneId)), then aggregate with [`aggBy`](../../reference/table-operations/group-and-aggregate/aggBy.md). For example, the following query uses the `tradingData` table from [Filter and count with a calendar](#filter-and-count-with-a-calendar) to calculate the number of trades, the total size, and the average price for each ticker on each day:
 
 ```groovy test-set=6 order=dailySummary
 dailySummary = tradingData
-        .update("Date = toLocalDate(Timestamp, 'America/New_York')")
-        .dropColumns("Timestamp")
-        .sumBy("Date", "Ticker")
+        .update("Date = toLocalDate(Timestamp, 'ET')")
+        .aggBy(
+                [AggCount("NumTrades"), AggSum("TotalSize = Size"), AggAvg("AvgPrice = Price")],
+                "Date", "Ticker"
+        )
 ```
 
 ### Aggregations over time buckets
 
-Data is commonly placed into temporal buckets, allowing for analysis of trends over specific intervals. The following query places each trade into a 15-minute bucket, then calculates the average trade price and size for each bucket:
+Time buckets group data into fixed intervals so you can analyze trends across them. The following query uses [`lowerBin`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#lowerBin(java.time.Instant,long)) to place each trade into a 15-minute bucket, then calculates the average trade price and size for each ticker in each bucket:
 
 ```groovy test-set=6 order=avgByTimeBucket
-import static io.deephaven.api.agg.Aggregation.AggAvg
-
 avgByTimeBucket = tradingData.update("TimeBucket = lowerBin(Timestamp, 15 * MINUTE)").aggBy(
         [AggAvg("AvgPrice = Price"), AggAvg("AvgSize = Size")],
         "TimeBucket", "Ticker"
 )
 ```
 
-### Combine calendar and time methods
+## Put it all together
 
-Here's a practical example that combines multiple time concepts:
+Here's a practical example that brings these time concepts together. It combines the business-hours [filter](../../reference/table-operations/filter/where.md) from [Filter and count with a calendar](#filter-and-count-with-a-calendar) with the daily summary from [Daily summaries](#daily-summaries), a combination common in financial data analysis. It reuses the `nyseCal` calendar and differs from those examples in two ways:
 
-```groovy test-set=7 order=marketData,processedData,dailySummary
-import static io.deephaven.time.calendar.Calendars.calendar
+- Its data starts on January 1, an NYSE holiday, so the calendar [filter](../../reference/table-operations/filter/where.md) removes that whole day.
+- Its query uses [`minuteOfDay`](/core/javadoc/io/deephaven/time/DateTimeUtils.html#minuteOfDay(java.time.Instant,java.time.ZoneId,boolean)) to get each trade's minute of the day, then flags trades in the first hour after the open.
 
-// Get NYSE calendar
-nyse = calendar("USNYSE_EXAMPLE")
-
-// Create realistic market data
+```groovy test-set=6 order=marketData,processedData,marketDailySummary
+// Create synthetic market data: a row every 5 minutes, rotating among three tickers
 marketData = emptyTable(1000).update(
-        "Timestamp = '2024-01-01T09:00:00 ET' + 'PT5m' * ii",
-        "Symbol = i % 3 == 0 ? `AAPL` : (i % 3 == 1 ? `GOOGL` : `MSFT`)",
+        "Timestamp = '2024-01-01T09:00:00 ET' + ii * 5 * MINUTE",
+        "Ticker = ii % 3 == 0 ? `AAPL` : (ii % 3 == 1 ? `GOOGL` : `MSFT`)",
         "Price = 150 + randomDouble(-50, 50)",
-        "Volume = randomInt(100, 10000)"
+        "Size = randomInt(100, 10000)"
 )
 
 // Filter to business hours and add time-based features
-processedData = marketData.where("nyse.isBusinessTime(Timestamp)").update(
-        "Date = toLocalDate(Timestamp, 'America/New_York')",
-        "MinutesSinceOpen = diffMinutes('2024-01-01T09:30:00 ET', Timestamp)",
-        "IsEarlyTrading = MinutesSinceOpen <= 60"
+// January 1 is an NYSE holiday, so the filter removes that whole day
+processedData = marketData.where("nyseCal.isBusinessTime(Timestamp)").update(
+        "Date = toLocalDate(Timestamp, 'ET')",
+        "MinuteOfDay = minuteOfDay(Timestamp, 'ET', true)",
+        // Before 10:30 AM (630 minutes after midnight): the first hour after the 9:30 AM open
+        "IsEarlyTrading = MinuteOfDay < 630"
 )
 
 // Calculate daily summary statistics
-dailySummary = processedData.dropColumns("Timestamp").sumBy("Symbol", "Date")
+marketDailySummary = processedData.aggBy(
+        [AggCount("NumTrades"), AggSum("TotalSize = Size", "EarlyTrades = IsEarlyTrading"), AggAvg("AvgPrice = Price")],
+        "Date", "Ticker"
+)
 ```
-
-This example demonstrates filtering by business hours, extracting time components, and performing time-based aggregations - all common patterns in financial data analysis.
 
 ## Next steps
 
-Time handling is crucial for real-time data processing. The concepts covered here form the foundation for more advanced time-series analysis, including:
+Time handling is crucial for real-time data processing. The concepts covered here form the foundation for more advanced time-series analysis. To go further, see:
 
-- [Built-in Time Functions](../../reference/query-language/query-library/auto-imported/index.md)
+- [Built-in time functions](../../reference/query-language/query-library/auto-imported/time.md)
 - [Rolling window calculations](../../how-to-guides/rolling-aggregations.md)
 - [Time-based joins](../../how-to-guides/joins-timeseries-range.md)
-- [Time in Deephaven](../../conceptual/time-in-deephaven.md)
+- [Work with time](../../conceptual/time-in-deephaven.md)
 - [Work with calendars](../../how-to-guides/business-calendar.md)

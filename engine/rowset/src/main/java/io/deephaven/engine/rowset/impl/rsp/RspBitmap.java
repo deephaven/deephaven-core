@@ -785,18 +785,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     }
 
     public void appendContainerUnsafeNoWriteCheck(final long k, final Container c) {
-        if (c != null) {
-            if (c.isAllOnes()) {
-                appendFullBlockSpan(k, 1);
-                return;
-            }
-            if (c.isSingleElement()) {
-                final long value = k | c.first();
-                appendSingletonSpan(value);
-                return;
-            }
-        }
-        appendContainer(k, c);
+        appendSpan(k, c, true);
     }
 
     public void appendFullBlockSpanUnsafeNoWriteCheck(final long k, final long slen) {
@@ -1352,23 +1341,6 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         final RspBitmap rb = writeCheck();
         rb.orEqualsShiftedUnsafeNoWriteCheck(shiftAmount, other);
         return rb;
-    }
-
-    public void appendShiftedUnsafeNoWriteCheck(final long shiftAmount, final RspArray other) {
-        if ((shiftAmount & BLOCK_LAST) == 0 &&
-                tryAppendShiftedUnsafeNoWriteCheck(shiftAmount, other)) {
-            return;
-        }
-        if (lastValue() >= other.firstValue() + shiftAmount) {
-            throw new IllegalArgumentException(
-                    "Cannot append rowSet with shiftAmount=" + shiftAmount + ", firstRowKey=" + other.firstValue() +
-                            " when our lastValue=" + lastValue());
-
-        }
-        other.forEachLongRange((final long start, final long end) -> {
-            appendRangeUnsafeNoWriteCheck(start + shiftAmount, end + shiftAmount);
-            return true;
-        });
     }
 
     /**

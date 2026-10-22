@@ -8,10 +8,17 @@ dependencies {
     implementation project(':extensions-barrage')
     implementation project(':engine-table')
     implementation project(':BenchmarkSupport')
+    // BarrageMessageProducerPropagateBenchmark drives a real BarrageMessageProducer on a TestControlledScheduler
+    implementation project(':server')
+    implementation project(':server-test-utils')
+    implementation libs.dsi.fastutil
     implementation libs.arrow.vector
     implementation libs.flatbuffers.java
     implementation platform(libs.grpc.bom)
     implementation libs.grpc.api
+    // BarrageGrpcPropagateBenchmark writes through a real gRPC Netty transport to clients on the loopback interface
+    implementation libs.grpc.stub
+    implementation libs.grpc.netty
     implementation TestTools.projectDependency(project, 'engine-rowset')
     implementation TestTools.projectDependency(project, 'engine-table')
 
@@ -49,6 +56,38 @@ def createJmhTask = {
 }
 
 createJmhTask('jmhRunBarrageRoundTrip', 'BarrageMessageRoundTripBenchmark')
+
+// One propagation phase's writes to N subscribers, fanned out over T threads (T=1 is the sequential loop).
+createJmhTask('jmhRunBarrageFanOut', 'BarrageSubscriberFanOutBenchmark')
+
+// The same, over viewport and mixed full/viewport subscriptions.
+createJmhTask('jmhRunBarrageFanOutMixed',
+        ['BarrageSubscriberFanOutBenchmark', '-p', 'mix=viewport,mixed', '-p', 'subscribers=4,8,16'])
+
+// String and dictionary-encoded String columns; full subscribers of the latter share one dictionary per column.
+createJmhTask('jmhRunBarrageFanOutStrings',
+        ['BarrageSubscriberFanOutBenchmark', '-p', 'columnType=String,dictString', '-p', 'subscribers=1,4,8,16',
+         '-p', 'threads=1,8'])
+
+// A real BarrageMessageProducer's propagation job, end to end: initial snapshots and ticking updates.
+createJmhTask('jmhRunBarrageProducerPropagate', 'BarrageMessageProducerPropagateBenchmark')
+
+// The producer supplying 1 to 16 subscribers through a real gRPC Netty transport on the loopback interface, from a
+// 30-column table of mixed types with a dictionary-encoded and a run-end encoded column: snapshots of 1M and 5M rows,
+// and updates of 100k and 1M rows, each with the full job's parts reported beside its time. The fork takes 12g of heap
+// and up to 32g of direct memory; the largest cell holds about 12 GB of serialized messages per side of the transport.
+createJmhTask('jmhRunBarrageGrpcPropagate', 'BarrageGrpcPropagateBenchmark')
+
+// The same at a size that runs in minutes rather than an hour: 1M-row snapshots, 100k-row updates, 1, 4 and 16
+// subscribers, and shorter iterations.
+createJmhTask('jmhRunBarrageGrpcPropagateQuick',
+        ['BarrageGrpcPropagateBenchmark', '-p', 'subscribers=1,4,16', '-p', 'rows=1000000', '-p', 'deltaRows=100000',
+         '-wi', '2', '-i', '3', '-w', '5', '-r', '5'])
+
+// A smoke test of the gRPC benchmark's plumbing, in under a minute: tiny tables, two subscribers, one iteration.
+createJmhTask('jmhRunBarrageGrpcPropagateSmoke',
+        ['BarrageGrpcPropagateBenchmark', '-p', 'subscribers=2', '-p', 'threads=1,2', '-p', 'rows=20000',
+         '-p', 'deltaRows=2000', '-wi', '1', '-i', '1', '-w', '1', '-r', '1'])
 
 createJmhTask('jmhRunBarrageCopyKernel', 'BarrageCopyKernelBenchmark')
 

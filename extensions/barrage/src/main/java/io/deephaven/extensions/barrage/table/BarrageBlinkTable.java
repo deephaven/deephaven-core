@@ -129,10 +129,7 @@ public class BarrageBlinkTable extends BarrageTable {
     private void ensureCapacity(long size) {
         if (capacity < size) {
             capacity = Long.highestOneBit(Math.max(size * 2, 8));
-
-            for (final WritableColumnSource<?> source : destSources) {
-                source.ensureCapacity(capacity);
-            }
+            ensureSourceCapacity();
         }
     }
 
