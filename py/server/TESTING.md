@@ -28,8 +28,11 @@ This page covers the second way. It does not measure coverage. For coverage repo
    uv venv --managed-python --python 3.14t .venv-3.14t
    source .venv-3.14t/bin/activate
    uv pip install py/embedded-server/build/wheel/deephaven_server-*.whl -e py/server -e py/client \
-       -r py/server/requirements-test.txt --config-settings editable_mode=compat
+       --config-settings editable_mode=compat
+   uv pip install -r py/server/requirements-test.txt
    ```
+
+   The test dependencies install in a separate step, because one package with no wheel for your Python fails the whole command. If that happens, install the other packages from `requirements-test.txt` by name. The tests that need the missing one skip or fail on their own.
 
    The version can be anything uv accepts, such as `3.10`, `3.14` or `3.14t`. A version ending in `t` is the free-threaded build. `--managed-python` gets uv's own build at the newest patch release, the one CI uses. With `-e`, the venv uses `py/server` and `py/client` as they are on disk, so Python edits need no reinstall. `editable_mode=compat` is needed for `py/server`: `deephaven-plugin` installs a `deephaven/plugin` folder into the venv, and with the default editable mode Python finds that folder instead of `py/server/deephaven`. The server tests need `py/client` too, because `tests/test_barrage.py` uses it.
 

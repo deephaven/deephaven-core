@@ -28,10 +28,13 @@ This page covers the second way. It does not measure coverage. For coverage repo
    uv venv --managed-python --python 3.14t .venv-3.14t
    source .venv-3.14t/bin/activate
    uv pip install py/embedded-server/build/wheel/deephaven_server-*.whl -e py/server -e py/client \
-       -r py/client/requirements-test.txt --config-settings editable_mode=compat
+       --config-settings editable_mode=compat
+   uv pip install -r py/client/requirements-test.txt
    ```
 
-   The version can be anything uv accepts, such as `3.10`, `3.14` or `3.14t`. A version ending in `t` is the free-threaded build. With `-e`, Python edits need no reinstall. `editable_mode=compat` is needed for `py/server`: `deephaven-plugin` installs a `deephaven/plugin` folder into the venv, and with the default editable mode Python finds that folder instead of `py/server/deephaven`. A venv made for the server tests works here too, once you add `-r py/client/requirements-test.txt`.
+   The test dependencies install in a separate step, because one package with no wheel for your Python fails the whole command. If that happens, install the other packages from `requirements-test.txt` by name. The tests that need the missing one skip or fail on their own.
+
+   The version can be anything uv accepts, such as `3.10`, `3.14` or `3.14t`. A version ending in `t` is the free-threaded build. With `-e`, Python edits need no reinstall. `editable_mode=compat` is needed for `py/server`: `deephaven-plugin` installs a `deephaven/plugin` folder into the venv, and with the default editable mode Python finds that folder instead of `py/server/deephaven`. A venv made for the server tests works here too, once you install `py/client/requirements-test.txt` into it.
 
 3. With the venv active, run the script, optionally with test names:
 
