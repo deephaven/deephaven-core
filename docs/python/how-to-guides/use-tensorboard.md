@@ -82,7 +82,7 @@ tensorboard_callback = TensorBoard(
 Each argument controls what the callback logs:
 
 - `update_freq="epoch"` writes the loss and metrics once per epoch.
-- `write_graph=True` logs the model graph that the Graphs tab shows.
+- `write_graph=True` logs the model's layer structure, which the Graphs tab shows as a conceptual graph.
 - `histogram_freq=1` logs weight and bias histograms every epoch.
 - `write_images=True` logs the weights as images each time `histogram_freq` logs histograms, so it has no effect when `histogram_freq` is 0.
 - `profile_batch=2` profiles the second training batch. Viewing the profile needs an extra package; see [View the results](#view-the-results).
@@ -237,9 +237,9 @@ The Scalars tab shows how the loss, the metrics, and the optimizer's learning ra
 
 ![A TensorBoard Scalars tab showing graphs that track epoch accuracy and loss](../assets/how-to/tensorboard-scalars-tf.png)
 
-The Graphs tab opens on the op graph of the training step. To see your model's layers and check that the architecture looks as intended, select **Conceptual graph** under **Graph type**.
+To see your model's layers and check that the architecture looks as intended, open the Graphs tab, choose the `keras` tag, and select **Conceptual graph** under **Graph type**. Then expand the `sequential` node to show the layers. The tab opens on the `batch_2` tag instead, which the `profile_batch` argument adds. In the current `server-tensorflow` image, that op graph is empty, and TensorBoard reports that it couldn't trace a graph.
 
-![The TensorBoard Graphs tab](../assets/how-to/tensorboard-graphs-tf.png)
+![The TensorBoard Graphs tab showing the conceptual graph of the model, with its input layer and three dense layers](../assets/how-to/tensorboard-graphs-tf.png)
 
 The Distributions and Histograms tabs show how the weights and biases changed over the epochs. The `histogram_freq` argument logs this data.
 
@@ -248,7 +248,7 @@ The Images tab draws the weights that `write_images` logs as images. It logs the
 Two callback arguments log data that this example can't fully display:
 
 - `embeddings_freq`: this model has no embedding layers, so there is nothing to project. The callback still saves a weights checkpoint to the log directory's `train` folder every epoch.
-- `profile_batch`: the callback records the graph that ran for batch 2, and the Graphs tab shows it under the `batch_2` tag. It also records a performance profile of that batch. To display the profile, TensorBoard needs the `tensorboard-plugin-profile` package, which the `server-tensorflow` image doesn't include. To add it, see [How to install and use Python packages](./install-and-use-python-packages.md).
+- `profile_batch`: the callback records a performance profile of batch 2 and adds a `batch_2` tag to the Graphs tab, which is empty in the current `server-tensorflow` image. To display the profile, TensorBoard needs the `tensorboard-plugin-profile` package, which the `server-tensorflow` image doesn't include. To add it, see [How to install and use Python packages](./install-and-use-python-packages.md).
 
 ## Use TensorBoard with PyTorch
 

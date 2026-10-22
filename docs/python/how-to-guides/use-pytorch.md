@@ -46,7 +46,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 ```
 
-Next, we import our data, encode the class labels we want to predict as integers, and split the data into training and testing sets.
+Next, we import our data, encode the class labels we want to predict as integers, and split the data into training and testing sets. The `random_state` argument fixes the shuffle, so the split is the same every run.
 
 ```python test-set=1 order=null
 # Read the dataset and encode the class labels as integers
@@ -57,7 +57,7 @@ iris_mappings = {"Iris-setosa": 0, "Iris-virginica": 1, "Iris-versicolor": 2}
 iris["Class"] = iris["Class"].apply(lambda x: iris_mappings[x])
 
 # Split the DataFrame into training and testing sets
-iris_shuffled = iris.sample(frac=1)
+iris_shuffled = iris.sample(frac=1, random_state=42)
 train_size = int(0.75 * len(iris_shuffled))
 train_set = iris_shuffled[:train_size]
 test_set = iris_shuffled[train_size:]
@@ -75,7 +75,7 @@ y_train = torch.tensor(y_train, dtype=torch.long)
 y_test = torch.tensor(y_test, dtype=torch.long)
 ```
 
-With that done, we can define and create our neural network. We use a simple feed-forward neural network with two hidden layers. Both hidden layers use the [ReLU activation function](https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html).
+With that done, we can define and create our neural network. We use a simple feed-forward neural network with two hidden layers. Both hidden layers use the [ReLU activation function](https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html). The seed fixes the network's starting weights, so training gives the same result every run.
 
 ```python test-set=1 order=null
 # Our neural network class (simple feed-forward neural network)
@@ -95,7 +95,8 @@ class IrisANN(nn.Module):
         return x
 
 
-# Create an instance of our neural network
+# Fix the starting weights, then create an instance of our neural network
+torch.manual_seed(42)
 model = IrisANN()
 ```
 
@@ -141,7 +142,7 @@ accuracy = df["Correct"].sum() / len(df) * 100
 print("Neural Network accuracy: " + str(accuracy) + "%")
 ```
 
-A simple model like this typically classifies most of the test set correctly. Your result varies between runs because `sample` shuffles the data randomly and the network starts from random weights.
+A simple model like this typically classifies most of the test set correctly. Without the fixed seeds, the data split and the starting weights would be random, and the exact numbers would vary between runs.
 
 This example follows a basic formula for using a neural network to solve a supervised learning problem:
 
@@ -202,7 +203,7 @@ def get_class_number(c) -> np.intc:
 iris = iris_raw.update(formulas=["Class = get_class_number(Class)"])
 ```
 
-Next, we define and create the neural network. It is the same `IrisANN` network as in the first example, with one added line, `x = x.float()`. The gather function later in this section delivers the measurements as 64-bit doubles, and this line converts them to the 32-bit floats the network's layers use.
+Next, we define and create the neural network. It is the same `IrisANN` network as in the first example, with one added line, `x = x.float()`. The gather function later in this section delivers the measurements as 64-bit doubles, and this line converts them to the 32-bit floats the network's layers use. As before, the seed fixes the starting weights.
 
 ```python test-set=1 order=null
 # Our neural network class
@@ -221,7 +222,8 @@ class IrisANN(nn.Module):
         return x
 
 
-# Create the neural network
+# Fix the starting weights, then create the neural network
+torch.manual_seed(42)
 model = IrisANN()
 ```
 
