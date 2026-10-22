@@ -12,7 +12,7 @@ If a query seems to be taking too long or throws an error, looking at the proces
 
 ### Evaluation numbers
 
-Several [`perfmon`](/core/pydoc/code/deephaven.perfmon.html#module-deephaven.perfmon) functions take an `eval_number` argument. This number is a unique identifier for a query (whatever you type into the console and press _Enter_) and its subqueries (individual operations within the query, such as individual method calls). Evaluation numbers can be found in the performance data tables obtained from calling [`query_performance_log`](#query-performance-log) or [`query_operation_performance_log`](#query-operation-performance-log).
+Several [`perfmon`](/core/pydoc/code/deephaven.perfmon.html#module-deephaven.perfmon) functions take an `eval_number` argument. This number is a unique identifier for a query (whatever you type into the console and press _Enter_) and its subqueries (individual operations within the query, such as individual method calls). You can find evaluation numbers in the performance data tables obtained from calling [`query_performance_log`](#query-performance-log) or [`query_operation_performance_log`](#query-operation-performance-log).
 
 ## Available performance tables
 

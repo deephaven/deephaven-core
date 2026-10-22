@@ -12,7 +12,7 @@ If a query seems to be taking too long or throws an error, looking at the proces
 
 ### Evaluation numbers
 
-Several [`PerformanceQueries`](/core/javadoc/io/deephaven/engine/table/impl/util/PerformanceQueries.html) methods take an `evaluationNumber` argument. This number is a unique identifier for a query (whatever you type into the console and press _Enter_) and its subqueries (individual operations within the query, such as individual method calls). Evaluation numbers can be found in the performance data tables obtained from calling [`queryPerformanceLog`](#query-performance-log) or [`queryOperationPerformanceLog`](#query-operation-performance-log).
+Several [`PerformanceQueries`](/core/javadoc/io/deephaven/engine/table/impl/util/PerformanceQueries.html) methods take an `evaluationNumber` argument. This number is a unique identifier for a query (whatever you type into the console and press _Enter_) and its subqueries (individual operations within the query, such as individual method calls). You can find evaluation numbers in the performance data tables obtained from calling [`queryPerformanceLog`](#query-performance-log) or [`queryOperationPerformanceLog`](#query-operation-performance-log).
 
 ## Available performance tables
 
