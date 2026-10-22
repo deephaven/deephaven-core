@@ -562,6 +562,7 @@ public class QueryTableSelectUpdateTest {
             final ColumnSource<?> select1Column = select1.getColumnSource("Sentinel");
             final ColumnSource<?> selectFlatColumn = selectFlat.getColumnSource("Sentinel");
             Assert.assertTrue(select1Column instanceof RedirectedColumnSource);
+            Assert.assertFalse(select1Column.isImmutable());
             Assert.assertTrue(selectFlatColumn instanceof SparseArrayColumnSource);
         } finally {
             QueryTable.USE_REDIRECTED_COLUMNS_FOR_SELECT = startSelect;
@@ -1179,6 +1180,7 @@ public class QueryTableSelectUpdateTest {
 
         final ColumnSource<?> cs = updated.getColumnSource("D");
         Assert.assertTrue(cs instanceof RedirectedColumnSource);
+        Assert.assertTrue(cs.isImmutable());
 
         Assert.assertEquals(4L, updated.getColumnSource("D").get(updated.getRowSet().get(1)));
         Assert.assertEquals(8L, updated.getColumnSource("D").getPrev(updated.getRowSet().prev().get(2)));
@@ -1188,12 +1190,16 @@ public class QueryTableSelectUpdateTest {
     public void testAppendOnlyPositionalRedirection() {
         final QueryTable source = testRefreshingTable(i(10, 20, 30).toTracking(), intCol("A", 1, 2, 3));
         source.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
-        final Table updated = source.update("B = A * 10");
+        final Table updated = source.update("B = A * 10", "T = DateTimeUtils.epochNanosToInstant(A)");
 
         final ColumnSource<Integer> bSource = updated.getColumnSource("B", int.class);
         Assert.assertTrue(bSource instanceof RedirectedColumnSource);
         Assert.assertTrue(((RedirectedColumnSource<?>) bSource)
                 .getRowRedirection() instanceof InverseWrappedRowSetRowRedirection);
+        Assert.assertTrue(bSource.isImmutable());
+        final ColumnSource<?> tSource = updated.getColumnSource("T");
+        Assert.assertTrue(tSource.isImmutable());
+        Assert.assertTrue(tSource.reinterpret(long.class).isImmutable());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.startCycleForUnitTests();
@@ -1219,7 +1225,8 @@ public class QueryTableSelectUpdateTest {
             updateGraph.completeCycleForUnitTests();
         }
 
-        assertTableEquals(newTable(intCol("A", 1, 2, 3, 4, 5), intCol("B", 10, 20, 30, 40, 50)), updated);
+        assertTableEquals(newTable(intCol("A", 1, 2, 3, 4, 5), intCol("B", 10, 20, 30, 40, 50)),
+                updated.dropColumns("T"));
     }
 
     @Test
@@ -1296,6 +1303,7 @@ public class QueryTableSelectUpdateTest {
         Assert.assertTrue(bSource instanceof RedirectedColumnSource);
         Assert.assertTrue(((RedirectedColumnSource<?>) bSource)
                 .getRowRedirection() instanceof InverseWrappedRowSetRowRedirection);
+        Assert.assertTrue(bSource.isImmutable());
 
         // preserving nothing produces a flat result that needs no redirection
         final QueryTable flat = (QueryTable) source.select("C = A * 100", "D = C + ii");
@@ -1304,6 +1312,7 @@ public class QueryTableSelectUpdateTest {
         Assert.assertEquals(i(0, 1, 2), flat.getRowSet());
         final ColumnSource<Integer> cSource = flat.getColumnSource("C", int.class);
         Assert.assertFalse(cSource instanceof RedirectedColumnSource);
+        Assert.assertTrue(cSource.isImmutable());
         final ListenerWithGlobals flatListener = base.newListenerWithGlobals(flat);
         flat.addUpdateListener(flatListener);
 

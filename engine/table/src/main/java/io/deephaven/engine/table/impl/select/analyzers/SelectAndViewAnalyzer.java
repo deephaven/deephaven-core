@@ -302,7 +302,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     final WritableColumnSource<?> scs = parentIsFlat || context.flatResult
                             ? sc.newFlatDestInstance(targetDestinationCapacity)
                             : sc.newDestInstance(targetDestinationCapacity);
-                    maybeSetStaticColumnSourceImmutable(scs);
+                    maybeSetColumnSourceImmutable(scs);
                     maybeCreateAlias.accept(scs);
                     layer = new SelectColumnLayer(
                             updateGraph, rowSet, context, sc, scs, null, distinctDeps, execDeps.toIntArray(),
@@ -316,9 +316,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                         final WritableColumnSource<?> scs = parentTable.isRefreshing()
                                 ? sc.newDestInstance(targetDestinationCapacity)
                                 : sc.newFlatDestInstance(targetDestinationCapacity);
-                        if (!parentTable.isRefreshing()) {
-                            maybeSetStaticColumnSourceImmutable(scs);
-                        }
+                        maybeSetColumnSourceImmutable(scs);
                         maybeCreateAlias.accept(scs);
                         layer = new SelectColumnLayer(
                                 updateGraph, rowSet, context, sc, scs, null, distinctDeps, execDeps.toIntArray(),
@@ -328,9 +326,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     final WritableColumnSource<?> underlyingSource = sc.newDestInstance(rowSet.size());
                     final WritableColumnSource<?> scs = WritableRedirectedColumnSource.maybeRedirect(
                             rowRedirection, underlyingSource, rowSet.size());
-                    if (!parentTable.isRefreshing()) {
-                        maybeSetStaticColumnSourceImmutable(scs);
-                    }
+                    maybeSetColumnSourceImmutable(scs);
                     maybeCreateAlias.accept(scs);
                     layer = new SelectColumnLayer(
                             updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps,
@@ -385,7 +381,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         context.addLayer(layer);
     }
 
-    private static void maybeSetStaticColumnSourceImmutable(final ColumnSource<?> columnSource) {
+    private static void maybeSetColumnSourceImmutable(final ColumnSource<?> columnSource) {
         if (columnSource instanceof PossiblyImmutableColumnSource) {
             ((PossiblyImmutableColumnSource) columnSource).setImmutable();
         }
