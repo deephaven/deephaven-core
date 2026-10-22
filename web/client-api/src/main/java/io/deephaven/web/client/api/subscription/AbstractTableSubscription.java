@@ -8,9 +8,13 @@ import com.google.protobuf.ByteStringAccess;
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
 import elemental2.core.ReadonlyArray;
+import elemental2.promise.Promise;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.flightjs.protocol.BrowserFlight;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.web.client.api.Column;
@@ -27,6 +31,7 @@ import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.fu.JsSettings;
+import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
@@ -41,6 +46,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collections;
 
 /**
  * Superclass of various subscription types, allowing specific implementations to customize behavior for their needs.
@@ -143,6 +149,122 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     protected Status status = Status.STARTING;
 
     private String failMsg;
+
+    /**
+     * Takes a one-time snapshot of the given state's data, within the requested rows and columns. Shared by every table
+     * flavor that can read data; only the connection and the state are needed.
+     *
+     * @param connection the connection the state lives on
+     * @param state the table to snapshot
+     * @param options options for the snapshot; see {@link DataOptions.SnapshotOptions} for details
+     * @return a promise of the snapshot's data
+     */
+    public static Promise<TableData> createSnapshot(WorkerConnection connection, ClientTableState state,
+            Object options) {
+        DataOptions.SnapshotOptions snapshotOptions = DataOptions.SnapshotOptions.of(options);
+        ReadonlyArray<Column.ColumnOrName> columns = snapshotOptions.columns;
+        RangeSet rows = snapshotOptions.rows.asRangeSet().getRange();
+
+        // TODO #1039 slice rows and drop columns
+        int previewListLengthLimit = getPreviewListLengthLimit(snapshotOptions);
+        BarrageSnapshotOptions barrageSnapshotOptions = BarrageSnapshotOptions.builder()
+                .batchSize(WebBarrageSubscription.BATCH_SIZE)
+                .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
+                .useDeephavenNulls(true)
+                .previewListLengthLimit(previewListLengthLimit)
+                .build();
+
+        ClientTableState previewed = createPreview(connection, state, snapshotOptions.previewOptions);
+
+        LazyPromise<TableData> promise = new LazyPromise<>();
+        previewed.onRunning(cts -> {
+            int rowStyleColumn = cts.getRowFormatColumn() == null ? TableData.NO_ROW_FORMAT_COLUMN
+                    : cts.getRowFormatColumn().getIndex();
+
+            WebBarrageSubscription snapshot = WebBarrageSubscription.subscribe(
+                    SubscriptionType.SNAPSHOT, cts,
+                    (serverViewport1, serverColumns, serverReverseViewport) -> {
+                    },
+                    (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
+                    });
+
+            WebBarrageMessageReader reader = new WebBarrageMessageReader();
+
+            BiDiStream<Flight.FlightData, Flight.FlightData> doExchange =
+                    connection.<Flight.FlightData, Flight.FlightData>streamFactory().<BrowserFlight.BrowserNextResponse>create(
+                            headers -> connection.flightServiceClient().doExchange(headers),
+                            (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first, headers),
+                            (next, headers) -> connection.browserFlightServiceClient().nextDoExchange(next, headers));
+            MutableLong rowsReceived = new MutableLong(0);
+            doExchange.onData(data -> {
+                WebBarrageMessage message;
+                try {
+                    message = reader.parseFrom(barrageSnapshotOptions, data);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                if (message != null) {
+                    // Replace rowsets with flat versions
+                    long resultSize = message.rowsIncluded.size();
+                    if (resultSize != 0) {
+                        message.rowsAdded = RangeSet.ofRange(rowsReceived.get(), rowsReceived.get() + resultSize - 1);
+                        message.rowsIncluded = message.rowsAdded;
+                        message.snapshotRowSet = null;
+                        rowsReceived.add(resultSize);
+                    }
+
+                    // Update our table data with the complete message
+                    snapshot.applyUpdates(message);
+                }
+            });
+            Flight.FlightData.Builder payload = Flight.FlightData.newBuilder();
+            final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+            int colOffset = BarrageSnapshotRequest.createColumnsVector(metadata,
+                    cts.makeBitset(Js.uncheckedCast(columns)).toByteArray());
+            int vpOffset = BarrageSnapshotRequest.createViewportVector(metadata,
+                    WebBarrageUtils.serializeRanges(Collections.singleton(rows)));
+            int optOffset = barrageSnapshotOptions.appendTo(metadata);
+
+            final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata,
+                    cts.getHandle().getTicket().getTicket().toByteArray());
+            BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
+            BarrageSnapshotRequest.addColumns(metadata, colOffset);
+            BarrageSnapshotRequest.addViewport(metadata, vpOffset);
+            BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
+            BarrageSnapshotRequest.addTicket(metadata, ticOffset);
+            BarrageSnapshotRequest.addReverseViewport(metadata, false);
+            metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
+
+            payload.setAppMetadata(ByteStringAccess
+                    .wrap(WebBarrageUtils.wrapMessage(metadata, BarrageMessageType.BarrageSnapshotRequest)));
+            doExchange.onEnd(status -> {
+                if (status.isOk()) {
+                    // notify the caller that the snapshot is finished
+                    RangeSet result;
+                    if (rowsReceived.get() != 0) {
+                        result = RangeSet.ofRange(0, rowsReceived.get() - 1);
+                    } else {
+                        result = RangeSet.empty();
+                    }
+
+                    promise.succeed(new SubscriptionEventData(snapshot, rowStyleColumn,
+                            Js.uncheckedCast(columns),
+                            result,
+                            RangeSet.empty(),
+                            RangeSet.empty(),
+                            null));
+                } else {
+                    promise.fail(status);
+                }
+            });
+
+            doExchange.send(payload.build());
+            doExchange.end();
+
+        }, promise::fail, () -> promise.fail("Table was closed"));
+        return promise.asPromise();
+    }
 
     protected AbstractTableSubscription(
             SubscriptionType subscriptionType,

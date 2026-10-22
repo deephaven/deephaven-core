@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "lib": ["es2020", "dom"],
+    "module": "es2020",
+    "moduleResolution": "node",
+    "strict": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@deephaven/jsapi-types": ["../../build/ts-types/types.d.ts"]
+    }
+  },
+  "include": ["*.ts"]
+}
