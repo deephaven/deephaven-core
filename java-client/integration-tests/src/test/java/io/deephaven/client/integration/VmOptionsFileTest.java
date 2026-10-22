@@ -6,10 +6,13 @@ package io.deephaven.client.integration;
 import io.deephaven.client.integration.ExampleRunner.Project;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,24 +25,55 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Checks that the launchers pass {@code -XX:VMOptionsFile} for the Java major version they run on, falling back to the
- * generic {@code dh-default.vmoptions} for a version without its own file.
+ * Checks the default VM options each Java major version gets from the launchers, against the options written out below.
+ * Changing the options in {@code buildSrc/src/main/groovy/io.deephaven.java-toolchain-conventions.gradle} without
+ * updating them here fails these tests.
  *
  * <p>
- * The start script cases run it with a stand-in {@code java} that prints the arguments it is given. The stand-in's Java
- * home has a {@code release} file copied from the test JDK, naming another version, or missing; calls the script makes
- * to read the version with {@code -XshowSettings} go to the test JDK. {@link ExamplesSmokeTest} starts the launchers on
- * the test JDK itself. The test JDK is chosen with {@code -PtestRuntimeVersion} (and by the nightly matrix).
+ * The start script cases run it with a stand-in {@code java} that prints the arguments it is given, and check the
+ * options in the file it passes. The stand-in's Java home has a {@code release} file copied from the test JDK, naming
+ * another version, or missing; calls the script makes to read the version with {@code -XshowSettings} go to the test
+ * JDK. {@link ExamplesSmokeTest} starts the launchers on the test JDK itself. The test JDK is chosen with
+ * {@code -PtestRuntimeVersion} (and by the nightly matrix).
  */
 @Timeout(120)
 class VmOptionsFileTest {
 
+    private static final List<String> GENERIC_OPTIONS = List.of(
+            "-XX:+UseG1GC",
+            "-XX:MaxGCPauseMillis=100",
+            "-XX:+UseStringDeduplication",
+            "--enable-native-access=ALL-UNNAMED");
+
+    private static final List<String> GC_LOCKER_OPTIONS = List.of("-XX:GCLockerRetryAllocationCount=128");
+
+    /** Every option any version gets by default. */
+    private static final List<String> ALL_OPTIONS = concat(GENERIC_OPTIONS, GC_LOCKER_OPTIONS);
+
+    /** The options a Java major version gets by default. */
+    private static List<String> expectedOptions(int javaVersion) {
+        return switch (javaVersion) {
+            case 17, 21 -> concat(GENERIC_OPTIONS, GC_LOCKER_OPTIONS);
+            default -> GENERIC_OPTIONS;
+        };
+    }
+
+    /** Each file the distribution ships, with its options. */
+    private static final Map<String, List<String>> EXPECTED_FILES = Map.of(
+            "dh-default.vmoptions", GENERIC_OPTIONS,
+            "dh-default-17.vmoptions", expectedOptions(17),
+            "dh-default-21.vmoptions", expectedOptions(21),
+            "dh-default-25.vmoptions", expectedOptions(25));
+
+    private static final String START_SCRIPT_ON_WINDOWS =
+            "The start script is POSIX-only; a Windows launcher needs its own VM options tests";
+
     private static final String VM_OPTIONS_FILE_ARG = "-XX:VMOptionsFile=";
-    private static final String GENERIC_FILE = "dh-default.vmoptions";
 
     /** A version with no file of its own. */
     private static final int UNLISTED_VERSION = 22;
@@ -55,64 +89,72 @@ class VmOptionsFileTest {
     private static final Path JAVA_HOME = Paths.get(System.getProperty("java.home"));
     private static final int JAVA_VERSION = Runtime.version().feature();
 
-    /**
-     * The file a Java major version loads. Mirrors {@code VERSIONED_JAVA_OPTS} in
-     * {@code buildSrc/src/main/groovy/io.deephaven.java-toolchain-conventions.gradle}.
-     */
-    private static String expectedFile(int javaVersion) {
-        return switch (javaVersion) {
-            case 17, 21, 25 -> "dh-default-" + javaVersion + ".vmoptions";
-            default -> GENERIC_FILE;
-        };
+    private static List<String> concat(List<String> first, List<String> second) {
+        return Stream.concat(first.stream(), second.stream()).collect(Collectors.toList());
     }
 
-    /**
-     * This JVM's command line. ProcessHandle returns no arguments when the command line is long (for example, a long
-     * classpath), so Linux's complete /proc/self/cmdline is preferred when it exists.
-     */
-    private static List<String> currentProcessArgs() throws IOException {
-        final Path cmdline = Paths.get("/proc/self/cmdline");
-        if (Files.isReadable(cmdline)) {
-            return Arrays.asList(Files.readString(cmdline).split("\0"));
+    /** The options in a VM options file. */
+    private static List<String> optionsIn(Path vmOptionsFile) throws IOException {
+        return Arrays.asList(Files.readString(vmOptionsFile).trim().split("\\s+"));
+    }
+
+    @Test
+    void distributionShipsTheExpectedOptions() throws IOException {
+        try (Stream<Path> files = Files.list(etcDir())) {
+            assertThat(files.map(f -> f.getFileName().toString()).filter(f -> f.endsWith(".vmoptions")))
+                    .containsExactlyInAnyOrderElementsOf(EXPECTED_FILES.keySet());
         }
-        return Arrays.asList(ProcessHandle.current().info().arguments().orElseThrow());
+        for (Map.Entry<String, List<String>> file : EXPECTED_FILES.entrySet()) {
+            assertThat(optionsIn(etcDir().resolve(file.getKey())))
+                    .as(file.getKey())
+                    .containsExactlyInAnyOrderElementsOf(file.getValue());
+        }
     }
 
     @Test
-    void gradleTestJvm() throws IOException {
-        final List<String> args = currentProcessArgs();
-        final Optional<String> loaded = vmOptionsFile(args);
-        assertThat(loaded).as("%s in %s", VM_OPTIONS_FILE_ARG, args).isPresent();
-        assertThat(Paths.get(loaded.get())).isRegularFile().hasFileName(expectedFile(JAVA_VERSION));
+    void gradleTestJvm() {
+        final List<String> args = ManagementFactory.getRuntimeMXBean().getInputArguments();
+        for (String option : ALL_OPTIONS) {
+            if (expectedOptions(JAVA_VERSION).contains(option)) {
+                assertThat(args).contains(option);
+            } else {
+                assertThat(args).doesNotContain(option);
+            }
+        }
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = START_SCRIPT_ON_WINDOWS)
     void startScriptWithJavaHome(@TempDir Path dir) throws Exception {
         final Path home = standInJavaHome(dir, Release.COPY);
-        assertPasses(launchArgs(Map.of("JAVA_HOME", home.toString())), expectedFile(JAVA_VERSION));
+        assertPasses(launchArgs(Map.of("JAVA_HOME", home.toString())), JAVA_VERSION);
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = START_SCRIPT_ON_WINDOWS)
     void startScriptWithJavaOnPath(@TempDir Path dir) throws Exception {
         final Path home = standInJavaHome(dir, Release.COPY);
         final String path = home.resolve("bin") + File.pathSeparator + System.getenv("PATH");
-        assertPasses(launchArgs(Map.of("PATH", path)), expectedFile(JAVA_VERSION));
+        assertPasses(launchArgs(Map.of("PATH", path)), JAVA_VERSION);
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = START_SCRIPT_ON_WINDOWS)
     void startScriptFallsBackForUnlistedVersion(@TempDir Path dir) throws Exception {
         assertThat(etcDir().resolve("dh-default-" + UNLISTED_VERSION + ".vmoptions")).doesNotExist();
         final Path home = standInJavaHome(dir, Release.UNLISTED);
-        assertPasses(launchArgs(Map.of("JAVA_HOME", home.toString())), GENERIC_FILE);
+        assertPasses(launchArgs(Map.of("JAVA_HOME", home.toString())), UNLISTED_VERSION);
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = START_SCRIPT_ON_WINDOWS)
     void startScriptAsksJavaWhenThereIsNoReleaseFile(@TempDir Path dir) throws Exception {
         final Path home = standInJavaHome(dir, Release.NONE);
-        assertPasses(launchArgs(Map.of("JAVA_HOME", home.toString())), expectedFile(JAVA_VERSION));
+        assertPasses(launchArgs(Map.of("JAVA_HOME", home.toString())), JAVA_VERSION);
     }
 
     @Test
+    @DisabledOnOs(value = OS.WINDOWS, disabledReason = START_SCRIPT_ON_WINDOWS)
     void startScriptSkipsTheDefaultsWhenJavaOptsIsSet(@TempDir Path dir) throws Exception {
         final Path home = standInJavaHome(dir, Release.COPY);
         final List<String> args = launchArgs(Map.of("JAVA_HOME", home.toString(), "JAVA_OPTS", "-Xss2m"));
@@ -133,10 +175,14 @@ class VmOptionsFileTest {
         return files.stream().findFirst();
     }
 
-    private static void assertPasses(List<String> args, String expected) throws IOException {
+    /** Checks that the launcher passed a file from the distribution holding the options for {@code javaVersion}. */
+    private static void assertPasses(List<String> args, int javaVersion) throws IOException {
         final Optional<String> passed = vmOptionsFile(args);
         assertThat(passed).as("%s in %s", VM_OPTIONS_FILE_ARG, args).isPresent();
-        assertThat(Paths.get(passed.get()).toRealPath()).isEqualTo(etcDir().resolve(expected).toRealPath());
+        final Path file = Paths.get(passed.get()).toRealPath();
+        assertThat(file.getParent()).isEqualTo(etcDir().toRealPath());
+        assertThat(optionsIn(file)).as(file.getFileName().toString())
+                .containsExactlyInAnyOrderElementsOf(expectedOptions(javaVersion));
     }
 
     private enum Release {

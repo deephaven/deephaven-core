@@ -8,21 +8,33 @@ import sys
 import tempfile
 import types
 import unittest
-from typing import Optional
+from typing import List, Optional
 from unittest import mock
 
 from deephaven_server import start_jvm
 
 VM_OPTIONS_FILE_ARG = "-XX:VMOptionsFile="
-GENERIC_FILE = "dh-default.vmoptions"
 
-# The file each Java major version loads, including one with no file of its own. Mirrors VERSIONED_JAVA_OPTS in
-# buildSrc/src/main/groovy/io.deephaven.java-toolchain-conventions.gradle.
+# The default VM options each Java major version gets. Changing the options in
+# buildSrc/src/main/groovy/io.deephaven.java-toolchain-conventions.gradle without updating them here fails these tests.
+GENERIC_OPTIONS = [
+    "-XX:+UseG1GC",
+    "-XX:MaxGCPauseMillis=100",
+    "-XX:+UseStringDeduplication",
+    "--enable-native-access=ALL-UNNAMED",
+]
+GC_LOCKER_OPTIONS = ["-XX:GCLockerRetryAllocationCount=128"]
+ALL_OPTIONS = GENERIC_OPTIONS + GC_LOCKER_OPTIONS
+
+# Versions to check, including one with no file of its own (22)
+VERSIONS = (17, 21, 22, 25)
+
+# Each file the wheel ships, with its options
 EXPECTED_FILES = {
-    17: "dh-default-17.vmoptions",
-    21: "dh-default-21.vmoptions",
-    22: GENERIC_FILE,
-    25: "dh-default-25.vmoptions",
+    "dh-default.vmoptions": GENERIC_OPTIONS,
+    "dh-default-17.vmoptions": GENERIC_OPTIONS + GC_LOCKER_OPTIONS,
+    "dh-default-21.vmoptions": GENERIC_OPTIONS + GC_LOCKER_OPTIONS,
+    "dh-default-25.vmoptions": GENERIC_OPTIONS,
 }
 
 # Environment variables jpyutil consults when looking for the JVM
@@ -39,8 +51,14 @@ JPY_ENV_VARS = (
 )
 
 
-def _expected_file(java_version: int) -> str:
-    return EXPECTED_FILES.get(java_version, GENERIC_FILE)
+def _expected_options(java_version: Optional[int]) -> List[str]:
+    if java_version in (17, 21):
+        return GENERIC_OPTIONS + GC_LOCKER_OPTIONS
+    return GENERIC_OPTIONS
+
+
+def _options_in(vmoptions: pathlib.Path) -> List[str]:
+    return vmoptions.read_text().split()
 
 
 class VmOptionsFileTest(unittest.TestCase):
@@ -81,14 +99,22 @@ class VmOptionsFileTest(unittest.TestCase):
         detected = start_jvm._java_major_version(jvm_dll)
         self.assertEqual(detected, java_version)
         vmoptions = start_jvm._default_vmoptions(detected)
-        expected = (
-            GENERIC_FILE if java_version is None else _expected_file(java_version)
-        )
-        self.assertEqual(vmoptions.name, expected)
         self.assertTrue(vmoptions.is_file(), f"{vmoptions} is not in the wheel")
+        self.assertCountEqual(
+            _options_in(vmoptions), _expected_options(java_version), vmoptions.name
+        )
 
-    def test_file_for_each_version(self):
-        for java_version in EXPECTED_FILES:
+    def test_wheel_ships_the_expected_options(self):
+        shipped = {p.name for p in start_jvm._jars_path().glob("*.vmoptions")}
+        self.assertCountEqual(shipped, EXPECTED_FILES)
+        for name, options in EXPECTED_FILES.items():
+            with self.subTest(file=name):
+                self.assertCountEqual(
+                    _options_in(start_jvm._jars_path() / name), options
+                )
+
+    def test_options_for_each_version(self):
+        for java_version in VERSIONS:
             with self.subTest(java_version=java_version):
                 home = self._java_home(java_version)
                 jvm_dll = start_jvm._find_jvm_dll(str(home), None)
@@ -139,23 +165,21 @@ class VmOptionsFileTest(unittest.TestCase):
             start_jvm.start_jvm(java_home=str(home_17), config=config)
         kwargs = init_jvm.call_args.kwargs
         self.assertEqual(kwargs["jvm_dll"], self._jvm_dll(home_25))
-        vmoptions_args = [
-            arg for arg in kwargs["jvm_options"] if arg.startswith(VM_OPTIONS_FILE_ARG)
+        vmoptions_files = [
+            arg[len(VM_OPTIONS_FILE_ARG) :]
+            for arg in kwargs["jvm_options"]
+            if arg.startswith(VM_OPTIONS_FILE_ARG)
         ]
-        self.assertEqual(
-            vmoptions_args,
-            [f"{VM_OPTIONS_FILE_ARG}{start_jvm._default_vmoptions(25)}"],
-        )
-        self.assertEqual(
-            start_jvm._default_vmoptions(25).name, "dh-default-25.vmoptions"
+        self.assertEqual(len(vmoptions_files), 1, kwargs["jvm_options"])
+        self.assertCountEqual(
+            _options_in(pathlib.Path(vmoptions_files[0])), _expected_options(25)
         )
 
 
 class StartedServerVmOptionsFileTest(unittest.TestCase):
-    """The options the embedded server's JVM started with, in this test's real environment. The JVM replaces
-    -XX:VMOptionsFile with the file's contents, so this checks that the expected file's options are there."""
+    """The options the embedded server's JVM started with, in this test's real environment."""
 
-    def test_started_jvm_has_its_files_options(self):
+    def test_started_jvm_has_its_versions_options(self):
         from deephaven_server import Server
 
         if Server.instance is None:
@@ -170,9 +194,12 @@ class StartedServerVmOptionsFileTest(unittest.TestCase):
             .getInputArguments()
             .toArray()
         )
-        expected = start_jvm._jars_path() / _expected_file(java_version)
-        for option in expected.read_text().split():
-            self.assertIn(option, input_args, f"{option} from {expected.name}")
+        expected = _expected_options(java_version)
+        for option in ALL_OPTIONS:
+            if option in expected:
+                self.assertIn(option, input_args)
+            else:
+                self.assertNotIn(option, input_args)
 
 
 if __name__ == "__main__":
