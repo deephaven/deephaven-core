@@ -21,14 +21,14 @@ This page covers the second way. It does not measure coverage. For coverage repo
    ./gradlew :py-embedded-server:assemble
    ```
 
-2. Make a venv with the Deephaven packages and the test dependencies, once per Python version. `py/server/setup.py` and `py/client/setup.py` read their version from `DEEPHAVEN_VERSION`, which must match the wheel, because `deephaven-server` pins `deephaven-core` to it. Both come from Gradle, so they match the build. `--find-links` with the pinned version picks the right wheel even when `build/wheel` holds wheels from older builds.
+2. Make a venv with the Deephaven packages and the test dependencies, once per Python version. `py/server/setup.py` and `py/client/setup.py` read their version from `DEEPHAVEN_VERSION`, which must match the wheel, because `deephaven-server` pins `deephaven-core` to it. Both come from Gradle, so they match the build. Naming the wheel by its version means a stale wheel from an older build fails the install instead of being picked up.
 
    ```bash
-   export DEEPHAVEN_VERSION="$(./gradlew -q printVersion)"
+   export DEEPHAVEN_VERSION="$(./gradlew -q :printVersion)"
    WHEEL_VERSION="$(./gradlew -q :py-embedded-server:printWheelVersion)"
    uv venv --managed-python --python 3.14t .venv-3.14t
    source .venv-3.14t/bin/activate
-   uv pip install --find-links py/embedded-server/build/wheel "deephaven-server==${WHEEL_VERSION}" \
+   uv pip install "py/embedded-server/build/wheel/deephaven_server-${WHEEL_VERSION}-py3-none-any.whl" \
        -e py/server -e py/client --config-settings editable_mode=compat
    uv pip install -r py/server/requirements-test.txt
    ```
@@ -54,8 +54,8 @@ The tests run on the jars installed in the venv, not on the build output. After 
 
 ```bash
 ./gradlew :py-embedded-server:assemble
-uv pip install --reinstall-package deephaven-server --find-links py/embedded-server/build/wheel \
-    "deephaven-server==$(./gradlew -q :py-embedded-server:printWheelVersion)"
+uv pip install --reinstall-package deephaven-server \
+    "py/embedded-server/build/wheel/deephaven_server-$(./gradlew -q :py-embedded-server:printWheelVersion)-py3-none-any.whl"
 ```
 
 In a venv made with Python's `venv` module, use `pip install --force-reinstall --no-deps` instead. A venv made by uv has no `pip`.
