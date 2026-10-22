@@ -43,7 +43,7 @@ public class InverseWrappedRowSetRowRedirection implements RowRedirection {
 
     @Override
     public long get(long key) {
-        if (key < 0 || key > wrappedRowSet.lastRowKey()) {
+        if (key < 0 || wrappedRowSet.lastRowKey() < key) {
             return RowSet.NULL_ROW_KEY;
         }
         return wrappedRowSet.find(key);
@@ -51,7 +51,7 @@ public class InverseWrappedRowSetRowRedirection implements RowRedirection {
 
     @Override
     public long getPrev(long key) {
-        if (key < 0 || key > trackingRowSet.lastRowKeyPrev()) {
+        if (key < 0 || trackingRowSet.lastRowKeyPrev() < key) {
             return RowSet.NULL_ROW_KEY;
         }
         return trackingRowSet.findPrev(key);
