@@ -847,7 +847,7 @@ public abstract class SingleRange implements OrderedLongSet {
         final int size = keys.size();
         for (int ki = 0; ki < size; ++ki) {
             final long key = keys.get(ki);
-            if (key < rangeStart() || key > rangeEnd()) {
+            if (key < rangeStart() || rangeEnd() < key) {
                 throw new IllegalArgumentException("invert for non-existing key:" + key);
             }
             positions.set(ki, key - rangeStart());
