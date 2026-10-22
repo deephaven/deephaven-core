@@ -5,6 +5,9 @@ package io.deephaven.server.barrage;
 
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.DrainableByteArrayInputStream;
@@ -15,6 +18,7 @@ import io.deephaven.extensions.barrage.chunk.SharedDictionaryWriterState;
 import io.deephaven.extensions.barrage.chunk.SharedWriterDictionary;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
+import io.deephaven.util.mutable.MutableLong;
 import io.grpc.stub.StreamObserver;
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -29,6 +33,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.IntConsumer;
 
 /**
  * Writes one message for a group of full subscribers that would each be sent the same bytes, and delivers it to all of
@@ -62,13 +67,28 @@ import java.util.List;
  * the message itself would meet every subscriber alike, so it fails all of them.
  *
  * <p>
- * Thread-safety: a fan-out, and the subscriber states it reads and moves, is used by one thread.
+ * Thread-safety: a fan-out, and the subscriber states it reads and moves, is used by one thread, except that a round of
+ * copies large enough to run in parallel copies on the propagation scheduler's threads. Those copies only read the
+ * captured batch and fail subscribers, through the synchronized {@link #failSubscriber}, and the round finishes before
+ * the fan-out's thread reads which subscribers have failed.
  */
 final class SharedMessageFanOut {
 
     /** Told of each subscriber that is failed, once. */
     interface DeliveryFailureHandler {
         void onFailure(int subIndex, @NotNull Exception failure);
+    }
+
+    /**
+     * Told of the copies of a message that the message's own write did not record. A view records its write once, with
+     * the bytes of one copy, and each other subscriber sent the whole message received a copy of its own.
+     */
+    interface CopyMetricsConsumer {
+        /**
+         * @param bytes the size of one copy, every stream of the message counted
+         * @param copies the number of copies beyond the one the write recorded
+         */
+        void onCopies(long bytes, int copies);
     }
 
     /** Thrown through the writer to stop writing a message that no subscriber is still receiving. */
@@ -83,6 +103,14 @@ final class SharedMessageFanOut {
     private final List<DictionaryWriterRegistryImpl> registries;
     private final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries;
     private final DeliveryFailureHandler failureHandler;
+    private final CopyMetricsConsumer copyMetrics;
+    /** Copies a captured batch to the subscribers in parallel, when the round is large enough. */
+    private final JobScheduler copyScheduler;
+    /**
+     * The bytes a round's copies must move off the writing thread, a batch's size multiplied by one less than its
+     * subscribers, for the round to run in parallel on {@link #copyScheduler}.
+     */
+    private final long parallelCopyMinBytes;
     /** Every subscriber, for the messages that go to all of them. */
     private final IntList allSubs;
     private final boolean[] failed;
@@ -101,6 +129,26 @@ final class SharedMessageFanOut {
             @NotNull final List<? extends DictionaryWriterRegistry> registries,
             @NotNull final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries,
             @NotNull final DeliveryFailureHandler failureHandler) {
+        this(listeners, registries, sharedDictionaries, failureHandler, (bytes, copies) -> {
+        }, new ImmediateJobScheduler(), Long.MAX_VALUE);
+    }
+
+    /**
+     * @param copyMetrics told of the copies of each message that its write did not record
+     * @param copyScheduler copies a captured batch to the subscribers in parallel, when the round is large enough
+     * @param parallelCopyMinBytes the bytes a round's copies must move off the writing thread, a batch's size
+     *        multiplied by one less than its subscribers, for the round to run in parallel on {@code copyScheduler}
+     */
+    SharedMessageFanOut(
+            @NotNull final List<StreamObserver<BarrageMessageWriter.MessageView>> listeners,
+            @NotNull final List<? extends DictionaryWriterRegistry> registries,
+            @NotNull final Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries,
+            @NotNull final DeliveryFailureHandler failureHandler,
+            @NotNull final CopyMetricsConsumer copyMetrics,
+            @NotNull final JobScheduler copyScheduler,
+            final long parallelCopyMinBytes) {
+        this.copyScheduler = copyScheduler;
+        this.parallelCopyMinBytes = parallelCopyMinBytes;
         final int numSubs = listeners.size();
         if (registries.size() != numSubs) {
             throw new IllegalArgumentException(
@@ -118,6 +166,7 @@ final class SharedMessageFanOut {
         }
         this.sharedDictionaries = sharedDictionaries;
         this.failureHandler = failureHandler;
+        this.copyMetrics = copyMetrics;
         this.allSubs = new IntArrayList(numSubs);
         for (int si = 0; si < numSubs; ++si) {
             allSubs.add(si);
@@ -181,13 +230,10 @@ final class SharedMessageFanOut {
         final int numSubs = registries.size();
         final DictionaryWriterRegistryImpl registry = new DictionaryWriterRegistryImpl(sharedDictionaries);
 
-        // Every subscriber has a state for every dictionary id: its snapshot registered each dictionary column, whether
-        // or
-        // not it subscribes to the column, and the producer's ids are fixed by its schema. So the first subscriber's
-        // ids
-        // are every subscriber's. They are taken in id order, so that catch-ups are sent in an order that does not
-        // depend
-        // on hashing.
+        // Every subscriber has a state for every dictionary id: its snapshot registered each dictionary column,
+        // whether or not it subscribes to the column, and the producer's ids are fixed by its schema. So the first
+        // subscriber's ids are every subscriber's. They are taken in id order, so that catch-ups are sent in an order
+        // that does not depend on hashing.
         final List<DictionaryWriterRegistry.Entry> dictionaryEntries = new ArrayList<>(registries.get(0).entries());
         dictionaryEntries.sort(Comparator.comparingLong(entry -> entry.state.getDictId()));
 
@@ -279,7 +325,8 @@ final class SharedMessageFanOut {
     /**
      * Writes {@code view} once, handing each of its streams to every one of {@code subIndices} still receiving before
      * the next stream is written. Stops writing as soon as none of them is receiving. A subscriber whose delivery fails
-     * is failed alone.
+     * is failed alone. Once the whole message has been delivered, tells the {@link CopyMetricsConsumer} of the copies
+     * beyond the one the view's write recorded.
      *
      * @param view the view of the message
      * @param subIndices the indices of the subscribers to send it to
@@ -289,6 +336,8 @@ final class SharedMessageFanOut {
     void deliverMessageToSubscribers(@NotNull final BarrageMessageWriter.MessageView view,
             @NotNull final IntList subIndices)
             throws IOException {
+        // the bytes of one copy of the message
+        final MutableLong messageBytes = new MutableLong();
         try {
             // Each stream of the message covers one record batch. This could be a dictionary batch or a regular data
             // batch. The writer builds each stream only once this visitor has returned from the one before, so every
@@ -317,14 +366,15 @@ final class SharedMessageFanOut {
                 } catch (final IOException e) {
                     throw new UncheckedIOException(e);
                 }
+                messageBytes.add(bytes.length);
 
-                // TODO: distribute the captured batch in parallel if the number of subscribers or message size is
-                // large. This is a pure copy operation but does add time per subscriber.
-                for (int ii = 0; ii < subIndices.size(); ++ii) {
+                // Copy the batch to every subscriber still receiving. Either way every copy has run before the next
+                // batch is encoded, so each subscriber is handed this batch first.
+                final IntConsumer copyToSubscriber = ii -> {
                     final int subIndex = subIndices.getInt(ii);
                     // a subscriber that has failed is sent nothing more
                     if (failed[subIndex]) {
-                        continue;
+                        return;
                     }
                     try {
                         // each subscriber is given its own stream over the array, since draining a stream takes its
@@ -335,10 +385,30 @@ final class SharedMessageFanOut {
                         // a subscriber whose listener throws is failed alone, and the others carry on
                         failSubscriber(subIndex, e);
                     }
+                };
+                // in parallel only when enough bytes would move off this thread to pay for handing the copies out
+                final long bytesOffThisThread = (long) bytes.length * (subIndices.size() - 1);
+                if (bytesOffThisThread >= parallelCopyMinBytes) {
+                    copyScheduler.invokeParallel(ExecutionContext.getContext(),
+                            logOutput -> logOutput.append("SharedMessageFanOut copies"),
+                            JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, subIndices.size(),
+                            (context, ii, nestedErrorConsumer) -> copyToSubscriber.accept(ii));
+                } else {
+                    for (int ii = 0; ii < subIndices.size(); ++ii) {
+                        copyToSubscriber.accept(ii);
+                    }
                 }
             });
         } catch (final NoSubscriberReceiving ignored) {
-            // no subscriber is left to write the rest of the message for
+            // no subscriber is left to write the rest of the message for, and the view records no write
+            return;
+        }
+
+        // The view recorded its write with the bytes of one copy. Each other subscriber still receiving was sent a
+        // copy of its own.
+        final int copies = numReceiving(subIndices) - 1;
+        if (copies > 0) {
+            copyMetrics.onCopies(messageBytes.get(), copies);
         }
     }
 
@@ -375,8 +445,19 @@ final class SharedMessageFanOut {
         return false;
     }
 
+    /** How many of {@code subIndices} have not been failed. */
+    private int numReceiving(@NotNull final IntList subIndices) {
+        int count = 0;
+        for (int ii = 0; ii < subIndices.size(); ++ii) {
+            if (!failed[subIndices.getInt(ii)]) {
+                ++count;
+            }
+        }
+        return count;
+    }
+
     /** Fails subscriber {@code subIndex}, if it is still receiving, and tells the failure handler. */
-    void failSubscriber(final int subIndex, @NotNull final Exception failure) {
+    synchronized void failSubscriber(final int subIndex, @NotNull final Exception failure) {
         if (failed[subIndex]) {
             return;
         }

@@ -12,6 +12,8 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageOptions;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
@@ -45,6 +47,8 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -167,15 +171,37 @@ public class SharedMessageFanOutTest {
         }
     }
 
+    /** Records each report of the copies a message's write did not record, as its bytes and copies. */
+    private static final class Copies implements SharedMessageFanOut.CopyMetricsConsumer {
+        private final List<String> reports = new ArrayList<>();
+
+        @Override
+        public void onCopies(final long bytes, final int copies) {
+            reports.add("bytes=" + bytes + ", copies=" + copies);
+        }
+    }
+
     /** A fan-out to {@code listeners}, each member with a registry backed by the shared dictionaries. */
     private SharedMessageFanOut fanOut(
             final SharedMessageFanOut.DeliveryFailureHandler failures,
+            final RecordingListener... listeners) {
+        return fanOut(failures, new Copies(), listeners);
+    }
+
+    /**
+     * A fan-out to {@code listeners} that reports copies to {@code copies}, each member with a registry backed by the
+     * shared dictionaries.
+     */
+    private SharedMessageFanOut fanOut(
+            final SharedMessageFanOut.DeliveryFailureHandler failures,
+            final Copies copies,
             final RecordingListener... listeners) {
         final List<DictionaryWriterRegistryImpl> registries = new ArrayList<>(listeners.length);
         for (int ii = 0; ii < listeners.length; ++ii) {
             registries.add(member());
         }
-        return new SharedMessageFanOut(List.of(listeners), registries, sharedDictionaries, failures);
+        return new SharedMessageFanOut(List.of(listeners), registries, sharedDictionaries, failures, copies,
+                new ImmediateJobScheduler(), Long.MAX_VALUE);
     }
 
     private static byte[] bytes(final int value) {
@@ -197,6 +223,77 @@ public class SharedMessageFanOutTest {
         }
         assertThat(failures.members).isEmpty();
         assertThat(view.made).allMatch(stream -> stream.closed);
+    }
+
+    /**
+     * Copied to the subscribers in parallel, every stream still reaches every subscriber in order, and a subscriber
+     * whose delivery fails is failed alone.
+     */
+    @Test
+    public void testParallelCopiesDeliverEveryStreamInOrder() throws IOException {
+        final ThreadPoolExecutor helpers = ExecutorJobScheduler.newHelperPool(3, Executors.defaultThreadFactory());
+        try {
+            final List<RecordingListener> listeners = new ArrayList<>();
+            final List<DictionaryWriterRegistryImpl> registries = new ArrayList<>();
+            for (int si = 0; si < 8; ++si) {
+                // the sixth subscriber's second delivery fails
+                listeners.add(si == 5 ? new RecordingListener(1) : new RecordingListener());
+                registries.add(member());
+            }
+            final Failures failures = new Failures();
+            final Copies copies = new Copies();
+            // a threshold of zero copies every round in parallel
+            final SharedMessageFanOut fanOut = new SharedMessageFanOut(new ArrayList<>(listeners), registries,
+                    sharedDictionaries, failures, copies, new ExecutorJobScheduler(helpers, 4), 0);
+
+            final GeneratingView view = new GeneratingView(3);
+            fanOut.deliverMessageToSubscribers(view, IntList.of(0, 1, 2, 3, 4, 5, 6, 7));
+
+            assertThat(failures.members).containsExactly(5);
+            for (int si = 0; si < listeners.size(); ++si) {
+                if (si == 5) {
+                    assertThat(listeners.get(si).received).containsExactly(bytes(0));
+                } else {
+                    assertThat(listeners.get(si).received).containsExactly(bytes(0), bytes(1), bytes(2));
+                }
+            }
+            assertThat(view.made).allMatch(stream -> stream.closed);
+            // the seven members sent the whole message are counted, once by the write and six times as copies
+            assertThat(copies.reports).containsExactly("bytes=3, copies=6");
+        } finally {
+            helpers.shutdownNow();
+        }
+    }
+
+    /**
+     * A message's write records one copy, and the fan-out reports a copy for each other member still receiving once the
+     * whole message is delivered, so every member sent all of it is counted once. A member that failed during the
+     * message is not counted, and a message that is not delivered reports nothing.
+     */
+    @Test
+    public void testCopiesBeyondTheWritesOwnAreReported() throws IOException {
+        final Copies copies = new Copies();
+        final SharedMessageFanOut fanOut = fanOut(new Failures(), copies, new RecordingListener(),
+                new RecordingListener(1), new RecordingListener(), new RecordingListener());
+
+        // the second member fails on the second stream, so three members are sent all three bytes
+        fanOut.deliverMessageToSubscribers(new GeneratingView(3), IntList.of(0, 1, 2, 3));
+        assertThat(copies.reports).containsExactly("bytes=3, copies=2");
+
+        // a message sent to one member is counted by its write alone
+        fanOut.deliverMessageToSubscribers(new GeneratingView(2), IntList.of(2));
+        assertThat(copies.reports).hasSize(1);
+
+        // a message whose write fails is not delivered
+        assertThatThrownBy(() -> fanOut.deliverMessageToSubscribers(new GeneratingView(5, 2), IntList.of(0, 2, 3)))
+                .isInstanceOf(IOException.class);
+        assertThat(copies.reports).hasSize(1);
+
+        // nor is one abandoned because every member failed
+        final Copies abandonedCopies = new Copies();
+        fanOut(new Failures(), abandonedCopies, new RecordingListener(0), new RecordingListener(0))
+                .deliverMessageToSubscribers(new GeneratingView(10), IntList.of(0, 1));
+        assertThat(abandonedCopies.reports).isEmpty();
     }
 
     @Test
@@ -525,18 +622,21 @@ public class SharedMessageFanOutTest {
         private final CatchUpWriter writer;
         private final DictionaryWriterRegistry registry;
         private final Failures failures;
+        private final Copies copies;
 
         private SynchronizedGroup(
                 final SharedMessageFanOut fanOut,
                 final List<RecordingListener> listeners,
                 final CatchUpWriter writer,
                 final DictionaryWriterRegistry registry,
-                final Failures failures) {
+                final Failures failures,
+                final Copies copies) {
             this.fanOut = fanOut;
             this.listeners = listeners;
             this.writer = writer;
             this.registry = registry;
             this.failures = failures;
+            this.copies = copies;
         }
 
         /** Every catch-up built, in the order sent. */
@@ -581,13 +681,14 @@ public class SharedMessageFanOutTest {
             listeners.add(new RecordingListener());
         }
         final Failures failures = new Failures();
-        final SharedMessageFanOut fanOut =
-                new SharedMessageFanOut(new ArrayList<>(listeners), List.of(members), sharedDictionaries, failures);
+        final Copies copies = new Copies();
+        final SharedMessageFanOut fanOut = new SharedMessageFanOut(new ArrayList<>(listeners), List.of(members),
+                sharedDictionaries, failures, copies, new ImmediateJobScheduler(), Long.MAX_VALUE);
         for (int ii = 0; ii < failedFirst.size(); ++ii) {
             fanOut.failSubscriber(failedFirst.getInt(ii), new IllegalStateException("failed before synchronizing"));
         }
         final DictionaryWriterRegistry registry = fanOut.synchronizeDictionaries(writer, OPTS);
-        return new SynchronizedGroup(fanOut, listeners, writer, registry, failures);
+        return new SynchronizedGroup(fanOut, listeners, writer, registry, failures, copies);
     }
 
     @Test
@@ -626,6 +727,8 @@ public class SharedMessageFanOutTest {
         assertThat(group.catchUps(3)).containsExactly(freshCatchUps.get(0));
         // built once for both
         assertThat(group.catchUps()).hasSize(2);
+        // the catch-up the two fresh members share counts one copy beyond its write; the member behind's has none
+        assertThat(group.copies.reports).containsExactly("bytes=1, copies=1");
 
         // the group's message carries only what is new beyond the highest offset
         final DictionaryWriterState groupState = state(group.registry());

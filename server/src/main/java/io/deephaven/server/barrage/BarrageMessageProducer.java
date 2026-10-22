@@ -189,6 +189,16 @@ public class BarrageMessageProducer extends LivenessArtifact
     public static final boolean DEDUP_IDENTICAL_SUBSCRIBERS = Configuration.getInstance()
             .getBooleanForClassWithDefault(BarrageMessageProducer.class, "dedupIdenticalSubscribers", true);
 
+    /**
+     * A group of subscriptions sharing one write copies each batch it captures to its members in parallel, on the
+     * propagation job scheduler, when the batch's size multiplied by one less than its members reaches this many bytes:
+     * the bytes the copies would move off the group's thread. Smaller rounds are copied one after another on the
+     * group's thread, where handing the copies out would cost more than it saves. With {@link #PROPAGATION_THREADS} of
+     * one or less, every round is copied on the group's thread.
+     */
+    public static final long PARALLEL_COPY_MIN_BYTES = Configuration.getInstance().getLongForClassWithDefault(
+            BarrageMessageProducer.class, "parallelCopyMinBytes", 4L * 1024 * 1024);
+
     private long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
     private double snapshotNanosPerCell = 0;
 
@@ -2310,7 +2320,8 @@ public class BarrageMessageProducer extends LivenessArtifact
         // the members are identical in configuration, so the first's options, direction and columns are every member's
         final Subscription first = members.get(0);
         new SharedMessageFanOut(listeners, registries, sharedDictionaryStates,
-                (member, failure) -> failSubscription(members.get(member), failure))
+                (member, failure) -> failSubscription(members.get(member), failure), this::recordCopyBytes,
+                propagationJobSchedulerFactory.get(), PARALLEL_COPY_MIN_BYTES)
                 .propagateToSubscribers(bmw, effectiveOptions(first.options), first.reverseViewport,
                         first.subscribedColumns);
     }
@@ -2898,9 +2909,22 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
     }
 
-    private void recordWriteMetrics(final long bytes, final long cpuNanos) {
+    private void recordWriteMetrics(final long bytes, final long writeNanos) {
         recordMetric(stats -> stats.writeBytes, bytes);
-        recordMetric(stats -> stats.writeTime, cpuNanos);
+        recordMetric(stats -> stats.writeTime, writeNanos);
+    }
+
+    /**
+     * Records the copies of a shared write that the write itself did not record, as one {@code WriteBytes} sample each,
+     * so that every subscriber sent the write has a sample of the bytes it received.
+     */
+    private void recordCopyBytes(final long bytes, final int copies) {
+        if (stats == null) {
+            return;
+        }
+        synchronized (stats) {
+            stats.writeBytes.recordValueWithCount(bytes, copies);
+        }
     }
 
     private void recordMetric(final Function<Stats, Histogram> hist, final long value) {

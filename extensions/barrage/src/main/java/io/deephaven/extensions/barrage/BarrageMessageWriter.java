@@ -222,15 +222,19 @@ public interface BarrageMessageWriter extends SafeCloseable {
      * write it.
      */
     interface WriteMetricsConsumer {
-        WriteMetricsConsumer NO_OP = (bytes, cpuNanos) -> {
+        WriteMetricsConsumer NO_OP = (bytes, writeNanos) -> {
         };
 
         /**
-         * Called after the entire message has been sent, with the total byte count and nanos of CPU time to send it.
+         * Called once the whole message has been written, with its size and how long it took to write. A view that
+         * several subscribers share is written once, so this is called once for all of them.
          *
-         * @param bytes number of bytes in the record batch message
-         * @param cpuNanos nanoseconds it took to serialize and send the message
+         * @param bytes the number of bytes in the message, every batch it was written as counted, dictionary batches
+         *        included
+         * @param writeNanos the elapsed nanoseconds, not CPU time, from starting to encode the message until the
+         *        visitor returned from its last batch; this includes the visitor's own time, such as delivering each
+         *        batch
          */
-        void onWrite(long bytes, long cpuNanos);
+        void onWrite(long bytes, long writeNanos);
     }
 }

@@ -82,12 +82,14 @@ Deliver: gRPC transport threads, then the client (step 7)
       the members' highest offset;
    2. one `SubView` is made for the group, with the group's columns and registry;
       `deliverMessageToSubscribers` drains it with a visitor that captures each message into
-      an exact-size array and delivers the array to every member still receiving, before the writer
-      builds the next message;
+      an exact-size array and delivers the array to every member still receiving, in parallel when
+      the round is large enough (see [Parallel copies](#parallel-copies)), before the writer builds
+      the next message;
    3. once the write succeeds, `advanceSubscriberDictionaries` moves each member's dictionary states to
       the group registry's.
-6. **After the phase.** Each view records `onWrite` once. When every unit has finished, the writer
-   closes and its contexts return the chunks to the pool.
+6. **After the phase.** Each write has recorded its metrics (see
+   [Metrics and configuration](#metrics-and-configuration)). When every unit has finished, the
+   writer closes and its contexts return the chunks to the pool.
 7. **Transport and client.** gRPC sends its queued buffers to each socket. The client reader
    handles each FlightData message separately: dictionary batches update its dictionaries in order,
    and record batches are assembled into one `BarrageMessage` that `BarrageTable` applies.
@@ -152,6 +154,33 @@ promise; gRPC does drain synchronously, so each array is garbage as soon as its 
   are behind, that adds about 1/N to what is already queued.
 - A staging copy can be as large as a record batch, and batches grow to about 90% of
   `maxMessageSize`, so about 90 MB at the 100 MB default. See [Open questions](#open-questions).
+
+### Parallel copies
+
+A round of copies, one captured message handed to every member still receiving, runs in parallel
+when it is large enough to pay for handing the copies out:
+
+- **When.** A round goes parallel when the message's size, multiplied by one less than the number
+  of members it goes to, reaches `BarrageMessageProducer.parallelCopyMinBytes`, 4 MiB by default.
+  That is what the copies would move off the group's thread, which copies one share itself. A
+  smaller round is copied one member after another on the group's thread. See
+  [Parallel copy threshold](#parallel-copy-threshold) for how the default was chosen.
+- **Where.** The copies run through `invokeParallel` on the phase's propagation scheduler, the same
+  one its units run on. So they draw on the same `propagationThreads - 1` helpers, which every
+  producer shares, and the group's thread takes part. When the pool is busy, a refused copy runs on
+  the group's thread, so a busy pool means fewer copies at once, never a wait.
+- **Subject to `propagationThreads`.** With `BarrageMessageProducer.propagationThreads` of 1 or
+  less, the scheduler is an `ImmediateJobScheduler` and every copy runs on the group's thread. That
+  one property turns off parallel writes to subscribers and parallel copies together; there is no
+  separate switch.
+- **Order and memory.** A round finishes before the next message is encoded, so each member still
+  receives its messages in order, and a group still holds one captured message at a time.
+- **Failures.** Members of one round can fail on different threads at once, so `failSubscriber` is
+  synchronized. A member whose delivery fails is still failed alone.
+- **Cost of a busy pool.** A refused hand-off builds the helper pool's `RejectedExecutionException`,
+  with a formatted message and a stack trace, on the order of 10 µs each, up to one fewer than the
+  helpers a round asks for. Next to a round of at least 4 MiB, about 0.5 ms of copying, that is
+  small. See [Open questions](#open-questions).
 
 ## Dictionaries
 
@@ -223,7 +252,8 @@ The work around one propagated update runs as follows.
 | The phases of one job | The job's thread | Nothing else in the same job | Order: pre-snapshot deltas, blink flush, snapshot, post-snapshot deltas, each finished before the next starts |
 | The units of one phase | The propagation scheduler: the job's thread plus up to `BarrageMessageProducer.propagationThreads - 1` helpers from a pool every producer shares | Each other: groups and single subscriptions | `forEachInParallel` returns only when every unit has finished. A refused helper job runs on the job's thread, so a busy pool means fewer units at once, never a wait |
 | A snapshot phase's writes | The same propagation scheduler | Each other, one per growing subscription | As for units |
-| Inside a group: catch-ups, the shared encode and the copies to members | The unit's one thread, in turn | Nothing else in the group | The group's thread. Each message is captured, then copied to member 1, member 2 and so on, before the next is encoded |
+| Inside a group: catch-ups and the shared encode | The unit's one thread, in turn | Nothing else in the group | The group's thread. Each message is captured and copied to every member before the next is encoded |
+| Inside a group: copying one message to its members | The group's thread, plus propagation helpers when the round reaches `parallelCopyMinBytes` | Each other; the group's thread waits for the round | `invokeParallel` returns only when every copy of the round has run. A refused helper job runs on the group's thread |
 | Inside a single subscription: encoding and handing to gRPC | The unit's one thread | Nothing else for that subscription | The gRPC stream's lock in `MessageViewAdapter` |
 | Filling a shared dictionary | Whichever unit's thread writes a batch referencing it | Other units filling or copying the same dictionary | `SharedWriterDictionary`'s monitor, held once per chunk filled and once per batch copied; its size is a volatile field read without the lock |
 | A member's dictionary states | Only its own unit's thread | Nothing | A member belongs to exactly one unit per phase |
@@ -233,17 +263,18 @@ What this means in practice:
 
 - **Across tables, everything can overlap.** Each producer's job is independent, and the
   propagation helpers are shared, so a busy table cannot monopolize them beyond its own phases.
-- **Within a phase, parallelism is by unit.** N identical subscribers form one unit and use one
-  thread, where N subscribers written alone would spread over up to `propagationThreads`. That
-  trades elapsed time for CPU: the group's work is about one encode plus N copies, instead of N
-  encodes.
-- **Each member's messages stay in order,** because a member is written only by its unit's thread,
-  and a group copies message k to every member before encoding message k+1.
+- **Within a phase, parallelism is by unit, and within a group by copy.** N identical subscribers
+  form one unit, whose encode runs on one thread while its copies can spread over the propagation
+  helpers. N subscribers written alone would instead spread N encodes over up to
+  `propagationThreads`. The group's work is about one encode plus N copies, instead of N encodes.
+- **Each member's messages stay in order,** because a group finishes copying message k to every
+  member, on whichever threads, before encoding message k+1, and each member gets one copy a
+  round.
 - **A split dictionary batch stays on its unit's thread.** Its messages are delivered in order,
   like the rest of the unit's.
-- **Not parallel: the copies to a group's members.** They run one after another on the group's
-  thread. [Open questions](#open-questions) describes how they could run in parallel and why that is
-  not planned.
+- **Copies share the helpers with units.** A group's copies and the phase's other units draw on
+  the same pool. A phase of many units leaves fewer helpers for copies, and a single large group can
+  use all of them. `propagationThreads` bounds both.
 
 ## Failure handling
 
@@ -254,6 +285,9 @@ What this means in practice:
 - **A failure delivering to one member,** whether a catch-up or a shared message, fails only that
   member. It gets nothing more; the others carry on.
 - **A catch-up that fails to build** fails only the members that needed it.
+- **Failures on different threads.** With parallel copies, members of one round can fail at the
+  same time on different threads. `failSubscriber` is synchronized, so each is failed once and
+  reported alone.
 - **Once every member has failed,** the visitor throws a private sentinel to stop the encode, and
   `deliverMessageToSubscribers` catches it. `BarrageMessageWriterImpl.visitMessages` closes the messages of the
   batch it had not yet handed over, so stopping early leaks no pooled chunks. It closes them the
@@ -261,15 +295,25 @@ What this means in practice:
 
 ## Metrics and configuration
 
-The shared view calls `onWrite` once, so `WriteNanos` and `WriteBytes` are recorded once per write:
-the count is the number of writes, `WriteBytes` is the size of one copy, and `WriteNanos` includes
-copying to every member. Each catch-up records a write of its own, from building it to delivering it
-to the members owed it. Every write's `WriteBytes` counts all the messages it sends, dictionary
-batches included; before this change, a write with rows counted only its record batches.
+Each view calls `onWrite` once, when its write ends, so a write records one `WriteNanos` sample:
+the elapsed time of the write, including copying it to every member, in parallel or not. The same
+call records one `WriteBytes` sample, the size of one copy, counting every message the write
+sends, dictionary batches included. When a group's write ends, the fan-out records one more
+`WriteBytes` sample of that size for each other member still receiving, through the producer's
+`recordCopyBytes`. Each catch-up is a write of its own, recorded the same way, with its time
+running from building it to delivering it to the members owed it. So the `WriteNanos` count is
+the number of writes, and the `WriteBytes` count is the number of deliveries: one for each write
+or catch-up a member was sent.
+
+A member that fails during a write isn't counted for it, and a write abandoned because every
+member failed records nothing. A write whose remaining members all fail during its last message
+still records its own sample, since the view records it before the fan-out can see the failures.
 
 | Property | Default | Effect |
 | --- | --- | --- |
 | `BarrageMessageProducer.dedupIdenticalSubscribers` | `true` | When `false`, every subscription is written alone, on every table |
+| `BarrageMessageProducer.parallelCopyMinBytes` | `4194304` (4 MiB) | A round of copies runs in parallel when the message's size, multiplied by one less than the number of its members, reaches this. A very large value copies every round serially |
+| `BarrageMessageProducer.propagationThreads` | The number of available processors | Bounds parallel writes to subscribers and parallel copies within groups together. 1 or less turns both off |
 
 The one property covers tables with dictionary encoded columns too: dedup applies to every
 subscriber or to none.
@@ -284,84 +328,101 @@ RecordBatch. The Arrow format allows it, and the readers apply each batch on its
 | --- | --- | --- |
 | Java | `BarrageMessageReaderImpl` applies each through `DictionaryReaderRegistry.update`: a delta appends, a replacement clears and appends | By the server round-trip tests |
 | JS | `WebBarrageMessageReader.parseFrom` does the same, through the same registry | By reading the code |
-| C++ and R | Arrow's `FlightStreamReader` and IPC dictionary handling | With pyarrow 25.0.1, on spliced streams: two deltas back to back, and a replacement then a delta, both decode correctly. The C++ client's own Arrow version was not tested |
+| C++ and R | Arrow's `FlightStreamReader` and IPC dictionary handling | With pyarrow 25.0.1, on spliced streams: two deltas back to back, and a replacement then a delta, both decode correctly. Through the C++ client's own Arrow build, `encoding_test.cc` decodes split replacements, split catch-ups and the deltas that follow them |
 | Python ticking | pyarrow's `FlightStreamReader` | As for C++ |
 | C# | Apache.Arrow.Flight 23.0.0 | Not checked, including whether it reads dictionary deltas at all |
 
 ## Measurements
 
-JMH `AverageTime`, lower is better. One fork per configuration; `±` is the 99.9% confidence interval
-over that fork's iterations. Each pair ran with the property on and off, back to back, with nothing
-else loading the machine: no tests or other benchmarks ran during either.
+JMH `AverageTime`, one fork per configuration, with nothing else loading the machine.
 
 **Hardware**: Apple M1 Max, 10 cores, 64 GiB, macOS 26.6.2 (arm64). **JVM**: OpenJDK 21.0.1
-(`21.0.1+12-LTS`), G1. JMH 1.37. **Code**: this change at `435a7ee82`, on main `4bc6b7bb1`, which
-includes DH-24095. Measured 2026-10-22; runs on 2026-10-18 and 2026-10-21 agreed to within the
-noise, except as noted below.
-
-### In process
-
-`BarrageMessageProducerPropagateBenchmark.tick`: a real producer on a `TestControlledScheduler`,
-200,000 rows by 50 columns, 20,000 rows modified in every column per tick, every subscriber full.
-Each subscriber drains into a sink that copies into a small scratch array, standing in for gRPC's
-copy. `-Xmx8g`, 5×3 s warmup, 5×3 s measurement, `-prof gc`. `dictString` columns hold strings from
-a pool of 1,000 values, dictionary encoded. Milliseconds per tick:
-
-| Columns | Threads | Subscribers | Dedup off | Dedup on | Speedup | Allocated per tick, off / on |
-| --- | --- | --- | --- | --- | --- | --- |
-| `long` | 1 | 1 | 5.8 ± 0.6 | 5.9 ± 0.7 | 1.0x | 420 / 420 MB |
-| `long` | 1 | 4 | 21.5 ± 0.6 | 6.9 ± 0.2 | 3.1x | 421 / 428 MB |
-| `long` | 1 | 16 | 86.4 ± 2.2 | 9.2 ± 0.2 | 9.4x | 427 / 428 MB |
-| `long` | 4 | 1 | 5.7 ± 0.6 | 5.8 ± 0.8 | 1.0x | 420 / 420 MB |
-| `long` | 4 | 4 | 5.9 ± 0.1 | 6.9 ± 0.1 | 0.9x | 421 / 428 MB |
-| `long` | 4 | 16 | 22.5 ± 0.1 | 9.1 ± 1.2 | 2.5x | 427 / 428 MB |
-| `dictString` | 1 | 1 | 21.4 ± 0.4 | 22.6 ± 2.0 | 0.9x | 315 / 315 MB |
-| `dictString` | 1 | 4 | 83.9 ± 5.4 | 22.1 ± 0.6 | 3.8x | 317 / 319 MB |
-| `dictString` | 1 | 16 | 320.0 ± 10.3 | 23.8 ± 4.7 | 13.4x | 323 / 319 MB |
-| `dictString` | 4 | 1 | 22.2 ± 0.9 | 21.8 ± 2.2 | 1.0x | 315 / 315 MB |
-| `dictString` | 4 | 4 | 22.9 ± 1.8 | 21.8 ± 0.2 | 1.0x | 317 / 319 MB |
-| `dictString` | 4 | 16 | 84.1 ± 6.9 | 23.0 ± 0.2 | 3.7x | 322 / 319 MB |
-
-Most of the allocation is the benchmark's own table update; the capture arrays add about one message
-per write, about 7 MB per tick for `long`.
+(`21.0.1+12-LTS`), G1. JMH 1.37. **Code**: this change, parallel copies included, on main
+`4bc6b7bb1`, which includes DH-24095. Measured 2026-10-22.
 
 ### Through gRPC
 
 `BarrageGrpcPropagateBenchmark.tick`: 1M rows of 30 mixed columns, including a dictionary encoded
 and a run-end encoded column, 100,000 rows modified per tick, about 16 MB per subscriber, written
 through a real gRPC Netty transport to clients on the loopback interface. `-Xmx12g`, 2×5 s warmup,
-3×5 s measurement. The table reports the producer's job time per tick, averaged over 24–53
-invocations; the overall tick also includes the clients receiving the bytes, on the same cores, and
-its confidence intervals are too wide to compare.
+3×5 s measurement. Each update is two record batches: the writer's first, of 4,096 rows and about
+0.66 MB, then the rest. It ran three times: with dedup off; with dedup on and `parallelCopyMinBytes`
+at `Long.MAX_VALUE`, so every round of copies is serial; and as shipped. The table reports the
+producer's job time per tick, averaged over 6 to 54 invocations. The overall tick also includes the
+clients receiving the bytes, on the same cores, and its confidence intervals are too wide to compare.
+With one thread the scheduler runs every job inline, so both dedup-on runs copy serially there.
 
-| Threads | Subscribers | Dedup off (ms) | Dedup on (ms) | Speedup |
+| Threads | Subscribers | Dedup off (ms) | Dedup on, serial copies (ms) | Dedup on (ms) | Speedup over dedup off | Parallel over serial copies |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 1 | 31.5 | 31.2 | 32.2 | 0.98x | 0.97x |
+| 1 | 2 | 61.2 | 35.4 | 36.3 | 1.68x | 0.98x |
+| 1 | 3 | 83.3 | 37.8 | 35.9 | 2.32x | 1.05x |
+| 1 | 4 | 112.8 | 36.8 | 37.0 | 3.05x | 1.00x |
+| 1 | 8 | 194.0 | 43.2 | 46.1 | 4.21x | 0.94x |
+| 1 | 16 | 367.3 | 57.9 | 58.2 | 6.32x | 1.00x |
+| 1 | 128 | 2642.1 | 297.5 | 261.6 | 10.10x | 1.14x |
+| 8 | 1 | 31.8 | 31.3 | 31.8 | 1.00x | 0.99x |
+| 8 | 2 | 32.3 | 37.0 | 32.2 | 1.00x | 1.15x |
+| 8 | 3 | 37.7 | 37.5 | 33.4 | 1.13x | 1.12x |
+| 8 | 4 | 33.2 | 36.5 | 32.2 | 1.03x | 1.13x |
+| 8 | 8 | 39.1 | 43.2 | 33.9 | 1.15x | 1.28x |
+| 8 | 16 | 77.5 | 57.8 | 38.4 | 2.02x | 1.51x |
+| 8 | 128 | 584.7 | 303.4 | 123.5 | 4.74x | 2.46x |
+
+### Parallel copy threshold
+
+`BarrageGrpcPropagateBenchmark.tick` with dedup on and 8 threads, 1M rows, run once with
+`parallelCopyMinBytes` at `Long.MAX_VALUE`, so every round of copies is serial, and once at `0`, so
+every round is parallel. The table reports the producer's job time per tick, as in
+[Through gRPC](#through-grpc). An update of more than 4,096 rows is two record batches, and each is
+copied in a round of its own, so the table gives each round's size: the batch's size multiplied by
+one less than the number of subscribers.
+
+| Rows per tick | Subscribers | Copied off the group's thread, per round | Serial copies (ms) | Parallel copies (ms) | Speedup |
+| --- | --- | --- | --- | --- | --- |
+| 1,000 | 2 | 0.16 MB | 0.93 | 0.88 | 1.06x |
+| 1,000 | 4 | 0.49 MB | 1.10 | 1.03 | 1.07x |
+| 1,000 | 16 | 2.45 MB | 1.00 | 1.09 | 0.92x |
+| 10,000 | 2 | 0.66 MB and 0.95 MB | 4.21 | 4.03 | 1.05x |
+| 10,000 | 4 | 1.98 MB and 2.85 MB | 5.17 | 3.96 | 1.31x |
+| 10,000 | 16 | 9.88 MB and 14.24 MB | 7.05 | 5.02 | 1.40x |
+| 100,000 | 2 | 0.66 MB and 15.39 MB | 34.36 | 33.47 | 1.03x |
+| 100,000 | 4 | 1.97 MB and 46.18 MB | 38.27 | 32.75 | 1.17x |
+| 100,000 | 16 | 9.86 MB and 230.90 MB | 61.10 | 43.40 | 1.41x |
+
+Above 4 MiB, every update with four or more subscribers gained, by 1.17x to 1.41x. With two
+subscribers only one copy moves off the group's thread, and the gain was at most 6% at any size,
+within the noise.
+
+Below 4 MiB the results were small and mixed. The one loss was the 2.45 MB round of fifteen copies of
+a 0.16 MB message, and the largest gain the 1.98 MB and 2.85 MB rounds of three copies each, so a
+round's size alone does not separate them. Run again with three forks each, both came out within
+the spread between forks:
+
+| Rows per tick | Subscribers | Serial copies, per fork (ms) | Parallel copies, per fork (ms) | Speedup |
 | --- | --- | --- | --- | --- |
-| 1 | 1 | 31.4 | 31.1 | 1.01x |
-| 1 | 4 | 111.7 | 38.2 | 2.92x |
-| 1 | 16 | 369.7 | 65.6 | 5.63x |
-| 8 | 1 | 30.9 | 31.0 | 1.00x |
-| 8 | 4 | 32.8 | 36.7 | 0.89x |
-| 8 | 16 | 71.8 | 56.4 | 1.27x |
+| 1,000 | 16 | 0.96, 0.93, 1.08 | 1.07, 1.02, 1.01 | 0.95x |
+| 10,000 | 4 | 4.26, 4.66, 4.75 | 4.65, 3.90, 3.95 | 1.10x |
+
+So the default stays at 4 MiB: below it, parallel copies moved a round's time by about a tenth at
+most, in either direction, and above it every update with four or more subscribers gained.
 
 ### What the numbers show
 
 - **CPU per extra identical subscriber drops by about 90%.** On one thread, where job time is close
-  to CPU time, each extra subscriber costs about 23–27 ms without dedup and about 2.3 ms with it
-  through gRPC. In process it falls from 5.4 to 0.22 ms for `long` and from 19.9 to 0.08 ms for
-  `dictString`. The saving grows with the number of identical subscribers; extending the gRPC line,
-  128 of them would cost about 2.9 s of CPU per tick without dedup and about 0.3 s with it.
-- **One subscriber is not affected.** It takes the per-subscriber path, so the differences in those
-  rows are noise.
-- **Elapsed time can be slightly worse when threads are plentiful.** With about as many threads as
-  subscribers, the per-subscriber writes ran fully in parallel, while a group does one encode and
-  then copies serially. That shows as 0.86x for `long` columns at 4 subscribers on 4 threads and
-  0.89x through gRPC at 4 subscribers on 8 threads, while the group uses about a third of the CPU:
-  38.2 ms against 111.7 ms on one thread.
-- **Noise.** One fork per configuration is enough for effects of 3–14x but not for differences of
-  10%. The 16-subscriber, 8-thread gRPC run without dedup varied most between runs: 118.1 ms on
-  2026-10-18, 89.3 ms on 2026-10-21 and 71.8 ms here. With dedup, the 16-subscriber, 1-thread gRPC
-  run moved from 59.0 to 65.6 ms between the last two runs, while the in-process runs, which share
-  its code path but leave out the transport and the clients, did not move.
+  to CPU time, each extra subscriber costs about 21–22 ms per update without dedup and about
+  1.7–1.8 ms with it. The saving grows with the number of identical subscribers: at 128, a tick
+  takes 2.6 s of the producer's time without dedup and 0.26 s with it.
+- **One subscriber is not affected.** It takes the per-subscriber path in every run, so the
+  differences in those rows are noise.
+- **Parallel copies remove dedup's elapsed-time cost for small groups.** On 8 threads, writes
+  without dedup overlap until subscribers outnumber threads, so dedup with serial copies was up to
+  13% slower at 2–8 subscribers. With parallel copies dedup is never slower: 1.00–1.15x at 2–8
+  subscribers, 2.02x at 16 and 4.74x at 128. Against serial copies, parallel copies are 1.12–1.15x
+  faster at 2–4 subscribers, 1.28x at 8, 1.51x at 16 and 2.46x at 128.
+- **Noise.** One fork per configuration is enough for effects of 2–10x, not for differences of
+  10%. With one thread both dedup-on runs copy serially, so their ratio measures the noise: within
+  6% up to 16 subscribers, and 14% at 128, where each run averaged only 6 to 26 invocations.
 
 ## Decisions recorded
 
@@ -375,44 +436,50 @@ its confidence intervals are too wide to compare.
 | Fail every member on a write failure | Members share byte-identical inputs, so a retry per member would fail the same way |
 | Catch up to the highest offset, never down to the lowest | Starting lower would make members that hold those values append them again |
 | Catch-ups before the shared write | Arrow needs a dictionary before a RecordBatch references it, and the range below H is stable then |
-| Metrics once per write | The write count then shows the dedup, which is the signal the ticket used |
+| `WriteNanos` once per write, `WriteBytes` once per delivery | The `WriteNanos` count falls from one per subscriber to one per group, which shows the dedup at work, while `WriteBytes` still reads as it would without sharing: one sample of each subscriber's bytes for each write it is sent |
 | One switch, for every table | Dedup applies to every subscriber or to none; a separate mode for dictionary encoded tables would be one more configuration to test and support |
 | `getDictionaryBatchView` abstract | A writer that lacks it fails to compile, rather than failing every member that needs a catch-up |
-| Copy to members serially | The encode saving dominates; parallel copies would add coordination cost to every update for a gain only on large updates to many subscribers |
+| Copy to members in parallel, above 4 MiB | Through gRPC on 8 threads, parallel copies make a group's write 1.12–1.15x faster than serial copies at 2–4 members, 1.51x at 16 and 2.46x at 128, and remove dedup's elapsed-time cost for small groups. Below 4 MiB a round gained or lost at most about 10%, within the noise of three forks |
+| Measure a round as message size × (members − 1) | That is what moves off the group's thread, which copies one share itself. A size alone would keep a small message to many members serial, and would parallelize a large message to two members that gains only one copy |
+| Copy on the phase's scheduler, passed unconditionally | `propagationThreads` of 1 then turns off parallel copies along with parallel writes, with no separate switch to configure |
 
 ## Open questions
 
-- **Parallel copies within a group.** Through gRPC a copy costs about 1.7–2.3 ms per member, so at 16
-  members on 8 threads the serial copies are about 25–35 ms of a 56 ms job. They could run in
-  parallel: after capturing message k, helper jobs on the propagation scheduler claim members from a
-  per-round counter and copy to them. With pipelining, the group's thread returns to encode message
-  k+1 while round k is still copying, and before starting round k+1 it claims any members of round k
-  not yet claimed and waits only for copies already running. That cannot deadlock, because the helper
-  pool has no queue and a refused job runs on the submitting thread. It would hold two captured
-  messages per group instead of one, need thread-safe failure bookkeeping, and help only when
-  members × message size is large; small updates would get slower. Not planned.
+- **Pipelining copies with the encode.** The group's thread could encode message k+1 while round k
+  is still copying, helping with any copies of round k not yet claimed before it starts round k+1. It
+  would hold two captured messages per group instead of one, and it helps only updates of many
+  similar messages; the benchmark's updates are one or two messages, where parallel copies take
+  nearly all the gain. Not planned.
+- **Refused hand-offs.** `ExecutorJobScheduler.newHelperPool` keeps the `ThreadPoolExecutor`'s
+  default `AbortPolicy`, so each job a busy pool refuses costs a `RejectedExecutionException` with a
+  formatted message and a stack trace. A rejection without either would cut that cost for parallel
+  copies and parallel writes to subscribers alike. It is engine code, not changed here.
 - **The staging copy's size.** Capping the message size for grouped writes would bound it, and
   capturing into pooled 1 MB segments would avoid G1's humongous allocations. Neither is
   implemented.
-- **Clients not tested.** No Python ticking, C++, C# or JS test exercises two dictionary batches for
-  one id back to back; the C# reader's support for dictionary deltas at all is unknown.
+- **Clients not tested.** The C++ client's `encoding_test.cc` subscribes through the client's own
+  Arrow build to a table whose writes split their dictionary batches and send catch-ups. No Python
+  ticking, C# or JS test exercises two dictionary batches for one id back to back, and the C#
+  reader's support for dictionary deltas at all is unknown.
 
 ## Re-running
 
 ```bash
-# in process; add -p threads=... -p subscribers=... to narrow the matrix
-./gradlew :extensions-barrage-benchmark:jmhRunBarrageProducerPropagate --args="BarrageMessageProducerPropagateBenchmark.tick \
-    -p mix=full -p subscribers=1,4,16 -p threads=1,4 -p columnType=long,dictString -prof gc \
+# through gRPC: run with dedup off; with dedup on and parallelCopyMinBytes=9223372036854775807, for
+# serial copies; and with dedup on and the default threshold
+./gradlew :extensions-barrage-benchmark:jmhRunBarrageGrpcPropagate --args="BarrageGrpcPropagateBenchmark.tick \
+    -p subscribers=1,2,3,4,8,16,128 -p threads=1,8 -p rows=1000000 -p deltaRows=100000 -wi 2 -i 3 -w 5 -r 5 \
     -jvmArgsPrepend -DBarrageMessageProducer.dedupIdenticalSubscribers=false"
 
-# through gRPC
+# the parallel copy threshold: run with parallelCopyMinBytes=9223372036854775807, then with 0;
+# the three-fork check adds -f 3 and narrows the matrix to its two cases
 ./gradlew :extensions-barrage-benchmark:jmhRunBarrageGrpcPropagate --args="BarrageGrpcPropagateBenchmark.tick \
-    -p subscribers=1,4,16 -p threads=1,8 -p rows=1000000 -p deltaRows=100000 -wi 2 -i 3 -w 5 -r 5 \
-    -jvmArgsPrepend -DBarrageMessageProducer.dedupIdenticalSubscribers=false"
+    -p subscribers=2,4,16 -p threads=8 -p rows=1000000 -p deltaRows=1000,10000,100000 -wi 2 -i 3 -w 5 -r 5 \
+    -jvmArgsPrepend -DBarrageMessageProducer.parallelCopyMinBytes=9223372036854775807"
 ```
 
-Run each with the property `true` and `false`. Pass it with `-jvmArgsPrepend`: `-jvmArgsAppend` would
-replace the fork's own arguments, including its heap size and, for the in-process benchmark,
-`subscriptionGrowthEnabled=false`. Each side of each benchmark takes about 7 minutes. Run nothing
-else on the machine meanwhile, and never run Gradle against `:extensions-barrage-benchmark` while a
-JMH run of it is live: it rewrites the fork's classpath.
+Pass each property with its own `-jvmArgsPrepend`: `-jvmArgsAppend` would replace the fork's own
+arguments, including its heap size. Each run of the gRPC matrix takes about 9 minutes, and each run
+of the threshold sweep about 5. Run nothing else on the machine meanwhile, and never run Gradle
+against `:extensions-barrage-benchmark` while a JMH run of it is live: it rewrites the fork's
+classpath.
