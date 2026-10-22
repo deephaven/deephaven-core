@@ -156,6 +156,83 @@ public class BarrageMessageWriterImplTest {
         }
     }
 
+    /**
+     * A dictionary batch that would reach the maximum message size is split by position into several under it: the
+     * first keeps the replacement flag, the rest append, and together they carry every value once.
+     */
+    @Test
+    public void testALargeDictionaryBatchIsSplitUnderTheMessageLimit() throws IOException {
+        final int limit = 2048;
+        final BarrageSubscriptionOptions small = BarrageSubscriptionOptions.builder().maxMessageSize(limit).build();
+        final String[] values = new String[1000];
+        for (int ii = 0; ii < values.length; ++ii) {
+            values[ii] = String.format("value-%05d", ii);
+        }
+        final ChunkWriter<Chunk<Values>>[] writers = chunkWriters();
+        final DictionaryChunkWriter dictionaryWriter = (DictionaryChunkWriter) (ChunkWriter<?>) writers[2];
+        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
+                delta(columns(0, 1, 2)), writers, BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
+            final List<byte[]> messages = drain(writer.getDictionaryBatchView(small, DICT_ID,
+                    dictionaryWriter.getValuesWriter(), strings(values), false));
+            assertThat(messages.size()).isGreaterThan(1);
+            int total = 0;
+            for (int mi = 0; mi < messages.size(); ++mi) {
+                assertThat(messages.get(mi).length).isLessThan(limit);
+                final DictionaryBatch batch = dictionaryBatch(messages.get(mi));
+                assertThat(batch.id()).isEqualTo(DICT_ID);
+                assertThat(batch.isDelta()).isEqualTo(mi > 0);
+                total += batch.data().length();
+            }
+            assertThat(total).isEqualTo(values.length);
+        }
+    }
+
+    /** No dictionary batch carries more values than the batch size, however far under the message limit it is. */
+    @Test
+    public void testADictionaryBatchCarriesNoMoreValuesThanTheBatchSize() throws IOException {
+        final BarrageSubscriptionOptions batchesOf100 = BarrageSubscriptionOptions.builder().batchSize(100).build();
+        final String[] values = new String[1000];
+        for (int ii = 0; ii < values.length; ++ii) {
+            values[ii] = String.format("value-%05d", ii);
+        }
+        final ChunkWriter<Chunk<Values>>[] writers = chunkWriters();
+        final DictionaryChunkWriter dictionaryWriter = (DictionaryChunkWriter) (ChunkWriter<?>) writers[2];
+        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
+                delta(columns(0, 1, 2)), writers, BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
+            final List<byte[]> messages = drain(writer.getDictionaryBatchView(batchesOf100, DICT_ID,
+                    dictionaryWriter.getValuesWriter(), strings(values), false));
+            assertThat(messages).hasSize(10);
+            for (int mi = 0; mi < messages.size(); ++mi) {
+                final DictionaryBatch batch = dictionaryBatch(messages.get(mi));
+                assertThat(batch.data().length()).isEqualTo(100);
+                assertThat(batch.isDelta()).isEqualTo(mi > 0);
+            }
+        }
+    }
+
+    /** A dictionary value too large for a message under the limit is sent in a message of its own. */
+    @Test
+    public void testADictionaryValueTooLargeForTheMessageLimitIsSentAlone() throws IOException {
+        final int limit = 1024;
+        final BarrageSubscriptionOptions small = BarrageSubscriptionOptions.builder().maxMessageSize(limit).build();
+        final ChunkWriter<Chunk<Values>>[] writers = chunkWriters();
+        final DictionaryChunkWriter dictionaryWriter = (DictionaryChunkWriter) (ChunkWriter<?>) writers[2];
+        try (final BarrageMessageWriter writer = new BarrageMessageWriterImpl(
+                delta(columns(0, 1, 2)), writers, BarrageMessageWriter.WriteMetricsConsumer.NO_OP)) {
+            final List<byte[]> messages = drain(writer.getDictionaryBatchView(small, DICT_ID,
+                    dictionaryWriter.getValuesWriter(), strings("a", "x".repeat(4 * limit), "b"), true));
+            assertThat(messages).hasSize(3);
+            for (int mi = 0; mi < messages.size(); ++mi) {
+                final DictionaryBatch batch = dictionaryBatch(messages.get(mi));
+                assertThat(batch.data().length()).isEqualTo(1);
+                assertThat(batch.isDelta()).isTrue();
+            }
+            assertThat(messages.get(0).length).isLessThan(limit);
+            assertThat(messages.get(1).length).isGreaterThan(limit);
+            assertThat(messages.get(2).length).isLessThan(limit);
+        }
+    }
+
     private static Message flightMessage(final byte[] flightData) throws IOException {
         final Flight.FlightData data = Flight.FlightData.parseFrom(flightData);
         return Message.getRootAsMessage(data.getDataHeader().asReadOnlyByteBuffer());

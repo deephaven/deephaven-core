@@ -205,7 +205,9 @@ lacks it fails to compile rather than failing group members at runtime.
 
 A client is likely to reject a message over its inbound limit, so a dictionary's pending delta is
 held to `maxMessageSize` as record batches are. A delta over the limit is split into several
-batches under it: the first keeps the replacement or delta flag, and the rest are deltas. That
+batches under it: the first keeps the replacement or delta flag, and the rest are deltas. A batch
+also carries no more values than the subscription's batch size, as a record batch carries no more
+rows. That
 covers both the regular path and the catch-ups, so a catch-up can be several messages, delivered in
 order.
 

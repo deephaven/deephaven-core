@@ -41,11 +41,10 @@ import java.util.List;
  * same indices; what differs between subscribers is only how many of each dictionary's values each has been sent.
  * {@link #synchronizeDictionaries} brings the subscribers level before the message is written. For each dictionary id
  * it finds the highest offset any subscriber has reached, {@code H}, and gives every subscriber below {@code H} one
- * catch-up DictionaryBatch of the values from its own offset up to {@code H}: a delta for a subscriber that has been
- * sent a batch, a full replacement from zero for one that needs a full batch. The group's registry then starts at
- * {@code H}, so the message carries only what is new beyond it, which is the same for every subscriber. Once the
- * message has been written to a subscriber, {@link #advanceSubscriberDictionaries} moves the subscriber's states to the
- * group's.
+ * catch-up of the values from its own offset up to {@code H}: a delta for a subscriber that has been sent a batch, a
+ * full replacement from zero for one that needs a full batch. The group's registry then starts at {@code H}, so the
+ * message carries only what is new beyond it, which is the same for every subscriber. Once the message has been written
+ * to a subscriber, {@link #advanceSubscriberDictionaries} moves the subscriber's states to the group's.
  *
  * <p>
  * The group never starts below {@code H}: a subscriber that already holds the values between a lower offset and
@@ -237,9 +236,9 @@ final class SharedMessageFanOut {
                     deltaSubIndices.add(si);
                 }
             }
-            // subscribers holding no values are sent [0, H) as a replacement, one batch for all of them
+            // subscribers holding no values are sent [0, H) as a replacement, one catch-up for all of them
             deliverDictionaryToSubscribers(bmw, options, shared, valuesWriter, 0, high, false, fullSubIndices);
-            // subscribers holding [0, k) are sent [k, H) as a delta, one batch for all the subscribers at the same
+            // subscribers holding [0, k) are sent [k, H) as a delta, one catch-up for all the subscribers at the same
             // offset k
             for (final Int2ObjectMap.Entry<IntArrayList> entry : deltaSubIndicesByOffset.int2ObjectEntrySet()) {
                 deliverDictionaryToSubscribers(bmw, options, shared, valuesWriter, entry.getIntKey(), high, true,
@@ -250,9 +249,10 @@ final class SharedMessageFanOut {
     }
 
     /**
-     * Sends {@code subIndices} one DictionaryBatch of {@code shared}'s values in {@code [fromOffset, toOffset)}. The
-     * batch is built only if one of them is still receiving, and a failure building or writing it fails only
-     * {@code subIndices}, since only they were owed it.
+     * Sends {@code subIndices} a catch-up of {@code shared}'s values in {@code [fromOffset, toOffset)}: one
+     * DictionaryBatch, or several when one would exceed the maximum message size. The catch-up is built only if one of
+     * them is still receiving, and a failure building or writing it fails only {@code subIndices}, since only they were
+     * owed it.
      */
     private void deliverDictionaryToSubscribers(
             @NotNull final BarrageMessageWriter bmw,

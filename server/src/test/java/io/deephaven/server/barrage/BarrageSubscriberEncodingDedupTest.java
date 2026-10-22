@@ -418,6 +418,63 @@ public class BarrageSubscriberEncodingDedupTest extends BarrageMessageRoundTripT
         }
     }
 
+    /**
+     * With a small maximum message size, a dictionary batch too large for one message is split into several, and every
+     * subscriber still decodes every value: one written alone, the members of a group, and a member that joins late and
+     * is caught up.
+     */
+    @Test
+    public void testDictionaryBatchesOverTheMessageLimitAreSplit() {
+        final int size = 400;
+        final Random random = new Random(3);
+        final ColumnInfo<?, ?>[] columnInfo = initColumnInfos(new String[] {"Str", "intCol"},
+                new StringGenerator(),
+                new IntGenerator(0, 100));
+        final QueryTable source = getTable(size, random, columnInfo);
+        source.setAttribute(Table.BARRAGE_SCHEMA_ATTRIBUTE, dictionaryEncodedSchema(source.getDefinition(), "Str"));
+        final BarrageMessageProducer producer = newProducer(source, new RecordingWriterFactory());
+
+        final BarrageSubscriptionOptions small = optionsBuilder().maxMessageSize(2048).build();
+        final List<RemoteClient> clients = new ArrayList<>();
+        for (int ci = 0; ci < 3; ++ci) {
+            clients.add(new RemoteClient(null, allColumns(source), producer, source, "full-" + ci, false, false,
+                    small));
+        }
+        final RemoteClient viewport = new RemoteClient(RowSetFactory.fromRange(0, 199), allColumns(source), producer,
+                source, "viewport", false, false, small);
+        clients.add(viewport);
+        flushProducerTable();
+        deliverAndValidate("initial", source, clients);
+        // A subscriber written alone is sent no catch-ups, so two dictionary batches in a row are one split batch; its
+        // 200
+        // rows hold about 200 distinct values of the only dictionary column, too many for one message under the limit.
+        assertTrue("the viewport's first dictionary batch was split", hasConsecutiveDictionaryBatches(viewport));
+
+        for (int step = 0; step < 20; ++step) {
+            if (step == 10) {
+                clients.add(new RemoteClient(null, allColumns(source), producer, source, "late", false, false,
+                        small));
+            }
+            randomStep(source, columnInfo, size, random);
+            deliverAndValidate("step " + step, source, clients);
+        }
+        for (final RemoteClient client : clients) {
+            assertTrue(client.name, client.dummyObserver.errors.isEmpty());
+        }
+    }
+
+    /** Whether {@code client} was sent two dictionary batches in a row. */
+    private static boolean hasConsecutiveDictionaryBatches(final RemoteClient client) {
+        final List<Byte> observed = client.dummyObserver.observedHeaderTypes;
+        for (int ii = 1; ii < observed.size(); ++ii) {
+            if (observed.get(ii - 1) == MessageHeader.DictionaryBatch
+                    && observed.get(ii) == MessageHeader.DictionaryBatch) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // ---- helpers ----
 
     private ControlledUpdateGraph updateGraph() {

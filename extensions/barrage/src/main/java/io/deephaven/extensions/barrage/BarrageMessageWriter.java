@@ -193,18 +193,22 @@ public interface BarrageMessageWriter extends SafeCloseable {
             @Nullable DictionaryWriterRegistry dictionaryRegistry);
 
     /**
-     * Obtain a {@link MessageView} of one standalone DictionaryBatch carrying {@code values} for dictionary
+     * Obtain a {@link MessageView} of standalone DictionaryBatches carrying {@code values} for dictionary
      * {@code dictId}, framed like this writer's other messages. A producer that writes one message for several
      * subscribers sends these first, to bring each subscriber's dictionary level with the others'.
      * <p>
+     * The values make one DictionaryBatch, or several when one would reach the maximum message size {@code options}
+     * allow or carry more values than their batch size, as a message's rows are split into record batches. Only the
+     * first replaces the dictionary when {@code isDelta} is {@code false}; the rest append to it.
+     * <p>
      * Takes ownership of {@code values}. The returned view must be visited exactly once.
      *
-     * @param options serialization options for the values
+     * @param options serialization options for the values, including the maximum message size
      * @param dictId the dictionary id
      * @param valuesWriter the writer for the dictionary's values
      * @param values the values to send
      * @param isDelta whether the values append to the dictionary the subscriber holds, rather than replace it
-     * @return a MessageView of one DictionaryBatch
+     * @return a MessageView of the DictionaryBatches, one stream each
      */
     MessageView getDictionaryBatchView(
             BarrageOptions options,

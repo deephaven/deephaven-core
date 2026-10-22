@@ -168,9 +168,9 @@ The server copies a shared write to its subscribers one message at a time:
 - Each message holds exactly one batch, either a record batch or a dictionary batch. A message never holds both.
 - For a table with dictionary-encoded columns, each dictionary batch is its own message, sent ahead of the record batch that uses its values.
 - The server copies each message to every subscriber before it writes the next, so sharing holds at most one extra batch in memory for each write in progress.
-- A record batch is no larger than the subscriber's maximum message size, which is `BarrageMessageWriterImpl.maxOutboundMessageSize` unless the subscriber sets its own (see [Message batching](#message-batching)). The exception is a single row too large to fit, which the server sends anyway.
+- A record batch or dictionary batch is no larger than the subscriber's maximum message size, which is `BarrageMessageWriterImpl.maxOutboundMessageSize` unless the subscriber sets its own (see [Message batching](#message-batching)). The exception is a single row, or a single dictionary value, too large to fit, which the server sends anyway.
 
-When a table has dictionary-encoded columns, subscribers that share a write may have been sent different amounts of each dictionary, for example when one of them subscribed more recently. Before the shared write, the server sends each subscriber that is behind one message per dictionary with the values it lacks. After that, subscribers that share a write stay level, so they need no more of these messages until another subscriber joins them.
+When a table has dictionary-encoded columns, subscribers that share a write may have been sent different amounts of each dictionary, for example when one of them subscribed more recently. Before the shared write, the server sends each subscriber that is behind the values it lacks: one message per dictionary, or several when the values would exceed the maximum message size. After that, subscribers that share a write stay level, so they need no more of these messages until another subscriber joins them.
 
 - `-DBarrageMessageProducer.dedupIdenticalSubscribers`: When `true` (the default), identical full-table subscribers share one write of each update. When `false`, every subscriber gets a write of its own.
 
@@ -187,9 +187,9 @@ The following properties control other aspects of Barrage behavior:
 
 ### Message batching
 
-- `-DBarrageMessageWriterImpl.batchSize`: Maximum rows per Arrow record batch. Default: `Integer.MAX_VALUE`. Reduce this if clients have trouble processing very large batches.
+- `-DBarrageMessageWriterImpl.batchSize`: Maximum rows per Arrow record batch, and values per dictionary batch. Default: `Integer.MAX_VALUE`. Reduce this if clients have trouble processing very large batches.
 - `-DBarrageMessageWriterImpl.initialBatchSize`: Initial batch size for the first message. Default: `4096`. A smaller initial batch ensures clients receive data quickly while the server calibrates optimal batch sizes.
-- `-DBarrageMessageWriterImpl.maxOutboundMessageSize`: Maximum size (in bytes) for outbound messages. Default: `104857600` (100 MB). This matches the default incoming message limit for Java clients.
+- `-DBarrageMessageWriterImpl.maxOutboundMessageSize`: Maximum size (in bytes) for outbound messages. Default: `104857600` (100 MB). This matches the default incoming message limit for Java clients. The server splits record batches, and the dictionary batches of dictionary-encoded columns, to stay under it.
 
 ## Troubleshooting
 
