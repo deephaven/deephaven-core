@@ -48,8 +48,15 @@ public final class TableSubscription extends AbstractTableSubscription {
 
     public static TableSubscription createTableSubscription(DataOptions.SubscriptionOptions options,
             JsTable existingTable) {
-        WorkerConnection connection = existingTable.getConnection();
-        ClientTableState tableState = existingTable.state();
+        return createTableSubscription(options, existingTable.getConnection(), existingTable.state());
+    }
+
+    /**
+     * Creates a full subscription on a state; nothing about the owning table is needed.
+     */
+    @JsIgnore
+    public static TableSubscription createTableSubscription(DataOptions.SubscriptionOptions options,
+            WorkerConnection connection, ClientTableState tableState) {
         ClientTableState previewedState = createPreview(connection, tableState, options.previewOptions);
 
         return new TableSubscription(previewedState, connection, options);

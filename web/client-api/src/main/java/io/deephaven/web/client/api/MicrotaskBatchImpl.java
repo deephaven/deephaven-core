@@ -13,6 +13,7 @@ import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
+import io.deephaven.web.client.api.subscription.DataOptions;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import io.deephaven.web.client.fu.JsLog;
@@ -277,14 +278,21 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
 
         @Override
         public TableViewportSubscription createViewportSubscription(Object options) {
-            // TODO step 4 of the CTS plan: subscriptions over a state without a JsTable
-            throw new UnsupportedOperationException("createViewportSubscription on a ResolvedTable");
+            DataOptions.ViewportSubscriptionOptions copy = DataOptions.ViewportSubscriptionOptions.of(options);
+            if (copy.columns == null) {
+                throw new IllegalArgumentException("Missing 'columns' property in viewport subscription options");
+            }
+            TableViewportSubscription subscription = TableViewportSubscription.make(copy, connection, state, null);
+            // As on JsTable: the subscription is the caller's, independent of this table's lifetime
+            subscription.retainForExternalUse();
+            subscription.internalClose();
+            return subscription;
         }
 
         @Override
         public TableSubscription createSubscription(Object options) {
-            // TODO step 4 of the CTS plan: subscriptions over a state without a JsTable
-            throw new UnsupportedOperationException("createSubscription on a ResolvedTable");
+            return TableSubscription.createTableSubscription(DataOptions.SubscriptionOptions.of(options), connection,
+                    state);
         }
 
         @Override

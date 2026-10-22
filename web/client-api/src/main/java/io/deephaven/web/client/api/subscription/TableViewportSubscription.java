@@ -24,6 +24,7 @@ import io.deephaven.web.shared.data.ShiftedRange;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
+import org.jspecify.annotations.Nullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -68,9 +69,16 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     private UpdateEventData viewportData;
 
     public static TableViewportSubscription make(DataOptions.ViewportSubscriptionOptions options, JsTable jsTable) {
-        ClientTableState tableState = jsTable.state();
-        WorkerConnection connection = jsTable.getConnection();
+        return make(options, jsTable.getConnection(), jsTable.state(), jsTable);
+    }
 
+    /**
+     * Creates a viewport subscription on a state. {@code original} is the {@link JsTable} the subscription forwards
+     * events to and follows across a reconnect, or {@code null} for a table that has no such owner, such as a
+     * {@link io.deephaven.web.client.api.JsResolvedTable}.
+     */
+    public static TableViewportSubscription make(DataOptions.ViewportSubscriptionOptions options,
+            WorkerConnection connection, ClientTableState tableState, @Nullable JsTable original) {
         ClientTableState previewedState =
                 TableSubscription.createPreview(connection, tableState, options.previewOptions);
 
@@ -90,21 +98,30 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             stateToSubscribe = previewedState;
         }
 
-        TableViewportSubscription sub = new TableViewportSubscription(stateToSubscribe, connection, jsTable);
+        TableViewportSubscription sub = new TableViewportSubscription(stateToSubscribe, connection, original);
         sub.setInternalViewport(options);
         return sub;
     }
 
-    public TableViewportSubscription(ClientTableState state, WorkerConnection connection, JsTable existingTable) {
+    public TableViewportSubscription(ClientTableState state, WorkerConnection connection,
+            @Nullable JsTable existingTable) {
         super(SubscriptionType.VIEWPORT_SUBSCRIPTION, state, connection);
         this.original = existingTable;
 
-        initialState = existingTable.state();
-        this.reconnectSubscription = existingTable.addEventListener(JsTable.EVENT_RECONNECT, e -> {
-            if (existingTable.state() == initialState) {
-                revive();
-            }
-        });
+        if (existingTable == null) {
+            // No owning table: nothing to forward events to, and nothing to follow on reconnect yet
+            // TODO reconnect for subscriptions owned by a ResolvedTable, once batch-created states revive
+            originalActive = false;
+            initialState = state;
+            reconnectSubscription = null;
+        } else {
+            initialState = existingTable.state();
+            this.reconnectSubscription = existingTable.addEventListener(JsTable.EVENT_RECONNECT, e -> {
+                if (existingTable.state() == initialState) {
+                    revive();
+                }
+            });
+        }
     }
 
     // Expose this as public
@@ -337,7 +354,9 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         // indicate that the base table shouldn't get events anymore, even if it is still retained elsewhere
         originalActive = false;
 
-        reconnectSubscription.remove();
+        if (reconnectSubscription != null) {
+            reconnectSubscription.remove();
+        }
 
         if (retained || isClosed()) {
             // the JsTable has indicated it is no longer interested in this viewport, but other calling
@@ -385,6 +404,9 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         }
         options.columns = Js.uncheckedCast(columns);
         options.isReverseViewport = false;
-        return original.createSnapshot(options);
+        if (original != null) {
+            return original.createSnapshot(options);
+        }
+        return createSnapshot(connection(), state(), options);
     }
 }
