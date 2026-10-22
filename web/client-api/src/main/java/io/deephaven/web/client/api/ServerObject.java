@@ -83,14 +83,14 @@ public interface ServerObject {
 
         @TsUnionMember
         @JsOverlay
-        default JsPendingTable asPendingTable() {
-            return (JsPendingTable) this;
+        default JsPendingTable<?> asPendingTable() {
+            return (JsPendingTable<?>) this;
         }
 
         @TsUnionMember
         @JsOverlay
-        default JsImmutableTable asImmutableTable() {
-            return (JsImmutableTable) this;
+        default JsResolvedTable asResolvedTable() {
+            return (JsResolvedTable) this;
         }
     }
 }

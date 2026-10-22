@@ -482,7 +482,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 Js.uncheckedCast(keyTableColumns.map((p0, p1) -> p0.getName())),
                 Js.uncheckedCast(keyTableColumns.map((p0, p1) -> p0.getType())),
                 keyTableData,
-                null);
+                null).resolve();
         return keyTable;
     }
 
@@ -654,6 +654,13 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             @Override
             protected SubscriptionRow makeRow(long index) {
                 return new TreeRowImpl(subscription, index);
+            }
+
+            @Override
+            @SuppressWarnings({"unchecked", "rawtypes"})
+            public JsArray<TreeViewportData.TreeRow> getRows() {
+                // makeRow always produces TreeRowImpl, so the rows are TreeRows
+                return (JsArray<TreeViewportData.TreeRow>) (JsArray) allRows();
             }
 
             @JsProperty
@@ -1432,15 +1439,17 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * in the resulting table.</li>
      * </ul>
      */
-    public Promise<JsTable> selectDistinct(Column[] columns) {
-        return sourceTable.get().then(t -> {
+    public JsPendingTable<JsTable> selectDistinct(Column[] columns) {
+        // Allocate the result's ticket now, so operations can be chained before the source table has even resolved
+        TableTicket handle = connection.getTickets().newTableTicket();
+        return MicrotaskBatchImpl.wrap(connection, handle.makeTicket(), sourceTable.get().then(t -> {
             // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
             // up.
             if (!t.getFilter().asList().equals(getFilter().asList())) {
                 t.applyFilter(getFilter().asArray(new FilterCondition[0]));
             }
-            return Promise.resolve(t.selectDistinct(columns));
-        });
+            return t.selectDistinct(columns, handle).resolve();
+        }));
     }
 
     public Promise<JsTotalsTableConfig> getTotalsTableConfig() {

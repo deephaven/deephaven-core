@@ -376,7 +376,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                                         data[i][j] = s.getData(j, column);
                                     }
                                 }
-                                return table.getConnection().newTable(columnNames, types, data, null);
+                                return table.getConnection().newTable(columnNames, types, data, null).resolve();
                             })
                             .then(newTable -> {
                                 // subscribe to the new table, verify it matches the existing one

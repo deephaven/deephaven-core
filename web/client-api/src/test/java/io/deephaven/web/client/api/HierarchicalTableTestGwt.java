@@ -77,7 +77,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                         JsTreeTable.EVENT_UPDATED, 2001d);
                             }).then(event -> {
                                 assertEquals(10d, event.getDetail().getTreeSize());
-                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+                                JsArray<TreeViewportData.TreeRow> rows = event.getDetail().getRows();
                                 assertEquals(10, rows.length);
                                 TreeViewportData.TreeRow row0 = (TreeViewportData.TreeRow) rows.getAt(0);
                                 assertTrue(row0.isExpanded());
@@ -100,7 +100,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 return treeTable.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 2002d);
                             }).then(event -> {
                                 assertEquals(10d, event.getDetail().getTreeSize());
-                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+                                JsArray<TreeViewportData.TreeRow> rows = event.getDetail().getRows();
                                 assertEquals(5, rows.length);
 
                                 // Row 0 is already expanded and is the parent of rows 1-9, so expand row 5
@@ -109,7 +109,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 return treeTable.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 2003d);
                             }).then(event -> {
                                 assertEquals(20d, event.getDetail().getTreeSize());
-                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+                                JsArray<TreeViewportData.TreeRow> rows = event.getDetail().getRows();
                                 assertEquals(15, rows.length);
                                 TreeViewportData.TreeRow row5 = (TreeViewportData.TreeRow) rows.getAt(0);
                                 assertTrue(row5.isExpanded());
@@ -138,7 +138,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 return treeTable.<TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 2004d);
                             }).then(event -> {
                                 assertEquals(30d, event.getDetail().getTreeSize());
-                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+                                JsArray<TreeViewportData.TreeRow> rows = event.getDetail().getRows();
                                 assertEquals(25, rows.length);
                                 TreeViewportData.TreeRow row6 = (TreeViewportData.TreeRow) rows.getAt(1);
                                 assertTrue(row6.isExpanded());
@@ -890,7 +890,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                             }).then(event -> {
                                 // Root (depth 1) + 9 children (depth 2) + 90 grandchildren (depth 3) = 100
                                 assertEquals(100d, event.getDetail().getTreeSize());
-                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+                                JsArray<TreeViewportData.TreeRow> rows = event.getDetail().getRows();
 
                                 // Row 0 is the root, expanded
                                 TreeViewportData.TreeRow row0 = (TreeViewportData.TreeRow) rows.getAt(0);
@@ -942,7 +942,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                             }).then(event -> {
                                 // Depth 1 = single expand: root + 9 children = 10
                                 assertEquals(10d, event.getDetail().getTreeSize());
-                                JsArray<TableData.Row> rows = event.getDetail().getRows();
+                                JsArray<TreeViewportData.TreeRow> rows = event.getDetail().getRows();
 
                                 TreeViewportData.TreeRow row0 = (TreeViewportData.TreeRow) rows.getAt(0);
                                 assertTrue(row0.isExpanded());

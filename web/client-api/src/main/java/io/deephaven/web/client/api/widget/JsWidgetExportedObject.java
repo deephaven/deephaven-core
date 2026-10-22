@@ -14,7 +14,9 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.JsLazy;
+import io.deephaven.web.client.api.JsPendingObject;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.MicrotaskBatchImpl;
 import io.deephaven.web.client.api.ServerObject;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableType;
@@ -36,28 +38,30 @@ public class JsWidgetExportedObject implements ServerObject {
 
     private final TypedTicket ticket;
 
-    private final JsLazy<Promise<?>> fetched;
+    private final JsLazy<JsPendingObject> fetched;
 
     public JsWidgetExportedObject(WorkerConnection connection, TypedTicket ticket) {
         this.connection = connection;
         this.ticket = ticket;
         this.fetched = JsLazy.of(() -> {
             if (getType() == null) {
-                return Promise.reject("Exported object has no type, can't be fetched");
+                return JsPendingObject.of(Promise.reject("Exported object has no type, can't be fetched"));
             }
             if (getType().equals(JsVariableType.TABLE)) {
-                return Callbacks.<ExportedTableCreationResponse>grpcUnaryPromise(c -> {
-                    connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
-                            c);
-                }).then(etcr -> {
-                    ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for widget");
-                    JsTable table = new JsTable(connection, cts);
-                    // never attempt a reconnect, since we might have a different widget schema entirely
-                    table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
-                    return Promise.resolve(table);
-                });
+                // The ticket is already known, so the table can be chained on before its schema arrives
+                return JsPendingObject.of(MicrotaskBatchImpl.wrap(connection, ticket.getTicket(),
+                        Callbacks.<ExportedTableCreationResponse>grpcUnaryPromise(c -> {
+                            connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
+                                    c);
+                        }).then(etcr -> {
+                            ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for widget");
+                            JsTable table = new JsTable(connection, cts);
+                            // never attempt a reconnect, since we might have a different widget schema entirely
+                            table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
+                            return Promise.resolve(table);
+                        })));
             } else {
-                return this.connection.getObject(ticket);
+                return JsPendingObject.of(this.connection.getObject(ticket));
             }
         });
     }
@@ -123,11 +127,12 @@ public class JsWidgetExportedObject implements ServerObject {
      * @return a promise that will resolve to a client side object that represents the reference on the server.
      */
     @JsMethod
-    public Promise<?> fetch() {
+    public JsPendingObject fetch() {
         if (getType() != null) {
             return fetched.get();
         }
-        return Promise.reject("Can't fetch an object with no type (i.e. no server plugin implementation)");
+        return JsPendingObject
+                .of(Promise.reject("Can't fetch an object with no type (i.e. no server plugin implementation)"));
     }
 
     /**

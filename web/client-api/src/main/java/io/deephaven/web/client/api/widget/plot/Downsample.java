@@ -27,7 +27,7 @@ public class Downsample {
      * 
      * @return A promise that resolves to the downsampled table.
      */
-    public static Promise<JsTable> runChartDownsample(JsTable table, String xCol, String[] yCols, int width,
+    public static JsPendingTable<JsTable> runChartDownsample(JsTable table, String xCol, String[] yCols, int width,
             @JsOptional @JsNullable LongWrapper[] xRange) {
         return table.downsample(xRange, width, xCol, yCols);
     }

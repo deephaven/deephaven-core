@@ -53,7 +53,7 @@ import jsinterop.base.Js;
  */
 @TsInterface
 @TsName(namespace = "dh", name = "TotalsTable")
-public class JsTotalsTable implements JoinableTable, ServerObject, JsResolvedTable {
+public class JsTotalsTable implements JoinableTable, ServerObject, JsITable {
     private final JsTable wrappedTable;
     private final String directive;
     private final JsArray<JsString> groupBy;
@@ -103,17 +103,6 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsResolvedTab
                 .setTicket(state().getHandle().makeTicket())
                 .setType(JsVariableType.TABLE)
                 .build();
-    }
-
-    /**
-     * The chainable, immutable {@link JsTableOperations} over this table's current server-side state; see
-     * {@link JsTable#operations()}.
-     *
-     * @return an operations view over this table
-     */
-    @JsMethod
-    public JsTableOperations operations() {
-        return new MicrotaskBatchImpl.View(this);
     }
 
     /**
@@ -457,7 +446,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsResolvedTab
      */
     @Override
     @JsMethod
-    public Promise<JsTable> freeze() {
+    public JsPendingTable<JsTable> freeze() {
         return wrappedTable.freeze();
     }
 
@@ -471,7 +460,8 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsResolvedTab
      */
     @Override
     @JsMethod
-    public Promise<JsTable> snapshot(JsTableReference baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
+    public JsPendingTable<JsTable> snapshot(JsTableReference baseTable,
+            @JsOptional @JsNullable Boolean doInitialSnapshot,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> stampColumns) {
         return wrappedTable.snapshot(baseTable, doInitialSnapshot, stampColumns);
     }
@@ -488,7 +478,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsResolvedTab
      */
     @Override
     @JsMethod
-    public Promise<JsTable> join(String joinType, JsTableReference rightTable,
+    public JsPendingTable<JsTable> join(String joinType, JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule) {
@@ -506,7 +496,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsResolvedTab
      */
     @Override
     @JsMethod
-    public Promise<JsTable> asOfJoin(JsTableReference rightTable,
+    public JsPendingTable<JsTable> asOfJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule) {
@@ -524,7 +514,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsResolvedTab
      */
     @Override
     @JsMethod
-    public Promise<JsTable> crossJoin(JsTableReference rightTable,
+    public JsPendingTable<JsTable> crossJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable Double reserveBits) {
@@ -541,7 +531,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsResolvedTab
      */
     @Override
     @JsMethod
-    public Promise<JsTable> exactJoin(JsTableReference rightTable,
+    public JsPendingTable<JsTable> exactJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
         return wrappedTable.exactJoin(rightTable, columnsToMatch, columnsToAdd);
@@ -557,7 +547,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject, JsResolvedTab
      */
     @Override
     @JsMethod
-    public Promise<JsTable> naturalJoin(JsTableReference rightTable,
+    public JsPendingTable<JsTable> naturalJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
         return wrappedTable.naturalJoin(rightTable, columnsToMatch, columnsToAdd);

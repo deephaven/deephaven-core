@@ -48,7 +48,7 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                     assertEquals("MyKey", columns[0].getName());
                     assertEquals("x", columns[1].getName());
 
-                    return partitionedTable.getBaseTable().then(keyTable -> {
+                    return partitionedTable.getBaseTable().resolve().then(keyTable -> {
                         assertEquals(5d, keyTable.getSize());
 
                         return partitionedTable.getTable("2");
@@ -75,7 +75,7 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                     assertEquals(1, columns.length);
                     assertEquals("x", columns[0].getName());
 
-                    return partitionedTable.getBaseTable().then(keyTable -> {
+                    return partitionedTable.getBaseTable().resolve().then(keyTable -> {
                         // the keys are not uniqued
                         assertEquals(10d, keyTable.getSize());
 
@@ -104,7 +104,7 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                     assertEquals(1, columns.length);
                     assertEquals("x", columns[0].getName());
 
-                    return partitionedTable.getBaseTable().then(keyTable -> {
+                    return partitionedTable.getBaseTable().resolve().then(keyTable -> {
                         assertEquals(5d, keyTable.getSize());
 
                         return partitionedTable.getTable("2");

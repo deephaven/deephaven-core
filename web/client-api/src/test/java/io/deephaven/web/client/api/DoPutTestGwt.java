@@ -40,12 +40,12 @@ public class DoPutTestGwt extends AbstractAsyncGwtTestCase {
                 .then(session -> {
                     delayTestFinish(30_000);
                     // Use emptyTable to obtain the WorkerConnection so we can use the underlying newTable api
-                    return session.emptyTable(1);
+                    return session.emptyTable(1).resolve();
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
                     table.close();
-                    return connection.newTable(columnNames, types, data, null);
+                    return connection.newTable(columnNames, types, data, null).resolve();
                 })
                 .then(table -> {
                     assertEquals(rowCount, table.getSize(), 0);

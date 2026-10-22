@@ -19,6 +19,7 @@ import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsLazy;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.JsTableReference;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsIgnore;
@@ -27,6 +28,7 @@ import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -152,8 +154,8 @@ public class JsInputTable {
         }
 
         // TODO deephaven-core#2529 parallelize this
-        return table.getConnection().newTable(names, types, data, userTimeZone)
-                .then(this::addTable);
+        return table.getConnection().newTable(names, types, data, userTimeZone).resolve()
+                .then(created -> addTable(JsTableReference.of(created)));
     }
 
     /**
@@ -165,55 +167,58 @@ public class JsInputTable {
      * @param tableToAdd
      * @return Promise of dh.InputTable
      */
-    public Promise<JsInputTable> addTable(JsTable tableToAdd) {
-        return addTables(new JsTable[] {tableToAdd});
+    public Promise<JsInputTable> addTable(JsTableReference tableToAdd) {
+        return addTables(new JsTableReference[] {tableToAdd});
+    }
+
+    /**
+     * The ticket an input-table operation should act on for a given reference. A {@link JsTable} contributes its head
+     * state, as it always has here; anything else contributes the table it refers to.
+     */
+    private static Ticket ticketOf(JsTableReference reference) {
+        if ((Object) reference instanceof JsTable) {
+            return reference.asTable().getHeadHandle().makeTicket();
+        }
+        return reference.typedTicket().getTicket();
     }
 
     /**
      * Add multiple tables to this Input Table.
-     * 
+     *
      * @param tablesToAdd
      * @return Promise of dh.InputTable
      */
-    public Promise<JsInputTable> addTables(JsTable[] tablesToAdd) {
+    public Promise<JsInputTable> addTables(JsTableReference[] tablesToAdd) {
         if (tablesToAdd.length == 0) {
             // noinspection unchecked,rawtypes
             return (Promise) Promise.reject("Must provide at least one table");
         }
-        final boolean closeIntermediateTable;
-        final Promise<JsTable> mergePromise;
         if (tablesToAdd.length == 1) {
-            mergePromise = Promise.resolve(tablesToAdd[0]);
-            closeIntermediateTable = false;
-        } else {
-            mergePromise = table.getConnection().mergeTables(tablesToAdd, this.table);
-            closeIntermediateTable = true;
+            return addTicket(ticketOf(tablesToAdd[0]), null);
         }
+        // Merge first; the merged table is an intermediate to close once the add has settled
+        return table.getConnection().mergeTables(tablesToAdd, this.table).resolve()
+                .then(merged -> addTicket(merged.getHeadHandle().makeTicket(), merged));
+    }
 
-        return mergePromise
-                .then(merged -> {
-                    // noinspection CodeBlock2Expr - easier readability for chained then()
-                    return Callbacks.<AddTableResponse>grpcUnaryPromise(c -> {
-                        AddTableRequest addTableRequest = AddTableRequest.newBuilder()
-                                .setInputTable(table.getHeadHandle().makeTicket())
-                                .setTableToAdd(merged.getHeadHandle().makeTicket())
-                                .build();
-                        table.getConnection().inputTableServiceClient().addTableToInputTable(addTableRequest, c);
-                    }).then(success -> {
-                        if (closeIntermediateTable) {
-                            // this is an intermediate table for the merge, close it
-                            merged.close();
-                        }
-                        return Promise.resolve(success);
-                    }, failure -> {
-                        if (closeIntermediateTable) {
-                            // this is an intermediate table for the merge, close it
-                            merged.close();
-                        }
-                        return Promise.reject(failure);
-                    });
-                })
-                .then(response -> Promise.resolve(this));
+    private Promise<JsInputTable> addTicket(Ticket tableToAdd, @Nullable JsTable intermediate) {
+        return Callbacks.<AddTableResponse>grpcUnaryPromise(c -> {
+            AddTableRequest addTableRequest = AddTableRequest.newBuilder()
+                    .setInputTable(table.getHeadHandle().makeTicket())
+                    .setTableToAdd(tableToAdd)
+                    .build();
+            table.getConnection().inputTableServiceClient().addTableToInputTable(addTableRequest, c);
+        }).then(success -> {
+            if (intermediate != null) {
+                intermediate.close();
+            }
+            return Promise.resolve(this);
+        }, failure -> {
+            if (intermediate != null) {
+                intermediate.close();
+            }
+            return Promise.reject(failure);
+        });
     }
 
     /**
@@ -222,8 +227,8 @@ public class JsInputTable {
      * @param tableToDelete
      * @return Promise of dh.InputTable
      */
-    public Promise<JsInputTable> deleteTable(JsTable tableToDelete) {
-        return deleteTables(new JsTable[] {tableToDelete});
+    public Promise<JsInputTable> deleteTable(JsTableReference tableToDelete) {
+        return deleteTables(new JsTableReference[] {tableToDelete});
     }
 
     /**
@@ -232,7 +237,7 @@ public class JsInputTable {
      * @param tablesToDelete
      * @return
      */
-    public Promise<JsInputTable> deleteTables(JsTable[] tablesToDelete) {
+    public Promise<JsInputTable> deleteTables(JsTableReference[] tablesToDelete) {
         if (tablesToDelete.length == 0) {
             return Promise.resolve(this);
         }
@@ -242,10 +247,13 @@ public class JsInputTable {
         final Ticket ticketToDelete;
         final Promise<?> failureToReport;
         if (tablesToDelete.length == 1) {
-            JsTable onlyTable = tablesToDelete[0];
-            // don't try too hard to find matching columns, if it looks like we have a match go for it
-            if (onlyTable.getColumns().length == keys.length && onlyTable.findColumns(keys).length == keys.length) {
-                ticketToDelete = onlyTable.getHandle().makeTicket();
+            JsTableReference onlyTable = tablesToDelete[0];
+            // A Table has columns to inspect: if it looks like it is already just the key columns, use it as is. Any
+            // other reference has no columns yet, so it always takes the view.
+            if ((Object) onlyTable instanceof JsTable
+                    && onlyTable.asTable().getColumns().length == keys.length
+                    && onlyTable.asTable().findColumns(keys).length == keys.length) {
+                ticketToDelete = onlyTable.asTable().getHandle().makeTicket();
                 failureToReport = Promise.resolve((Object) null);
             } else {
                 // view the only table
@@ -253,7 +261,7 @@ public class JsInputTable {
                 cleanups.add(() -> table.getConnection().releaseTicket(ticketToDelete));
 
                 SelectOrUpdateRequest view = SelectOrUpdateRequest.newBuilder()
-                        .setSourceId(onlyTable.state().getHandle().makeTableReference())
+                        .setSourceId(TableReference.newBuilder().setTicket(onlyTable.typedTicket().getTicket()))
                         .setResultId(ticketToDelete)
                         .addAllColumnSpecs(Arrays.asList(keys))
                         .build();
@@ -268,10 +276,10 @@ public class JsInputTable {
 
             BatchTableRequest.Builder batch = BatchTableRequest.newBuilder();
             for (int i = 0; i < tablesToDelete.length; i++) {
-                JsTable toDelete = tablesToDelete[i];
+                JsTableReference toDelete = tablesToDelete[i];
 
                 SelectOrUpdateRequest view = SelectOrUpdateRequest.newBuilder()
-                        .setSourceId(toDelete.state().getHandle().makeTableReference())
+                        .setSourceId(TableReference.newBuilder().setTicket(toDelete.typedTicket().getTicket()))
                         .addAllColumnSpecs(Arrays.asList(keys))
                         .build();
                 BatchTableRequest.Operation.Builder op = BatchTableRequest.Operation.newBuilder()

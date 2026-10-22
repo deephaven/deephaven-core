@@ -13,8 +13,9 @@ import jsinterop.base.Js;
 
 /**
  * Any client object that refers to a table on the server, and so can be the other operand of a table operation: a
- * {@link JsTable}, a {@link JsTotalsTable}, or any {@link JsTableOperations} such as a {@link JsPendingTable} or
- * {@link JsImmutableTable}. Operations only need the table's ticket; they never retain or read the operand.
+ * {@link JsTable}, a {@link JsTotalsTable}, a {@link JsPendingTable} or a {@link JsResolvedTable}. These are the
+ * table-shaped members of {@link ServerObject.Union}. Operations only need the table's ticket; they never retain or
+ * read the operand.
  */
 @TsUnion(anonymous = false, name = "TableReference", namespace = "dh")
 @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)
@@ -38,7 +39,13 @@ public interface JsTableReference {
 
     @TsUnionMember
     @JsOverlay
-    default JsTableOperations asTableOperations() {
+    default JsPendingTable<?> asPendingTable() {
+        return Js.cast(this);
+    }
+
+    @TsUnionMember
+    @JsOverlay
+    default JsResolvedTable asResolvedTable() {
         return Js.cast(this);
     }
 

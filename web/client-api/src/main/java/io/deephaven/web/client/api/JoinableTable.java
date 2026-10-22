@@ -22,7 +22,7 @@ public interface JoinableTable {
     ClientTableState state();
 
     @JsMethod
-    Promise<JsTable> freeze();
+    JsPendingTable<JsTable> freeze();
 
     /**
      * Creates a server-side snapshot of {@code baseTable} when this table updates.
@@ -33,7 +33,7 @@ public interface JoinableTable {
      * @return A promise that resolves to the snapshot table.
      */
     @JsMethod
-    Promise<JsTable> snapshot(JsTableReference baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
+    JsPendingTable<JsTable> snapshot(JsTableReference baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> stampColumns);
 
     /**
@@ -63,7 +63,7 @@ public interface JoinableTable {
      */
     @JsMethod
     @Deprecated
-    Promise<JsTable> join(String joinType, JsTableReference rightTable,
+    JsPendingTable<JsTable> join(String joinType, JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule);
@@ -84,11 +84,13 @@ public interface JoinableTable {
      * @param columnsToMatch The columns that should match, according to the asOfMatchRole.
      * @param columnsToAdd Columns from the right table to add to the resulting table, empty/null/absent to add all
      *        columns.
-     * @param asOfMatchRule The match rule to use, see above.
+     * @param asOfMatchRule The match rule to use, see above. TODO BEFORE MERGE: these names read from the right table's
+     *        side ({@code LESS_THAN_EQUAL} is an aj on {@code "L >= R"}); the new {@link JsTableOperations#asOfJoin}
+     *        copies this convention and the choice is still open, see {@link JsTableOperations.AsOfMatchRule}.
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    Promise<JsTable> asOfJoin(JsTableReference rightTable,
+    JsPendingTable<JsTable> asOfJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule);
@@ -108,7 +110,7 @@ public interface JoinableTable {
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    Promise<JsTable> crossJoin(JsTableReference rightTable,
+    JsPendingTable<JsTable> crossJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable Double reserveBits);
@@ -125,7 +127,7 @@ public interface JoinableTable {
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    Promise<JsTable> exactJoin(JsTableReference rightTable,
+    JsPendingTable<JsTable> exactJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd);
 
@@ -141,7 +143,7 @@ public interface JoinableTable {
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
-    Promise<JsTable> naturalJoin(JsTableReference rightTable,
+    JsPendingTable<JsTable> naturalJoin(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd);
 }

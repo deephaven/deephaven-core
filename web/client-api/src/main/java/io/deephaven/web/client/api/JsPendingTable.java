@@ -5,7 +5,6 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
-import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.fu.PromiseLike;
 import jsinterop.annotations.JsMethod;
@@ -15,23 +14,31 @@ import jsinterop.annotations.JsMethod;
  * methods of {@link JsTableOperations}, which will each in turn return another PendingTable.
  * <p>
  * This interface is "Thenable" / "PromiseLike", it can be awaited or have methods chained to it like a promise to
- * resolve into an object with metadata that can have data fetched from it, and will result in a
- * {@link JsImmutableTable}. If it is awaited, the resulting table must be closed to indicate that it will no longer be
- * used and server resources can be freed. A future version of this API could provide "liveness scopes" to claim/release
- * batches of tables at a time automatically.
+ * resolve into a table with metadata that can have data fetched from it. What that table is depends on where the
+ * pending table came from: an operation on {@link JsTableOperations} yields a {@link JsResolvedTable}, while the APIs
+ * that have always produced a {@link JsTable}, such as fetching a named table, yield a {@link JsTable}. Either way the
+ * resulting table must be closed to indicate that it will no longer be used and server resources can be freed. A future
+ * version of this API could provide "liveness scopes" to claim/release batches of tables at a time automatically.
  * <p>
- * Any instance not awaited will only last long enough for methods to be synchronously called on it, then freed
- * automatically as soon as possible. Any instance that is {@code await}ed will be retained until {@code close()} is
- * called on it to free it. To optionally chain more calls to an instance in a later event loop, it must be retained
- * first.
+ * A pending table from an operation that is not awaited only lasts long enough for methods to be synchronously called
+ * on it, then is freed automatically as soon as possible. Any instance that is {@code await}ed will be retained until
+ * {@code close()} is called on it to free it. To optionally chain more calls to an instance in a later event loop, it
+ * must be retained first. A pending table from a fetch is retained from the start, as the promise it replaces was.
+ *
+ * @param <T> the table this resolves to
  */
 @TsName(namespace = "dh", name = "PendingTable")
 @TsInterface
-public interface JsPendingTable extends JsTableOperations, PromiseLike<JsImmutableTable> {
+public interface JsPendingTable<T extends JsITable> extends JsTableOperations, PromiseLike<T> {
+    /**
+     * The promise this pending table stands for: the same thing as awaiting it, with the resulting table's type spelled
+     * out. Retains the table.
+     *
+     * @return a promise of the retained table
+     */
     @Override
-    default Promise<JsImmutableTable> resolve() {
-        return Promise.resolve((IThenable<JsImmutableTable>) this);
-    }
+    @JsMethod
+    Promise<T> resolve();
 
     // workaround for a javadoc -> ts issue
     @JsMethod

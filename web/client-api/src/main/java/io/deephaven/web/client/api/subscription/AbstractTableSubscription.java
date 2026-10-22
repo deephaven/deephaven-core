@@ -478,7 +478,15 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         }
 
         @Override
-        public JsArray<TableData.Row> getRows() {
+        public JsArray<? extends TableData.Row> getRows() {
+            return allRows();
+        }
+
+        /**
+         * The rows of this update, built on first use. Not a JsProperty, so subclasses that narrow {@link #getRows()}
+         * can reach it: JsInterop forbids calling a property accessor via super.
+         */
+        protected JsArray<SubscriptionRow> allRows() {
             if (allRows == null) {
                 allRows = new JsArray<>();
                 fullRowSet.getRange().indexIterator().forEachRemaining((long index) -> {
@@ -488,7 +496,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                     assert allRows.length == fullRowSet.getSize();
                 }
             }
-            return (JsArray<Row>) (JsArray) allRows;
+            return allRows;
         }
 
         protected SubscriptionRow makeRow(long index) {

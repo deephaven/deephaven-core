@@ -37,18 +37,21 @@ public class Sort {
         /**
          * The column or column name to sort.
          */
-        Column.ColumnOrName column;
+        public Column.ColumnOrName column;
         /**
          * The direction to sort this column. If absent/null, sort is ascending.
          */
+        // TODO follow-up: make this a literal union ("ASC" | "DESC" | "REVERSE") rather than a string. Sort.direction
+        // is a plain string on the existing Sort object and is read back by web-client-ui, so changing it there needs
+        // its own look; this struct is new and could take the literal type on its own.
         @JsNullable
-        String direction;
+        public String direction;
 
         /**
          * True to take the absolute value before sorting. Defaults to false if absent/null.
          */
         @JsNullable
-        Boolean isAbs;
+        public Boolean isAbs;
     }
 
     @JsType(name = "?", namespace = JsPackage.GLOBAL, isNative = true)

@@ -338,7 +338,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
         connect(tables)
                 .then(session -> {
                     delayFinish(2000);
-                    return session.getTable("hasTotals", true);
+                    return session.getTable("hasTotals", true).resolve();
                 })
                 .then(table -> {
                     // take the existing config and group by K

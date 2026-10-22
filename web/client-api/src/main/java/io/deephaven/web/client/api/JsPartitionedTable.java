@@ -58,6 +58,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     private List<String> keyColumnTypes;
     private PartitionedTableDescriptor descriptor;
     private Promise<JsTable> keys;
+    private TableTicket keysHandle;
     private JsTable baseTable;
     private TableSubscription subscription;
 
@@ -91,9 +92,10 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                 throw new RuntimeException(e);
             }
 
-            return w.getExportedObjects()[0].fetch();
+            // The partitioned table's one exported object is its base table
+            return w.getExportedObjects()[0].fetch().asPendingTable().resolve();
         }).then(result -> {
-            baseTable = (JsTable) result;
+            baseTable = result;
             keyColumnTypes = new ArrayList<>();
             InitialTableDefinition tableDefinition = WebBarrageUtils.readTableDefinition(
                     WebBarrageUtils
@@ -231,16 +233,14 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      *
      * @return A merged representation of the constituent tables.
      */
-    public Promise<JsTable> getMergedTable() {
-        return connection.newState((c, cts) -> {
+    public JsPendingTable<JsTable> getMergedTable() {
+        return connection.pendingTable((c, cts) -> {
             MergeRequest requestMessage = MergeRequest.newBuilder()
                     .setPartitionedTable(widget.getTicket())
                     .setResultId(cts.getHandle().makeTicket())
                     .build();
             connection.partitionedTableServiceClient().merge(requestMessage, c);
-        }, "partitioned table merged table")
-                .refetch()
-                .then(cts -> Promise.resolve(new JsTable(cts.getConnection(), cts)));
+        }, "partitioned table merged table");
     }
 
     /**
@@ -293,8 +293,9 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      * @return Promise of a Table
      */
     @Deprecated
-    public Promise<JsTable> getKeyTable() {
+    public JsPendingTable<JsTable> getKeyTable() {
         if (keys == null) {
+            keysHandle = connection.getTickets().newTableTicket();
             keys = connection.newState((c, state) -> {
                 SelectOrUpdateRequest view = SelectOrUpdateRequest.newBuilder()
                         .setSourceId(baseTable.state().getHandle().makeTableReference())
@@ -302,11 +303,16 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                         .addAllColumnSpecs(descriptor.getKeyColumnNamesList())
                         .build();
                 connection.tableServiceClient().view(view, c);
-            }, "view only key columns")
+            }, "view only key columns", keysHandle)
                     .refetch()
                     .then(state -> Promise.resolve(new JsTable(state.getConnection(), state)));
         }
-        return keys.then(JsTable::copy);
+        // Each caller gets its own copy, all sharing the one key table's ticket. The copies are JsTable bindings on
+        // one ClientTableState, so closing one leaves the others alive and the state is released with the last.
+        // TODO BEFORE MERGE: re-verify once pending tables are backed by a CTS; any ticket shared between closeable
+        // instances without that refcount (see Resolved.copy()) is a one-close-kills-all bug.
+        return MicrotaskBatchImpl.wrap(connection, keysHandle.makeTicket(),
+                () -> keys.then(table -> table.copy().resolve()));
     }
 
     /**
@@ -314,7 +320,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      *
      * @return Promise of a Table
      */
-    public Promise<JsTable> getBaseTable() {
+    public JsPendingTable<JsTable> getBaseTable() {
         return baseTable.copy();
     }
 

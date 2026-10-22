@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api;
 
-import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
@@ -74,7 +73,7 @@ public interface TableData {
     JsArray<Column> getColumns();
 
     @JsProperty
-    JsArray<@TsTypeRef(Row.class) ? extends Row> getRows();
+    JsArray<? extends Row> getRows();
 
     /**
      * Reads a row object from the table, from which any subscribed column can be read.

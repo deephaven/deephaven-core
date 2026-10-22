@@ -109,7 +109,7 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
  * </ol>
  */
 @TsName(namespace = "dh", name = "Table")
-public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject, JsResolvedTable {
+public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject, JsITable {
     /**
      * The table size has updated, so live scrollbars and the like can be updated accordingly.
      */
@@ -302,7 +302,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsMethod
     public JsTableOperations operations() {
-        return new MicrotaskBatchImpl.View(this);
+        return new MicrotaskBatchImpl.View(this, () -> copy().resolve());
     }
 
     @JsMethod
@@ -1083,22 +1083,27 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @return Promise of dh.Table
      */
     @JsMethod
-    public Promise<JsTable> selectDistinct(Column[] columns) {
+    public JsPendingTable<JsTable> selectDistinct(Column[] columns) {
+        return selectDistinct(columns, workerConnection.getTickets().newTableTicket());
+    }
+
+    /**
+     * As {@link #selectDistinct(Column[])}, into a ticket the caller allocated earlier.
+     */
+    public JsPendingTable<JsTable> selectDistinct(Column[] columns, TableTicket handle) {
         final ClientTableState state = state();
         // We are going to forget all configuration for the current state
         // by just creating a new, fresh state. This should be an optional flatten()/copy() step instead.
         List<String> columnNames = Arrays.stream(columns).map(Column::getName).collect(Collectors.toList());
-        final ClientTableState distinct = workerConnection.newState((c, cts) -> {
+        return MicrotaskBatchImpl.wrap(workerConnection, handle.makeTicket(), workerConnection.newState((c, cts) -> {
             SelectDistinctRequest request = SelectDistinctRequest.newBuilder()
                     .setSourceId(state.getHandle().makeTableReference())
                     .setResultId(cts.getHandle().makeTicket())
                     .addAllColumnNames(columnNames)
                     .build();
             workerConnection.tableServiceClient().selectDistinct(request, c);
-        },
-                "selectDistinct " + columnNames);
-        return distinct.refetch()
-                .then(cts -> Promise.resolve(new JsTable(workerConnection, cts)));
+        }, "selectDistinct " + columnNames, handle).refetch()
+                .then(cts -> Promise.resolve(new JsTable(workerConnection, cts))));
     }
 
     /**
@@ -1108,8 +1113,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      *
      */
     @JsMethod
-    public Promise<JsTable> copy() {
-        return Promise.resolve(new JsTable(this));
+    public JsPendingTable<JsTable> copy() {
+        // The copy is only created on await, so a copy that is only chained on retains nothing.
+        // TODO BEFORE MERGE: once pending tables hold a ClientTableState instead of a raw ticket, this becomes a plain
+        // retain of the current state and the deferred construction goes away.
+        return MicrotaskBatchImpl.wrap(workerConnection, state().getHandle().makeTicket(),
+                () -> Promise.resolve(new JsTable(this)));
     }
 
     public Promise<JsTable> copy(boolean resolved) {
@@ -1121,7 +1130,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             return promise.asPromise(MAX_BATCH_TIME)
                     .then(s -> Promise.resolve(new JsTable(this)));
         }
-        return copy();
+        return copy().resolve();
     }
 
     /**
@@ -1422,20 +1431,20 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @return Promise of {@link JsTable dh.Table}
      */
     @JsMethod
-    public Promise<JsTable> freeze() {
-        return workerConnection.newState((c, state) -> {
+    public JsPendingTable<JsTable> freeze() {
+        return workerConnection.pendingTable((c, state) -> {
             SnapshotTableRequest request = SnapshotTableRequest.newBuilder()
                     .setSourceId(state().getHandle().makeTableReference())
                     .setResultId(state.getHandle().makeTicket())
                     .build();
             workerConnection.tableServiceClient().snapshot(request, c);
-        }, "freeze").refetch()
-                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
+        }, "freeze");
     }
 
     @Override
     @JsMethod
-    public Promise<JsTable> snapshot(JsTableReference baseTable, @JsOptional @JsNullable Boolean doInitialSnapshot,
+    public JsPendingTable<JsTable> snapshot(JsTableReference baseTable,
+            @JsOptional @JsNullable Boolean doInitialSnapshot,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> stampColumns) {
         Objects.requireNonNull(baseTable, "Snapshot base table");
         final boolean realDoInitialSnapshot;
@@ -1446,7 +1455,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         }
         final String fetchSummary =
                 "snapshot(" + baseTable + ", " + doInitialSnapshot + ", " + stampColumns + ")";
-        return workerConnection.newState((c, state) -> {
+        return workerConnection.pendingTable((c, state) -> {
             SnapshotWhenTableRequest.Builder request = SnapshotWhenTableRequest.newBuilder()
                     .setBaseId(TableReference.newBuilder().setTicket(baseTable.typedTicket().getTicket()))
                     .setTriggerId(state().getHandle().makeTableReference())
@@ -1458,8 +1467,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             }
 
             workerConnection.tableServiceClient().snapshotWhen(request.build(), c);
-        }, fetchSummary).refetch()
-                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
+        }, fetchSummary);
     }
 
     // inheritDoc lets us implement the inherited method, but still keep docs for TS
@@ -1469,7 +1477,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @Override
     @JsMethod
     @Deprecated
-    public Promise<JsTable> join(String joinType, JsTableReference rightTable,
+    public JsPendingTable<JsTable> join(String joinType, JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule) {
@@ -1488,7 +1496,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     @JsMethod
-    public Promise<JsTable> asOfJoin(JsTableReference rightTable,
+    public JsPendingTable<JsTable> asOfJoin(JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable String asOfMatchRule) {
@@ -1496,7 +1504,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
-        return workerConnection.newState((c, state) -> {
+        return workerConnection.pendingTable((c, state) -> {
             AsOfJoinTablesRequest.Builder request = AsOfJoinTablesRequest.newBuilder();
             request.setLeftId(state().getHandle().makeTableReference());
             request.setRightId(TableReference.newBuilder().setTicket(rightTable.typedTicket().getTicket()));
@@ -1509,14 +1517,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 request.setAsOfMatchRule(AsOfJoinTablesRequest.MatchRule.valueOf(asOfMatchRule));
             }
             workerConnection.tableServiceClient().asOfJoinTables(request.build(), c);
-        }, "asOfJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + asOfMatchRule + ")")
-                .refetch()
-                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
+        }, "asOfJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + asOfMatchRule + ")");
     }
 
     @Override
     @JsMethod
-    public Promise<JsTable> crossJoin(JsTableReference rightTable,
+    public JsPendingTable<JsTable> crossJoin(JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable Double reserveBits) {
@@ -1524,7 +1530,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
-        return workerConnection.newState((c, state) -> {
+        return workerConnection.pendingTable((c, state) -> {
             CrossJoinTablesRequest.Builder request = CrossJoinTablesRequest.newBuilder();
             request.setLeftId(state().getHandle().makeTableReference());
             request.setRightId(TableReference.newBuilder().setTicket(rightTable.typedTicket().getTicket()));
@@ -1537,21 +1543,19 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 request.setReserveBits((int) (double) reserveBits);
             }
             workerConnection.tableServiceClient().crossJoinTables(request.build(), c);
-        }, "join(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + reserveBits + ")")
-                .refetch()
-                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
+        }, "join(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + reserveBits + ")");
     }
 
     @Override
     @JsMethod
-    public Promise<JsTable> exactJoin(JsTableReference rightTable,
+    public JsPendingTable<JsTable> exactJoin(JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd) {
         if (rightTable.getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
-        return workerConnection.newState((c, state) -> {
+        return workerConnection.pendingTable((c, state) -> {
             ExactJoinTablesRequest.Builder request = ExactJoinTablesRequest.newBuilder()
                     .setLeftId(state().getHandle().makeTableReference())
                     .setRightId(TableReference.newBuilder().setTicket(rightTable.typedTicket().getTicket()))
@@ -1561,21 +1565,19 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 request.addAllColumnsToAdd(MatchPairUnion.toStringArray(columnsToAdd));
             }
             workerConnection.tableServiceClient().exactJoinTables(request.build(), c);
-        }, "exactJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
-                .refetch()
-                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
+        }, "exactJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")");
     }
 
     @Override
     @JsMethod
-    public Promise<JsTable> naturalJoin(JsTableReference rightTable,
+    public JsPendingTable<JsTable> naturalJoin(JsTableReference rightTable,
             ReadonlyArray<MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<MatchPairUnion> columnsToAdd) {
         if (rightTable.getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
-        return workerConnection.newState((c, state) -> {
+        return workerConnection.pendingTable((c, state) -> {
             NaturalJoinTablesRequest.Builder request = NaturalJoinTablesRequest.newBuilder()
                     .setLeftId(state().getHandle().makeTableReference())
                     .setRightId(TableReference.newBuilder().setTicket(rightTable.typedTicket().getTicket()))
@@ -1585,9 +1587,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 request.addAllColumnsToAdd(MatchPairUnion.toStringArray(columnsToAdd));
             }
             workerConnection.tableServiceClient().naturalJoinTables(request.build(), c);
-        }, "naturalJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
-                .refetch()
-                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
+        }, "naturalJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")");
     }
 
     /**
@@ -1787,12 +1787,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @param yCols The names of the Y columns to downsample.
      * @return A promise that resolves to the downsampled table.
      */
-    public Promise<JsTable> downsample(LongWrapper[] zoomRange, int pixelCount, String xCol,
+    public JsPendingTable<JsTable> downsample(LongWrapper[] zoomRange, int pixelCount, String xCol,
             String[] yCols) {
         JsLog.info("downsample", zoomRange, pixelCount, xCol, yCols);
         final String fetchSummary = "downsample(" + Arrays.toString(zoomRange) + ", " + pixelCount + ", " + xCol + ", "
                 + Arrays.toString(yCols) + ")";
-        return workerConnection.newState((c, state) -> {
+        return workerConnection.pendingTable((c, state) -> {
             RunChartDownsampleRequest.Builder downsampleRequest = RunChartDownsampleRequest.newBuilder();
             downsampleRequest.setPixelCount(pixelCount);
             if (zoomRange != null) {
@@ -1805,8 +1805,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             downsampleRequest.setSourceId(state().getHandle().makeTableReference());
             downsampleRequest.setResultId(state.getHandle().makeTicket());
             workerConnection.tableServiceClient().runChartDownsample(downsampleRequest.build(), c);
-        }, fetchSummary).refetch()
-                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
+        }, fetchSummary);
     }
 
     /**
