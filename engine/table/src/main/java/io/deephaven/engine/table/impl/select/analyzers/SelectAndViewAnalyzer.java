@@ -169,11 +169,14 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         for (int columnIndex = 0; columnIndex < context.processedCols.size(); ++columnIndex) {
             SelectColumn sc = context.processedCols.get(columnIndex);
 
-            // if this select column depends on result column then its updates must happen in result-key-space
+            // A column that depends on a result column, or that uses i, ii or k, is evaluated at the result's row keys,
+            // so that it reads result columns where they are and k is the result's row key.
             // note: if flatResult is true then we are not preserving any parent columns
             final boolean useResultKeySpace = context.flatResult
-                    && Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream())
-                            .anyMatch(columnName -> context.getLayerIndexFor(columnName) != Layer.PARENT_TABLE_INDEX);
+                    && (sc.hasVirtualRowVariables()
+                            || Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream())
+                                    .anyMatch(columnName -> context
+                                            .getLayerIndexFor(columnName) != Layer.PARENT_TABLE_INDEX));
 
             if (useResultKeySpace) {
                 // the column is evaluated at result row keys, so positional variables such as ii use the result rows

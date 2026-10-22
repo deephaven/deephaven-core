@@ -1117,6 +1117,15 @@ public class QueryTableSelectUpdateTest {
     }
 
     @Test
+    public void testStaticFlatSelectRowKey() {
+        final Table parent = emptyTable(10).update("A = (int) ii").where("A % 2 == 0");
+        final Table result = parent.select("C = A * 100", "KP = k", "KR = C + k", "KA = A + k");
+        Assert.assertTrue(result.isFlat());
+        assertTableEquals(newTable(intCol("C", 0, 200, 400, 600, 800), longCol("KP", 0, 1, 2, 3, 4),
+                longCol("KR", 0, 201, 402, 603, 804), longCol("KA", 0, 3, 6, 9, 12)), result);
+    }
+
+    @Test
     public void testRegressionGH3562() {
         final Table src = TableTools.emptyTable(3).update("A = true", "B = ii != 1", "C = ii != 2");
         final Table result = src.select("And = and(A, B, C)", "Or = or(A, B, C)");
