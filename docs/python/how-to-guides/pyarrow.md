@@ -108,7 +108,7 @@ from_pyarrow = dharrow.to_table(pa_table)
 [`to_table`](../reference/arrow/to-table.md) accepts these Arrow column types:
 
 - Exact types listed in `deephaven.arrow.SUPPORTED_ARROW_TYPES`, such as `pa.int64()`, `pa.string()`, and `pa.timestamp("ns")`. [`to_table`](../reference/arrow/to-table.md) maps each of these directly to a Deephaven type.
-- Some parameterized types, which take arguments such as a precision, an element type, or a time zone: decimals, lists, list views, fixed-size lists, maps, fixed-size binary, unions, and timestamps with a time zone. `SUPPORTED_ARROW_TYPES` doesn't list these types, so [`to_table`](../reference/arrow/to-table.md) leaves their mapping to the Deephaven engine.
+- Some parameterized types, which take arguments such as a precision, an element type, or a time zone: 128-bit and 256-bit decimals (`pa.decimal128` and `pa.decimal256`), lists, list views, fixed-size lists, maps, fixed-size binary, unions, and timestamps with a time zone. `SUPPORTED_ARROW_TYPES` doesn't list these types, so [`to_table`](../reference/arrow/to-table.md) leaves their mapping to the Deephaven engine.
 
 To see the full list of exact types, print `SUPPORTED_ARROW_TYPES`:
 

@@ -147,12 +147,16 @@ writeCsv(sourceWithNulls, "/data/TrigFunctionsWithNulls.tsv", false, timeZone(),
 
 Deephaven tables can tick, updating in real time as new data arrives. [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md) writes the rows that a table holds when the call runs, so the file is a point-in-time copy of a live table. It reads those rows directly, without taking a snapshot, so a table that updates during the write can produce an inconsistent file. To write a consistent copy, take a [`snapshot`](../../reference/table-operations/snapshot/snapshot.md) of the table first and write the snapshot.
 
-The example below creates a ticking table with [`timeTable`](../../reference/table-operations/create/timeTable.md) and writes a snapshot of it:
+The example below creates a ticking table with [`timeTable`](../../reference/table-operations/create/timeTable.md):
+
+```groovy test-set=3 ticking-table order=null
+live = timeTable("PT1s").update("X = i")
+```
+
+A new time table has no rows until Deephaven runs its first update cycle, which happens after the command that creates the table finishes. Writing the table in that same command produces a file with only the header row. Run the write as a separate command, after the table has ticked:
 
 ```groovy test-set=3 ticking-table order=null
 import static io.deephaven.csv.CsvTools.writeCsv
-
-live = timeTable("PT1s").update("X = i")
 
 writeCsv(live.snapshot(), "/data/LiveSnapshot.csv")
 ```
