@@ -1,40 +1,40 @@
 ---
-title: Execution Context
+title: Execution context
 ---
 
-An [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.ExecutionContext) represents a specific combination of query library, compiler, and scope under which a query is evaluated. It acts as an isolated environment within which specific operations and tasks can be run.
+An [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.ExecutionContext) is the environment the engine evaluates a query in. It bundles four things:
 
-When Deephaven is started, a default `ExecutionContext` is created. It's used to evaluate queries submitted through the script session. To evaluate a table operation in a deferred manner, such as in a thread separate from the script session, an application must _explicitly_ build or obtain an `ExecutionContext`. In such a case, a Python [`with`](https://peps.python.org/pep-0343/) statement should be used to enclose the query.
+- The query library: the imports that query strings can use.
+- The query compiler: it turns query strings into code.
+- The [query scope](../how-to-guides/query-scope.md): the variables that query strings can use.
+- The [update graph](./dag.md#update-graph-ug-cycles): it schedules when [ticking tables](./table-types.md) refresh.
 
-An `ExecutionContext` can be shared across multiple threads. Typical use patterns obtain the script session's systemic `ExecutionContext` and use it to wrap a query run in a thread created by the user. More complex usage patterns can use more than one `ExecutionContext` to keep certain objects completely separate from one another.
+Most of the time you never see it. When a Deephaven script session starts, it creates a default context and runs every query you enter in the console inside it. That default context is _systemic_: the system supplies it, not your code. A systemic context is unrelated to [systemic object marking](./systemic-object-marking.md).
 
-## Motivation
+You need a context of your own in two situations: when a table operation runs on a thread you start, and when an operation does deferred work that the engine runs later. This page covers both, then shows when and how to create additional contexts.
 
-There are a few key benefits that the `ExecutionContext` brings to Deephaven:
-
-- Each `ExecutionContext` can have its own update graph, libraries, and query scope. This allows users to compartmentalize different units of code to work independently of one another.
-- The compartmentalization minimizes resource conflicts. For instance, an operation with a high computational cost can be isolated so as not to slow down other critical processes.
-- Multiple `ExecutionContext`s can run in parallel, enabling Deephaven to better leverage multi-core processor architectures.
-- In multi-user environments, each `ExecutionContext` can have specific authentication and authorization settings to securely encapsulate sensitive data and operations.
+Contexts are also a tool in their own right. Because each context can carry its own [query scope](../how-to-guides/query-scope.md) and [update graph](./dag.md#update-graph-ug-cycles), you can use contexts to keep independent real-time workloads from stepping on each other's variables or update cycles.
 
 ## When an `ExecutionContext` is needed
 
-An `ExecutionContext` must be used if:
+The script session supplies a context for the code you run in the console. You must supply one yourself when:
 
-- A table operation takes place in a separate thread or context.
-- A table operation may cause downstream operations to occur at a future point in time after the query scope has had the chance to change.
+- A table operation runs in a thread other than the script session's thread.
+- A table operation does deferred work: the engine runs part of it later, outside the script session, such as when a new partition arrives in a [partitioned table](../how-to-guides/partitioned-tables.md).
 
 ### Table operations in a separate thread
 
-Take, for instance, the following code, which attempts to use a [`TablePublisher`](../reference/table-operations/create/TablePublisher.md) to write data to a [blink table](../conceptual/table-types.md#specialization-3-blink) in a separate thread once per second:
+Each thread has its own current context. A thread you start has no usable context until you open one in it.
+
+Take, for instance, the following code, which attempts to use a [`TablePublisher`](../reference/table-operations/create/TablePublisher.md) to write data to a [blink table](./table-types.md#specialization-3-blink) in a separate thread once per second:
 
 ```python ticking-table should-fail
 from deephaven.stream.table_publisher import table_publisher
 from deephaven import dtypes as dht
 from deephaven import empty_table
-import asyncio, random, threading, time
+import random, threading, time
 
-coldefs = {"X": dht.int32, "Y": dht.double}
+col_defs = {"X": dht.int32, "Y": dht.double}
 
 
 def shut_down():
@@ -42,12 +42,8 @@ def shut_down():
 
 
 source, p = table_publisher(
-    name="Publisher", col_defs=coldefs, on_shutdown_callback=shut_down
+    name="Publisher", col_defs=col_defs, on_shutdown_callback=shut_down
 )
-
-
-def when_done():
-    p.publish_failure(RuntimeError("shut_down"))
 
 
 def add_table(n):
@@ -66,13 +62,15 @@ thread = threading.Thread(target=thread_func)
 thread.start()
 ```
 
-This causes Deephaven to crash with the following error:
+The table operation in the new thread fails, and the server log shows the following error:
 
 ```
 No ExecutionContext registered, or current ExecutionContext has no QueryScope. If this is being run in a thread, did you specify an ExecutionContext for the thread? Please refer to the documentation on ExecutionContext for details.
 ```
 
-This occurs because [`add`](../reference/table-operations/create/TablePublisher.md#methods), called in a separate thread, performs table operations and isn't encapsulated in an ExecutionContext. A fix as simple as the following will allow the code to run:
+This occurs because `add_table` runs in a separate thread, and the table operations it calls ([`empty_table`](../reference/table-operations/create/emptyTable.md) and [`update`](../reference/table-operations/select/update.md)) don't run inside an open [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.ExecutionContext).
+
+A simple fix lets the code run. Get the script session's context with [`get_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.get_exec_ctx), then open it in the thread with a Python [`with`](https://peps.python.org/pep-0343/) statement:
 
 ```python reset ticking-table order=null
 from deephaven.stream.table_publisher import table_publisher
@@ -81,7 +79,7 @@ from deephaven import dtypes as dht
 from deephaven import empty_table
 import random, threading, time
 
-coldefs = {"X": dht.int32, "Y": dht.double}
+col_defs = {"X": dht.int32, "Y": dht.double}
 
 
 def shut_down():
@@ -89,12 +87,8 @@ def shut_down():
 
 
 source, p = table_publisher(
-    name="Publisher", col_defs=coldefs, on_shutdown_callback=shut_down
+    name="Publisher", col_defs=col_defs, on_shutdown_callback=shut_down
 )
-
-
-def when_done():
-    p.publish_failure(RuntimeError("shut_down"))
 
 
 def add_table(n):
@@ -117,133 +111,114 @@ thread.start()
 
 ![The ticking `source` table](../assets/conceptual/exec-ctx-publisher.gif)
 
-### Table operations that produce deferred results
+The `source` [blink table](./table-types.md#specialization-3-blink) now receives a batch of 5 to 10 random rows about once per second, five times. Several threads can use the same execution context, so any other thread you start can open `ctx` the same way.
 
-Below is a block of Python code that contains a table operation that produces a deferred result. The `max_date` function is called in the [`transform`](../reference/table-operations/partitioned-tables/transform.md) method of a `PartitionedTable`:
+### Table operations that do deferred work
 
-```python skip-test
+A [partitioned table transform](../how-to-guides/partitioned-tables.md#transform) can do deferred work: if a new partition arrives later, the engine re-evaluates the transform function for that partition.
+
+Operations that record a context for later work don't record a systemic one. Because the script session's context is systemic, [`transform`](../reference/table-operations/partitioned-tables/transform.md) doesn't record it for that deferred work. The function then runs without access to the query library, [query scope](../how-to-guides/query-scope.md), or query compiler unless it opens an execution context itself.
+
+A [`time_table`](../reference/table-operations/create/timeTable.md) starts empty, so in the following code every partition arrives after [`transform`](../reference/table-operations/partitioned-tables/transform.md) is set up, and each call to `max_date` is deferred work:
+
+- `source` is a [time table](../how-to-guides/time-table.md) that adds a row every second. Its `Key` column is `A` for the first five rows and `B` after that.
+- [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md) splits `source` into a [partitioned table](../how-to-guides/partitioned-tables.md) with one partition per key.
+- [`transform`](../reference/table-operations/partitioned-tables/transform.md) calls `max_date` on each partition. `max_date` opens the script session's context, `main_exec_ctx`, around its table operations.
+
+```python ticking-table order=null
+from deephaven import time_table
 from deephaven.execution_context import get_exec_ctx
+from deephaven.table import Table
+from deephaven.updateby import cum_max
 
 main_exec_ctx = get_exec_ctx()
+
 
 def max_date(t: Table) -> Table:
     with main_exec_ctx:
         return (
             t.update_by([cum_max(["MaxTimestamp = Timestamp"])])
-            .update_view(["Date=formatDate(MaxTimestamp, timeZone(`PT`))"])
+            .update_view(["Date = formatDate(MaxTimestamp, timeZone(`PT`))"])
             .drop_columns(["MaxTimestamp"])
         )
 
-my_partitioned_table = (
-    consume_to_partitioned_table(
-        ...
-    )
-    .transform(max_date)
-    ...
-)
+
+source = time_table("PT1s").update("Key = ii < 5 ? `A` : `B`")
+my_partitioned_table = source.partition_by("Key").transform(max_date)
 ```
 
-A partitioned table transform can be a deferred operation. For instance, if a new partition is added to `my_partitioned_table` at a later time, `max_date` will be re-evaluated for the new partition. The query scope may be different then, so the `ExecutionContext` must be explicitly specified.
+Alternatively, open a non-systemic context around the [`transform`](../reference/table-operations/partitioned-tables/transform.md) call. Called with no arguments, [`make_user_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.make_user_exec_ctx) returns a _user_ execution context: a copy of the current context that isn't systemic. Because it isn't systemic, [`transform`](../reference/table-operations/partitioned-tables/transform.md) records it, so `max_date` runs in it without its own [`with`](https://peps.python.org/pep-0343/) block:
 
-## Systemic vs Separate `ExecutionContext`
-
-For most applications where a single user runs Deephaven, the systemic execution context will be enough for their needs. There are more complex use cases where multiple execution contexts can be critical.
-
-- A secondary update graph can provide resource isolation, improved performance, and user-specific workflows.
-- Fixing variables that can be found in the query scope. Deferred table creation in loops must be parameterized correctly.
-- Multithreaded queries may want separate execution contexts for safe execution of deferred operations.
-- If multiple users are using the same Deephaven server, each user can keep their work completely separate from one another.
-- If a single user wishes to avoid any crossing of data between separate workloads, each workload can be done in an isolated environment.
-- Restriction of allowed operations in deferred execution (if supported by the AuthContext in use).
-
-### Multiple execution contexts
-
-The previous examples in this guide have only shown the use of the systemic execution context. You can create additional execution contexts with [`make_user_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.make_user_exec_ctx). Called with no arguments, `make_user_exec_ctx` returns a non-systemic execution context that shares the current query scope, query library, query compiler, and update graph. To isolate variables, pass `freeze_vars` (shown below). To isolate the update graph, [create an execution context from scratch](#creating-execution-contexts-from-scratch).
-
-The following code block writes to a [table publisher](../reference/table-operations/create/TablePublisher.md) in the systemic execution context, then uses a user execution context to perform a [partitioned table transform](../how-to-guides/partitioned-tables.md#transform):
-
-```python skip-test
-from deephaven.stream.table_publisher import table_publisher
-from deephaven.execution_context import get_exec_ctx, make_user_exec_ctx
-from deephaven import dtypes as dht
-from deephaven import empty_table
-import random, threading, time
-
-coldefs = {"X": dht.int32, "Y": dht.double}
-
-
-def shut_down():
-    print("Shutting down table publisher.")
-
-
-source, p = table_publisher(
-    name="Publisher", col_defs=coldefs, on_shutdown_callback=shut_down
-)
-
-
-def when_done():
-    p.publish_failure(RuntimeError("shut_down"))
-
-
-def add_table(n):
-    p.add(
-        empty_table(n).update(["X = randomInt(0, 10)", "Y = randomDouble(-50.0, 50.0)"])
-    )
-
-
-def thread_func():
-    with systemic_ctx:  # Encapsulate table operations in the execution context
-        for i in range(5):
-            add_table(random.randint(5, 10))
-            time.sleep(1)
-
-
-systemic_ctx = get_exec_ctx()  # Get the systemic execution context
-thread = threading.Thread(target=thread_func)
-thread.start()
+```python ticking-table order=null
+from deephaven import time_table
+from deephaven.execution_context import make_user_exec_ctx
+from deephaven.table import Table
+from deephaven.updateby import cum_max
 
 user_ctx = make_user_exec_ctx()  # Create a new execution context
 
-def max_date(t: Table) -> Table:
-    with user_ctx:
-        return (
-            t.update_by([cum_max(["MaxTimestamp = Timestamp"])])
-            .update_view(["Date=formatDate(MaxTimestamp, timeZone(`PT`))"])
-            .drop_columns(["MaxTimestamp"])
-        )
 
-my_partitioned_table = (
-    consume_to_partitioned_table(
-        ...
+def max_date(t: Table) -> Table:
+    return (
+        t.update_by([cum_max(["MaxTimestamp = Timestamp"])])
+        .update_view(["Date = formatDate(MaxTimestamp, timeZone(`PT`))"])
+        .drop_columns(["MaxTimestamp"])
     )
-    .transform(max_date)
-    ...
-)
+
+
+source = time_table("PT1s").update("Key = ii < 5 ? `A` : `B`")
+
+with user_ctx:
+    my_partitioned_table = source.partition_by("Key").transform(max_date)
 ```
 
-When you pass a sequence of variable names to `freeze_vars`, the new execution context gets its own query scope that holds only those variables and their current values. The following code block freezes `value1`, `value2`, and `value3`:
+## When and how to create additional execution contexts
 
-```python skip-test
+For most applications where a single user runs Deephaven, the systemic execution context is enough. Each [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.ExecutionContext) can have its own [update graph](./dag.md#update-graph-ug-cycles), query library, and [query scope](../how-to-guides/query-scope.md), which lets you compartmentalize units of code so they work independently of one another. That matters in these more complex use cases:
+
+- **Freezing query-scope variables**: Some work must keep the values its variables had when it was set up. For example, [transforms](../reference/table-operations/partitioned-tables/transform.md) set up in a loop each need their own iteration's value, and a thread might need to be shielded from changes that other threads make to the [query scope](../how-to-guides/query-scope.md). Pass `freeze_vars` to [`make_user_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.make_user_exec_ctx), described in [Create a context from the current one](#create-a-context-from-the-current-one).
+- **Isolating update processing**: A secondary [update graph](./dag.md#update-graph-ug-cycles) runs its own update cycles, so an expensive operation on it doesn't delay the update cycles of the main graph. Separate [update graphs](./dag.md#update-graph-ug-cycles) refresh independently, so their update cycles can run in parallel on different cores. Build a context with its own [update graph](./dag.md#update-graph-ug-cycles), described in [Create an execution context from scratch](#create-an-execution-context-from-scratch).
+- **Separating workloads**: When multiple users share a Deephaven server, or a single user wants to keep each workload's variables, imports, and update processing separate from the others, each workload can run in a context with its own [query scope](../how-to-guides/query-scope.md), query library, and [update graph](./dag.md#update-graph-ug-cycles). Build each context from scratch, described in [Create an execution context from scratch](#create-an-execution-context-from-scratch).
+
+### Create a context from the current one
+
+The [thread](#table-operations-in-a-separate-thread) example and the first [partitioned table transform](#table-operations-that-do-deferred-work) example above reuse the script session's own context, which [`get_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.get_exec_ctx) returns. [`make_user_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.make_user_exec_ctx) creates a user execution context, which isn't systemic.
+
+- Called with no arguments, it shares the current [query scope](../how-to-guides/query-scope.md), query library, query compiler, and [update graph](./dag.md#update-graph-ug-cycles), as in the [deferred-work example](#table-operations-that-do-deferred-work).
+- Called with `freeze_vars`, it gets its own [query scope](../how-to-guides/query-scope.md) (shown below).
+
+`freeze_vars` is a name or sequence of names from the current [query scope](../how-to-guides/query-scope.md). The new context's [query scope](../how-to-guides/query-scope.md) contains only those names, with their current values, and later changes to those variables aren't visible in it.
+
+The following code block freezes `value1`, `value2`, and `value3`, then sets `value1` to 100. It runs the same [`update`](../reference/table-operations/select/update.md) on an [`empty_table`](../reference/table-operations/create/emptyTable.md) inside and outside the new context:
+
+```python order=inside,outside
+from deephaven import empty_table
 from deephaven.execution_context import make_user_exec_ctx
 
+value1, value2, value3 = 1, 2, 3
+
 user_ctx = make_user_exec_ctx(freeze_vars=["value1", "value2", "value3"])
+
+value1 = 100
+
+with user_ctx:
+    inside = empty_table(1).update("X = value1")
+
+outside = empty_table(1).update("X = value1")
 ```
 
-### Creating execution contexts from scratch
+`inside` shows 1, the value `value1` had when the context was created, and `outside` shows 100.
 
-In some scenarios, you may need to create an `ExecutionContext` completely from scratch rather than using the systemic context or `make_user_exec_ctx`. This is particularly useful when:
+Neither form gives the context its own [update graph](./dag.md#update-graph-ug-cycles). For that, [create an execution context from scratch](#create-an-execution-context-from-scratch).
 
-- Working with the Java client where no default execution context exists.
-- Creating isolated environments with custom update graphs.
-- Using an [`EventDrivenUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html) for specific use cases.
-- Building completely independent execution environments.
+### Create an execution context from scratch
 
-The following example demonstrates how to build an `ExecutionContext` from scratch using Java interop:
+Create an [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.ExecutionContext) from scratch, instead of using the systemic context or [`make_user_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.make_user_exec_ctx), when you need a context with its own query library or its own [update graph](./dag.md#update-graph-ug-cycles), such as a separate [`PeriodicUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html) or an [`EventDrivenUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html) that refreshes only on request.
+
+The following example builds an [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.ExecutionContext) from scratch by calling the Java builder through [`jpy`](../how-to-guides/use-jpy.md):
 
 ```python skip-test
 import jpy
-from deephaven.jcompat import j_hashmap
-import tempfile
 
 ExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
 QueryCompilerImpl = jpy.get_type("io.deephaven.engine.context.QueryCompilerImpl")
@@ -254,64 +229,94 @@ OperationInitializer = jpy.get_type(
     "io.deephaven.engine.updategraph.OperationInitializer"
 )
 
-temp_dir = tempfile.mkdtemp(prefix="qc_")
+update_graph = PeriodicUpdateGraph.newBuilder("MyCustomGraph").build()
 
 execution_context = (
     ExecutionContext.newBuilder()
     .newQueryLibrary()
     .newQueryScope()
     .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
-    .setUpdateGraph(PeriodicUpdateGraph.newBuilder("MyCustomGraph").build())
+    .setUpdateGraph(update_graph)
     .setQueryCompiler(QueryCompilerImpl.create())
     .build()
 )
+
+update_graph.start()
 ```
 
+A context also has an operation initializer, which controls whether operations parallelize their initial work. It also carries the [`AuthContext`](/core/javadoc/io/deephaven/auth/AuthContext.html) that was current when the context was built. Deephaven records that [`AuthContext`](/core/javadoc/io/deephaven/auth/AuthContext.html) with the work done in that context, for example in the performance logs.
+
+The builder lets you specify each component:
+
+- **Query library**: A new query library with only the default imports, via [`newQueryLibrary`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#newQueryLibrary()).
+- **[Query scope](../how-to-guides/query-scope.md)**: A new, empty [query scope](../how-to-guides/query-scope.md), via [`newQueryScope`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#newQueryScope()).
+- **Operation initializer**: Whether and how the engine parallelizes the initial work of table operations in this context, via [`setOperationInitializer`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#setOperationInitializer(io.deephaven.engine.updategraph.OperationInitializer)). The example passes [`OperationInitializer.NON_PARALLELIZABLE`](/core/javadoc/io/deephaven/engine/updategraph/OperationInitializer.html#NON_PARALLELIZABLE), which runs that work on the calling thread.
+- **[Update graph](./dag.md#update-graph-ug-cycles)**: A custom [update graph](./dag.md#update-graph-ug-cycles), such as a [`PeriodicUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html) or an [`EventDrivenUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html), via [`setUpdateGraph`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#setUpdateGraph(io.deephaven.engine.updategraph.UpdateGraph)).
+- **Query compiler**: The compiler that turns query strings into code, via [`setQueryCompiler`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#setQueryCompiler(io.deephaven.engine.context.QueryCompiler)). [`QueryCompilerImpl.create`](/core/javadoc/io/deephaven/engine/context/QueryCompilerImpl.html) also accepts an optional directory to add to the compiler's classpath and an optional parent class loader.
+
+[`newBuilder`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.html#newBuilder()) starts from the current thread's [update graph](./dag.md#update-graph-ug-cycles), operation initializer, and [`AuthContext`](/core/javadoc/io/deephaven/auth/AuthContext.html). The example replaces the [update graph](./dag.md#update-graph-ug-cycles) and operation initializer and keeps the [`AuthContext`](/core/javadoc/io/deephaven/auth/AuthContext.html).
+
+A new [`PeriodicUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html) doesn't refresh until you call its [`start`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html#start()) method, as the example does.
+
+The builder chain returns `execution_context` as a Java object, and a Python [`with`](https://peps.python.org/pep-0343/) statement can't open it directly. Wrap it in the Python [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.ExecutionContext) class first:
+
+```python skip-test
+from deephaven.execution_context import ExecutionContext as PyExecutionContext
+
+ctx = PyExecutionContext(j_exec_ctx=execution_context)
+
+with ctx:
+    ...
+```
+
+Because the [query scope](../how-to-guides/query-scope.md) is new and empty, query strings in this context can't see the script's Python variables or functions. Query strings that use them fail with a `Cannot find variable or class` or `Cannot find method` error. Put any values they need in the context's [query scope](../how-to-guides/query-scope.md) first, for example with `execution_context.getQueryScope().putParam("my_value", my_value)`.
+
+Refreshing tables that belong to different [update graphs](./dag.md#update-graph-ug-cycles) can't be used together in one table operation. For example, a [join](../how-to-guides/joins-exact-relational.md) between a table that ticks on `MyCustomGraph` and a table that ticks on the server's main [update graph](./dag.md#update-graph-ug-cycles) fails.
+
 > [!NOTE]
-> When creating a new update graph, you must provide a unique name. If you're running this in a Deephaven server where a "DEFAULT" update graph already exists, use a different name like "MyCustomGraph" to avoid conflicts.
+> [Update graph](./dag.md#update-graph-ug-cycles) names must be unique within the JVM.
+>
+> - Building a graph with a name that's already in use, including re-running this example, throws an `IllegalStateException`.
+> - The Deephaven server's own [update graph](./dag.md#update-graph-ug-cycles) is named `"DEFAULT"`, so don't use that name.
+> - To reuse an existing graph when you re-run the code, call the graph builder's [`existingOrBuild`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.Builder.html#existingOrBuild()) method instead of [`build`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.Builder.html#build()). Both [`PeriodicUpdateGraph.Builder`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.Builder.html) and [`EventDrivenUpdateGraph.Builder`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.Builder.html) provide it.
 
-This approach allows you to specify:
-
-- **Query library**: A new, empty query library via `newQueryLibrary`.
-- **Query scope**: A new, empty query scope via `newQueryScope`.
-- **Operation initializer**: Parallelization behavior of operations.
-- **Update graph**: A custom update graph (e.g., `PeriodicUpdateGraph` or `EventDrivenUpdateGraph`).
-- **Query compiler**: A custom query compiler, which can be created with an optional class directory, plus optional classloader
-
-For use cases requiring event-driven updates instead of periodic updates, you can substitute an `EventDrivenUpdateGraph`:
+To refresh only on demand, build an [`EventDrivenUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html) instead of the [`PeriodicUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html) and pass it to [`setUpdateGraph`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#setUpdateGraph(io.deephaven.engine.updategraph.UpdateGraph)) in the builder chain above. An event-driven graph has no `start` method, so leave out the [`start`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html#start()) call. Instead, it runs one update cycle each time you call its [`requestRefresh`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html#requestRefresh()) method:
 
 ```python skip-test
 import jpy
-import tempfile
 
-ExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-QueryCompilerImpl = jpy.get_type("io.deephaven.engine.context.QueryCompilerImpl")
 EventDrivenUpdateGraph = jpy.get_type(
     "io.deephaven.engine.updategraph.impl.EventDrivenUpdateGraph"
 )
-OperationInitializer = jpy.get_type(
-    "io.deephaven.engine.updategraph.OperationInitializer"
-)
-
-temp_dir = tempfile.mkdtemp(prefix="qc_")
 
 event_driven_graph = EventDrivenUpdateGraph.newBuilder("EventDriven").build()
 
-execution_context = (
-    ExecutionContext.newBuilder()
-    .newQueryLibrary()
-    .newQueryScope()
-    .setOperationInitializer(OperationInitializer.NON_PARALLELIZABLE)
-    .setUpdateGraph(event_driven_graph)
-    .setQueryCompiler(QueryCompilerImpl.create())
-    .build()
-)
+# Pass event_driven_graph to setUpdateGraph when building the execution context.
+# Then run an update cycle whenever new data should be processed:
+event_driven_graph.requestRefresh()
 ```
 
 ## Related documentation
 
+- [Live DAG](./dag.md)
+- [Table types](./table-types.md)
 - [Create an empty table](../how-to-guides/new-and-empty-table.md#empty_table)
+- [Partitioned tables](../how-to-guides/partitioned-tables.md)
+- [Query scope](../how-to-guides/query-scope.md)
+- [Time tables](../how-to-guides/time-table.md)
+- [Use jpy](../how-to-guides/use-jpy.md)
 - [Deephaven data types](../reference/python/deephaven-python-types.md)
+- [`cum_max`](../reference/table-operations/update-by-operations/cum-max.md)
+- [`drop_columns`](../reference/table-operations/select/drop-columns.md)
+- [`empty_table`](../reference/table-operations/create/emptyTable.md)
+- [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md)
 - [`TablePublisher`](../reference/table-operations/create/TablePublisher.md)
+- [`time_table`](../reference/table-operations/create/timeTable.md)
+- [`transform`](../reference/table-operations/partitioned-tables/transform.md)
 - [`update`](../reference/table-operations/select/update.md)
-- [Pydoc](/core/pydoc/code/deephaven.execution_context.html#module-deephaven.execution_context)
+- [`update_by`](../reference/table-operations/update-by-operations/updateBy.md)
+- [`update_view`](../reference/table-operations/select/update-view.md)
+- [`deephaven.execution_context` Pydoc](/core/pydoc/code/deephaven.execution_context.html#module-deephaven.execution_context)
+- [`ExecutionContext` Javadoc](/core/javadoc/io/deephaven/engine/context/ExecutionContext.html)
+- [`PeriodicUpdateGraph` Javadoc](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html)
+- [`EventDrivenUpdateGraph` Javadoc](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html)

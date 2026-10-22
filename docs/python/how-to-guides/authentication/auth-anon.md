@@ -38,7 +38,8 @@ from deephaven_server import Server
 
 s = Server(
     jvm_args=["-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler"]
-).start()
+)
+s.start()
 ```
 
 ## Related documentation

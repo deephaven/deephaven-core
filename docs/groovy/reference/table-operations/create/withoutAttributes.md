@@ -13,7 +13,7 @@ table.withoutAttributes(toRemove)
 ## Parameters
 
 <ParamTable>
-<Param name="toRemove>" type="Collection<String>">
+<Param name="toRemove" type="Collection<String>">
 
 The names of the attributes to remove.
 

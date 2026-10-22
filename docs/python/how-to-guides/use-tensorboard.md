@@ -2,30 +2,55 @@
 title: Use TensorBoard with Deephaven
 ---
 
-This guide will show you how to use [TensorBoard](https://www.tensorflow.org/tensorboard) with either [TensorFlow](https://www.tensorflow.org/) or [PyTorch](https://pytorch.org/) in Deephaven queries.
+This guide shows how to use [TensorBoard](https://www.tensorflow.org/tensorboard) with either [TensorFlow](https://www.tensorflow.org/) or [PyTorch](https://pytorch.org/) in Deephaven queries.
 
-[TensorBoard](https://www.tensorflow.org/tensorboard) is one of the most useful tools when training deep neural networks. Many consider the neural network to be a black box, but TensorBoard can shed some light on how to improve your model. TensorBoard can track your experiment metrics like loss and accuracy, visualize the model’s architecture, check model weights and biases, profile your model to see its performance, help tune hyperparameters, project embeddings to a lower dimensional space, and much more. If the training time of your neural network is a couple of hours/days, you can watch updating statistics in a TensorBoard dashboard in real time, making it a natural pairing with Deephaven.
+[TensorBoard](https://www.tensorflow.org/tensorboard) is one of the most useful tools when training deep neural networks. Many consider the neural network to be a black box, but TensorBoard can shed some light on how to improve your model. TensorBoard can:
 
-Don't sweat: using TensorBoard with Deephaven's powerful table engine is easy and requires just a couple of lines of code!
+- Track experiment metrics such as loss and accuracy.
+- Visualize the model's architecture.
+- Show model weights and biases.
+- Profile your model's performance.
+- Help tune hyperparameters.
+- Project embeddings to a lower-dimensional space.
 
-## Using TensorBoard with TensorFlow
+If training your neural network takes hours or days, you can watch its statistics update in a TensorBoard dashboard in real time. That makes TensorBoard a natural fit for Deephaven's real-time tables.
 
-In our example, we will be using one of the pre-built Deephaven Docker images: [Python with TensorFlow](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/TensorFlow/docker-compose.yml). If you need detailed instructions on how to launch Deephaven from pre-built images, please see [this guide](../getting-started/docker-install.md#choose-a-deployment).
+To keep the TensorBoard steps short, the examples below train on a static table. To apply a trained model to a live table that updates as new data arrives, see [Predict on a live table](./use-tensorflow.md#predict-on-a-live-table) in the TensorFlow guide and [Predict on live data](./use-pytorch.md#predict-on-live-data) in the PyTorch guide.
 
-### Classification example
+Don't sweat: using TensorBoard with Deephaven's powerful table engine is easy and takes only a few lines of code!
 
-We will classify the Iris dataset with Deephaven tables and use the same Keras neural network we built in [our TensorFlow tutorial](./use-tensorflow.md#classify-the-iris-dataset-with-deephaven-tables). We will only need to add a few lines of code to enable TensorBoard!
+## Set up the server
 
-First, we have to set a log directory. This is where TensorBoard will store the logs. It will read these logs to show various visualizations:
+To follow along, you need a Deephaven server with TensorBoard and either TensorFlow or PyTorch installed, and port 6006 published so your browser can reach TensorBoard. The image named in each section below includes TensorBoard and that section's framework, and the `docker-compose.yml` file linked there also publishes port 6006.
+
+If you start an image with `docker run` instead, publish port 6006 alongside port 10000. This command starts the `server-tensorflow` image:
+
+```sh
+docker run --name deephaven -p 10000:10000 -p 6006:6006 ghcr.io/deephaven/server-tensorflow:latest
+```
+
+For the PyTorch example, replace `server-tensorflow` with `server-pytorch`.
+
+For other ways to launch Deephaven from pre-built images, see the [Docker install guide](../getting-started/docker-install.md#choose-a-deployment).
+
+## Use TensorBoard with TensorFlow
+
+This example uses the `server-tensorflow` image, which includes TensorFlow and TensorBoard. Start it with the [TensorFlow `docker-compose.yml` file](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/TensorFlow/docker-compose.yml).
+
+This example classifies the Iris dataset with Deephaven tables, using the same neural network that the [TensorFlow guide](./use-tensorflow.md#classify-the-iris-dataset-with-deephaven-tables) builds with [Keras](https://www.tensorflow.org/guide/keras), TensorFlow's high-level API for building models. You only need to add a few lines of code to enable TensorBoard!
+
+### Enable logging and start TensorBoard
+
+First, set a log directory. The training code writes its logs to this directory, and TensorBoard reads them to build its visualizations:
 
 ```python skip-test
 import os
 
 log_dir = "tensorboard_logs"
-os.system("mkdir '{}'".format(log_dir))
+os.makedirs(log_dir, exist_ok=True)
 ```
 
-Second, we need to run TensorBoard and provide the log directory and port number:
+Second, run TensorBoard with the log directory and port number. The `--bind_all` flag makes TensorBoard listen on all network interfaces, so your browser can reach it through the published port from outside the container:
 
 ```python skip-test
 import os
@@ -33,10 +58,12 @@ import os
 os.system("tensorboard --logdir='{}' --port 6006 --bind_all &".format(log_dir))
 ```
 
-After that, your TensorBoard dashboard will be available via the browser using the following URL:
+With port 6006 published, your TensorBoard dashboard is now available in the browser at the following URL:
 [http://localhost:6006](http://localhost:6006)
 
-The TensorBoard dashboard is not active yet. To have some meaningful information in it, we need to specify the TensorBoard callback during the model’s fit method. The TensorBoard callback is just an object that will allow us to write to Tensorboard logs after every epoch:
+TensorBoard keeps running in the background. If you run this code again, delete the `tensorboard_logs` directory first, or set `log_dir` to a new folder, so the new run's charts don't overlay the old ones.
+
+The TensorBoard dashboard has no data to show yet. To give it data, use a Keras callback: an object that Keras calls during training. Create a [`TensorBoard`](https://www.tensorflow.org/api_docs/python/tf/keras/callbacks/TensorBoard) callback and pass it to the model's [`fit`](https://www.tensorflow.org/api_docs/python/tf/keras/Model#fit) method. With the settings below, it writes most of its logs at the end of each epoch:
 
 ```python skip-test
 from tensorflow.keras.callbacks import TensorBoard
@@ -52,32 +79,49 @@ tensorboard_callback = TensorBoard(
 )
 ```
 
-The final step is to pass the callback to the function that trains the model:
+Each argument controls what the callback logs:
+
+- `update_freq="epoch"` writes the loss and metrics once per epoch.
+- `write_graph=True` logs the model graph that the Graphs tab shows.
+- `histogram_freq=1` logs weight and bias histograms every epoch.
+- `write_images=True` logs the weights as images each time `histogram_freq` logs histograms, so it has no effect when `histogram_freq` is 0.
+- `profile_batch=2` profiles the second training batch. Viewing the profile needs an extra package; see [View the results](#view-the-results).
+- `embeddings_freq=1` logs data for any embedding layers. This model has none; see [View the results](#view-the-results).
+
+See the [`TensorBoard` callback reference](https://www.tensorflow.org/api_docs/python/tf/keras/callbacks/TensorBoard) for every option.
+
+The final step is to pass the callback to the model's `fit` method. In the complete script below, that call is inside `train_model`, the function that Deephaven's [`learn`](/core/pydoc/code/deephaven.learn.html#deephaven.learn.learn) function calls to train the model on table data:
 
 ```python skip-test
-def train_model(X_train, Y_train):
+def train_model(x_train, y_train):
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=0.01),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(),
         metrics=["accuracy"],
     )
-    model.fit(x=X_train, y=Y_train, epochs=20, callbacks=[tensorboard_callback])
+    model.fit(x=x_train, y=y_train, epochs=20, callbacks=[tensorboard_callback])
 ```
 
-So the complete script looks like this:
+### Complete example
+
+The complete script below does the following:
+
+1. Reads the Iris dataset with [`read_csv`](../reference/data-import-export/CSV/readCsv.md).
+2. Converts the class names to numbers with [`update`](../reference/table-operations/select/update.md). The `-> np.intc` [type hint](./python-functions.md#type-hints) on `get_class_number` makes the resulting `Class` column an `int` column.
+3. Calls [`learn`](/core/pydoc/code/deephaven.learn.html#deephaven.learn.learn) twice: once to train the model, and once to create `iris_predicted_static`, a copy of `iris` with a `PredictedClass` column of predictions. [`learn.Input`](/core/pydoc/code/deephaven.learn.html#deephaven.learn.Input) and [`learn.Output`](/core/pydoc/code/deephaven.learn.html#deephaven.learn.Output) map table columns to and from the model, and [`gather`](/core/pydoc/code/deephaven.learn.gather.html#module-deephaven.learn.gather) converts columns to arrays. [How to use `deephaven.learn`](./use-deephaven-learn.md) explains these in detail.
+
+Here is the full script:
 
 ```python skip-test
 import os
 
 # Set up the name of the log directory and run TensorBoard using port 6006
 log_dir = "tensorboard_logs"
-os.system("mkdir '{}'".format(log_dir))
+os.makedirs(log_dir, exist_ok=True)
 os.system("tensorboard --logdir='{}' --port 6006 --bind_all &".format(log_dir))
 
 
 # Deephaven imports
-from deephaven import DynamicTableWriter
-import deephaven.dtypes as dht
 from deephaven.learn import gather
 from deephaven import read_csv
 from deephaven import learn
@@ -85,35 +129,30 @@ from deephaven import learn
 # Machine learning imports
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.callbacks import TensorBoard
 
 # Additional required imports
 import numpy as np
-import random, threading, time
 
-# Read and quantize the Iris dataset
+# Read the Iris dataset and convert the class names to numbers
 iris_raw = read_csv(
     "https://media.githubusercontent.com/media/deephaven/examples/main/Iris/csv/iris.csv"
 )
 
-classes = {}
-num_classes = 0
+iris_mappings = {"Iris-setosa": 0, "Iris-virginica": 1, "Iris-versicolor": 2}
 
 
 def get_class_number(c) -> np.intc:
-    global classes, num_classes
-    if c not in classes:
-        classes[c] = num_classes
-        num_classes += 1
-    return classes[c]
+    return iris_mappings[c]
 
 
 iris = iris_raw.update(formulas=["Class = get_class_number(Class)"])
 
 # Our neural network
 model = Sequential()
-model.add(Dense(16, input_shape=(4,), activation=tf.nn.relu))
+model.add(Input(shape=(4,)))
+model.add(Dense(16, activation=tf.nn.relu))
 model.add(Dense(12, activation=tf.nn.relu))
 model.add(Dense(3, activation=tf.nn.softmax))
 
@@ -129,20 +168,18 @@ tensorboard_callback = TensorBoard(
 )
 
 
-# A function that trains the model with tensorboard_callback passed as a parameter
-def train_model(X_train, Y_train):
+# A function that trains the model and passes tensorboard_callback to fit
+def train_model(x_train, y_train):
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=0.01),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(),
         metrics=["accuracy"],
     )
-    model.fit(x=X_train, y=Y_train, epochs=20, callbacks=[tensorboard_callback])
+    model.fit(x=x_train, y=y_train, epochs=20, callbacks=[tensorboard_callback])
 
 
 # A function that gets the model's predictions on input data
 def predict_with_model(features):
-    if features.ndim == 1:
-        features = np.expand_dims(features, 0)
     predictions = model.predict(features)
     return [np.argmax(item) for item in predictions]
 
@@ -192,63 +229,89 @@ iris_predicted_static = learn.learn(
 )
 ```
 
-After training the model, you can open the Tensorboard dashboard with [http://localhost:6006](http://localhost:6006) and explore the gathered data.
-The Scalars tab shows changes in the loss and metrics over the epochs. It can be used to track other scalar values, such as learning rate and training speed:
+### View the results
+
+After training the model, you can open the TensorBoard dashboard at [http://localhost:6006](http://localhost:6006) and explore the data the callback logged.
+
+The Scalars tab shows how the loss, the metrics, and the optimizer's learning rate changed over the epochs. To also log training speed, add `write_steps_per_second=True` to the callback. The following screenshot shows the loss and accuracy charts:
 
 ![A TensorBoard Scalars tab showing graphs that track epoch accuracy and loss](../assets/how-to/tensorboard-scalars-tf.png)
 
-The Graphs tab shows your model’s layers. You can use this to check if the model's architecture looks as intended.
+The Graphs tab opens on the op graph of the training step. To see your model's layers and check that the architecture looks as intended, select **Conceptual graph** under **Graph type**.
 
 ![The TensorBoard Graphs tab](../assets/how-to/tensorboard-graphs-tf.png)
 
-You can also use TensorBoard to check the distribution of the weights and biases over each epoch, visualize any vector representation (e.g., word embeddings and images), track the performance of every TensorFlow operation that has been executed, monitor hyperparameters and other cool things!
+The Distributions and Histograms tabs show how the weights and biases changed over the epochs. The `histogram_freq` argument logs this data.
 
-## Using TensorBoard with PyTorch
+The Images tab draws the weights that `write_images` logs as images. It logs them on the same epochs as the histograms.
 
-In this example, we will be using one of the pre-built Deephaven Docker images: [Python with PyTorch](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/PyTorch/docker-compose.yml). If you need detailed instructions on how to launch Deephaven from pre-built images, please see [this guide](../getting-started/docker-install.md#choose-a-deployment).
+Two callback arguments log data that this example can't fully display:
 
-### Classification example
+- `embeddings_freq`: this model has no embedding layers, so there is nothing to project. The callback still saves a weights checkpoint to the log directory's `train` folder every epoch.
+- `profile_batch`: the callback records the graph that ran for batch 2, and the Graphs tab shows it under the `batch_2` tag. It also records a performance profile of that batch. To display the profile, TensorBoard needs the `tensorboard-plugin-profile` package, which the `server-tensorflow` image doesn't include. To add it, see [How to install and use Python packages](./install-and-use-python-packages.md).
 
-This example classifies the Iris dataset with Deephaven tables, using the same PyTorch neural network (`IrisANN`) built in the [PyTorch guide](./use-pytorch.md#classify-the-iris-dataset-with-deephaven-tables). Enabling TensorBoard takes only a few extra lines of code.
+## Use TensorBoard with PyTorch
 
-First, we need to create a `SummaryWriter` instance to log data for consumption and visualization by TensorBoard:
+This example uses the `server-pytorch` image, which includes PyTorch and TensorBoard. Start it with the [PyTorch `docker-compose.yml` file](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/PyTorch/docker-compose.yml).
 
-```python skip-test
-from torch.utils.tensorboard import SummaryWriter
+This example classifies the Iris dataset with Deephaven tables, using the same PyTorch neural network (`IrisANN`) built in the [PyTorch guide](./use-pytorch.md#classify-the-iris-dataset-with-deephaven-tables). You only need to add a few lines of code to enable TensorBoard!
 
-log_dir = "tensorboard_logs"
-writer = SummaryWriter(log_dir)
-```
+### Enable logging and start TensorBoard
 
-Second, we need to run TensorBoard and provide the log directory and port number:
+First, create a log directory and run TensorBoard with that directory and port number. The `--bind_all` flag makes TensorBoard listen on all network interfaces, so your browser can reach it through the published port from outside the container:
 
 ```python skip-test
 import os
 
+log_dir = "tensorboard_logs"
+os.makedirs(log_dir, exist_ok=True)
 os.system("tensorboard --logdir='{}' --port 6006 --bind_all &".format(log_dir))
 ```
 
-After that, your TensorBoard dashboard will be available via the browser using the following URL:
+With port 6006 published, your TensorBoard dashboard is now available in the browser at the following URL:
 [http://localhost:6006](http://localhost:6006)
 
-The TensorBoard dashboard is not active yet. To have some meaningful information in it, let's use our `SummaryWriter` to write the model evaluation features that we want, e.g. loss:
+TensorBoard keeps running in the background. If you run this code again, delete the `tensorboard_logs` directory first, or set `log_dir` to a new folder, so the new run's charts don't overlay the old ones.
+
+Second, create a [`SummaryWriter`](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter) instance that writes the logs TensorBoard reads:
 
 ```python skip-test
-writer.add_scalar("Loss/train", loss, epoch)
+from torch.utils.tensorboard import SummaryWriter
+
+writer = SummaryWriter(log_dir)
 ```
 
-The complete script looks like this:
+The TensorBoard dashboard has no data to show yet. To give it something to show, use the `SummaryWriter` to log the metrics you want to track, such as the training loss. In the complete script below, `train_model` runs a loop over the epochs, where `i` is the epoch number and `loss` is that epoch's loss. Inside that loop, this line logs the loss for each epoch:
+
+```python skip-test
+writer.add_scalar("Loss/train", loss, i)
+```
+
+By default, `SummaryWriter` writes pending data to disk once 10 events are queued or every two minutes, whichever comes first. To make the dashboard show the final results right away, call `flush` on the writer when training finishes. The complete script below does this at the end of `train_model`:
+
+```python skip-test
+writer.flush()
+```
+
+### Complete example
+
+The complete script below does the following:
+
+1. Reads the Iris dataset with [`read_csv`](../reference/data-import-export/CSV/readCsv.md).
+2. Converts the class names to numbers with [`update`](../reference/table-operations/select/update.md). The `-> np.intc` [type hint](./python-functions.md#type-hints) on `get_class_number` makes the resulting `Class` column an `int` column.
+3. Calls [`learn`](/core/pydoc/code/deephaven.learn.html#deephaven.learn.learn) twice: once to train the model, and once to create `iris_predicted_static`, a copy of `iris` with a `PredictedClass` column of predictions. [`learn.Input`](/core/pydoc/code/deephaven.learn.html#deephaven.learn.Input) and [`learn.Output`](/core/pydoc/code/deephaven.learn.html#deephaven.learn.Output) map table columns to and from the model, and [`gather`](/core/pydoc/code/deephaven.learn.gather.html#module-deephaven.learn.gather) converts columns to arrays. [How to use `deephaven.learn`](./use-deephaven-learn.md) explains these in detail.
+
+Here is the full script:
 
 ```python skip-test
 import os
 
 # Set up the name of the log directory and run TensorBoard using port 6006
 log_dir = "tensorboard_logs"
+os.makedirs(log_dir, exist_ok=True)
 os.system("tensorboard --logdir='{}' --port 6006 --bind_all &".format(log_dir))
 
 # Deephaven imports
-from deephaven import DynamicTableWriter
-import deephaven.dtypes as dht
 from deephaven.learn import gather
 from deephaven import read_csv
 from deephaven import learn
@@ -260,24 +323,19 @@ import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 
 # Python imports
-import numpy as np, random, threading, time
+import numpy as np
 
 
-# Read and quantize the Iris dataset
+# Read the Iris dataset and convert the class names to numbers
 iris_raw = read_csv(
     "https://media.githubusercontent.com/media/deephaven/examples/main/Iris/csv/iris.csv"
 )
 
-classes = {}
-num_classes = 0
+iris_mappings = {"Iris-setosa": 0, "Iris-virginica": 1, "Iris-versicolor": 2}
 
 
 def get_class_number(c) -> np.intc:
-    global classes, num_classes
-    if c not in classes:
-        classes[c] = num_classes
-        num_classes += 1
-    return classes[c]
+    return iris_mappings[c]
 
 
 iris = iris_raw.update(formulas=["Class = get_class_number(Class)"])
@@ -307,7 +365,7 @@ writer = SummaryWriter(log_dir)
 
 
 # A function that trains the model
-def train_model(X_train, Y_train):
+def train_model(x_train, y_train):
     global model
     # Set training parameters
     criterion = nn.CrossEntropyLoss()
@@ -315,32 +373,30 @@ def train_model(X_train, Y_train):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     epochs = 50
 
-    loss_arr = []
-
     for i in range(epochs):
-        Y_hat = model.forward(X_train)
-        loss = criterion(Y_hat, Y_train.long())
+        y_hat = model(x_train)
+        loss = criterion(y_hat, y_train.long())
         writer.add_scalar("Loss/train", loss, i)
-        loss_arr.append(loss)
 
         if i % 10 == 0:
-            print(f"Epoch: {i} Loss: {loss}")
+            print(f"Epoch: {i} Loss: {loss.item():.4f}")
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
+    # Write any pending data so TensorBoard shows the full training run
+    writer.flush()
+
 
 # A function that gets the model's predictions from input data
 def predict_with_model(features):
-    if features.dim() == 1:
-        features = torch.unsqueeze(features, 0)
     preds = []
 
     with torch.no_grad():
         for val in features:
-            Y_hat = model.forward(val)
-            preds.append(Y_hat.argmax().item())
+            y_hat = model(val)
+            preds.append(y_hat.argmax().item())
 
     # Return the model's predictions
     return preds
@@ -393,20 +449,28 @@ iris_predicted_static = learn.learn(
 )
 ```
 
-After training the model, you can open the Tensorboard dashboard with [http://localhost:6006](http://localhost:6006) and see the results of your neutral networks training runs:
+### View the results
 
-![The TensorBoard dashboard, opened at `http://localhost:6006`](../assets/how-to/tensorboard-scalars-pytorch.png)
+After training the model, you can open the TensorBoard dashboard at [http://localhost:6006](http://localhost:6006) and see the results of your neural network's training runs:
 
-You can also use TensorBoard to check the distribution of the weights and biases over each epoch, visualize any vector representation (e.g., word embeddings and images), track the performance of every TensorFlow operation that has been executed, monitor hyperparameters, and more.
+![The TensorBoard Scalars tab showing the Loss/train curve over 50 epochs](../assets/how-to/tensorboard-scalars-pytorch.png)
+
+This example logs only the training loss, so the dashboard shows a single curve on the Scalars tab. To fill in TensorBoard's other tabs, log more data with `SummaryWriter` in `train_model`:
+
+- [`add_histogram`](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_histogram) logs histograms of weights and biases.
+- [`add_graph`](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_graph) logs the model graph.
+- [`add_embedding`](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_embedding) logs embeddings.
+- [`add_hparams`](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_hparams) logs hyperparameters.
 
 ## Related documentation
 
+- [Docker install guide](../getting-started/docker-install.md)
 - [How to install and use Python packages](./install-and-use-python-packages.md)
-- [How to use deephaven.learn](./use-deephaven-learn.md)
+- [How to use `deephaven.learn`](./use-deephaven-learn.md)
 - [How to use PyTorch](./use-pytorch.md)
 - [How to use TensorFlow](./use-tensorflow.md)
-- [How to use scikit-learn](./use-scikit-learn.md)
-- [Python variables in query strings](./python-variables.md)
 - [Python functions in query strings](./python-functions.md)
-- [Python classes and objects in query strings](./python-classes.md)
-- [How to write data to an in-memory, real-time table](./table-publisher.md)
+- [`read_csv`](../reference/data-import-export/CSV/readCsv.md)
+- [`update`](../reference/table-operations/select/update.md)
+- [`deephaven.learn` Pydoc](/core/pydoc/code/deephaven.learn.html#module-deephaven.learn)
+- [`deephaven.learn.gather` Pydoc](/core/pydoc/code/deephaven.learn.gather.html#module-deephaven.learn.gather)

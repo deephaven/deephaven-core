@@ -2,57 +2,81 @@
 title: Javadocs for Python users
 ---
 
-This guide will cover best practices for reading Javadocs as a Python user. Deephaven's query engine is written in Java, and Deephaven query strings can call Java, so a basic understanding of Javadocs and how to effectively use them can greatly benefit any Python user who wants to maximize the return from their queries.
+This guide covers best practices for reading Javadocs as a Python user. Deephaven's query engine is written in Java, and Deephaven [query strings](./query-string-overview.md) can call Java, so knowing how to read Javadocs helps you find the Java methods you can call in your queries and get the most out of them.
 
 ## What are Javadocs?
 
-[Javadoc](https://en.wikipedia.org/wiki/Javadoc) generates API-level documentation called Javadocs from Java source code. Javadocs are the primary source of documentation for Java libraries. Deephaven is no different. [Deephaven's Javadocs](/core/javadoc/) are an important resource and contain comprehensive reference material for all our core methods. When you first land on Deephaven's Javadocs, you see this:
+[Javadoc](https://en.wikipedia.org/wiki/Javadoc) generates API-level documentation called Javadocs from Java source code. Javadocs are the primary source of documentation for Java libraries. [Deephaven's Javadocs](/core/javadoc/) document Deephaven's Java classes and methods. When you first land on Deephaven's Javadocs, you see this:
 
 ![Deephaven Javadoc landing page with search bar and package list](../assets/how-to/javadoc-landingpage.png)
 
-The landing page for Deephaven's Javadocs contains a top menu bar, search bar, and a list of packages. The two most important items for Deephaven Python users are (in order):
-
-- The search bar
-- The package list
-
-Most Python developers using Deephaven will only need to use the search bar, but the package list can be helpful as well.
+The landing page contains a top menu bar, a search bar, and a list of packages. Most Python users only need the search bar. [Calculate a median](#calculate-a-median) shows how to search for a method with it. The package list is useful for browsing, and [Packages, interfaces, classes, and methods](#packages-interfaces-classes-and-methods) explains what it holds.
 
 ## Why would a Python user need to use Javadocs?
 
-Most Deephaven Python users won't need to use Javadocs very often. However, query strings in Deephaven implement Java code _regardless_ of which API is being used. Python queries benefit greatly from a "keep Java in Java and Python in Python as often as possible" approach. Thus, users should try to minimize the amount of Python objects they use in query strings. For more information on why, see [The Python-Java boundary](../conceptual/python-java-boundary.md). Deephaven's query library has a large variety of [built-in methods](./built-in-functions.md) and attributes that users can and should take full advantage of. All of these methods can be found in the Javadocs.
+You don't need the Javadocs for ordinary Python API calls such as [`update`](../reference/table-operations/select/update.md) or [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md). You need them when you write [query strings](./query-string-overview.md): the engine compiles them to Java _regardless_ of which API you use, so the functions built into them are Java methods.
+
+Those built-in methods are also the fast choice. A query performs best when it keeps Java in Java and Python in Python, so prefer a [built-in method](./built-in-functions.md) over a [Python function](./python-functions.md) in a [query string](./query-string-overview.md). That matters most on real-time and large tables, where a formula runs again for every row that's added or whose inputs change. For why, see [The Python-Java boundary](../conceptual/python-java-boundary.md).
+
+Deephaven's query library includes many [built-in methods](./built-in-functions.md) and fields that you can and should take full advantage of, and the Javadocs document all of them. A field is Java's term for a variable that belongs to a class or object, like a Python attribute.
 
 ## Java concepts for Python users
 
-Each of the following subsections explores a Java concept that differs from Python. This is not a comprehensive list. For a TL;DR, see [Java vs Python](#java-vs-python).
+Each of the following subsections explains a Java concept you meet when reading a Javadoc page. This is not a comprehensive list. The first subsection covers packages, interfaces, classes, and methods, which organize Javadoc pages much as modules and classes organize Python code. The other four concepts differ most from Python, and the following table summarizes them:
 
-### Naming conventions
-
-Deephaven's Python API follows standard Python conventions outlined in [PEP 8](https://peps.python.org/pep-0008/). Deephaven's Java code, including Java code in query strings, follows [standard Java naming conventions](https://www.oracle.com/java/technologies/javase/codeconventions-namingconventions.html). The biggest key differences between the two are:
-
-- In Python, functions and variables use `snake_case`. In Java, they use `camelCase`.
-- Java also has [interfaces](https://docs.oracle.com/javase/tutorial/java/concepts/interface.html), which contain empty elements and methods. Classes can implement interfaces, populating these empty elements and methods with substance.
+| Concept            | Python                                 | Java                                                                                       |
+| ------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Naming conventions | `snake_case`                           | `camelCase`                                                                                |
+| Data types         | Dynamically typed                      | Statically typed. Every variable and parameter has a declared type, fixed at compile time. |
+| Method overloading | Optional arguments with default values | Method overloading                                                                         |
+| Varargs            | `*args`                                | Varargs (`...`)                                                                            |
 
 ### Packages, interfaces, classes, and methods
 
-The landing page contains a laundry list of Java packages. But what is a Java package? It's not much different from a Python package in that it contains Java code that that's part of an API. Packages in Java are used to group similar classes and interfaces in the same way a folder is typically used in a file system to group similar files. For instance, the [`io.deephaven.api.agg`](/core/javadoc/io/deephaven/api/agg/package-summary.html) package contains classes and interfaces that form the Java implementation of Deephaven's powerful aggregations. Deephaven's Python analogue, [`deephaven.agg`](/core/pydoc/code/deephaven.agg.html#module-deephaven.agg), is a wrapper around Java source code, so it contains many of the same functionalities.
+The [Javadoc landing page](/core/javadoc/) contains a list of Java packages. But what is a Java package? It's not much different from a Python package in that it contains Java code that's part of an API. Java uses packages to group similar classes and interfaces, much as a file system uses folders to group similar files.
 
-A Java package typically contains one or more interfaces and one or more classes. A Java class is similar to a Python class — it's a blueprint for how to build certain types of objects. A Java interface is a bit different. For the sake of this document, just think of an interface as a Java mechanism to achieve [abstraction](https://en.wikipedia.org/wiki/Abstraction_(computer_science)), which hides implementation details from users. An interface can also hold static methods. For instance, the Deephaven Java interface [`io.deephaven.api.agg.Aggregation`](/core/javadoc/io/deephaven/api/agg/Aggregation.html) defines static factory methods for every aggregation type Deephaven offers.
+For instance, the [`io.deephaven.api.agg`](/core/javadoc/io/deephaven/api/agg/package-summary.html) package contains the classes and interfaces of Deephaven's Java API for [aggregations](../conceptual/aggregations.md). Deephaven's Python analogue, [`deephaven.agg`](/core/pydoc/code/deephaven.agg.html#module-deephaven.agg), wraps that Java code, so it offers many of the same [aggregations](../conceptual/aggregations.md).
 
-Java methods live within classes and interfaces. Following the previous path, [`io.deephaven.api.agg.Aggregation.AggAbsSum`](https://deephaven.io/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggAbsSum(java.lang.String...)) is a static factory method that creates and returns an absolute sum aggregation. It's a member of an interface, which is a member of a package.
+A Java package typically contains one or more interfaces and one or more classes. A Java class is similar to a Python class: a blueprint for building a certain type of object.
 
-Javadocs organize the packages, classes, interfaces, methods, and attributes in a hierarchical fashion.
+A Java [interface](https://docs.oracle.com/javase/tutorial/java/concepts/interface.html) mostly declares methods without implementing them. Classes that implement the interface supply the method bodies. Interfaces are a way to achieve [abstraction](https://en.wikipedia.org/wiki/Abstraction_(computer_science)), which hides implementation details from users.
+
+Interfaces can also define static methods directly. A static method belongs to the class or interface itself rather than to an object, like a Python `@staticmethod`, so you call it without creating an object first. For instance, the Deephaven Java interface [`io.deephaven.api.agg.Aggregation`](/core/javadoc/io/deephaven/api/agg/Aggregation.html) defines a static factory method for every [aggregation](../conceptual/aggregations.md) type Deephaven offers.
+
+Java methods live within classes and interfaces. Continuing the [`Aggregation`](/core/javadoc/io/deephaven/api/agg/Aggregation.html) example, [`io.deephaven.api.agg.Aggregation.AggAbsSum`](/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggAbsSum(java.lang.String...)) is a static method that creates and returns an [absolute sum aggregation](../reference/table-operations/group-and-aggregate/AggAbsSum.md). It's a member of an interface, which is a member of a package.
+
+Javadocs follow the same hierarchy: each package page lists its interfaces and classes, and each interface or class page lists its fields, constructors, and methods.
+
+### Naming conventions
+
+Deephaven's Python API follows standard Python conventions outlined in [PEP 8](https://peps.python.org/pep-0008/). Deephaven's Java code, including Java code in [query strings](./query-string-overview.md), follows [standard Java naming conventions](https://www.oracle.com/java/technologies/javase/codeconventions-namingconventions.html). The naming rules that matter most when reading Javadocs are:
+
+- In Python, functions and variables use `snake_case`. In Java, they use `camelCase`.
+- Java classes and interfaces use `PascalCase`, which capitalizes the first letter of every word (for example, [`Aggregation`](/core/javadoc/io/deephaven/api/agg/Aggregation.html) or [`Numeric`](/core/javadoc/io/deephaven/function/Numeric.html)). Python classes follow the same rule.
+- Some Deephaven factory methods break this convention. The [static methods](#packages-interfaces-classes-and-methods) on [`Aggregation`](/core/javadoc/io/deephaven/api/agg/Aggregation.html), such as [`AggPct`](/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggPct(double,boolean,java.lang.String...)) and [`AggAbsSum`](/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggAbsSum(java.lang.String...)), start with a capital letter.
+
+Because of these exceptions, don't rely on case alone to tell a method from a class. Javadoc search lists methods under **Members**, and each class page lists its methods in a method summary.
 
 ### Data types
 
-On its own, Python offers very few data types. It's one of the things that makes Python so accessible to new users - but it comes at the cost of performance. Thankfully, Python has a large variety of modules, some of which help alleviate the problem (such as [NumPy](https://numpy.org/) and its data types). For more information on this topic, see [data types in Deephaven](./data-types.md).
+Java is statically typed, whereas Python is dynamically typed. In Java, every variable and method parameter has a declared type that is fixed at compile time, which is why every parameter in a Javadoc method signature lists its type.
 
-Java offers a variety of data types. For our purposes, they fall into two categories: [primitives](https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html) and [objects](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html). Primitives are what their names suggest: basic data types with no attributes. Objects, like in Python, have attributes. Objects come in an incredible variety of shapes and sizes.
+Java data types fall into two categories, [primitives](https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html) and [objects](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html). A type name in a Javadoc signature usually tells them apart by case:
 
-In Java, primitive data types all start with a lowercase letter (e.g. `boolean`, `int`, `long`, `double`, etc.), whereas objects start with an uppercase letter (e.g. `Integer`, `Boolean`, etc.). The Java `Boolean` object simply wraps the primitive type in an object so that it has other attributes and methods.
+- Primitives are basic types with no fields or methods. Their names start with a lowercase letter, such as `boolean`, `int`, `long`, and `double`.
+- Objects, like Python objects, have fields and methods. Their class names start with an uppercase letter, such as `Integer` and `Boolean`.
+
+Arrays are the exception: they are objects even when the element type is a primitive, as in `double[]` or the [varargs](#varargs) `double...`.
+
+Each primitive has a matching wrapper class that holds the value as an object, such as `Integer` for `int` and `Boolean` for `boolean`. Javadoc pages often list a separate method for each. For example, [`Numeric`](/core/javadoc/io/deephaven/function/Numeric.html) has both [`median(double...)`](/core/javadoc/io/deephaven/function/Numeric.html#median(double...)), which takes `double` values, and [`median(Double[])`](/core/javadoc/io/deephaven/function/Numeric.html#median(java.lang.Double%5B%5D)), which takes an array of `Double` objects. The [median example](#calculate-a-median) uses the first. [Method overloading](#method-overloading) explains how Java tells them apart.
+
+Python has only a few numeric types, such as `int` and `float`. Python's `int` has no fixed size, and its `float` is always 64 bits, like Java's `double`. [NumPy](https://numpy.org/) adds more sized types, such as `int32` and `float32`, that line up with the other Java primitives. For how Deephaven maps Java types to Python and NumPy types, see [data types in Deephaven](./data-types.md).
 
 ### Method overloading
 
-Java enables method overloading, where two distinct methods can have the same name, provided that they accept different input parameters. In Python, optional input arguments are typically used to govern a method's behavior based on different inputs. Optional inputs are not possible in Java. Deephaven's [Javadocs](https://deephaven.io/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggPct(double,boolean,java.lang.String...)) have many cases of method overloading. For instance:
+Java supports method overloading: two methods can share a name if they accept different parameters. Java has no optional arguments, so overloading fills the role that optional arguments with defaults play in Python.
+
+Deephaven's Javadocs contain many overloaded methods. For instance, the [`Aggregation`](/core/javadoc/io/deephaven/api/agg/Aggregation.html) interface has four overloads of [`AggPct`](/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggPct(double,boolean,java.lang.String...)), which builds the same kind of percentile aggregation as Python's [`agg.pct`](../reference/table-operations/group-and-aggregate/AggPct.md). You don't call [`AggPct`](/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggPct(double,boolean,java.lang.String...)) from Python, but its signatures show the patterns you see on any Javadoc page:
 
 ```java skip-test
 AggPct(double percentile, boolean average, String... pairs)
@@ -61,47 +85,49 @@ AggPct(String inputColumn, boolean average, PercentileOutput... percentileOutput
 AggPct(String inputColumn, PercentileOutput... percentileOutputs)
 ```
 
-Each `AggPct` in the block above is a different method, despite having the same name. The method that gets invoked is dependent on the number of input parameters given, as well as their type.
+Each [`AggPct`](/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggPct(double,boolean,java.lang.String...)) in the block above is a different method, despite having the same name. Java picks which method to call from the number and types of the arguments.
 
 ### Varargs
 
-Note how, in the previous section, each overloaded method uses `...`. This is called `varargs` (short for variable arguments), and it means that an input parameter can take an arbitrary number of values. For instance, `String...` is an input data type to many of Deephaven's methods. The `...` means "zero or more". Any varargs input parameter must _always_ be the final input parameter if there is more than one input to a method. For the second overload above (`AggPct(double percentile, String... pairs)`), any of the following calls are valid:
+Java calls a parameter that accepts a variable number of arguments of one type a varargs parameter, short for variable arguments. Its type ends in `...`, as in the `String... pairs` parameter of the [`AggPct`](/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggPct(double,java.lang.String...)) overloads shown in [Method overloading](#method-overloading). When reading a varargs signature, keep these rules in mind:
+
+- The `...` means "zero or more".
+- A varargs parameter must be the method's last parameter.
+- Varargs correspond to Python's `*args`. Java has no equivalent of `**kwargs`.
+
+For the overload [`AggPct(double percentile, String... pairs)`](/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggPct(double,java.lang.String...)), each of the following Java calls is valid:
 
 ```java skip-test
-AggPct(0.5, "Col2", "AnotherColumn", "SomeOtherColumn = Col1")
-AggPct(0.2, "ColNew = ColOld")
-AggPct(0.9, "A = B", "C = D", "E = F", "G = H")
+Aggregation.AggPct(0.5, "Col2", "AnotherColumn", "SomeOtherColumn = Col1");
+Aggregation.AggPct(0.2, "ColNew = ColOld");
+Aggregation.AggPct(0.9, "A = B", "C = D", "E = F", "G = H");
 ```
 
-Java's varargs syntax accepts zero values, but a method can still reject them at runtime. `AggPct` throws an `IllegalArgumentException` if you pass no column name pairs.
+Java's varargs syntax allows a call with no values, but a method can still throw an error at runtime when it receives none. [`AggPct`](/core/javadoc/io/deephaven/api/agg/Aggregation.html#AggPct(double,java.lang.String...)) throws an `IllegalArgumentException` if you pass no column name pairs.
 
-## Java vs Python
-
-To summarize all of the previous subsections, the following list provides the most important differences between Java and Python for Deephaven Python users who wish to use Javadocs:
-
-- Java uses `camelCase` for variable and method names. Python uses `snake_case` for variable and function names.
-- Java is strongly typed, whereas Python is dynamically typed. This means that, in Java, variable types are explicitly given, and cannot change without a typecast.
-- Java has overloaded methods, whereas Python does not. Python makes up for this with optional arguments with default values.
-- Varargs in Java are denoted by `...`, whereas in Python they're denoted by `*args` or `**kwargs`.
+The signatures of methods you call in [query strings](./query-string-overview.md) read the same way. The [median example](#calculate-a-median) calls the varargs overload [`median(double...)`](/core/javadoc/io/deephaven/function/Numeric.html#median(double...)).
 
 ## Examples
 
+Each example starts from a goal, reads the signatures of the Javadoc method that meets it, and calls that method in a [query string](./query-string-overview.md). The first example shows how to find the method with the Javadoc search bar. The others start from a class that query strings import by default.
+
 ### Calculate a median
 
-Let's assume you have a table of [OHLC](https://en.wikipedia.org/wiki/Open-high-low-close_chart) data for a particular stock. Your column names are `Open`, `High`, `Low`, and `Close`, and they all contain double values. You want to calculate the median of those values. Start by searching for `median` in the search bar:
+Let's assume you have a table of [OHLC](https://en.wikipedia.org/wiki/Open-high-low-close_chart) data for a particular stock. Your column names are `Open`, `High`, `Low`, and `Close`, and they all contain `double` values. You want to calculate the median of the four values in each row. Start by searching for `median` in the search bar:
 
 ![Javadoc search results after searching for 'median'](../assets/how-to/median-javadoc-search.png)
 
-That's a lot of results. Firstly, a class or interface isn't what we're looking for. We want a method, which is a member in a search. This search can be narrowed down further by searching instead for `median(double`, since the columns are of `double` data type:
+That's a lot of results. Classes and interfaces aren't what you want here. Methods, along with fields, appear under the **Members** heading in the search results. To narrow the search further, include the parameter type. The columns hold `double` values, so search for `median(double`:
 
 ![Refined Javadoc search results for 'median(double'](../assets/how-to/median-double-javadoc-search.png)
 
-This search yields the correct method as the first result. It takes a variable amount of `double` values (denoted by `...`) as input. The third result, which takes a `double[]` input, is meant for array columns, which is not applicable. Deephaven's [`io.deephaven.function.Numeric`](/core/javadoc/io/deephaven/function/Numeric.html) class is automatically imported into the query language upon server startup, which means two things:
+The first result, [`median(double...)`](/core/javadoc/io/deephaven/function/Numeric.html#median(double...)) in the [`io.deephaven.function.Numeric`](/core/javadoc/io/deephaven/function/Numeric.html) class, is the one you want: it takes any number of `double` values. The [`Double[]`](/core/javadoc/io/deephaven/function/Numeric.html#median(java.lang.Double%5B%5D)) and [`DoubleVector`](/core/javadoc/io/deephaven/vector/DoubleVector.html) [overloads](#method-overloading) further down each take a single array or vector, which isn't what this table holds.
 
-- It shows up twice in Javadoc searches, once in `io.deephaven.function.Numeric` and once in `io.deephaven.libs.GroovyStaticImports`.
-- It can be used without any import statements.
+Each [`Numeric`](/core/javadoc/io/deephaven/function/Numeric.html) row is followed by a matching [`io.deephaven.libs.GroovyStaticImports`](/core/javadoc/io/deephaven/libs/GroovyStaticImports.html) entry. That class is a generated wrapper that Groovy scripts use, and its entries only link back to [`Numeric`](/core/javadoc/io/deephaven/function/Numeric.html), so open the [`Numeric`](/core/javadoc/io/deephaven/function/Numeric.html) entry to read the documentation.
 
-Deephaven knows to use the numeric values in columns when column names are passed as input. The query engine will _automatically_ know which method to use based on the input arguments you provide. So, with this knowledge in hand, computing the median of OHLC data is easy:
+[Query strings](./query-string-overview.md) import [`Numeric`](/core/javadoc/io/deephaven/function/Numeric.html) by default, so you can call its methods without an import statement.
+
+When you pass column names to a method in a [query string](./query-string-overview.md), the engine passes the values from each row and picks the [overload](#method-overloading) that matches their types. With this knowledge in hand, computing the median of OHLC data is easy. The following example creates the data with [`new_table`](../reference/table-operations/create/newTable.md) and adds a `MedianOHLC` column with [`update`](../reference/table-operations/select/update.md):
 
 ```python order=source,result
 from deephaven.column import double_col
@@ -121,14 +147,14 @@ result = source.update(["MedianOHLC = median(Open, High, Low, Close)"])
 
 ### Generate pseudorandom numbers
 
-Say, for instance, you want to test your query against some random data. Deephaven's [`io.deephaven.function.Random`](/core/javadoc/io/deephaven/function/Random.html) class contains a wide array of pseudorandom number generators, and is automatically imported into the DQL upon server startup. Looking at the Javadocs, there are two overloads for [`randomDouble`](https://deephaven.io/core/javadoc/io/deephaven/function/Random.html#randomDouble(double,double)):
+Say you want to test your query against some random data. Deephaven's [`io.deephaven.function.Random`](/core/javadoc/io/deephaven/function/Random.html) class contains many pseudorandom number generators. [Query strings](./query-string-overview.md) import it by default, so you can call its methods without an import statement. The Javadocs list two [overloads](#method-overloading) of [`randomDouble`](/core/javadoc/io/deephaven/function/Random.html#randomDouble(double,double)):
 
 ```java skip-test
 randomDouble(double min, double max)
 randomDouble(double min, double max, int size)
 ```
 
-The first method generates a single random value between `min` and `max`. The second generates `size` random values in an array between `min` and `max`. Both can be used in query strings:
+The first method generates a single random value that is at least `min` and less than `max`. The second generates an array of `size` random values in the same range. The following example calls both in an [`update`](../reference/table-operations/select/update.md) on an [`empty_table`](../reference/table-operations/create/emptyTable.md):
 
 ```python order=source
 from deephaven import empty_table
@@ -141,33 +167,45 @@ source = empty_table(10).update(
 )
 ```
 
-### Math functions
+### Apply math functions to an integer column
 
-The [`io.deephaven.function.Numeric`](/core/javadoc/io/deephaven/function/Numeric.html) class contains a set of commonly used numeric functions. The link to the class's Javadoc page shows a large variety of methods that are available in query strings.
+Say you want the absolute value and sign of an `int` column, and the square root of its absolute value. [`io.deephaven.function.Numeric`](/core/javadoc/io/deephaven/function/Numeric.html), the class from the [median example](#calculate-a-median), lists these and many more common math functions, all available in [query strings](./query-string-overview.md). Most have a separate [overload](#method-overloading) for each numeric input type. For example, [`sqrt(int)`](/core/javadoc/io/deephaven/function/Numeric.html#sqrt(int)) takes an `int` and returns a `double`, while [`abs(int)`](/core/javadoc/io/deephaven/function/Numeric.html#abs(int)) and [`signum(int)`](/core/javadoc/io/deephaven/function/Numeric.html#signum(int)) both return an `int`:
 
 ```python order=source
 from deephaven import empty_table
 
 source = empty_table(10).update(
-    ["X = i - 5", "AbsX = abs(X)", "SqrtAbsX = pow(AbsX, 0.5)", "SignumX = signum(X)"]
+    ["X = i - 5", "AbsX = abs(X)", "SqrtAbsX = sqrt(AbsX)", "SignumX = signum(X)"]
 )
 ```
 
 ## Key takeaways
 
-To summarize this article, keep the following tips in mind when using Javadocs:
+Keep the following tips in mind when using Javadocs:
 
 - Be specific when using the search bar to limit the number of results you get.
-  - If you're looking for a method, look under `Members` in results.
+  - If you're looking for a method, look under **Members** in results.
   - Use data types when searching for methods.
-- Java uses `camelCase` for methods and `PascalCase` for classes and interfaces.
-- Java uses method overloading, where different methods can have the same name, but take different input parameters.
-- Java is strongly typed. All input parameters to methods must be of a specific data type.
-- Java `varargs` use the syntax `...`, which means zero or more inputs of a given type. This input type _must_ come last in a Java method.
-- Java methods that take primitive types as input (e.g. `double`, `int`, etc.) can take columns of that type as input.
+- In a [query string](./query-string-overview.md), you can pass a column name where a Java method expects a primitive such as `double` or `int`. The engine passes the column's value from each row and picks the [overload](#method-overloading) that matches its type.
+- For how Java's naming, typing, overloading, and varargs differ from Python's, see the table in [Java concepts for Python users](#java-concepts-for-python-users).
 
 ## Related documentation
 
+- [The Python-Java boundary](../conceptual/python-java-boundary.md)
+- [Aggregations in Deephaven](../conceptual/aggregations.md)
+- [Built-in query language functions](./built-in-functions.md)
+- [Data types in Deephaven and Python](./data-types.md)
+- [Java objects and classes in query strings](./java-classes.md)
+- [Python functions in query strings](./python-functions.md)
+- [Query string overview](./query-string-overview.md)
+- [`double_col`](../reference/table-operations/create/doubleCol.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`new_table`](../reference/table-operations/create/newTable.md)
-- [Javadoc](/core/javadoc/)
+- [`update`](../reference/table-operations/select/update.md)
+- [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md)
+- [`agg.pct`](../reference/table-operations/group-and-aggregate/AggPct.md)
+- [`agg.abs_sum`](../reference/table-operations/group-and-aggregate/AggAbsSum.md)
+- [`deephaven.agg` Pydoc](/core/pydoc/code/deephaven.agg.html#module-deephaven.agg)
+- [`Aggregation` Javadoc](/core/javadoc/io/deephaven/api/agg/Aggregation.html)
+- [`Numeric` Javadoc](/core/javadoc/io/deephaven/function/Numeric.html)
+- [`Random` Javadoc](/core/javadoc/io/deephaven/function/Random.html)

@@ -21,7 +21,7 @@ Plugins in the [deephaven-plugins](https://github.com/deephaven/deephaven-plugin
 
 When the Deephaven server uses Python rather than Groovy as its query language, the server and web UI have hard dependencies on the Python packages `jpy`, `deephaven-plugin`, `numpy`, `pandas`, and `pyarrow` (Apache Arrow). The server requires every hard dependency to run.
 
-The server also has soft dependencies on `numba` and `jedi`, which are optional packages that turn on extra features. To install `jedi`, use the `autocomplete` extra: `pip install "deephaven-core[autocomplete]"`. In 0.40.x and 41.x, `pip` installs `numba` automatically on Python versions earlier than 3.13. Soft dependencies might not work on every supported Python version, though Deephaven makes a best effort to support them.
+The server also has soft dependencies on `numba` and `jedi`, which are optional packages that turn on extra features. To install `jedi`, use the `autocomplete` extra: `pip install "deephaven-core[autocomplete]"`. In 0.40.x through 41.2, `pip` installs `numba` automatically on Python versions earlier than 3.13. Soft dependencies might not work on every supported Python version, though Deephaven makes a best effort to support them.
 
 The [`deephaven-core` package metadata on PyPI](https://pypi.org/project/deephaven-core/) declares the hard dependencies, including minimum versions for `jpy`, `deephaven-plugin`, and `pandas`. `pip` resolves these dependencies at install time. Deephaven cannot test every combination of dependency versions, and some combinations conflict with each other.
 

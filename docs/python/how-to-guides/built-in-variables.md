@@ -24,12 +24,12 @@ and is not safe to refresh. Note that some usages, such as on an append-only tab
 
 The following table summarizes when each variable is safe to use:
 
-| Variable                                     | Safe on                    | Throws error on      |
-| -------------------------------------------- | -------------------------- | -------------------- |
-| `i`, `ii`                                    | static, append-only, blink | add-only, ticking    |
-| `k`                                          | static, add-only, blink    | append-only, ticking |
-| Simple constant offset (`Column_[i-1]`)      | all tables                 | —                    |
-| Complex array expressions (`Column_[(i)-1]`) | static, blink              | any refreshing table |
+| Variable                                     | Safe on                                         | Throws error on         |
+| -------------------------------------------- | ----------------------------------------------- | ----------------------- |
+| `i`, `ii`                                    | static, append-only, blink                      | other refreshing tables |
+| `k`                                          | static, add-only (including append-only), blink | other refreshing tables |
+| Simple constant offset (`Column_[i-1]`)      | all tables                                      | —                       |
+| Complex array expressions (`Column_[(i)-1]`) | static, blink                                   | other refreshing tables |
 
 > [!NOTE]
 > The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables.
@@ -50,7 +50,7 @@ source = empty_table(10).update(
 
 ## Alternatives for refreshing tables
 
-When working with refreshing tables where you need to reference preceding or following column values, avoid using column array notation (e.g., `Column_[ii-1]`). Instead, use one of the following approaches:
+When working with refreshing tables where you need to reference preceding or following column values, avoid column array expressions other than a simple constant offset such as `Column_[ii - 1]`. The engine doesn't recognize expressions like `Column_[(i)-1]` or an offset held in a variable, such as `Column_[ii - n]`, as constant offsets. On a refreshing table other than a blink table, those expressions throw an error. Instead, use one of the following approaches:
 
 > [!NOTE]
 > The examples below use Iceberg tables with auto-refresh mode, which creates add-only tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](./data-import-export/iceberg.md).

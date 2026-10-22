@@ -20,7 +20,7 @@ An instance of a `LivenessScope` class.
 
 ## Examples
 
-The following example uses [function generated tables](../table-operations/create/function_generated_table.md) to produce a blink table with 5 new rows per second. Encapsulating the function generated table inside of a liveness scope enables the safe deletion of data once the scope has been released. `table_from_func` will continue to tick after the scope is released until _all_ referents have been deleted. That includes the ticking table in the UI.
+The following example uses [function generated tables](../table-operations/create/function_generated_table.md) to produce a blink table with 5 new rows per second. Encapsulating the function generated table inside of a liveness scope enables the safe deletion of data once the scope has been released. Releasing the scope stops `table_from_func` from updating, unless another scope or the UI still holds a reference to it. A table open in the UI keeps updating until you close it.
 
 ```python ticking-table order=null
 from deephaven.liveness_scope import liveness_scope, LivenessScope
@@ -41,12 +41,11 @@ with scope.open():
     )
 
 # After a while...
-del table_from_func
 scope.release()
 ```
 
 ## Related documentation
 
-- [How to use Liveness Scopes](../../conceptual/liveness-scope-concept.md)
+- [Liveness scopes](../../conceptual/liveness-scope-concept.md)
 - [`liveness_scope`](./liveness-scope.md)
-- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.LivenessScope)
+- [Pydoc](/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.LivenessScope)

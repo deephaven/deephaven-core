@@ -58,7 +58,7 @@ import deephaven.numpy as dhnp
 from deephaven.liveness_scope import liveness_scope
 
 
-@liveness_scope
+@liveness_scope()
 def get_current_values(source_table):
     latest = source_table.last_by("Sym")
     return dhnp.to_numpy(latest)  # Table stops updating after return
@@ -66,6 +66,6 @@ def get_current_values(source_table):
 
 ## Related documentation
 
-- [How to use Liveness Scopes](../../conceptual/liveness-scope-concept.md)
+- [Liveness scopes](../../conceptual/liveness-scope-concept.md)
 - [`LivenessScope`](./LivenessScope.md)
-- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.liveness_scope)
+- [Pydoc](/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.liveness_scope)
