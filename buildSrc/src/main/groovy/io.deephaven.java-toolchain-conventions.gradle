@@ -266,7 +266,8 @@ def START_OPTS = parseJvmArgumentsFromProperty("deephaven.startOpts", parseJvmAr
 // An empty override is still an override: it disables the defaults (an empty list is false to Groovy's ?:)
 def withOverride = { List<String> opts -> JAVA_OPTS_OVERRIDE != null ? JAVA_OPTS_OVERRIDE : opts }
 
-// File name -> VM options, for the generic file and each version-specific file
+// File name -> VM options, for the generic file and each version-specific file. Groovy map literals, + and
+// collectEntries all produce LinkedHashMaps, so iteration follows the order written here.
 def vmOptionsFiles = ['dh-default.vmoptions': withOverride(GENERIC_JAVA_OPTS)] +
   VERSIONED_JAVA_OPTS.collectEntries { version, opts -> ["dh-default-${version}.vmoptions".toString(), withOverride(opts)] }
 
@@ -277,14 +278,13 @@ def vmOptionsArgsFor = { int version ->
 }
 
 def createVmOptions = tasks.register('createVmOptions') {
-  def vmOptionsTexts = vmOptionsFiles.collectEntries { name, opts -> [name, opts.join('\n')] }
-  it.inputs.property('vmOptionsTexts', vmOptionsTexts)
+  it.inputs.property('vmOptionsFiles', vmOptionsFiles)
   it.outputs.dir(vmOptionsDir)
   doFirst {
     def dir = vmOptionsDir.get().asFile
     dir.deleteDir()
     dir.mkdirs()
-    vmOptionsTexts.each { name, text -> new File(dir, name).text = text }
+    vmOptionsFiles.each { name, opts -> new File(dir, name).text = opts.join('\n') }
   }
 }
 
