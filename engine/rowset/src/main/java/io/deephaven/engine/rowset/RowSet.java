@@ -124,7 +124,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      *
      * @param keys The keys to find positions for
      * @param positions The chunk to fill with the positions of {@code keys}; its capacity must be at least the size of
-     *        {@code keys}
+     *        {@code keys}. It may be the same chunk as {@code keys}, which are then replaced by their positions.
      */
     void invert(LongChunk<OrderedRowKeys> keys, WritableLongChunk<? super OrderedRowKeys> positions);
 

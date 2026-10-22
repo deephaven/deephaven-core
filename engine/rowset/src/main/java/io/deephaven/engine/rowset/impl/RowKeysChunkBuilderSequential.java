@@ -29,8 +29,12 @@ public final class RowKeysChunkBuilderSequential implements OrderedLongSet.Build
 
     @Override
     public void appendRange(final long firstKey, final long lastKey) {
-        for (long key = firstKey; key <= lastKey; ++key) {
+        // stop at lastKey before incrementing, so that a range ending at Long.MAX_VALUE does not wrap around
+        for (long key = firstKey;; ++key) {
             chunk.add(key);
+            if (key == lastKey) {
+                return;
+            }
         }
     }
 }

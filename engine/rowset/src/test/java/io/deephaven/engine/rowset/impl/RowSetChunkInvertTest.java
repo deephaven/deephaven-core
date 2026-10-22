@@ -89,6 +89,39 @@ public class RowSetChunkInvertTest {
     }
 
     @Test
+    public void testInvertInPlace() {
+        for (final Supplier<WritableRowSet> supplier : rowSets()) {
+            final Random random = new Random(0);
+            try (final WritableRowSet rowSet = supplier.get();
+                    final WritableRowSet randomTenth = keysWhere(rowSet, key -> random.nextInt(10) == 0);
+                    final WritableRowSet expected = rowSet.invert(randomTenth);
+                    final WritableLongChunk<OrderedRowKeys> chunk =
+                            WritableLongChunk.makeWritableChunk(randomTenth.intSize())) {
+                final String name = ((WritableRowSetImpl) rowSet).getInnerSet().getClass().getSimpleName();
+                randomTenth.fillRowKeyChunk(chunk);
+                rowSet.invert(chunk, chunk);
+                final List<Long> actual = new ArrayList<>(chunk.size());
+                for (int ii = 0; ii < chunk.size(); ++ii) {
+                    actual.add(chunk.get(ii));
+                }
+                assertEquals(name + " in place", keysOf(expected), actual);
+            }
+        }
+    }
+
+    @Test
+    public void testBuilderAppendsRangeEndingAtMaxValue() {
+        try (final WritableLongChunk<OrderedRowKeys> chunk = WritableLongChunk.makeWritableChunk(3)) {
+            final RowKeysChunkBuilderSequential builder = new RowKeysChunkBuilderSequential(chunk);
+            builder.appendRange(Long.MAX_VALUE - 2, Long.MAX_VALUE);
+            assertEquals(3, chunk.size());
+            assertEquals(Long.MAX_VALUE - 2, chunk.get(0));
+            assertEquals(Long.MAX_VALUE - 1, chunk.get(1));
+            assertEquals(Long.MAX_VALUE, chunk.get(2));
+        }
+    }
+
+    @Test
     public void testMissingKeyIsRejected() {
         for (final Supplier<WritableRowSet> supplier : rowSets()) {
             try (final WritableRowSet rowSet = supplier.get();

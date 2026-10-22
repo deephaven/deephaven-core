@@ -394,7 +394,9 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     public final void invert(
             final LongChunk<OrderedRowKeys> keys,
             final WritableLongChunk<? super OrderedRowKeys> positions) {
-        innerSet.ixInvert(keys, positions);
+        // Inversion empties positions before reading keys, so when they are the same chunk, keys are read through a
+        // slice with its own size. Each run of keys is read before its positions overwrite it.
+        innerSet.ixInvert(keys == positions ? keys.slice(0, keys.size()) : keys, positions);
     }
 
     @NotNull
