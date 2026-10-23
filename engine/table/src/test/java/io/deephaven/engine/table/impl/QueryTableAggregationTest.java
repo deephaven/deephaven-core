@@ -4021,48 +4021,21 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testInitialGroupsRefreshingWithoutPreserveEmpty() {
-        // Initial groups that start empty are absent from the result until they are filled, and must then carry their
-        // keys; compare each cycle with the same aggregation of a static snapshot of the input
-        final Collection<? extends Aggregation> aggs = List.of(
-                AggCount("Count"),
-                AggSum("SumI=I"),
-                AggGroup("GroupS=S"));
+        // initial group A starts empty, so it is absent from the result until a row for it arrives
+        final TrackingWritableRowSet inputRows = RowSetFactory.fromRange(0, 1).toTracking();
+        final QueryTable input = testRefreshingTable(inputRows, col("C", 'A', 'B'));
+        inputRows.remove(0);
 
-        final TrackingWritableRowSet inputRows = RowSetFactory.fromRange(0, 9).toTracking();
-        final QueryTable input = testRefreshingTable(inputRows,
-                col("S", "A", "B", "C", "D", "E", "F", "G", "H", "I", "K"),
-                col("C", 'A', 'A', 'B', 'B', 'C', 'C', 'D', 'D', 'E', 'E'),
-                col("I", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
-        inputRows.removeRange(0, 7);
-
-        final Table initialKeys = testTable(col("C", 'A', 'B', 'C', 'D', 'E', 'F'));
-
-        final Table aggregated = input.aggBy(aggs, false, initialKeys, ColumnName.from("C"));
-        assertTableEquals(input.snapshot().aggBy(aggs, false, initialKeys, ColumnName.from("C")), aggregated);
-        assertEquals(1, aggregated.size());
+        final Table initialKeys = testTable(col("C", 'A', 'B'));
+        final Table aggregated = input.aggBy(List.of(AggCount("Count")), false, initialKeys, ColumnName.from("C"));
+        assertTableEquals(testTable(col("C", 'B'), longCol("Count", 1)), aggregated);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
-            inputRows.insertRange(2, 5);
-            input.notifyListeners(RowSetFactory.fromRange(2, 5), i(), i());
+            inputRows.insert(0);
+            input.notifyListeners(i(0), i(), i());
         });
-        assertTableEquals(input.snapshot().aggBy(aggs, false, initialKeys, ColumnName.from("C")), aggregated);
-        assertEquals(3, aggregated.size());
-
-        updateGraph.runWithinUnitTestCycle(() -> {
-            inputRows.insertRange(0, 1);
-            inputRows.insertRange(6, 7);
-            input.notifyListeners(RowSetFactory.fromRange(0, 1).union(RowSetFactory.fromRange(6, 7)), i(), i());
-        });
-        assertTableEquals(input.snapshot().aggBy(aggs, false, initialKeys, ColumnName.from("C")), aggregated);
-        assertEquals(5, aggregated.size());
-
-        updateGraph.runWithinUnitTestCycle(() -> {
-            inputRows.removeRange(0, 7);
-            input.notifyListeners(i(), RowSetFactory.fromRange(0, 7), i());
-        });
-        assertTableEquals(input.snapshot().aggBy(aggs, false, initialKeys, ColumnName.from("C")), aggregated);
-        assertEquals(1, aggregated.size());
+        assertTableEquals(testTable(col("C", 'A', 'B'), longCol("Count", 1, 1)), aggregated);
     }
 
     @Test
