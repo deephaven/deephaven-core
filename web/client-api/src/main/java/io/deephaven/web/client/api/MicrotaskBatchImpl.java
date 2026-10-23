@@ -32,7 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -260,28 +260,79 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
-     * A pending table from an API that has always produced a {@link JsTable} (or another retained table) through a
-     * promise: the same promise, with a ticket known up front so operations can be chained before it resolves. The
-     * table is created on first await, so a pending that is only chained on retains nothing of its own; dependents
-     * retain the state the promise will produce, synchronously when that state already exists.
+     * A pending table from an API that has always produced a {@link JsTable} (or another retained table): a state whose
+     * fetch is already issued, and a way to build the table over it once the fetch has completed. The table is built on
+     * the first await only, so a pending that is merely chained on holds nothing past its dependents; one that is
+     * neither awaited nor chained on is released when its fetch completes, as an unawaited operation is.
      */
     private static class Fetched<T extends JsITable> extends Pending<T> {
-        private final Supplier<Promise<T>> fetch;
-        private final Consumer<Operation> retainSource;
+        private final ClientTableState state;
+        private final Function<ClientTableState, T> build;
+        private boolean holding;
+        private @Nullable ClientTableState fetchedState;
+        private @Nullable Object fetchFailure;
         private @Nullable LazyPromise<T> result;
         private @Nullable T delivered;
         private boolean cancelled;
 
-        public Fetched(WorkerConnection connection, Ticket ticket, Supplier<Promise<T>> fetch,
-                Consumer<Operation> retainSource) {
-            super(connection, ticket);
-            this.fetch = fetch;
-            this.retainSource = retainSource;
+        public Fetched(WorkerConnection connection, ClientTableState state, Promise<ClientTableState> fetched,
+                Function<ClientTableState, T> build) {
+            super(connection, state.getHandle().makeTicket());
+            this.state = state;
+            this.build = build;
+            // Hold the state until the fetch settles, so an await or a chained operation can still find it
+            state.retain(this);
+            holding = true;
+            // Observe the fetch whether or not anyone awaits, so its failure is never an unhandled rejection
+            fetched.then(cts -> {
+                fetchedState = cts;
+                if (result != null && !cancelled) {
+                    deliver();
+                } else {
+                    letGo();
+                }
+                return null;
+            }, failure -> {
+                fetchFailure = failure;
+                // The state carries the failure too, so dependents learn of it even if the fetch never reached the
+                // server; a dependent the server did see fails there as well, whichever comes first
+                if (state.getResolution() == ClientTableState.ResolutionState.UNRESOLVED) {
+                    state.setResolution(ClientTableState.ResolutionState.FAILED, String.valueOf(failure));
+                }
+                if (result != null && !cancelled) {
+                    result.fail(failure);
+                }
+                letGo();
+                return null;
+            });
+        }
+
+        private void letGo() {
+            if (holding) {
+                holding = false;
+                state.unretain(this);
+            }
+        }
+
+        /** Builds the table over the fetched state for the awaiter; that table then owns the state. */
+        private void deliver() {
+            assert result != null && fetchedState != null;
+            if (delivered != null) {
+                return;
+            }
+            if (state.getResolution() == ClientTableState.ResolutionState.RELEASED) {
+                // Nobody awaited or chained on it in time; it was released when the fetch completed
+                result.fail("Table was released before it was awaited");
+                return;
+            }
+            delivered = build.apply(fetchedState);
+            letGo();
+            result.succeed(delivered);
         }
 
         @Override
         protected void retainUntilSettled(Operation dependent) {
-            retainSource.accept(dependent);
+            MicrotaskBatchImpl.retainUntilSettled(state, dependent);
         }
 
         @Override
@@ -296,23 +347,15 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         public Promise<T> resolve(@JsOptional @Nullable Object options) {
             if (result == null) {
                 // The pending owns the promise it hands out, so a cancel can reject it for every awaiter
-                LazyPromise<T> promise = new LazyPromise<>();
-                result = promise;
-                fetch.get().then(table -> {
-                    if (cancelled) {
-                        // Nobody is waiting any more, but the table arrived; it must not leak
-                        table.close();
-                    } else {
-                        delivered = table;
-                        promise.succeed(table);
-                    }
-                    return null;
-                }, failure -> {
-                    if (!cancelled) {
-                        promise.fail(failure);
-                    }
-                    return null;
-                });
+                result = new LazyPromise<>();
+                if (cancelled) {
+                    result.fail("Operation canceled");
+                } else if (fetchedState != null) {
+                    deliver();
+                } else if (fetchFailure != null) {
+                    result.fail(fetchFailure);
+                }
+                // Otherwise the fetch is still in flight and delivers when it completes
             }
             Promise<T> promise = result.asPromise();
             cancelOnAbort(options, promise);
@@ -325,23 +368,17 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 return;
             }
             cancelled = true;
-            if (result != null && !result.isUnresolved()) {
-                // Already settled: nothing to cancel, but the table this pending handed out is released
-                if (delivered != null) {
-                    delivered.close();
-                }
+            if (delivered != null) {
+                // Already delivered: nothing to cancel, but the table this pending handed out is released
+                delivered.close();
                 return;
             }
             // TODO the underlying fetch is not withdrawn: the entry points' unary calls carry no cancellation context.
+            // The state is let go now, so it is released once any dependents are done with it.
             if (result != null) {
                 result.fail(message);
-            } else {
-                // Never awaited, but the fetch behind it may already be in flight; close whatever it produces
-                fetch.get().then(table -> {
-                    table.close();
-                    return null;
-                }, failure -> null);
             }
+            letGo();
         }
     }
 
@@ -495,36 +532,14 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
-     * Presents a table that an existing API produces through a promise as a pending table, so operations can be chained
-     * on it before it resolves. {@code sourceState} is the state the promised table will occupy; dependents retain it
-     * from the moment they are created. The supplier is invoked at most once, on the first await.
+     * Presents a fetched state as a pending table, so operations can be chained on it before the fetch completes.
+     * {@code fetched} is the already-issued fetch of {@code state}; {@code build} makes the table the first awaiter
+     * receives, over the fetched state, and is called at most once. A pending that nobody awaits or chains on is
+     * released when the fetch completes.
      */
-    public static <T extends JsITable> JsPendingTable<T> wrap(WorkerConnection connection,
-            ClientTableState sourceState, Supplier<Promise<T>> fetch) {
-        return new Fetched<>(connection, sourceState.getHandle().makeTicket(), fetch,
-                dependent -> retainUntilSettled(sourceState, dependent));
-    }
-
-    /**
-     * As {@link #wrap(WorkerConnection, ClientTableState, Supplier)} for a {@link JsTable} fetch that has already been
-     * issued into a known state.
-     */
-    public static JsPendingTable<JsTable> wrapTable(WorkerConnection connection, ClientTableState sourceState,
-            Promise<JsTable> table) {
-        return wrap(connection, sourceState, () -> table);
-    }
-
-    /**
-     * As {@link #wrap(WorkerConnection, ClientTableState, Supplier)} for a {@link JsTable} fetch that has already been
-     * issued but whose state does not exist yet: the ticket must be the one the promised table will have, and
-     * dependents retain the fetched table's state once the promise produces it.
-     */
-    public static JsPendingTable<JsTable> wrapTable(WorkerConnection connection, Ticket ticket,
-            Promise<JsTable> table) {
-        // The state promise is derived only when a dependent needs it, so a failed fetch that nothing chains on has no
-        // unobserved rejection; the caller observes the fetch promise itself.
-        return new Fetched<>(connection, ticket, () -> table, dependent -> retainUntilSettled(
-                table.<ClientTableState>then(t -> Promise.resolve(t.state())), dependent));
+    public static <T extends JsITable> JsPendingTable<T> wrap(WorkerConnection connection, ClientTableState state,
+            Promise<ClientTableState> fetched, Function<ClientTableState, T> build) {
+        return new Fetched<>(connection, state, fetched, build);
     }
 
     /**
@@ -563,8 +578,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
-     * Has {@code dependent} retain {@code source} until the dependent is running, failed, or released. A dependent that
-     * has already settled (possible when the source arrived through a promise) retains nothing.
+     * Has {@code dependent} retain {@code source} until the dependent is running, failed, or released, and fails the
+     * dependent if the source fails first. A dependent that has already settled retains nothing.
      */
     private static void retainUntilSettled(ClientTableState source, Operation dependent) {
         ClientTableState state = dependent.state;
@@ -576,23 +591,15 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 ignore -> source.unretain(state),
                 failure -> source.unretain(state),
                 () -> source.unretain(state));
-    }
-
-    /**
-     * As {@link #retainUntilSettled(ClientTableState, Operation)} for a source that may not exist yet: the retain
-     * happens when it does, and a dependent that has already settled by then retains nothing.
-     */
-    private static void retainUntilSettled(Promise<ClientTableState> source, Operation dependent) {
-        source.then(sourceState -> {
-            retainUntilSettled(sourceState, dependent);
-            return null;
-        }, failure -> {
-            // The source never came to be. Whether or not the dependent was already sent, it references a ticket the
-            // server will never see defined and would wait on a placeholder export forever; fail it here, which also
-            // releases its ticket so the server drops that placeholder.
-            dependent.cancel("Source table failed: " + failure);
-            return null;
-        });
+        // A source that fails may never have been defined on the server (a fetch that failed before it was sent),
+        // in which case the dependent would wait on a placeholder export forever; failing it here also releases its
+        // ticket so the server drops that placeholder. When the server did define the source, this merely beats its
+        // own dependency failure to the same result.
+        source.onRunning(
+                ignore -> {
+                },
+                failure -> dependent.cancel("Source table failed: " + failure),
+                () -> dependent.cancel("Source table was released"));
     }
 
     private static void sendBatch(WorkerConnection connection, Batch batch) {

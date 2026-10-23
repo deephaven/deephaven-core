@@ -136,14 +136,13 @@ public class IdeSession extends HasEventHandling {
             JsLog.warn(
                     "getTable is deprecated, please use getObject instead. The applyPreviewColumns parameter no longer applies, the new APIs to access data from the resulting Table should be used instead.");
         }
-        // Allocate the ticket now, so operations can be chained on the result before the fetch has been sent
+        // The ticket and state exist now, so operations can be chained on the result before the fetch has been sent;
+        // the table itself, and the opened event, come with the first await
         final TableTicket handle = connection.getTickets().newTableTicket();
-        return MicrotaskBatchImpl.wrapTable(connection, handle.makeTicket(),
-                connection.getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
-                    final Promise<JsTable> table = connection.getTable(varDef, applyPreviewColumns, handle);
-                    fireEvent(EVENT_TABLE_OPENED, table);
-                    return table;
-                }));
+        return connection.pendingTable(
+                connection.fetchTableState(connection.getVariableDefinition(name, JsVariableType.TABLE),
+                        applyPreviewColumns, handle),
+                table -> fireEvent(EVENT_TABLE_OPENED, table));
     }
 
     /**

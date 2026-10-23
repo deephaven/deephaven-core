@@ -992,16 +992,14 @@ public class JsTable extends HasLifecycle
         // We are going to forget all configuration for the current state
         // by just creating a new, fresh state. This should be an optional flatten()/copy() step instead.
         List<String> columnNames = Arrays.stream(columns).map(Column::getName).collect(Collectors.toList());
-        ClientTableState distinct = workerConnection.newState((c, cts) -> {
+        return workerConnection.pendingTable(workerConnection.newState((c, cts) -> {
             SelectDistinctRequest request = SelectDistinctRequest.newBuilder()
                     .setSourceId(state.getHandle().makeTableReference())
                     .setResultId(cts.getHandle().makeTicket())
                     .addAllColumnNames(columnNames)
                     .build();
             workerConnection.tableServiceClient().selectDistinct(request, c);
-        }, "selectDistinct " + columnNames, handle);
-        return MicrotaskBatchImpl.wrapTable(workerConnection, distinct,
-                distinct.refetch().then(cts -> Promise.resolve(new JsTable(workerConnection, cts))));
+        }, "selectDistinct " + columnNames, handle));
     }
 
     /**
@@ -1014,7 +1012,9 @@ public class JsTable extends HasLifecycle
     public JsPendingTable<JsTable> copy() {
         // The copy is only created on await, so a copy that is only chained on binds nothing; operations chained on
         // it retain the current state directly while they are created.
-        return MicrotaskBatchImpl.wrap(workerConnection, state(), () -> Promise.resolve(new JsTable(this)));
+        ClientTableState current = state();
+        return MicrotaskBatchImpl.<JsTable>wrap(workerConnection, current, Promise.resolve(current),
+                cts -> new JsTable(this));
     }
 
     public Promise<JsTable> copy(boolean resolved) {

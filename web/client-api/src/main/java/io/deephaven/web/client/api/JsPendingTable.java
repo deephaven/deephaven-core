@@ -24,10 +24,11 @@ import jsinterop.annotations.JsOptional;
  * resulting table must be closed to indicate that it will no longer be used and server resources can be freed. A future
  * version of this API could provide "liveness scopes" to claim/release batches of tables at a time automatically.
  * <p>
- * A pending table from an operation that is not awaited only lasts long enough for methods to be synchronously called
- * on it, then is freed automatically as soon as possible. Any instance that is {@code await}ed will be retained until
- * {@code close()} is called on it to free it. To optionally chain more calls to an instance in a later event loop, it
- * must be retained first. A pending table from a fetch is retained from the start, as the promise it replaces was.
+ * A pending table that is not awaited only lasts long enough for methods to be synchronously called on it, then is
+ * freed automatically as soon as possible: once its response arrives and nothing chained on it still needs it. Any
+ * instance that is {@code await}ed will be retained until {@code close()} is called on it to free it. To optionally
+ * chain more calls to an instance in a later event loop, it must be awaited first. This holds for a fetch as much as
+ * for an operation: {@code getTable(name)} that is neither awaited nor chained on is released when the fetch completes.
  *
  * @param <T> the table this resolves to
  */

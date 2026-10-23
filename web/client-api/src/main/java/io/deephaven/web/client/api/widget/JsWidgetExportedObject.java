@@ -3,6 +3,8 @@
 //
 package io.deephaven.web.client.api.widget;
 
+import io.deephaven.web.client.api.TableTicket;
+
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
@@ -49,17 +51,13 @@ public class JsWidgetExportedObject implements ServerObject {
             }
             if (getType().equals(JsVariableType.TABLE)) {
                 // The ticket is already known, so the table can be chained on before its schema arrives
-                return JsPendingObject.of(MicrotaskBatchImpl.wrapTable(connection, ticket.getTicket(),
-                        Callbacks.<ExportedTableCreationResponse>grpcUnaryPromise(c -> {
-                            connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
-                                    c);
-                        }).then(etcr -> {
-                            ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for widget");
-                            JsTable table = new JsTable(connection, cts);
-                            // never attempt a reconnect, since we might have a different widget schema entirely
-                            table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
-                            return Promise.resolve(table);
-                        })));
+                ClientTableState state = connection.newState(
+                        (c, cts) -> connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
+                                c),
+                        "table for widget", new TableTicket(ticket.getTicket()));
+                return JsPendingObject.of(connection.pendingTable(state,
+                        // never attempt a reconnect, since we might have a different widget schema entirely
+                        table -> table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close())));
             } else {
                 return JsPendingObject.of(this.connection.getObject(ticket));
             }

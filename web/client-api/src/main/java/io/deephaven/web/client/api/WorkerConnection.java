@@ -690,36 +690,63 @@ public class WorkerConnection {
      */
     public Promise<JsTable> getTable(JsVariableDefinition varDef, @Nullable Boolean applyPreviewColumns,
             TableTicket handle) {
+        return pendingTable(fetchTableState(Promise.resolve(varDef), applyPreviewColumns, handle)).resolve();
+    }
+
+    /**
+     * Creates the state for a named table and issues nothing yet: the fetch waits for the server to be ready and for
+     * {@code definition} to resolve, so the state exists, and operations can be chained on its ticket, before either
+     * has happened.
+     */
+    public ClientTableState fetchTableState(Promise<JsVariableDefinition> definition,
+            @Nullable Boolean applyPreviewColumns, TableTicket handle) {
         if (applyPreviewColumns != null && applyPreviewColumns) {
             JsLog.warn("applyPreviewColumns is deprecated, and will be removed in a future release");
         }
-        return whenServerReady("get a table").then(serve -> {
-            JsLog.debug("innerGetTable", varDef.getTitle(), " started");
-            return newState((c, cts) -> {
-                JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts,
-                        " (" + cts.getHandle() + ")");
-                // Only apply preview if specifically requested
-                if (applyPreviewColumns != null && applyPreviewColumns) {
-                    ApplyPreviewColumnsRequest req = ApplyPreviewColumnsRequest.newBuilder()
-                            .setSourceId(Tickets.createTableRef(varDef))
-                            .setResultId(cts.getHandle().makeTicket())
-                            .build();
-                    tableServiceClient.applyPreviewColumns(req, c);
-                } else {
-                    FetchTableRequest req = FetchTableRequest.newBuilder()
-                            .setSourceId(Tickets.createTableRef(varDef))
-                            .setResultId(cts.getHandle().makeTicket())
-                            .build();
-                    tableServiceClient.fetchTable(req, c);
-                }
-            }, "fetch table " + varDef.getTitle(), handle)
-                    .refetch()
-                    .then(cts -> {
-                        JsLog.debug("innerGetTable", varDef.getTitle(), " succeeded ", cts);
-                        JsTable table = new JsTable(this, cts);
-                        return Promise.resolve(table);
-                    });
-        });
+        return newState((c, cts) -> whenServerReady("get a table").then(serve -> definition).then(varDef -> {
+            JsLog.debug("performing fetch for ", varDef.getTitle(), " / ", cts, " (" + cts.getHandle() + ")");
+            // Only apply preview if specifically requested
+            if (applyPreviewColumns != null && applyPreviewColumns) {
+                ApplyPreviewColumnsRequest req = ApplyPreviewColumnsRequest.newBuilder()
+                        .setSourceId(Tickets.createTableRef(varDef))
+                        .setResultId(cts.getHandle().makeTicket())
+                        .build();
+                tableServiceClient.applyPreviewColumns(req, c);
+            } else {
+                FetchTableRequest req = FetchTableRequest.newBuilder()
+                        .setSourceId(Tickets.createTableRef(varDef))
+                        .setResultId(cts.getHandle().makeTicket())
+                        .build();
+                tableServiceClient.fetchTable(req, c);
+            }
+            return null;
+        }).catch_(error -> {
+            c.onError(asThrowable(error));
+            return null;
+        }), "fetch table", handle);
+    }
+
+    /**
+     * The definition a {@code getObject} argument names: looked up by name, or taken as given by id.
+     */
+    public Promise<JsVariableDefinition> lookupDefinition(JsPropertyMap<Object> definitionObject) {
+        String type = definitionType(definitionObject);
+        boolean hasName = definitionObject.has("name");
+        boolean hasId = definitionObject.has("id");
+        if (hasName && hasId) {
+            throw new IllegalArgumentException("has both name and id field; could not getObject");
+        } else if (hasName) {
+            return getVariableDefinition(definitionObject.getAsAny("name").asString(), type);
+        } else if (hasId) {
+            return Promise.resolve(new JsVariableDefinition(type, null, definitionObject.getAsAny("id").asString(),
+                    null));
+        } else {
+            throw new IllegalArgumentException("no name/id field; could not construct getObject");
+        }
+    }
+
+    private static Throwable asThrowable(Object error) {
+        return error instanceof Throwable ? (Throwable) error : new RuntimeException(String.valueOf(error));
     }
 
     public JsPendingObject getObject(JsVariableDefinition definition) {
@@ -734,8 +761,7 @@ public class WorkerConnection {
     public JsPendingObject getObject(JsVariableDefinition definition, @Nullable TableTicket handle) {
         if (JsVariableType.TABLE.equalsIgnoreCase(definition.getType())) {
             TableTicket tableHandle = handle != null ? handle : tickets.newTableTicket();
-            return JsPendingObject.of(MicrotaskBatchImpl.wrapTable(this, tableHandle.makeTicket(),
-                    getTable(definition, null, tableHandle)));
+            return JsPendingObject.of(pendingTable(fetchTableState(Promise.resolve(definition), null, tableHandle)));
         }
         return JsPendingObject.of(getNonTableObject(definition));
     }
@@ -790,26 +816,12 @@ public class WorkerConnection {
         }
 
         String type = definitionType(definitionObject);
-
-        boolean hasName = definitionObject.has("name");
-        boolean hasId = definitionObject.has("id");
-        if (hasName && hasId) {
-            throw new IllegalArgumentException("has both name and id field; could not getObject");
-        } else if (hasName) {
-            String name = definitionObject.getAsAny("name").asString();
-            Promise<JsVariableDefinition> lookup = getVariableDefinition(name, type);
-            if (JsVariableType.TABLE.equalsIgnoreCase(type)) {
-                TableTicket tableHandle = handle != null ? handle : tickets.newTableTicket();
-                return JsPendingObject.of(MicrotaskBatchImpl.wrapTable(this, tableHandle.makeTicket(),
-                        lookup.then(definition -> getTable(definition, null, tableHandle))));
-            }
-            return JsPendingObject.of(lookup.then(definition -> getNonTableObject(definition)));
-        } else if (hasId) {
-            String id = definitionObject.getAsAny("id").asString();
-            return getObject(new JsVariableDefinition(type, null, id, null), handle);
-        } else {
-            throw new IllegalArgumentException("no name/id field; could not construct getObject");
+        Promise<JsVariableDefinition> lookup = lookupDefinition(definitionObject);
+        if (JsVariableType.TABLE.equalsIgnoreCase(type)) {
+            TableTicket tableHandle = handle != null ? handle : tickets.newTableTicket();
+            return JsPendingObject.of(pendingTable(fetchTableState(lookup, null, tableHandle)));
         }
+        return JsPendingObject.of(lookup.then(definition -> getNonTableObject(definition)));
     }
 
     public Promise<?> getObject(TypedTicket typedTicket) {
@@ -1505,20 +1517,43 @@ public class WorkerConnection {
      * the fetch is issued, so operations can be chained on the result immediately.
      */
     public JsPendingTable<JsTable> pendingTable(JsTableFetch fetcher, String fetchSummary) {
-        ClientTableState state = newState(fetcher, fetchSummary, tickets.newTableTicket());
-        return MicrotaskBatchImpl.wrapTable(this, state,
-                state.refetch().then(cts -> Promise.resolve(new JsTable(this, cts))));
+        return pendingTable(newState(fetcher, fetchSummary, tickets.newTableTicket()));
     }
 
     /**
-     * As {@link #pendingTable(JsTableFetch, String)}, but the state is only created once the server is ready. The
-     * ticket is still allocated immediately.
+     * As {@link #pendingTable(JsTableFetch, String)}, but the fetch waits for the server to be ready. The state and its
+     * ticket exist immediately.
      */
     public JsPendingTable<JsTable> pendingTable(String operationName, JsTableFetch fetcher, String fetchSummary) {
-        TableTicket handle = tickets.newTableTicket();
-        return MicrotaskBatchImpl.wrapTable(this, handle.makeTicket(), whenServerReady(operationName)
-                .then(server -> newState(fetcher, fetchSummary, handle).refetch())
-                .then(cts -> Promise.resolve(new JsTable(this, cts))));
+        return pendingTable((c, cts) -> whenServerReady(operationName).then(server -> {
+            fetcher.fetch(c, cts);
+            return null;
+        }).catch_(error -> {
+            c.onError(asThrowable(error));
+            return null;
+        }), fetchSummary);
+    }
+
+    /**
+     * Issues the fetch of {@code state} and presents it as a pending table whose {@link JsTable} is built on the first
+     * await. A pending nobody awaits or chains on is released when the fetch completes.
+     */
+    public JsPendingTable<JsTable> pendingTable(ClientTableState state) {
+        return pendingTable(state, null);
+    }
+
+    /**
+     * As {@link #pendingTable(ClientTableState)}, with a callback for the moment the table is built, which is when it
+     * counts as opened.
+     */
+    public JsPendingTable<JsTable> pendingTable(ClientTableState state, @Nullable Consumer<JsTable> onCreated) {
+        return MicrotaskBatchImpl.wrap(this, state, state.refetch(), cts -> {
+            JsTable table = new JsTable(this, cts);
+            if (onCreated != null) {
+                onCreated.accept(table);
+            }
+            return table;
+        });
     }
 
     public ClientTableState newState(ClientTableState from, TableConfig to) {

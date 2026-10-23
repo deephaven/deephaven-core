@@ -507,20 +507,71 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(table -> {
                     WorkerConnection connection = table.getConnection();
-                    // A definition the server cannot resolve fails as soon as the fetch is sent, unlike a missing name
-                    // through getTable(name), which waits ten seconds for the variable to appear first
-                    JsVariableDefinition bogus = new JsVariableDefinition(JsVariableType.TABLE, "missing",
-                            DomGlobal.btoa("s/missing"), null);
-                    // The source is never awaited itself; only the operation chained on it is. The fetch fails, so
+                    // Neither source is awaited itself; only the operation chained on each is. The fetch fails, so
                     // the dependent must fail too rather than wait on the server for a source that never arrives.
-                    JsPendingTable<JsResolvedTable> dependent =
-                            connection.getObject(bogus, null).asPendingTable().head(Js.uncheckedCast(1.0));
-                    return expectRejection(dependent.resolve(), "Source table failed")
+                    // A definition lookup that fails (what getTable(name) does after waiting ten seconds for the
+                    // variable, shortcut here) fails before anything is sent, so only the client can fail the
+                    // dependent; a definition the server cannot resolve fails once sent, and the server fails the
+                    // dependent as well, so either message is acceptable there.
+                    JsPendingTable<JsTable> unsendable = connection.pendingTable(connection.fetchTableState(
+                            Promise.reject("no such table"), null, connection.getTickets().newTableTicket()));
+                    JsVariableDefinition unresolvable = new JsVariableDefinition(JsVariableType.TABLE, "missing",
+                            DomGlobal.btoa("s/missing"), null);
+                    JsPendingTable<JsResolvedTable> ofUnsendable = unsendable.head(Js.uncheckedCast(1.0));
+                    JsPendingTable<JsResolvedTable> ofUnresolvable =
+                            connection.getObject(unresolvable, null).asPendingTable().head(Js.uncheckedCast(1.0));
+                    return expectRejection(ofUnsendable.resolve(), "Source table failed")
+                            .then(ignore -> expectRejection(ofUnresolvable.resolve(), "missing"))
                             .then(ignore -> delay(200))
                             .then(ignore -> {
                                 assertEquals(0, batchStates(connection));
                                 table.close();
                                 return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /** The state a pending table's ticket occupies, if the cache still has one that is not released. */
+    private static boolean isHeld(JsPendingTable<?> pending) {
+        TableTicket ticket = new TableTicket(pending.typedTicket().getTicket());
+        return pending.getConnection().getCache().get(ticket)
+                .map(state -> state.getResolution() != ClientTableState.ResolutionState.RELEASED)
+                .orElse(false);
+    }
+
+    public void testFetchedTableOnlyChainedOnIsReleased() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_019);
+                    // The fetch is never awaited; only an operation on it is. Once that operation is done with it,
+                    // nothing should hold the fetched table.
+                    JsPendingTable<JsTable> source = session.getTable("source", null);
+                    JsPendingTable<JsResolvedTable> head = source.head(Js.uncheckedCast(1.0));
+                    return head.resolve()
+                            .then(table -> {
+                                assertEquals(1., table.getSize(), 0);
+                                table.close();
+                                return delay(200);
+                            })
+                            .then(ignore -> {
+                                assertFalse("fetched table still held", isHeld(source));
+                                return Promise.resolve(session);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testFetchedTableNeverUsedIsReleased() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_020);
+                    // Neither awaited nor chained on: released as soon as the fetch completes
+                    JsPendingTable<JsTable> source = session.getTable("source", null);
+                    return delay(500)
+                            .then(ignore -> {
+                                assertFalse("fetched table still held", isHeld(source));
+                                return Promise.resolve(session);
                             });
                 })
                 .then(this::finish).catch_(this::report);

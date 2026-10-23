@@ -306,11 +306,12 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             keys = keysState.refetch()
                     .then(state -> Promise.resolve(new JsTable(state.getConnection(), state)));
         }
-        // Each caller gets its own copy, all sharing the one key table's state. The copies are JsTable bindings on
-        // that state and chained operations retain it directly, so closing any one leaves the others alive and the
-        // state is released with the last.
-        return MicrotaskBatchImpl.<JsTable>wrap(connection, keysState,
-                () -> keys.<JsTable>then(table -> table.copy().resolve()));
+        // Each caller gets its own table over the one key table's state. Each is a JsTable binding on that state and
+        // chained operations retain it directly, so closing any one leaves the others alive; the state is released
+        // with the last of them and the partitioned table's own hold.
+        ClientTableState state = keysState;
+        return MicrotaskBatchImpl.<JsTable>wrap(connection, state, keys.then(table -> Promise.resolve(state)),
+                cts -> new JsTable(connection, cts));
     }
 
     /**
