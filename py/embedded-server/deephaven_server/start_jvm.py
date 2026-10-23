@@ -23,7 +23,7 @@ def _compiler_directives() -> pathlib.Path:
     return _jars_path() / "dh-compiler-directives.txt"
 
 
-def _default_vmoptions(java_major_version: Optional[int] = None) -> pathlib.Path:
+def _default_vmoptions(java_major_version: int | None = None) -> pathlib.Path:
     """The default VM options file for a Java major version, falling back to the generic file when there is no
     version-specific one or the version is unknown."""
     if java_major_version is not None:
@@ -33,9 +33,7 @@ def _default_vmoptions(java_major_version: Optional[int] = None) -> pathlib.Path
     return _jars_path() / "dh-default.vmoptions"
 
 
-def _find_jvm_dll(
-    java_home: Optional[str], config: Optional[types.ModuleType]
-) -> Optional[str]:
+def _find_jvm_dll(java_home: str | None, config: types.ModuleType | None) -> str | None:
     """The JVM shared library that jpyutil.init_jvm would load for these arguments, found with its precedence: the
     configuration's jvm_dll (the given config, else jpyconfig or JPY_PY_CONFIG), then a search from java_home or the
     configuration's java_home. Returns None when it cannot be determined, leaving the search to jpyutil.init_jvm."""
@@ -53,7 +51,7 @@ def _find_jvm_dll(
         return None
 
 
-def _java_major_version(jvm_dll: Optional[str]) -> Optional[int]:
+def _java_major_version(jvm_dll: str | None) -> int | None:
     """Best-effort major version of the JDK that holds a JVM shared library, read from that JDK's release file.
     Returns None when it cannot be determined."""
     try:
