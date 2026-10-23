@@ -9,8 +9,11 @@ import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
+import io.deephaven.web.client.api.ConnectOptions;
+import io.deephaven.web.client.api.CoreClient;
 import io.deephaven.web.client.api.CustomColumn;
 import io.deephaven.web.client.api.CustomColumnOptions;
+import io.deephaven.web.client.api.CuttingTransportFactory;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.Format;
 import io.deephaven.web.client.api.JsRangeSet;
@@ -21,6 +24,7 @@ import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
+import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.base.Any;
@@ -59,7 +63,87 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
             .script("more_arrays",
                     "empty_table(1).update([\"doublevector_int=i\", \"doublevector_string=``\"]).group_by()" +
                             ".update([\"vector_int=i\", \"vector_string=``\"]).group_by()" +
-                            ".update([\"array_int=new int[]{i}\", \"doublearray_int=new int[][] {{i}}\",\"array_string=new String[]{``}\",\"doublearray_string=new String[][]{{``}}\"])");
+                            ".update([\"array_int=new int[]{i}\", \"doublearray_int=new int[][] {{i}}\",\"array_string=new String[]{``}\",\"doublearray_string=new String[][]{{``}}\"])")
+            // One row from the start, replaced twice a second, so updates carry data continuously
+            .script("ticking", "time_table(\"PT0.5S\", start_time=datetime.now() - timedelta(seconds=10))"
+                    + ".update([\"X = i\", \"Y = 0\"]).last_by(by=\"Y\")");
+
+    private static Promise<Object> delay(int millis) {
+        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
+    }
+
+    public void testViewportResumesAfterTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_001);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    table.setViewport(0, 0, null);
+                    IdeConnection ide = lastIdeConnection;
+                    // An unhandled disconnect event is logged as an error, which the harness treats as a failure
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    return assertUpdateReceived(table, 1, 5002)
+                            .then(ignore -> {
+                                // Every open stream dies, the viewport's Barrage stream included; the connection
+                                // sees a transport error and reconnects within the same session
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5003).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(table, 1, 8004),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "viewport did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testViewportSubscriptionResumesAfterTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_005);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    // A standalone viewport subscription, as opposed to the table's own viewport
+                    DataOptions.ViewportSubscriptionOptions subOptions = new DataOptions.ViewportSubscriptionOptions();
+                    subOptions.columns = Js.cast(table.getColumns());
+                    subOptions.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 0));
+                    TableViewportSubscription sub = table.createViewportSubscription(subOptions);
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    return assertUpdateReceived(sub, viewport -> assertEquals(1, viewport.getRows().length), 5006)
+                            .then(ignore -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5007).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(sub,
+                                            viewport -> assertEquals(1, viewport.getRows().length), 8008),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "viewport subscription did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                sub.close();
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
 
     public void testViewportOnStaticTable() {
         connect(tables)
