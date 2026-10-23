@@ -390,6 +390,15 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         return new WritableRowSetImpl(innerSet.ixInvertOnNew(getInnerSet(keys), maximumPosition));
     }
 
+    @Override
+    public final void invert(
+            final LongChunk<OrderedRowKeys> keys,
+            final WritableLongChunk<? super OrderedRowKeys> positions) {
+        // Inversion empties positions before reading keys, so when they are the same chunk, keys are read through a
+        // slice with its own size. Each run of keys is read before its positions overwrite it.
+        innerSet.ixInvert(keys == positions ? keys.slice(0, keys.size()) : keys, positions);
+    }
+
     @NotNull
     @Override
     public final WritableRowSet intersect(@NotNull final RowSet range) {

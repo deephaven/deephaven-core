@@ -86,25 +86,6 @@ This package contains classes for filtering tables.
 </details>
 
 <details>
-<summary>io.deephaven.engine.table.vectors.ColumnVectors</summary>
-
-- [io.deephaven.engine.table.vectors.ColumnVectors](/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html)
-
-This class provides access to the following instance methods:
-
-- of
-- ofByte
-- ofChar
-- ofDouble
-- ofFloat
-- ofInt
-- ofLong
-- ofObject
-- ofShort
-
-</details>
-
-<details>
 <summary>io.deephaven.engine.table.Table</summary>
 
 - [io.deephaven.engine.table.Table](/core/javadoc/io/deephaven/engine/table/Table.html)
