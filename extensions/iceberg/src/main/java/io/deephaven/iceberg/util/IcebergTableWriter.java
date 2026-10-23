@@ -322,9 +322,9 @@ public class IcebergTableWriter {
      * <p>
      * Deephaven sorts the tables with its own comparisons, but other engines read a data file's sort order with the
      * Iceberg specification's. So the provider's sort order to write is written down only if the tables are sorted and
-     * {@link #canWriteSortOrder(SortOrder)} finds that the two orderings agree for every field of that sort order.
+     * {@link #canDeclareSortOrder(SortOrder)} finds that the two orderings agree for every field of that sort order.
      * Otherwise the data files declare {@link SortOrder#unsorted()}. Strings and floating point values are where the
-     * orderings disagree, as {@link #ordersAsSpecified(Class, Type)} describes.
+     * orderings disagree, as {@link #deephavenOrderMatchesIceberg(Class, Type)} describes.
      */
     private SortSpec computeSortSpec(@NotNull final SortOrderProviderInternal.SortOrderProviderImpl sortOrderProvider) {
         final List<SortColumn> sortColumns =
@@ -332,7 +332,7 @@ public class IcebergTableWriter {
         // Computed even when not written down, since the provider checks the sort order to write against the table's
         // sort orders
         final SortOrder sortOrderToWrite = sortOrderProvider.getSortOrderToWrite(table);
-        if (sortColumns.isEmpty() || !canWriteSortOrder(sortOrderToWrite)) {
+        if (sortColumns.isEmpty() || !canDeclareSortOrder(sortOrderToWrite)) {
             return new SortSpec(sortColumns, SortOrder.unsorted());
         }
         return new SortSpec(sortColumns, sortOrderToWrite);
@@ -343,13 +343,13 @@ public class IcebergTableWriter {
      * {@link SortOrder#satisfies(SortOrder) satisfies} {@code sortOrder}. Each field of {@code sortOrder} must:
      * <ul>
      * <li>be on a column whose values Deephaven orders as the Iceberg specification does, per
-     * {@link #ordersAsSpecified(Class, Type)}, and</li>
+     * {@link #deephavenOrderMatchesIceberg(Class, Type)}, and</li>
      * <li>use the identity transform, except that the last field may use any order preserving transform, such as
      * {@code day}. Deephaven sorts by column values rather than transformed values, so tables sorted by {@code ts} are
      * sorted by {@code day(ts)}, but within a day are not sorted by any later field.</li>
      * </ul>
      */
-    private boolean canWriteSortOrder(@NotNull final SortOrder sortOrder) {
+    private boolean canDeclareSortOrder(@NotNull final SortOrder sortOrder) {
         final List<SortField> sortFields = sortOrder.fields();
         for (int fi = 0; fi < sortFields.size(); ++fi) {
             final SortField sortField = sortFields.get(fi);
@@ -362,7 +362,7 @@ public class IcebergTableWriter {
                     columnName == null ? null : tableDefinition.getColumn(columnName);
             final Type icebergType = userSchema.findType(sortField.sourceId());
             if (columnDefinition == null || icebergType == null
-                    || !ordersAsSpecified(columnDefinition.getDataType(), icebergType)) {
+                    || !deephavenOrderMatchesIceberg(columnDefinition.getDataType(), icebergType)) {
                 return false;
             }
         }
@@ -376,7 +376,8 @@ public class IcebergTableWriter {
      * code point, and for floating point values, where Deephaven treats {@code -0.0} and {@code 0.0} as equal and
      * orders every NaN last, but the specification orders {@code -0.0} before {@code 0.0} and a negative NaN first.
      */
-    private static boolean ordersAsSpecified(@NotNull final Class<?> dataType, @NotNull final Type icebergType) {
+    private static boolean deephavenOrderMatchesIceberg(@NotNull final Class<?> dataType,
+            @NotNull final Type icebergType) {
         switch (icebergType.typeId()) {
             case BOOLEAN:
                 return dataType == Boolean.class;
