@@ -18,7 +18,8 @@ import org.jetbrains.annotations.NotNull;
  * A {@link ColumnSource} that provides a redirected view into another {@link ColumnSource} by mapping keys using a
  * {@link RowRedirection}.
  */
-public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T> implements WritableColumnSource<T> {
+public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
+        implements WritableColumnSource<T>, PossiblyImmutableColumnSource {
     /**
      * Redirect the innerSource if it is not agnostic to redirection. Otherwise, return the innerSource.
      *
@@ -38,6 +39,9 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
 
     /** The maximum row key available in innerSource. */
     private final long maxInnerIndex;
+
+    /** Whether the value at each row key never changes; see {@link #setImmutable()}. */
+    private boolean immutable;
 
     /**
      * Create a type-appropriate WritableRedirectedColumnSource for the supplied {@link WritableRowRedirection} and
@@ -151,6 +155,20 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
                 redirectionFillFrom.redirections);
     }
 
+    /**
+     * Mark this source immutable. The caller promises that the redirection never maps an existing row key elsewhere and
+     * that the inner value at each mapped row key is never rewritten.
+     */
+    @Override
+    public void setImmutable() {
+        immutable = true;
+    }
+
+    @Override
+    public boolean isImmutable() {
+        return immutable;
+    }
+
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return innerSource.allowsReinterpret(alternateDataType);
@@ -159,7 +177,12 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
     @Override
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return WritableRedirectedColumnSource.maybeRedirect(rowRedirection,
+        final WritableColumnSource<ALTERNATE_DATA_TYPE> reinterpreted = WritableRedirectedColumnSource.maybeRedirect(
+                rowRedirection,
                 (WritableColumnSource<ALTERNATE_DATA_TYPE>) innerSource.reinterpret(alternateDataType), maxInnerIndex);
+        if (immutable && reinterpreted instanceof PossiblyImmutableColumnSource) {
+            ((PossiblyImmutableColumnSource) reinterpreted).setImmutable();
+        }
+        return reinterpreted;
     }
 }
