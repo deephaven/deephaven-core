@@ -2,46 +2,36 @@
 title: Think like a Deephaven ninja
 ---
 
+This guide collects habits that experienced Deephaven users rely on. It shows you how to:
+
+- Choose the right quotes in [query strings](../how-to-guides/query-string-overview.md).
+- Replace loops with [table operations](./table-operations-overview.md).
+- Write fast, correct [filters](../how-to-guides/use-filters.md).
+- Use the [ternary operator](../how-to-guides/ternary-if-how-to.md).
+- Call Java from [query strings](../how-to-guides/query-string-overview.md).
+- Format chained queries.
+
+Each section stands on its own, so you can read them in any order.
+
 ## Choose the right quotes
 
-The Deephaven Query Language (DQL) uses three types of quotes:
+A [query string](../how-to-guides/query-string-overview.md) uses quotes at two levels. The outer quotes are Groovy's own string delimiters, and the inner quotes are part of the Deephaven Query Language (DQL):
 
-- ' (single quote)
-- " (double quote)
-- ` (backtick)
+| Quote              | Where it goes                                                              | What it marks                                                                                                                                                                                                                                            |
+| ------------------ | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `"` (double quote) | Around the whole [query string](../how-to-guides/query-string-overview.md) | A Groovy string. Single quotes also work here, but double quotes don't clash with the single quotes inside. See the `GString` note below.                                                                                                                |
+| `` ` `` (backtick) | Inside a [query string](../how-to-guides/query-string-overview.md)         | A [string](../reference/query-language/types/strings.md) value, such as `` `A` ``                                                                                                                                                                        |
+| `'` (single quote) | Inside a [query string](../how-to-guides/query-string-overview.md)         | A [date-time](../reference/query-language/types/date-time.md), date, time, [duration](../reference/query-language/types/durations.md), [time period](../reference/query-language/types/periods.md), time zone, or character, such as `'PT10S'` or `'ET'` |
 
-Choosing the right quote can be confusing. Let’s explore where each should be used.
+Choosing the right quote can be confusing. Let's explore where to use each one.
 
-DQL query strings are [strings](../reference/query-language/types/strings.md). In Groovy, strings can be defined with either a single quote or a double quote. Both yield valid query strings, as illustrated in this example.
-
-```groovy order=result
-result = emptyTable(10).update("X = i", 'Y = X*X')
-```
-
-Backticks surround [strings](../reference/query-language/types/strings.md) _within_ a query string. This is easier to understand with an example.
-
-```groovy order=result1,result2
-import static io.deephaven.csv.CsvTools.readCsv
-
-result1 = emptyTable(10).update("X = `A`",'Y = (i%2==0) ? `P` : `Q`')
-result2 = readCsv("https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/CryptoTrades_20210922.csv")
-    .where("Instrument in `BTC/USD`,`DOGE/USD`")
-```
-
-In table `result1`, column X is created and set equal to the string "A", and column Y is set equal to either the string "P" or the string "Q". In table `result2`, the Cryptocurrency table is filtered to only include the rows where the Instrument column is equal to the strings "BTC/USD" or "DOGE/USD".
-
-Times, time periods, and characters are the most complex quoting case. Similar to [strings](../reference/query-language/types/strings.md), single quotes surround [times](../reference/query-language/types/date-time.md), [time periods](../reference/query-language/types/periods.md), or characters within a query [string](../reference/query-language/types/strings.md).
+DQL [query strings](../how-to-guides/query-string-overview.md) are [strings](../reference/query-language/types/strings.md). In Groovy, you can define strings with either single or double quotes, and both yield valid [query strings](../how-to-guides/query-string-overview.md). This example writes `"X = i"` with double quotes and `'Y = X * X'` with single quotes.
 
 ```groovy order=result
-result = emptyTable(10).update("X = '2019-01-23T12:15 ET'", "Y = X + 'PT00:10:00'", "Z=X + YEAR_365", "A='C'")
+result = emptyTable(10).update("X = i", 'Y = X * X')
 ```
 
-In this example, column X is created and is set equal to a [date-time](../reference/query-language/types/date-time.md). Column Y is also a [date-time](../reference/query-language/types/date-time.md) and is set equal to 10 minutes after the [date-time](../reference/query-language/types/date-time.md) stored in X. Column Z is a [date-time](../reference/query-language/types/date-time.md) and is set equal to one year after the [date-time](../reference/query-language/types/date-time.md) stored in X. Column A is a character. Single quotes surround the [date-time](../reference/query-language/types/date-time.md), the time difference, and the character.
-
-> [!TIP]
-> Date columns are frequently stored as strings, which use backticks.
-
-There is one catch. You need to use double quotes for your query strings if you are going to use single quotes within the query strings.
+There is one catch. You need to use double quotes for your [query strings](../how-to-guides/query-string-overview.md) if you are going to use single quotes within the [query strings](../how-to-guides/query-string-overview.md), as the date-time and character literals later in this section do.
 
 For example:
 
@@ -49,37 +39,67 @@ For example:
 
 `s2 = 'This is 'NOT''`
 
-There is no downside to using double quotes for query strings. When in doubt, use double quotes. You can use single quotes with escapes, but they are more difficult to read.
+Double quotes are the safer default for [query strings](../how-to-guides/query-string-overview.md). When in doubt, use double quotes. You can use single quotes with escapes, but they are more difficult to read.
 
-## Looping: don’t do it!
+Groovy treats a double-quoted string that contains a `$` expression as a `GString`, and it replaces each `$` expression with its value before the engine sees the [query string](../how-to-guides/query-string-overview.md). To put a literal `$` in a [query string](../how-to-guides/query-string-overview.md), use single quotes or escape it as `\$`.
 
-Common programming languages, such as Python, Java, C, C++, and Go, have instructions that operate upon a single piece of data at a time. In order to operate upon multiple pieces of data, users must write loops. Deephaven is similar to NumPy, TensorFlow, or PyTorch, where a single command operates upon multiple pieces of data.
+Backticks surround [strings](../reference/query-language/types/strings.md) _within_ a [query string](../how-to-guides/query-string-overview.md). This is easier to understand with an example.
+
+```groovy order=result1,result2
+import static io.deephaven.csv.CsvTools.readCsv
+
+result1 = emptyTable(10).update("X = `A`", 'Y = (i % 2 == 0) ? `P` : `Q`')
+result2 = readCsv("https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/CryptoTrades_20210922.csv")
+    .where("Instrument in `BTC/USD`,`DOGE/USD`")
+```
+
+In table `result1`, the query creates column `X` and sets it to the string "A". It sets column `Y` to the string "P" in even rows and the string "Q" in odd rows, using the [ternary operator](#use-the-ternary-operator). In table `result2`, the filter keeps only the rows where the `Instrument` column equals "BTC/USD" or "DOGE/USD".
+
+Single quotes are the most complex quoting case. Just as backticks surround [strings](../reference/query-language/types/strings.md) within a [query string](../how-to-guides/query-string-overview.md), single quotes surround [date-times](../reference/query-language/types/date-time.md), dates, times, [durations](../reference/query-language/types/durations.md), [time periods](../reference/query-language/types/periods.md), time zones such as `'ET'`, and characters.
+
+```groovy order=result
+result = emptyTable(10).update("X = '2019-01-23T12:15 ET'", "Y = X + 'PT10S'", "Z = X + 'P1D'", "A = 'C'")
+```
+
+In this example, the query sets column `X` to a [date-time](../reference/query-language/types/date-time.md). Column `Y` holds the [date-time](../reference/query-language/types/date-time.md) 10 seconds after `X`, and column `Z` holds the [date-time](../reference/query-language/types/date-time.md) one day after `X`. Column `A` holds a character. Single quotes surround the [date-time](../reference/query-language/types/date-time.md), the [duration](../reference/query-language/types/durations.md), the [time period](../reference/query-language/types/periods.md), and the character.
+
+> [!TIP]
+> If a date column is stored as a [string](../reference/query-language/types/strings.md) rather than a [date-time](../reference/query-language/types/date-time.md), compare it with a backtick string, such as `` Date = `2021-09-22` ``, not a single-quoted date.
+
+## Replace loops with table operations
+
+Common programming languages, such as Python, Java, C, C++, and Go, have instructions that operate upon a single piece of data at a time. To operate upon multiple pieces of data, users must write loops. Like NumPy, TensorFlow, and PyTorch, Deephaven uses [vectorized operations](./vectorization-and-recipes.md), where a single command operates upon a whole column of data.
 
 Because looping is so common in standard programming languages, new Deephaven users rely on loops to perform calculations. Their code often looks like:
 
-<!--(This is a dummy code block, only intended to demonstrate the complicated syntax a user would need to write this query without DH. 'Table' has no attribute 'getColumn'). This block does not need to be fixed.-->
+<!--(This block intentionally shows the slow loop pattern a user would write instead of table operations. It is skip-test on purpose. This block does not need to be fixed.)-->
 
 ```groovy skip-test
 import static io.deephaven.csv.CsvTools.readCsv
+import io.deephaven.engine.table.vectors.ColumnVectors
+import java.time.LocalDate
 
 source = readCsv("https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/crypto.csv")
+    .update("Date = toLocalDate(dateTime, 'ET')")
 result = null
 
-source.selectDistinct("dateTime").getColumn("dateTime").getDirect().each{ date ->
-  source.selectDistinct("coin").getColumn("coin").getDirect().each{ sym ->
-    temp = source.where("""dateTime=convertDateTime(`$date`)""", """coin=`$sym`""")
+ColumnVectors.ofObject(source.selectDistinct("Date"), "Date", LocalDate).each { date ->
+    ColumnVectors.ofObject(source.selectDistinct("coin"), "coin", String).each { sym ->
+        temp = source.where("Date = '$date'", "coin = `$sym`")
 
-    if (result == null) {
-        result = temp.maxBy()
+        if (result == null) {
+            result = temp.maxBy()
+        }
+        else {
+            result = merge(result, temp.maxBy())
+        }
     }
-    else {
-        result = merge(result, temp.maxBy())
-    }
-  }
 }
 ```
 
-This code is fairly complex. It has multiple loops, multiple queries, and multiple table merges. It is slow. It also does not work correctly as a dynamic query. The loops iterate over the values in the "dateTime" and "coin" columns. If a new value is added to the "coin" column, the loop does not handle the dynamic data change, and the loops no longer iterate over the correct data. Oops.
+This code is fairly complex. It has multiple loops, multiple queries, and multiple table [merges](../reference/table-operations/merge/merge.md), and it is slow.
+
+The loop version also breaks on live data. A dynamic query runs on [ticking tables](./table-types.md), whose rows change while the query runs, and it updates its results as those rows change. The loops read the `Date` and `coin` values only once. When a new value appears in either column, the loops never see it, and the result goes stale. Oops.
 
 A more experienced Deephaven user would write the same query as:
 
@@ -87,32 +107,33 @@ A more experienced Deephaven user would write the same query as:
 import static io.deephaven.csv.CsvTools.readCsv
 
 result = readCsv("https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/crypto.csv")
-    .maxBy("dateTime","coin")
+    .update("Date = toLocalDate(dateTime, 'ET')")
+    .maxBy("Date", "coin")
 ```
 
 This piece of code is:
 
 1. much easier to read ✅
 2. faster ✅
-3. dynamically updates ✅
+3. updates when the source table ticks ✅
 
 Win, Win, Win.
 
-Every time you write a loop or call `getColumn` in your Deephaven code, ask yourself how you can accomplish the same goal without the loop and without directly accessing the contents of the Deephaven table. Most changes will involve using key columns in [aggregations](../how-to-guides/dedicated-aggregations.md) and join columns in [joins](../how-to-guides/joins-exact-relational.md). At first, these changes will seem foreign, but soon it will become natural.
+Every time you write a loop or pull values out of a table, as the [`ColumnVectors`](../how-to-guides/iterate-table-vectors.md) calls above do, ask yourself how you can accomplish the same goal without the loop and without directly accessing the contents of the Deephaven table. Most changes involve using key columns in [aggregations](../how-to-guides/dedicated-aggregations.md) and join columns in [joins](../how-to-guides/joins-exact-relational.md). At first, these changes seem foreign, but they soon become natural.
 
-As with most rules, there are a few exceptions to the "don’t use loops" rule. Most commonly, the rule is broken to get around RAM limitations. If you are applying complex calculations to a huge dataset, your calculation may exhaust the RAM available to your job. To avoid RAM limitations, a loop can be used to break the massive dataset into smaller, more manageable datasets, which fit sequentially into RAM. Such exceptions to the rule are rare.
+As with most rules, there are a few exceptions to the "don't use loops" rule. Most commonly, users break the rule to get around RAM limitations. If you are applying complex calculations to a huge dataset, your calculation may exhaust the RAM available to the Deephaven server. To avoid RAM limitations, you can use a loop to break the massive dataset into smaller datasets that fit into RAM one at a time. Such exceptions to the rule are rare.
 
-## High performance filters
+## Write fast, correct filters
 
-The secret to computational efficiency is being lazy - doing as little work as possible. For Deephaven, this means operating on the minimum possible amount of data.
+The secret to computational efficiency is being lazy — doing as little work as possible. For Deephaven, this means operating on the minimum possible amount of data. Filter as early in a query as you can, so that later operations such as [`update`](../reference/table-operations/select/update.md) and [joins](../how-to-guides/joins-exact-relational.md) run on fewer rows.
 
-For most use cases, [`where`](../reference/table-operations/filter/where.md) is the most common way to filter a table. But, the same logic can be expressed in different ways.
+[`where`](../reference/table-operations/filter/where.md) is the most common way to filter a table, but you can express the same logic in different ways.
 
 > [!CAUTION]
-> This query allocates a billion row table in memory. To see the distinction between each table's load time, run the queries separately.
+> This query allocates a billion-row table in memory. If you run it to compare how long `t1`, `t2`, and `t3` take, run each filter separately.
 
 ```groovy skip-test
-t = emptyTable(1_000_000_000).update("X = i", "Y = X*X")
+t = emptyTable(1_000_000_000).update("X = i")
 
 t1 = t.where("X > 2").where("X < 6")
 
@@ -121,56 +142,74 @@ t2 = t.where("X > 2", "X < 6")
 t3 = t.where("X > 2 && X < 6")
 ```
 
-In this query, `t1`, `t2`, and `t3` produce the same result. However, `t3` is the most efficient, because column X is only read one time; `t1` and `t2` read column `X` twice. Furthermore, `t2` is better than `t1`, because future improvements in the Deephaven Query Language will potentially allow reorderings and other optimizations for `t2` that are not possible for `t1`.
+In this query, `t1`, `t2`, and `t3` produce the same result, but `t2` is the best way to write it:
 
-`t3` takes less than 1 second to run.
+- In `t1` and `t2`, each simple comparison, such as `X > 2`, becomes a [range filter](../how-to-guides/use-filters.md#range-filters), which the engine evaluates without compiling a formula. In `t3`, the engine compiles the combined expression `X > 2 && X < 6` into a single [formula filter](../how-to-guides/filters.md#keep-match-filters-separate-from-formulas).
+- `t2` passes both filters to one [`where`](../reference/table-operations/filter/where.md), so it produces one result table, while `t1` builds an intermediate table and filters it again. On tables that support [predicate pushdown](../how-to-guides/predicate-pushdown.md), one [`where`](../reference/table-operations/filter/where.md) also lets the engine reorder the filters.
 
-Similarly, filtering performance is dictated by how a table is structured. It is most efficient to filter partition columns before grouping columns and grouping columns before normal columns.
+You can write many filters as either a [formula filter](../how-to-guides/filters.md#keep-match-filters-separate-from-formulas) (e.g., `where("X == 1 || X == 2 || X == 3")`) or a [match filter](../how-to-guides/use-filters.md#match-filters) (e.g., `where("X in 1,2,3")`). When a filter can be expressed either way, use the [match filter](../how-to-guides/use-filters.md#match-filters). Deephaven evaluates a [match filter](../how-to-guides/use-filters.md#match-filters) by comparing values directly instead of compiling a formula, so [match filters](../how-to-guides/use-filters.md#match-filters) typically perform better.
 
-Many filters can be expressed as either a conditional filter (e.g., `where("X==1 || X==2 || X==3")`) or a match filter (e.g., `where("X in 1,2,3")`). When a filter can be expressed either way, use the match filter. Deephaven can perform more advanced optimizations for match filters, and you should see higher performance.
+Filter performance also depends on how a table is structured. Some columns let a filter skip data without reading every row. Two common kinds are:
 
-Finally, your filtering criteria may dynamically change or may be driven by values in a table. For example, an input table may contain a list of values a user cares about. The user may add or remove items from this list during the day. [`where`](../reference/table-operations/filter/where.md) cannot handle this dynamic case. Instead, you will need to filter using [`whereIn`](../reference/table-operations/filter/where-in.md) or [`whereNotIn`](../reference/table-operations/filter/where-not-in.md). To see this in action, try this query.
+- A [partitioning column](../how-to-guides/data-import-export/parquet-formats.md#parquet-file-directories) is a column whose values split the table's data into separate files or directories on disk. Each partition holds one value, so the engine checks that value once and skips partitions that don't match.
+- An indexed column is a column with a [data index](../how-to-guides/data-indexes.md), which maps each key value to the rows that hold it. The engine looks up matching rows in the index instead of checking every row.
 
-```groovy skip-test
-t1 = emptyTable(10).update("X=i%2", "Y=i*i")
-t2 = timeTable("PT00:00:02").update("X=i%2").lastBy()
+Within one [`where`](../reference/table-operations/filter/where.md), the engine can change the order of the filters when the data supports it:
+
+- It applies filters on [partitioning columns](../how-to-guides/data-import-export/parquet-formats.md#parquet-file-directories) first.
+- It can move filters that support [predicate pushdown](../how-to-guides/predicate-pushdown.md) ahead of others by estimated cost, and the estimate takes [data indexes](../how-to-guides/data-indexes.md) into account.
+
+When the engine can't reorder filters, it applies them in the order you give them, so put the filter that removes the most rows first. [Predicate pushdown](../how-to-guides/predicate-pushdown.md) lists the order in which the engine prioritizes the filters it can reorder.
+
+To keep every filter in the order you give, even when the engine could reorder them, use [Barriers](../reference/query-language/types/Barrier.md) or [serial filters](./query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where).
+
+Sometimes the values you filter on live in another table that changes while the query runs. For example, an [input table](../how-to-guides/input-tables.md) can hold the values a user cares about, and the user can add or remove values during the day. A [`where`](../reference/table-operations/filter/where.md) filter's values are fixed when you call it, so it never sees those changes. Use [`whereIn`](../reference/table-operations/filter/where-in.md) or [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) instead.
+
+In this example, a [time table](../how-to-guides/time-table.md) stands in for the [input table](../how-to-guides/input-tables.md), so the filter values change without anyone editing them:
+
+```groovy ticking-table order=t1,t2,t3
+t1 = emptyTable(10).update("X = i % 2", "Y = i * i")
+t2 = timeTable("PT2S").update("X = i % 2").lastBy()
 t3 = t1.whereIn(t2, "X")
 ```
 
+As `t2` ticks, its one row alternates between `X = 0` and `X = 1`, so `t3` switches between the rows of `t1` where `X` is 0 and the rows where `X` is 1.
+
 > [!IMPORTANT]
-> To summarize:
-> When performance tuning filtering:
+> To write fast, correct filters:
 >
-> 1. filter first, to minimize the data being computed upon,
-> 2. order your filters in partition, grouping, normal order,
-> 3. minimize the number of times a column is read,
-> 4. combine filters within a single [`where`](../reference/table-operations/filter/where.md), instead of chaining multiple [`where`](../reference/table-operations/filter/where.md)`s together,
-> 5. prefer match filters to conditional filters, and
-> 6. use [`whereIn`](../reference/table-operations/filter/where-in.md) and [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) for dynamic filtering.
+> 1. Filter first, so later operations compute on less data.
+> 2. Combine filters in a single [`where`](../reference/table-operations/filter/where.md) call so the engine can reorder them when [predicate pushdown](../how-to-guides/predicate-pushdown.md) applies, and put the most selective filter first for when it can't.
+> 3. Prefer simple comparisons and [match filters](../how-to-guides/use-filters.md#match-filters) to [formula filters](../how-to-guides/filters.md#keep-match-filters-separate-from-formulas).
+> 4. When the filter values come from a table that changes, use [`whereIn`](../reference/table-operations/filter/where-in.md) or [`whereNotIn`](../reference/table-operations/filter/where-not-in.md) instead of [`where`](../reference/table-operations/filter/where.md).
 
-## ? Is Your Friend
+## Use the ternary operator
 
-The [ternary operator](../how-to-guides/ternary-if-how-to.md) `?` allows an if-else block to be expressed in a single line of code.
+The [ternary operator](../how-to-guides/ternary-if-how-to.md) `? :` lets you express an if-else block in a single line of code.
 
 ```groovy order=source,result default=result
-source = emptyTable(10).update("X=i", "Y=X*X")
-result = source.update("Z = (X%2==0) ? Y : 42")
+source = emptyTable(10).update("X = i", "Y = X * X")
+result = source.update("Z = (X % 2 == 0) ? Y : 42")
 ```
 
-The query string `"Z = (X%2==0) ? Y : 42"` sets `Z` equal to `Y`, if `X` is even, or equal to 42 otherwise. Using the [ternary conditional operator](../how-to-guides/ternary-if-how-to.md) results in concise queries and saves you from writing functions.
+The [query string](../how-to-guides/query-string-overview.md) `"Z = (X % 2 == 0) ? Y : 42"` sets `Z` to `Y` when `X` is even and to 42 otherwise. Using the [ternary operator](../how-to-guides/ternary-if-how-to.md) results in concise queries and saves you from writing functions.
 
-## Java Inside
+## Call Java from query strings
 
-Most user interactions with Deephaven happen via a programming language such as Python or Groovy, yet, under the hood, the Deephaven Query Engine is written in Java. Occasionally, it is beneficial to use the "Java inside."
+Most users work with Deephaven through a programming language such as Python or Groovy, but the Deephaven query engine is written in Java. Occasionally, it is beneficial to use that "Java inside" directly.
 
 ```groovy order=t1,t2
 t1 = newTable(intCol("X", 1, 2, 3), stringCol("Y", "A/B", "C/D", "E/F"))
-t2 = t1.update("A=java.lang.Math.sin(X)", "B=Y.split(`/`)[1]")
+t2 = t1.update("A = java.lang.Math.sin(X)", "B = Y.split(`/`)[1]")
 ```
 
-In this query, Java is used twice in the query strings. First, the `sin(...)` method from the `java.lang.Math` class is used to compute column `A`. If you find a Java library that implements functionality you need, just place it on the classpath, and it is available in the query language. (See [Install and use Java packages](../how-to-guides/install-and-use-java-packages.md) for more details.) Second, Deephaven Query Language strings are `java.lang.String` objects. Here the `split(...)` method plus an array access have been used to retrieve the second token in the string. This inline use of Java String methods eliminates the need to write a custom string processing function.
+This query uses Java twice in its [query strings](../how-to-guides/query-string-overview.md). First, the `sin` method from the `java.lang.Math` class computes column `A`.
 
-Because of the deep integration of Java within the Deephaven environment, it is possible to create Java objects within a Groovy query. This technique isn’t often used, but it is occasionally helpful when using a Java package.
+Second, [DQL strings](../how-to-guides/work-with-strings.md) are `java.lang.String` objects. Here, the `split` method splits `Y` on `/`, and the `[1]` [array access](../how-to-guides/work-with-arrays.md) retrieves the second token. Calling Java `String` methods inline means you don't need to write a custom string-processing function.
+
+If you find a Java library that implements functionality you need, place it on the classpath, and [query strings](../how-to-guides/query-string-overview.md) can call it by its fully qualified class name. For more details, see [Install and use Java packages](../how-to-guides/install-and-use-java-packages.md).
+
+Because Java is deeply integrated with Deephaven, you can create Java objects in a Groovy query. This technique isn't common, but it helps when you use a Java package.
 
 ```groovy order=t,t1
 import java.util.ArrayList
@@ -180,62 +219,98 @@ al.add(1)
 al.add(3)
 println(al)
 
-t = emptyTable(10).update("X=i", "Y=X*X")
+t = emptyTable(10).update("X = i", "Y = X * X")
 t1 = t.where("al.contains(X)")
 ```
 
-In this Groovy example, a Java ArrayList is created and used in a query filter. You now have the power of Groovy, Java, and Deephaven available within a single query!
+This Groovy example creates a Java `ArrayList` holding 1 and 3 and uses it in a query filter, so `t1` keeps the rows where `X` is 1 or 3. The [query string](../how-to-guides/query-string-overview.md) can refer to `al` because it can use [variables from your script](../how-to-guides/query-scope.md).
 
-## Clean chained queries
+You now have the power of Groovy, Java, and Deephaven available within a single query!
 
-Query operations can be chained together to express complex ideas.
+## Format chained queries
+
+You can chain query operations together to express complex ideas.
 
 ```groovy order=result
-result = emptyTable(10).update("X = i", "Y = X*X").where("Y > 3", "X > 2")
+result = emptyTable(10).update("X = i", "Y = X * X").where("Y > 3", "X > 2")
 ```
 
-While powerful, these chained queries can quickly become difficult to read. Apply some formatting to clean things up.
+While powerful, these chained queries can quickly become difficult to read. To clean things up, start each operation on its own line with its leading dot, and put each [query string](../how-to-guides/query-string-overview.md) on its own line.
 
-```groovy skip-test
+```groovy order=result
 result = emptyTable(10)
     .update(
-        "X = i", 
-        "Y = X*X"
+        "X = i",
+        "Y = X * X"
     )
     .where(
-        "Y > 3", 
+        "Y > 3",
         "X > 2"
     )
 ```
 
-If you want to include comments between your chained query operations or avoid trailing slashes, surround the code block with parentheses.
+To put comments between your chained query operations, place each comment on its own line. This example also wraps the chain in parentheses so its start and end are easy to see.
 
 ```groovy order=result2
 result2 = (
     emptyTable(10)
+        // Comment 1
         .update(
-            "X = i", 
-            "Y = X*X"
+            "X = i",
+            "Y = X * X"
         )
+        // Comment 2
         .where(
-            "Y > 3", 
+            "Y > 3",
             "X > 2"
         )
 )
 ```
 
-With some practice, you will get a feeling for how to format chained query operations for maximum readability.
+With some practice, you develop a feel for how to format chained query operations for maximum readability.
 
 ## Related documentation
 
+- [Table types](./table-types.md)
+- [Table operations overview](./table-operations-overview.md)
+- [Work with time](./time-in-deephaven.md)
+- [Parallelization](./query-engine/parallelization.md)
+- [Vectorization and the recipe paradigm](./vectorization-and-recipes.md)
 - [Create an empty table](../how-to-guides/new-and-empty-table.md#emptytable)
 - [Choose a join method](../how-to-guides/joins-exact-relational.md#which-method-should-you-use)
-- [Choose the right selection method](../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
-- [Handle nulls, infs, and NaNs](../how-to-guides/null-inf-nan.md)
+- [Single aggregation](../how-to-guides/dedicated-aggregations.md)
+- [Create a time table](../how-to-guides/time-table.md)
+- [Create and use input tables](../how-to-guides/input-tables.md)
+- [Data indexes](../how-to-guides/data-indexes.md)
+- [Install and use Java packages](../how-to-guides/install-and-use-java-packages.md)
+- [Iterate over tables with ColumnVectors](../how-to-guides/iterate-table-vectors.md)
+- [Predicate pushdown](../how-to-guides/predicate-pushdown.md)
+- [Supported Parquet formats](../how-to-guides/data-import-export/parquet-formats.md)
 - [Query strings](../how-to-guides/query-string-overview.md)
 - [Work with arrays](../how-to-guides/work-with-arrays.md)
-- [Work with time](./time-in-deephaven.md)
 - [Work with strings](../how-to-guides/work-with-strings.md)
 - [Use filters](../how-to-guides/use-filters.md)
-- [Use ternary-if](../how-to-guides/ternary-if-how-to.md)
+- [Filters](../how-to-guides/filters.md)
+- [Use the ternary conditional operator in query strings](../how-to-guides/ternary-if-how-to.md)
 - [Use variables in query strings](../how-to-guides/query-scope.md)
+- [Strings](../reference/query-language/types/strings.md)
+- [Date-times](../reference/query-language/types/date-time.md)
+- [Durations](../reference/query-language/types/durations.md)
+- [Periods](../reference/query-language/types/periods.md)
+- [Barrier](../reference/query-language/types/Barrier.md)
+- [`emptyTable`](../reference/table-operations/create/emptyTable.md)
+- [`intCol`](../reference/table-operations/create/intCol.md)
+- [`lastBy`](../reference/table-operations/group-and-aggregate/lastBy.md)
+- [`maxBy`](../reference/table-operations/group-and-aggregate/maxBy.md)
+- [`merge`](../reference/table-operations/merge/merge.md)
+- [`newTable`](../reference/table-operations/create/newTable.md)
+- [`readCsv`](../reference/data-import-export/CSV/readCsv.md)
+- [`selectDistinct`](../reference/table-operations/select/select-distinct.md)
+- [`stringCol`](../reference/table-operations/create/stringCol.md)
+- [`timeTable`](../reference/table-operations/create/timeTable.md)
+- [`toLocalDate`](../reference/time/datetime/toLocalDate.md)
+- [`update`](../reference/table-operations/select/update.md)
+- [`where`](../reference/table-operations/filter/where.md)
+- [`whereIn`](../reference/table-operations/filter/where-in.md)
+- [`whereNotIn`](../reference/table-operations/filter/where-not-in.md)
+- [`ColumnVectors` Javadoc](/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html)

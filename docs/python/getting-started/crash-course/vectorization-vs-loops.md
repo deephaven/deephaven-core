@@ -231,6 +231,6 @@ These are the closest Deephaven recipes for common DataFrame operations:
 ## Next steps
 
 - Continue to the next chapter, [Python integrations](./py-integrations.md), to convert between Deephaven tables and pandas, NumPy, and other Python libraries.
-- Read [Think like a ninja](../../conceptual/ninja.md#looping-dont-do-it) for more examples.
+- Read [Think like a Deephaven ninja](../../conceptual/ninja.md#replace-loops-with-table-operations) for more examples.
 - Read [Vectorization and the recipe paradigm](../../conceptual/vectorization-and-recipes.md) for technical details.
 - See [rolling aggregations with `update_by`](../../how-to-guides/rolling-aggregations.md) for more recipes.
