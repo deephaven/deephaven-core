@@ -420,6 +420,21 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Reverse,
                 CopyAttributeOperation.Sort));
 
+        // kept when the result holds only the opted-in table's values; dropped when an operation computes new values or
+        // brings in another table's data
+        tempMap.put(TRANSPORT_COMPRESSION_ATTRIBUTE, EnumSet.of(
+                CopyAttributeOperation.Coalesce,
+                CopyAttributeOperation.DropColumns,
+                CopyAttributeOperation.Filter,
+                CopyAttributeOperation.FirstBy,
+                CopyAttributeOperation.Flatten,
+                CopyAttributeOperation.LastBy,
+                CopyAttributeOperation.PartitionBy,
+                CopyAttributeOperation.Preview,
+                CopyAttributeOperation.RenameColumns,
+                CopyAttributeOperation.Reverse,
+                CopyAttributeOperation.Sort));
+
         attributeToCopySet = Collections.unmodifiableMap(tempMap);
     }
 
