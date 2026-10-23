@@ -25,7 +25,7 @@ For additional configuration options, see the [install guide for Docker](./docke
 
 ### With pip
 
-To install Deephaven with pip, you need Java 17 or later and Python 3.9 or later, and your `JAVA_HOME` environment variable must point to your Java installation. On Windows, pip-installed Deephaven also requires [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install). See the [pip install prerequisites](./pip-install.md#prerequisites) for details.
+To install Deephaven with pip, you need Java 17 or later and Python 3.10 or later, and your `JAVA_HOME` environment variable must point to your Java installation. On Windows, pip-installed Deephaven also requires [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install). See the [pip install prerequisites](./pip-install.md#prerequisites) for details.
 
 > [!NOTE]
 > For pip-installed Deephaven, we recommend using a Python [virtual environment](https://docs.python.org/3/library/venv.html) to decouple and isolate Python installs and associated packages.

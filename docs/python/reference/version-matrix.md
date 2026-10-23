@@ -11,7 +11,8 @@ A :white_check_mark: indicates that the Deephaven version supports the Python ve
 | Deephaven version |     Python 3.8     |     Python 3.9     |    Python 3.10     |    Python 3.11     |    Python 3.12     |    Python 3.13     |
 | ----------------- | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
 | 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| 41.x and later    |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| 41.x and 42.x     |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| 43.x and later    |                    |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
 Deephaven tests primarily with Python 3.12.
 

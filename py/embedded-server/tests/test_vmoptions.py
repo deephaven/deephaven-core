@@ -8,7 +8,6 @@ import sys
 import tempfile
 import types
 import unittest
-from typing import List, Optional
 from unittest import mock
 
 from deephaven_server import start_jvm
@@ -34,7 +33,7 @@ OVERRIDE = None if _override is None else _override.split()
 VERSIONS = (17, 21, 22, 25)
 
 
-def _expected_options(java_version: Optional[int]) -> List[str]:
+def _expected_options(java_version: int | None) -> list[str]:
     if OVERRIDE is not None:
         return OVERRIDE
     if java_version in (17, 21):
@@ -66,7 +65,7 @@ JPY_ENV_VARS = (
 )
 
 
-def _options_in(vmoptions: pathlib.Path) -> List[str]:
+def _options_in(vmoptions: pathlib.Path) -> list[str]:
     return vmoptions.read_text().split()
 
 
@@ -92,7 +91,7 @@ class VmOptionsFileTest(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def _java_home(self, java_version: Optional[int]) -> pathlib.Path:
+    def _java_home(self, java_version: int | None) -> pathlib.Path:
         home = pathlib.Path(tempfile.mkdtemp(dir=self._dir.name))
         (home / "lib" / "server").mkdir(parents=True)
         (home / "lib" / "server" / "libjvm.so").touch()
@@ -104,7 +103,7 @@ class VmOptionsFileTest(unittest.TestCase):
     def _jvm_dll(home: pathlib.Path) -> str:
         return str(home / "lib" / "server" / "libjvm.so")
 
-    def _assert_selects(self, jvm_dll: Optional[str], java_version: Optional[int]):
+    def _assert_selects(self, jvm_dll: str | None, java_version: int | None):
         detected = start_jvm._java_major_version(jvm_dll)
         self.assertEqual(detected, java_version)
         vmoptions = start_jvm._default_vmoptions(detected)

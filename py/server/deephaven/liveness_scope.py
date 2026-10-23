@@ -54,18 +54,17 @@ Examples:
 
 import contextlib
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, Union, cast
+from typing import TypeAlias, cast
 
 import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 
-if TYPE_CHECKING:
-    from typing_extensions import TypeAlias  # novermin  # noqa
-
 _JLivenessScopeStack = jpy.get_type("io.deephaven.engine.liveness.LivenessScopeStack")
-_JLivenessScope = cast(type, jpy.get_type("io.deephaven.engine.liveness.LivenessScope"))  # type: TypeAlias
+_JLivenessScope: TypeAlias = cast(
+    type, jpy.get_type("io.deephaven.engine.liveness.LivenessScope")
+)
 _JLivenessReferent = jpy.get_type("io.deephaven.engine.liveness.LivenessReferent")
 
 
@@ -81,7 +80,7 @@ def _pop(scope: _JLivenessScope) -> None:
 
 
 def _unwrap_to_liveness_referent(
-    referent: Union[JObjectWrapper, jpy.JType],
+    referent: JObjectWrapper | jpy.JType,
 ) -> jpy.JType:
     if isinstance(referent, jpy.JType) and _JLivenessReferent.jclass.isInstance(
         referent
@@ -116,7 +115,7 @@ class _BaseLivenessScope(JObjectWrapper):
         except Exception as e:
             raise DHError(e, message="failed to close the LivenessScope.")
 
-    def preserve(self, referent: Union[JObjectWrapper, jpy.JType]) -> None:
+    def preserve(self, referent: JObjectWrapper | jpy.JType) -> None:
         """Preserves a query graph node (usually a Table) to keep it live for the outer scope.
 
         Args:
@@ -146,7 +145,7 @@ class _BaseLivenessScope(JObjectWrapper):
             # Success or failure, restore the scope that was successfully popped
             _JLivenessScopeStack.push(self.j_scope)
 
-    def manage(self, referent: Union[JObjectWrapper, jpy.JType]) -> None:
+    def manage(self, referent: JObjectWrapper | jpy.JType) -> None:
         """
         Explicitly manage the given java object in this scope. Must only be passed a Java LivenessReferent, or
         a Python wrapper around a LivenessReferent
@@ -166,7 +165,7 @@ class _BaseLivenessScope(JObjectWrapper):
         except Exception as e:
             raise DHError(e, message="failed to manage object")
 
-    def unmanage(self, referent: Union[JObjectWrapper, jpy.JType]) -> None:
+    def unmanage(self, referent: JObjectWrapper | jpy.JType) -> None:
         """
         Explicitly unmanage the given java object from this scope. Must only be passed a Java LivenessReferent, or
         a Python wrapper around a LivenessReferent
@@ -230,7 +229,7 @@ class LivenessScope(_BaseLivenessScope):
             _pop(self.j_scope)
 
 
-def is_liveness_referent(referent: Union[JObjectWrapper, jpy.JType]) -> bool:
+def is_liveness_referent(referent: JObjectWrapper | jpy.JType) -> bool:
     """
     Returns True if the provided object is a LivenessReferent, and so can be managed by a LivenessScope.
     Args:

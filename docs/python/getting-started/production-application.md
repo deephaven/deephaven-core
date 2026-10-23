@@ -22,7 +22,7 @@ Deephaven is only supported on:
 | Package | Recommended version | Required version |
 | ------- | ------------------- | ---------------- |
 | java    | latest LTS          | >= 17            |
-| python  | latest LTS          | >= 3.9           |
+| python  | latest LTS          | >= 3.10          |
 
 ## Get the artifacts
 

@@ -5,8 +5,6 @@
 """This module provides Change Data Capture(CDC) support for streaming relational database changes into Deephaven
 tables."""
 
-from typing import Optional
-
 import jpy
 
 from deephaven import DHError
@@ -35,9 +33,9 @@ class CDCSpec(JObjectWrapper):
 def consume(
     kafka_config: dict,
     cdc_spec: CDCSpec,
-    partitions: Optional[list[int]] = None,
+    partitions: list[int] | None = None,
     stream_table: bool = False,
-    cols_to_drop: Optional[list[str]] = None,
+    cols_to_drop: list[str] | None = None,
 ) -> Table:
     """Consume from a Change Data Capture (CDC) Kafka stream (as, eg, produced by Debezium), tracking the underlying
     database table to a Deephaven table.
@@ -81,7 +79,7 @@ def consume(
 def consume_raw(
     kafka_config: dict,
     cdc_spec: CDCSpec,
-    partitions: Optional[list[int]] = None,
+    partitions: list[int] | None = None,
     table_type: TableType = TableType.Stream,
 ) -> Table:
     """Consume the raw events from a Change Data Capture (CDC) Kafka stream to a Deephaven table.

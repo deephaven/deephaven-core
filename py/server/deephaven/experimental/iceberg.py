@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import Any, TypeAlias, cast
 from warnings import warn
 
 import jpy
@@ -17,13 +17,10 @@ from deephaven.experimental import s3
 from deephaven.jcompat import j_hashmap
 from deephaven.table import Table, TableDefinition, TableDefinitionLike
 
-if TYPE_CHECKING:
-    from typing_extensions import TypeAlias, overload  # novermin  # noqa
-
 _JBuildCatalogOptions = jpy.get_type("io.deephaven.iceberg.util.BuildCatalogOptions")
-_JIcebergUpdateMode = cast(
+_JIcebergUpdateMode: TypeAlias = cast(
     type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")
-)  # type: TypeAlias
+)
 _JIcebergReadInstructions = jpy.get_type(
     "io.deephaven.iceberg.util.IcebergReadInstructions"
 )
@@ -35,15 +32,15 @@ _JSortOrderProvider = jpy.get_type("io.deephaven.iceberg.util.SortOrderProvider"
 _JTableParquetWriterOptions = jpy.get_type(
     "io.deephaven.iceberg.util.TableParquetWriterOptions"
 )
-_JIcebergCatalogAdapter = cast(
+_JIcebergCatalogAdapter: TypeAlias = cast(
     type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
-)  # type: TypeAlias
-_JIcebergTableAdapter = cast(
+)
+_JIcebergTableAdapter: TypeAlias = cast(
     type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter")
-)  # type: TypeAlias
-_JIcebergTableWriter = cast(
+)
+_JIcebergTableWriter: TypeAlias = cast(
     type[Any], jpy.get_type("io.deephaven.iceberg.util.IcebergTableWriter")
-)  # type: TypeAlias
+)
 _JIcebergTable = jpy.get_type("io.deephaven.iceberg.util.IcebergTable")
 _JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
 _JLoadTableOptions = jpy.get_type("io.deephaven.iceberg.util.LoadTableOptions")
@@ -95,7 +92,7 @@ class IcebergUpdateMode(JObjectWrapper):
         return IcebergUpdateMode(_JIcebergUpdateMode.manualRefreshingMode())
 
     @classmethod
-    def auto_refresh(cls, auto_refresh_ms: Optional[int] = None) -> IcebergUpdateMode:
+    def auto_refresh(cls, auto_refresh_ms: int | None = None) -> IcebergUpdateMode:
         """
         Creates an IcebergUpdateMode with auto-refreshing enabled.
 
@@ -124,11 +121,11 @@ class IcebergReadInstructions(JObjectWrapper):
 
     def __init__(
         self,
-        table_definition: Optional[TableDefinitionLike] = None,
-        data_instructions: Optional[s3.S3Instructions] = None,
-        column_renames: Optional[dict[str, str]] = None,
-        update_mode: Optional[IcebergUpdateMode] = None,
-        snapshot_id: Optional[int] = None,
+        table_definition: TableDefinitionLike | None = None,
+        data_instructions: s3.S3Instructions | None = None,
+        column_renames: dict[str, str] | None = None,
+        update_mode: IcebergUpdateMode | None = None,
+        snapshot_id: int | None = None,
         ignore_resolving_errors: bool = False,
     ):
         """
@@ -198,8 +195,8 @@ class IcebergWriteInstructions(JObjectWrapper):
 
     def __init__(
         self,
-        tables: Union[Table, Sequence[Table]],
-        partition_paths: Optional[Union[str, Sequence[str]]] = None,
+        tables: Table | Sequence[Table],
+        partition_paths: str | Sequence[str] | None = None,
     ):
         """
         Initializes the instructions using the provided parameters.
@@ -414,7 +411,7 @@ class InferenceResolver(JObjectWrapper):
         self,
         infer_partitioning_columns: bool = False,
         fail_on_unsupported_types: bool = False,
-        schema_provider: Optional[SchemaProvider] = None,
+        schema_provider: SchemaProvider | None = None,
     ):
         """
         Initializes the `InferenceResolver` object.
@@ -453,8 +450,8 @@ class UnboundResolver(JObjectWrapper):
     def __init__(
         self,
         table_definition: TableDefinitionLike,
-        column_instructions: Optional[Mapping[str, Union[int, str]]] = None,
-        schema_provider: Optional[SchemaProvider] = None,
+        column_instructions: Mapping[str, int | str] | None = None,
+        schema_provider: SchemaProvider | None = None,
     ):
         """
         Initializes the `UnboundResolver` object.
@@ -500,14 +497,14 @@ class TableParquetWriterOptions(JObjectWrapper):
     def __init__(
         self,
         table_definition: TableDefinitionLike,
-        schema_provider: Optional[SchemaProvider] = None,
-        field_id_to_column_name: Optional[dict[int, str]] = None,
-        compression_codec_name: Optional[str] = None,
-        maximum_dictionary_keys: Optional[int] = None,
-        maximum_dictionary_size: Optional[int] = None,
-        target_page_size: Optional[int] = None,
-        sort_order_provider: Optional[SortOrderProvider] = None,
-        data_instructions: Optional[s3.S3Instructions] = None,
+        schema_provider: SchemaProvider | None = None,
+        field_id_to_column_name: dict[int, str] | None = None,
+        compression_codec_name: str | None = None,
+        maximum_dictionary_keys: int | None = None,
+        maximum_dictionary_size: int | None = None,
+        target_page_size: int | None = None,
+        sort_order_provider: SortOrderProvider | None = None,
+        data_instructions: s3.S3Instructions | None = None,
     ):
         """
         Initializes the instructions using the provided parameters.
@@ -600,7 +597,7 @@ class IcebergTable(Table):
     def __init__(self, j_table: jpy.JType):
         super().__init__(j_table)
 
-    def update(self, snapshot_id: Optional[int] = None):  # type: ignore[override]
+    def update(self, snapshot_id: int | None = None):  # type: ignore[override]
         """
         Updates the table to match the contents of the specified snapshot. This may result in row removes and additions
         that will be propagated asynchronously via this IcebergTable's UpdateGraph. If no snapshot is provided, the
@@ -686,9 +683,7 @@ class IcebergTableAdapter(JObjectWrapper):
         """
         return Table(self.j_object.snapshots())
 
-    def definition(
-        self, instructions: Optional[IcebergReadInstructions] = None
-    ) -> Table:
+    def definition(self, instructions: IcebergReadInstructions | None = None) -> Table:
         """
         Returns the Deephaven table definition as a Deephaven table.
 
@@ -710,10 +705,10 @@ class IcebergTableAdapter(JObjectWrapper):
 
     def table(
         self,
-        instructions: Optional[IcebergReadInstructions] = None,
-        snapshot_id: Optional[int] = None,
-        update_mode: Optional[IcebergUpdateMode] = None,
-        data_instructions: Optional[s3.S3Instructions] = None,
+        instructions: IcebergReadInstructions | None = None,
+        snapshot_id: int | None = None,
+        update_mode: IcebergUpdateMode | None = None,
+        data_instructions: s3.S3Instructions | None = None,
         ignore_resolving_errors: bool = False,
     ) -> IcebergTable:
         """
@@ -796,7 +791,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
     def __exit__(self, exc_type, exc, tb):
         self.close()
 
-    def namespaces(self, namespace: Optional[str] = None) -> Table:
+    def namespaces(self, namespace: str | None = None) -> Table:
         """
         Returns information on the namespaces in the catalog as a Deephaven table. If a namespace is specified, the
         tables in that namespace are listed; otherwise the top-level namespaces are listed.
@@ -829,7 +824,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
     def load_table(
         self,
         table_identifier: str,
-        resolver: Optional[Union[InferenceResolver, UnboundResolver]] = None,
+        resolver: InferenceResolver | UnboundResolver | None = None,
     ) -> IcebergTableAdapter:
         """
         Load the table from the catalog.
@@ -879,11 +874,11 @@ class IcebergCatalogAdapter(JObjectWrapper):
 def adapter_s3_rest(
     catalog_uri: str,
     warehouse_location: str,
-    name: Optional[str] = None,
-    region_name: Optional[str] = None,
-    access_key_id: Optional[str] = None,
-    secret_access_key: Optional[str] = None,
-    end_point_override: Optional[str] = None,
+    name: str | None = None,
+    region_name: str | None = None,
+    access_key_id: str | None = None,
+    secret_access_key: str | None = None,
+    end_point_override: str | None = None,
 ) -> IcebergCatalogAdapter:
     """
     DEPRECATED: Use `adapter()` instead.
@@ -935,7 +930,7 @@ def adapter_s3_rest(
 
 
 def adapter_aws_glue(
-    catalog_uri: str, warehouse_location: str, name: Optional[str] = None
+    catalog_uri: str, warehouse_location: str, name: str | None = None
 ) -> IcebergCatalogAdapter:
     """
     DEPRECATED: Use `adapter()` instead.
@@ -969,11 +964,11 @@ def adapter_aws_glue(
 
 
 def adapter(
-    name: Optional[str] = None,
-    properties: Optional[dict[str, str]] = None,
-    hadoop_config: Optional[dict[str, str]] = None,
-    s3_instructions: Optional[s3.S3Instructions] = None,
-    enable_property_injection: Optional[bool] = True,
+    name: str | None = None,
+    properties: dict[str, str] | None = None,
+    hadoop_config: dict[str, str] | None = None,
+    s3_instructions: s3.S3Instructions | None = None,
+    enable_property_injection: bool | None = True,
 ) -> IcebergCatalogAdapter:
     """
     Create an Iceberg catalog adapter from configuration properties. These properties map to the Iceberg catalog Java
@@ -1090,10 +1085,10 @@ def adapter(
 
 
 def _build_catalog_options(
-    name: Optional[str] = None,
-    properties: Optional[dict[str, str]] = None,
-    hadoop_config: Optional[dict[str, str]] = None,
-    enable_property_injection: Optional[bool] = True,
+    name: str | None = None,
+    properties: dict[str, str] | None = None,
+    hadoop_config: dict[str, str] | None = None,
+    enable_property_injection: bool | None = True,
 ) -> jpy.JType:
     try:
         builder = _JBuildCatalogOptions.builder()

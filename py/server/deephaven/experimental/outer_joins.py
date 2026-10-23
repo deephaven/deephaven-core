@@ -7,7 +7,6 @@
 """This module allows users to perform SQL-style left outer and full outer joins on tables."""
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import jpy
 
@@ -22,9 +21,9 @@ _JOuterJoinTools = jpy.get_type("io.deephaven.engine.util.OuterJoinTools")
 def full_outer_join(
     l_table: Table,
     r_table: Table,
-    on: Optional[Union[str, Sequence[str]]] = None,
-    joins: Optional[Union[str, Sequence[str]]] = None,
-    reserve_bits: Optional[int] = None,
+    on: str | Sequence[str] | None = None,
+    joins: str | Sequence[str] | None = None,
+    reserve_bits: int | None = None,
 ) -> Table:
     """The full_outer_join function creates a new table containing rows that have matching values in both tables.
     If there are multiple matches between a row from the left table and rows from the right table, all matching
@@ -68,9 +67,9 @@ def full_outer_join(
 def left_outer_join(
     l_table: Table,
     r_table: Table,
-    on: Optional[Union[str, Sequence[str]]] = None,
-    joins: Optional[Union[str, Sequence[str]]] = None,
-    reserve_bits: Optional[int] = None,
+    on: str | Sequence[str] | None = None,
+    joins: str | Sequence[str] | None = None,
+    reserve_bits: int | None = None,
 ) -> Table:
     """The left_outer_join function creates a new table containing rows that have matching values in both tables.
     If there are multiple matches between a row from the left table and rows from the right table, all matching

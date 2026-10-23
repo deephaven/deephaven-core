@@ -3,7 +3,6 @@
 #
 from __future__ import annotations
 
-from typing import Optional
 from warnings import warn
 
 import jpy
@@ -145,23 +144,23 @@ class S3Instructions(JObjectWrapper):
 
     def __init__(
         self,
-        region_name: Optional[str] = None,
-        credentials: Optional[Credentials] = None,
-        max_concurrent_requests: Optional[int] = None,
-        read_ahead_count: Optional[int] = None,
-        fragment_size: Optional[int] = None,
-        connection_timeout: Optional[DurationLike] = None,
-        read_timeout: Optional[DurationLike] = None,
-        write_timeout: Optional[DurationLike] = None,
-        access_key_id: Optional[str] = None,
-        secret_access_key: Optional[str] = None,
+        region_name: str | None = None,
+        credentials: Credentials | None = None,
+        max_concurrent_requests: int | None = None,
+        read_ahead_count: int | None = None,
+        fragment_size: int | None = None,
+        connection_timeout: DurationLike | None = None,
+        read_timeout: DurationLike | None = None,
+        write_timeout: DurationLike | None = None,
+        access_key_id: str | None = None,
+        secret_access_key: str | None = None,
         anonymous_access: bool = False,
-        endpoint_override: Optional[str] = None,
-        write_part_size: Optional[int] = None,
-        num_concurrent_write_parts: Optional[int] = None,
-        profile_name: Optional[str] = None,
-        config_file_path: Optional[str] = None,
-        credentials_file_path: Optional[str] = None,
+        endpoint_override: str | None = None,
+        write_part_size: int | None = None,
+        num_concurrent_write_parts: int | None = None,
+        profile_name: str | None = None,
+        config_file_path: str | None = None,
+        credentials_file_path: str | None = None,
     ):
         """
         Initializes the instructions.

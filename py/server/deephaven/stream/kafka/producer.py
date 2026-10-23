@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional, Sequence
+from collections.abc import Callable, Sequence
 
 import jpy
 
@@ -42,15 +42,15 @@ KeyValueSpec.IGNORE = KeyValueSpec(_JKafkaTools_Produce.IGNORE)
 def produce(
     table: Table,
     kafka_config: dict,
-    topic: Optional[str],
+    topic: str | None,
     key_spec: KeyValueSpec,
     value_spec: KeyValueSpec,
     last_by_key_columns: bool = False,
     publish_initial: bool = True,
-    partition: Optional[int] = None,
-    topic_col: Optional[str] = None,
-    partition_col: Optional[str] = None,
-    timestamp_col: Optional[str] = None,
+    partition: int | None = None,
+    topic_col: str | None = None,
+    partition_col: str | None = None,
+    timestamp_col: str | None = None,
 ) -> Callable[[], None]:
     """Produce to Kafka from a Deephaven table.
 
@@ -144,13 +144,13 @@ def produce(
 def avro_spec(
     schema: str,
     schema_version: str = "latest",
-    field_to_col_mapping: Optional[dict[str, str]] = None,
-    timestamp_field: Optional[str] = None,
-    include_only_columns: Optional[Sequence[str]] = None,
-    exclude_columns: Optional[Sequence[str]] = None,
+    field_to_col_mapping: dict[str, str] | None = None,
+    timestamp_field: str | None = None,
+    include_only_columns: Sequence[str] | None = None,
+    exclude_columns: Sequence[str] | None = None,
     publish_schema: bool = False,
-    schema_namespace: Optional[str] = None,
-    column_properties: Optional[dict[str, str]] = None,
+    schema_namespace: str | None = None,
+    column_properties: dict[str, str] | None = None,
 ) -> KeyValueSpec:
     """Creates a spec for how to use an Avro schema to produce a Kafka stream from a Deephaven table.
 
@@ -210,12 +210,12 @@ def avro_spec(
 
 
 def json_spec(
-    include_columns: Optional[Sequence[str]] = None,
-    exclude_columns: Optional[Sequence[str]] = None,
-    mapping: Optional[dict[str, str]] = None,
-    nested_delim: Optional[str] = None,
+    include_columns: Sequence[str] | None = None,
+    exclude_columns: Sequence[str] | None = None,
+    mapping: dict[str, str] | None = None,
+    nested_delim: str | None = None,
     output_nulls: bool = False,
-    timestamp_field: Optional[str] = None,
+    timestamp_field: str | None = None,
 ) -> KeyValueSpec:
     """Creates a spec for how to generate JSON data when producing a Kafka stream from a Deephaven table.
 

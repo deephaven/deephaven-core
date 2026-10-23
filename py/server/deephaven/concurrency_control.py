@@ -13,7 +13,8 @@ See https://deephaven.io/core/docs/conceptual/query-engine/parallelization/ for 
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Protocol, Sequence, TypeVar, Union
+from collections.abc import Sequence
+from typing import Protocol, TypeVar
 
 import jpy
 
@@ -45,11 +46,11 @@ class ConcurrencyControl(Protocol[T]):
     """An abstract class representing concurrency control features for Selectable and Filter."""
 
     @abstractmethod
-    def with_declared_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> T:
+    def with_declared_barriers(self, barriers: Barrier | Sequence[Barrier]) -> T:
         """Returns a new instance with the given declared barriers."""
 
     @abstractmethod
-    def with_respected_barriers(self, barriers: Union[Barrier, Sequence[Barrier]]) -> T:
+    def with_respected_barriers(self, barriers: Barrier | Sequence[Barrier]) -> T:
         """Returns a new instance with the given respected barriers."""
 
     @abstractmethod
