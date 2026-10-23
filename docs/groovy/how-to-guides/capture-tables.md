@@ -1,6 +1,5 @@
 ---
 title: Capture remote tables with Barrage
-sidebar_label: Capture remote tables
 ---
 
 > [!NOTE]

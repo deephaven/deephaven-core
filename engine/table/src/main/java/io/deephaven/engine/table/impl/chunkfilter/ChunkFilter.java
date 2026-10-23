@@ -47,7 +47,7 @@ public interface ChunkFilter {
      * @param values the values to filter
      * @param results a boolean chunk containing the result of the filter
      *
-     * @return the number of values that are newly set to {@code true} in {@code results} after the filter is applied.
+     * @return the number of values that are {@code true} in {@code results} after the filter is applied.
      */
     int filterAnd(Chunk<? extends Values> values, WritableBooleanChunk<Values> results);
 
@@ -70,15 +70,8 @@ public interface ChunkFilter {
 
         @Override
         public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            final int len = values.size();
-            // Count the values that changed from true to false
-            int count = 0;
-            for (int ii = 0; ii < len; ++ii) {
-                final boolean result = results.get(ii);
-                results.set(ii, false);
-                count += result ? 1 : 0;
-            }
-            return count;
+            results.fillWithValue(0, values.size(), false);
+            return 0;
         }
     };
 
@@ -102,8 +95,13 @@ public interface ChunkFilter {
 
         @Override
         public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
-            // No values were set to false
-            return 0;
+            // No values are set to false, so every value that was true remains true
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                count += results.get(ii) ? 1 : 0;
+            }
+            return count;
         }
     };
 

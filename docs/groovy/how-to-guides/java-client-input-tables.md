@@ -1,16 +1,15 @@
 ---
 title: Send data to Deephaven from a Java client
-sidebar_label: Java client input tables
 ---
 
-This guide shows how to send data to Deephaven from an external Java application using the Deephaven Java client and input tables. Input tables allow a client to add, update, and delete rows in a Deephaven table.
+This guide shows how to send data to Deephaven from an external Java application using the Deephaven Java client and input tables. An input table is a Deephaven table that a client can write to. Every type of input table accepts new rows, and keyed input tables also let the client update and delete rows.
 
 > [!NOTE]
-> If your data source can run directly on the Deephaven server, consider using [server-side input tables](./input-tables.md) or [`DynamicTableWriter`](./table-publisher.md) instead. Server-side ingestion is generally more efficient because it avoids network overhead.
+> If your data source can run directly on the Deephaven server, write the data from a server-side script instead. You can [create and use input tables](./input-tables.md) there, or use a [`TablePublisher` or `DynamicTableWriter`](./table-publisher.md). Server-side ingestion is generally more efficient because it avoids network overhead.
 
-## When to use client-side input tables
+## When to write to input tables from a Java client
 
-Use client-side input tables when:
+Common reasons to write to an input table from a Java client include:
 
 - **Managing reference data**: Upload configuration, lookup tables, or static datasets that may need updates.
 - **Tracking state**: Maintain the latest status per entity (e.g., device status, order state, user preferences).
@@ -19,7 +18,7 @@ Use client-side input tables when:
 
 ## Setup
 
-Add the Deephaven Java client dependencies to your project. Replace `<version>` with the version that matches your Deephaven server (e.g., `0.36.1`). For Gradle:
+Add the Deephaven Java client dependencies to your project. Replace `<version>` with the version that matches your Deephaven server (e.g., `42.6`). For Gradle:
 
 ```groovy syntax
 dependencies {
@@ -30,41 +29,99 @@ dependencies {
 
 ### JVM configuration
 
-On Java 9+, Arrow requires reflective access to `java.nio.Buffer`. Add this JVM option to avoid `InaccessibleObjectException`:
+The Java client transfers data with Apache Arrow, which needs reflective access to `java.nio.Buffer`. Add this JVM option to avoid an `InaccessibleObjectException` on Java 16 and later:
 
 ```text syntax
 --add-opens=java.base/java.nio=ALL-UNNAMED
 ```
 
-For Gradle's `application` plugin, configure the run task:
+With Deephaven 43.0 and later on Java 25 and later, also add `-Dio.netty.noUnsafe=false`. Without it, Arrow's Netty allocator fails with a `ClassCastException` (`PooledDirectByteBuf cannot be cast to ... PooledUnsafeDirectByteBuf`).
+
+The following snippets include both options. Keep `-Dio.netty.noUnsafe=false` on earlier Java versions too. It's harmless there because it sets the value Netty already uses.
+
+With Gradle's `application` plugin, set the default JVM arguments, which apply to the `run` task and the generated start scripts:
 
 ```groovy syntax
 application {
-    applicationDefaultJvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
+    applicationDefaultJvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Dio.netty.noUnsafe=false']
 }
 ```
 
-Or for a specific `JavaExec` task:
+To set them on one `JavaExec` task only, such as `run`, configure that task:
 
 ```groovy syntax
 tasks.named('run', JavaExec) {
-    jvmArgs += ['--add-opens=java.base/java.nio=ALL-UNNAMED']
+    jvmArgs += ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Dio.netty.noUnsafe=false']
 }
 ```
+
+### Authentication
+
+By default, the Deephaven server requires [pre-shared key (PSK) authentication](./authentication/auth-psk.md). A Java client that sets no authentication connects as anonymous, and the server rejects it.
+
+To authenticate, pass your key to `authenticationTypeAndValue` when you build the [`FlightSession`](/core/javadoc/io/deephaven/client/impl/FlightSession.html) that connects to the server. The value is `io.deephaven.authentication.psk.PskAuthenticationHandler` followed by a space and the key.
+
+The [complete example](#complete-example) builds the session like this, reading the key from the `DEEPHAVEN_PSK` environment variable. Set that variable to your server's key before you run it.
+
+```java
+FlightSession flight = DaggerDeephavenFlightRoot.create().factoryBuilder()
+        .managedChannel(channel)
+        .scheduler(scheduler)
+        .allocator(allocator)
+        .authenticationTypeAndValue(
+                "io.deephaven.authentication.psk.PskAuthenticationHandler "
+                        + System.getenv("DEEPHAVEN_PSK"))
+        .build()
+        .newFlightSession();
+```
+
+If your server has [anonymous authentication](./authentication/auth-anon.md) enabled, remove the `authenticationTypeAndValue` call.
 
 ## Basic pattern
 
 The basic pattern for sending data from a Java client is:
 
-1. **Create a `FlightSession`** to connect to the Deephaven server.
-2. **Define an input table spec** using `InMemoryKeyBackedInputTable`, `InMemoryAppendOnlyInputTable`, or `BlinkInputTable`.
-3. **Execute the spec** to create the input table on the server.
-4. **Publish the input table** to the query scope so it's accessible and the server maintains a reference.
-5. **Close the handle** to avoid leaking client-side resources (the server-side table persists via the scope).
-6. **Build data rows** using `ColumnHeader` and `NewTable`.
-7. **Add to the input table** via `ScopeId` with `FlightSession.addToInputTable`. For keyed tables, this inserts new rows or updates existing ones.
+1. **Create a [`FlightSession`](/core/javadoc/io/deephaven/client/impl/FlightSession.html)** to connect to the Deephaven server.
+2. **Define an input table spec**, a client-side description of the table that doesn't exist on the server until you execute it. List the columns in a [`TableHeader`](/core/javadoc/io/deephaven/qst/table/TableHeader.html) built from [`ColumnHeader`](/core/javadoc/io/deephaven/qst/column/header/ColumnHeader.html)s, then pass the header to [`InMemoryKeyBackedInputTable`](/core/javadoc/io/deephaven/qst/table/InMemoryKeyBackedInputTable.html), [`InMemoryAppendOnlyInputTable`](/core/javadoc/io/deephaven/qst/table/InMemoryAppendOnlyInputTable.html), or [`BlinkInputTable`](/core/javadoc/io/deephaven/qst/table/BlinkInputTable.html), which [Input table types](#input-table-types) compares.
+3. **Execute the spec** to create the input table on the server. Execution returns a [`TableHandle`](/core/javadoc/io/deephaven/client/impl/TableHandle.html) for the new table.
+4. **Publish the input table** to the [query scope](./query-scope.md) under a variable name. This makes the table visible on the server and keeps a server-side reference to it.
+5. **Close the handle** to release the server-side [export](#tablehandle-lifecycle) it holds. The published table stays alive through the query scope.
+6. **Build data rows** using [`ColumnHeader`](/core/javadoc/io/deephaven/qst/column/header/ColumnHeader.html) and [`NewTable`](/core/javadoc/io/deephaven/qst/table/NewTable.html).
+7. **Add to the input table** with [`FlightSession.addToInputTable`](/core/javadoc/io/deephaven/client/impl/FlightSession.html). Pass a [`ScopeId`](/core/javadoc/io/deephaven/client/impl/ScopeId.html), which refers to the published table by its query-scope variable name (for example, `new ScopeId("device_status")`). For keyed tables, this inserts new rows or updates existing ones.
 
-Repeat steps 6-7 as needed.
+Repeat steps 6-7 as needed. To remove rows from a keyed input table, call [`FlightSession.deleteFromInputTable`](/core/javadoc/io/deephaven/client/impl/FlightSession.html) with a table of key values instead, as shown in [Delete rows from a keyed input table](#delete-rows-from-a-keyed-input-table).
+
+## Input table types
+
+The Java client supports three types of input tables. Each type's `of` method takes a table schema. The snippets below pass a [`TableHeader`](/core/javadoc/io/deephaven/qst/table/TableHeader.html) named `header`, which lists the column names and types. The [complete example](#complete-example) shows how to build one.
+
+### Keyed
+
+Create a keyed input table with [`InMemoryKeyBackedInputTable`](/core/javadoc/io/deephaven/qst/table/InMemoryKeyBackedInputTable.html). The key columns identify each row. Adding a row with an existing key replaces that row. You can also delete rows, as shown in [Delete rows from a keyed input table](#delete-rows-from-a-keyed-input-table).
+
+```java
+// Single key column
+TableSpec singleKeySpec = InMemoryKeyBackedInputTable.of(header, java.util.List.of("DeviceId"));
+
+// Multiple key columns (the header must also define a Region column)
+TableSpec multiKeySpec = InMemoryKeyBackedInputTable.of(header, java.util.List.of("DeviceId", "Region"));
+```
+
+### Append-only
+
+Create an append-only input table with [`InMemoryAppendOnlyInputTable`](/core/javadoc/io/deephaven/qst/table/InMemoryAppendOnlyInputTable.html). Each new row goes at the end of the table. The table has no key columns and doesn't support updates or deletion. Use this when you need to keep every row you send, such as a log or event history.
+
+```java
+TableSpec spec = InMemoryAppendOnlyInputTable.of(header);
+```
+
+### Blink
+
+Create a blink input table with [`BlinkInputTable`](/core/javadoc/io/deephaven/qst/table/BlinkInputTable.html). In a [blink table](../conceptual/table-types.md#specialization-3-blink), rows are visible for only one [update graph](../conceptual/table-update-model.md) cycle, then disappear. You can't delete rows from a blink input table. Use this for event streams where downstream queries only need each new batch, not the history.
+
+```java
+TableSpec spec = BlinkInputTable.of(header);
+```
 
 ## Complete example
 
@@ -106,6 +163,9 @@ public class DeviceStatusTracker {
                             .managedChannel(channel)
                             .scheduler(scheduler)
                             .allocator(allocator)
+                            .authenticationTypeAndValue(
+                                    "io.deephaven.authentication.psk.PskAuthenticationHandler "
+                                            + System.getenv("DEEPHAVEN_PSK"))
                             .build()
                             .newFlightSession();
                     try {
@@ -146,7 +206,7 @@ public class DeviceStatusTracker {
         // Use try-with-resources to ensure handle is closed even if publish() fails
         ScopeId scopeId;
         try (TableHandle inputTableHandle = flight.session().execute(inputTableSpec)) {
-            // Publish so it's visible in the UI (check http://localhost:10000)
+            // Publish so it's visible in the web IDE (http://localhost:10000/ide)
             flight.session().publish("device_status", inputTableHandle).get(5, TimeUnit.SECONDS);
             // Handle closes here - the server-side table persists via the query scope
             scopeId = new ScopeId("device_status");
@@ -164,7 +224,8 @@ public class DeviceStatusTracker {
         updateDevice(flight, scopeId, allocator, deviceIdCol, statusCol, lastSeenCol,
                 "sensor-001", "maintenance");
 
-        // Delete sensor-003
+        // Delete sensor-003. The delete table holds only the key column; see
+        // "Delete rows from a keyed input table" below
         NewTable keysToDelete = deviceIdCol.row("sensor-003").newTable();
         flight.deleteFromInputTable(scopeId, keysToDelete, allocator)
                 .get(5, TimeUnit.SECONDS);
@@ -188,78 +249,66 @@ public class DeviceStatusTracker {
 }
 ```
 
-## Input table types
+## Batch uploads
 
-The Java client supports three types of input tables:
-
-### Keyed
-
-Rows are identified by key columns. Adding a row with an existing key replaces that row. Deletion is supported.
+The [complete example](#complete-example) sends one row per call to show how each update replaces the previous row. When you have several rows ready at once, such as the three initial devices there, send them in a single upload, which is faster. This snippet uses the column headers, `flight`, `allocator`, and `scopeId` from the [complete example](#complete-example):
 
 ```java
-// Single key column
-TableSpec spec = InMemoryKeyBackedInputTable.of(header, java.util.List.of("DeviceId"));
+// Build multiple rows; start() takes the initial capacity (expected row count)
+io.deephaven.qst.column.header.ColumnHeaders3<String, String, Instant>.Rows rows =
+        deviceIdCol.header(statusCol).header(lastSeenCol).start(3);
 
-// Multiple key columns
-TableSpec spec = InMemoryKeyBackedInputTable.of(header, java.util.List.of("DeviceId", "Region"));
+rows.row("sensor-001", "online", Instant.now());
+rows.row("sensor-002", "online", Instant.now());
+rows.row("sensor-003", "offline", Instant.now());
+
+NewTable batch = rows.newTable();
+
+// Upload entire batch at once
+flight.addToInputTable(scopeId, batch, allocator).get(5, TimeUnit.SECONDS);
 ```
 
-With keyed tables, you can delete rows by providing just the key values:
+## Delete rows from a keyed input table
+
+To delete rows from a keyed input table, call [`FlightSession.deleteFromInputTable`](/core/javadoc/io/deephaven/client/impl/FlightSession.html) with a table that contains every key column and no other columns. The server rejects a delete table that is missing a key column or includes any other column. This snippet uses the `flight`, `allocator`, and `scopeId` from the [complete example](#complete-example) and deletes two devices in one call:
 
 ```java
-// Delete by key (using ScopeId after publishing and closing handle)
-ScopeId scopeId = new ScopeId("device_status");
 NewTable keysToDelete = ColumnHeader.ofString("DeviceId")
         .row("sensor-001")
-        .row("sensor-003")
+        .row("sensor-002")
         .newTable();
 
 flight.deleteFromInputTable(scopeId, keysToDelete, allocator)
         .get(5, TimeUnit.SECONDS);
 ```
 
-### Append-only
-
-Rows are added to the end of the table. No key columns, no updates, no deletion. Use this when you need a simple log or event stream.
-
-```java
-TableSpec spec = InMemoryAppendOnlyInputTable.of(header);
-```
-
-### Blink
-
-Rows are visible for only one [update graph](../conceptual/table-update-model.md) cycle, then disappear. Use this for event streams where you only need to process the latest batch.
-
-```java
-TableSpec spec = BlinkInputTable.of(header);
-```
-
 ## Resource management
 
 ### TableHandle lifecycle
 
-`TableHandle` represents a managed export and implements `Closeable`. Unclosed handles leak server-side resources for the lifetime of the client. The recommended pattern is:
+A [`TableHandle`](/core/javadoc/io/deephaven/client/impl/TableHandle.html) refers to an export, which is a table the server keeps alive for your session until you release the handle. `TableHandle` implements `Closeable`, and closing it releases the export. A handle you never close keeps its export alive on the server until the session closes.
 
-1. Execute the spec to create the input table.
-2. Publish it to the query scope (creates a server-side reference).
-3. Close the handle immediately.
-4. Send data via `ScopeId`.
-
-This ensures the server-side table persists (via the scope) while avoiding client-side resource leaks.
+That is why steps 3-5 of the [basic pattern](#basic-pattern) publish the input table to the query scope and then close the handle. The query scope keeps the table alive, and later calls reach it through a [`ScopeId`](/core/javadoc/io/deephaven/client/impl/ScopeId.html).
 
 ### Data upload lifecycle
 
-The `FlightSession.addToInputTable` method handles data upload automatically:
+The [`FlightSession.addToInputTable`](/core/javadoc/io/deephaven/client/impl/FlightSession.html) method performs these steps in a single call:
 
-1. Uploads the `NewTable` to the server as a temporary export.
+1. Uploads the [`NewTable`](/core/javadoc/io/deephaven/qst/table/NewTable.html) to the server as a temporary export that exists only for this call.
 2. Calls the input table service to add the data.
 3. Releases the temporary export when complete.
 
-If you need more control, you can use the lower-level `Session` API:
+If you need more control, do the three steps yourself:
+
+1. Upload the data with [`FlightSession.putExportManual`](/core/javadoc/io/deephaven/client/impl/FlightSession.html), which returns an [`ExportId`](/core/javadoc/io/deephaven/client/impl/ExportId.html).
+2. Call [`Session.addToInputTable`](/core/javadoc/io/deephaven/client/impl/Session.html) with that `ExportId`.
+3. Release the export with [`FlightSession.release`](/core/javadoc/io/deephaven/client/impl/FlightSession.html) when done.
+
+This snippet uses the column headers, `flight`, `allocator`, and `scopeId` from the [complete example](#complete-example):
 
 ```java
 // Manual approach (use FlightSession.addToInputTable instead when possible)
-ScopeId scopeId = new ScopeId("device_status");
+// Requires: import io.deephaven.client.impl.ExportId;
 NewTable row = deviceIdCol.header(statusCol).header(lastSeenCol)
         .row("sensor-001", "online", Instant.now())
         .newTable();
@@ -272,36 +321,17 @@ try {
 }
 ```
 
-## Batch uploads
-
-For better performance, batch multiple rows into a single upload:
-
-```java
-// Build multiple rows
-io.deephaven.qst.column.header.ColumnHeaders3<String, String, Instant>.Rows rows =
-        deviceIdCol.header(statusCol).header(lastSeenCol).start(10);
-
-rows.row("sensor-001", "online", Instant.now());
-rows.row("sensor-002", "offline", Instant.now());
-rows.row("sensor-003", "maintenance", Instant.now());
-
-NewTable batch = rows.newTable();
-
-// Upload entire batch at once (using ScopeId after publishing and closing handle)
-ScopeId scopeId = new ScopeId("device_status");
-flight.addToInputTable(scopeId, batch, allocator).get(5, TimeUnit.SECONDS);
-```
-
 ## Working examples
 
 The Deephaven repository includes complete working examples:
 
-- [`AddToInputTable.java`](https://github.com/deephaven/deephaven-core/blob/main/java-client/flight-examples/src/main/java/io/deephaven/client/examples/AddToInputTable.java) - Append-only input table with validation
-- [`KeyValueInputTable.java`](https://github.com/deephaven/deephaven-core/blob/main/java-client/flight-examples/src/main/java/io/deephaven/client/examples/KeyValueInputTable.java) - Keyed input table with add/delete
-- [`AddToBlinkTable.java`](https://github.com/deephaven/deephaven-core/blob/main/java-client/flight-examples/src/main/java/io/deephaven/client/examples/AddToBlinkTable.java) - Blink input table
+- [`AddToInputTable.java`](https://github.com/deephaven/deephaven-core/blob/main/java-client/flight-examples/src/main/java/io/deephaven/client/examples/tools/AddToInputTable.java) — Append-only input table with server-side validation. Requires a Python server, because it sets up the validator from the Python console.
+- [`KeyValueInputTable.java`](https://github.com/deephaven/deephaven-core/blob/main/java-client/flight-examples/src/main/java/io/deephaven/client/examples/KeyValueInputTable.java) — Keyed input table with add and delete.
+- [`AddToBlinkTable.java`](https://github.com/deephaven/deephaven-core/blob/main/java-client/flight-examples/src/main/java/io/deephaven/client/examples/AddToBlinkTable.java) — Blink input table.
 
 ## Related documentation
 
-- [Input tables (server-side)](./input-tables.md)
+- [Create and use input tables](./input-tables.md)
 - [Extract data with a Java client](./java-client.md)
-- [DynamicTableWriter](./table-publisher.md)
+- [Write data to an in-memory, real-time table](./table-publisher.md)
+- [Pre-shared key authentication](./authentication/auth-psk.md)

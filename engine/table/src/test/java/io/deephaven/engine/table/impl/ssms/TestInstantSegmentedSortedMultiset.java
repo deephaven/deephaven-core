@@ -10,6 +10,7 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.value.iterator.ValueIterator;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.InstantSsmSourceWrapper;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.LongSsmBackedSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -107,8 +108,14 @@ public class TestInstantSegmentedSortedMultiset extends RefreshingTableTestCase 
         assertArrayEquals(asInstants(initial), wrapper.getPrev(0).toArray());
         assertArrayEquals(asInstants(instantNanos(7)), wrapper.get(0).toArray());
 
-        // a row that never had an SSM has no previous value at all
+        // a row that never had an SSM has no current or previous value at all
+        assertNull(wrapper.get(1));
         assertNull(wrapper.getPrev(1));
+        assertNull(wrapper.get(RowSequence.NULL_ROW_KEY));
+
+        // an SSM that is cleared, as the distinct operators do once a state holds no values, is null again
+        source.clear(0);
+        assertNull(wrapper.get(0));
     }
 
     private void checkInstantExtensions(final int nodeSize, final int valueCount) {

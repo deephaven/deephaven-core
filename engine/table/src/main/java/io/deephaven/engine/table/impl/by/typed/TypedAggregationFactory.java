@@ -5,8 +5,8 @@ package io.deephaven.engine.table.impl.by.typed;
 
 import com.palantir.javapoet.CodeBlock;
 import com.palantir.javapoet.MethodSpec;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -34,12 +34,17 @@ public class TypedAggregationFactory {
         builder.addStatement("throw new IllegalStateException($S)", "Missing value in probe");
     }
 
+    public static void lookupMissing(CodeBlock.Builder builder) {
+        builder.addStatement("outputPositions.set(chunkPosition, UNKNOWN_ROW)");
+    }
+
     static void buildFound(HasherConfig<?> hasherConfig, boolean alternate, CodeBlock.Builder builder) {
         builder.addStatement("outputPositions.set(chunkPosition, outputPosition)");
     }
 
     private static void buildInsertCommon(HasherConfig<?> hasherConfig, CodeBlock.Builder builder) {
-        builder.addStatement("outputPosition = nextOutputPosition.getAndIncrement()");
+        builder.addStatement("outputPosition = $T.allocateOutputPosition(nextOutputPosition)",
+                ChunkedOperatorAggregationHelper.class);
         builder.addStatement("outputPositions.set(chunkPosition, outputPosition)");
         builder.addStatement("$L.set(tableLocation, outputPosition)", hasherConfig.mainStateName);
     }
@@ -115,8 +120,7 @@ public class TypedAggregationFactory {
 
         final String nextLocationName = alternate ? "alternateNextTableLocation" : "nextTableLocation";
         builder.addStatement("$L = $L($L)", tableLocationName, nextLocationName, tableLocationName);
-        builder.addStatement("$T.neq($L, $S, $L, $S)", Assert.class, tableLocationName, tableLocationName,
-                firstLocationName, firstLocationName);
+        builder.addCode(TypedHasherFactory.wrapAroundCheck(tableLocationName, firstLocationName));
 
         builder.endControlFlow();
     }

@@ -12,10 +12,13 @@ import static io.deephaven.util.compare.DoubleComparisons.eq;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.DoubleChunkHasher;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySource;
 import io.deephaven.util.type.TypeUtils;
@@ -75,13 +78,15 @@ final class IncrementalAggOpenHasherDoubleDouble extends IncrementalChunkedOpera
                             break MAIN_SEARCH;
                         } else {
                             alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainKeySource1.set(tableLocation, k1);
-                    outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPosition = ChunkedOperatorAggregationHelper.allocateOutputPosition(nextOutputPosition);
                     outputPositions.set(chunkPosition, outputPosition);
                     mainOutputPosition.set(tableLocation, outputPosition);
                     outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);
@@ -91,7 +96,57 @@ final class IncrementalAggOpenHasherDoubleDouble extends IncrementalChunkedOpera
                     break;
                 } else {
                     tableLocation = nextTableLocation(tableLocation);
-                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                    if (tableLocation == firstTableLocation) {
+                        throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                    }
+                }
+            }
+        }
+    }
+
+    protected void lookup(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            WritableLongChunk<RowKeys> outputPositions) {
+        final DoubleChunk<Values> keyChunk0 = sourceKeyChunks[0].asDoubleChunk();
+        final DoubleChunk<Values> keyChunk1 = sourceKeyChunks[1].asDoubleChunk();
+        final int chunkSize = keyChunk0.size();
+        for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
+            final double k0 = keyChunk0.get(chunkPosition);
+            final double k1 = keyChunk1.get(chunkPosition);
+            final int hash = hash(k0, k1);
+            final int firstTableLocation = hashToTableLocation(hash);
+            boolean found = false;
+            int tableLocation = firstTableLocation;
+            int outputPosition;
+            while (!isStateEmpty(outputPosition = mainOutputPosition.getUnsafe(tableLocation))) {
+                if (eq(mainKeySource0.getUnsafe(tableLocation), k0) && eq(mainKeySource1.getUnsafe(tableLocation), k1)) {
+                    outputPositions.set(chunkPosition, outputPosition);
+                    found = true;
+                    break;
+                }
+                tableLocation = nextTableLocation(tableLocation);
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
+            }
+            if (!found) {
+                final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
+                boolean alternateFound = false;
+                if (firstAlternateTableLocation < rehashPointer) {
+                    int alternateTableLocation = firstAlternateTableLocation;
+                    while (!isStateEmpty(outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation))) {
+                        if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0) && eq(alternateKeySource1.getUnsafe(alternateTableLocation), k1)) {
+                            outputPositions.set(chunkPosition, outputPosition);
+                            alternateFound = true;
+                            break;
+                        }
+                        alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
+                        if (alternateTableLocation == firstAlternateTableLocation) {
+                            throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                        }
+                    }
+                }
+                if (!alternateFound) {
+                    outputPositions.set(chunkPosition, UNKNOWN_ROW);
                 }
             }
         }
@@ -116,7 +171,9 @@ final class IncrementalAggOpenHasherDoubleDouble extends IncrementalChunkedOpera
                     break;
                 }
                 tableLocation = nextTableLocation(tableLocation);
-                Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                if (tableLocation == firstTableLocation) {
+                    throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+                }
             }
             if (!found) {
                 final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
@@ -130,7 +187,9 @@ final class IncrementalAggOpenHasherDoubleDouble extends IncrementalChunkedOpera
                             break;
                         }
                         alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                        Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                        if (alternateTableLocation == firstAlternateTableLocation) {
+                            throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                        }
                     }
                 }
                 if (!alternateFound) {
@@ -233,7 +292,9 @@ final class IncrementalAggOpenHasherDoubleDouble extends IncrementalChunkedOpera
                     break;
                 }
                 destinationTableLocation = nextTableLocation(destinationTableLocation);
-                Assert.neq(destinationTableLocation, "destinationTableLocation", firstDestinationTableLocation, "firstDestinationTableLocation");
+                if (destinationTableLocation == firstDestinationTableLocation) {
+                    throw Assert.statementNeverExecuted("destinationTableLocation wraps around to firstDestinationTableLocation");
+                }
             }
         }
     }
@@ -263,14 +324,18 @@ final class IncrementalAggOpenHasherDoubleDouble extends IncrementalChunkedOpera
                         return alternatePositionValue;
                     }
                     alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                    Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                    if (alternateTableLocation == firstAlternateTableLocation) {
+                        throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                    }
                 }
             }
             if (eq(mainKeySource0.getUnsafe(tableLocation), k0) && eq(mainKeySource1.getUnsafe(tableLocation), k1)) {
                 return positionValue;
             }
             tableLocation = nextTableLocation(tableLocation);
-            Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+            if (tableLocation == firstTableLocation) {
+                throw Assert.statementNeverExecuted("tableLocation wraps around to firstTableLocation");
+            }
         }
     }
 }

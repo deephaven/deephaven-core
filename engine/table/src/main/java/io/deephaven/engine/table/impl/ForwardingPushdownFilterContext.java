@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.util.SafeCloseable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +46,9 @@ public class ForwardingPushdownFilterContext extends BasePushdownFilterContextIm
 
     @Override
     public void close() {
-        childContexts.forEach(PushdownFilterContext::close);
-        super.close();
+        // Closes the children, then super.close() even if closing a child fails.
+        try (final SafeCloseable ignoredSuper = super::close) {
+            SafeCloseable.closeAll(childContexts);
+        }
     }
 }

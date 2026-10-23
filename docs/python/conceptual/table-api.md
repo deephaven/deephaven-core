@@ -1,6 +1,5 @@
 ---
 title: Understanding the Table API
-sidebar_label: The Table API
 ---
 
 <div className="comment-title">

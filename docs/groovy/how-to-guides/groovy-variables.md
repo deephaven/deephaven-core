@@ -1,7 +1,6 @@
 ---
 id: groovy-variables
 title: Groovy variables in query strings
-sidebar_label: Variables
 ---
 
 The ability to use your own custom Groovy variables, [closures](./groovy-closures.md), and [classes](./groovy-classes.md) in Deephaven query strings is one of its most powerful features. The use of Groovy variables in query strings follows some basic rules, which are outlined in this guide.

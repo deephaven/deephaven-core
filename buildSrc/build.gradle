@@ -41,17 +41,17 @@ dependencies {
         because('needed by plugin com.bmuschko.docker-remote-api')
     }
 
-    implementation('com.avast.gradle:gradle-docker-compose-plugin:0.17.12') {
+    implementation('com.avast.gradle:gradle-docker-compose-plugin:0.17.21') {
         because('needed by plugin com.avast.gradle.docker-compose')
     }
 
-    implementation('com.diffplug.spotless:spotless-plugin-gradle:8.4.0') {
+    implementation('com.diffplug.spotless:spotless-plugin-gradle:8.10.4') {
         because('needed by plugin java-coding-conventions')
     }
 
-    implementation "com.gradleup.shadow:shadow-gradle-plugin:8.3.8"
+    implementation "com.gradleup.shadow:shadow-gradle-plugin:9.6.1"
 
-    implementation('com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin:0.36.0') {
+    implementation('com.vanniktech.maven.publish:com.vanniktech.maven.publish.gradle.plugin:0.37.0') {
         because('needed by plugin java-publishing-conventions')
     }
 }

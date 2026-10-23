@@ -1,6 +1,5 @@
 ---
 title: Add clickable links to a Deephaven table
-sidebar_label: Clickable links
 ---
 
 This guide will show you how to add clickable links to a Deephaven table.

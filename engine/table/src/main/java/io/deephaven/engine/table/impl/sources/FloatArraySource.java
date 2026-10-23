@@ -98,6 +98,11 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
                 final long firstKey = it.peekNextKey();
 
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
+                if (isFreshBlock(block)) {
+                    // the block's previous values are the ones it was allocated with, and are shared
+                    final RowSequence ignored = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    continue;
+                }
 
                 final long[] inUse;
                 if (prevBlocks[block] == null) {
@@ -239,15 +244,31 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
     }
 
     @Override
-    final float[] allocateNullFilledBlock(int size) {
+    final float[] allocateBlock(final int size, final boolean nullFilled) {
         final float[] newBlock = new float[size];
-        Arrays.fill(newBlock, NULL_FLOAT);
+        if (nullFilled) {
+            Arrays.fill(newBlock, NULL_FLOAT);
+        }
         return newBlock;
     }
 
+    /** The previous values of blocks allocated null-filled during the current update cycle; never written. */
+    private static final float[] FRESH_NULL_PREV_BLOCK = makeFreshNullPrevBlock();
+    /** The previous values of blocks allocated during the current update cycle without null-filling; never written. */
+    private static final float[] FRESH_DEFAULT_PREV_BLOCK = new float[BLOCK_SIZE];
+
+    private static float[] makeFreshNullPrevBlock() {
+        final float[] block = new float[BLOCK_SIZE];
+        Arrays.fill(block, NULL_FLOAT);
+        return block;
+    }
+
     @Override
-    final float[] allocateBlock(int size) {
-        return new float[size];
+    final float[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
+        return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
     }
 
     @Override
@@ -560,10 +581,10 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
                 chunk.set(ii, NULL_FLOAT);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_FLOAT);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final float[] currentBlock = blocks[blockNo];
                 // region conversion
                 chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
@@ -590,11 +611,11 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
                 chunk.set(ii, NULL_FLOAT);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_FLOAT);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final float[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             // region conversion
             chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);

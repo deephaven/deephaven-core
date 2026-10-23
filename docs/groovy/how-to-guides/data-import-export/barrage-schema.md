@@ -1,6 +1,5 @@
 ---
 title: Barrage schema annotation
-sidebar_label: Barrage schema annotation
 ---
 
 Deephaven tables support Object-typed columns that can hold arbitrary Java objects. When exporting these tables over Flight using the Barrage format, Deephaven uses Apache Arrow schemas to describe the data. By default, if a column is typed as `Object`, the Arrow schema may not capture the intended structure of the data, which can lead to inefficient serialization or loss of type information. Use the `Table.BARRAGE_SCHEMA_ATTRIBUTE` to inject explicit Arrow schema information, which ensures that the Flight export uses the correct wire format.
@@ -463,7 +462,7 @@ value: run_end_encoded=false dictionary_encoded=false arrow_type=Int(32, true)
 
 `status` arrived as `RunEndEncoded` with `Int32` run ends, exactly as annotated, while `value` was sent unencoded. Running the same check against the [dictionary-encoded example](#example-dictionary-encoded-columns) prints `dictionary_encoded=true` for `status` instead.
 
-Subscribing to a table with no `BARRAGE_SCHEMA_ATTRIBUTE` prints `false` for both facets of every column, unless the server has encoding auto-detection enabled. The `BarrageUtil.ree.autoDetectEnabled` and `BarrageUtil.dictionary.autoDetectEnabled` properties are both off by default; when either is set, the server may choose an encoding on its own for a table you never annotated, and this check is how you see what it picked.
+Subscribing to a table with no `BARRAGE_SCHEMA_ATTRIBUTE` prints `false` for both facets of every column, unless the server has encoding auto-detection enabled. The `BarrageUtil.ree.autoDetectEnabled` and `BarrageUtil.dictionary.autoDetectEnabled` properties are both on by default; while either is enabled, the server may choose an encoding on its own for a table you never annotated, and this check is how you see what it picked.
 
 Use `println wire_schema.toJson()` to dump the entire negotiated schema, including each field's `deephaven:type` metadata.
 

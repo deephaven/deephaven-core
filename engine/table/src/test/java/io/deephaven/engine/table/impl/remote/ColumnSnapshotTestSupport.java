@@ -15,6 +15,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertTrue;
 
@@ -31,7 +33,17 @@ final class ColumnSnapshotTestSupport {
 
     private static final int COLUMNS = 4;
     private static final int ROWS = 16;
+    /**
+     * The second column, so that under a parallel snapshot the intercepted fill always runs on a scheduler thread: the
+     * invoking thread reserves the first column job for itself, the second goes to the first scheduler thread, and the
+     * other columns' fills wait until the intercepted fill has begun, so the invoking thread cannot run out of work and
+     * take the second job over before that thread starts it. The tests that interrupt the invoking thread rely on it
+     * being the one waiting, not the one running the intercepted fill.
+     */
     private static final int INTERCEPTED_COLUMN_INDEX = 1;
+
+    /** How long the other columns' fills wait for the intercepted fill to begin before going ahead regardless. */
+    private static final long INTERCEPTED_START_WAIT_SECONDS = 30;
 
     /** The column of {@link #tableWithInterceptedColumn} whose fill runs the test's {@code beforeFill}. */
     static final String INTERCEPTED_COLUMN_NAME = "C" + INTERCEPTED_COLUMN_INDEX;
@@ -70,6 +82,49 @@ final class ColumnSnapshotTestSupport {
     }
 
     /**
+     * An {@link IntegerArraySource} whose fills wait until {@code interceptedStarted} is released, so that the
+     * intercepted column's fill begins first.
+     */
+    private static final class GatedIntegerArraySource extends IntegerArraySource {
+
+        private final CountDownLatch interceptedStarted;
+
+        private GatedIntegerArraySource(@NotNull final CountDownLatch interceptedStarted) {
+            this.interceptedStarted = interceptedStarted;
+        }
+
+        private void awaitIntercepted() {
+            if (!QueryTable.ENABLE_PARALLEL_SNAPSHOT) {
+                // a serial snapshot fills the columns in order, so the intercepted fill cannot begin first
+                return;
+            }
+            try {
+                interceptedStarted.await(INTERCEPTED_START_WAIT_SECONDS, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        @Override
+        public void fillChunk(
+                @NotNull final FillContext context,
+                @NotNull final WritableChunk<? super Values> destination,
+                @NotNull final RowSequence rowSequence) {
+            awaitIntercepted();
+            super.fillChunk(context, destination, rowSequence);
+        }
+
+        @Override
+        public void fillPrevChunk(
+                @NotNull final FillContext context,
+                @NotNull final WritableChunk<? super Values> destination,
+                @NotNull final RowSequence rowSequence) {
+            awaitIntercepted();
+            super.fillPrevChunk(context, destination, rowSequence);
+        }
+    }
+
+    /**
      * A static table of int columns named {@code C0..Cn}, where filling {@link #INTERCEPTED_COLUMN_NAME} runs
      * {@code beforeFill} first. It has more than one non-empty column, which a snapshot requires before it will
      * consider collecting them in parallel.
@@ -85,10 +140,15 @@ final class ColumnSnapshotTestSupport {
             @NotNull final Runnable beforeFill,
             final boolean refreshing) {
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
+        final CountDownLatch interceptedStarted = new CountDownLatch(1);
+        final Runnable markStartedThenFill = () -> {
+            interceptedStarted.countDown();
+            beforeFill.run();
+        };
         for (int ci = 0; ci < COLUMNS; ++ci) {
             final IntegerArraySource source = ci == INTERCEPTED_COLUMN_INDEX
-                    ? new InterceptingIntegerArraySource(beforeFill)
-                    : new IntegerArraySource();
+                    ? new InterceptingIntegerArraySource(markStartedThenFill)
+                    : new GatedIntegerArraySource(interceptedStarted);
             source.ensureCapacity(ROWS, false);
             for (int ri = 0; ri < ROWS; ++ri) {
                 source.set(ri, ri * (ci + 1));

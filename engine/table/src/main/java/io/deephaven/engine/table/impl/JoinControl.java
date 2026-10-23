@@ -279,8 +279,13 @@ public class JoinControl {
         return 4096;
     }
 
+    /**
+     * The most right rows an as-of join stamps against its sorted right rows in one chunk. Each update cycle uses at
+     * most the size of the update, so a smaller update allocates correspondingly smaller chunks; a larger chunk
+     * restamps the affected left rows fewer times when an update spans several chunks.
+     */
     public int rightChunkSize() {
-        return 64 * 1024;
+        return 1 << 20;
     }
 
     public int leftChunkSize() {

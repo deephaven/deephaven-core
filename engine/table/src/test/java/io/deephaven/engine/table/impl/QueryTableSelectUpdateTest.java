@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
+import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.literal.Literal;
@@ -1107,6 +1108,24 @@ public class QueryTableSelectUpdateTest {
     }
 
     @Test
+    public void testStaticFlatSelectPositionWithResultColumn() {
+        final Table parent = emptyTable(10).update("A = (int) ii").where("A % 2 == 0");
+        final Table result = parent.select("C = A * 100", "D = C + ii", "E = C + i");
+        Assert.assertTrue(result.isFlat());
+        assertTableEquals(newTable(intCol("C", 0, 200, 400, 600, 800), longCol("D", 0, 201, 402, 603, 804),
+                intCol("E", 0, 201, 402, 603, 804)), result);
+    }
+
+    @Test
+    public void testStaticFlatSelectRowKey() {
+        final Table parent = emptyTable(10).update("A = (int) ii").where("A % 2 == 0");
+        final Table result = parent.select("C = A * 100", "KP = k", "KR = C + k", "KA = A + k");
+        Assert.assertTrue(result.isFlat());
+        assertTableEquals(newTable(intCol("C", 0, 200, 400, 600, 800), longCol("KP", 0, 1, 2, 3, 4),
+                longCol("KR", 0, 201, 402, 603, 804), longCol("KA", 0, 3, 6, 9, 12)), result);
+    }
+
+    @Test
     public void testRegressionGH3562() {
         final Table src = TableTools.emptyTable(3).update("A = true", "B = ii != 1", "C = ii != 2");
         final Table result = src.select("And = and(A, B, C)", "Or = or(A, B, C)");
@@ -1457,6 +1476,32 @@ public class QueryTableSelectUpdateTest {
         final double duration = endTime - startTime;
         System.out.println("Density: " + new DecimalFormat("0.0000").format(density) + ", Nanos: " + (long) duration
                 + ", per cell=" + new DecimalFormat("0.00").format(duration / (size * numIterations)));
+    }
+
+    /**
+     * A composed filter reports virtual row variables when any component uses them, so a disjunction containing
+     * {@code ii} is refused by select/update and wouldMatch exactly as a bare {@code ii} filter is. Before
+     * {@code ComposedFilter} propagated {@code hasVirtualRowVariables()}, such a disjunction slipped past these checks.
+     */
+    @Test
+    public void testComposedFilterExpressionWithVirtualRowVariables() {
+        final QueryTable table = TstUtils.testRefreshingTable(intCol("A", 1, 1, 2, 3, 5, 8, 9, 9));
+        final Filter composed = Filter.or(RawString.of("A = 1"), RawString.of("ii > 5"));
+
+        final UncheckedTableException ue = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.update(List.of(Selectable.of(ColumnName.of("AWM"), composed))));
+        assertTrue(ue.getMessage(), ue.getMessage().startsWith(
+                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView:"));
+
+        final UncheckedTableException ve = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.view(List.of(Selectable.of(ColumnName.of("AWM"), composed))));
+        assertTrue(ve.getMessage(), ve.getMessage().startsWith(
+                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView:"));
+
+        final UncheckedTableException wme = Assert.assertThrows(UncheckedTableException.class,
+                () -> table.wouldMatch(new WouldMatchPair("AWM", composed)));
+        assertTrue(wme.getMessage(),
+                wme.getMessage().startsWith("wouldMatch filters cannot use virtual row variables (i, ii, and k):"));
     }
 
     @Test

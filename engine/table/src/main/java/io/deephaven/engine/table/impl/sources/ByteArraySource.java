@@ -98,6 +98,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
                 final long firstKey = it.peekNextKey();
 
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
+                if (isFreshBlock(block)) {
+                    // the block's previous values are the ones it was allocated with, and are shared
+                    final RowSequence ignored = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    continue;
+                }
 
                 final long[] inUse;
                 if (prevBlocks[block] == null) {
@@ -239,15 +244,31 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
     }
 
     @Override
-    final byte[] allocateNullFilledBlock(int size) {
+    final byte[] allocateBlock(final int size, final boolean nullFilled) {
         final byte[] newBlock = new byte[size];
-        Arrays.fill(newBlock, NULL_BYTE);
+        if (nullFilled) {
+            Arrays.fill(newBlock, NULL_BYTE);
+        }
         return newBlock;
     }
 
+    /** The previous values of blocks allocated null-filled during the current update cycle; never written. */
+    private static final byte[] FRESH_NULL_PREV_BLOCK = makeFreshNullPrevBlock();
+    /** The previous values of blocks allocated during the current update cycle without null-filling; never written. */
+    private static final byte[] FRESH_DEFAULT_PREV_BLOCK = new byte[BLOCK_SIZE];
+
+    private static byte[] makeFreshNullPrevBlock() {
+        final byte[] block = new byte[BLOCK_SIZE];
+        Arrays.fill(block, NULL_BYTE);
+        return block;
+    }
+
     @Override
-    final byte[] allocateBlock(int size) {
-        return new byte[size];
+    final byte[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
+        return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
     }
 
     @Override
@@ -560,10 +581,10 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
                 chunk.set(ii, NULL_BYTE);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_BYTE);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final byte[] currentBlock = blocks[blockNo];
                 // region conversion
                 chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
@@ -590,11 +611,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
                 chunk.set(ii, NULL_BYTE);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_BYTE);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final byte[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             // region conversion
             chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);

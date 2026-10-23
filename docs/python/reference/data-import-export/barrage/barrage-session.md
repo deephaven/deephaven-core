@@ -2,7 +2,7 @@
 title: barrage_session
 ---
 
-The `barrage_session` method creates a new Deephaven gRPC session ([`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession)) to a remote server. Each call opens its own connection. Use the session's [`subscribe`](./subscribe.md) and [`snapshot`](./snapshot-barrage.md) methods to retrieve remote tables, and [`close`](./close.md) it when you are done.
+The `barrage_session` function creates a new Deephaven gRPC session ([`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession)) to a remote server. Each call opens its own connection. Use the session's [`subscribe`](./subscribe.md) and [`snapshot`](./snapshot-barrage.md) methods to retrieve remote tables, and [`close`](./close.md) it when you are done.
 
 <!--TODO: Add information about client mutual TLS authentication when it's added. -->
 
@@ -16,7 +16,7 @@ barrage_session(
   auth_token: str = '',
   use_tls: bool = False,
   tls_root_certs: bytes = None,
-  extra_headers: dict[str, str] = None
+  extra_headers: dict[str, str] = None,
 ) -> BarrageSession
 ```
 
@@ -35,7 +35,7 @@ The port number that the remote Deephaven server is listening on. The default va
 </Param>
 <Param name="auth_type" type="str" optional>
 
-The authentication type string. Can be "Anonymous", "Basic", or any custom-built authenticator in the server, such as "io.deephaven.authentication.psk.PskAuthenticationHandler". The default is "Anonymous"
+The authentication type string. Can be `"Anonymous"`, `"Basic"`, or any custom-built authenticator in the server, such as `"io.deephaven.authentication.psk.PskAuthenticationHandler"`. The default is `"Anonymous"`.
 
 </Param>
 <Param name="auth_token" type="str" optional>
@@ -66,7 +66,7 @@ A [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.B
 
 ## Examples
 
-The following example creates a [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) on a Deephaven server running on `localhost` at port `10000`. This and the next two examples use the default anonymous authentication, so the target server must allow it (`-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler`); the default server configuration uses pre-shared key authentication.
+The following example creates a [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) on a Deephaven server running on `localhost` at port `10000`. This and the next two examples use the default anonymous authentication, so the target server must allow [anonymous authentication](../../../how-to-guides/authentication/auth-anon.md) (`-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler`); the default server configuration uses [pre-shared key authentication](../../../how-to-guides/authentication/auth-psk.md).
 
 ```python skip-test
 from deephaven.barrage import barrage_session

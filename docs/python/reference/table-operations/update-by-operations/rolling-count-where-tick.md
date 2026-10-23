@@ -1,8 +1,8 @@
 ---
-title: rolling_count__where_tick
+title: rolling_count_where_tick
 ---
 
-`rolling_count__where_tick` creates an [`update_by`](./updateBy.md) table operation that keeps a count of values in a rolling window that pass a set of filters in an [`update_by`](./updateBy.md) table operation. This call uses table ticks as the
+`rolling_count_where_tick` creates an [`update_by`](./updateBy.md) table operation that keeps a count of values in a rolling window that pass a set of filters in an [`update_by`](./updateBy.md) table operation. This call uses table ticks as the
 windowing unit. Ticks are row counts. The rolling count can be calculated using forward and/or backward windows.
 
 ## Syntax

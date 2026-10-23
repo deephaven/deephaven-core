@@ -85,6 +85,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                 final long firstKey = it.peekNextKey();
 
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
+                if (isFreshBlock(block)) {
+                    // the block's previous values are the ones it was allocated with, and are shared
+                    final RowSequence ignored = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    continue;
+                }
                 final int indexWithinBlock = (int) (firstKey & INDEX_MASK);
                 final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
                 final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
@@ -197,15 +202,31 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
     }
 
     @Override
-    byte[] allocateNullFilledBlock(int size) {
+    final byte[] allocateBlock(final int size, final boolean nullFilled) {
         final byte[] result = new byte[size];
-        Arrays.fill(result, NULL_BOOLEAN_AS_BYTE);
+        if (nullFilled) {
+            Arrays.fill(result, NULL_BOOLEAN_AS_BYTE);
+        }
         return result;
     }
 
+    /** The previous values of blocks allocated null-filled during the current update cycle; never written. */
+    private static final byte[] FRESH_NULL_PREV_BLOCK = makeFreshNullPrevBlock();
+    /** The previous values of blocks allocated during the current update cycle without null-filling; never written. */
+    private static final byte[] FRESH_DEFAULT_PREV_BLOCK = new byte[BLOCK_SIZE];
+
+    private static byte[] makeFreshNullPrevBlock() {
+        final byte[] block = new byte[BLOCK_SIZE];
+        Arrays.fill(block, NULL_BOOLEAN_AS_BYTE);
+        return block;
+    }
+
     @Override
-    final byte[] allocateBlock(int size) {
-        return new byte[size];
+    final byte[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
+        return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
     }
 
     @Override
@@ -310,10 +331,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                 dest.set(ii, null);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 dest.set(ii, null);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final byte[] currentBlock = blocks[blockNo];
                 dest.set(ii, BooleanUtils.byteAsBoolean(currentBlock[(int) (fromIndex & INDEX_MASK)]));
             }
@@ -332,11 +353,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                 dest.set(ii, null);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 dest.set(ii, null);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final byte[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             dest.set(ii, BooleanUtils.byteAsBoolean(currentBlock[(int) (fromIndex & INDEX_MASK)]));
         }
@@ -655,10 +676,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
-                final int blockNo = getBlockNo(fromIndex);
-                if (blockNo >= blocks.length) {
+                if (fromIndex > maxIndex) {
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                 } else {
+                    final int blockNo = getBlockNo(fromIndex);
                     final byte[] currentBlock = blocks[blockNo];
                     dest.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
                 }
@@ -676,11 +697,11 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
-                final int blockNo = getBlockNo(fromIndex);
-                if (blockNo >= blocks.length) {
+                if (fromIndex > maxIndex) {
                     dest.set(ii, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
+                final int blockNo = getBlockNo(fromIndex);
                 final byte[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
                 dest.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
             }

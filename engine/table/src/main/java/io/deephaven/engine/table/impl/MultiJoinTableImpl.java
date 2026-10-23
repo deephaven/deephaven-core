@@ -325,10 +325,10 @@ public class MultiJoinTableImpl implements MultiJoinTable {
                     final MultiJoinListenerRecorder listenerRecorder =
                             new MultiJoinListenerRecorder("multiJoin(" + ii + ")", input, mergedListener, keySources,
                                     sourceKeyModifiedColumnSet, sourceAdditionModifiedColumnSet, transformer, ii);
-                    input.addUpdateListener(listenerRecorder);
                     listenerRecorders.add(listenerRecorder);
                 }
             }
+            mergedListener.addRecordersToParents();
             result.addParentReference(mergedListener);
         }
 
@@ -401,10 +401,10 @@ public class MultiJoinTableImpl implements MultiJoinTable {
                     final MultiJoinListenerRecorder listenerRecorder = new MultiJoinListenerRecorder(
                             "multiJoin(" + ii + ")", input, mergedListener, null, null, sourceAdditionModifiedColumnSet,
                             transformer, ii);
-                    input.addUpdateListener(listenerRecorder);
                     listenerRecorders.add(listenerRecorder);
                 }
             }
+            mergedListener.addRecordersToParents();
             result.addParentReference(mergedListener);
         }
 

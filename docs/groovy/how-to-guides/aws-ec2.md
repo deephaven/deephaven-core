@@ -1,6 +1,5 @@
 ---
 title: Use Deephaven with AWS EC2
-sidebar_label: AWS EC2
 ---
 
 [Amazon Web Services](https://aws.amazon.com/) (AWS) is the world's most popular cloud computing service. It offers a wide variety of cloud solutions - these tend to pair well with Deephaven Community Core.

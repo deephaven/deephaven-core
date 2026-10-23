@@ -1,6 +1,5 @@
 ---
 title: Ultimate cheat sheet
-sidebar_label: Ultimate cheat sheet
 ---
 
 ## Necessary data
@@ -917,8 +916,8 @@ tickingSource2 = timeTable("PT10.5S").update(
     "Double4 = randomDouble(1, 100)",
     "Int4 = randomInt(1, 100)",
     "Date = Timestamp.toString()",
-    "String7 = randChoice(lettersUpp)",
-    "String8 = getRandomString(randomInt(1, 4))",
+    "String7 = (String)randChoice(lettersUpp)",
+    "String8 = (String)getRandomString(randomInt(1, 4))",
 )
 
 ajJoin = tickingSource2.aj(
@@ -1209,7 +1208,7 @@ numberAndColor = staticSource1.formatColumns(
 )
 ```
 
-You will find an itemization of stock colors in [the docs](../../assets/deephaven-colors.pdf).
+For the full list of stock colors, see [Named colors](../table-operations/format/named-colors.md).
 
 ## Plot programmatically
 

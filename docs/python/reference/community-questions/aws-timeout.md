@@ -1,6 +1,5 @@
 ---
 title: Why can't I read from an S3 bucket but I can connect to it?
-sidebar_label: Why can't I read from S3?
 ---
 
 _I've got some trouble reading Parquet data from an S3 server. I can connect to the bucket, but all attempts to read data fail. Why is this happening?_

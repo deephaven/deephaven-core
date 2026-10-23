@@ -1,6 +1,5 @@
 ---
 title: Create a markdown widget
-sidebar_label: Markdown widgets
 ---
 
 This guide shows you how to add a Markdown Widget to your workspace in the Deephaven IDE.

@@ -1,6 +1,5 @@
 ---
 title: LoadTableOptions
-sidebar_label: LoadTableOptions
 ---
 
 The `LoadTableOptions` class specifies options for loading Iceberg tables into Deephaven.

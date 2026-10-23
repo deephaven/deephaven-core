@@ -1,6 +1,5 @@
 ---
 title: Query language built-in constants
-sidebar_label: Built-in constants
 ---
 
 Deephaven's Query Language (DQL) has a large number of built-in constants. These can be used in queries with no additional imports or setup. The built-in constants cover null values, maximum and minimum allowed values, NaNs, infinities, date-time values, and more. All constants use the `CAPITAL_CASE` naming convention to distinguish them from user-defined variables.

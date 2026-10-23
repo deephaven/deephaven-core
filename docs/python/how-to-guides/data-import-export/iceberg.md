@@ -1,6 +1,5 @@
 ---
 title: Iceberg and Deephaven
-sidebar_label: Iceberg
 ---
 
 [Apache Iceberg](https://iceberg.apache.org/) is a high-performance format for tabular data. Deephaven's Iceberg integration enables users to interact with Iceberg catalogs, namespaces, tables, and snapshots. This guide walks through reading from Iceberg with a single table and snapshot, then writes multiple Deephaven tables to the same Iceberg namespace. The examples presented this guide interact with a [REST catalog](https://iceberg.apache.org/rest-catalog-spec/).
@@ -43,7 +42,7 @@ When querying Iceberg tables located in any S3-compatible storage service, the [
 
 ## A Deephaven deployment for Iceberg
 
-The examples in this guide use the Docker deployment found in the [Deephaven example Iceberg REST catalog deployment](https://github.com/deephaven-examples/deephaven-iceberg-rest-catalog/). It includes a Deephaven server, Iceberg REST catalog, MinIO object store, and MinIO client. The repository's README contains a full description of the deployment.
+The examples in this guide use the Docker deployment found in the [Deephaven example Iceberg REST catalog deployment](https://github.com/deephaven-examples/deephaven-iceberg-rest-catalog/). It includes a Deephaven server, an Iceberg REST catalog, a [RustFS](https://rustfs.com/) S3-compatible object store, and an Apache Spark container that creates a sample table. The repository's README contains a full description of the deployment.
 
 For this guide, you need only clone the repository, `cd` into the `Python` directory, and run `docker compose up`:
 
@@ -84,7 +83,7 @@ If you are working with a REST catalog backed by S3 storage, you can use the mor
 from deephaven.experimental import iceberg
 
 rest_adapter = iceberg.adapter_s3_rest(
-    name="minio-iceberg",
+    name="rustfs-iceberg",
     catalog_uri=catalog_uri,
     warehouse_location=warehouse_location,
     region_name=aws_region,

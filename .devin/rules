@@ -1,6 +1,6 @@
 # Deephaven documentation style guide (Community/Core)
 
-These standards apply to deephaven-core documentation.
+These standards apply to customer-facing deephaven-core documentation in `docs/`.
 
 ## Documentation categories
 
@@ -45,6 +45,7 @@ Capitalize:
 - ColumnSource
 - ScriptSession
 - Barrage
+- Barrier (the concurrency-control concept and class; the generic phrase "ordering barrier" in prose stays lowercase)
 
 ## Code formatting
 

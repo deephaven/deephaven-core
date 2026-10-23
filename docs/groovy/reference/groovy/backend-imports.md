@@ -1,6 +1,5 @@
 ---
 title: Automatic Backend Imports
-sidebar_label: Backend Imports
 ---
 
 This guide outlines the backend packages and classes a new Deephaven instance automatically imports during startup.
@@ -160,7 +159,7 @@ A [`ColumnSource`](../../conceptual/deephaven-design.md#tables-designed-for-shar
 
 - [io.deephaven.engine.table.vectors.ColumnVectors](/core/javadoc/io/deephaven/engine/table/vectors/ColumnVectors.html)
 
-This is an interface that allows the Deephaven engine positional access to columns. Users will not interact with this class directly.
+This is a utility class that returns a table's column data as vectors for positional access, for example `ColumnVectors.ofInt(table, "X")`.
 
 </details>
 

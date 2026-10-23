@@ -14,7 +14,6 @@ import io.deephaven.util.annotations.TestUseOnly;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.LongConsumer;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
@@ -85,7 +84,8 @@ public final class IntOneOrN {
         }
 
         /**
-         * Clear one block.
+         * Clear one block, if it exists. A block holds no data until one of its rows is written, so a block may be
+         * absent although rows within it were in the output rowset.
          *
          * @param block2Idx the block index to clear
          * @param recycler recycler for lowest level blocks
@@ -97,21 +97,19 @@ public final class IntOneOrN {
 
             final Block1 blocks0 = get(block0);
             if (blocks0 == null) {
-                // we should not be asking to clear a block that does not actually exist
-                throw new IllegalStateException();
+                return;
             }
 
             final Block2 blocks1 = blocks0.get(block1);
-            if (blocks1 == null) {
-                // we should not be asking to clear a block that does not actually exist
-                throw new IllegalStateException();
+            if (blocks1 == null || blocks1.get(block2) == null) {
+                return;
             }
 
             blocks1.clearByIndex(block2, recycler);
         }
 
         /**
-         * Clear one block2 structure from a block1 structure.
+         * Clear one block2 structure from a block1 structure, if it exists.
          *
          * @param block1Idx the block index to clear
          * @param recycler recycler for lowest level blocks
@@ -121,16 +119,15 @@ public final class IntOneOrN {
             final int block1 = (int) (block1Idx) & BLOCK1_MASK;
 
             final Block1 blocks0 = get(block0);
-            if (blocks0 == null) {
-                // we should not be asking to clear a block that does not actually exist
-                throw new IllegalStateException();
+            if (blocks0 == null || blocks0.get(block1) == null) {
+                return;
             }
 
             blocks0.clearByIndex(block1, recycler);
         }
 
         /**
-         * Clear one block1 structure from a block0 structure.
+         * Clear one block1 structure from a block0 structure, if it exists.
          *
          * <p>The silly underscore in the name is to make replication not append a &lt;T&gt; type in the object case.</p>
          *
@@ -139,6 +136,9 @@ public final class IntOneOrN {
          */
         private void clearOneBlock_1(final long block0Idx, final SoftRecycler<Block2[]> recycler1) {
             final int block0 = (int) (block0Idx) & BLOCK0_MASK;
+            if (get(block0) == null) {
+                return;
+            }
             clearByIndex(block0, recycler1);
         }
 
@@ -211,23 +211,6 @@ public final class IntOneOrN {
             }
         }
 
-        public void enumerate(int nullValue, LongConsumer consumer) {
-            if (oneIndex == ONE_UNINITIALIZED) {
-                return;
-            }
-            if (oneIndex != HAVE_MORE_THAN_ONE) {
-                if (oneValue != null) {
-                    oneValue.enumerate(nullValue, consumer, (long) oneIndex << BLOCK0_SHIFT);
-                }
-                return;
-            }
-            for (int ii = 0; ii < BLOCK0_SIZE; ++ii) {
-                if (array[ii] != null) {
-                    array[ii].enumerate(nullValue, consumer, (long)ii << BLOCK0_SHIFT);
-                }
-            }
-        }
-
         @TestUseOnly
         public long estimateSize() {
             if (oneIndex == ONE_UNINITIALIZED) {
@@ -286,23 +269,6 @@ public final class IntOneOrN {
         public void maybeRecycle(SoftRecycler<Block2[]> recycler) {
             if (array != null) {
                 recycler.returnItem(array);
-            }
-        }
-
-        void enumerate(int nullValue, LongConsumer consumer, long offset) {
-            if (oneIndex == ONE_UNINITIALIZED) {
-                return;
-            }
-            if (oneIndex != HAVE_MORE_THAN_ONE) {
-                if (oneValue != null) {
-                    oneValue.enumerate(nullValue, consumer, offset + ((long)oneIndex << BLOCK1_SHIFT));
-                }
-                return;
-            }
-            for (int ii = 0; ii < BLOCK1_SIZE; ++ii) {
-                if (array[ii] != null) {
-                    array[ii].enumerate(nullValue, consumer, offset + ((long)ii << BLOCK1_SHIFT));
-                }
             }
         }
 
@@ -385,31 +351,6 @@ public final class IntOneOrN {
         public void maybeRecycle(SoftRecycler<int [][]> recycler) {
             if (array != null) {
                 recycler.returnItem(array);
-            }
-        }
-
-        void enumerate(int nullValue, LongConsumer consumer, long offset) {
-            if (oneIndex == ONE_UNINITIALIZED) {
-                return;
-            }
-            if (oneIndex != HAVE_MORE_THAN_ONE) {
-                if (oneValue != null) {
-                    enumerateInner(nullValue, oneValue, consumer, offset + ((long)oneIndex << BLOCK2_SHIFT));
-                }
-                return;
-            }
-            for (int ii = 0; ii < BLOCK2_SIZE; ++ii) {
-                if (array[ii] != null) {
-                    enumerateInner(nullValue, array[ii], consumer, offset + ((long)ii << BLOCK2_SHIFT));
-                }
-            }
-        }
-
-        private static void enumerateInner(int nullValue, int[] inner, LongConsumer consumer, long offset) {
-            for (int ii = 0; ii < inner.length; ++ii) {
-                if (inner[ii] != nullValue) {
-                    consumer.accept(offset + ii);
-                }
             }
         }
 

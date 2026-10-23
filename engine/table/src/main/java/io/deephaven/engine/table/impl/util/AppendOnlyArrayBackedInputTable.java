@@ -67,6 +67,9 @@ public class AppendOnlyArrayBackedInputTable extends BaseArrayBackedInputTable {
 
     @Override
     protected void processPendingTable(Table table, RowSetChangeRecorder rowSetChangeRecorder) {
+        if (table.isEmpty()) {
+            return;
+        }
         try (final RowSet addRowSet = table.getRowSet().copy()) {
             final long firstRow = nextRow;
             final long lastRow = firstRow + addRowSet.intSize() - 1;

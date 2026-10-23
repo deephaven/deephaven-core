@@ -1,6 +1,5 @@
 ---
 title: UnboundResolver
-sidebar_label: UnboundResolver
 ---
 
 The `UnboundResolver` class provides a consolidated set of inference options for use in [`LoadTableOptions`](./load-table-options.md). It's most useful when the caller knows the definition of the table they want to load, and can provide an explicit mapping of Iceberg columns to Deephaven columns.

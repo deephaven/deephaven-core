@@ -1,6 +1,5 @@
 ---
 title: Ultimate cheat sheet
-sidebar_label: Ultimate cheat sheet
 ---
 
 ## Necessary data
@@ -1331,7 +1330,7 @@ number_and_color = static_source_1.format_columns(
 )
 ```
 
-You will find an itemization of stock colors in [the docs](../../assets/deephaven-colors.pdf).
+For the full list of stock colors, see [Named colors](../table-operations/format/named-colors.md).
 
 ## Plot programmatically
 

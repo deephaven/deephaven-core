@@ -7,7 +7,11 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndexOptions;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -19,6 +23,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
+import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
@@ -196,12 +201,19 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
             added = RowSetFactory.empty();
         } else {
             added = RowSetFactory.fromRange(previousSize, newSize - 1);
+            // A new key's bucket may be grown by further locations in the same cycle; it is still only an add.
+            modified.remove(added);
         }
         final RowSet removed = removedPositionsBuilder.build();
         modified.remove(removed);
+        // Positions are never reassigned, so an emptied bucket keeps its position and leaves the row set; if its key
+        // returns, the bucket comes back at the same position.
+        final WritableRowSet indexRowSet = indexTable.getRowSet().writableCast();
+        indexRowSet.remove(removed);
         try (final RowSet resurrected = resurrectedPositionsBuilder.build()) {
             added.insert(resurrected);
             modified.remove(resurrected);
+            indexRowSet.insert(resurrected);
         }
 
         // Send the downstream updates to any listeners of the index table
@@ -321,7 +333,28 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex implements
     @Override
     @NotNull
     public RowKeyLookup rowKeyLookup(final DataIndexOptions unusedOptions) {
-        return (final Object key, final boolean usePrev) -> keyPositionMap.getInt(key);
+        final TrackingRowSet indexRowSet = indexTable.getRowSet();
+        return new RowKeyLookup() {
+            @Override
+            public long apply(@Nullable final Object key, final boolean usePrev) {
+                final int position = keyPositionMap.getInt(key);
+                if (position == KEY_NOT_FOUND) {
+                    return RowSequence.NULL_ROW_KEY;
+                }
+                // A key whose locations are all removed keeps its position but is not in the index table.
+                return (usePrev ? indexRowSet.prev() : indexRowSet).containsRange(position, position)
+                        ? position
+                        : RowSequence.NULL_ROW_KEY;
+            }
+
+            @Override
+            public void apply(
+                    @NotNull final Chunk<? extends Values>[] keyChunks,
+                    @NotNull final WritableLongChunk<RowKeys> rowKeys,
+                    final boolean usePrev) {
+                DataIndexUtils.lookupRowKeysBoxed(this, keyChunks, rowKeys, usePrev);
+            }
+        };
     }
 
     @Override

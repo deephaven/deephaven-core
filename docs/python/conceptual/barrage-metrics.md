@@ -35,7 +35,7 @@ New subscriptions and subscription changes require initializing table state buil
 
 4. Propagation to gRPC listeners
 
-Each delta and snapshot is then propagated to subscribers. Barrage records `PropagateNanos`, the time it took to pass a delta to all subscribers, or a snapshot to one subscriber. Because each subscriber's message is written to its gRPC stream during propagation, `PropagateNanos` includes the write time described in the next step.
+Each delta and snapshot is then propagated to its subscribers. When a message goes to more than one subscriber, the server can write it to several of them at once (see [Write to subscribers in parallel](../how-to-guides/performance/barrage-performance.md#write-to-subscribers-in-parallel)). Barrage records `PropagateNanos`, the time it took to pass the message to the list of listeners. Because each subscriber's message is written to its gRPC stream during propagation, `PropagateNanos` includes the write time described in the next step.
 
 > [!NOTE]
 > Barrage also records `UpdateJobNanos`, the aggregate time it took to coalesce deltas, fetch the snapshot, propagate, and housekeep. Compaction runs separately and is not included.
@@ -66,7 +66,7 @@ The snapshot request is queued for processing. Barrage records `QueueNanos`, the
 
 2. The snapshot is constructed
 
-The snapshot request is then fulfilled. For a refreshing table, Barrage first tries to build the snapshot concurrently with the UG, without taking a lock. If those attempts cannot produce a consistent snapshot — for example, because the table keeps changing while a large snapshot is being read — Barrage makes a final attempt while holding the UG shared lock. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener, and `WriteNanos` and `WriteBytes`, the time it took to write, and the size of the record batches written (dictionary messages are not counted, except in a message that carries no rows).
+The snapshot request is then fulfilled. For a refreshing table, Barrage normally builds the snapshot concurrently with the UG, retrying if the table changes during an attempt. If those concurrent attempts keep failing, or a failed attempt takes too long, Barrage holds the UG shared lock for a final attempt. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener, and `WriteNanos` and `WriteBytes`, the time it took to write, and the size of the record batches written (dictionary messages are not counted, except in a message that carries no rows).
 
 A static table is snapshotted in chunks, without locking. Each chunk that is written produces its own row, with that chunk's `WriteNanos` and `WriteBytes` and the `SnapshotNanos` accumulated so far, so a large static snapshot can produce several rows.
 

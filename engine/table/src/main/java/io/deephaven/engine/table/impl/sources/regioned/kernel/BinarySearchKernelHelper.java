@@ -55,7 +55,8 @@ public class BinarySearchKernelHelper {
      * decides.
      *
      * <p>
-     * The property is not verified; registering a type that lacks it will produce incorrect filter results.
+     * The property is not verified; registering a type that lacks it will produce incorrect filter, as-of join, range
+     * join, sorted first or last, minimum, maximum, median, percentile, count distinct, distinct and unique results.
      *
      * <p>
      * Registration is additive and idempotent, and a type cannot be withdrawn. Register types during startup: a search
@@ -92,7 +93,14 @@ public class BinarySearchKernelHelper {
      * {@link java.util.Objects#equals(Object, Object)} -- the same relation the chunk filter uses. When the two agree,
      * the ordering-equal run the search locates is exactly the set of matching rows and the search can answer the match
      * outright. When they disagree -- {@link java.math.BigDecimal} at differing scales, for one -- that run is only a
-     * superset, and the matches have to be picked out of it by equality.
+     * superset, and the matches have to be picked out of it by equality. Sorted pushdown therefore matches a column of
+     * a type for which this holds with {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithConsistentEquality}
+     * or {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithConsistentEquality}, and a column of any other type
+     * with {@link ObjectRegionBinarySearchKernel#binarySearchMatchWithGeneralEquality} or
+     * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithGeneralEquality}. {@link java.math.BigDecimal} is the
+     * exception: its match filter matches by {@link java.math.BigDecimal#compareTo(java.math.BigDecimal)}, as the query
+     * language's {@code ==} does, so sorted pushdown matches it by ordering alone too, checking for it by type before
+     * consulting this method.
      *
      * <p>
      * Only this stronger both-ways guarantee is checked, and only where documented, since {@link java.math.BigDecimal}
@@ -100,6 +108,12 @@ public class BinarySearchKernelHelper {
      * {@code eq(a, b) implies compare(a, b) == 0}, which {@link Comparable} recommends and without which a type is
      * unusable in any sorted context. An enum qualifies because its ordering is by ordinal and its equality is
      * identity.
+     *
+     * <p>
+     * The same answer selects between the EqualsConsistentObject and Object segmented sorted array, SSA stamp,
+     * duplicate compaction, compaction, segmented sorted multiset, and compact modifications classes, which test
+     * equality with {@code equals} and with
+     * {@link io.deephaven.util.compare.ObjectComparisons#compareEquals(Object, Object)} respectively.
      *
      * <p>
      * The engine's own types are answered here; a type it does not know is answered {@code false} until

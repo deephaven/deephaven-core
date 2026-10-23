@@ -1,6 +1,5 @@
 ---
 title: Use URIs to share tables
-sidebar_label: URI
 ---
 
 This guide shows you how to use Deephaven's [URIs](https://docs.deephaven.io/core/pydoc/code/deephaven.uri.html#module-deephaven.uri) to share tables across server instances and networks.
@@ -67,7 +66,7 @@ The components are:
   - A Docker container name (for container-to-container communication within the same Docker network).
   - A hostname/IP address (for network communication).
 - **`<port>`** is optional and only needed when:
-  - The Deephaven instance is running on a port other than the default: 10000 for `dh+plain://`, or 443 for `dh://`.
+  - The Deephaven instance is running on a port other than the scheme's default: `10000` for `dh+plain`, `443` for `dh`.
   - You're connecting across a network to a specific port.
 - **`<scope>`** identifies the namespace where the resource exists. This is typically `scope` for variables created in interactive console sessions, or `app/<app_name>/field` for resources exported from Application Mode applications.
 - **`<resource_name>`** is the exact name of the table or resource you want to access.
@@ -185,7 +184,7 @@ The query scope contains variables created in interactive console sessions - whe
 from deephaven import empty_table
 
 my_table = empty_table(100).update(["X = i", "Y = i * 2"])
-# Accessible via: dh://hostname/scope/my_table
+# Accessible via: dh+plain://hostname/scope/my_table
 ```
 
 ### Application scope (`app/<app_name>/field`)
@@ -194,7 +193,7 @@ The application scope contains fields exported from [Application Mode](./applica
 
 ```python syntax
 # In an Application Mode script, this exports a field
-# Accessible via: dh://hostname/app/trading_app/field/market_data
+# Accessible via: dh+plain://hostname/app/trading_app/field/market_data
 ```
 
 Scopes ensure that:
@@ -224,9 +223,9 @@ You can also share tables across networks, public or private. Just like the prev
 
 > [!NOTE]
 >
-> - When sharing tables across a network, you do **not** need to specify the port if Deephaven is running on the default port: `10000` for `dh+plain://`, or `443` for `dh://`.
+> - When sharing tables across a network with `dh+plain`, you do **not** need to specify the port if Deephaven is running on the default port `10000`. A `dh` URI without a port uses `443`.
 > - You **must** specify the port in the URI when:
->   - The remote Deephaven instance runs on a port other than the default (10000 for `dh+plain://`, 443 for `dh://`).
+>   - The remote Deephaven instance runs on a port other than the scheme's default (`10000` for `dh+plain`, `443` for `dh`).
 >   - You're connecting to a custom port forwarding configuration.
 >
 > Example format with port: `dh+plain://hostname:9876/scope/table_name`
@@ -289,5 +288,4 @@ When using URIs to share tables across instances, particularly over networks, th
 - [Capture Python client tables](./capture-tables.md)
 - [Application Mode](./application-mode.md)
 - [URI cheat sheet](../reference/cheat-sheets/uri-cheat-sheet.md)
-- [Enterprise URIs](https://deephaven.io/enterprise/docs/deephaven-database/remote-tables-python/#uris)
 - [Pydoc](https://deephaven.io/core/pydoc/code/deephaven.uri.html)

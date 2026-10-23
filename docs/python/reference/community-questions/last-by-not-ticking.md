@@ -1,6 +1,5 @@
 ---
 title: Why isn't `last_by` updating when called on ticking data?
-sidebar_label: Why isn't `last_by` ticking?
 ---
 
 _I'm calling [`last_by`](../table-operations/group-and-aggregate/lastBy.md) on a ticking table. The resultant table isn't ticking with the upstream ticking table. What's going on?_

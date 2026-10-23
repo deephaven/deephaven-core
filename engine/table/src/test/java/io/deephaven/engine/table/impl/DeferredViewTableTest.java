@@ -299,6 +299,36 @@ public class DeferredViewTableTest {
     }
 
     @Test
+    public void testFailedOverMatchFilterRename() {
+        // a variable of the same name as the renamed column must not stand in for it pre-view
+        ExecutionContext.getContext().getQueryScope().putParam("Rhs", 2);
+        final TableDefinition resultDef = TableDefinition.of(
+                ColumnDefinition.ofInt("Lhs"),
+                ColumnDefinition.ofInt("Src"));
+        final Table sourceTable = TableTools.newTable(
+                TableTools.intCol("Lhs", 1, 2, 3),
+                TableTools.intCol("Src", 1, 3, 3));
+        final DeferredViewTable deferredTable = new DeferredViewTable(
+                resultDef,
+                "test",
+                new DeferredViewTable.TableReference(sourceTable),
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
+                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
+                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+
+        // Rhs is a column, so Lhs == Rhs fails over to a ConditionFilter that uses Lhs and Rhs, and only Rhs is
+        // renamed
+        final Table result = deferredTable
+                .view(List.of(new SourceColumn("Lhs"), new SourceColumn("Src", "Rhs")))
+                .where("Lhs == Rhs")
+                .coalesce();
+
+        TstUtils.assertTableEquals(
+                TableTools.newTable(TableTools.intCol("Lhs", 1, 3), TableTools.intCol("Rhs", 1, 3)),
+                result);
+    }
+
+    @Test
     public void testMatchFilterDoubleRename() {
         verifyFilterIsPrioritized(new MatchFilter(MatchOptions.REGULAR, "Y", "A"), true,
                 DeferredViewTableTest::doubleRenameUpdate);

@@ -60,6 +60,7 @@ import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.file.Files;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -2143,6 +2144,22 @@ public class QueryTableAggregationTest {
         sumw = sumw + (7L);
         expected = (double) wsum / (double) sumw;
         assertEquals(expected, wavg);
+    }
+
+    @Test
+    public void testWeightedAvgRepeatedModify() {
+        // the first modification leaves the new sum of weights equal to the old weighted sum
+        final QueryTable table = testRefreshingTable(i(0).toTracking(),
+                stringCol("Key", "A"), longCol("x", 3), intCol("w", 1));
+        final Table aggregated = table.aggBy(List.of(AggWAvg("w", "WAvg=x")), "Key");
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int round = 0; round < 2; ++round) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(table, i(0), stringCol("Key", "A"), longCol("x", 1011), intCol("w", 3));
+                table.notifyListeners(i(), i(), i(0));
+            });
+            assertTableEquals(newTable(stringCol("Key", "A"), doubleCol("WAvg", 1011.0)), aggregated);
+        }
     }
 
     @Test
@@ -4271,6 +4288,46 @@ public class QueryTableAggregationTest {
         });
 
         // Without the fix, the prev state for the distinct table would be incorrect here and the TUV would fail.
+    }
+
+    /**
+     * A group whose Instant values are all null has no multiset, and its distinct cell must be null, as it is for the
+     * primitive types, rather than a vector that throws on every access. The TUV reads each cell's current and previous
+     * values as groups move into and out of that state.
+     */
+    @Test
+    public void testDistinctInstantAllNullGroup() {
+        final Instant t1 = Instant.ofEpochSecond(1);
+        final Instant t2 = Instant.ofEpochSecond(2);
+        final QueryTable table = testRefreshingTable(i(0, 1).toTracking(),
+                stringCol("Key", "A", "B"), instantCol("T", t1, null));
+        final QueryTable distinct = (QueryTable) table.aggBy(AggDistinct("T"), "Key");
+        final Table sizes = distinct.view("Key", "Size = T == null ? -1 : T.intSize()");
+
+        final TableUpdateValidator validator = TableUpdateValidator.make("distinctInstant", distinct);
+        final FailureListener failureListener = new FailureListener();
+        validator.getResultTable().addUpdateListener(failureListener);
+
+        assertTableEquals(newTable(stringCol("Key", "A", "B"), intCol("Size", 1, -1)), sizes);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        // A becomes all null, and B gains its first non-null value
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(0, 2), stringCol("Key", "A", "B"), instantCol("T", null, t2));
+            table.notifyListeners(i(2), i(), i(0));
+        });
+        assertTableEquals(newTable(stringCol("Key", "A", "B"), intCol("Size", -1, 1)), sizes);
+        final Table distinctB = distinct.where("Key == `B`");
+        assertArrayEquals(new Instant[] {t2}, ((ObjectVector<?>) distinctB.getColumnSource("T")
+                .get(distinctB.getRowSet().firstRowKey())).toArray());
+
+        // B loses its only non-null value
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(2));
+            table.notifyListeners(i(), i(2), i());
+        });
+        assertTableEquals(newTable(stringCol("Key", "A", "B"), intCol("Size", -1, -1)), sizes);
     }
 
     private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {

@@ -1,6 +1,5 @@
 ---
 title: Table operations overview
-sidebar_label: Operations overview
 ---
 
 <div className="comment-title">
@@ -40,6 +39,7 @@ The reference documentation for each operation (e.g., [`where`](../reference/tab
 
 ## Related documentation
 
+- [Aggregations in Deephaven](./aggregations.md)
 - [Understanding the Table API](./table-api.md)
 - [Deephaven's design](./deephaven-design.md)
 - [Table types](./table-types.md)

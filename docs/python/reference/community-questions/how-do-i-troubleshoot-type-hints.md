@@ -1,6 +1,5 @@
 ---
 title: How do I troubleshoot type hints?
-sidebar_label: How do I troubleshoot type hints?
 ---
 
 <em>My table has a column that's the wrong type. I checked my typecasting and type hints, and it should produce the correct type. What's going on?</em>

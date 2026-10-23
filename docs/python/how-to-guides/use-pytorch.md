@@ -1,6 +1,5 @@
 ---
 title: Use PyTorch in Deephaven
-sidebar_label: PyTorch
 ---
 
 This guide will show you how to use [PyTorch](https://pytorch.org) in Deephaven queries.
@@ -348,7 +347,7 @@ table_writer = DynamicTableWriter(
 live_iris = table_writer.table
 
 
-# This function creates faux Iris measurements once per second for a minute
+# This function creates faux Iris measurements once per second for 30 seconds
 def write_to_iris():
     for i in range(30):
         petal_length = random.randint(10, 69) / 10
@@ -365,7 +364,7 @@ thread = threading.Thread(target=write_to_iris)
 thread.start()
 ```
 
-Now we use [`learn`](/core/pydoc/code/deephaven.learn.html#deephaven.learn.learn) on the ticking table. All it takes to change from static to live data is to change the table!
+Now we use [`learn`](/core/pydoc/code/deephaven.learn.html#deephaven.learn.learn) on the ticking table. All it takes to change from static to live data is to use an add-only table, such as the one from `DynamicTableWriter`.
 
 ```python test-set=1 ticking-table order=null skip-test
 # Use the learn function to create a new table with live predictions
@@ -400,7 +399,7 @@ table_writer = DynamicTableWriter(
 live_iris = table_writer.table
 
 
-# This function creates faux Iris measurements once per second for a minute
+# This function creates faux Iris measurements once per second for 30 seconds
 def write_to_iris():
     for i in range(30):
         petal_length = random.randint(10, 69) / 10
@@ -437,7 +436,7 @@ iris_predicted_live = learn.learn(
 
 - [How to install and use Python packages](./install-and-use-python-packages.md)
 - [How to use deephaven.learn](./use-deephaven-learn.md)
-- [How to use SciKit-Learn](./use-scikit-learn.md)
+- [How to use scikit-learn](./use-scikit-learn.md)
 - [How to use TensorFlow](./use-tensorflow.md)
 - [Python variables in query strings](./python-variables.md)
 - [Python functions in query strings](./python-functions.md)

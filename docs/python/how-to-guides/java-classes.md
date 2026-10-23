@@ -1,6 +1,5 @@
 ---
 title: Java objects and classes in query strings
-sidebar_label: Java classes & objects
 ---
 
 The ability to use Java objects and classes in Deephaven query strings is one of its most powerful features. This guide explains how to use Java objects effectively in your queries, even if you have limited Java experience.

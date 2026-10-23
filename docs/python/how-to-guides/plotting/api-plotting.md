@@ -1,6 +1,5 @@
 ---
 title: Built-in plotting API
-sidebar_label: Built-in API
 ---
 
 Deephaven's built-in plotting API offers methods for creating figures, plots, and charts using data sourced directly from tables. This guide provides an overview of its capabilities.
@@ -148,7 +147,7 @@ plot_shared_twin_x_colors = (
 )
 ```
 
-You can find the full list of available colors [here](../../assets/deephaven-colors.pdf).
+For the full list of available colors, see [Named colors](../../reference/table-operations/format/named-colors.md).
 
 ### Plot styles
 

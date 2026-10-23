@@ -9,11 +9,14 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.object.UnionObject;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.impl.by.AggregationProcessor;
+import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
@@ -1687,6 +1690,106 @@ public class TestRollupTable extends RefreshingTableTestCase {
      * internally.
      */
     private static final int NON_UNIQUE = -1;
+
+    /**
+     * A reaggregated leaf level (as a pivot table builds for its grid cells) replaces the rollup's partition with a
+     * null column. The partition operator was the only other one requiring row keys, so without it the unique
+     * re-aggregation operator must request the row keys it uses to read each constituent's {@code singletonCount}.
+     * {@code Unique} holds one value per {@code Sym}, so those states are unique; {@code Spread} varies within each
+     * {@code Sym}, so those are non-unique.
+     */
+    @Test
+    public void testRollupUniqueReaggregatedLeafStatic() {
+        final Table source = TableTools.emptyTable(1000).update(
+                "Sym = `S` + (i % 4)",
+                "Sym2 = `T` + (i % 3)",
+                "Unique = (int) (i % 4)",
+                "UniqueStr = `U` + (i % 4)",
+                "Spread = i",
+                "SpreadStr = `V` + i");
+        final List<Aggregation> aggs = List.of(AggUnique("Unique", "UniqueStr", "Spread", "SpreadStr"));
+
+        final QueryTable base = rollupBase(source, aggs, "Sym", "Sym2");
+        assertTableEquals(
+                source.aggBy(aggs, "Sym").sort("Sym"),
+                reaggregatedLeaf(base, aggs, List.of("Sym2"), "Sym").view("Sym", "Unique", "UniqueStr", "Spread",
+                        "SpreadStr").sort("Sym"));
+        assertTableEquals(
+                source.aggBy(aggs),
+                reaggregatedLeaf(base, aggs, List.of("Sym", "Sym2")).view("Unique", "UniqueStr", "Spread",
+                        "SpreadStr"));
+    }
+
+    /**
+     * {@link #testRollupUniqueReaggregatedLeafStatic()} under random updates, reaggregating through both the bucketed
+     * (keyed) and singleton (zero-key) paths. The flattened constituent table shifts rows whenever a constituent state
+     * is removed, which delivers shifted constituents (with or without modifications) to the operator's shift path.
+     */
+    @Test
+    public void testRollupUniqueReaggregatedLeafIncremental() {
+        for (int size = 10; size <= 1_000; size *= 10) {
+            testRollupUniqueReaggregatedLeafIncremental("size-" + size, size);
+        }
+    }
+
+    private void testRollupUniqueReaggregatedLeafIncremental(final String ctxt, final int size) {
+        final Random random = new Random(0);
+
+        final ColumnInfo[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "Sym2", "intCol", "strCol"},
+                new SetGenerator<>("a", "b", "c", "d"),
+                new IntGenerator(0, 50),
+                new IntGenerator(0, 2),
+                new SetGenerator<>("x", "y"));
+        final QueryTable testTable = getTable(true, size, random, columnInfo);
+
+        final List<Aggregation> aggs = List.of(AggUnique("intCol", "strCol"));
+        final QueryTable base = rollupBase(testTable, aggs, "Sym", "Sym2");
+        final QueryTable flatBase = (QueryTable) base.flatten();
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new QueryTableTest.TableComparator(
+                        reaggregatedLeaf(base, aggs, List.of("Sym2"), "Sym").view("Sym", "intCol", "strCol")
+                                .sort("Sym"),
+                        testTable.aggBy(aggs, "Sym").sort("Sym")),
+                new QueryTableTest.TableComparator(
+                        reaggregatedLeaf(flatBase, aggs, List.of("Sym2"), "Sym").view("Sym", "intCol", "strCol")
+                                .sort("Sym"),
+                        testTable.aggBy(aggs, "Sym").sort("Sym")),
+                new QueryTableTest.TableComparator(
+                        reaggregatedLeaf(base, aggs, List.of("Sym", "Sym2")).view("intCol", "strCol"),
+                        testTable.aggBy(aggs)),
+                new QueryTableTest.TableComparator(
+                        reaggregatedLeaf(flatBase, aggs, List.of("Sym", "Sym2")).view("intCol", "strCol"),
+                        testTable.aggBy(aggs)),
+        };
+
+        for (int step = 0; step < 100; step++) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Step = " + step);
+            }
+            simulateShiftAwareStep(ctxt + " step == " + step, size, random, testTable, columnInfo, en);
+        }
+    }
+
+    private static QueryTable rollupBase(final Table source, final Collection<? extends Aggregation> aggs,
+            final String... groupByColumns) {
+        return ((QueryTable) source.coalesce()).aggNoMemo(
+                AggregationProcessor.forRollupBase(aggs, false, ColumnName.of(RollupConstants.ROLLUP_COLUMN_SUFFIX)),
+                false, null, ColumnName.from(groupByColumns));
+    }
+
+    private static QueryTable reaggregatedLeaf(final QueryTable constituents,
+            final Collection<? extends Aggregation> aggs, final List<String> nullColumnNames,
+            final String... groupByColumns) {
+        final List<ColumnDefinition<?>> nullColumns = nullColumnNames.stream()
+                .map(constituents.getDefinition()::getColumn)
+                .collect(Collectors.toList());
+        return constituents.aggNoMemo(
+                AggregationProcessor.forRollupReaggregatedLeaf(aggs, nullColumns,
+                        ColumnName.of(RollupConstants.ROLLUP_COLUMN_SUFFIX)),
+                false, null, ColumnName.from(groupByColumns));
+    }
 
     /**
      * Maps the {@code int} values {@link #testRollupUniqueIncremental(UniqueValueCoder)} is written in terms of onto

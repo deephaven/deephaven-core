@@ -15,6 +15,7 @@ import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -53,6 +54,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -2637,6 +2639,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
      * An exact join of a static left table to a refreshing right table fails with an ExactJoinMissingKeyException when
      * the right row of a matched key is removed.
      */
+    @Test
     public void testExactJoinRightRemovalStaticLeft() {
         final Table left = testTable(col("Key", "a", "b"), intCol("L", 1, 2));
         final QueryTable right = testRefreshingTable(i(0, 1).toTracking(), col("Key", "a", "b"), intCol("R", 10, 20));
@@ -3695,6 +3698,133 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     @Test
+    public void testMaximumLoadFactorMustLetTheAlternateDrain() {
+        final QueryTable left = testRefreshingTable(i(0, 1).toTracking(), longCol("K", 1, 2));
+        final QueryTable right = testRefreshingTable(i(0).toTracking(), longCol("K", 1), intCol("RV", 10));
+        final Function<Double, Table> join = maximumLoadFactor -> NaturalJoinHelper.naturalJoin(left, right,
+                MatchPairFactory.getExpressions("K"), MatchPairFactory.getExpressions("RV"),
+                NaturalJoinType.ERROR_ON_DUPLICATE, new JoinControl() {
+                    @Override
+                    double getMaximumLoadFactor() {
+                        return maximumLoadFactor;
+                    }
+                });
+
+        // at or below 1 / REHASH_SLOTS_PER_ENTRY, a partial rehash could not drain the alternate before the new table
+        // fills
+        final double limit = 1.0 / IncrementalNaturalJoinStateManagerTypedBase.REHASH_SLOTS_PER_ENTRY;
+        for (final double maximumLoadFactor : new double[] {0.3, limit}) {
+            Throwable cause = assertThrows(Throwable.class, () -> join.apply(maximumLoadFactor));
+            while (!(cause instanceof IllegalArgumentException) && cause.getCause() != null) {
+                cause = cause.getCause();
+            }
+            assertTrue(String.valueOf(cause), cause instanceof IllegalArgumentException);
+            assertTrue(cause.getMessage(), cause.getMessage().contains("REHASH_SLOTS_PER_ENTRY"));
+        }
+
+        assertEquals(2, join.apply(0.5).size());
+    }
+
+    @Test
+    public void testCyclingKeysRehashWithoutLiveEntries() {
+        testCyclingKeysThroughRehashes(500, 500, false, 400);
+    }
+
+    @Test
+    public void testCyclingKeysDrainAcrossCycles() {
+        testCyclingKeysThroughRehashes(1500, 500, true, 700);
+    }
+
+    /**
+     * The left table grows to many keys, so the hash table grows for them, and then cycles a window of keys through it:
+     * each cycle removes the oldest keys of the window and adds as many new ones. The removed keys leave tombstones,
+     * which repeatedly push the table past its load factor, so it rehashes at the same size, since it is sized for its
+     * live keys.
+     *
+     * @param window the live left keys while cycling; when it equals {@code churn}, every key is removed before the
+     *        cycle's additions, so a rehash finds no live entries and drops the old table
+     * @param churn the keys removed and added each cycle
+     * @param rightMatches whether some window keys have a right row, which the cycles add, remove and modify, and
+     *        whether left rows are modified, so that the modified slot tracker follows slots the rehash migrates
+     * @param cycles the number of cycles, enough for several rehashes
+     */
+    private void testCyclingKeysThroughRehashes(final int window, final int churn, final boolean rightMatches,
+            final int cycles) {
+        final int peak = 1 << 15;
+        final QueryTable left = testRefreshingTable(RowSetFactory.flat(peak).toTracking(),
+                longCol("K", LongStream.range(0, peak).toArray()), intCol("LV", new int[peak]));
+        final QueryTable right = testRefreshingTable(i().toTracking(), longCol("K"), intCol("RV"));
+        final Table joined = left.naturalJoin(right, "K", "RV");
+        final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) joined);
+        final FailureListener failureListener = new FailureListener();
+        validator.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final RowSet shrink = RowSetFactory.fromRange(0, peak - window - 1);
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(left, shrink);
+            left.notifyListeners(i(), shrink, i());
+        });
+
+        long first = peak - window;
+        long next = peak;
+        for (int cycle = 0; cycle < cycles; ++cycle) {
+            final RowSet removed = RowSetFactory.fromRange(first, first + churn - 1);
+            final RowSet added = RowSetFactory.fromRange(next, next + churn - 1);
+            final long[] addedKeys = LongStream.rangeClosed(next, next + churn - 1).toArray();
+            final int cycleNumber = cycle;
+            // the first key that survives this cycle's removals
+            final long firstSurvivor = first + churn;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                if (rightMatches) {
+                    // every seventh key has a right row while it is in the window
+                    final RowSet rightRemoved = right.getRowSet().subSetByKeyRange(removed.firstRowKey(),
+                            removed.lastRowKey());
+                    removeRows(right, rightRemoved);
+                    final RowSetBuilderSequential rightAddedBuilder = RowSetFactory.builderSequential();
+                    for (long key = added.firstRowKey(); key <= added.lastRowKey(); ++key) {
+                        if (key % 7 == 0) {
+                            rightAddedBuilder.appendKey(key);
+                        }
+                    }
+                    final RowSet rightAdded = rightAddedBuilder.build();
+                    final long[] rightKeys = rowKeys(rightAdded);
+                    addToTable(right, rightAdded, longCol("K", rightKeys),
+                            intCol("RV", LongStream.of(rightKeys).mapToInt(key -> (int) key).toArray()));
+                    // and the surviving ones change value
+                    final RowSet rightModified = right.getRowSet().minus(rightAdded)
+                            .subSetByKeyRange(firstSurvivor, firstSurvivor + 49);
+                    addToTable(right, rightModified, longCol("K", rowKeys(rightModified)),
+                            intCol("RV", new int[rightModified.intSize()]));
+                    right.notifyListeners(rightAdded, rightRemoved, rightModified);
+                }
+                removeRows(left, removed);
+                addToTable(left, added, longCol("K", addedKeys), intCol("LV", new int[churn]));
+                final RowSet leftModified =
+                        rightMatches ? RowSetFactory.fromRange(firstSurvivor, firstSurvivor + 19) : i();
+                if (leftModified.isNonempty()) {
+                    addToTable(left, leftModified, longCol("K", rowKeys(leftModified)),
+                            intCol("LV", IntStream.range(0, leftModified.intSize()).map(ii -> cycleNumber).toArray()));
+                }
+                left.notifyListeners(added, removed, leftModified);
+            });
+            first += churn;
+            next += churn;
+            if (cycle % 25 == 0 || cycle == cycles - 1) {
+                assertTableEquals(left.snapshot().naturalJoin(right.snapshot(), "K", "RV"), joined);
+            }
+        }
+        assertEquals(window, joined.size());
+    }
+
+    private static long[] rowKeys(final RowSet rowSet) {
+        final long[] keys = new long[rowSet.intSize()];
+        final MutableInt ki = new MutableInt(0);
+        rowSet.forAllRowKeys(key -> keys[ki.getAndIncrement()] = key);
+        return keys;
+    }
+
+    @Test
     public void testTombstonedSlotDiscardsTrackerEntryLeftRemoval() {
         testTombstonedSlotDiscardsTrackerEntry(false);
     }
@@ -3916,6 +4046,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
      * reaches the unmatched key first when it applies the modified slots, so each path reports the violation it meets
      * first, with that violation's exception.
      */
+    @Test
     public void testExactJoinSameCycleRemoveAndDuplicateReportDedicatedExceptions() {
         for (final boolean leftRefreshing : new boolean[] {false, true}) {
             final QueryTable left = leftRefreshing
