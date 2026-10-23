@@ -70,9 +70,10 @@ Deliver: gRPC transport threads, then the client (step 7)
    - runs the units in parallel (`forEachInParallel`).
 4. **A single subscription.** `propagateSingle` calls
    `listener.onNext(bmw.getSubView(...))`. `MessageViewAdapter`, holding the gRPC stream's lock,
-   drains the view: `processBatches` and `getInputStream` build each batch's column data, then one
-   `DictionaryBatch` for each dictionary with new values, then the `RecordBatch`, and hand each
-   message straight to gRPC, which copies it into its transport buffers.
+   drains the view: `processBatches` and `getInputStream` build each batch's column data, then the
+   `DictionaryBatch` messages for each dictionary with new values (several when the values exceed a
+   size limit; see [Large dictionary batches](#large-dictionary-batches)), then the `RecordBatch`,
+   and hand each message straight to gRPC, which copies each message into the transport's buffers.
 5. **A group.** `propagateGroup` hands the group to `SharedMessageFanOut.propagateToSubscribers`, which:
    1. `synchronizeDictionaries` works out, one dictionary id at a time, the catch-ups the members
       are owed (see [Dictionaries](#dictionaries)). It sends each through `deliverDictionaryToSubscribers`, which builds
@@ -226,9 +227,9 @@ owed the same values share one catch-up, built once.
 
 A catch-up is built by `BarrageMessageWriter.getDictionaryBatchView`, which frames a standalone
 `DictionaryBatch` the way the writer frames its other messages: FlightData from `Factory`, IPC from
-`ArrowFactory`. It shares `buildDictionaryBatchStream` with the regular path, so a catch-up is byte
-for byte the batch the stream would have carried. The method is abstract, so an implementation that
-lacks it fails to compile rather than failing group members at runtime.
+`ArrowFactory`. The view shares `buildDictionaryBatchStreams` with the regular path, so a catch-up is
+byte for byte the batches the stream would have carried. The method is abstract, so an
+implementation without the method fails to compile rather than failing group members at runtime.
 
 ### Large dictionary batches
 
@@ -311,7 +312,7 @@ still records its own sample, since the view records it before the fan-out can s
 
 | Property | Default | Effect |
 | --- | --- | --- |
-| `BarrageMessageProducer.dedupIdenticalSubscribers` | `true` | When `false`, every subscription is written alone, on every table |
+| `BarrageMessageProducer.dedupIdenticalSubscribers` | `true` | When `true`, identical stable full subscriptions share one write. When `false`, every subscription is written alone, on every table |
 | `BarrageMessageProducer.parallelCopyMinBytes` | `4194304` (4 MiB) | A round of copies runs in parallel when the message's size, multiplied by one less than the number of its members, reaches this. A very large value copies every round serially |
 | `BarrageMessageProducer.propagationThreads` | The number of available processors | Bounds parallel writes to subscribers and parallel copies within groups together. 1 or less turns both off |
 

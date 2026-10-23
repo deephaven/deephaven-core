@@ -179,12 +179,11 @@ public class BarrageMessageProducer extends LivenessArtifact
     public static final String PROPAGATION_JOB_SCHEDULER = "BarrageMessageProducer.propagationJobScheduler";
 
     /**
-     * Whether a propagation phase writes its message once for each group of full subscriptions that would be sent
-     * identical bytes, handing each stream of it to every member of the group as it is written, instead of writing it
-     * once per subscription. A full subscription joins a group once it has the whole table, and a group's members share
-     * their subscription options, viewport direction and columns. Viewport subscriptions, and full subscriptions still
-     * growing toward the whole table, are always written alone. Tables with dictionary encoded columns are grouped too:
-     * a member behind the others is first sent the dictionary values it lacks; see {@link SharedMessageFanOut}.
+     * Whether a propagation phase writes the propagated message once for each group of full subscriptions that would be
+     * sent identical bytes, handing each stream of the message to every member of the group as the stream is written,
+     * instead of writing the message once per subscription. A full subscription joins a group once the subscription has
+     * the whole table, and a group's members share their subscription options and columns. Viewport subscriptions, and
+     * full subscriptions still growing toward the whole table, are always written alone.
      */
     public static final boolean DEDUP_IDENTICAL_SUBSCRIBERS = Configuration.getInstance()
             .getBooleanForClassWithDefault(BarrageMessageProducer.class, "dedupIdenticalSubscribers", true);

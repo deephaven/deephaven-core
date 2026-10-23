@@ -37,8 +37,8 @@ Subscription statistics are presented in percentiles bucketed over a time period
 | PropagateNanos       | Sender            | The elapsed time of one propagation phase: writing one message to the subscribers it goes to                                                                       |
 | SnapshotNanos        | Sender            | The time it took to snapshot data for a new or changed subscription                                                                                                |
 | UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic                                                                                         |
-| WriteNanos           | Sender            | The elapsed time of one write of the update, to one subscriber or to every subscriber that shares it                                                               |
-| WriteBytes           | Sender            | The payload size of the update in bytes, recorded once for each subscriber sent it                                                                                 |
+| WriteNanos           | Sender            | The elapsed time of one write of the update, to one subscriber or to every subscriber that shares an update                                                        |
+| WriteBytes           | Sender            | The payload size of the update in bytes, recorded once for each subscriber                                                                                         |
 | PendingDeltaCount    | Sender            | How many pending updates the server was holding, un-propagated, at the end of an update graph cycle; a compacted update stands for every cycle it coalesced        |
 | PendingDeltaBytes    | Sender            | Approximate heap footprint, in bytes, of the chunk storage those pending updates own                                                                               |
 | DeserializationNanos | Receiver          | The time it took to read and deserialize the update from the wire                                                                                                  |
@@ -161,7 +161,6 @@ Full-table subscribers share a write when they:
 
 - Have received the whole table, rather than still receiving it in parts (see [Control subscription snapshot size](#control-subscription-snapshot-size)).
 - Use the same subscription options, such as the batch size, the maximum message size, and how nulls are sent.
-- Use the same viewport direction.
 - Subscribe to the same columns.
 
 Viewport subscribers always get a write of their own.

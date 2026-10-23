@@ -552,7 +552,7 @@ public class BarrageSubscriberEncodingDedupTest extends BarrageMessageRoundTripT
     /** Applies what each client has been sent to its replicated table, and checks the table against the source. */
     private void deliverAndValidate(final String step, final QueryTable source, final List<RemoteClient> clients) {
         for (final RemoteClient client : clients) {
-            client.flushEventsToReplicatedTable();
+            client.flushMessages();
         }
         updateGraph().runWithinUnitTestCycle(updateSourceCombiner::run);
         for (final RemoteClient client : clients) {

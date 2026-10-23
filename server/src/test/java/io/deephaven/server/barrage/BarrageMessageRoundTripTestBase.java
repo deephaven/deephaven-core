@@ -535,7 +535,7 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
             }
         }
 
-        public void flushEventsToReplicatedTable() {
+        public void flushMessages() {
             for (final BarrageMessage msg : commandQueue) {
                 checkNoDataForUnsubscribedColumns(msg);
                 barrageTable.handleBarrageMessage(msg);
@@ -552,7 +552,7 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
          * Delivers at most {@code maxMessages} of the queued messages, leaving the rest for a later flush. Callers use
          * this to spread a single server propagation across more than one consumer update graph cycle.
          */
-        public void flushEventsToReplicatedTable(final int maxMessages) {
+        public void flushMessages(final int maxMessages) {
             for (int ii = 0; ii < maxMessages; ++ii) {
                 final BarrageMessage msg = commandQueue.poll();
                 if (msg == null) {
@@ -645,7 +645,7 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
 
         public void flushClientEvents() {
             for (final RemoteClient client : clients) {
-                client.flushEventsToReplicatedTable();
+                client.flushMessages();
             }
         }
 
