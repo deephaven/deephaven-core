@@ -2,15 +2,22 @@
 title: Create your own plugin
 ---
 
-This guide walks you through creating a plugin in Deephaven using Java or Groovy. Plugins in Deephaven are Java-based extensions that allow you to add custom functionality to the server, including custom object types, JavaScript plugins, and other extensions.
+This guide walks you through creating a plugin in Deephaven using Java or Groovy. Plugins written in Java or Groovy are JVM extensions that add custom functionality to the server, such as custom object types and [JavaScript plugins](./create-js-plugins.md) that the server serves to the web UI.
 
-Deephaven plugins are implemented using the Java plugin API in the [`io.deephaven.plugin`](https://docs.deephaven.io/core/javadoc/io/deephaven/plugin/package-summary.html) package. Plugins can extend the server's functionality by registering custom object types, JavaScript plugins, or other extensions.
+You implement a Deephaven plugin with the Java plugin API in the [`io.deephaven.plugin`](/core/javadoc/io/deephaven/plugin/package-summary.html) package.
 
-This guide focuses on creating object type plugins, which allow you to register custom objects that can be exported from the server and accessed by clients.
+This guide focuses on creating object type plugins, which register custom objects that the server can export and clients can fetch. An object type plugin communicates with clients in one of two ways:
 
-## Plugin structure
+- **Fetch-only**: The plugin extends [`ObjectTypeBase.FetchOnly`](/core/javadoc/io/deephaven/plugin/type/ObjectTypeBase.FetchOnly.html) and serializes the object once, as a single payload, when a client fetches it. The client can't send messages back to the object.
+- **Bidirectional**: The plugin extends [`ObjectTypeBase`](/core/javadoc/io/deephaven/plugin/type/ObjectTypeBase.html) and implements its [`compatibleClientConnection`](/core/javadoc/io/deephaven/plugin/type/ObjectTypeBase.html#compatibleClientConnection(java.lang.Object,io.deephaven.plugin.type.ObjectType.MessageStream)) method to return a custom [`MessageStream`](/core/javadoc/io/deephaven/plugin/type/ObjectType.MessageStream.html). The client and server can then exchange messages for as long as the connection is open, for example to call methods on the server-side object.
 
-This example creates a plugin called `ExampleObjectType` that demonstrates how to create a custom object type plugin. The plugin will be implemented as a Java/Groovy class that extends the Deephaven plugin API.
+This guide builds a fetch-only plugin and a Groovy client that fetches it. To call a bidirectional plugin from the Java client, see [Work with bidirectional plugins](./install-use-plugins.md#work-with-bidirectional-plugins). The [Python version of this guide](/core/docs/how-to-guides/create-plugins/) walks through a complete bidirectional plugin in Python.
+
+## Create the plugin
+
+### Project layout
+
+This example creates an object type plugin class called `ExampleObjectType`, which manages objects of class `ExampleObject`. The project directory, `ExamplePlugin`, does not need to match either name.
 
 Create the following directory and file structure for your plugin project:
 
@@ -19,6 +26,7 @@ ExamplePlugin/
 ├── build.gradle
 ├── src/main/java/
 │   └── com/example/
+│       ├── ExampleObject.java
 │       ├── ExampleObjectType.java
 │       └── ExamplePluginRegistration.java
 └── src/main/resources/
@@ -26,13 +34,14 @@ ExamplePlugin/
         └── io.deephaven.plugin.Registration
 ```
 
-Alternatively, if using Groovy:
+If you write the plugin in Groovy, use this structure instead:
 
 ```plaintext
 ExamplePlugin/
 ├── build.gradle
 ├── src/main/groovy/
 │   └── com/example/
+│       ├── ExampleObject.groovy
 │       ├── ExampleObjectType.groovy
 │       └── ExamplePluginRegistration.groovy
 └── src/main/resources/
@@ -41,19 +50,65 @@ ExamplePlugin/
 ```
 
 > [!NOTE]
-> This guide uses [Gradle](https://gradle.org/) for building the plugin. The plugin uses Java's ServiceLoader mechanism for registration, which requires the `META-INF/services` configuration.
+> This guide uses [Gradle](https://gradle.org/) for building the plugin.
 
-### Plugin implementation
+### Plugin components
 
-Deephaven plugins are implemented using the Java plugin API. The main components are:
+A plugin project has five pieces, each covered below in the order you create them:
 
-- **ObjectType**: Defines a custom object type that can be exported from the server.
-- **Registration**: Registers the plugin with the Deephaven server using Java's ServiceLoader mechanism.
-- **Build configuration**: Gradle build file to compile and package the plugin.
+- The object itself (`ExampleObject`).
+- The object type (`ExampleObjectType`), an [`ObjectType`](/core/javadoc/io/deephaven/plugin/type/ObjectType.html) that recognizes and serializes your object.
+- The registration class (`ExamplePluginRegistration`), a [`Registration`](/core/javadoc/io/deephaven/plugin/Registration.html) that registers the object type.
+- The `ServiceLoader` configuration file that names the registration class.
+- The Gradle build file.
 
-#### Creating an object type plugin
+#### Create the object
 
-First, create the object type class. Here's an example in Java:
+First, create the object class that your plugin manages:
+
+```java
+package com.example;
+
+public class ExampleObject {
+    private final String message;
+
+    public ExampleObject(String message) {
+        this.message = message;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    @Override
+    public String toString() {
+        return "ExampleObject{message='" + message + "'}";
+    }
+}
+```
+
+Or in Groovy:
+
+```groovy skip-test
+package com.example
+
+class ExampleObject {
+    final String message
+
+    ExampleObject(String message) {
+        this.message = message
+    }
+
+    @Override
+    String toString() {
+        return "ExampleObject{message='$message'}"
+    }
+}
+```
+
+#### Create the object type
+
+Next, create the object type class that recognizes and serializes `ExampleObject`. It extends [`ObjectTypeBase.FetchOnly`](/core/javadoc/io/deephaven/plugin/type/ObjectTypeBase.FetchOnly.html), which implements [`compatibleClientConnection`](/core/javadoc/io/deephaven/plugin/type/ObjectTypeBase.html#compatibleClientConnection(java.lang.Object,io.deephaven.plugin.type.ObjectType.MessageStream)) for you. You implement [`writeCompatibleObjectTo`](/core/javadoc/io/deephaven/plugin/type/ObjectTypeBase.FetchOnly.html#writeCompatibleObjectTo(io.deephaven.plugin.type.Exporter,java.lang.Object,java.io.OutputStream)), which writes the object's bytes once. Here's an example in Java:
 
 ```java
 package com.example;
@@ -127,53 +182,11 @@ class ExampleObjectType extends ObjectTypeBase.FetchOnly {
 }
 ```
 
-#### Creating the example object
+The [`name`](/core/javadoc/io/deephaven/plugin/type/ObjectType.html#name()) method returns the type name, `ExampleObject`, that clients use to fetch these objects. If you change it, update the client in [Client implementation](#client-implementation) as well.
 
-You'll also need to create the actual object class that your plugin manages:
+#### Create the registration class
 
-```java
-package com.example;
-
-public class ExampleObject {
-    private final String message;
-
-    public ExampleObject(String message) {
-        this.message = message;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    @Override
-    public String toString() {
-        return "ExampleObject{message='" + message + "'}";
-    }
-}
-```
-
-Or in Groovy:
-
-```groovy skip-test
-package com.example
-
-class ExampleObject {
-    final String message
-
-    ExampleObject(String message) {
-        this.message = message
-    }
-
-    @Override
-    String toString() {
-        return "ExampleObject{message='$message'}"
-    }
-}
-```
-
-#### Plugin registration
-
-Create a registration class that tells Deephaven about your plugin:
+Create a registration class that registers `ExampleObjectType` with the server:
 
 ```java
 package com.example;
@@ -203,17 +216,37 @@ class ExamplePluginRegistration implements Registration {
 }
 ```
 
-#### ServiceLoader configuration
+To register more than one object type from the same plugin, call [`callback.register`](/core/javadoc/io/deephaven/plugin/Registration.Callback.html#register(io.deephaven.plugin.Plugin)) once for each:
 
-Create the ServiceLoader configuration file at `src/main/resources/META-INF/services/io.deephaven.plugin.Registration`:
-
+```java
+@Override
+public void registerInto(Callback callback) {
+    callback.register(ExampleObjectType.INSTANCE);
+    callback.register(AnotherObjectType.INSTANCE);
+}
 ```
+
+Or in Groovy:
+
+```groovy skip-test
+@Override
+void registerInto(Callback callback) {
+    callback.register(ExampleObjectType.INSTANCE)
+    callback.register(AnotherObjectType.INSTANCE)
+}
+```
+
+#### Create the ServiceLoader configuration file
+
+Create the `ServiceLoader` configuration file at `src/main/resources/META-INF/services/io.deephaven.plugin.Registration`:
+
+```plaintext
 com.example.ExamplePluginRegistration
 ```
 
-This file tells Java's ServiceLoader mechanism where to find your plugin registration class.
+At startup, the server uses Java's [`ServiceLoader`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/ServiceLoader.html) mechanism to read this file and load the registration class it names.
 
-#### Build configuration
+#### Create the Gradle build file
 
 Create a `build.gradle` file for your plugin:
 
@@ -228,78 +261,70 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.deephaven:deephaven-engine-api:0.36.1'
-    implementation 'io.deephaven:deephaven-plugin:0.36.1'
+    // Use the same version as your Deephaven server, which provides these classes at runtime
+    compileOnly 'io.deephaven:deephaven-plugin:42.7'
 
-    // If using Groovy
-    implementation 'org.apache.groovy:groovy-all:4.0.15'
-
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
-}
-
-test {
-    useJUnitPlatform()
+    // Needed only if you write the plugin in Groovy: use the Groovy version that the server runs
+    compileOnly 'org.codehaus.groovy:groovy:3.0.25'
 }
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 ```
 
-## Building and installing the plugin
+## Build and install the plugin
 
 ### Build the plugin
 
-To build your plugin, run:
+If the project doesn't have a Gradle wrapper yet, create one with `gradle wrapper`. Then build your plugin:
 
 ```bash
 ./gradlew build
 ```
 
-This creates a JAR file in the `build/libs/` directory.
+This creates `build/libs/ExamplePlugin.jar`. The build file sets no version, so Gradle names the JAR after the project folder.
 
 ### Install the plugin
 
-To install your plugin in a Deephaven server:
+To install your plugin, add the JAR to the Deephaven server's classpath and restart the server. The server loads the plugin at startup.
 
-1. **Copy the JAR file** to the server's classpath or plugin directory
-2. **Restart the server** to load the plugin
-3. **Create instances** of your custom objects in Groovy scripts
+#### Server built from source
 
-## Server setup
+If you run Deephaven from a build of the source code:
 
-### Local installation
+1. From the root of the deephaven-core repository, build the server and its start script with `./gradlew server-jetty-app:installDist`.
+2. Start the server with the `EXTRA_CLASSPATH` environment variable set to the plugin JAR, as in the command below.
 
-If running Deephaven locally, you can install your plugin by:
+The command also passes two options in `START_OPTS`:
 
-1. Building the plugin JAR as shown above
-2. Adding the JAR to Deephaven's classpath when starting the server
-3. Starting Deephaven with the plugin available
+- `-Ddeephaven.console.type=groovy` starts the server with a Groovy console instead of the default Python console.
+- `-Dauthentication.psk` sets the [pre-shared key](./authentication/auth-psk.md) that clients supply when they connect. Outside of testing, replace `YOUR_PASSWORD_HERE` with a secure key.
 
 ```bash
 # Add your plugin JAR to the classpath when starting Deephaven
-START_OPTS="-Ddeephaven.console.type=groovy -Dauthentication.psk=YOUR_PASSWORD_HERE" EXTRA_CLASSPATH="/path/to/your-plugin.jar" ./server/jetty-app/build/install/server-jetty/bin/start
+START_OPTS="-Ddeephaven.console.type=groovy -Dauthentication.psk=YOUR_PASSWORD_HERE" EXTRA_CLASSPATH="/path/to/ExamplePlugin/build/libs/ExamplePlugin.jar" ./server/jetty-app/build/install/server-jetty/bin/start
 ```
 
 See [Install and use Java packages](./install-and-use-java-packages.md) for more about building the server and using `EXTRA_CLASSPATH`.
 
-### Docker deployment
+#### Docker deployment
 
-For Docker deployments, create a Dockerfile that extends the Deephaven base image:
+For Docker deployments, save a Dockerfile in the root folder of the plugin project, `ExamplePlugin/`, that extends Deephaven's Groovy server image, `server-slim`:
 
-```dockerfile
+```Dockerfile
 FROM ghcr.io/deephaven/server-slim:latest
 
 # Copy your plugin JAR into /apps/libs, which is on the server classpath
-COPY build/libs/your-plugin.jar /apps/libs/
+COPY build/libs/ExamplePlugin.jar /apps/libs/
 ```
 
-Create a Docker Compose file to run the server:
-
 > [!IMPORTANT]
-> The Docker Compose file below sets the pre-shared key to `YOUR_PASSWORD_HERE` for demonstration purposes. Change this to a more secure key in production.
+> The Docker Compose file below sets the [pre-shared key](./authentication/auth-psk.md) to `YOUR_PASSWORD_HERE` for demonstration purposes. The pre-shared key is the password that clients supply when they connect to the server. Change this to a more secure key in production.
+
+Save the following Docker Compose file in the same folder:
 
 ```yaml
 services:
@@ -310,17 +335,14 @@ services:
     volumes:
       - ./data:/data
     environment:
-      # Replace 'YOUR_PASSWORD_HERE' with a strong, secure key in production
       - START_OPTS=-Xmx4g -Dauthentication.psk=YOUR_PASSWORD_HERE
 ```
 
-With these files, run `docker compose up` to start the server with your plugin installed.
+With those two files in hand, `docker compose up --build` builds the image with the plugin installed and starts the server. Use `--build` again whenever you rebuild the plugin JAR.
 
 ## Server-side testing
 
-### Creating test objects
-
-To test your plugin on the server side, create instances of your custom objects and export them so clients can access them. Create a Groovy script to set up test objects:
+To test your plugin on the server side, create instances of your custom objects so clients can access them. Once the server is running with your plugin installed, locally or in Docker, open the Deephaven IDE at `http://localhost:10000/ide/`, log in with the pre-shared key you set, and run the following script in the Groovy console:
 
 ```groovy skip-test
 // Create an instance of your custom object
@@ -329,42 +351,20 @@ exampleObject = new com.example.ExampleObject("Hello from server plugin!")
 // You can create multiple instances with different data
 anotherExample = new com.example.ExampleObject("Another test message")
 
-// The objects are automatically recognized by your ObjectType plugin
-// and can be exported to clients
+// Your ObjectType plugin's isType method matches these objects,
+// so the server can export them to clients
 printf("Created example objects: %s, %s%n", exampleObject, anotherExample)
 ```
 
-### Local testing
-
-When running Deephaven locally with your plugin installed, you can test the plugin by:
-
-1. Starting the Deephaven server with your plugin JAR in the classpath
-2. Opening the Deephaven IDE in your browser
-3. Running the test script above in the Groovy console
-4. Verifying that the objects are created and can be exported
-
-### Docker testing
-
-When using Docker, add your test script to the container or run it through the IDE:
-
-```groovy skip-test
-// This script can be run in the Deephaven IDE after starting the Docker container
-import com.example.ExampleObject
-
-// Create test instances
-testObject1 = new ExampleObject("Docker test 1")
-testObject2 = new ExampleObject("Docker test 2")
-
-printf("Docker test objects created successfully%n")
-```
+Clients can then access these objects through the Deephaven client APIs. The plugin's [`ObjectType`](/core/javadoc/io/deephaven/plugin/type/ObjectType.html) implementation serializes each object.
 
 ## Client-side implementation
 
-### Groovy client setup
+### Set up the client project
 
-To interact with your plugin from a Groovy client, you'll need to create a client-side implementation that can connect to and communicate with your plugin objects on the server.
+To interact with your plugin from a client application written in Groovy, use the [Java client](./java-client.md) library to connect to and communicate with your plugin objects on the server.
 
-First, create a separate Groovy project for the client with its own `build.gradle`:
+First, create a separate Groovy project for the client. Put the client class from [Client implementation](#client-implementation) at `src/main/groovy/com/example/client/ExamplePluginClient.groovy`, and give the project its own `build.gradle`:
 
 ```gradle
 plugins {
@@ -377,19 +377,14 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.deephaven:deephaven-java-client-session:0.36.1'
+    // Use the same version as your Deephaven server
+    implementation 'io.deephaven:deephaven-java-client-session:42.7'
     implementation 'org.apache.groovy:groovy-all:4.0.15'
-
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
-}
-
-test {
-    useJUnitPlatform()
 }
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(11)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
@@ -400,7 +395,12 @@ application {
 
 ### Client implementation
 
-Create a Groovy client that connects to the server with the [Java client](./java-client.md) session API and fetches the `exampleObject` variable created by the server-side test script. The ticket type, `ExampleObject`, is the name returned by the plugin's `name` method:
+> [!IMPORTANT]
+> Replace `YOUR_PASSWORD_HERE` with the pre-shared key you set when starting the server.
+
+Create a Groovy client that fetches the `exampleObject` variable created by the [server-side test script](#server-side-testing). The client connects with the Java client session API and refers to the server object by a [typed ticket](/core/javadoc/io/deephaven/client/impl/TypedTicket.html), which pairs a client-side reference to the object with the object's type. The type, `ExampleObject`, must match the value that the plugin's [`name`](/core/javadoc/io/deephaven/plugin/type/ObjectType.html#name()) method returns.
+
+For more about using plugin objects from Java, see [Use plugins from the Java client](./install-use-plugins.md#use-plugins-from-the-java-client).
 
 ```groovy skip-test
 package com.example.client
@@ -461,135 +461,33 @@ class ExamplePluginClient {
 
 ## Client-side testing
 
-### Running the client
-
 To test your client-side implementation:
 
-1. **Start the Deephaven server** with your plugin installed
-2. **Create test objects** on the server using the server-side testing scripts above
-3. **Build and run the client**:
+1. **Start the Deephaven server** with your plugin installed.
+2. **Create test objects** on the server with the script in [Server-side testing](#server-side-testing).
+3. **Build and run the client**. If the client project doesn't have a Gradle wrapper yet, create one with `gradle wrapper` first:
 
-```bash
-# From your client project directory
-./gradlew build
-./gradlew run
-```
+   ```bash
+   # From your client project directory
+   ./gradlew build
+   ./gradlew run
+   ```
 
-### Complete test example
-
-Here's a complete example that demonstrates the full plugin workflow:
-
-```groovy skip-test
-package com.example.client
-
-import io.deephaven.client.impl.ClientConfig
-import io.deephaven.client.impl.ScopeId
-import io.deephaven.client.impl.SessionConfig
-import io.deephaven.client.impl.SessionFactoryConfig
-import io.deephaven.client.impl.TypedTicket
-import io.deephaven.uri.DeephavenTarget
-
-import java.nio.charset.StandardCharsets
-import java.util.concurrent.Executors
-
-class CompletePluginTest {
-    static void main(String[] args) {
-        println("Starting Deephaven plugin test...")
-
-        def scheduler = Executors.newScheduledThreadPool(4)
-        def factory = SessionFactoryConfig.builder()
-            .clientConfig(ClientConfig.builder()
-                .target(DeephavenTarget.of(URI.create("dh+plain://localhost:10000")))
-                .build())
-            .sessionConfig(SessionConfig.builder()
-                .authenticationTypeAndValue("io.deephaven.authentication.psk.PskAuthenticationHandler YOUR_PASSWORD_HERE")
-                .build())
-            .scheduler(scheduler)
-            .build()
-            .factory()
-
-        // Connect to the server
-        def session = factory.newSession()
-        println("Connected to Deephaven server")
-
-        try {
-            // Test fetching each object created by the server-side test script
-            ["exampleObject", "anotherExample"].each { name ->
-                try {
-                    println("\nTesting object: ${name}")
-                    def fetchable = session.fetchable(new TypedTicket("ExampleObject", new ScopeId(name))).get()
-                    try {
-                        def serverData = fetchable.fetch().get()
-                        try {
-                            def data = serverData.data()
-                            def bytes = new byte[data.remaining()]
-                            data.get(bytes)
-                            println("Successfully fetched: ${new String(bytes, StandardCharsets.UTF_8)}")
-
-                            // You can add more specific tests here based on your object type
-                        } finally {
-                            serverData.close()
-                        }
-                    } finally {
-                        fetchable.close()
-                    }
-                } catch (Exception e) {
-                    println("Error fetching ${name}: ${e.message}")
-                }
-            }
-
-            println("\nPlugin test completed successfully!")
-
-        } catch (Exception e) {
-            println("Test failed: ${e.message}")
-            e.printStackTrace()
-        } finally {
-            session.close()
-            factory.managedChannel().shutdown()
-            scheduler.shutdown()
-            println("Session closed")
-        }
-    }
-}
-```
-
-> [!IMPORTANT]
-> Replace `YOUR_PASSWORD_HERE` with the pre-shared key you set when starting the server.
-
-### Using the plugin
-
-Once your plugin is installed, you can create and export instances of your custom objects:
-
-```groovy skip-test
-// Create an instance of your custom object
-exampleObject = new com.example.ExampleObject("Hello from plugin!")
-
-// The object will be automatically recognized by your ObjectType plugin
-// and can be exported to clients
-```
-
-Clients can then access these objects through the Deephaven client APIs. The object will be serialized according to the ObjectType's implementation.
-
-## Advanced features
-
-### Custom client-server communication
-
-For plugins that need custom client-server communication beyond simple object export, you can implement a custom `MessageStream` in the `compatibleClientConnection` method. This allows you to handle bidirectional communication between the client and server.
-
-The example above extends `ObjectTypeBase.FetchOnly`, which is suitable for simple object types that only need to be fetched by clients without ongoing communication. Instead of overriding `compatibleClientConnection`, a `FetchOnly` subclass implements `writeCompatibleObjectTo` to write the object's bytes once.
-
-### Multiple object types
-
-A single plugin can register multiple object types by calling `callback.register()` multiple times in the registration class:
-
-```java
-@Override
-public void registerInto(Callback callback) {
-    callback.register(ExampleObjectType.INSTANCE);
-    callback.register(AnotherObjectType.INSTANCE);
-}
-```
+The client prints `Fetched object: Hello from server plugin!`, the bytes that `ExampleObjectType` wrote for the `exampleObject` variable.
 
 ## Related documentation
 
+- [Configure and use pre-shared key authentication](./authentication/auth-psk.md)
+- [Create a JavaScript plugin](./create-js-plugins.md)
+- [Extract data with a Java client](./java-client.md)
+- [Install and run Deephaven with Docker](../getting-started/docker-install.md)
+- [Install and use Java packages](./install-and-use-java-packages.md)
 - [Install and use plugins](./install-use-plugins.md)
+- [`io.deephaven.plugin` Javadoc](/core/javadoc/io/deephaven/plugin/package-summary.html)
+- [`ObjectTypeBase.FetchOnly` Javadoc](/core/javadoc/io/deephaven/plugin/type/ObjectTypeBase.FetchOnly.html)
+- [`ObjectType` Javadoc](/core/javadoc/io/deephaven/plugin/type/ObjectType.html)
+- [`ObjectType.MessageStream` Javadoc](/core/javadoc/io/deephaven/plugin/type/ObjectType.MessageStream.html)
+- [`ObjectTypeBase` Javadoc](/core/javadoc/io/deephaven/plugin/type/ObjectTypeBase.html)
+- [`Registration` Javadoc](/core/javadoc/io/deephaven/plugin/Registration.html)
+- [`SessionFactoryConfig` Javadoc](/core/javadoc/io/deephaven/client/impl/SessionFactoryConfig.html)
+- [`TypedTicket` Javadoc](/core/javadoc/io/deephaven/client/impl/TypedTicket.html)

@@ -172,7 +172,7 @@ result_meta = result.meta_table
 
 ### Using the underscore operator
 
-Every column in a table has an associated [array](../reference/query-language/types/arrays.md) variable, which can be accessed using the underscore (`_`) operator. This operator is specific to Deephaven. For example, a column called `X` can be accessed as an [array](../reference/query-language/types/arrays.md) by using the column name `X_`:
+Every column in a table has an associated column array: a [vector](../conceptual/arrays-vs-vectors.md#access-a-column-as-a-vector) of all the column's values. You access it with the underscore (`_`) operator, which is specific to Deephaven. For example, a column called `X` is available as `X_`:
 
 ```python order=source,result
 from deephaven import empty_table
