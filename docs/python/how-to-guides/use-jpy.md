@@ -63,14 +63,19 @@ print(_JURL)
 print(type(_JURL))
 ```
 
-[`jpy`](/core/pydoc/code/jpy.html) gives this class methods that mirror those of the underlying Java type. Use Python's `help` function to print out all the available methods.
+[`jpy`](/core/pydoc/code/jpy.html) gives this class methods that mirror those of the underlying Java type. To print the full class, including every Java method, call Python's [`help`](https://docs.python.org/3/library/functions.html#help) function: `help(_JURL)`. Its output is long, so the following example prints only the names of the Java methods:
 
 ```python test-set=2
-# print all of the methods with help
-help(_JURL)
+# list the Java methods that jpy exposes on the class
+java_methods = sorted(
+    name
+    for name in dir(_JURL)
+    if not name.startswith("_") and callable(getattr(_JURL, name))
+)
+print(java_methods)
 ```
 
-Check the [Javadoc for `java.net.URL`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/net/URL.html) to confirm that the [`jpy`](/core/pydoc/code/jpy.html) class includes all of its public methods. [`jpy`](/core/pydoc/code/jpy.html) doesn't expose protected or private members.
+Check the [Javadoc for `java.net.URL`](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/URL.html) to confirm that the [`jpy`](/core/pydoc/code/jpy.html) class includes all of its public methods. [`jpy`](/core/pydoc/code/jpy.html) doesn't expose protected or private members.
 
 ### Access nested (inner) classes
 
