@@ -48,17 +48,17 @@ The variables `t1`, `t2`, and `t3` are simply references to tables within the DA
 
 ### Garbage collection and the DAG
 
-Tables that are not used in the calculation of any variables are garbage collected and removed from the DAG. This automatic cleanup keeps memory usage efficient. For example:
+Tables that are not used in the calculation of any variables are eventually garbage collected and removed from the DAG. This automatic cleanup keeps memory usage efficient. For example:
 
 ```python order=t3
 # Original DAG has three tables: t1 -> t2 -> t3
 t3 = None  # Remove reference to the join result
 
-# Now the DAG only has two tables: t1 -> t2
+# After garbage collection, the DAG only has two tables: t1 -> t2
 # The natural_join operation is removed because nothing references it
 ```
 
-When `t3` is set to `None`, there are no references to the result of the [`natural_join`](../reference/table-operations/join/natural-join.md), so that table and its associated computations are removed from the DAG. However, `t1` and `t2` remain because they still have active references.
+When `t3` is set to `None`, nothing refers to the result of the [`natural_join`](../reference/table-operations/join/natural-join.md) any more. The table and its computations are removed from the DAG when the JVM garbage collector reclaims them. Until then, the table keeps updating. To remove them immediately, create them in a [liveness scope](./liveness-scope-concept.md) and release it. `t1` and `t2` remain because they still have active references.
 
 <Svg src='../assets/conceptual/dag-garbage-collection.svg' style={{height: 'auto', maxWidth: '900px'}} />
 
