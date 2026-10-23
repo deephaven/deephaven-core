@@ -20,15 +20,16 @@ class SortOrderProviderInternal {
         SortOrder getSortOrderToUse(@NotNull Table table);
 
         /**
-         * Checks the sort order this provider identifies by ID against the provided iceberg table: it must be one of
-         * the table's sort orders, and {@link #getSortOrderToUse(Table)} must {@link SortOrder#satisfies(SortOrder)
-         * satisfy} it. New data files declare no sort order, so the identified sort order is only checked, never
-         * written. By default there is nothing to check beyond what {@link #getSortOrderToUse(Table)} does, since the
-         * identified sort order is the one used.
-         *
-         * @throws IllegalArgumentException if the check fails
+         * Returns the sort order to write down to the iceberg table when appending new data. This may be different from
+         * the {@code getSortOrderToUse(table)} as this sort order may be customized. But
+         * {@link #getSortOrderToUse(Table)} should always {@link SortOrder#satisfies(SortOrder) satisfy} this sort
+         * order. New data files declare this sort order only where Deephaven orders the values of this sort order's
+         * fields as the Iceberg specification does, and declare no sort order otherwise.
          */
-        default void validateSortOrder(@NotNull final Table table) {}
+        @NotNull
+        default SortOrder getSortOrderToWrite(@NotNull final Table table) {
+            return getSortOrderToUse(table);
+        }
 
         /**
          * Whether to fail if the sort order cannot be applied to the tables being written.
@@ -103,12 +104,14 @@ class SortOrderProviderInternal {
         }
 
         @Override
-        public void validateSortOrder(@NotNull final Table table) {
+        @NotNull
+        public SortOrder getSortOrderToWrite(@NotNull final Table table) {
             // Check if provided sort order is included in the table's sort orders
             if (!sortOrder.equals(getSortOrderForId(table, sortOrder.orderId()))) {
                 throw new IllegalArgumentException("Provided sort order with id " + sortOrder.orderId() + " is not " +
                         "included in the table's sort orders");
             }
+            return sortOrder;
         }
     }
 
@@ -132,7 +135,8 @@ class SortOrderProviderInternal {
         }
 
         @Override
-        public void validateSortOrder(final @NotNull Table table) {
+        @NotNull
+        public SortOrder getSortOrderToWrite(final @NotNull Table table) {
             final SortOrder sortOrderFromDelegate = getSortOrderToUse(table);
             final SortOrder sortOrderForId = getSortOrderForId(table, sortOrderId);
             if (!sortOrderFromDelegate.satisfies(sortOrderForId)) {
@@ -140,6 +144,7 @@ class SortOrderProviderInternal {
                         "Provided sort order " + sortOrderFromDelegate + " does not satisfy the table's sort order " +
                                 "with id " + sortOrderId + ": " + sortOrderForId);
             }
+            return sortOrderForId;
         }
 
         @Override
