@@ -6,6 +6,7 @@ package io.deephaven.web.client.api;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsLiteral;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.ReadonlyArray;
@@ -38,6 +39,7 @@ import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.web.client.api.agg.*;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.updateby.*;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -131,10 +133,19 @@ public interface JsTableOperations extends ServerObject {
      * resolved table yields an independently closeable copy of itself. The caller owns the result and must close it.
      * {@code await} on a pending table gives the same thing; this is the spelling that works on either.
      *
+     * @param options optionally, an {@code AbortSignal} that cancels a pending operation when aborted
      * @return a promise of a retained, readable table
      */
     @JsMethod
-    Promise<? extends JsITable> resolve();
+    Promise<? extends JsITable> resolve(@JsOptional @JsNullable @TsTypeRef(ResolveOptions.class) Object options);
+
+    /**
+     * As {@link #resolve(Object)} with no options.
+     */
+    @JsIgnore
+    default Promise<? extends JsITable> resolve() {
+        return resolve(null);
+    }
 
     /**
      * Internal method to make the async call to the server.

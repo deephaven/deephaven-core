@@ -5,9 +5,13 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.fu.PromiseLike;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
+import jsinterop.annotations.JsOptional;
 
 /**
  * Represents a table being created on the server that more operations can be called on asynchronously. Supports all the
@@ -32,23 +36,29 @@ import jsinterop.annotations.JsMethod;
 public interface JsPendingTable<T extends JsITable> extends JsTableOperations, PromiseLike<T> {
     /**
      * The promise this pending table stands for: the same thing as awaiting it, with the resulting table's type spelled
-     * out. Retains the table.
+     * out. Retains the table. Awaiting or resolving the same pending table more than once yields the same promise and
+     * the same table, so closing it closes it for every awaiter; {@code copy()} on the result is how to get a second,
+     * independently closeable owner.
      *
+     * @param options optionally, an {@code AbortSignal} that cancels this pending table when aborted
      * @return a promise of the retained table
      */
     @Override
     @JsMethod
-    Promise<T> resolve();
+    Promise<T> resolve(@JsOptional @JsNullable @TsTypeRef(ResolveOptions.class) Object options);
 
-    // workaround for a javadoc -> ts issue
-    @JsMethod
-    void foo();
+    @Override
+    @JsIgnore
+    default Promise<T> resolve() {
+        return resolve(null);
+    }
 
     /**
-     * Cancels the operation: the promise from {@link #resolve()} rejects with "Operation canceled", the table this
-     * pending would have produced is released, and operations chained on it afterward throw. A table that was already
-     * delivered is unaffected; close it instead. The server cancels work it has not started, but work it has already
-     * begun runs to completion there, so callers that cancel often should debounce.
+     * Releases everything this pending table produced, whichever stage it is at. If the operation is still pending, it
+     * is canceled: the promise from {@link #resolve()} rejects with "Operation canceled" and the ticket is released. If
+     * the table was already delivered, it is closed, for every awaiter. Operations chained on it afterward throw. The
+     * server cancels work it has not started, but work it has already begun runs to completion there, so callers that
+     * cancel often should debounce.
      */
     // also happens to be a workaround for a javadoc -> ts bug
     @JsMethod

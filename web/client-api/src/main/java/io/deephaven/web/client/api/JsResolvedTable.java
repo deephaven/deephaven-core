@@ -5,8 +5,12 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.promise.Promise;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
+import jsinterop.annotations.JsOptional;
 
 /**
  * The table an awaited {@link JsPendingTable} resolves to: a retained {@link JsITable} whose data can be read, plus the
@@ -24,8 +28,16 @@ public interface JsResolvedTable extends JsITable, JsTableOperations {
      * close.
      */
     @Override
-    default Promise<JsResolvedTable> resolve() {
+    @JsMethod
+    default Promise<JsResolvedTable> resolve(@JsOptional @JsNullable @TsTypeRef(ResolveOptions.class) Object options) {
+        // Nothing pending to cancel: the signal is irrelevant here
         return copy();
+    }
+
+    @Override
+    @JsIgnore
+    default Promise<JsResolvedTable> resolve() {
+        return resolve(null);
     }
 
     /**

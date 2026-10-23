@@ -4,6 +4,8 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
+import elemental2.dom.AbortSignal;
+import elemental2.dom.EventListener;
 import elemental2.promise.Promise;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
@@ -20,6 +22,7 @@ import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.fu.PromiseLike;
 import io.deephaven.web.client.state.ClientTableState;
+import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 import org.jspecify.annotations.Nullable;
 
@@ -52,8 +55,8 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        public Promise<? extends JsITable> resolve() {
-            return source.copy().resolve();
+        public Promise<? extends JsITable> resolve(@JsOptional @Nullable Object options) {
+            return source.copy().resolve(options);
         }
 
         @Override
@@ -101,8 +104,42 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        public void foo() {
-            // workaround for a javadoc -> ts issue
+        public void cancel() {
+            cancel("Operation canceled");
+        }
+
+        /**
+         * As {@link #cancel()}, with the message the pending promise rejects with.
+         */
+        protected abstract void cancel(String message);
+
+        /**
+         * Cancels this pending table when the signal in {@code options} aborts, until {@code settles} does. An already
+         * aborted signal cancels at once.
+         */
+        protected void cancelOnAbort(@Nullable Object options, Promise<?> settles) {
+            AbortSignal signal = options == null ? null : new ResolveOptions(options).signal;
+            if (signal == null) {
+                return;
+            }
+            if (signal.aborted) {
+                cancel(abortMessage(signal));
+                return;
+            }
+            EventListener onAbort = e -> cancel(abortMessage(signal));
+            signal.addEventListener("abort", onAbort);
+            settles.then(ignore -> {
+                signal.removeEventListener("abort", onAbort);
+                return null;
+            }, ignore -> {
+                signal.removeEventListener("abort", onAbort);
+                return null;
+            });
+        }
+
+        private static String abortMessage(AbortSignal signal) {
+            // The reason is a DOMException such as AbortError or TimeoutError; its text tells them apart
+            return signal.reason == null ? "Operation canceled" : String.valueOf(signal.reason);
         }
     }
 
@@ -119,6 +156,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         private boolean cancelled;
         private @Nullable Batch batch;
         private @Nullable Promise<JsResolvedTable> resolved;
+        private @Nullable Resolved owner;
 
         public Operation(WorkerConnection connection, TableTicket handle,
                 BatchTableRequest.Operation.Builder operation) {
@@ -163,10 +201,11 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        public Promise<JsResolvedTable> resolve() {
+        public Promise<JsResolvedTable> resolve(@JsOptional @Nullable Object options) {
             if (resolved == null) {
-                // The Resolved retains the state from now on; the caller owns it and must close it
+                // The Resolved retains the state from now on; the caller owns it and must close it, or cancel() does
                 Resolved owner = new Resolved(connection, state);
+                this.owner = owner;
                 LazyPromise<JsResolvedTable> promise = new LazyPromise<>();
                 state.onRunning(cts -> promise.succeed(owner), failure -> {
                     owner.close();
@@ -177,6 +216,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
                 });
                 resolved = promise.asPromise();
             }
+            cancelOnAbort(options, resolved);
             return resolved;
         }
 
@@ -191,12 +231,18 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        public void cancel() {
-            if (cancelled || state.getResolution() != ClientTableState.ResolutionState.UNRESOLVED) {
-                // Already canceled, or already settled: a table that was delivered is closed, not canceled
+        protected void cancel(String message) {
+            if (cancelled) {
                 return;
             }
             cancelled = true;
+            if (state.getResolution() != ClientTableState.ResolutionState.UNRESOLVED) {
+                // Already settled: nothing to cancel, but the table this pending handed out is released
+                if (owner != null) {
+                    owner.closeFromCancel();
+                }
+                return;
+            }
             if (!sent) {
                 // Never reached the server, so there is no ticket to release there; sendBatch skips it
                 state.getHandle().setConnected(false);
@@ -207,7 +253,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
             // Fails the promise from resolve() and closes its owner, if any; the refcount then releases the ticket,
             // which cancels the work on the server if it has not begun. Work the server has already started runs to
             // completion there, so callers that cancel often should debounce.
-            state.setResolution(ClientTableState.ResolutionState.FAILED, "Operation canceled");
+            state.setResolution(ClientTableState.ResolutionState.FAILED, message);
             connection.scheduleCheck(state);
         }
     }
@@ -221,7 +267,9 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     private static class Fetched<T extends JsITable> extends Pending<T> {
         private final Supplier<Promise<T>> fetch;
         private final Consumer<ClientTableState> retainSource;
-        private @Nullable Promise<T> table;
+        private @Nullable LazyPromise<T> result;
+        private @Nullable T delivered;
+        private boolean cancelled;
 
         public Fetched(WorkerConnection connection, Ticket ticket, Supplier<Promise<T>> fetch,
                 Consumer<ClientTableState> retainSource) {
@@ -236,16 +284,63 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        public Promise<T> resolve() {
-            if (table == null) {
-                table = fetch.get();
+        public JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
+            if (cancelled) {
+                throw new IllegalStateException("Operation was canceled");
             }
-            return table;
+            return super.call(resultId, operation);
         }
 
         @Override
-        public void cancel() {
-            // TODO the underlying fetch has no cancellation today; if it was awaited, the result must be closed
+        public Promise<T> resolve(@JsOptional @Nullable Object options) {
+            if (result == null) {
+                // The pending owns the promise it hands out, so a cancel can reject it for every awaiter
+                LazyPromise<T> promise = new LazyPromise<>();
+                result = promise;
+                fetch.get().then(table -> {
+                    if (cancelled) {
+                        // Nobody is waiting any more, but the table arrived; it must not leak
+                        table.close();
+                    } else {
+                        delivered = table;
+                        promise.succeed(table);
+                    }
+                    return null;
+                }, failure -> {
+                    if (!cancelled) {
+                        promise.fail(failure);
+                    }
+                    return null;
+                });
+            }
+            Promise<T> promise = result.asPromise();
+            cancelOnAbort(options, promise);
+            return promise;
+        }
+
+        @Override
+        protected void cancel(String message) {
+            if (cancelled) {
+                return;
+            }
+            cancelled = true;
+            if (result != null && !result.isUnresolved()) {
+                // Already settled: nothing to cancel, but the table this pending handed out is released
+                if (delivered != null) {
+                    delivered.close();
+                }
+                return;
+            }
+            // TODO the underlying fetch is not withdrawn: the entry points' unary calls carry no cancellation context.
+            if (result != null) {
+                result.fail(message);
+            } else {
+                // Never awaited, but the fetch behind it may already be in flight; close whatever it produces
+                fetch.get().then(table -> {
+                    table.close();
+                    return null;
+                }, failure -> null);
+            }
         }
     }
 
@@ -256,6 +351,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     private static class Resolved extends MicrotaskBatchImpl implements JsResolvedTable {
         private final ClientTableState state;
         private boolean closed;
+        private boolean closedByCancel;
 
         public Resolved(WorkerConnection connection, ClientTableState state) {
             super(connection, state.getHandle().makeTicket());
@@ -334,11 +430,24 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         @Override
         public void close() {
             if (closed) {
-                JsLog.warn("ResolvedTable.close() called twice, second call being ignored", this);
+                if (!closedByCancel) {
+                    JsLog.warn("ResolvedTable.close() called twice, second call being ignored", this);
+                }
                 return;
             }
             closed = true;
             state.unretain(this);
+        }
+
+        /**
+         * Closes on behalf of the pending table that produced this one; a later {@link #close()} by the caller is then
+         * expected and not warned about.
+         */
+        void closeFromCancel() {
+            if (!closed) {
+                closedByCancel = true;
+                close();
+            }
         }
 
         @Override
