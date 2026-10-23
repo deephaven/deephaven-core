@@ -7,27 +7,27 @@ The `input_table` method creates an input table, which allows users to manually 
 ## Syntax
 
 ```python syntax
-input_table = input_table(
-    init_table: Table,
-    col_defs: dict[str, DType] = None,
-    key_cols: list[str],
+input_table(
+    col_defs: Optional[TableDefinitionLike] = None,
+    init_table: Optional[Table] = None,
+    key_cols: Optional[Union[str, Sequence[str]]] = None,
     ) -> InputTable
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="init_table" type="Table">
+<Param name="col_defs" type="Optional[TableDefinitionLike]" optional>
 
-The table from which the input table will be created. If used, column definitions must be `None` (the default value).
-
-</Param>
-<Param name="col_defs" type="dict[str, DType]">
-
-A set of column definitions that define the column names and types in the input table. If used, an initial table must be `None` (the default value).
+A set of column definitions that define the column names and types in the input table. Provide exactly one of `col_defs` and `init_table`: the call raises an error if both are given or if both are `None`.
 
 </Param>
-<Param name="key_cols" type="list[str]">
+<Param name="init_table" type="Optional[Table]" optional>
+
+The table from which the input table will be created. Provide exactly one of `col_defs` and `init_table`: the call raises an error if both are given or if both are `None`.
+
+</Param>
+<Param name="key_cols" type="Optional[Union[str, Sequence[str]]]" optional>
 
 One or more key column names. The default value is `None`, which results in an append-only input table. If not `None`, it becomes a keyed input table, which allows for the creation and modification of pre-existing cells.
 

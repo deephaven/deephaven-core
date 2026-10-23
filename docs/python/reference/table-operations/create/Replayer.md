@@ -7,27 +7,27 @@ title: TableReplayer
 ## Syntax
 
 ```python syntax
-TableReplayer(start_time: Union[Instant, str], end_time: Union[Instant, str]) -> Replayer
+TableReplayer(start_time: InstantLike, end_time: InstantLike) -> TableReplayer
 ```
 
 ## Parameters
 
 <ParamTable>
-<Param name="start_time" type="Union[Instant, str]">
+<Param name="start_time" type="InstantLike">
 
-Historical data start time.
+Historical data start time. Can be an `Instant`, `int` (nanoseconds since the Epoch), `str`, `datetime.datetime`, `numpy.datetime64`, or `pandas.Timestamp`.
 
 </Param>
-<Param name="end_time" type="Union[Instant, str]">
+<Param name="end_time" type="InstantLike">
 
-Historical data end time.
+Historical data end time. Can be an `Instant`, `int` (nanoseconds since the Epoch), `str`, `datetime.datetime`, `numpy.datetime64`, or `pandas.Timestamp`.
 
 </Param>
 </ParamTable>
 
 ## Returns
 
-A `Replayer` object that can be used to replay historical data.
+A `TableReplayer` object that can be used to replay historical data.
 
 ## Methods
 

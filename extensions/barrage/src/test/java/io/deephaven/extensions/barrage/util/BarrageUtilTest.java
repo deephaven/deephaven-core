@@ -923,6 +923,41 @@ public class BarrageUtilTest extends RefreshingTableTestCase {
                 .isEqualTo(expectedBitWidth);
     }
 
+    @Test
+    public void testRestrictSortToNoColumnsSchema() {
+        final Table table = newTable(
+                intCol("A", 1, 2),
+                doubleCol("B", 1.0, 2.0))
+                .restrictSortTo();
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertFieldIsNotSortable(schema, "A");
+        assertFieldIsNotSortable(schema, "B");
+    }
+
+    @Test
+    public void testSortableColumnsAttributeWithUnknownColumnSchema() {
+        final Table table = newTable(
+                intCol("A", 1, 2),
+                doubleCol("B", 1.0, 2.0))
+                .withAttributes(Map.of(Table.SORTABLE_COLUMNS_ATTRIBUTE, "A,Missing"));
+
+        final Schema schema = BarrageUtil.schemaFromTable(table);
+
+        assertThat(schema.findField("A").getMetadata())
+                .containsEntry(BarrageUtil.ATTR_DH_PREFIX + "isSortable", "true");
+        assertFieldIsNotSortable(schema, "B");
+    }
+
+    private static void assertFieldIsNotSortable(final Schema schema, final String columnName) {
+        final Field field = schema.findField(columnName);
+        assertThat(field).as("field %s", columnName).isNotNull();
+        assertThat(field.getMetadata())
+                .as("field %s should not be sortable", columnName)
+                .doesNotContainKey(BarrageUtil.ATTR_DH_PREFIX + "isSortable");
+    }
+
     private static void assertFieldIsNotREE(final Schema schema, final String columnName) {
         final Field field = schema.findField(columnName);
         assertThat(field).as("field %s", columnName).isNotNull();

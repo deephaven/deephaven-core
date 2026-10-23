@@ -60,13 +60,6 @@ dependencies {
 }
 
 // The server is the published jetty image: Python console, anonymous and pre-shared-key auth, as py/client uses.
-// TODO(DH-23820): the example launchers default JAVA_OPTS to dh-default.vmoptions, which carries a flag JDK 25
-// removed, so every spawned example fails to start on 25. Until the launchers select the right options file, skip
-// the examples smoke test there rather than fail the nightly matrix. The API-level, transport, and TLS tests run in
-// the test JVM itself and still run on 25.
-def testRuntimeVersion = Integer.parseInt((String) project.findProperty('testRuntimeVersion') ?: '21')
-def skipExamplesOnThisRuntime = testRuntimeVersion >= 25
-
 String randomSuffix = UUID.randomUUID().toString()
 def serverStartOpts = '-Xmx512m -DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler,' +
         'io.deephaven.authentication.psk.PskAuthenticationHandler -Dauthentication.psk=deephaven'
@@ -98,9 +91,9 @@ test {
     // Make netty track every buffer and report leaks; TransportTest fails if any are reported
     systemProperty 'io.netty.leakDetection.level', 'paranoid'
 
-    if (skipExamplesOnThisRuntime) {
-        // TODO(DH-23820): remove once the launchers run on JDK 25
-        exclude '**/ExamplesSmokeTest*'
+    // A deephaven.javaOpts / JAVA_OPTS override replaces the default VM options; VmOptionsFileTest expects it instead
+    if (project.deephavenJavaOptsOverride != null) {
+        systemProperty 'dh.javaOptsOverride', project.deephavenJavaOptsOverride.join(' ')
     }
 
     dependsOn deephavenDocker.portTask
