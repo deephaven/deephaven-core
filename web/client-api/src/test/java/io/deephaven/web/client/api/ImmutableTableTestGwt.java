@@ -12,6 +12,7 @@ import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.subscription.DataOptions;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
+import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -203,6 +204,51 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                                 sub.close();
                                 resolved.close();
                                 return Promise.resolve(resolved);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testSubscriptionResumesAfterTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_023);
+                    return session.getTable("ticking", null).update(cols("Z = X * 2")).resolve();
+                })
+                .then(resolved -> {
+                    DataOptions.ViewportSubscriptionOptions opts = new DataOptions.ViewportSubscriptionOptions();
+                    opts.rows = Js.uncheckedCast(JsRangeSet.ofRange(0, 0));
+                    opts.columns = Js.cast(resolved.getColumns());
+                    TableViewportSubscription sub = resolved.createViewportSubscription(opts);
+                    IdeConnection ide = lastIdeConnection;
+                    // An unhandled disconnect event is logged as an error, which the harness treats as a failure
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    return assertUpdateReceived(sub, viewport -> assertEquals(1, viewport.getRows().length), 5007)
+                            .then(ignore -> {
+                                // Every open stream dies, the subscription's Barrage stream included: the connection
+                                // sees a transport error, reconnects within the same session, and the reviver must
+                                // bring back a subscription that no JsTable owns
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5009).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(sub,
+                                            viewport -> assertEquals(1, viewport.getRows().length), 8008),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "subscription owned by a ResolvedTable did not resume after the transport was cut"))))
+                            // Close on failure too, or a broken stream keeps logging errors into the next tests
+                            .then(ignore -> {
+                                sub.close();
+                                resolved.close();
+                                return Promise.resolve(resolved);
+                            }, err -> {
+                                sub.close();
+                                resolved.close();
+                                return Promise.reject(err);
                             });
                 })
                 .then(this::finish).catch_(this::report);
