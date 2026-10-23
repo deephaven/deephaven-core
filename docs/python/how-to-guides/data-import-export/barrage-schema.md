@@ -16,7 +16,7 @@ Schema annotation is needed when:
 
 ## How it works
 
-1. Extract a base schema with `BarrageUtil.schemaFromTable`. With encoding auto-detection disabled (the default), this gives each column its default Arrow type.
+1. Extract a base schema with `BarrageUtil.schemaFromTable`. Encoding auto-detection is enabled by default, so the base schema may already include run-end or dictionary encodings for columns that qualify; with it disabled, this gives each column its default Arrow type.
 2. Replace the target field with explicit Arrow types (e.g., `ArrowType.Utf8`, `ArrowType.Union`, `ArrowType.Map`).
 3. Attach the schema using [`with_attributes`](../../reference/table-operations/create/withAttributes.md).
 

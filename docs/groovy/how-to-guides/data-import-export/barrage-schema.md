@@ -8,7 +8,7 @@ Use this when your Deephaven column type is too generic for the intended wire ty
 
 ## How it works
 
-1. Extract a base schema with `BarrageUtil.schemaFromTable(...)`. It maps every column to a default Arrow type; columns whose type has no native mapping, including generic `Object` columns, default to `Utf8` (string). This assumes encoding auto-detection is disabled (the default); otherwise the base schema may already include REE or dictionary encodings.
+1. Extract a base schema with `BarrageUtil.schemaFromTable(...)`. It maps every column to a default Arrow type; columns whose type has no native mapping, including generic `Object` columns, default to `Utf8` (string). Encoding auto-detection is enabled by default, so the base schema may already include run-end or dictionary encodings for columns that qualify; with it disabled, every column gets its default Arrow type.
 2. Replace the target field with explicit Arrow types.
 3. Attach the schema using `withAttributes(Map.of(Table.BARRAGE_SCHEMA_ATTRIBUTE, newSchema))`.
 
@@ -385,7 +385,7 @@ The `DictionaryEncoding` index width controls the integer type used for indices:
 - `Int64` (64-bit signed) — accepted, but indices are computed as 32-bit integers, so it adds no capacity over `Int32`.
 
 > [!CAUTION]
-> Dictionary updates are sent as deltas, so entries accumulate as new unique values appear. To prevent unbounded growth on the server and client, Deephaven resets the dictionary when its size exceeds the table or viewport size by flushing the current dictionary and accumulating only newly encountered values. Despite this safety net, if the dictionary accumulated since its last reset holds more distinct values than the index type can represent (128 for `Int8`, 32,768 for `Int16`), Deephaven throws an error at serialization time. Because an active subscription resets its dictionary only when it grows larger than the table or viewport (or when the subscription changes), a column whose values change over time can hit this limit even if it never holds that many distinct values at once. Prefer `Int32` unless the total number of distinct values the column can ever take stays within the smaller limit.
+> Dictionary updates are sent as deltas, so entries accumulate as new unique values appear. To prevent unbounded growth on the server and client, Deephaven resets the dictionary before writing a message when the dictionary has grown larger than the table or viewport, or when the message's new values could push it past what the index type can represent (128 distinct values for `Int8`, 32,768 for `Int16`). A reset flushes the current dictionary and accumulates only newly encountered values. A column whose values change over time therefore does not hit the limit just because it has held more distinct values in total than the index can represent. Deephaven still throws an error at serialization time if the values in a single update or snapshot exceed what the index type can represent. Prefer `Int32` unless the number of distinct values a column holds at one time stays within the smaller limit.
 
 ```groovy order=table,table_w_attributes
 import io.deephaven.extensions.barrage.util.BarrageUtil
