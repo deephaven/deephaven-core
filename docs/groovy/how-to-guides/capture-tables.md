@@ -1,99 +1,119 @@
 ---
-title: Capture Python client tables with Barrage
+title: Capture remote tables with Barrage
 ---
 
-The [Deephaven Python client](/core/client-api/python/) can create new tables and retrieve references to tables on a remote Deephaven server. These references are not true Deephaven tables, so you can't use them in a typical Deephaven server query.
+A Groovy Deephaven server can use the Deephaven Java client, which is included with the server, to create tables on a remote Deephaven server and capture them with [Barrage](../conceptual/what-is-barrage.md). In this guide, _capturing_ a table means either subscribing to its real-time data stream or taking a static snapshot of its data. The captured tables are true Deephaven tables on the local server, so you can use them in any query. To let other sessions capture the same tables, publish them to _shared tickets_ — endpoints (references) for Deephaven tables that clients and servers can share.
 
-To get true Deephaven tables from a remote server into your Groovy server, you _capture_ them. Capturing a table means either subscribing to its real-time updates or taking a static snapshot of its data. You capture tables over [Barrage](../conceptual/what-is-barrage.md) using shared tickets, which are identifiers that clients and servers can both use to address the same Deephaven table.
-
-Shared tickets let you capture tables that you create or access with the Python client, whether they are static or [ticking](../conceptual/table-types.md). To pull a table that already exists on the remote server by name, you can use a URI instead. See the [URI guide](./use-uris.md).
+> [!NOTE]
+> URIs and shared tickets are two different ways to pull tables, and both work on static or dynamic tables. A URI pulls a table that already exists in a remote server's scope via a URL-like string, while shared tickets also let you create tables on the remote server and share them. See the [URI guide](./use-uris.md). For the Python version of this workflow, which uses the `pydeephaven` client, see [Capture Python client tables with Barrage](/core/docs/how-to-guides/capture-tables/).
 
 ## Setup
 
-This guide covers capturing tables from a "remote" Deephaven server to a "local" Deephaven server that runs Groovy. The servers do not need to run on different hosts, but the terminology helps distinguish the two.
+This guide covers capturing tables from a "remote" Deephaven server to a "local" Deephaven server. The servers do not need to run on different hosts, but the terminology helps distinguish the two.
 
-The workflow uses two connections to the remote server:
+The local server opens a Barrage session to the remote server. The [`BarrageSession`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/BarrageSession.html) retrieves tables from the remote server. It wraps a Java client [`Session`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/Session.html), available through its `session` method, that performs operations on the remote server.
 
-- The Deephaven Python client, [`pydeephaven`](/core/client-api/python/), runs in a separate Python process. You use it to run queries on the remote server and to publish tables to shared tickets.
-- The local Groovy server uses [`BarrageTableResolver`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html) to open a Barrage connection that retrieves tables from the remote server.
+No installation is required. The Java client classes used in this guide are part of the Deephaven server.
 
-![A Python process running pydeephaven sends queries and shared tickets to the remote Deephaven server, and the local Groovy server uses BarrageTableResolver to subscribe to or snapshot tables from the remote server](../assets/how-to/capture-tables-groovy.svg)
+## Connect to the remote Deephaven server
 
-> [!IMPORTANT]
-> [`BarrageTableResolver`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html) does not support authentication, so the remote server must accept [anonymous authentication](./authentication/auth-anon.md). This is the same limitation that applies to URIs, tracked in [deephaven-core#3421](https://github.com/deephaven/deephaven-core/issues/3421).
+To connect, describe the remote server with a [`ClientConfig`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/ClientConfig.html), then create a Barrage session through the local server's session factory. The target is a URI with the `dh+plain` scheme (no TLS) or the `dh` scheme (TLS).
 
-You need an installation of [`pydeephaven`](/core/client-api/python/) in the Python environment that runs the client:
+Suppose that the "remote" Deephaven server is running locally on port `9999` with [anonymous authentication](./authentication/auth-anon.md). Connect to it as follows:
 
-```bash
-pip install pydeephaven
+```groovy skip-test
+import io.deephaven.client.impl.ClientConfig
+import io.deephaven.server.runner.DeephavenApiServer
+import io.deephaven.uri.DeephavenTarget
+
+clientConfig = ClientConfig.builder()
+    .target(DeephavenTarget.of(URI.create("dh+plain://localhost:9999")))
+    .build()
+
+factory = DeephavenApiServer.getInstance().sessionFactoryCreator().barrageFactory(clientConfig)
+barrageSession = factory.newBarrageSession()
 ```
 
-To learn about the Deephaven Python client, check out the [Python client Quickstart](/core/docs/getting-started/pyclient-quickstart/).
+Suppose instead that the "remote" Deephaven server is running at IP address `192.168.0.1` on port `11000`, using [pre-shared key authentication](./authentication/auth-psk.md), where the password is `D33phavenR0cks!`. Pass the authentication type and value, separated by a space, in a [`SessionConfig`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/SessionConfig.html):
 
-## Connect the Python client to the remote Deephaven server
+```groovy skip-test
+import io.deephaven.client.impl.ClientConfig
+import io.deephaven.client.impl.SessionConfig
+import io.deephaven.server.runner.DeephavenApiServer
+import io.deephaven.uri.DeephavenTarget
 
-The Deephaven Python client creates and maintains a connection to the remote Deephaven server through a [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session). You also use this object to create tables on the remote server. To connect, you supply the remote server's host name or IP address, port, and authentication details.
+clientConfig = ClientConfig.builder()
+    .target(DeephavenTarget.of(URI.create("dh+plain://192.168.0.1:11000")))
+    .build()
 
-If you omit any of these, the [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session) uses a default:
-
-- Host: the `DH_HOST` environment variable, or `localhost` if that variable isn't set.
-- Port: the `DH_PORT` environment variable, or `10000` if that variable isn't set.
-- Authentication: anonymous authentication.
-
-The local server already uses the default port, `10000`, so suppose that the "remote" Deephaven server is running locally on port `9999` with [anonymous authentication](./authentication/auth-anon.md). Run the following in the Python client:
-
-```python skip-test
-from pydeephaven import Session
-
-# with DH_HOST unset, this is short for Session(host="localhost", port=9999, auth_type="Anonymous")
-client_session = Session(port=9999)
+factory = DeephavenApiServer.getInstance().sessionFactoryCreator().barrageFactory(clientConfig)
+barrageSession = factory.newBarrageSession(
+    SessionConfig.builder()
+        .authenticationTypeAndValue("io.deephaven.authentication.psk.PskAuthenticationHandler D33phavenR0cks!")
+        .build()
+)
 ```
 
-See the [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session) API documentation for more configuration options.
+## Create or look up tables on the remote server
 
-## Retrieve table references using the client
+Once you've established a connection to the remote Deephaven server, you can use the session to create new tables on the server or retrieve references to existing tables.
 
-Once you've established a client connection to the remote Deephaven server, you can use the [`Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session) instance to create new tables on the server or retrieve references to existing tables.
+As an example, you can create a new static table on the server. Build the whole query as a [`TableSpec`](https://deephaven.io/core/javadoc/io/deephaven/qst/table/TableSpec.html), then send it to the server once with `session.of`:
 
-As an example, you can create a new static table on the server using [`empty_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.empty_table):
+```groovy skip-test
+import io.deephaven.qst.table.TableSpec
 
-```python skip-test
-table_ref = client_session.empty_table(10).update(["X = i", "Y = X / 2"])
+session = barrageSession.session()
+
+tableRef = session.of(TableSpec.empty(10).update("X = i", "Y = X / 2"))
 ```
 
-`table_ref` is not a Deephaven table itself, but a _reference_ to a Deephaven table on the server. See [Python client tables are references to server tables](/core/docs/getting-started/pyclient-quickstart/#2-python-client-tables-are-references-to-server-tables) for more information on table references.
+`tableRef` is not a Deephaven table itself, but a [`TableHandle`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/TableHandle.html): a _reference_ to a Deephaven table on the remote server. Calling a table operation such as `update` on a handle runs it on the remote server and returns a second handle, and the first handle stays open. Building the query as a `TableSpec` first creates one handle for the whole query, so there is nothing intermediate to close.
 
-Similarly, you can use [`time_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.time_table) to create a ticking table on the server:
+Similarly, you can create a ticking table on the server with a `TimeTable`:
 
-```python skip-test
-table_ref = client_session.time_table("PT1s").update(["X = i", "Y = X / 2"])
+```groovy skip-test
+import io.deephaven.qst.table.TimeTable
+import java.time.Duration
+
+tableRef = session.of(TimeTable.of(Duration.ofSeconds(1)).update("X = i", "Y = X / 2"))
 ```
 
-If a table already exists on the remote server, you can retrieve a reference to it with the [`open_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.open_table) method:
+If a table already exists in the remote server's query scope, you can retrieve a reference to it by name:
 
-```python skip-test
-table_ref = client_session.open_table("table_on_server")
+```groovy skip-test
+import io.deephaven.qst.table.TicketTable
+
+tableRef = session.of(TicketTable.fromQueryScopeField("table_on_server"))
 ```
 
-## Publish the table to a shared ticket
+## Capture a table
 
-Once you have a reference to a table on the server, you can publish it with a shared ticket. In the Python client, create a shared ticket with the [`SharedTicket`](/core/client-api/python/code/pydeephaven.ticket.html#pydeephaven.ticket.SharedTicket) class. Then publish the table to the ticket with [`publish_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.publish_table).
+To capture the table that a handle refers to, pass the handle to the Barrage session. Subscribing creates a local table that updates in real time when the remote table changes:
 
-Generate the ticket with [`SharedTicket.random_ticket`](/core/client-api/python/code/pydeephaven.ticket.html#pydeephaven.ticket.SharedTicket.random_ticket). Any session that knows a shared ticket's bytes can read the table, so a random ticket is harder to guess than a fixed name. The Groovy server needs the ticket's bytes, so print them as a hex string:
+```groovy skip-test
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions
 
-```python skip-test
-from pydeephaven.ticket import SharedTicket
+subOptions = BarrageSubscriptionOptions.builder().useDeephavenNulls(true).build()
 
-ticket = SharedTicket.random_ticket()
-client_session.publish_table(ticket, table_ref)
-print(ticket.bytes.hex())
+localTStreaming = barrageSession.subscribe(tableRef, subOptions).entireTable().get()
 ```
 
-The ticket stays valid only while `client_session` is open and the published table is alive. Keep the Python client running, and keep a reference to `table_ref` without closing it.
+Alternatively, you can get a static snapshot of the table:
 
-## Capture the table on the local Groovy server
+```groovy skip-test
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions
 
-On the local Groovy server, use [`BarrageTableResolver`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html) to capture the table published to the ticket. You can capture it in two ways.
+snapOptions = BarrageSnapshotOptions.builder().useDeephavenNulls(true).build()
+
+localTStatic = barrageSession.snapshot(tableRef, snapOptions).entireTable().get()
+```
+
+You now have `localTStreaming` and `localTStatic`, which are true Deephaven tables on the local server. Unlike `tableRef`, they aren't references, so you can use them in any query.
+
+`subscribe` and `snapshot` also have `partialTable` variants that capture only a viewport of rows, a subset of columns, or both. See [What is Barrage?](../conceptual/what-is-barrage.md#viewports).
+
+### Choose between subscribe and snapshot
 
 Use **subscribe** when:
 
@@ -108,94 +128,91 @@ Use **snapshot** when:
 - You want to capture a point-in-time state for analysis.
 - You need to reduce ongoing resource consumption.
 
-To capture it:
+## Share a table with a shared ticket
 
-1. Write the remote server's address as a target URI. Use the `dh+plain` scheme for a server without TLS, or `dh` for a server with TLS.
-2. Build a [`TableSpec`](/core/javadoc/io/deephaven/qst/table/TableSpec.html) from the ticket bytes you published in the Python client. Paste the hex string that the Python client printed, and decode it with Groovy's `decodeHex`.
-3. Call [`BarrageTableResolver.get`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html#get()) to obtain the server's resolver.
-4. Pass the target URI and the [`TableSpec`](/core/javadoc/io/deephaven/qst/table/TableSpec.html) to the resolver's [`subscribe`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html#subscribe(java.lang.String,io.deephaven.qst.table.TableSpec)) or [`snapshot`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html#snapshot(java.lang.String,io.deephaven.qst.table.TableSpec)) method. Both return a [`Future`](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Future.html).
-5. Call [`Future.get`](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Future.html#get--) on the result to wait for the table.
-
-The following example subscribes to the ticket and creates a local table that updates in real time when the remote table changes:
+A table handle belongs to the session that created it. To let other sessions capture the same table — another server, a Python client, or a second Barrage session — publish it to a shared ticket. Create the ticket with [`SharedId`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/SharedId.html), and publish the table to it:
 
 ```groovy skip-test
-import io.deephaven.qst.table.TableSpec
-import io.deephaven.server.uri.BarrageTableResolver
+import io.deephaven.client.impl.SharedId
 
-remoteTarget = "dh+plain://localhost:9999"
-// Replace with the hex string that the Python client printed
-ticketSpec = TableSpec.ticket("<ticket hex>".decodeHex())
-
-localTStreaming = BarrageTableResolver.get().subscribe(remoteTarget, ticketSpec).get()
+sharedId = SharedId.newRandom()
+session.publish(sharedId, tableRef).get()
 ```
 
-Alternatively, take a static snapshot:
+Any session connected to the remote server can now capture the table from the ticket:
 
 ```groovy skip-test
-localTStatic = BarrageTableResolver.get().snapshot(remoteTarget, ticketSpec).get()
+localFromTicket = barrageSession.subscribe(sharedId.ticketId().table(), subOptions).entireTable().get()
 ```
 
-You now have `localTStreaming` and `localTStatic`, which are real Deephaven tables on the local Groovy server. Unlike `table_ref` in the Python client, they aren't references, so you can use them in any Deephaven query.
+A session in another process needs the ticket's ID. The `asHexString` method of `sharedId` returns the 16-byte ID as a `0x`-prefixed hexadecimal string that you can pass along; the receiver decodes the hex digits after `0x` into bytes and constructs `new SharedId(bytes)`. A Python client can also publish tables to shared tickets that a Groovy server captures; see [What is Barrage?](../conceptual/what-is-barrage.md#shared-tickets).
 
 ## Manage subscriptions
 
-This section covers what an active subscription costs, how the local server reuses its Barrage connection, how to recover from connection problems, and how to keep large subscriptions small.
+This section covers what an active subscription costs, how to close the session, how to recover from connection problems, and how to keep large subscriptions small.
 
 ### Subscription resource usage
 
 Each active subscription consumes resources on both the remote server and the local (subscribing) server:
 
-| Resource | Remote server impact                             | Local server impact                               |
-| -------- | ------------------------------------------------ | ------------------------------------------------- |
-| Memory   | Maintains subscriber state and pending updates   | Stores table data and applies incremental updates |
-| CPU      | Aggregates and serializes updates per subscriber | Deserializes and processes incoming updates       |
-| Network  | Sends periodic update batches to each subscriber | Receives and buffers incoming data                |
+| Resource | Remote server impact                                                                      | Local server impact                               |
+| -------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Memory   | Maintains subscriber state and pending updates                                            | Stores table data and applies incremental updates |
+| CPU      | Aggregates updates once per table and update interval, then writes each subscriber's view | Deserializes and processes incoming updates       |
+| Network  | Sends periodic update batches to each subscriber                                          | Receives and buffers incoming data                |
 
 For tables with frequent updates or many subscribers, these costs can add up. Monitor subscription health using the [Barrage performance tables](./performance/barrage-performance.md).
 
-### Barrage connections from the local server
+### Close the session when finished
 
-[`BarrageTableResolver`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html) opens one Barrage connection per target URI and reuses it for every later subscription and snapshot to that same target URI. `BarrageTableResolver` has no method to close that connection, so this workflow has no closing step.
+When you no longer need the connection, close the Barrage session to release resources. Closing the session does not close the connection's channel, so shut that down as well:
+
+```groovy skip-test
+import java.util.concurrent.TimeUnit
+
+barrageSession.close()
+
+channel = factory.managedChannel()
+channel.shutdownNow()
+channel.awaitTermination(10, TimeUnit.SECONDS)
+```
 
 ### Handle connection issues
 
 Network interruptions can break Barrage subscriptions. Consider these patterns for production applications:
 
-- **Failed subscription**: Subscribe to the ticket again. The new subscription reuses the local server's existing Barrage connection to the remote server.
-- **Failed connection**: [`BarrageTableResolver`](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html) can't replace a Barrage connection that has failed, for example because the remote server restarted. Restart the local server to open a new connection.
-- **Ticket lifetime**: If the published table or `client_session` has gone away, re-publish before resubscribing. See [Publish the table to a shared ticket](#publish-the-table-to-a-shared-ticket).
-- **Authentication expiry**: The remote server can accept other authentication methods alongside anonymous authentication. If the Python client connects with one of them, make sure its tokens or credentials stay valid for as long as the published table needs to stay available.
+- **Reconnection**: Subscriptions do not resume automatically after a disconnect. Create a new Barrage session and resubscribe. If the session that published a shared ticket was lost (in this guide, the same session), the server released its exports: publish the table again from the new session before resubscribing.
+
+- **Ticket lifetime**: A shared ticket remains valid only while the published table is still exported by the publishing session. Closing the publishing session releases all of its exports and invalidates the ticket. Java client handles are reference counted: the export is released only after every handle that refers to it is closed, including other handles for the same table in that session and the reference an active subscription created from the handle holds. Garbage collection never releases a handle, so close handles explicitly once others no longer need the ticket.
+
+- **Authentication expiry**: The client refreshes its session token automatically while the session is open. Credentials are needed again only when you open a new session, for example after reconnecting, so make sure they are still valid then.
 
 ### Memory considerations for large tables
 
 When subscribing to large ticking tables:
 
-- **Initial snapshot size**: A subscription starts with a snapshot of the whole table. For very large tables, this can consume significant memory. By default, the server breaks large snapshots into chunks. See [snapshot size control](./performance/barrage-performance.md#control-subscription-snapshot-size).
-- **Incremental updates**: After the initial snapshot, the remote server sends only changed rows. These updates are typically much smaller than the full table.
-- **Server-side filtering**: If you only need a subset of the data, consider filtering the table on the remote server before subscribing. This reduces both network and memory usage.
+- **Initial snapshot size**: A subscription starts with a complete snapshot of the table. For very large tables, this can consume significant memory. By default, the server sends a large snapshot in several chunks (see [snapshot size control](./performance/barrage-performance.md#control-subscription-snapshot-size)), and the local table is returned once the whole snapshot has arrived.
 
-The Python client is what publishes tickets to the remote server, so do the filtering there. Filter the table and publish the result to a new ticket:
+- **Incremental updates**: After the initial snapshot, only changes are sent: data for added rows, the changed columns of modified rows, and row keys for removed or shifted rows. This is typically much smaller than the full table.
 
-```python skip-test
-# Filter on the remote server before publishing
-filtered_ref = client_session.open_table("large_table").where("Region = `EAST`")
-filtered_ticket = SharedTicket.random_ticket()
-client_session.publish_table(filtered_ticket, filtered_ref)
-print(filtered_ticket.bytes.hex())
-```
-
-Then subscribe to the new ticket from the local Groovy server:
+- **Server-side filtering**: If you only need a subset of the data, consider filtering the table on the remote server before subscribing. This reduces both network and memory usage. This is distinct from viewports, which define a scrollable window over row positions. The following example reuses `session`, `subOptions`, and the `TicketTable` import from earlier:
 
 ```groovy skip-test
-// The subscriber now receives only the filtered data
-filteredSpec = TableSpec.ticket("<filtered ticket hex>".decodeHex())
-localTFiltered = BarrageTableResolver.get().subscribe(remoteTarget, filteredSpec).get()
+// The filter runs on the remote server
+filteredRef = session.of(TicketTable.fromQueryScopeField("large_table").where("Region = `EAST`"))
+
+// The subscriber receives only the filtered data
+localFiltered = barrageSession.subscribe(filteredRef, subOptions).entireTable().get()
 ```
 
 ## Related documentation
 
-- [Python client Quickstart](/core/docs/getting-started/pyclient-quickstart/)
 - [What is Barrage?](../conceptual/what-is-barrage.md)
+- [Barrage metrics](./performance/barrage-performance.md)
 - [Share tables with URIs](./use-uris.md)
+- [Capture Python client tables with Barrage](/core/docs/how-to-guides/capture-tables/)
 - [Anonymous authentication](./authentication/auth-anon.md)
-- [`BarrageTableResolver` Javadoc](/core/javadoc/io/deephaven/server/uri/BarrageTableResolver.html)
+- [Pre-shared key authentication](./authentication/auth-psk.md)
+- [Keycloak authentication](./authentication/auth-keycloak.md)
+- [mTLS authentication](./authentication/auth-mtls.md)
+- [Username/password authentication](./authentication/auth-uname-pw.md)

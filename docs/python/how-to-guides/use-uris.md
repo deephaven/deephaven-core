@@ -10,10 +10,10 @@ A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uni
 > URIs can be used to share tables across Groovy and Python instances interchangeably. For how to use URIs in Groovy, see [the equivalent guide](/core/groovy/docs/how-to-guides/use-uris).
 
 > [!NOTE]
-> URIs and shared tickets are two different ways to pull tables. Both work on static or dynamic tables. A URI pulls a table already on the server via a URL-like string. Shared tickets let you pull tables you create or access via the Python client. Learn more in [Capture Python client tables with Barrage](./capture-tables.md).
+> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access through a client session. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](./capture-tables.md).
 
 > [!IMPORTANT]
-> URI resolution in Deephaven Community (Core) requires **anonymous authentication**. PSK (pre-shared key) authentication is not currently supported — attempting to resolve a URI when PSK is enabled will fail. This is a known limitation tracked in GitHub issues [#5383](https://github.com/deephaven/deephaven-core/issues/5383) and [#3421](https://github.com/deephaven/deephaven-core/issues/3421).
+> URI resolution in Deephaven Community (Core) requires the server being resolved to accept **anonymous authentication**. The resolving server connects anonymously and cannot send PSK (pre-shared key) or other credentials, so resolving a URI on a server that requires PSK will fail. This is a known limitation tracked in GitHub issues [#5383](https://github.com/deephaven/deephaven-core/issues/5383) and [#3421](https://github.com/deephaven/deephaven-core/issues/3421).
 >
 > If you found this page while looking for `ui.resolve`, note that the [Deephaven UI URI component](https://deephaven.io/core/ui/docs/components/uri/) is a separate, **Deephaven Enterprise**-only feature for Persistent Queries (PQ). It is not the same as `deephaven.uri.resolve` documented here.
 
@@ -85,9 +85,10 @@ table = resolve("dh+plain://hostname/scope/table_name")
 table = resolve("dh+plain://hostname:9876/scope/table_name")
 ```
 
-The `resolve` function connects to the specified Deephaven instance, retrieves the table, and returns it as a local reference that you can use in your code.
+The `resolve` function connects to the specified Deephaven instance, subscribes to the table, and returns a local, live copy of it that updates as the remote table changes.
 
-`resolve` waits until the table's initial snapshot arrives, so the returned table already holds the remote table's current data.
+> [!NOTE]
+> `resolve` blocks until the initial snapshot of the remote table has arrived, so the returned table is already populated. After that, it updates as the remote table changes. There is no need to wait for an update before using it; on a static remote table, waiting for an update would block indefinitely.
 
 Let's explore this with a couple of examples.
 
@@ -274,11 +275,12 @@ When using URIs to share tables across instances, particularly over networks, th
 ### Optimization strategies
 
 - **Only share what's needed**: Filter, aggregate, and limit the amount of data you're sharing to only what a downstream consumer actually needs. This includes applying filters at the source, projecting only necessary columns, and pre-aggregating large datasets to reduce the volume of transferred data.
-- **Avoid repeated URI resolution**: Store resolved table references in variables rather than calling `resolve` multiple times for the same URI. Each call to `resolve` creates a new subscription to the remote table, so reuse the table reference when possible within your application.
-- **Use appropriate data consistency models**: For analysis requiring consistent data across multiple operations, use table snapshots instead of live updating tables. Point-in-time consistency ensures all your data represents the same moment in time, preventing issues where some data updates mid-analysis while other data remains static. Snapshots freeze the table state at a specific moment, guaranteeing consistent results and reducing network overhead from continuous updates.
+- **Avoid repeated URI resolution**: Store resolved table references in variables rather than calling `resolve` multiple times for the same URI. Each call to `resolve` opens a new subscription and builds a new local copy of the table, including a fresh initial snapshot (the connection to that server is reused), so reuse the table reference when possible within your application.
+- **Use appropriate data consistency models**: For analysis requiring consistent data across multiple operations, use table snapshots instead of live updating tables. Point-in-time consistency ensures all your data represents the same moment in time, preventing issues where some data updates mid-analysis while other data remains static. Snapshots freeze the table state at a specific moment, guaranteeing consistent results. A local snapshot does not stop the resolved table's subscription: upstream updates keep arriving over the network for as long as the resolved table is kept alive, which, for a table resolved in a console script, is until the script session ends. To reduce network traffic as well, take the snapshot on the source server and resolve that table.
 
 ## Related documentation
 
+- [What is Barrage?](../conceptual/what-is-barrage.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`time_table`](../reference/table-operations/create/timeTable.md)
 - [`update`](../reference/table-operations/select/update.md)

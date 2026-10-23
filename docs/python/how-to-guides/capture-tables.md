@@ -76,7 +76,7 @@ Similarly, you can use [`time_table`](/core/client-api/python/code/pydeephaven.s
 table_ref = client_session.time_table("PT1s").update(["X = i", "Y = X / 2"])
 ```
 
-If a table already exists on the remote server, you can retrieve a reference to it with the [`open_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.open_table) method:
+If a table already exists in the remote server's query scope, you can retrieve a reference to it with the [`open_table`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session.open_table) method:
 
 ```python skip-test
 table_ref = client_session.open_table("table_on_server")
@@ -149,11 +149,11 @@ This section covers what an active subscription costs, how to release it, how to
 
 Each active subscription consumes resources on both the remote server and the local (subscribing) server:
 
-| Resource | Remote server impact                             | Local server impact                               |
-| -------- | ------------------------------------------------ | ------------------------------------------------- |
-| Memory   | Maintains subscriber state and pending updates   | Stores table data and applies incremental updates |
-| CPU      | Aggregates and serializes updates per subscriber | Deserializes and processes incoming updates       |
-| Network  | Sends periodic update batches to each subscriber | Receives and buffers incoming data                |
+| Resource | Remote server impact                                                                      | Local server impact                               |
+| -------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Memory   | Maintains subscriber state and pending updates                                            | Stores table data and applies incremental updates |
+| CPU      | Aggregates updates once per table and update interval, then writes each subscriber's view | Deserializes and processes incoming updates       |
+| Network  | Sends periodic update batches to each subscriber                                          | Receives and buffers incoming data                |
 
 For tables with frequent updates or many subscribers, these costs can add up. Monitor subscription health using the [Barrage performance tables](./performance/barrage-performance.md).
 
@@ -166,38 +166,43 @@ When you no longer need the session's subscriptions or snapshots, close the Barr
 my_barrage_session.close()
 ```
 
-If you need to keep the session open for other subscriptions but want to release a specific table, you can drop the reference to the subscribed table. However, the underlying subscription may remain active until you close the session.
+Dropping the Python reference to a subscribed table does not end its subscription: tables created in the console stay alive until the script session ends. To end one subscription while keeping the Barrage session open, create it inside a [`liveness_scope`](../reference/engine/liveness-scope.md) block; when the block ends, the table is released and its subscription is cancelled.
 
 ### Handle connection issues
 
 Network interruptions can break Barrage subscriptions. Consider these patterns for production applications:
 
-- **Reconnection**: If the Barrage session disconnects, create a new session with [`barrage_session`](../reference/data-import-export/barrage/barrage-session.md) and resubscribe.
+- **Reconnection**: Subscriptions do not resume automatically after a disconnect. Create a new session with [`barrage_session`](../reference/data-import-export/barrage/barrage-session.md) and resubscribe. The remote table must still be published to the same shared ticket; if the client session that published it was lost, [publish the table again](#publish-the-table-to-a-shared-ticket) first.
 - **Ticket lifetime**: If the published table or `client_session` has gone away, re-publish before resubscribing. See [Publish the table to a shared ticket](#publish-the-table-to-a-shared-ticket).
-- **Authentication expiry**: If your sessions use authenticated connections, make sure their tokens or credentials stay valid for as long as your subscriptions run.
+- **Authentication expiry**: The client refreshes its session token automatically while the session is open. Credentials are needed again only when you open a new session, for example after reconnecting, so make sure they are still valid then.
 
 ### Memory considerations for large tables
 
 When subscribing to large ticking tables:
 
-- **Initial snapshot size**: A subscription starts with a snapshot of the whole table. For very large tables, this can consume significant memory. By default, the server breaks large snapshots into chunks. See [snapshot size control](./performance/barrage-performance.md#control-subscription-snapshot-size).
-- **Incremental updates**: After the initial snapshot, the remote server sends only changed rows. These updates are typically much smaller than the full table.
-- **Server-side filtering**: If you only need a subset of the data, consider filtering the table on the remote server before subscribing. This reduces both network and memory usage.
+- **Initial snapshot size**: A subscription starts with a complete snapshot of the table. For very large tables, this can consume significant memory. By default, the server sends a large snapshot in several chunks (see [snapshot size control](./performance/barrage-performance.md#control-subscription-snapshot-size)), and the local table is returned once the whole snapshot has arrived.
+
+- **Incremental updates**: After the initial snapshot, only changes are sent: data for added rows, the changed columns of modified rows, and row keys for removed or shifted rows. This is typically much smaller than the full table.
+
+- **Server-side filtering**: If you only need a subset of the data, consider filtering the table on the remote server before subscribing. This reduces both network and memory usage. (Note: this is distinct from viewports, which define a scrollable window over row positions.)
 
 ```python skip-test
-# Filter on the remote server before publishing
+# The filter runs on the remote server
 filtered_ref = client_session.open_table("large_table").where("Region = `EAST`")
+
+# Publish the filtered table to its own shared ticket
 filtered_ticket = SharedTicket.random_ticket()
 client_session.publish_table(filtered_ticket, filtered_ref)
 
-# The subscriber now receives only the filtered data
-local_t_filtered = my_barrage_session.subscribe(filtered_ticket.bytes)
+# The subscriber receives only the filtered rows
+local_filtered = my_barrage_session.subscribe(filtered_ticket.bytes)
 ```
 
 ## Related documentation
 
 - [Python client Quickstart](../getting-started/pyclient-quickstart.md)
 - [What is Barrage?](../conceptual/what-is-barrage.md)
+- [Barrage metrics](./performance/barrage-performance.md)
 - [Share tables with URIs](./use-uris.md)
 - [Anonymous authentication](./authentication/auth-anon.md)
 - [Pre-shared key authentication](./authentication/auth-psk.md)
