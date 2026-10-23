@@ -5,11 +5,21 @@ package io.deephaven.iceberg.base;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import org.apache.iceberg.NullOrder;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.SortDirection;
+import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+
+import static io.deephaven.iceberg.base.IcebergUtils.deephavenNullOrderMatchesIceberg;
+import static io.deephaven.iceberg.base.IcebergUtils.deephavenOrderMatchesIceberg;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyPartitioningColumns;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -116,5 +126,60 @@ public class TestIcebergUtils {
                     .startsWith("Partitioning column " + PART_COL2_NAME
                             + " is not present in the table definition TableDefinition");
         }
+    }
+
+    @Test
+    void testDeephavenNullOrderMatchesIceberg() {
+        assertThat(deephavenNullOrderMatchesIceberg(SortDirection.ASC, NullOrder.NULLS_FIRST)).isTrue();
+        assertThat(deephavenNullOrderMatchesIceberg(SortDirection.DESC, NullOrder.NULLS_LAST)).isTrue();
+        assertThat(deephavenNullOrderMatchesIceberg(SortDirection.ASC, NullOrder.NULLS_LAST)).isFalse();
+        assertThat(deephavenNullOrderMatchesIceberg(SortDirection.DESC, NullOrder.NULLS_FIRST)).isFalse();
+    }
+
+    /**
+     * Deephaven orders booleans, integers, dates, times and timestamps as the Iceberg specification does, but not
+     * strings or floating point values, nor a column whose type does not belong with the field's.
+     */
+    @Test
+    void testDeephavenOrderMatchesIceberg() {
+        assertOrderMatches(Boolean.class, Types.BooleanType.get(), true);
+        assertOrderMatches(byte.class, Types.IntegerType.get(), true);
+        assertOrderMatches(short.class, Types.IntegerType.get(), true);
+        assertOrderMatches(int.class, Types.IntegerType.get(), true);
+        assertOrderMatches(long.class, Types.LongType.get(), true);
+        assertOrderMatches(LocalDate.class, Types.DateType.get(), true);
+        assertOrderMatches(LocalTime.class, Types.TimeType.get(), true);
+        assertOrderMatches(Instant.class, Types.TimestampType.withZone(), true);
+        assertOrderMatches(LocalDateTime.class, Types.TimestampType.withoutZone(), true);
+        assertOrderMatches(Instant.class, Types.TimestampNanoType.withZone(), true);
+        assertOrderMatches(LocalDateTime.class, Types.TimestampNanoType.withoutZone(), true);
+
+        assertOrderMatches(String.class, Types.StringType.get(), false);
+        assertOrderMatches(float.class, Types.FloatType.get(), false);
+        assertOrderMatches(double.class, Types.DoubleType.get(), false);
+
+        assertOrderMatches(String.class, Types.IntegerType.get(), false);
+        assertOrderMatches(double.class, Types.LongType.get(), false);
+        assertOrderMatches(int.class, Types.BooleanType.get(), false);
+        assertOrderMatches(Instant.class, Types.DateType.get(), false);
+    }
+
+    /**
+     * Assert whether {@code dataType} orders as {@code icebergType} does in both of the null orders Deephaven sorts in,
+     * and that neither of the other null orders matches, whatever the types.
+     */
+    private static void assertOrderMatches(final Class<?> dataType, final Type icebergType, final boolean expected) {
+        assertThat(deephavenOrderMatchesIceberg(SortDirection.ASC, NullOrder.NULLS_FIRST, dataType, icebergType))
+                .as("%s as %s ascending", dataType, icebergType)
+                .isEqualTo(expected);
+        assertThat(deephavenOrderMatchesIceberg(SortDirection.DESC, NullOrder.NULLS_LAST, dataType, icebergType))
+                .as("%s as %s descending", dataType, icebergType)
+                .isEqualTo(expected);
+        assertThat(deephavenOrderMatchesIceberg(SortDirection.ASC, NullOrder.NULLS_LAST, dataType, icebergType))
+                .as("%s as %s ascending, nulls last", dataType, icebergType)
+                .isFalse();
+        assertThat(deephavenOrderMatchesIceberg(SortDirection.DESC, NullOrder.NULLS_FIRST, dataType, icebergType))
+                .as("%s as %s descending, nulls first", dataType, icebergType)
+                .isFalse();
     }
 }
