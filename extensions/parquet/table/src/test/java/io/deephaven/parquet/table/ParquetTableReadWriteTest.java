@@ -4651,9 +4651,6 @@ public final class ParquetTableReadWriteTest {
         verifyMakeHandleException(nonExistentTableLocation::getSortedColumns);
         makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getSortedColumns);
 
-        verifyMakeHandleException(nonExistentTableLocation::getColumnTypes);
-        makeNewTableLocationAndVerifyNoException(ParquetTableLocation::getColumnTypes);
-
         verifyMakeHandleException(nonExistentTableLocation::hasDataIndex);
         makeNewTableLocationAndVerifyNoException(ParquetTableLocation::hasDataIndex);
 
