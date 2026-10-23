@@ -30,10 +30,12 @@ The following table summarizes when each variable is safe to use:
 
 | Variable                                     | Safe on                                         | Throws error on         |
 | -------------------------------------------- | ----------------------------------------------- | ----------------------- |
-| `i`, `ii`                                    | static, append-only, blink                      | other refreshing tables |
+| `i`, `ii`                                    | static, append-only, flat add-only, blink       | other refreshing tables |
 | `k`                                          | static, add-only (including append-only), blink | other refreshing tables |
 | Simple constant offset (`Column_[i-1]`)      | all tables                                      | —                       |
 | Complex array expressions (`Column_[(i)-1]`) | static, blink                                   | other refreshing tables |
+
+A flat add-only table is an [add-only table](../../../conceptual/table-types.md#specialization-2-add-only) whose row keys match its row positions (0, 1, 2, and so on). The engine treats it as [append-only](../../../conceptual/table-types.md#specialization-1-append-only).
 
 > [!NOTE]
 > The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables.
