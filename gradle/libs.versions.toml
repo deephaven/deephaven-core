@@ -39,7 +39,7 @@ groovy = "3.0.25"
 
 # Only bump this in concert with netty (which will update boringssl). See the dependency matrix
 # for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
-grpc = "1.84.0"
+grpc = "1.85.0"
 netty = "4.2.19.Final"
 
 protobuf-gwt='4.33.4-1'
@@ -55,7 +55,7 @@ hadoop = "3.4.3"
 hdrhistogram = "2.2.2"
 iceberg = "1.11.0"
 immutables = "2.12.3"
-jackson = "2.22.3"
+jackson = "2.22.4"
 jakarta-servlet = "6.0.0"
 jakarta-websocket = "2.2.0"
 jama = "1.1.1"
@@ -87,7 +87,7 @@ rewrite-java = "8.90.4"
 selenium = "4.51.0"
 slf4j = "2.0.20"
 snappy = "1.1.10.12"
-javapoet = "0.20.0"
+javapoet = "0.22.0"
 ayza = "10.1.0"
 tdunning = "3.3"
 undercouch = "2.18.0"
