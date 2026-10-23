@@ -264,20 +264,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
 
     public JsPendingTable<JsTable> newTable(String[] columnNames, String[] types, String[][] data,
             String userTimeZone) {
-        return opened(connection.get().newTable(columnNames, types, data, userTimeZone));
-    }
-
-    /**
-     * Fires {@link io.deephaven.web.client.api.QueryInfoConstants#EVENT_TABLE_OPENED} once the table exists, and hands
-     * the pending table back unchanged.
-     */
-    private JsPendingTable<JsTable> opened(JsPendingTable<JsTable> table) {
-        // Failures are the caller's to observe on the pending table itself; this derived promise must not reject
-        table.resolve().then(t -> {
-            fireEvent(EVENT_TABLE_OPENED, t);
-            return null;
-        }, err -> null);
-        return table;
+        return connection.get().newTable(columnNames, types, data, userTimeZone);
     }
 
     /**
@@ -287,6 +274,6 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      * @return {@link Promise} of {@link JsTable}
      */
     public JsPendingTable<JsTable> mergeTables(JsTableReference[] tables) {
-        return opened(connection.get().mergeTables(tables, this));
+        return connection.get().mergeTables(tables, this);
     }
 }

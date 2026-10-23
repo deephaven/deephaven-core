@@ -577,6 +577,54 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testNewTableOnlyChainedOnIsReleased() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_021);
+                    // A client-built table that is only chained on holds nothing once its dependent is done
+                    JsPendingTable<JsTable> created = session.newTable(new String[] {"X"}, new String[] {"int"},
+                            new String[][] {{"1", "2", "3"}}, "UTC");
+                    JsPendingTable<JsResolvedTable> head = created.head(Js.uncheckedCast(1.0));
+                    return head.resolve()
+                            .then(table -> {
+                                assertEquals(1., table.getSize(), 0);
+                                table.close();
+                                return delay(200);
+                            })
+                            .then(ignore -> {
+                                assertFalse("created table still held", isHeld(created));
+                                return Promise.resolve(session);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testMergedTableOnlyChainedOnIsReleased() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_022);
+                    return session.getTable("source", null).resolve().then(source -> {
+                        // A merge that is only chained on holds nothing once its dependent is done. Through the
+                        // session, as a caller would, not the connection: the session layer is what is under test.
+                        JsPendingTable<JsTable> merged = session.mergeTables(
+                                new JsTableReference[] {JsTableReference.of(source), JsTableReference.of(source)});
+                        JsPendingTable<JsResolvedTable> head = merged.head(Js.uncheckedCast(7.0));
+                        return head.resolve()
+                                .then(table -> {
+                                    assertEquals(7., table.getSize(), 0);
+                                    table.close();
+                                    return delay(200);
+                                })
+                                .then(ignore -> {
+                                    assertFalse("merged table still held", isHeld(merged));
+                                    source.close();
+                                    return Promise.resolve(session);
+                                });
+                    });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     @Override
     public String getModuleName() {
         return "io.deephaven.web.DeephavenIntegrationTest";
