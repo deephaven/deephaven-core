@@ -139,6 +139,8 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     private BiDiStream<Flight.FlightData, Flight.FlightData> doExchange;
     protected WebBarrageSubscription barrageSubscription;
 
+    private WebBarrageMessageReader reader;
+
     protected Status status = Status.STARTING;
 
     private String failMsg;
@@ -174,6 +176,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             WebBarrageSubscription.DataChangedHandler dataChangedHandler = this::onDataChanged;
 
             status = Status.SUBSCRIPTION_REQUESTED;
+
+            // Replace the reader, it holds state that varies per stream
+            reader = new WebBarrageMessageReader();
 
             // In order to create the subscription, we need to already have the table resolved, so we know if it
             // is a blink table or not. In turn, we can't be prepared to handle any messages from the server until
@@ -571,8 +576,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             status = Status.ACTIVE;
         }
     }
-
-    private final WebBarrageMessageReader reader = new WebBarrageMessageReader();
 
     private void onFlightData(Flight.FlightData data) {
         WebBarrageMessage message;
