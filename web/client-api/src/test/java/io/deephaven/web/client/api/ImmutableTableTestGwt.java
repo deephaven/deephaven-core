@@ -8,6 +8,8 @@ import elemental2.core.ReadonlyArray;
 import elemental2.dom.AbortController;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
+import io.deephaven.web.client.api.console.JsVariableDefinition;
+import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.subscription.DataOptions;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import io.deephaven.web.client.state.ClientTableState;
@@ -492,6 +494,33 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                                 pending.getConnection().getCache().get(ticket).ifPresent(state -> assertEquals(
                                         ClientTableState.ResolutionState.RELEASED, state.getResolution()));
                                 return Promise.resolve(session);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    public void testDependentOfFailedFetchFails() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(10_018);
+                    return session.getTable("source", null).resolve();
+                })
+                .then(table -> {
+                    WorkerConnection connection = table.getConnection();
+                    // A definition the server cannot resolve fails as soon as the fetch is sent, unlike a missing name
+                    // through getTable(name), which waits ten seconds for the variable to appear first
+                    JsVariableDefinition bogus = new JsVariableDefinition(JsVariableType.TABLE, "missing",
+                            DomGlobal.btoa("s/missing"), null);
+                    // The source is never awaited itself; only the operation chained on it is. The fetch fails, so
+                    // the dependent must fail too rather than wait on the server for a source that never arrives.
+                    JsPendingTable<JsResolvedTable> dependent =
+                            connection.getObject(bogus, null).asPendingTable().head(Js.uncheckedCast(1.0));
+                    return expectRejection(dependent.resolve(), "Source table failed")
+                            .then(ignore -> delay(200))
+                            .then(ignore -> {
+                                assertEquals(0, batchStates(connection));
+                                table.close();
+                                return Promise.resolve(table);
                             });
                 })
                 .then(this::finish).catch_(this::report);

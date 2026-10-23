@@ -87,9 +87,10 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         /**
-         * Has {@code dependent} retain the state this pending table occupies until the dependent has settled.
+         * Has {@code dependent} retain the state this pending table occupies until the dependent has settled, or fails
+         * the dependent if this pending table never produces a state.
          */
-        protected abstract void retainUntilSettled(ClientTableState dependent);
+        protected abstract void retainUntilSettled(Operation dependent);
 
         @Override
         public JsPendingTable<JsResolvedTable> call(Ticket resultId, BatchTableRequest.Operation.Builder operation) {
@@ -196,7 +197,7 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
         }
 
         @Override
-        protected void retainUntilSettled(ClientTableState dependent) {
+        protected void retainUntilSettled(Operation dependent) {
             MicrotaskBatchImpl.retainUntilSettled(state, dependent);
         }
 
@@ -266,20 +267,20 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
      */
     private static class Fetched<T extends JsITable> extends Pending<T> {
         private final Supplier<Promise<T>> fetch;
-        private final Consumer<ClientTableState> retainSource;
+        private final Consumer<Operation> retainSource;
         private @Nullable LazyPromise<T> result;
         private @Nullable T delivered;
         private boolean cancelled;
 
         public Fetched(WorkerConnection connection, Ticket ticket, Supplier<Promise<T>> fetch,
-                Consumer<ClientTableState> retainSource) {
+                Consumer<Operation> retainSource) {
             super(connection, ticket);
             this.fetch = fetch;
             this.retainSource = retainSource;
         }
 
         @Override
-        protected void retainUntilSettled(ClientTableState dependent) {
+        protected void retainUntilSettled(Operation dependent) {
             retainSource.accept(dependent);
         }
 
@@ -536,13 +537,13 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
     }
 
     /**
-     * Queues an operation on the given connection's next batch. {@code retainSource} is called with the new state
+     * Queues an operation on the given connection's next batch. {@code retainSource} is called with the new operation
      * before this returns, so the source is retained before anything else can run.
      */
     private static JsPendingTable<JsResolvedTable> enqueue(WorkerConnection connection, Ticket resultId,
-            BatchTableRequest.Operation.Builder operation, Consumer<ClientTableState> retainSource) {
+            BatchTableRequest.Operation.Builder operation, Consumer<Operation> retainSource) {
         Operation pending = new Operation(connection, new TableTicket(resultId), operation);
-        retainSource.accept(pending.state);
+        retainSource.accept(pending);
 
         Batch batch = enqueued.get(connection);
         if (batch == null) {
@@ -565,29 +566,31 @@ public abstract class MicrotaskBatchImpl implements JsTableOperations {
      * Has {@code dependent} retain {@code source} until the dependent is running, failed, or released. A dependent that
      * has already settled (possible when the source arrived through a promise) retains nothing.
      */
-    private static void retainUntilSettled(ClientTableState source, ClientTableState dependent) {
-        if (dependent.getResolution() != ClientTableState.ResolutionState.UNRESOLVED) {
+    private static void retainUntilSettled(ClientTableState source, Operation dependent) {
+        ClientTableState state = dependent.state;
+        if (state.getResolution() != ClientTableState.ResolutionState.UNRESOLVED) {
             return;
         }
-        source.retain(dependent);
-        dependent.onRunning(
-                ignore -> source.unretain(dependent),
-                failure -> source.unretain(dependent),
-                () -> source.unretain(dependent));
+        source.retain(state);
+        state.onRunning(
+                ignore -> source.unretain(state),
+                failure -> source.unretain(state),
+                () -> source.unretain(state));
     }
 
     /**
-     * As {@link #retainUntilSettled(ClientTableState, ClientTableState)} for a source that may not exist yet: the
-     * retain happens when it does, and a dependent that has already settled by then retains nothing.
+     * As {@link #retainUntilSettled(ClientTableState, Operation)} for a source that may not exist yet: the retain
+     * happens when it does, and a dependent that has already settled by then retains nothing.
      */
-    private static void retainUntilSettled(Promise<ClientTableState> source, ClientTableState dependent) {
+    private static void retainUntilSettled(Promise<ClientTableState> source, Operation dependent) {
         source.then(sourceState -> {
             retainUntilSettled(sourceState, dependent);
             return null;
         }, failure -> {
-            // The source never came to be. Nothing here fails the dependent: it has been (or will be) sent referencing
-            // a ticket the server never sees exported, and the server keeps a placeholder export waiting for it.
-            // TODO BEFORE MERGE: fail the dependents of a failed source client-side instead of sending them.
+            // The source never came to be. Whether or not the dependent was already sent, it references a ticket the
+            // server will never see defined and would wait on a placeholder export forever; fail it here, which also
+            // releases its ticket so the server drops that placeholder.
+            dependent.cancel("Source table failed: " + failure);
             return null;
         });
     }

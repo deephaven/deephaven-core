@@ -997,6 +997,7 @@ public interface JsTableOperations extends ServerObject {
                         .setTicket(typedTicket().getTicket())
                         .build())
                 .setResultId(ticket)
+                .setSpec(AggSpec.newBuilder().setGroup(AggSpec.AggSpecGroup.getDefaultInstance()))
                 .addAllGroupByColumns(
                         groupByColumns != null ? columnsToNameList(groupByColumns) : Collections.emptyList())));
     }
