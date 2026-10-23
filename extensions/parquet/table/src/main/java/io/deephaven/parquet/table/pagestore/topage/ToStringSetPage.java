@@ -4,6 +4,7 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Indices;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
@@ -12,6 +13,8 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.parquet.base.ColumnPageReader;
 import io.deephaven.parquet.base.DataWithOffsets;
+import io.deephaven.parquet.base.SparsePageCursor;
+import io.deephaven.chunk.LongChunk;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -102,6 +105,14 @@ public class ToStringSetPage<ATTR extends Any, STRING_ARRAY>
         public Object getResult(ColumnPageReader columnPageReader,
                 SeekableChannelContext channelContext) throws IOException {
             return toPage.getDictionaryKeysToPage().getResult(columnPageReader, channelContext);
+        }
+
+        /**
+         * Unsupported: string sets are repeated, which sparse reads refuse.
+         */
+        @Override
+        public Object getSparseResult(SparsePageCursor cursor, LongChunk<Indices> rowRanges, int rowCount) {
+            throw new UnsupportedOperationException("Sparse reads of string sets are not supported");
         }
 
         @Override
