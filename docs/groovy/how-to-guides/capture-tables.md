@@ -58,22 +58,25 @@ barrageSession = factory.newBarrageSession(
 
 Once you've established a connection to the remote Deephaven server, you can use the session to create new tables on the server or retrieve references to existing tables.
 
-As an example, you can create a new static table on the server using `emptyTable`:
+As an example, you can create a new static table on the server. Build the whole query as a [`TableSpec`](https://deephaven.io/core/javadoc/io/deephaven/qst/table/TableSpec.html), then send it to the server once with `session.of`:
 
 ```groovy skip-test
+import io.deephaven.qst.table.TableSpec
+
 session = barrageSession.session()
 
-tableRef = session.emptyTable(10).update("X = i", "Y = X / 2")
+tableRef = session.of(TableSpec.empty(10).update("X = i", "Y = X / 2"))
 ```
 
-`tableRef` is not a Deephaven table itself, but a [`TableHandle`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/TableHandle.html): a _reference_ to a Deephaven table on the remote server. Table operations on a handle, such as `update`, run on the remote server and return a new handle.
+`tableRef` is not a Deephaven table itself, but a [`TableHandle`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/TableHandle.html): a _reference_ to a Deephaven table on the remote server. Calling a table operation such as `update` on a handle runs it on the remote server and returns a second handle, and the first handle stays open. Building the query as a `TableSpec` first creates one handle for the whole query, so there is nothing intermediate to close.
 
-Similarly, you can use `timeTable` to create a ticking table on the server:
+Similarly, you can create a ticking table on the server with a `TimeTable`:
 
 ```groovy skip-test
+import io.deephaven.qst.table.TimeTable
 import java.time.Duration
 
-tableRef = session.timeTable(Duration.ofSeconds(1)).update("X = i", "Y = X / 2")
+tableRef = session.of(TimeTable.of(Duration.ofSeconds(1)).update("X = i", "Y = X / 2"))
 ```
 
 If a table already exists in the remote server's query scope, you can retrieve a reference to it by name:
@@ -196,7 +199,7 @@ When subscribing to large ticking tables:
 
 ```groovy skip-test
 // The filter runs on the remote server
-filteredRef = session.of(TicketTable.fromQueryScopeField("large_table")).where("Region = `EAST`")
+filteredRef = session.of(TicketTable.fromQueryScopeField("large_table").where("Region = `EAST`"))
 
 // The subscriber receives only the filtered data
 localFiltered = barrageSession.subscribe(filteredRef, subOptions).entireTable().get()
