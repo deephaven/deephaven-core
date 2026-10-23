@@ -35,7 +35,15 @@ Each delta and snapshot is then propagated to its subscribers. When a message go
 
 5. Writing to the OutputStream
 
-Another thread writes the resulting bytes to the actual gRPC stream. Barrage records `WriteNanos`, the time it took to drain the subscriber-specific filtered view of the update (including coalesced and snapshots) to the OutputStream. Barrage records `WriteBytes`, the number of bytes that were written on a single message. To compare against the bandwidth allowed by the connected hardware, convert to megabits in a query: `Megabits = WriteBytes * 8 / 1e6`.
+Another thread writes the resulting bytes to the actual gRPC stream. Barrage records `WriteNanos`, the time it took to drain one write of the update (coalesced or snapshot) to the OutputStream, and `WriteBytes`, the number of bytes in that write, once for each subscriber it was sent to. `WriteBytes` is a size, not a rate. To compare the traffic against the bandwidth of the connected hardware, estimate the bytes sent during a reporting interval as the `WriteBytes` count multiplied by a typical size, such as the median, and divide by the interval's length. The interval is one minute unless `BarragePerformanceLog.cycleDurationMillis` sets another.
+
+Full-table subscribers that would receive identical bytes share one write of each update (see [Share one write among identical subscribers](../how-to-guides/performance/barrage-performance.md#share-one-write-among-identical-subscribers)). For a shared write:
+
+- Barrage records `WriteNanos` once, including the time to copy the bytes to every subscriber that shares the write.
+- Barrage records `WriteBytes` once for each subscriber that was sent the whole write, as the size of one copy, just as it would if each subscriber had a write of its own.
+- When a table has dictionary-encoded columns, the dictionary values sent before a shared write to subscribers that were behind the others are a write of their own: one `WriteNanos` sample, and one `WriteBytes` sample for each subscriber sent them.
+
+So the `WriteNanos` count is the number of writes, and the `WriteBytes` count is the number of times a subscriber was sent one. Sharing lowers the first, but not the second.
 
 6. Receiver bundles gRPC messages into an update (coalesced or snapshot)
 
