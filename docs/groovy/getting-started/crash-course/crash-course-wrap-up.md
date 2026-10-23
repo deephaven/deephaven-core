@@ -45,7 +45,7 @@ This crash course is a starting point. To continue learning about Deephaven, che
 - Query strings
   - [Query string overview](../../how-to-guides/query-string-overview.md)
   - [Groovy variables in query strings](../../how-to-guides/groovy-variables.md)
-  - [User-defined functions](../../how-to-guides/groovy-closures.md)
+  - [Groovy closures in queries](../../how-to-guides/groovy-closures.md)
   - [Groovy classes and objects in query strings](../../how-to-guides/groovy-classes.md)
   - [Programmatic query string generation](../../how-to-guides/generate-query-strings.md)
 - Recipes, not loops

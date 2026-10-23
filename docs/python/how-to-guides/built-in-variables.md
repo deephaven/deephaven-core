@@ -2,195 +2,254 @@
 title: Built-in query language variables
 ---
 
-There are three special built-in query language variables worth noting. They correspond to row indices in tables.
+Deephaven provides three built-in query language variables that refer to rows in a table:
 
-- `i` is a 32-bit integer representing the current row index.
-- `ii` is a 64-bit integer representing the current row index.
-- `k` is a 64-bit integer representing a special internal indexing value.
+- `i` is a 32-bit `int` row position.
+- `ii` is a 64-bit `long` row position.
+- `k` is a 64-bit `long` [row key](../conceptual/table-update-model.md#describing-table-updates). A row key is the engine's internal address for a row, not its position.
 
-`i` and `ii` can be used to access the current, previous, and subsequent rows in a table.
+Combined with the [underscore operator](./work-with-arrays.md#using-the-underscore-operator), `i` and `ii` also read values from the previous and next rows.
 
-> [!WARNING]
-> `k` is a Deephaven engine index and does not correspond to traditional row indices. It should only be used in limited circumstances, such as debugging or advanced query operations.
+On [refreshing tables](../conceptual/table-types.md), the engine restricts where you can use these variables. [Refreshing table restrictions](#refreshing-table-restrictions) lists the safe cases, and [Alternatives for refreshing tables](#alternatives-for-refreshing-tables) shows what to use instead.
 
-### Refreshing table restrictions
+## Use the variables in a query
 
-The engine validates usage of these variables and throws an `IllegalArgumentException` if used unsafely on refreshing tables:
+The following code block creates a table with [`empty_table`](../reference/table-operations/create/emptyTable.md) and shows how to use `i`, `ii`, and `k` in a query:
 
-```
-IllegalArgumentException: Formula '<formula>' uses i, ii, k, or column array variables,
-and is not safe to refresh. Note that some usages, such as on an append-only table are safe.
-```
-
-The following table summarizes when each variable is safe to use:
-
-| Variable                                     | Safe on                    | Throws error on      |
-| -------------------------------------------- | -------------------------- | -------------------- |
-| `i`, `ii`                                    | static, append-only, blink | add-only, ticking    |
-| `k`                                          | static, add-only, blink    | append-only, ticking |
-| Simple constant offset (`Column_[i-1]`)      | all tables                 | —                    |
-| Complex array expressions (`Column_[(i)-1]`) | static, blink              | any refreshing table |
-
-> [!NOTE]
-> The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables.
-
-For refreshing tables where you need more complex positional access, see [Alternatives for refreshing tables](#alternatives-for-refreshing-tables) below.
-
-## Usage
-
-The following code block shows how to use `i` and `ii` in a query:
-
-```python order=source
+```python test-set=1 order=source
 from deephaven import empty_table
 
 source = empty_table(10).update(
-    ["RowIndex32Bit = i", "RowIndex64Bit = ii", "EngineIndex64Bit = k"]
+    ["RowPosition32Bit = i", "RowPosition64Bit = ii", "RowKey = k"]
 )
 ```
+
+An `int` holds values only up to 2,147,483,647, so a formula that uses `i` throws an error on any row position past that limit. Use `ii` unless you need to pass an `int` to another function.
+
+In `source`, [row keys](../conceptual/table-update-model.md#describing-table-updates) happen to equal row positions, so all three columns match. A [filter](./filters.md) shows the difference: [`where`](../reference/table-operations/filter/where.md) keeps each row's key from `source`, but positions start again at 0.
+
+```python test-set=1 order=filtered
+filtered = source.where("RowPosition64Bit % 2 == 0").update(
+    ["Position = ii", "Key = k"]
+)
+```
+
+> [!WARNING]
+> Because `k` is a [row key](../conceptual/table-update-model.md#describing-table-updates), not a row position, use it only in limited circumstances, such as debugging.
+
+### Read values from other rows
+
+To read values from other rows, combine `i` or `ii` with the [underscore operator](./work-with-arrays.md#using-the-underscore-operator). `Column_` is the column array variable for the column `Column`. `Column_[ii-1]` reads the value of `Column` in the previous row, and `Column_[ii+1]` reads it in the next row. An offset before the first row or after the last row returns null.
+
+The following code block uses [`update`](../reference/table-operations/select/update.md) to add the previous and next values of `RowPosition64Bit` to the `source` table:
+
+```python test-set=1 order=prev_next
+prev_next = source.update(
+    ["PrevRow = RowPosition64Bit_[ii-1]", "NextRow = RowPosition64Bit_[ii+1]"]
+)
+```
+
+## Refreshing table restrictions
+
+The engine checks every formula that the following operations run on a [refreshing table](../conceptual/table-types.md):
+
+- [`update`](../reference/table-operations/select/update.md)
+- [`select`](../reference/table-operations/select/select.md)
+- [`view`](../reference/table-operations/select/view.md)
+- [`update_view`](../reference/table-operations/select/update-view.md)
+- [`lazy_update`](../reference/table-operations/select/lazy-update.md)
+
+If the formula uses `i`, `ii`, `k`, or a [column array variable](./work-with-arrays.md#using-the-underscore-operator) such as `Column_` in a way the table below marks unsafe, the operation throws an `IllegalArgumentException`.
+
+The engine does not check [filters](./filters.md) passed to [`where`](../reference/table-operations/filter/where.md). In a [`where`](../reference/table-operations/filter/where.md) filter on a [refreshing table](../conceptual/table-types.md), use [column arrays](./work-with-arrays.md#using-the-underscore-operator) only as constant offsets. Don't rely on `i`, `ii`, or `k` there either, because their results go stale as rows change.
+
+The following table shows which usages are safe on [static](../conceptual/table-types.md#static-tables), [append-only](../conceptual/table-types.md#specialization-1-append-only), [add-only](../conceptual/table-types.md#specialization-2-add-only), and [blink](../conceptual/table-types.md#specialization-3-blink) tables:
+
+| Usage                                                    | Safe on                                                                                                                                                                                                                                                          | Throws error on                                                                                                                                                                                                                    |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `i`, `ii`                                                | [static](../conceptual/table-types.md#static-tables), [append-only](../conceptual/table-types.md#specialization-1-append-only), [blink](../conceptual/table-types.md#specialization-3-blink)                                                                     | other [refreshing tables](../conceptual/table-types.md), including [add-only](../conceptual/table-types.md#specialization-2-add-only) tables that are not [append-only](../conceptual/table-types.md#specialization-1-append-only) |
+| `k`                                                      | [static](../conceptual/table-types.md#static-tables), [append-only](../conceptual/table-types.md#specialization-1-append-only), [add-only](../conceptual/table-types.md#specialization-2-add-only), [blink](../conceptual/table-types.md#specialization-3-blink) | other [refreshing tables](../conceptual/table-types.md)                                                                                                                                                                            |
+| Simple constant offset (`Column_[i-1]`, `Column_[ii+1]`) | all tables                                                                                                                                                                                                                                                       | —                                                                                                                                                                                                                                  |
+| Other column array usage (`Column_[(i)-1]`, `Column_`)   | [static](../conceptual/table-types.md#static-tables), [blink](../conceptual/table-types.md#specialization-3-blink)                                                                                                                                               | other [refreshing tables](../conceptual/table-types.md), including [append-only](../conceptual/table-types.md#specialization-1-append-only)                                                                                        |
+
+> [!NOTE]
+> The engine treats an array index as a constant offset only in these two forms:
+>
+> - `i` or `ii` alone, such as `Column_[ii]`.
+> - `i` or `ii` followed by `+` or `-` and a whole-number literal, such as `Column_[ii-1]` or `Column_[i+2]`.
+>
+> Any other index, such as `Column_[(i)-1]`, `Column_[1+i]`, or `Column_[ii-1L]`, falls under "Other column array usage" in the table above.
+
+Unsafe usage throws an error like this:
+
+```text
+IllegalArgumentException: Formula '<formula>' uses i, ii, k, or column array variables,
+and is not safe to refresh. Note that some usages, such as on an append-only table are safe.
+To allow unsafe refreshing formulas, set the system property
+io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas.
+```
+
+> [!WARNING]
+> Turning off this check lets these formulas run on any [refreshing table](../conceptual/table-types.md), and their results can be wrong after rows are added, removed, modified, or shifted.
+>
+> To turn it off anyway, set `AbstractFormulaColumn.allowUnsafeRefreshingFormulas` to `true`, for example with the JVM argument `-DAbstractFormulaColumn.allowUnsafeRefreshingFormulas=true`. The fully qualified name in the error message has no effect.
 
 ## Alternatives for refreshing tables
 
-When working with refreshing tables where you need to reference preceding or following column values, avoid using column array notation (e.g., `Column_[ii-1]`). Instead, use one of the following approaches:
+Constant offsets such as `Column_[ii-1]` already work on [refreshing tables](../conceptual/table-types.md) when written in the [exact form the engine recognizes](#refreshing-table-restrictions). For other positional access on a [refreshing table](../conceptual/table-types.md), such as the previous value within each group or a whole-column `Column_` reference, use one of these approaches:
 
-> [!NOTE]
-> The examples below use Iceberg tables with auto-refresh mode, which creates add-only tables in Deephaven. For information on setting up Iceberg, see the [Iceberg guide](./data-import-export/iceberg.md).
+- [`update_by`](#update-by) computes row-based windows within each group and updates only the windows that a change affects.
+- The [group, update, and ungroup](#group-update-and-ungroup) pattern works on any table, but on a [refreshing table](../conceptual/table-types.md) it causes tick expansion. With tick expansion, a change to one input row reports every row in its group as modified.
+- An [as-of join](#as-of-joins) works when a column such as a timestamp or sequence number reliably orders the rows.
 
-### 1. Source partitioned tables
+Which approach is fastest depends on your data, so benchmark each one before you choose.
 
-Partition a table into multiple smaller tables. This can make operations more manageable and efficient, especially when dealing with add-only tables.
+If you want to work with each group as its own table, you can also [partition](#partition-the-table) the table first and apply any of these approaches to each partition.
 
-```python docker-config=iceberg test-set=1 order=null
-from deephaven.experimental import iceberg
-from deephaven import empty_table
+The examples in this section use a [keyed input table](./input-tables.md#create-a-keyed-input-table) as the refreshing source. You can modify and remove rows in a [keyed input table](./input-tables.md#create-a-keyed-input-table), so it is neither [append-only](../conceptual/table-types.md#specialization-1-append-only) nor [add-only](../conceptual/table-types.md#specialization-2-add-only). The engine therefore rejects formulas that use `i`, `ii`, or `k` on it in any of the operations listed under [Refreshing table restrictions](#refreshing-table-restrictions).
 
-# Create and write an Iceberg table for demonstration
-source_data = empty_table(20).update(formulas=["GroupKey = i % 3", "Value = i * 10"])
+Each example computes `PrevValue`, the previous `Value` in the same `Group`.
 
-rest_adapter = iceberg.adapter_s3_rest(
-    name="rustfs-iceberg",
-    catalog_uri=catalog_uri,
-    warehouse_location=warehouse_location,
-    region_name=aws_region,
-    access_key_id=aws_access_key_id,
-    secret_access_key=aws_secret_access_key,
-    end_point_override=s3_endpoint,
+```python test-set=2 order=refreshing_source
+from deephaven import empty_table, input_table
+
+source_data = empty_table(9).update(
+    formulas=["Key = i", "Group = i % 3", "Timestamp = (long)i", "Value = i * 10"]
 )
 
-source_adapter = rest_adapter.create_table(
-    table_identifier="examples.partition_source",
-    table_definition=source_data.definition,
-)
-
-writer_options = iceberg.TableParquetWriterOptions(
-    table_definition=source_data.definition
-)
-source_writer = source_adapter.table_writer(writer_options=writer_options)
-source_writer.append(iceberg.IcebergWriteInstructions([source_data]))
-
-# Load the Iceberg table with auto-refresh mode (creates an add-only table)
-add_only_source = source_adapter.table(
-    update_mode=iceberg.IcebergUpdateMode.auto_refresh()
-)
-
-# Partition by a grouping column to create multiple tables
-partitioned = add_only_source.partition_by(by=["GroupKey"])
+# A keyed input table is a refreshing table whose rows can be modified and removed
+refreshing_source = input_table(init_table=source_data, key_cols="Key")
 ```
 
-Each partition can then be processed independently, and operations within each partition can safely use `i` and `ii` since each partition is a separate table.
+Because `refreshing_source` is neither [append-only](../conceptual/table-types.md#specialization-1-append-only) nor [blink](../conceptual/table-types.md#specialization-3-blink), a formula that uses `ii` on it throws an error:
 
-### 2. By → update → ungroup pattern
+```python syntax
+# Throws IllegalArgumentException: Formula 'ii' uses i, ii, k, or column array variables, and is not safe to refresh. ...
+position = refreshing_source.update("Position = ii")
+```
 
-[Group](../reference/table-operations/group-and-aggregate/groupBy.md) the data, perform the update operation within each group, then [ungroup](../reference/table-operations/group-and-aggregate/ungroup.md). This allows you to reference values within each group without relying on absolute row positions.
+### Update by
 
-```python docker-config=iceberg test-set=1 order=result
-from deephaven.experimental import iceberg
-from deephaven import empty_table
+[`update_by`](../reference/table-operations/update-by-operations/updateBy.md) computes row-based windows within each group and updates them incrementally as rows are added, modified, or removed. It does not need an ordering column, and it avoids the tick expansion of [group, update, and ungroup](#group-update-and-ungroup).
 
-# Create and write an Iceberg table for demonstration
-group_data = empty_table(10).update(formulas=["Group = i % 3", "Value = i * 10"])
+The following example uses [`rolling_formula_tick`](../reference/table-operations/update-by-operations/rolling-formula-tick.md) with `rev_ticks=2` and `fwd_ticks=-1`. Together, these settings define a window that contains only the previous row in the group:
 
-group_adapter = rest_adapter.create_table(
-    table_identifier="examples.group_source", table_definition=group_data.definition
+```python test-set=2 order=update_by_result
+from deephaven.updateby import rolling_formula_tick
+
+update_by_result = refreshing_source.update_by(
+    ops=rolling_formula_tick(
+        formula="PrevValue = first(Value)", rev_ticks=2, fwd_ticks=-1
+    ),
+    by="Group",
 )
+```
 
-group_writer_options = iceberg.TableParquetWriterOptions(
-    table_definition=group_data.definition
-)
-group_writer = group_adapter.table_writer(writer_options=group_writer_options)
-group_writer.append(iceberg.IcebergWriteInstructions([group_data]))
+The first row of each group has no previous row, so its window is empty and [`first`](../reference/query-language/query-library/auto-imported/basic.md) returns null.
 
-# Load the Iceberg table with auto-refresh mode (creates an add-only table)
-add_only_group_source = group_adapter.table(
-    update_mode=iceberg.IcebergUpdateMode.auto_refresh()
-)
+### Group, update, and ungroup
 
+[Group](../reference/table-operations/group-and-aggregate/groupBy.md) the data, perform the [update](../reference/table-operations/select/update.md) operation within each group, then [ungroup](../reference/table-operations/group-and-aggregate/ungroup.md). Because the formula works on each group's array, it references values within the group without relying on absolute row positions.
+
+```python test-set=2 order=result
 # Group by the grouping column and compute previous values using array operations
 # Prepend null to match array sizes for ungroup
-grouped = add_only_group_source.group_by(by=["Group"]).update(
-    "PrevValue = concat(new int[]{NULL_INT}, Value.size() > 0 ? Value.subVector(0, Value.size() - 1).toArray() : new int[0])"
+grouped = refreshing_source.group_by(by=["Group"]).update(
+    "PrevValue = concat(new int[]{NULL_INT}, Value.subVector(0, Value.size() - 1).toArray())"
 )
 
 # Ungroup to work with individual rows
 result = grouped.ungroup()
 ```
 
+After [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md), each `Value` cell holds the array of that group's values. The formula drops the last element with [`subVector`](./work-with-arrays.md#slice-arrays) and prepends [`NULL_INT`](./built-in-constants.md#null-constants), so each element of `PrevValue` is the previous element of `Value`. [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) then expands every array column back into rows, including `Value` and `PrevValue`. The first row of each group gets a null `PrevValue`.
+
+Because [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) expands each group in place, `result` lists the rows group by group rather than in the source table's order.
+
 > [!NOTE]
-> Be aware that the group_by → update → ungroup pattern can cause tick expansion in ticking tables, where a single update to one row may trigger updates to multiple rows in the result.
+> This is where the tick expansion described above comes from: a change to one row modifies that row's group in the grouped table, so [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md) reports every row in the group as modified.
 
-### 3. As-of joins
+### As-of joins
 
-If you have a matching column (such as a timestamp or sequence number) that can be reliably used instead of row position, use an [as-of join](../reference/table-operations/join/aj.md).
+If a column such as a timestamp or sequence number reliably orders the rows, use an [as-of join](../reference/table-operations/join/aj.md) on that column instead of row position.
 
-```python docker-config=iceberg test-set=1 order=aj_result
-from deephaven.experimental import iceberg
-from deephaven import empty_table
-
-# Create and write an Iceberg table for demonstration
-aj_data = empty_table(10).update(formulas=["Timestamp = (long)i", "Value = i * 10"])
-
-aj_adapter = rest_adapter.create_table(
-    table_identifier="examples.aj_source", table_definition=aj_data.definition
-)
-
-aj_writer_options = iceberg.TableParquetWriterOptions(
-    table_definition=aj_data.definition
-)
-aj_writer = aj_adapter.table_writer(writer_options=aj_writer_options)
-aj_writer.append(iceberg.IcebergWriteInstructions([aj_data]))
-
-# Load the Iceberg table with auto-refresh mode (creates an add-only table)
-add_only_aj_source = aj_adapter.table(
-    update_mode=iceberg.IcebergUpdateMode.auto_refresh()
-)
-
-# Create a shifted version for the join
-shifted = add_only_aj_source.view("ShiftedTimestamp = Timestamp + 1")
-
-# Join to get the previous value based on timestamp
-aj_result = shifted.aj(
-    table=add_only_aj_source,
-    on=["ShiftedTimestamp >= Timestamp"],
+```python test-set=2 order=aj_result
+# Join to get the previous value within each group based on timestamp
+aj_result = refreshing_source.aj(
+    table=refreshing_source,
+    on=["Group", "Timestamp > Timestamp"],
     joins=["PrevValue = Value"],
 )
 ```
 
-### Performance considerations
+The [`aj`](../reference/table-operations/join/aj.md) matches `Group` exactly. `Timestamp > Timestamp` then picks the row in the same group with the largest `Timestamp` that is less than the current row's. That row's `Value` becomes `PrevValue`, the previous `Value` in the group. The first row of each group has no earlier row, so its `PrevValue` is null.
 
-The performance characteristics of these approaches depend on your data:
+### Partition the table
 
-- **[As-of joins](../reference/table-operations/join/aj.md)** require a hash table for each group, with the full set of timestamp and row key data stored individually.
-- **[`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md) → [`update`](../reference/table-operations/select/update.md) → [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md)** requires a hash table and a rowset.
-- The relative performance depends on your specific data patterns and cannot be determined from first principles alone.
+Use this approach if your data is already a [partitioned table](./partitioned-tables.md), or if you want each group as its own table. In the following example, [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md) creates one constituent table, or partition, for each `Group` value.
 
-Choose the approach that best fits your data structure and access patterns.
+[Partitioning](../reference/table-operations/group-and-aggregate/partitionBy.md) does not lift the [refreshing table restrictions](#refreshing-table-restrictions), because the engine checks each partition as its own table:
+
+- `i` and `ii` work in a partition that is [static](../conceptual/table-types.md#static-tables), [append-only](../conceptual/table-types.md#specialization-1-append-only), or [blink](../conceptual/table-types.md#specialization-3-blink).
+- In any other partition, use [`update_by`](#update-by), the [group, update, and ungroup](#group-update-and-ungroup) pattern, or an [as-of join](#as-of-joins), as the following example does.
+
+In the example:
+
+- [`transform`](../reference/table-operations/partitioned-tables/transform.md) applies an [`aj`](../reference/table-operations/join/aj.md) to each partition. Each partition holds a single `Group` value, so the [`aj`](../reference/table-operations/join/aj.md) matches only on `Timestamp`.
+- The `prev_value` function opens an [execution context](../conceptual/execution-context.md) because the table operations inside it need one, and [`transform`](../reference/table-operations/partitioned-tables/transform.md) doesn't pass the console's execution context to the function.
+- [`merge`](../reference/table-operations/partitioned-tables/partitioned-table-merge.md) combines the results into one table.
+
+```python test-set=2 order=partitioned_result
+from deephaven.execution_context import get_exec_ctx
+
+# Partition by a grouping column to create multiple tables
+partitioned = refreshing_source.partition_by(by=["Group"])
+
+ctx = get_exec_ctx()
+
+
+# Find the previous value within one partition
+def prev_value(t):
+    with ctx:
+        return t.aj(table=t, on=["Timestamp > Timestamp"], joins=["PrevValue = Value"])
+
+
+partitioned_result = partitioned.transform(func=prev_value).merge()
+```
 
 ## Related documentation
 
+- [Table types](../conceptual/table-types.md)
+- [Table update model](../conceptual/table-update-model.md)
+- [Execution context](../conceptual/execution-context.md)
 - [Built-in constants](./built-in-constants.md)
 - [Built-in functions](./built-in-functions.md)
 - [Query string overview](./query-string-overview.md)
 - [Filters](./filters.md)
 - [Formulas](./formulas.md)
 - [Work with arrays](./work-with-arrays.md)
+- [Group and ungroup data](./grouping-data.md)
+- [Rolling aggregations](./rolling-aggregations.md)
+- [Inexact, time-series, and range joins](./joins-timeseries-range.md)
+- [Input tables](./input-tables.md)
+- [Partitioned tables](./partitioned-tables.md)
+- [Special variables and constants](../reference/query-language/variables/special-variables.md)
+- [`aj`](../reference/table-operations/join/aj.md)
+- [`concat`](../reference/query-language/query-library/auto-imported/basic.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
+- [`first`](../reference/query-language/query-library/auto-imported/basic.md)
+- [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md)
+- [`input_table`](../reference/table-operations/create/input-table.md)
+- [`lazy_update`](../reference/table-operations/select/lazy-update.md)
+- [`merge`](../reference/table-operations/partitioned-tables/partitioned-table-merge.md)
+- [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md)
+- [`rolling_formula_tick`](../reference/table-operations/update-by-operations/rolling-formula-tick.md)
+- [`select`](../reference/table-operations/select/select.md)
+- [`transform`](../reference/table-operations/partitioned-tables/transform.md)
+- [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md)
 - [`update`](../reference/table-operations/select/update.md)
+- [`update_by`](../reference/table-operations/update-by-operations/updateBy.md)
+- [`update_view`](../reference/table-operations/select/update-view.md)
+- [`view`](../reference/table-operations/select/view.md)
+- [`where`](../reference/table-operations/filter/where.md)
+- [`get_exec_ctx` Pydoc](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.get_exec_ctx)
