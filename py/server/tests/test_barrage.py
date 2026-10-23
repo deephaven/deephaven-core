@@ -3,6 +3,7 @@
 #
 import os
 import subprocess
+import sys
 import time
 import unittest
 
@@ -20,17 +21,39 @@ class BarrageTestCase(BaseTestCase):
         super().setUpClass()
         # the cacheDir env var is required to avoid a problem when the same cache dir is used by two server instances,
         # in which case the later server instance will wipe out the cache dir of the earlier server instance.
-        env = {
-            "START_OPTS": "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler -Ddeephaven.cacheDir=/cache/tmp"
-        }
-        env.update(dict(os.environ))
+        cache_dir = os.environ.get("DEEPHAVEN_CACHE_DIR", "/cache")
+        start_opts = f"-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler -Ddeephaven.cacheDir={cache_dir}/tmp"
+        if os.path.exists("/opt/deephaven/server/bin/start"):
+            cmd = ["/opt/deephaven/server/bin/start"]
+            env = {"START_OPTS": start_opts}
+            env.update(dict(os.environ))
+        else:
+            # Outside the Docker image, use the deephaven-server wheel's "server" command. It runs until stdin closes,
+            # so stdin=subprocess.PIPE below keeps it alive until it is killed. Only stdout and stderr go to DEVNULL.
+            # Anonymous logins are on, so bind to 127.0.0.1. The cache dir goes through the environment, because the
+            # command splits --jvm-args on whitespace, which breaks a path with spaces.
+            cmd = [
+                sys.executable,
+                "-c",
+                "from deephaven_server.cli import cli; cli()",
+                "server",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "10000",
+                "--no-browser",
+                "--jvm-args",
+                "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler",
+            ]
+            env = dict(os.environ)
+            env["DEEPHAVEN_CACHE_DIR"] = f"{cache_dir}/tmp"
         cls.server_proc = subprocess.Popen(
-            ["/opt/deephaven/server/bin/start"],
+            cmd,
             shell=False,
             env=env,
             stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
         cls.ensure_server_running()
 
