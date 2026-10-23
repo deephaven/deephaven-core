@@ -112,6 +112,8 @@ live_dash = ui.dashboard(
 )
 ```
 
+![A dashboard with a ticking table panel beside a counter panel](../assets/how-to/deephaven-ui/live_dash.gif)
+
 See [`ui.dashboard`](/core/ui/docs/components/dashboard/) for rows, columns, and other layout options.
 
 ## Next steps

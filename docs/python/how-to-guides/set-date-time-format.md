@@ -51,7 +51,7 @@ In this example, we create a rule for all columns named `Timestamp` with the **D
 4. In **Column Type**, select **DateTime**.
 5. In **Formatting Rule**, select a format.
 
-<LoopedVideo src='../assets/how-to/date-time/date-time13.mp4' />
+![A formatting rule that shows Timestamp columns of the DateTime type with only the time of day](../assets/how-to/date-time/date-time-rule.png)
 
 To remove a rule, select the trash can icon (**Delete**) to the right of the rule's **Column Type** label.
 

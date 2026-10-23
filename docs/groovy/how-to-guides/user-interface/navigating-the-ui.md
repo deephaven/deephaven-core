@@ -20,13 +20,12 @@ The screenshot below outlines most of the items, each in a different color. The 
 
 - **Console** (red outline, first tab on the left): Type and run code here. You do most of your work in this panel.
 - **Log** (purple outline, tab next to **Console**): View recent [server log](../logs.md) output. The panel shows the most recent log messages when you open it, then new messages as they arrive.
-- **Table and widget buttons** (bright green outline, left of the ⋮ icon, Deephaven 0.35.x and earlier only): Deephaven 0.35.x and earlier, like the version in the screenshot, have buttons here that list the tables, plots, and widgets in your session. Deephaven 0.36.0 and later don't show them. To open an object, use the **Panels** menu in the top bar instead.
 - **Console Options menu** (magenta outline, ⋮ icon at the right end of the console toolbar, tooltip **More Actions...**): Change the console's behavior or [upload a table from a file](./upload-table-from-file.md). Behavior options include whether panels open automatically and whether they close when the connection drops.
 
 ### Right-hand pane
 
-- **File Explorer** (a tab in the right-hand pane, not outlined in this screenshot): Create, open, copy, rename, move, and delete the notebooks and folders stored on your Deephaven server. See [Create and organize notebooks](./file-explorer.md).
-- **Command History** (the other tab in the right-hand pane, not outlined in this screenshot): View a [history of the commands](../logs.md#command-history) you've run in the console.
+- **File Explorer** (light blue outline, a tab in the right-hand pane): Create, open, copy, rename, move, and delete the notebooks and folders stored on your Deephaven server. See [Create and organize notebooks](./file-explorer.md).
+- **Command History** (yellow outline, the other tab in the right-hand pane): View a [history of the commands](../logs.md#command-history) you've run in the console.
 
 ### Viewing area
 

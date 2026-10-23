@@ -32,7 +32,7 @@ The following table matches common use cases to the Barrage feature that serves 
 
 In the most common setup, one Deephaven server (the local server) captures a table that lives on another (the remote server):
 
-![A table on the remote server is referenced by a ticket. Barrage carries its data to a local table on the local server, which local queries use](../assets/conceptual/remote_and_local_server.png)
+![A table on the remote server is referenced by a ticket. Barrage carries its data to a local table on the local server, which local queries use](../assets/conceptual/remote_and_local_server.svg)
 
 1. **Remote server** hosts a table that a [ticket](#shared-tickets) refers to.
 2. **Barrage protocol** transports the actual data using Arrow Flight with incremental update metadata.

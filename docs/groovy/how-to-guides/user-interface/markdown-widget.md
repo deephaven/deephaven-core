@@ -25,7 +25,7 @@ Double-click inside the widget to edit its content. A widget you create with **N
 
 <LoopedVideo src='../../assets/how-to/markdown-widget.mp4' />
 
-New widgets are named **Note**, **Note-1**, and so on. To give a widget a name you'll recognize in the **Recently Closed from Dashboard** list, right-click its tab and choose **Rename**.
+A new widget's tab is titled **Markdown**. To give a widget a name you'll recognize in the **Recently Closed from Dashboard** list, right-click its tab and choose **Rename**.
 
 ## Markdown syntax
 

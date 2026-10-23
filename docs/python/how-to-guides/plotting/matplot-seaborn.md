@@ -107,6 +107,8 @@ table_axes.plot(df["X"], df["Y"])
 table_axes.set_title("Y against X from a Deephaven table")
 ```
 
+![A line plot of Y against X from a Deephaven table](../../assets/how-to/matplot/table_plot.png)
+
 The [3D plots](#3d-plots) below also pass DataFrame columns to Matplotlib, but they read the DataFrame from a CSV file.
 
 #### 3D plots

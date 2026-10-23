@@ -181,7 +181,7 @@ To apply color formatting in a query instead, see [Apply color formatting to col
 
 The **Custom Columns** option adds one or more calculated columns to your table. Deephaven adds them with [`update_view`](../../reference/table-operations/select/update-view.md).
 
-Choose a name for your new column, then specify the [formula](../formulas.md) in the field below. To add more columns, click **Add Another Column**. Click **Save Column** (or **Save Columns**) and close the dialog to see the new columns in the table.
+Choose a name for your new column, then specify the [formula](../formulas.md) in the field below. To add more columns, click **Add Another Column**. Click **Save Column** (or **Save Columns**) to add the columns to the table.
 
 ![Creating a custom column](../../assets/how-to/custom_column.gif)
 

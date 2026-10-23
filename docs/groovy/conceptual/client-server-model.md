@@ -186,6 +186,8 @@ This architecture centralizes intensive real-time calculations on the server whi
 
 Multi-server applications distribute workloads across multiple machines to handle high-volume data processing or specialized tasks. This example shows a financial trading application that uses Deephaven's [peer-to-peer](#peer-to-peer-software-architecture) architecture. Servers B and C are clients of Server A, and they are also servers to the client applications. Ingestion and analysis have different resource profiles ([Specialized workloads](#specialized-workloads)), so this design gives each its own server.
 
+![Server A ingests market data. Servers B and C resolve its tables by URI with anonymous authentication, and an external load balancer routes client applications to either one](../assets/conceptual/multi-server-application.svg)
+
 **Server A (data ingestion and storage):**
 
 - Ingests high-speed market data from multiple sources:

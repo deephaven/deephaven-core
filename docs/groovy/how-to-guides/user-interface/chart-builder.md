@@ -86,7 +86,7 @@ tempBands = seattleWeather.view("Year = year(ObservationDate, timeZone(`UTC`))",
 
 Open the Chart Builder from the `hiLoByYear` table to chart the average temperature for each year. Select **Line**, then click in the **X-Axis** field to see the table's column names:
 
-![The Chart Builder, with line plot selected. The user has clicked on the X-axis field to reveal available column names](../../assets/how-to/plots/plots5.png)
+![The Chart Builder for the hiLoByYear table, with the line chart type selected](../../assets/how-to/plots/plots5.png)
 
 Select `Year` for the **X-Axis** and `Avg_Temp` for the **Series**. Click **Create** to generate a single-series chart.
 
@@ -141,9 +141,11 @@ If you hover your cursor over the data shown in a chart, a tooltip shows the exa
 
 ### Toggle series visibility
 
-When a chart plots multiple series, you might want to temporarily hide one or more of them. Click a series name in the plot legend to hide that series. Click it again to show it.
+When a chart plots multiple series, you might want to temporarily hide one or more of them. A multi-series chart made with the [built-in plotting API](../plotting/api-plotting.md) shows a legend. Click a series name in the legend to hide that series. Click it again to show it.
 
-![The user toggles which series are visible by clicking on their names](../../assets/how-to/plots/plots14.gif)
+Charts made with the Chart Builder don't show a legend.
+
+![The user toggles which series are visible by clicking on their names in the legend](../../assets/how-to/plots/plots14.gif)
 
 ## Related documentation
 

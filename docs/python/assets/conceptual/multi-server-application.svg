@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 560" width="820" height="560" role="img" aria-labelledby="t d">
+  <title id="t">Multi-server application</title>
+  <desc id="d">Market data feeds and historical databases flow into Server A, which handles ingestion and storage. Servers B and C each resolve Server A&#x27;s ticking tables by URI with anonymous authentication and run the same analysis. An external load balancer, which is not part of Deephaven, routes client applications to Server B or Server C.</desc>
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1c7ed6"/></marker><marker id="ah-start" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1c7ed6"/></marker></defs>
+  <rect x="250" y="20" width="320" height="60" rx="10" fill="#e9ecef" stroke="#1e1e1e" stroke-width="1.5"/>
+  <text x="410.0" y="45.166666666666664" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1e1e1e">Market data feeds</text>
+  <text x="410.0" y="64.16666666666666" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#1e1e1e">and historical databases</text>
+  <rect x="250" y="130" width="320" height="80" rx="10" fill="#8fd6e1" stroke="#1e1e1e" stroke-width="1.5"/>
+  <text x="410.0" y="165.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1e1e1e">Server A</text>
+  <text x="410.0" y="185.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#1e1e1e">data ingestion and storage</text>
+  <line x1="410" y1="82" x2="410" y2="128" stroke="#1c7ed6" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="80" y="300" width="260" height="80" rx="10" fill="#8fd6e1" stroke="#1e1e1e" stroke-width="1.5"/>
+  <text x="210.0" y="335.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1e1e1e">Server B</text>
+  <text x="210.0" y="355.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#1e1e1e">analysis and client services</text>
+  <rect x="480" y="300" width="260" height="80" rx="10" fill="#8fd6e1" stroke="#1e1e1e" stroke-width="1.5"/>
+  <text x="610.0" y="335.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1e1e1e">Server C</text>
+  <text x="610.0" y="355.0" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#1e1e1e">redundant analysis</text>
+  <line x1="330" y1="212" x2="230" y2="298" stroke="#1c7ed6" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="490" y1="212" x2="590" y2="298" stroke="#1c7ed6" stroke-width="2" marker-end="url(#ah)"/>
+  <text x="410" y="262" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#1c7ed6">URI (anonymous auth)</text>
+  <rect x="250" y="420" width="320" height="50" rx="10" fill="#c0c0c0" stroke="#1e1e1e" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="410.0" y="440.3333333333333" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1e1e1e">External load balancer</text>
+  <text x="410.0" y="458.3333333333333" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#1e1e1e">(not part of Deephaven)</text>
+  <line x1="330" y1="418" x2="230" y2="382" stroke="#1c7ed6" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="490" y1="418" x2="590" y2="382" stroke="#1c7ed6" stroke-width="2" marker-end="url(#ah)"/>
+  <rect x="250" y="500" width="320" height="46" rx="10" fill="#e9ecef" stroke="#1e1e1e" stroke-width="1.5"/>
+  <text x="410.0" y="527.6666666666666" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1e1e1e">Client applications</text>
+  <line x1="410" y1="498" x2="410" y2="472" stroke="#1c7ed6" stroke-width="2" marker-end="url(#ah)"/>
+</svg>

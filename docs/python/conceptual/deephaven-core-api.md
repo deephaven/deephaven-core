@@ -142,6 +142,8 @@ Flight's service definition gives the order of `RecordBatch`es no meaning, but a
 
 A single snapshot or update can span several `RecordBatch`es.
 
+![A Barrage subscription stream: the client's DoExchange request, then the schema, snapshot pieces, and incremental updates from the server, and a new snapshot after the client changes its viewport](../assets/conceptual/barrage-subscription-stream.svg)
+
 The server sends incremental updates no more often than the subscription's update interval, as described in [Barrage update batching](#barrage-update-batching).
 
 [Barrage](./what-is-barrage.md) breaks each update payload into a sequence of `RecordBatch`es:

@@ -57,11 +57,11 @@ Set up the three pieces in order. In step 2, you create your theme plugin by cop
 
 The web UI development build runs at `http://localhost:4000/ide/` and connects to the Deephaven server on port 10000. Visit it and, if prompted, log in with the [pre-shared key](./authentication/auth-psk.md) printed in the server log. To preview your theme, open the **Settings** menu and select it from the **Pick a color scheme** list in the **Theme** section:
 
-![The Pick a color scheme option in the Settings menu](../assets/how-to/themes/pick_a_color.png)
+![The Pick a color scheme list in the Settings menu, with FT Theme selected](../assets/how-to/themes/pick_a_color.png)
 
 Alternatively, visit `http://localhost:4000/ide/styleguide` for a preview of all the components in the web-client-ui library. To change the theme, click the theme selector in the top-right corner of the style guide:
 
-![The style guide displays the theme's components, such as headings and menus](../assets/how-to/themes/style_guide_selector.png)
+![The theme selector in the top-right corner of the style guide](../assets/how-to/themes/style_guide_selector.png)
 
 > [!NOTE]
 > If you change your styles, refresh the page to see the changes.
