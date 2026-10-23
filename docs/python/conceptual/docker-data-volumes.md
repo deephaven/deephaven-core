@@ -6,7 +6,7 @@ This guide discusses accessing your file system within your Deephaven Docker con
 
 ## What is Docker?
 
-Docker is an open platform for developing, shipping, and running applications. In Docker, applications are packaged into containers -- standardized executable components containing application code, operating system libraries, and dependencies required to run the application. Docker containers can be run on any operating system that supports Docker.
+Docker is an open platform for developing, shipping, and running applications. In Docker, applications are packaged into containers: standardized executable components containing application code, operating system libraries, and dependencies required to run the application. Docker containers can be run on any operating system that supports Docker.
 
 Deephaven is one of many applications that leverages Docker for build and deployment. Each Deephaven deployment is composed of multiple containers. These containers are managed by [Docker Compose](https://docs.docker.com/compose/). A YAML (`.yml`) file configures a Docker Compose deployment.
 
@@ -14,7 +14,9 @@ By design, Docker containers do not store persistent data. To persist data, stor
 
 ## The `/data` mount point
 
-By default, all Deephaven deployments mount `./data` in the local deployment directory to the `/data` volume in the running Deephaven container. This means that if the Deephaven console is used to write data to `/data/abc/file.csv`, that file will be visible at `./data/abc/file.csv` on the local file system of your computer. Similarly, if the local file `abc.parquet` is copied to `./data/abc.parquet`, then the file can be accessed at `/data/abc.parquet` on the Deephaven server.
+The Docker Compose files for Deephaven mount `./data` in the deployment directory to `/data` in the container. This means that if the Deephaven console is used to write data to `/data/abc/file.csv`, that file will be visible at `./data/abc/file.csv` on the local file system of your computer. Similarly, if the local file `abc.parquet` is copied to `./data/abc.parquet`, then the file can be accessed at `/data/abc.parquet` on the Deephaven server.
+
+With `docker run`, add `-v "$(pwd)/data:/data"` to get the same mount.
 
 If the `./data` directory does not exist when Deephaven is launched, it will be created.
 

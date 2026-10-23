@@ -87,12 +87,13 @@ Docker images set these environment variables by default:
 
 These properties control the core server behavior.
 
-| Property                  | Description                                                                                 | Default                      |
-| ------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------- |
-| `http.host`               | Network interface to bind to (IP address or hostname). If not set, binds to all interfaces. | All interfaces               |
-| `http.port`               | Port the server listens on                                                                  | `10000` (or `443` with SSL)  |
-| `http.targetUrl`          | User-accessible target URL (useful behind proxies)                                          | Auto-computed from host/port |
-| `http.session.durationMs` | Session duration in milliseconds                                                            | `300000` (5 minutes)         |
+| Property                  | Description                                                                                 | Default                       |
+| ------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------- |
+| `http.host`               | Network interface to bind to (IP address or hostname). If not set, binds to all interfaces. | All interfaces                |
+| `http.port`               | Port the server listens on                                                                  | `10000` (or `443` with SSL)   |
+| `http.targetUrl`          | User-accessible target URL (useful behind proxies)                                          | Auto-computed from host/port  |
+| `http.session.durationMs` | Session duration in milliseconds                                                            | `300000` (5 minutes)          |
+| `storage.path`            | Root directory for the web IDE's notebooks and layouts                                      | `<deephaven.dataDir>/storage` |
 
 ## Authentication configuration
 
@@ -134,14 +135,14 @@ These properties configure the HTTP server and web interface.
 
 These properties configure the Deephaven web interface defaults.
 
-| Property                         | Description                                | Default      |
-| -------------------------------- | ------------------------------------------ | ------------ |
-| `deephaven.console.type`         | Default console type: `python` or `groovy` | `python`     |
-| `web.storage.layout.directory`   | Directory for storing layouts              | `/layouts`   |
-| `web.storage.notebook.directory` | Directory for storing notebooks            | `/notebooks` |
-| `web.webgl`                      | Enable WebGL support in the web interface  | `true`       |
-| `web.webgl.editable`             | Allow users to toggle WebGL setting        | `true`       |
-| `web.flattenViewports`           | Flatten web viewports by default           | `false`      |
+| Property                         | Description                                                                                             | Default      |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------ |
+| `deephaven.console.type`         | Default console type: `python` or `groovy`                                                              | `python`     |
+| `web.storage.layout.directory`   | Storage subdirectory the server creates at startup for layouts. The web IDE always uses `/layouts`.     | `/layouts`   |
+| `web.storage.notebook.directory` | Storage subdirectory the server creates at startup for notebooks. The web IDE always uses `/notebooks`. | `/notebooks` |
+| `web.webgl`                      | Enable WebGL support in the web interface                                                               | `true`       |
+| `web.webgl.editable`             | Allow users to toggle WebGL setting                                                                     | `true`       |
+| `web.flattenViewports`           | Flatten web viewports by default                                                                        | `false`      |
 
 ## Security headers
 

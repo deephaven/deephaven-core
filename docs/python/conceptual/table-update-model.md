@@ -279,4 +279,3 @@ The update model described above serves as a cornerstone enabler of Deephaven’
 - [Deephaven’s Directed-Acyclic-Graph (DAG)](./dag.md)
 - [Kafka basic terminology](./kafka-basic-terms.md)
 - [Deephaven Barrage](/barrage/docs)
-- [Core API design](./deephaven-core-api.md)

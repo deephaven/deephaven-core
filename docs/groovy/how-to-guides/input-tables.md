@@ -156,9 +156,9 @@ Here are some things to consider when manually entering data into an input table
 
 ## Clickable links
 
-Any string column in Deephaven can contain a clickable link — the string just has to be formatted correctly.
+The UI shows any URL that starts with `http://` or `https://`, and any email address, as a clickable link. This includes values in an input table. For the full rules, see [Add clickable links to a Deephaven table](./user-interface/add-clickable-links.md).
 
-![An input table contains both valid and invalid links, with valid links underlined and highlighted in blue](../assets/how-to/ui/invalid_links.png)
+![An input table with URLs that start with `http://` or `https://` shown as blue, underlined links, and other values shown as plain text](../assets/how-to/ui/invalid_links.png)
 
 Let's create an input table that we can add links to manually:
 

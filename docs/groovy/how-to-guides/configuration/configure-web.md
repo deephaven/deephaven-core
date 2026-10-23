@@ -1,5 +1,5 @@
 ---
-title: Web Defaults
+title: Web defaults
 ---
 
 You can configure default settings for the Web UI using the Deephaven configuration file. See [Create a Deephaven configuration file](./config-file.md) for details.
