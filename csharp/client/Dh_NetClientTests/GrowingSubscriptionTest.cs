@@ -141,6 +141,62 @@ public class GrowingSubscriptionTest {
   }
 
   /// <summary>
+  /// A table whose rows are being removed from the top of its key space while the snapshot is delivering it from
+  /// the bottom. A full subscription receives the server's entire removed set, so a delta between rounds names
+  /// rows this client has not been given yet. Those used to be converted strictly and throw out of SpaceMapper:
+  /// "Of the 25 keys specified in Interval { Begin = 299960, ... }, the set only contains 0 keys".
+  /// </summary>
+  [Test]
+  public async Task TableLosingUndeliveredRowsIsFullyDelivered() {
+    // The delta removes a few rows from the bottom of the key space, which the first round has delivered, along
+    // with many from the top, which the snapshot has not reached. The former make the delta visible to the client.
+    const int removedFromBottom = 10;
+    const int removedFromTop = 1_000;
+    var run = RunId();
+    var script = Expensive + "\n\n" + $"""
+      # The keys of the rows removed once the snapshot is under way; empty until then.
+      blacklist_{run} = input_table(init_table=empty_table(0).update(["K = ii"]))
+      _cols = ["C%d = ii * %d" % (i, i + 1) for i in range(30)]
+      growing_removes_{run} = (empty_table({BaseRows}).update(["K = ii"] + _cols)
+          .update_view(["Slow = (long) expensive(K)"])
+          .where_not_in(blacklist_{run}, "K"))
+      """;
+    var delta = $"""
+      blacklist_{run}.add(merge([empty_table({removedFromBottom}).update(["K = ii"]),
+          empty_table({removedFromTop}).update(["K = {BaseRows - removedFromTop} + ii"])]))
+      """;
+    var delivery = await AssertFullyDelivered(script, $"growing_removes_{run}", delta,
+      settlesAt: BaseRows - removedFromBottom - removedFromTop);
+
+    // The delta is the one update that removes rows. It must have erased only the rows from the bottom, and it must
+    // have arrived while the client held fewer rows than the first key removed from the top, so that none of the
+    // rows removed from the top was held and the removes naming them had to be skipped.
+    var removes = delivery.SinceDelta.Where(r => r.Removed != 0).ToList();
+    await Assert.That(removes.Count).IsEqualTo(1).Because("exactly one update should have removed rows");
+    await Assert.That(removes[0].Removed).IsEqualTo((UInt64)removedFromBottom);
+    await Assert.That(removes[0].RowsBefore).IsLessThanOrEqualTo((Int64)(BaseRows - removedFromTop))
+      .Because("the delta should have arrived before the snapshot reached the rows removed from the top");
+
+    // Columns are K, C0..C29, Slow. What survives is the keys between the two removed ranges, in order.
+    var table = delivery.Table;
+    var columns = Enumerable.Range(0, 32).Select(c => Longs(table, c)).ToArray();
+    var keys = columns[0];
+    var slow = columns[31];
+    await Assert.That(FirstBadRow(keys.Length, i => {
+      var expectedKey = removedFromBottom + i;
+      if (keys[i] != expectedKey) {
+        return $"K is {keys[i]}, expected {expectedKey}";
+      }
+      for (var c = 0; c != 30; ++c) {
+        if (columns[c + 1][i] != keys[i] * (c + 1)) {
+          return $"C{c} is {columns[c + 1][i]}, expected {keys[i] * (c + 1)}";
+        }
+      }
+      return slow[i] == keys[i] * 3 ? null : $"Slow is {slow[i]}, expected {keys[i] * 3}";
+    })).IsEqualTo("");
+  }
+
+  /// <summary>
   /// What the subscription reported for one update: the row count before it, and the sizes of the removed, added
   /// and modified sets it carried, the last being the largest over the columns.
   /// </summary>
