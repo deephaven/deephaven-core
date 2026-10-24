@@ -155,6 +155,42 @@ public class GrowingSubscriptionTest {
   }
 
   /// <summary>
+  /// A table that gains rows ahead of the region the snapshot has delivered. The server tracks what the client
+  /// holds as a range of positions, so each insertion pushes the last delivered rows out of that range, and the
+  /// next round sends them again. This client used to insert a re-sent row strictly: "This probably means
+  /// duplicates were inserted".
+  /// </summary>
+  [Test]
+  public async Task TableGainingRowsAheadOfTheSnapshotIsFullyDelivered() {
+    const int tickRows = 1_000;
+    var script = Expensive + "\n\n" + $"""
+      # The ticking constituent comes first in the merge, so its rows take the lowest row keys and land ahead of
+      # every base row. It stops after {tickRows} rows so that the table settles.
+      _tick = (time_table("PT0.002S").update(["K = 9_000_000 + ii", "Price = ii * 2.5"])
+          .update_view(["Slow = (long) expensive(K)"]).drop_columns("Timestamp").head({tickRows}))
+      _base = empty_table({BaseRows}).update(["K = ii", "Price = ii * 1.5"]).update_view(["Slow = (long) expensive(K)"])
+      growing_inserts = merge([_tick, _base])
+      """;
+    var table = await AssertFullyDelivered(script, "growing_inserts", settlesAt: tickRows + BaseRows);
+
+    // The ticking rows come first, with keys from 9,000,000 up; the base rows follow, with keys 0, 1, 2, ...
+    var keys = Longs(table, 0);
+    var prices = Doubles(table, 1);
+    var slow = Longs(table, 2);
+    await Assert.That(FirstBadRow(keys.Length, i => {
+      var expectedKey = i < tickRows ? 9_000_000 + i : i - tickRows;
+      if (keys[i] != expectedKey) {
+        return $"K is {keys[i]}, expected {expectedKey}";
+      }
+      var expectedPrice = i < tickRows ? (keys[i] - 9_000_000) * 2.5 : keys[i] * 1.5;
+      if (prices[i] != expectedPrice) {
+        return $"Price is {prices[i]}, expected {expectedPrice}";
+      }
+      return slow[i] == keys[i] * 3 ? null : $"Slow is {slow[i]}, expected {keys[i] * 3}";
+    })).IsEqualTo("");
+  }
+
+  /// <summary>
   /// Defines the table, subscribes, and waits until the subscription has held at least as many rows as the table
   /// had when it was opened, which means the initial snapshot has been delivered in full. A table that is losing
   /// rows never reaches its opening count; for one of those, 'settlesAt' gives the row count at which it is
