@@ -168,7 +168,10 @@ class AwaitingMetadata(TableState tableState) : IChunkProcessor {
       afterRemoves = prev;
     } else {
       removedRowsIndexSpace = tableState.Erase(removedRows);
-      afterRemoves = tableState.Snapshot();
+      // A non-empty removed set can still erase nothing: a full subscription is sent the server's entire removed
+      // set, which while the initial snapshot is still arriving can name only rows this client has not been given
+      // yet. The table is unchanged then, so this takes the pointer-equality path too.
+      afterRemoves = removedRowsIndexSpace.IsEmpty ? prev : tableState.Snapshot();
     }
 
     return (prev, removedRowsIndexSpace, afterRemoves);
