@@ -77,4 +77,21 @@ public class TableStateTest {
     await Assert.That(Render(erased)).IsEqualTo("[0,3) [4,7)");
     await AssertHoldsKeys(state, 10);
   }
+
+  /// <summary>
+  /// The second erasure's positions count only the rows that survived the first, so each has to move past the
+  /// rows the first one took out ahead of it.
+  /// </summary>
+  [Test]
+  public async Task CombineErasuresLiftsTheSecondPastTheFirst() {
+    // Rows 0 and 1 go first; the next two rows of what remains were rows 2 and 3 originally.
+    await Assert.That(Render(TableState.CombineErasures(Range(0, 2), Range(0, 2)))).IsEqualTo("[0,4)");
+    // Rows 5..7 go first; row 396 of what remains was row 399.
+    await Assert.That(Render(TableState.CombineErasures(Range(5, 8), Range(396, 397)))).IsEqualTo("[5,8) [399,400)");
+    // Rows 3 and 5 go first; rows 3 and 4 of what remains were rows 4 and 6, and the lift grows between them.
+    await Assert.That(Render(TableState.CombineErasures(Keys(3, 5), Range(3, 5)))).IsEqualTo("[3,7)");
+    // Either erasure may be empty.
+    await Assert.That(Render(TableState.CombineErasures(RowSequence.CreateEmpty(), Range(2, 4)))).IsEqualTo("[2,4)");
+    await Assert.That(Render(TableState.CombineErasures(Range(2, 4), RowSequence.CreateEmpty()))).IsEqualTo("[2,4)");
+  }
 }

@@ -171,6 +171,35 @@ public class TableState {
   }
 
   /// <summary>
+  /// Expresses two successive erasures as one. 'first' is the result of an Erase, in the index space of the table
+  /// before it; 'second' is the result of a later Erase, in the index space of the table after the first one, and
+  /// so has to be lifted past the rows the first one took out before the two can be merged.
+  /// </summary>
+  /// <param name="first">Positions erased first, in the index space of the original table</param>
+  /// <param name="second">Positions erased next, in the index space of the table after the first erasure</param>
+  /// <returns>All of the erased positions, in the index space of the original table</returns>
+  public static RowSequence CombineErasures(RowSequence first, RowSequence second) {
+    var builder = new RowSequenceBuilder();
+    foreach (var interval in first.Intervals) {
+      builder.AddInterval(interval);
+    }
+
+    // A position q in the later index space is position q + k in the original, where k counts the rows of 'first'
+    // that lie ahead of it there. Walking both in ascending order, k only ever grows.
+    using var firstIntervals = first.Intervals.GetEnumerator();
+    var haveFirst = firstIntervals.MoveNext();
+    UInt64 lifted = 0;
+    foreach (var position in second.Elements) {
+      while (haveFirst && firstIntervals.Current.Begin <= position + lifted) {
+        lifted += firstIntervals.Current.Count;
+        haveFirst = firstIntervals.MoveNext();
+      }
+      builder.Add(position + lifted);
+    }
+    return builder.Build();
+  }
+
+  /// <summary>
   /// Modifies column 'col_num' with the contiguous data sourced in 'src'
   /// at the half-open interval[begin, end), to be stored in the destination
   /// at the positions indicated by 'rows_to_modify_index_space'.

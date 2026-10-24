@@ -142,39 +142,41 @@ class AwaitingMetadata(TableState tableState) : IChunkProcessor {
     // 4. modifies
     // We have not called with add or modify data yet, but we can do removes and shifts now
     // (steps 1 and 2).
-    var (prev, removedRowsIndexSpace, afterRemoves) = ProcessRemoves(removedRows);
+    var prev = tableState.Snapshot();
+    var removedRowsIndexSpace = tableState.Erase(removedRows);
     tableState.ApplyShifts(shiftStartIndex, shiftEndIndex, shiftDestIndex);
 
     // We track only the rows we hold data for, so the keys we add are the ones data is arriving for. A key
     // that added_rows announces without data will arrive, with data, in a later snapshot round and is added
-    // then. The insertion is strict. During the initial snapshot the server can legitimately re-send a row we
-    // already hold; supporting that is a separate change, so for now such a row fails loudly inside
-    // SpaceMapper rather than being silently inserted a second time.
+    // then.
+    //
+    // While the initial snapshot is still arriving, the server can send data for a row we already hold. It
+    // tracks what we hold as a range of positions, so a row inserted ahead of the delivered region pushes the
+    // last delivered row out of that range, and the next round covers that row again. The Java client treats
+    // this as an overwrite. We hold only rows we have data for, so we take the row out and add it back with the
+    // new data, which reports it to the user as removed and then added. That is the one representation in which
+    // every before-and-after table in the update agrees with the index sets that describe it: overwriting in
+    // place during the add phase would change rows between AfterRemoves and AfterAdds that AddedRowsIndexSpace
+    // does not mention.
+    // Erase skips the rows it does not hold, so handed the whole included set it takes out exactly the re-sent rows.
+    var reSentRowsIndexSpace = tableState.Erase(addedRowsIncluded);
+    if (!reSentRowsIndexSpace.IsEmpty) {
+      // The removed set reported to the user is in the index space of 'prev'. This second erasure is in the
+      // index space of the table after the first, hence the lift.
+      removedRowsIndexSpace = TableState.CombineErasures(removedRowsIndexSpace, reSentRowsIndexSpace);
+    }
+
+    // When nothing was erased the table is unchanged, which we indicate by handing out the same table, because
+    // consumers rely on pointer equality (beforeRemoves == afterRemoves) to notice it. A non-empty removed set
+    // can still erase nothing: a full subscription is sent the server's entire removed set, which during the
+    // initial snapshot may name only rows this client has not been given yet.
+    var afterRemoves = removedRowsIndexSpace.IsEmpty ? prev : tableState.Snapshot();
+
     var addedRowsIndexSpace = tableState.AddKeys(addedRowsIncluded);
 
     var nextState = new AwaitingAdds(tableState, perColumnModifies.ToArray(), prev, removedRowsIndexSpace, afterRemoves,
       addedRowsIndexSpace);
     return nextState.ProcessNextChunk(sourcesAndRanges, Array.Empty<byte>());
-  }
-
-  (IClientTable, RowSequence, IClientTable) ProcessRemoves(RowSequence removedRows) {
-    var prev = tableState.Snapshot();
-    // The reason we special-case "empty" is because when the tables are unchanged, we prefer
-    // to indicate this via pointer equality (e.g. beforeRemoves == afterRemoves).
-    RowSequence removedRowsIndexSpace;
-    IClientTable afterRemoves;
-    if (removedRows.IsEmpty) {
-      removedRowsIndexSpace = RowSequence.CreateEmpty();
-      afterRemoves = prev;
-    } else {
-      removedRowsIndexSpace = tableState.Erase(removedRows);
-      // A non-empty removed set can still erase nothing: a full subscription is sent the server's entire removed
-      // set, which while the initial snapshot is still arriving can name only rows this client has not been given
-      // yet. The table is unchanged then, so this takes the pointer-equality path too.
-      afterRemoves = removedRowsIndexSpace.IsEmpty ? prev : tableState.Snapshot();
-    }
-
-    return (prev, removedRowsIndexSpace, afterRemoves);
   }
 }
 
