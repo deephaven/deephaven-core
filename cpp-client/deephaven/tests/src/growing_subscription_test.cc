@@ -433,4 +433,61 @@ blacklist_{2}.add(merge([empty_table({0}).update(["K = ii"]),
     return {};
   }) == "");
 }
+
+// A table that gains rows ahead of the region the snapshot has delivered. The server tracks what
+// the client holds as a range of positions, so each insertion pushes the last delivered rows out of
+// that range, and the next round sends them again. This client used to insert a re-sent row
+// strictly: "Some elements of [...] were already in the set".
+TEST_CASE("Growing subscription: table gaining rows ahead of the snapshot is fully delivered",
+    "[growing]") {
+  constexpr int64_t kInsertedRows = 1'000;
+  auto run = RunId();
+  auto script = std::string(kExpensive) + fmt::format(R"xxx(
+# The rows inserted once the snapshot is under way; empty until then. This constituent comes first
+# in the merge, so its rows take the lowest row keys and land ahead of every base row.
+inserted_{1} = input_table(init_table=empty_table(0).update(["K = ii", "Price = ii * 2.5"]))
+_base = empty_table({0}).update(["K = ii", "Price = ii * 1.5"]).update_view(["Slow = (long) expensive(K)"])
+growing_inserts_{1} = merge([inserted_{1}.update_view(["Slow = (long) expensive(K)"]), _base])
+)xxx", kBaseRows, run);
+  auto delta = fmt::format(R"xxx(
+inserted_{1}.add(empty_table({0}).update(["K = 9_000_000 + ii", "Price = ii * 2.5"]))
+)xxx", kInsertedRows, run);
+  auto delivery = SubscribeUntil(script, fmt::format("growing_inserts_{}", run), delta,
+      [](const ClientTable &t) {
+        return t.NumRows() == static_cast<size_t>(kInsertedRows + kBaseRows);
+      });
+
+  // The inserted rows push as many delivered rows out of the server's range, and the rounds that
+  // follow send each of those again, which this client reports as a row removed and added back.
+  // Nothing else removes a row.
+  size_t re_sent = 0;
+  for (const auto &reported : delivery.since_delta) {
+    re_sent += reported.removed;
+  }
+  INFO("each delivered row the insertion pushed out of the server's range should have been sent "
+      "again");
+  CHECK(re_sent == static_cast<size_t>(kInsertedRows));
+
+  // The inserted rows come first, with keys from 9,000,000 up; the base rows follow, with keys 0,
+  // 1, 2, ...
+  const auto &table = *delivery.table;
+  auto keys = Longs(table, 0);
+  auto prices = Doubles(table, 1);
+  auto slow = Longs(table, 2);
+  CHECK(FirstBadRow(keys.size(), [&](size_t i) -> std::optional<std::string> {
+    auto index = static_cast<int64_t>(i);
+    auto expected_key = index < kInsertedRows ? 9'000'000 + index : index - kInsertedRows;
+    if (keys[i] != expected_key) {
+      return fmt::format("K is {}, expected {}", keys[i], expected_key);
+    }
+    auto expected_price = index < kInsertedRows ? (keys[i] - 9'000'000) * 2.5 : keys[i] * 1.5;
+    if (prices[i] != expected_price) {
+      return fmt::format("Price is {}, expected {}", prices[i], expected_price);
+    }
+    if (slow[i] != keys[i] * 3) {
+      return fmt::format("Slow is {}, expected {}", slow[i], keys[i] * 3);
+    }
+    return {};
+  }) == "");
+}
 }  // namespace deephaven::client::tests
