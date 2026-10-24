@@ -197,6 +197,52 @@ public class GrowingSubscriptionTest {
   }
 
   /// <summary>
+  /// A table that gains rows ahead of the region the snapshot has delivered. The server tracks what the client
+  /// holds as a range of positions, so each insertion pushes the last delivered rows out of that range, and the
+  /// next round sends them again. This client used to insert a re-sent row strictly: "This probably means
+  /// duplicates were inserted".
+  /// </summary>
+  [Test]
+  public async Task TableGainingRowsAheadOfTheSnapshotIsFullyDelivered() {
+    const int insertedRows = 1_000;
+    var run = RunId();
+    var script = Expensive + "\n\n" + $"""
+      # The rows inserted once the snapshot is under way; empty until then. This constituent comes first in the
+      # merge, so its rows take the lowest row keys and land ahead of every base row.
+      inserted_{run} = input_table(init_table=empty_table(0).update(["K = ii", "Price = ii * 2.5"]))
+      _base = empty_table({BaseRows}).update(["K = ii", "Price = ii * 1.5"]).update_view(["Slow = (long) expensive(K)"])
+      growing_inserts_{run} = merge([inserted_{run}.update_view(["Slow = (long) expensive(K)"]), _base])
+      """;
+    var delta = $"""
+      inserted_{run}.add(empty_table({insertedRows}).update(["K = 9_000_000 + ii", "Price = ii * 2.5"]))
+      """;
+    var delivery = await AssertFullyDelivered(script, $"growing_inserts_{run}", delta, settlesAt: insertedRows + BaseRows);
+
+    // The inserted rows push as many delivered rows out of the server's range, and the rounds that follow send each
+    // of those again, which this client reports as a row removed and added back. Nothing else removes a row.
+    var reSent = delivery.SinceDelta.Aggregate(0UL, (sum, r) => sum + r.Removed);
+    await Assert.That(reSent).IsEqualTo((UInt64)insertedRows)
+      .Because("each delivered row the insertion pushed out of the server's range should have been sent again");
+
+    // The inserted rows come first, with keys from 9,000,000 up; the base rows follow, with keys 0, 1, 2, ...
+    var table = delivery.Table;
+    var keys = Longs(table, 0);
+    var prices = Doubles(table, 1);
+    var slow = Longs(table, 2);
+    await Assert.That(FirstBadRow(keys.Length, i => {
+      var expectedKey = i < insertedRows ? 9_000_000 + i : i - insertedRows;
+      if (keys[i] != expectedKey) {
+        return $"K is {keys[i]}, expected {expectedKey}";
+      }
+      var expectedPrice = i < insertedRows ? (keys[i] - 9_000_000) * 2.5 : keys[i] * 1.5;
+      if (prices[i] != expectedPrice) {
+        return $"Price is {prices[i]}, expected {expectedPrice}";
+      }
+      return slow[i] == keys[i] * 3 ? null : $"Slow is {slow[i]}, expected {keys[i] * 3}";
+    })).IsEqualTo("");
+  }
+
+  /// <summary>
   /// What the subscription reported for one update: the row count before it, and the sizes of the removed, added
   /// and modified sets it carried, the last being the largest over the columns.
   /// </summary>
