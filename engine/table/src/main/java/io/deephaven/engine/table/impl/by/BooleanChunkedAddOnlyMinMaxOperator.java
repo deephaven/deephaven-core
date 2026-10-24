@@ -149,4 +149,10 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
     public void startTrackingPrevValues() {
         resultColumn.startTrackingPrevValues();
     }
+
+    @Override
+    public boolean canReclaimStates() {
+        // only used for add-only and blink input, whose states never become empty, so there is nothing to reclaim
+        return false;
+    }
 }
