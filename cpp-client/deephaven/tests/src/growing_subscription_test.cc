@@ -298,4 +298,45 @@ growing_removes = (empty_table({0}).update(["K = ii"] + _cols)
     return {};
   }) == "");
 }
+
+// A table that gains rows ahead of the region the snapshot has delivered. The server tracks what
+// the client holds as a range of positions, so each insertion pushes the last delivered rows out of
+// that range, and the next round sends them again. This client used to insert a re-sent row
+// strictly: "Some elements of [...] were already in the set".
+TEST_CASE("Growing subscription: table gaining rows ahead of the snapshot is fully delivered",
+    "[growing]") {
+  constexpr int64_t kTickRows = 1'000;
+  auto script = std::string(kExpensive) + fmt::format(R"xxx(
+# The ticking constituent comes first in the merge, so its rows take the lowest row keys and land
+# ahead of every base row. It stops after {1} rows so that the table settles.
+_tick = (time_table("PT0.002S").update(["K = 9_000_000 + ii", "Price = ii * 2.5"])
+    .update_view(["Slow = (long) expensive(K)"]).drop_columns("Timestamp").head({1}))
+_base = empty_table({0}).update(["K = ii", "Price = ii * 1.5"]).update_view(["Slow = (long) expensive(K)"])
+growing_inserts = merge([_tick, _base])
+)xxx", kBaseRows, kTickRows);
+  auto table = SubscribeUntil(script, "growing_inserts", [](const ClientTable &t) {
+    return t.NumRows() == static_cast<size_t>(kTickRows + kBaseRows);
+  });
+
+  // The ticking rows come first, with keys from 9,000,000 up; the base rows follow, with keys 0,
+  // 1, 2, ...
+  auto keys = Longs(*table, 0);
+  auto prices = Doubles(*table, 1);
+  auto slow = Longs(*table, 2);
+  CHECK(FirstBadRow(keys.size(), [&](size_t i) -> std::optional<std::string> {
+    auto index = static_cast<int64_t>(i);
+    auto expected_key = index < kTickRows ? 9'000'000 + index : index - kTickRows;
+    if (keys[i] != expected_key) {
+      return fmt::format("K is {}, expected {}", keys[i], expected_key);
+    }
+    auto expected_price = index < kTickRows ? (keys[i] - 9'000'000) * 2.5 : keys[i] * 1.5;
+    if (prices[i] != expected_price) {
+      return fmt::format("Price is {}, expected {}", prices[i], expected_price);
+    }
+    if (slow[i] != keys[i] * 3) {
+      return fmt::format("Slow is {}, expected {}", slow[i], keys[i] * 3);
+    }
+    return {};
+  }) == "");
+}
 }  // namespace deephaven::client::tests

@@ -268,14 +268,44 @@ TEST_CASE("BarrageProcessor: absent included rows means same as added rows", "[b
   Driver::CheckHolds(*update->Current(), {Range(0, 1005)});
 }
 
-// While the initial snapshot is still arriving the server can re-send a row the client already
-// holds. Treating that as an overwrite is a separate change; until it lands, the row must be
-// rejected rather than inserted a second time.
-TEST_CASE("BarrageProcessor: re-sent row is rejected", "[barrage]") {
+// While the initial snapshot is still arriving, the server can re-send a row the client already
+// holds: a row that an insertion ahead of the delivered region pushed out of the server's window,
+// which the next round then covers again. This client holds only rows it has data for, so the row
+// is reported as removed and then added back with the new data. That is the one representation in
+// which every before-and-after table in the update agrees with the index sets that describe it.
+TEST_CASE("BarrageProcessor: re-sent row is removed and added back", "[barrage]") {
   auto driver = AfterFirstRound();
   auto metadata = AddsOnly(*Range(0, 1000), Range(399, 800).get(), true);
-  CHECK_THROWS_WITH(driver.FeedRows(&metadata, *Range(399, 800)),
-      Catch::Contains("already in the set"));
+  auto keys = Elements(*Range(399, 800));
+  std::vector<int64_t> values;
+  for (auto key : keys) {
+    values.push_back(Driver::ValueFor(key));
+  }
+  values[0] = 12345;  // The re-sent row carries a new value, which must win.
+  auto update = driver.Feed(&metadata, keys, values);
+  REQUIRE(update.has_value());
+  CHECK(Render(*update->RemovedRows()) == "[[399,400)]");
+  CHECK(update->AfterRemoves()->NumRows() == 399);
+  CHECK(Render(*update->AddedRows()) == "[[399,800)]");
+  CHECK(update->Current()->NumRows() == 800);
+  CHECK(Column(*update->Current(), 0)[399] == 399);
+  CHECK(Column(*update->Current(), 1)[399] == 12345);
+  CHECK(Column(*update->Current(), 1)[400] == Driver::ValueFor(400));
+}
+
+// One message can both remove held rows and re-send a held row. The removed set reported to the
+// user is in the index space of the table before the message, so the re-sent row's position has to
+// account for the rows removed ahead of it.
+TEST_CASE("BarrageProcessor: re-send combined with removes reports positions before the message",
+    "[barrage]") {
+  auto driver = AfterFirstRound();
+  auto metadata = Metadata(*Range(5, 8), *None(), Range(399, 405).get(), {None(), None()});
+  auto update = driver.FeedRows(&metadata, *Range(399, 405));
+  REQUIRE(update.has_value());
+  CHECK(Render(*update->RemovedRows()) == "[[5,8), [399,400)]");
+  CHECK(update->AfterRemoves()->NumRows() == 396);
+  CHECK(Render(*update->AddedRows()) == "[[396,402)]");
+  Driver::CheckHolds(*update->Current(), {Range(0, 5), Range(8, 405)});
 }
 
 // A full subscription is sent the server's entire removed set, which while the snapshot is still
