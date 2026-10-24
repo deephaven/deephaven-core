@@ -11,6 +11,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.SafeCloseable;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -23,6 +24,7 @@ import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.i;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static org.junit.Assert.*;
+import io.deephaven.engine.table.impl.CapturingUpdateGraph;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
 
@@ -47,6 +49,29 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
             }
         }
         assertEquals(source.size(), filtered.size());
+    }
+
+    @Test
+    public void testRefreshBeforeRecomputeListener() {
+        final CapturingUpdateGraph updateGraph =
+                new CapturingUpdateGraph(ExecutionContext.getContext().getUpdateGraph().cast());
+        try (final SafeCloseable ignored = updateGraph.getContext().open()) {
+            final Table source = TableTools.newTable(intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+
+            // A where() on a static table holds no update graph lock, so the update graph may refresh its sources at
+            // any point between the filter's init() and setRecomputeListener().
+            final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(2, 4);
+            incrementalReleaseFilter.init(source.getDefinition());
+            updateGraph.runWithinUnitTestCycle(updateGraph::refreshSources, true);
+
+            final Table filtered = source.where(incrementalReleaseFilter);
+            assertEquals(2, filtered.size());
+
+            for (int ii = 0; ii < 10 && filtered.size() < source.size(); ++ii) {
+                updateGraph.runWithinUnitTestCycle(updateGraph::refreshSources, true);
+            }
+            assertTableEquals(source, filtered);
+        }
     }
 
     @Test
