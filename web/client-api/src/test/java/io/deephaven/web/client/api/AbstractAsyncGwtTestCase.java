@@ -17,6 +17,7 @@ import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.CancellablePromise;
+import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
@@ -63,6 +64,12 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
 
     @Override
     protected void gwtTearDown() throws Exception {
+        // Shut every stream of this test's connection, pass or fail, so nothing leaks into the next test
+        if (lastCoreClient != null) {
+            lastCoreClient.disconnect();
+            lastCoreClient = null;
+            lastIdeConnection = null;
+        }
         super.gwtTearDown();
         errorLogsSeen.clear();
         Js.asPropertyMap(console).set("error", originalConsoleError);
@@ -171,13 +178,29 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
      * Connects and authenticates to the configured server and runs the specified scripts.
      */
     protected Promise<IdeSession> connect(TableSourceBuilder tables) {
+        return connect(tables, null);
+    }
+
+    /**
+     * The client and connection behind the most recent {@link #connect}, for tests that listen to connection-level
+     * events; the client is disconnected in teardown.
+     */
+    protected CoreClient lastCoreClient;
+    protected IdeConnection lastIdeConnection;
+
+    /**
+     * As {@link #connect(TableSourceBuilder)}, with connect options, for a test that needs its own transport.
+     */
+    protected Promise<IdeSession> connect(TableSourceBuilder tables, ConnectOptions connectOptions) {
         // start by delaying test finish by 1.0s so we fail fast in cases where we aren't set up right
         delayTestFinish(1007);
         return importDhInternal().then(module -> {
-            CoreClient coreClient = new CoreClient(localServer, null);
+            CoreClient coreClient = new CoreClient(localServer, connectOptions);
+            lastCoreClient = coreClient;
             return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
                     .then(ignore -> coreClient.getAsIdeConnection())
                     .then(ide -> {
+                        lastIdeConnection = ide;
                         delayTestFinish(501);
                         return ide.getConsoleTypes().then(consoleTypes -> {
                             delayTestFinish(502);
