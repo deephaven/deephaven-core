@@ -357,7 +357,11 @@ AwaitingMetadata::ProcessRemoves(const RowSequence &removed_rows) {
     after_removes = prev;
   } else {
     removed_rows_index_space = table_state_.Erase(removed_rows);
-    after_removes = table_state_.Snapshot();
+    // A non-empty removed set can still erase nothing: a full subscription is sent the server's
+    // entire removed set, which while the initial snapshot is still arriving can name only rows
+    // this client has not been given yet. The table is unchanged then, so this takes the
+    // pointer-equality path too.
+    after_removes = removed_rows_index_space->Empty() ? prev : table_state_.Snapshot();
   }
   return {std::move(prev), std::move(removed_rows_index_space), std::move(after_removes)};
 }
