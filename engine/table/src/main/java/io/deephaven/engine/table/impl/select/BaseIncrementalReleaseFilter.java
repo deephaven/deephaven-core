@@ -71,17 +71,18 @@ public abstract class BaseIncrementalReleaseFilter
     @Override
     public void init(@NotNull final TableDefinition tableDefinition) {
         initialized = true;
-        if (!started) {
-            return;
-        }
-        addToUpdateGraph();
     }
 
     /**
      * If this filter is not part of the update graph's sources, then add it.
+     * <p>
+     * The filter is not added until it has a recompute listener, because the update graph may run its sources at any
+     * time, including while the initial filter of a static table is running without the update graph lock.
+     * {@link #setRecomputeListener(RecomputeListener)} adds the filter if it has rows left to release.
+     * </p>
      */
     protected void addToUpdateGraph() {
-        if (addedToUpdateGraph) {
+        if (addedToUpdateGraph || listener == null) {
             return;
         }
         updateGraph.addSource(this);
@@ -316,6 +317,9 @@ public abstract class BaseIncrementalReleaseFilter
     public void setRecomputeListener(RecomputeListener listener) {
         this.listener = listener;
         listener.setIsRefreshing(true);
+        if (started && releaseAllNanos == QueryConstants.NULL_LONG) {
+            addToUpdateGraph();
+        }
     }
 
     @Override
