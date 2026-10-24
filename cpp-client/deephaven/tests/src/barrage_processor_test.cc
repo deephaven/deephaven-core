@@ -10,10 +10,9 @@
 #include <vector>
 #include "deephaven/third_party/catch.hpp"
 #include "deephaven/third_party/fmt/core.h"
-#include "deephaven/dhcore/chunk/chunk.h"
+#include "deephaven/tests/barrage_test_util.h"
 #include "deephaven/dhcore/clienttable/client_table.h"
 #include "deephaven/dhcore/clienttable/schema.h"
-#include "deephaven/dhcore/column/array_column_source.h"
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 #include "deephaven/dhcore/ticking/barrage_processor.h"
@@ -24,13 +23,10 @@
 
 using deephaven::dhcore::ElementType;
 using deephaven::dhcore::ElementTypeId;
-using deephaven::dhcore::chunk::Int64Chunk;
 using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::clienttable::Schema;
 using deephaven::dhcore::column::ColumnSource;
-using deephaven::dhcore::column::Int64ArrayColumnSource;
 using deephaven::dhcore::container::RowSequence;
-using deephaven::dhcore::container::RowSequenceBuilder;
 using deephaven::dhcore::ticking::BarrageProcessor;
 using deephaven::dhcore::ticking::TickingUpdate;
 using io::deephaven::barrage::flatbuf::BarrageMessageType;
@@ -86,22 +82,6 @@ std::vector<int8_t> EncodeRowSequence(const RowSequence &rows) {
   return result;
 }
 
-std::shared_ptr<RowSequence> Range(uint64_t begin, uint64_t end) {
-  return RowSequence::CreateSequential(begin, end);
-}
-
-std::shared_ptr<RowSequence> Keys(std::initializer_list<uint64_t> keys) {
-  RowSequenceBuilder builder;
-  for (auto key : keys) {
-    builder.Add(key);
-  }
-  return builder.Build();
-}
-
-std::shared_ptr<RowSequence> None() {
-  return RowSequence::CreateEmpty();
-}
-
 // Builds the serialized BarrageMessageWrapper carrying a BarrageUpdateMetadata. Passing nullptr
 // for 'included_rows' leaves the added_rows_included field absent, which is how the server says
 // "same as added_rows". There is one modified-rows set per column. Shifts are always empty.
@@ -148,56 +128,6 @@ std::vector<uint8_t> Metadata(const RowSequence &removed_rows, const RowSequence
 std::vector<uint8_t> AddsOnly(const RowSequence &added_rows, const RowSequence *included_rows,
     bool is_snapshot = false) {
   return Metadata(*None(), added_rows, included_rows, {None(), None()}, is_snapshot);
-}
-
-// Makes a long column source holding 'values', the shape in which record batch data reaches
-// BarrageProcessor.
-std::shared_ptr<ColumnSource> LongColumn(const std::vector<int64_t> &values) {
-  auto n = values.size();
-  auto elements = std::make_unique<int64_t[]>(n);
-  auto nulls = std::make_unique<bool[]>(n);
-  for (size_t i = 0; i != n; ++i) {
-    elements[i] = values[i];
-    nulls[i] = false;
-  }
-  return Int64ArrayColumnSource::CreateFromArrays(ElementType::Of(ElementTypeId::kInt64),
-      std::move(elements), std::move(nulls), n);
-}
-
-std::vector<int64_t> Elements(const RowSequence &rows) {
-  std::vector<int64_t> result;
-  rows.ForEachInterval([&result](uint64_t begin, uint64_t end) {
-    for (auto key = begin; key != end; ++key) {
-      result.push_back(static_cast<int64_t>(key));
-    }
-  });
-  return result;
-}
-
-std::vector<int64_t> Column(const ClientTable &table, size_t column_index) {
-  auto rows = table.GetRowSequence();
-  auto chunk = Int64Chunk::Create(rows->Size());
-  table.GetColumn(column_index)->FillChunk(*rows, &chunk, nullptr);
-  return {chunk.data(), chunk.data() + chunk.Size()};
-}
-
-std::string Render(const RowSequence &rows) {
-  return fmt::format("{}", rows);
-}
-
-// Describes the first place two columns differ, or returns "" when they are identical.
-std::string FirstDifference(const char *column, const std::vector<int64_t> &expected,
-    const std::vector<int64_t> &actual) {
-  auto n = std::min(expected.size(), actual.size());
-  for (size_t i = 0; i != n; ++i) {
-    if (expected[i] != actual[i]) {
-      return fmt::format("{}: row {} is {}, expected {}", column, i, actual[i], expected[i]);
-    }
-  }
-  if (expected.size() != actual.size()) {
-    return fmt::format("{}: {} rows, expected {}", column, actual.size(), expected.size());
-  }
-  return "";
 }
 
 // Drives a BarrageProcessor one record batch at a time. The table has two long columns, Key and
@@ -346,5 +276,33 @@ TEST_CASE("BarrageProcessor: re-sent row is rejected", "[barrage]") {
   auto metadata = AddsOnly(*Range(0, 1000), Range(399, 800).get(), true);
   CHECK_THROWS_WITH(driver.FeedRows(&metadata, *Range(399, 800)),
       Catch::Contains("already in the set"));
+}
+
+// A full subscription is sent the server's entire removed set, which while the snapshot is still
+// arriving can name rows this client has not been given yet. Those rows are not here to remove, so
+// the table is unchanged, and the update says so the way it does for an empty removed set: by
+// handing out the same table.
+TEST_CASE("BarrageProcessor: remove of undelivered rows leaves the table untouched", "[barrage]") {
+  auto driver = AfterFirstRound();
+  auto metadata = Metadata(*Range(800, 820), *None(), nullptr, {None(), None()});
+  auto update = driver.Feed(&metadata, {}, {});
+  REQUIRE(update.has_value());
+  CHECK(update->RemovedRows()->Empty());
+  CHECK(update->AfterRemoves() == update->Prev());
+  Driver::CheckHolds(*update->Current(), {Range(0, 400)});
+}
+
+// A removed set that straddles the delivered region erases only the rows this client holds, and
+// the row count drops by that many. The rows that move into the delivered region as a result
+// arrive in the same message, as included rows.
+TEST_CASE("BarrageProcessor: remove straddling the delivered region erases only held rows", "[barrage]") {
+  auto driver = AfterFirstRound();
+  auto metadata = Metadata(*Range(390, 410), *None(), Range(410, 420).get(), {None(), None()});
+  auto update = driver.FeedRows(&metadata, *Range(410, 420));
+  REQUIRE(update.has_value());
+  CHECK(Render(*update->RemovedRows()) == "[[390,400)]");
+  CHECK(update->AfterRemoves()->NumRows() == 390);
+  CHECK(Render(*update->AddedRows()) == "[[390,400)]");
+  Driver::CheckHolds(*update->Current(), {Range(0, 390), Range(410, 420)});
 }
 }  // namespace deephaven::client::tests

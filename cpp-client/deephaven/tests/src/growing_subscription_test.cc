@@ -254,4 +254,48 @@ growing_modifies = (empty_table({0}).update(["K = ii"] + _cols)
     return {};
   }) == "");
 }
+
+// A table whose rows are being removed from the top of its key space while the snapshot is
+// delivering it from the bottom. A full subscription receives the server's entire removed set, so
+// the deltas between rounds name rows this client has not been given yet. Those used to be
+// converted strictly and throw out of SpaceMapper.
+TEST_CASE("Growing subscription: table losing undelivered rows is fully delivered", "[growing]") {
+  constexpr int64_t kRemovedRows = 1'000;
+  auto script = std::string(kExpensive) + fmt::format(R"xxx(
+# Removes the highest keys first, one every 2ms, and stops after {1} of them.
+_blacklist = (time_table("PT0.002S").update(["K = (long) ({2} - ii)"])
+    .drop_columns("Timestamp").head({1}))
+_cols = ["C%d = ii * %d" % (i, i + 1) for i in range(30)]
+growing_removes = (empty_table({0}).update(["K = ii"] + _cols)
+    .update_view(["Slow = (long) expensive(K)"])
+    .where_not_in(_blacklist, "K"))
+)xxx", kBaseRows, kRemovedRows, kBaseRows - 1);
+  auto table = SubscribeUntil(script, "growing_removes", [](const ClientTable &t) {
+    return t.NumRows() == static_cast<size_t>(kBaseRows - kRemovedRows);
+  });
+
+  // Columns are K, C0..C29, Slow. What survives is the lowest keys, in order.
+  std::vector<std::vector<int64_t>> columns;
+  for (size_t c = 0; c != 32; ++c) {
+    columns.push_back(Longs(*table, c));
+  }
+  const auto &keys = columns[0];
+  const auto &slow = columns[31];
+  CHECK(FirstBadRow(keys.size(), [&](size_t i) -> std::optional<std::string> {
+    auto index = static_cast<int64_t>(i);
+    if (keys[i] != index) {
+      return fmt::format("K is {}, expected {}", keys[i], index);
+    }
+    for (size_t c = 0; c != 30; ++c) {
+      auto expected = keys[i] * static_cast<int64_t>(c + 1);
+      if (columns[c + 1][i] != expected) {
+        return fmt::format("C{} is {}, expected {}", c, columns[c + 1][i], expected);
+      }
+    }
+    if (slow[i] != keys[i] * 3) {
+      return fmt::format("Slow is {}, expected {}", slow[i], keys[i] * 3);
+    }
+    return {};
+  }) == "");
+}
 }  // namespace deephaven::client::tests
