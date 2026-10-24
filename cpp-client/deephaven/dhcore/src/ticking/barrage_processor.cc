@@ -62,10 +62,6 @@ public:
       std::vector<size_t> *begins, const std::vector<size_t> &ends, const void *metadata,
       size_t metadata_size);
 
-  [[nodiscard]]
-  std::tuple<std::shared_ptr<ClientTable>, std::shared_ptr<RowSequence>, std::shared_ptr<ClientTable>>
-  ProcessRemoves(const RowSequence &removed_rows);
-
   size_t num_cols_ = 0;
   ImmerTableState table_state_;
 };
@@ -328,42 +324,46 @@ std::optional<TickingUpdate> AwaitingMetadata::ProcessNextChunk(BarrageProcessor
   // 4. modifies
   // We have not called with add or modify data yet, but we can do removes and shifts now
   // (steps 1 and 2).
-  auto [prev, removedRowsIndexSpace, afterRemoves] = ProcessRemoves(*removed_rows);
+  auto prev = table_state_.Snapshot();
+  auto removed_rows_index_space = table_state_.Erase(*removed_rows);
   table_state_.ApplyShifts(*shift_start_index, *shift_end_index, *shift_dest_index);
 
   // We track only the rows we hold data for, so the keys we add are the ones data is arriving
   // for. A key that added_rows announces without data will arrive, with data, in a later snapshot
-  // round and is added then. The insertion is strict. During the initial snapshot the server can
-  // legitimately re-send a row we already hold; supporting that is a separate change, so for now
-  // such a row fails loudly inside SpaceMapper rather than being silently inserted a second time.
+  // round and is added then.
+  //
+  // While the initial snapshot is still arriving, the server can send data for a row we already
+  // hold. It tracks what we hold as a range of positions, so a row inserted ahead of the
+  // delivered region pushes the last delivered row out of that range, and the next round covers
+  // that row again. The Java client treats this as an overwrite. We hold only rows we have data
+  // for, so we take the row out and add it back with the new data, which reports it to the user
+  // as removed and then added. That is the one representation in which every before-and-after
+  // table in the update agrees with the index sets that describe it: overwriting in place during
+  // the add phase would change rows between AfterRemoves and AfterAdds that AddedRows does not
+  // mention.
+  auto re_sent_rows = table_state_.PresentKeys(*added_rows_included);
+  if (!re_sent_rows->Empty()) {
+    // The removed set reported to the user is in the index space of 'prev'. This second erasure
+    // is in the index space of the table after the first, hence the lift.
+    auto re_sent_rows_index_space = table_state_.Erase(*re_sent_rows);
+    removed_rows_index_space = ImmerTableState::CombineErasures(*removed_rows_index_space,
+        *re_sent_rows_index_space);
+  }
+
+  // When nothing was erased the table is unchanged, which we indicate by handing out the same
+  // table, because consumers rely on pointer equality (beforeRemoves == afterRemoves) to notice
+  // it. A non-empty removed set can still erase nothing: a full subscription is sent the server's
+  // entire removed set, which during the initial snapshot may name only rows this client has not
+  // been given yet.
+  auto after_removes = removed_rows_index_space->Empty() ? prev : table_state_.Snapshot();
+
   auto added_rows_index_space = table_state_.AddKeys(*added_rows_included);
 
   owner->state_ = State::kAwaitingAdds;
   owner->awaitingAdds_.Init(std::move(per_column_modifies), std::move(prev),
-      std::move(removedRowsIndexSpace),
-      std::move(afterRemoves), std::move(added_rows_index_space));
+      std::move(removed_rows_index_space),
+      std::move(after_removes), std::move(added_rows_index_space));
   return owner->awaitingAdds_.ProcessNextChunk(owner, sources, begins, ends, nullptr, 0);
-}
-
-std::tuple<std::shared_ptr<ClientTable>, std::shared_ptr<RowSequence>, std::shared_ptr<ClientTable>>
-AwaitingMetadata::ProcessRemoves(const RowSequence &removed_rows) {
-  auto prev = table_state_.Snapshot();
-  // The reason we special-case "empty" is because when the tables are unchanged, we prefer
-  // to indicate this via pointer equality (e.g. beforeRemoves == afterRemoves).
-  std::shared_ptr<RowSequence> removed_rows_index_space;
-  std::shared_ptr<ClientTable> after_removes;
-  if (removed_rows.Empty()) {
-    removed_rows_index_space = RowSequence::CreateEmpty();
-    after_removes = prev;
-  } else {
-    removed_rows_index_space = table_state_.Erase(removed_rows);
-    // A non-empty removed set can still erase nothing: a full subscription is sent the server's
-    // entire removed set, which while the initial snapshot is still arriving can name only rows
-    // this client has not been given yet. The table is unchanged then, so this takes the
-    // pointer-equality path too.
-    after_removes = removed_rows_index_space->Empty() ? prev : table_state_.Snapshot();
-  }
-  return {std::move(prev), std::move(removed_rows_index_space), std::move(after_removes)};
 }
 
 AwaitingAdds::AwaitingAdds() = default;

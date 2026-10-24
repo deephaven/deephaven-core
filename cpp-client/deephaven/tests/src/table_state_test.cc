@@ -74,4 +74,30 @@ TEST_CASE("TableState: erase maps each interval to the ranks of its held keys", 
   CHECK(Render(*erased) == "[[0,3), [4,7)]");
   CheckHoldsKeys(*state, {10});
 }
+
+TEST_CASE("TableState: present keys returns the held subset", "[tablestate]") {
+  auto state = Holding(*Keys({1, 2, 3, 10, 11, 12, 100}));
+  CHECK(Render(*state->PresentKeys(*Range(0, 5))) == "[[1,4)]");
+  CHECK(Render(*state->PresentKeys(*Range(50, 60))) == "[]");
+  RowSequenceBuilder builder;
+  builder.AddInterval(0, 5);
+  builder.AddInterval(11, 101);
+  CHECK(Render(*state->PresentKeys(*builder.Build())) == "[[1,4), [11,13), [100,101)]");
+}
+
+// The second erasure's positions count only the rows that survived the first, so each has to move
+// past the rows the first one took out ahead of it.
+TEST_CASE("TableState: combine erasures lifts the second past the first", "[tablestate]") {
+  // Rows 0 and 1 go first; the next two rows of what remains were rows 2 and 3 originally.
+  CHECK(Render(*ImmerTableState::CombineErasures(*Range(0, 2), *Range(0, 2))) == "[[0,4)]");
+  // Rows 5..7 go first; row 396 of what remains was row 399.
+  CHECK(Render(*ImmerTableState::CombineErasures(*Range(5, 8), *Range(396, 397)))
+      == "[[5,8), [399,400)]");
+  // Rows 3 and 5 go first; rows 3 and 4 of what remains were rows 4 and 6, and the lift grows
+  // between them.
+  CHECK(Render(*ImmerTableState::CombineErasures(*Keys({3, 5}), *Range(3, 5))) == "[[3,7)]");
+  // Either erasure may be empty.
+  CHECK(Render(*ImmerTableState::CombineErasures(*None(), *Range(2, 4))) == "[[2,4)]");
+  CHECK(Render(*ImmerTableState::CombineErasures(*Range(2, 4), *None())) == "[[2,4)]");
+}
 }  // namespace deephaven::client::tests

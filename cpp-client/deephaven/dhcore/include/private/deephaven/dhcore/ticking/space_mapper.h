@@ -86,6 +86,14 @@ public:
   std::shared_ptr<RowSequence> ConvertPresentKeysToIndices(const RowSequence &keys) const;
 
   /**
+   * Returns the subset of 'keys' that are in the map.
+   * @param keys Keys represented in key space
+   * @return Those of the keys that are present, represented in key space
+   */
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> PresentKeys(const RowSequence &keys) const;
+
+  /**
    * Note: this call iterates over the Roaring64Map and is not constant-time.
    */
   [[nodiscard]]
