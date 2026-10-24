@@ -118,11 +118,50 @@ public class GrowingSubscriptionTest {
   }
 
   /// <summary>
-  /// Defines the table, subscribes, and waits until the subscription has held at least as many rows as the table
-  /// had when it was opened, which means the initial snapshot has been delivered in full. Returns the table as of
-  /// that update.
+  /// A table whose rows are being removed from the top of its key space while the snapshot is delivering it from
+  /// the bottom. A full subscription receives the server's entire removed set, so the deltas between rounds name
+  /// rows this client has not been given yet. Those used to be converted strictly and throw out of SpaceMapper:
+  /// "Of the 25 keys specified in Interval { Begin = 299960, ... }, the set only contains 0 keys".
   /// </summary>
-  private static async Task<IClientTable> AssertFullyDelivered(string script, string tableName) {
+  [Test]
+  public async Task TableLosingUndeliveredRowsIsFullyDelivered() {
+    const int removedRows = 1_000;
+    var script = Expensive + "\n\n" + $"""
+      # Removes the highest keys first, one every 2ms, and stops after {removedRows} of them.
+      _blacklist = (time_table("PT0.002S").update(["K = (long) ({BaseRows - 1} - ii)"])
+          .drop_columns("Timestamp").head({removedRows}))
+      _cols = ["C%d = ii * %d" % (i, i + 1) for i in range(30)]
+      growing_removes = (empty_table({BaseRows}).update(["K = ii"] + _cols)
+          .update_view(["Slow = (long) expensive(K)"])
+          .where_not_in(_blacklist, "K"))
+      """;
+    var table = await AssertFullyDelivered(script, "growing_removes", settlesAt: BaseRows - removedRows);
+
+    // Columns are K, C0..C29, Slow. What survives is the lowest keys, in order.
+    var columns = Enumerable.Range(0, 32).Select(c => Longs(table, c)).ToArray();
+    var keys = columns[0];
+    var slow = columns[31];
+    await Assert.That(FirstBadRow(keys.Length, i => {
+      if (keys[i] != i) {
+        return $"K is {keys[i]}, expected {i}";
+      }
+      for (var c = 0; c != 30; ++c) {
+        if (columns[c + 1][i] != keys[i] * (c + 1)) {
+          return $"C{c} is {columns[c + 1][i]}, expected {keys[i] * (c + 1)}";
+        }
+      }
+      return slow[i] == keys[i] * 3 ? null : $"Slow is {slow[i]}, expected {keys[i] * 3}";
+    })).IsEqualTo("");
+  }
+
+  /// <summary>
+  /// Defines the table, subscribes, and waits until the subscription has held at least as many rows as the table
+  /// had when it was opened, which means the initial snapshot has been delivered in full. A table that is losing
+  /// rows never reaches its opening count; for one of those, 'settlesAt' gives the row count at which it is
+  /// complete instead. Returns the table as of the completing update.
+  /// </summary>
+  private static async Task<IClientTable> AssertFullyDelivered(string script, string tableName,
+      Int64? settlesAt = null) {
     using var ctx = CommonContextForTests.Create(new ClientOptions().SetSessionType(SessionTypes.Python));
     var manager = ctx.Client.Manager;
     manager.RunScript(script);
@@ -131,7 +170,7 @@ public class GrowingSubscriptionTest {
     var rowsAtOpen = table.NumRows;
     Console.WriteLine($"{tableName}: {rowsAtOpen:N0} rows at open");
 
-    var observer = new SnapshotObserver(rowsAtOpen);
+    var observer = new SnapshotObserver(rowsAtOpen, settlesAt);
     using var cookie = table.Subscribe(observer);
     Exception? error;
     try {
@@ -142,7 +181,11 @@ public class GrowingSubscriptionTest {
     }
 
     await Assert.That(error).IsNull();
-    await Assert.That(observer.PeakRowCount).IsGreaterThanOrEqualTo(rowsAtOpen);
+    if (settlesAt == null) {
+      await Assert.That(observer.PeakRowCount).IsGreaterThanOrEqualTo(rowsAtOpen);
+    } else {
+      await Assert.That(observer.Last!.NumRows).IsEqualTo(settlesAt.Value);
+    }
     return observer.Last!;
   }
 
@@ -168,10 +211,10 @@ public class GrowingSubscriptionTest {
   }
 
   /// <summary>
-  /// Logs each update and completes once the table has reached its opening row count, or on error. Keeps the table
-  /// as of the completing update for the caller to inspect.
+  /// Logs each update and completes once the table has reached its opening row count, or exactly 'settlesAt' rows
+  /// when that is given, or on error. Keeps the table as of the completing update for the caller to inspect.
   /// </summary>
-  private sealed class SnapshotObserver(Int64 rowsAtOpen) : IObserver<TickingUpdate> {
+  private sealed class SnapshotObserver(Int64 rowsAtOpen, Int64? settlesAt) : IObserver<TickingUpdate> {
     private const int MaxLoggedUpdates = 40;
     private readonly TaskCompletionSource<Exception?> _finished =
       new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -201,7 +244,8 @@ public class GrowingSubscriptionTest {
       }
       _previousAtMs = nowMs;
 
-      if (PeakRowCount >= rowsAtOpen) {
+      var complete = settlesAt == null ? PeakRowCount >= rowsAtOpen : rowCount == settlesAt.Value;
+      if (complete) {
         Last = update.Current;
         _finished.TrySetResult(null);
       }
