@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * never shrink, and the garbage collector reclaims their items under memory pressure as it always may.
  * </p>
  */
-public final class SoftRecyclerWindows {
+public final class SoftRecyclerWindow {
     /** The property for the most milliseconds a window may last, however slow a reporting graph is. */
     public static final String MAXIMUM_WINDOW_MILLIS_PROPERTY = "SoftRecycler.maximumWindowMillis";
     /** The property for the multiple of the longest interval between cycle starts that a window lasts. */
@@ -45,8 +45,8 @@ public final class SoftRecyclerWindows {
     private static final double WINDOW_MARGIN =
             Configuration.getInstance().getDoubleWithDefault(WINDOW_MARGIN_PROPERTY, 1.5);
 
-    private static final SoftRecyclerWindows INSTANCE =
-            new SoftRecyclerWindows(MINIMUM_WINDOW_NANOS, MAXIMUM_WINDOW_NANOS, WINDOW_MARGIN,
+    private static final SoftRecyclerWindow INSTANCE =
+            new SoftRecyclerWindow(MINIMUM_WINDOW_NANOS, MAXIMUM_WINDOW_NANOS, WINDOW_MARGIN,
                     SoftRecycler::endWindows);
 
     /** The cycles of one reporting graph, written only by that graph's update thread. */
@@ -71,7 +71,7 @@ public final class SoftRecyclerWindows {
     private boolean windowStarted;
 
     @VisibleForTesting
-    SoftRecyclerWindows(final long minimumWindowNanos, final long maximumWindowNanos, final double margin,
+    SoftRecyclerWindow(final long minimumWindowNanos, final long maximumWindowNanos, final double margin,
             @NotNull final Runnable endWindows) {
         this.minimumWindowNanos = minimumWindowNanos;
         this.maximumWindowNanos = maximumWindowNanos;

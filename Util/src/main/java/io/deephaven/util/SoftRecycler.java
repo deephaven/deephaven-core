@@ -28,7 +28,7 @@ import java.util.function.Supplier;
  * capacity it was created with and the maximum it was created with, which may be {@link Integer#MAX_VALUE}, since the
  * garbage collector reclaims the items under memory pressure. The shrink fraction is
  * {@value #SHRINK_FRACTION_PROPERTY}, 0.5 by default. The windows the capacity shrinks on end for every recycler at
- * once, through {@link #endWindows()}, which {@link SoftRecyclerWindows} calls from the update graphs' cycles; no
+ * once, through {@link #endWindows()}, which {@link SoftRecyclerWindow} calls from the update graphs' cycles; no
  * recycler reads a clock, and a process in which no update graph cycles never shrinks one. When the capacity shrinks,
  * the bin discards items from the back, which needs no other entry re-indexed: those are the items returned most
  * recently, but any item left in the bin serves a later borrow as well.
@@ -95,7 +95,7 @@ public class SoftRecycler<T> {
 
     /**
      * End the window of every recycler, shrinking each by the items its window never needed. Called at most once per
-     * window, which should span at least one whole cycle of each client of a recycler; see {@link SoftRecyclerWindows}.
+     * window, which should span at least one whole cycle of each client of a recycler; see {@link SoftRecyclerWindow}.
      */
     public static void endWindows() {
         // each recycler is locked on its own, so that no borrow or return waits on more than one

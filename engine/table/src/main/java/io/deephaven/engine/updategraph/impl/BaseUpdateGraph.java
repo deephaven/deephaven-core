@@ -23,7 +23,7 @@ import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.SoftRecyclerWindows;
+import io.deephaven.util.SoftRecyclerWindow;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
@@ -295,7 +295,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
      * @param startNanos when the cycle started, as already read from {@link System#nanoTime()}
      */
     void reportCycleStartToRecyclers(final long startNanos) {
-        SoftRecyclerWindows.reportCycleStart(name, startNanos);
+        SoftRecyclerWindow.reportCycleStart(name, startNanos);
     }
 
     public UpdateGraph getUpdateGraph() {
@@ -1101,7 +1101,7 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
                 return false;
             }
         }
-        SoftRecyclerWindows.forgetGraph(name);
+        SoftRecyclerWindow.forgetGraph(name);
         graph.stop();
         return true;
     }
