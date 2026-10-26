@@ -43,6 +43,9 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
             REGION_TYPE localResultRegion;
             if ((localResultRegion = resultRegion) != null) {
                 localResultRegion.invalidate();
+            } else {
+                // Never materialized: drop the factory and the removed location the factory holds.
+                resultRegionFactory = null;
             }
         }
     }
@@ -53,6 +56,8 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
         if ((localResultRegion = resultRegion) == null) {
             synchronized (this) {
                 if ((localResultRegion = resultRegion) == null) {
+                    // Fail rather than materialize a region for a removed location (and lose the invalidation).
+                    throwIfInvalidated();
                     resultRegion =
                             localResultRegion = Require.neqNull(resultRegionFactory.get(), "resultRegionFactory.get()");
                     resultRegionFactory = null;
