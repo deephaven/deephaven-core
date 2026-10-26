@@ -290,16 +290,12 @@ public abstract class BaseUpdateGraph implements UpdateGraph, LogOutputAppendabl
 
     /**
      * Report the start of an update cycle, so that the windows the {@link io.deephaven.util.SoftRecycler recyclers}
-     * shrink on span it; the DEFAULT graph also ends their window here once it has lasted long enough. This reads no
-     * clock.
+     * shrink on span it, and end their window if it has lasted long enough. This reads no clock.
      *
      * @param startNanos when the cycle started, as already read from {@link System#nanoTime()}
      */
     void reportCycleStartToRecyclers(final long startNanos) {
         SoftRecyclerWindows.reportCycleStart(name, startNanos);
-        if (DEFAULT_UPDATE_GRAPH_NAME.equals(name)) {
-            SoftRecyclerWindows.endWindowIfElapsed(startNanos);
-        }
     }
 
     public UpdateGraph getUpdateGraph() {

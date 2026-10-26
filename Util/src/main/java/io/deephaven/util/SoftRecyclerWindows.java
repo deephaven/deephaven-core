@@ -26,10 +26,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * </p>
  *
  * <p>
- * One caller, the DEFAULT update graph, calls {@link #endWindowIfElapsed(long)} once per cycle with the time it read
- * when the cycle started; no other code reads a clock for the recyclers. A process whose DEFAULT graph does not report
- * never ends a window, so its recyclers never shrink, and the garbage collector reclaims their items under memory
- * pressure as it always may.
+ * Each report also ends the current window if it has lasted long enough, so a window ends at the first cycle start, of
+ * any reporting graph, after it has elapsed. A process in which no graph reports never ends a window, so its recyclers
+ * never shrink, and the garbage collector reclaims their items under memory pressure as it always may.
  * </p>
  */
 public final class SoftRecyclerWindows {
@@ -67,7 +66,7 @@ public final class SoftRecyclerWindows {
     private final Runnable endWindows;
     private final Map<String, GraphCycles> graphs = new ConcurrentHashMap<>();
 
-    /** When the current window started; written only by the one caller of {@link #endWindowIfElapsed(long)}. */
+    /** When the current window started; guarded by this. */
     private long windowStartNanos;
     private boolean windowStarted;
 
@@ -81,14 +80,15 @@ public final class SoftRecyclerWindows {
     }
 
     /**
-     * Report that an update graph started a cycle. Called by the graph's update thread, with a time the graph has
-     * already read.
+     * Report that an update graph started a cycle, and end every recycler's window if it has lasted long enough. Called
+     * by the graph's update thread, with a time the graph has already read.
      *
      * @param graphName the name of the graph
      * @param startNanos when the cycle started, from {@link System#nanoTime()}
      */
     public static void reportCycleStart(@NotNull final String graphName, final long startNanos) {
         INSTANCE.cycleStarted(graphName, startNanos);
+        INSTANCE.maybeEndWindow(startNanos);
     }
 
     /**
@@ -98,15 +98,6 @@ public final class SoftRecyclerWindows {
      */
     public static void forgetGraph(@NotNull final String graphName) {
         INSTANCE.graphForgotten(graphName);
-    }
-
-    /**
-     * End every recycler's window if it has lasted long enough. Called once per cycle by the DEFAULT update graph.
-     *
-     * @param nowNanos the time the caller has already read, from {@link System#nanoTime()}
-     */
-    public static void endWindowIfElapsed(final long nowNanos) {
-        INSTANCE.maybeEndWindow(nowNanos);
     }
 
     @VisibleForTesting

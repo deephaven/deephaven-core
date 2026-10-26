@@ -28,10 +28,10 @@ import java.util.function.Supplier;
  * capacity it was created with and the maximum it was created with, which may be {@link Integer#MAX_VALUE}, since the
  * garbage collector reclaims the items under memory pressure. The shrink fraction is
  * {@value #SHRINK_FRACTION_PROPERTY}, 0.5 by default. The windows the capacity shrinks on end for every recycler at
- * once, through {@link #endWindows()}, which {@link SoftRecyclerWindows} calls from the cycles of the DEFAULT update
- * graph; no recycler reads a clock, and a process whose DEFAULT graph does not cycle never shrinks one. When the
- * capacity shrinks, the bin discards items from the back, which needs no other entry re-indexed: those are the items
- * returned most recently, but any item left in the bin serves a later borrow as well.
+ * once, through {@link #endWindows()}, which {@link SoftRecyclerWindows} calls from the update graphs' cycles; no
+ * recycler reads a clock, and a process in which no update graph cycles never shrinks one. When the capacity shrinks,
+ * the bin discards items from the back, which needs no other entry re-indexed: those are the items returned most
+ * recently, but any item left in the bin serves a later borrow as well.
  *
  * <p>
  * Note that the caller has no special obligation to return a borrowed item nor to return borrowed items in any
