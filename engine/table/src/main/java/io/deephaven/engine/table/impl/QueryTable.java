@@ -3405,7 +3405,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         final MemoizedResult<R> cachedResult = getMemoizedResult(memoKey, ensureCachedOperations());
-        return cachedResult.getOrCompute(operation);
+        return cachedResult.getOrCompute(operation, !currentThreadMustNotWaitForOtherThreads());
     }
 
     private Map<MemoizedOperationKey, MemoizedResult<?>> ensureCachedOperations() {

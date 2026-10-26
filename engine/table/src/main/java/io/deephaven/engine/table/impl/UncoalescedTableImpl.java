@@ -85,11 +85,7 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
             if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
                 return localCoalesced;
             }
-            // A coalesce in progress may be waiting for the update graph lock, so a thread that holds the lock, or that
-            // processes updates, must not wait for it.
-            if (updateGraph.exclusiveLock().isHeldByCurrentThread()
-                    || updateGraph.sharedLock().isHeldByCurrentThread()
-                    || updateGraph.currentThreadProcessesUpdates()) {
+            if (currentThreadMustNotWaitForOtherThreads()) {
                 if (!coalescingLock.tryLock()) {
                     return coalesceAndPublish();
                 }

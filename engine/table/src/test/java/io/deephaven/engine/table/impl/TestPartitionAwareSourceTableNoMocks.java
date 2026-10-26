@@ -11,6 +11,7 @@ import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.PoisonedUpdateGraph;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
@@ -27,6 +28,11 @@ import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilterDelegatingBase;
+import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.MatchOptions;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import org.apache.commons.lang3.mutable.MutableObject;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
@@ -41,6 +47,7 @@ import io.deephaven.qst.type.Type;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -611,7 +618,81 @@ public class TestPartitionAwareSourceTableNoMocks {
         ExecutionContext.getContext().getQueryScope().putParam("threshold", 0L);
         // copies of the filter, one for each coalesce, share what they capture
         final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("II + threshold >= 0"));
-        final Table deferred = source.where(filter);
+        final Table coalesced = coalesceWhileExclusiveLockHolderCoalesces(source.where(filter));
+        assertEquals(4 * partitionSize, coalesced.size());
+
+        filter.reset();
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(2 * partitionSize));
+        updateGraph.getDelegate().startCycleForUnitTests(false);
+        updateGraph.refreshSources();
+        updateGraph.markSourcesRefreshedForUnitTests();
+        updateGraph.getDelegate().completeCycleForUnitTests();
+        assertEquals(8 * partitionSize, coalesced.size());
+        assertEquals(4 * partitionSize, filter.numRowsProcessed());
+    }
+
+    /**
+     * As {@link #testDeferredCoalesceWhileExclusiveLockHolderCoalesces()}, but the deferred where is memoizable, so the
+     * exclusive lock holder's where reaches the same memoized operation that the other thread is computing.
+     */
+    @Test
+    public void testDeferredMemoizedCoalesceWhileExclusiveLockHolderCoalesces() throws Exception {
+        final long partitionSize = 128;
+        final Table source = refreshingPartitionedSource(partitionedLocationProvider(partitionSize));
+        // the source is coalesced up front, so that the deferred where's snapshot is the only one that needs the lock
+        source.coalesce();
+        final WhereFilter filter = new PreviousRejectingFilter(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        try {
+            final Table coalesced = coalesceWhileExclusiveLockHolderCoalesces(source.where(filter));
+            assertEquals(4 * partitionSize, coalesced.size());
+        } finally {
+            QueryTable.setMemoizeResults(oldMemoize);
+        }
+    }
+
+    /**
+     * A memoizable filter that cannot filter previous values, so that its where falls back to the update graph lock
+     * during an update cycle.
+     */
+    private static class PreviousRejectingFilter extends WhereFilterDelegatingBase {
+        private PreviousRejectingFilter(final WhereFilter filter) {
+            super(filter);
+        }
+
+        @NotNull
+        @Override
+        public WritableRowSet filter(
+                @NotNull final RowSet selection,
+                @NotNull final RowSet fullSet,
+                @NotNull final Table table,
+                final boolean usePrev) {
+            if (usePrev) {
+                throw new PreviousFilteringNotSupported();
+            }
+            return super.filter(selection, fullSet, table, usePrev);
+        }
+
+        @Override
+        public WhereFilter maybeUnwrapFilter() {
+            return this;
+        }
+
+        @Override
+        public WhereFilter copy() {
+            return new PreviousRejectingFilter(filter.copy());
+        }
+    }
+
+    /**
+     * One thread coalesces {@code deferred} during an update cycle without the update graph lock, and its deferred
+     * where's snapshot waits for the shared lock. Another thread, already waiting for the exclusive lock when that
+     * happens, holds it once the cycle completes and coalesces {@code deferred} too. Both coalesces must complete with
+     * the same result.
+     *
+     * @return The coalesced result
+     */
+    private Table coalesceWhileExclusiveLockHolderCoalesces(final Table deferred) throws Exception {
         assertTrue(deferred instanceof DeferredViewTable);
 
         final ExecutionContext executionContext = ExecutionContext.getContext();
@@ -669,16 +750,33 @@ public class TestPartitionAwareSourceTableNoMocks {
             throw new AssertionError("Coalescing did not complete; deadlocked threads:" + deadlocked, timeout);
         }
         assertSame(exclusiveResult, lockFreeResult);
-        assertEquals(4 * partitionSize, lockFreeResult.size());
+        return lockFreeResult;
+    }
 
-        filter.reset();
-        tableLocationProvider.locations.values().forEach(location -> location.setSize(2 * partitionSize));
-        updateGraph.getDelegate().startCycleForUnitTests(false);
-        updateGraph.refreshSources();
-        updateGraph.markSourcesRefreshedForUnitTests();
-        updateGraph.getDelegate().completeCycleForUnitTests();
-        assertEquals(8 * partitionSize, lockFreeResult.size());
-        assertEquals(4 * partitionSize, filter.numRowsProcessed());
+    /**
+     * A static source table built without a registered update graph coalesces.
+     */
+    @Test
+    public void testStaticCoalesceWithoutUpdateGraph() {
+        try (final SafeCloseable ignored =
+                ExecutionContext.getContext().withUpdateGraph(PoisonedUpdateGraph.INSTANCE).open()) {
+            final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                    partitionedLocationProvider(128);
+            final Table source = new PartitionAwareSourceTable(
+                    TableDefinition.of(
+                            ColumnDefinition.ofString("partition").withPartitioning(),
+                            ColumnDefinition.ofLong("II"),
+                            ColumnDefinition.of("Timestamp", Type.find(Instant.class))),
+                    tableLocationProvider.getKey().toString(),
+                    RegionedTableComponentFactoryImpl.INSTANCE,
+                    tableLocationProvider,
+                    null);
+            assertFalse(source.isRefreshing());
+            assertSame(PoisonedUpdateGraph.INSTANCE, source.getUpdateGraph());
+            final Table coalesced = source.coalesce();
+            assertEquals(4 * 128, coalesced.size());
+            assertSame(coalesced, source.coalesce());
+        }
     }
 
     /**
