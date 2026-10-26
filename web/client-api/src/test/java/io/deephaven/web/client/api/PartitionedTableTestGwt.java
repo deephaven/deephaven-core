@@ -53,6 +53,35 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
         return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
     }
 
+    /**
+     * When the server ends the key subscription's stream with an error, the partitioned table reports requestfailed.
+     */
+    public void testPartitionedTableReportsKeyStreamFailure() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tickingTables, options)
+                .then(session -> {
+                    delayTestFinish(20_047);
+                    return Promise.resolve(session);
+                })
+                .then(partitionedTable("growing_keys"))
+                .then(partitionedTable -> {
+                    List<String> failures = new ArrayList<>();
+                    partitionedTable.addEventListener(JsTable.EVENT_REQUEST_FAILED,
+                            e -> failures.add(String.valueOf(e.getDetail())));
+                    // The server closes the key stream with a failure that is not a transport error
+                    transport.failStreams("DoExchange", 9, "key stream failed by test");
+                    return waitFor(() -> !failures.isEmpty(), 100, 5048, partitionedTable)
+                            .then(t -> {
+                                assertEquals(List.of("key stream failed by test"), failures);
+                                partitionedTable.close();
+                                return Promise.resolve(partitionedTable);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testPartitionedTableResumesAfterTransportCut() {
         CuttingTransportFactory transport = new CuttingTransportFactory();
         ConnectOptions options = new ConnectOptions();
