@@ -1051,7 +1051,7 @@ public final class RunContainer extends Container {
             return false;
         }
         final int runCount = numberOfRuns();
-        short ib = 0, ir = 0;
+        int ib = 0, ir = 0;
         while (ib < bitmapContainer.bitmap.length && ir < runCount) {
             long w = bitmapContainer.bitmap[ib];
             while (w != 0 && ir < runCount) {

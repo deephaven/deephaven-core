@@ -14,6 +14,7 @@ import java.util.function.Supplier;
 import static io.deephaven.engine.rowset.impl.rsp.container.ContainerTestCommon.valuesOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Edge cases of the container API that the {@code RspBitmap} layer never asks for (empty ranges, empty rank ranges, a
@@ -135,5 +136,23 @@ public class TestContainerEdgeCases {
         final short[] buffer = new short[2];
         assertEquals(0, ContainerUtil.unsignedIntersect2by2(new short[] {7, 9}, 2, stale, 0, buffer));
         assertEquals(0, ContainerUtil.unsignedIntersect2by2(stale, 0, new short[] {7, 9}, 2, buffer));
+    }
+
+    /** A run container may hold more than {@code Short.MAX_VALUE} runs. */
+    @Test
+    public void testRunContainsBitmapWithManyRuns() {
+        final int nRuns = 32768;
+        final short[] valueslength = new short[2 * nRuns];
+        final BitmapContainer evens = new BitmapContainer();
+        // As many values as the run container, so the cardinality check cannot answer early.
+        final BitmapContainer lastOdd = new BitmapContainer();
+        for (int ii = 0; ii < nRuns; ++ii) {
+            valueslength[2 * ii] = (short) (2 * ii);
+            evens.iset((short) (2 * ii));
+            lastOdd.iset((short) (ii == nRuns - 1 ? 65535 : 2 * ii));
+        }
+        final RunContainer run = RunContainer.makeByWrapping(valueslength, nRuns, nRuns);
+        assertTrue(run.contains(evens));
+        assertFalse(run.contains(lastOdd));
     }
 }
