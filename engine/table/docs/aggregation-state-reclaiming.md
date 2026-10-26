@@ -48,7 +48,7 @@ aggregation — see [Choosing a mode per call](#choosing-a-mode-per-call).
 ### None
 
 `StateReclaimMode.none()` never removes a state. An empty state keeps its output position, and a returning group
-reuses it. This is how aggregations behaved before reclaiming existed. It uses the hash table without tombstones.
+reuses it. This is how aggregations behaved before reclaiming existed. It never tombstones a state.
 
 ### Release blocks
 
@@ -308,7 +308,7 @@ written with its parameters.
 
 The two places that hold positions were widened separately:
 
-- **The hash table's positions:** the tombstone state manager stores each slot's output position as a `long`, in both
+- **The hash table's positions:** the incremental state manager stores each slot's output position as a `long`, in both
   the main and the alternate table, with `long` sentinels. Its generated hashers use a `long` state type.
 - **Everything downstream of the hash table:**
   - the destination chunk every aggregation operator receives, `LongChunk<RowKeys>` instead of `IntChunk<RowKeys>`,
@@ -632,3 +632,38 @@ Assigning new states to released positions in the middle of the result would bou
 moving any state. It would give new groups lower row keys than older ones, so the result would no longer list groups
 in the order they were first seen, even among groups that never empty. New states therefore always go after every
 existing state, and only moves that keep the states in order give positions back.
+
+### A separate state manager for reclaiming
+
+Reclaiming first had a state manager of its own: a copy of the incremental aggregation state manager that supported
+tombstones and bounded its incremental rehash by the slots it examined, so that `none` kept the original manager
+unchanged. To measure what one manager for every mode would cost `none`, a temporary mode ran `none` on the
+tombstone manager, which then never tombstoned a state. It cost nothing, so there is now one manager, and `none` never
+creates a tombstone.
+
+Median milliseconds per batch of 900 cycles, with one row per group. The 1M rows are the tables' workloads; the 10M
+rows add and remove 100,000 rows each cycle. The run was on an Apple M5 Max that was not otherwise idle, with two forks
+of five measured batches per configuration.
+
+| Rows | Workload | Groups return | Original manager | Tombstone manager | Change |
+| --- | --- | --- | --- | --- | --- |
+| 1M | Add only | - | 927 | 840 | -9.4% |
+| 1M | Sliding window | No | 1399 | 1302 | -6.9% |
+| 1M | Sliding window | Yes | 657 | 625 | -4.9% |
+| 1M | Random churn | No | 2424 | 2351 | -3.0% |
+| 1M | Random churn | Yes | 1581 | 1527 | -3.4% |
+| 10M | Add only | - | 13233 | 11491 | -13.2% |
+| 10M | Sliding window | No | 17985 | 17545 | -2.4% |
+| 10M | Sliding window | Yes | 8191 | 7827 | -4.4% |
+| 10M | Random churn | No | 27614 | 26749 | -3.1% |
+| 10M | Random churn | Yes | 17503 | 17862 | +2.1% |
+
+- **Time:** with 100 rows per group, the two were within 4% of each other in every workload. The tombstone manager's
+  rehash examines three old-table slots for each insert, so it most likely gains by finishing sooner: fewer cycles
+  search the old table as well as the new one.
+- **Longest cycle:** within the run-to-run variation of each other.
+- **Retained heap:** the same at 10M. At 1M, the tombstone manager retained about 100 MB less in the three workloads
+  whose groups do not return, because its rehash had already released the old table when the heap was measured; the
+  peak is the same.
+- **Keys:** every key in the benchmark is a single `long` column. The original manager also had pregenerated hashers
+  for multiple key columns, and the one manager keeps them.

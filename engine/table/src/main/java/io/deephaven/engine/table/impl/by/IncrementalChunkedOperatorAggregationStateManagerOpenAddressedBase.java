@@ -9,8 +9,9 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
@@ -22,8 +23,6 @@ import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
-import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext;
-import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
@@ -34,8 +33,18 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChun
 
 public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase
         implements IncrementalOperatorAggregationStateManager {
+    /** The number of rehashes begun by all instances, for benchmarking. */
+    public static final java.util.concurrent.atomic.LongAdder REHASH_COUNT =
+            new java.util.concurrent.atomic.LongAdder();
+
     public static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
     private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
+
+    /*
+     * This is an invalid output position, so we can use it to represent a deleted state. It must equal UNKNOWN_ROW: the
+     * generated findPositionForKey returns the state of the slot whose key matches, so a removed key reports unknown.
+     */
+    protected static final int TOMBSTONE_STATE = UNKNOWN_ROW;
 
     /** The number of slots in our table. */
     protected int tableSize;
@@ -46,13 +55,18 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
      */
     protected int alternateTableSize = 1;
 
+    /** How many entries are taking up slots in the main hash table (includes tombstones)? */
+    protected long numEntries = 0;
+    /** How many values do we have that are live (in both main and alternate)? */
+    protected long liveEntries = 0;
+    /** How many entries are in the alternate table (includes tombstones)? */
+    protected long alternateEntries = 0;
+
     /** Should we rehash the entire table fully ({@code true}) or incrementally ({@code false})? */
     protected boolean fullRehash = true;
 
     /** How much of the alternate sources are necessary to rehash? */
     protected int rehashPointer = 0;
-
-    protected long numEntries = 0;
 
     /**
      * The table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor or if
@@ -64,7 +78,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     protected final WritableColumnSource[] mainKeySources;
 
     /** The keys for our hash entries, for the old alternative smaller table. */
-    protected final ColumnSource[] alternateKeySources;
+    protected final WritableColumnSource[] alternateKeySources;
 
 
     /** Our state value used when nothing is there. */
@@ -110,7 +124,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         Require.inRange(maximumLoadFactor, 0.0, 0.95, "maximumLoadFactor");
 
         mainKeySources = new WritableColumnSource[tableKeySources.length];
-        alternateKeySources = new ColumnSource[tableKeySources.length];
+        alternateKeySources = new WritableColumnSource[tableKeySources.length];
 
         for (int ii = 0; ii < tableKeySources.length; ++ii) {
             mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
@@ -153,7 +167,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];
 
+
             while (rsIt.hasMore()) {
+
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
                 // Rows of existing states take no positions, so only
@@ -165,6 +181,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
                     migrateFront();
                 }
 
+
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
                 final long oldEntries = numEntries;
@@ -173,6 +190,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
                 // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
                 // don't penalize this build call with additional rehashing
                 bc.rehashCredits.subtract(Math.toIntExact(entriesAdded));
+
 
                 bc.resetSharedContexts();
             }
@@ -236,17 +254,31 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
             }
         }
 
-        int oldTableSize = tableSize;
-        while (rehashRequired(nextChunkSize)) {
+        if (!rehashRequired(nextChunkSize)) {
+            return false;
+        }
+
+        if (rehashPointer > 0) {
+            // The rehash in progress chose a size at which its alternate drains before the main table fills; let it
+            // finish.
+            return false;
+        }
+
+        // Every slot in the main table is filled by a migration or an insert, so it holds at most the live entries plus
+        // the entries inserted since the rehash began; a tombstone marks a slot that was already counted. Each insert
+        // is preceded by examining REHASH_SLOTS_PER_ENTRY alternate slots (see the generated rehashInternalPartial), so
+        // the alternate drains before the main table needs another rehash if the inserts that fit under the load factor
+        // pay for examining every alternate slot. Doubling always satisfies that when live entries force the rehash.
+        // When tombstones alone crossed the load factor, the current size may satisfy it, and the rehash leaves the
+        // tombstones behind. A full rehash, used while building the initial state, completes immediately, so it only
+        // needs room for the live entries.
+        final int oldTableSize = tableSize;
+        while (!alternateDrainsInTime(oldTableSize, nextChunkSize)) {
             tableSize *= 2;
 
             if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
                 throw new UnsupportedOperationException("Hash table exceeds maximum size!");
             }
-        }
-
-        if (oldTableSize == tableSize) {
-            return false;
         }
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
@@ -255,9 +287,13 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         }
 
         if (fullRehash) {
+            // States are only removed once update cycles begin, so a full rehash never sees a tombstone and the table
+            // has grown above.
+            Assert.eq(numEntries, "numEntries", liveEntries, "liveEntries");
             // if we are doing a full rehash, we need to ditch the alternate
             if (rehashPointer > 0) {
-                rehashInternalPartial((int) numEntries);
+                // a partial rehash is bounded by the slots it examines, so ask for every slot that remains
+                rehashInternalPartial(rehashPointer);
                 clearAlternate();
             }
 
@@ -266,10 +302,32 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
             return false;
         }
 
+        REHASH_COUNT.increment();
         setupNewAlternate(oldTableSize);
         adviseNewAlternate();
+        if (rehashPointer == 0) {
+            // the old table held no entries, not even tombstones, so there is nothing to migrate and it can go now
+            clearAlternate();
+            return false;
+        }
 
         return true;
+    }
+
+    /** The alternate slots a partial rehash examines for each entry inserted; the generated hashers refer to it. */
+    public static final int REHASH_SLOTS_PER_ENTRY = 3;
+
+    /**
+     * @param alternateSize the size the alternate table will have
+     * @param nextChunkSize the size of the chunk about to be built
+     * @return whether, at the current {@link #tableSize}, the alternate is migrated before the main table fills
+     */
+    private boolean alternateDrainsInTime(final int alternateSize, final int nextChunkSize) {
+        final double insertsBeforeFull = tableSize * maximumLoadFactor - liveEntries - nextChunkSize;
+        if (fullRehash) {
+            return insertsBeforeFull >= 0;
+        }
+        return insertsBeforeFull * REHASH_SLOTS_PER_ENTRY >= alternateSize;
     }
 
     /**
@@ -279,11 +337,12 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     protected abstract void adviseNewAlternate();
 
     protected void clearAlternate() {
+        Assert.eqZero(alternateEntries, "alternateEntries");
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
         }
         if (alternatingColumnSources != null) {
-            // Every state is in the main table now, so neither side of an alternating source is read through the
+            // Every live state is in the main table now, so neither side of an alternating source is read through the
             // alternate; pointing both at the main table lets the drained alternate's keys be collected.
             for (int ai = 0; ai < alternatingColumnSources.length; ++ai) {
                 alternatingColumnSources[ai].setSources(mainKeySources[ai], mainKeySources[ai]);
@@ -302,7 +361,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     protected abstract void rehashInternalFull(int oldSize);
 
     public boolean rehashRequired(int nextChunkSize) {
-        return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
+        return (numEntries + alternateEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
     }
 
     protected int hashToTableLocation(int hash) {
@@ -315,6 +374,21 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     @Override
     abstract public int findPositionForKey(Object key);
+
+    protected abstract void lookup(RowSequence rowSequence, Chunk[] sourceKeyChunks,
+            WritableLongChunk<RowKeys> outputPositions);
+
+    /**
+     * Search the table for a chunk of keys, without changing it. The search keeps no state in this manager, so that any
+     * number of readers may search at once. The search passes over tombstones, so a removed key is not found.
+     */
+    @Override
+    public void findPositionsForKeys(
+            @NotNull final Chunk<? extends Values>[] keyChunks,
+            @NotNull final WritableLongChunk<RowKeys> positions) {
+        positions.setSize(keyChunks[0].size());
+        lookup(null, keyChunks, positions);
+    }
 
     private void setupNewAlternate(int oldTableSize) {
         Assert.eqZero(rehashPointer, "rehashPointer");
@@ -329,6 +403,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         if (numEntries > 0) {
             rehashPointer = alternateTableSize;
         }
+
+        alternateEntries = numEntries;
+        numEntries = 0;
 
         alternateOutputPosition = mainOutputPosition;
         mainOutputPosition = new ImmutableIntArraySource();
@@ -399,6 +476,68 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     }
 
     @Override
+    public void tombstoneStates(final RowSet removed) {
+        liveEntries -= removed.intSize();
+        // A tombstone keeps its key: probes and builds stop at a tombstone whose key matches, which is only correct
+        // if a deleted slot cannot be mistaken for a live key's slot. The keys are released when a rehash drops the
+        // tombstone or a new state reuses the slot.
+        if (removed.isEmpty()) {
+            return;
+        }
+        // look the removed states' hash slots up a chunk at a time, rather than one row key callback at a time
+        final int chunkSize = (int) Math.min(CHUNK_SIZE, removed.size());
+        try (final RowSequence.Iterator it = removed.getRowSequenceIterator();
+                final ChunkSource.FillContext fillContext = outputPositionToHashSlot.makeFillContext(chunkSize);
+                final WritableIntChunk<Values> hashSlots = WritableIntChunk.makeWritableChunk(chunkSize)) {
+            while (it.hasMore()) {
+                final RowSequence positions = it.getNextRowSequenceWithLength(chunkSize);
+                outputPositionToHashSlot.fillChunk(fillContext, hashSlots, positions);
+                for (int ii = 0; ii < hashSlots.size(); ++ii) {
+                    tombstoneSlot(hashSlots.get(ii));
+                }
+            }
+        }
+    }
+
+    @Override
+    public void shiftOutputPositions(final RowSetShiftData shiftData) {
+        final RowSetShiftData.Iterator it = shiftData.applyIterator();
+        while (it.hasNext()) {
+            it.next();
+            final long begin = it.beginRange();
+            final long end = it.endRange();
+            final long delta = it.shiftDelta();
+            // states only move toward lower positions, so walking forward never overwrites a state yet to move
+            Assert.leqZero(delta, "delta");
+            for (long pos = begin; pos <= end; pos++) {
+                final int hashSlot = outputPositionToHashSlot.getUnsafe(pos);
+                final int newOutputPosition = Math.toIntExact(pos + delta);
+                outputPositionToHashSlot.set(newOutputPosition, hashSlot);
+                final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+                if ((hashSlot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+                    mainOutputPosition.set(slot, newOutputPosition);
+                } else {
+                    alternateOutputPosition.set(slot, newOutputPosition);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void releaseOutputPositionBlocks(final long firstOutputPosition, final long lastOutputPosition) {
+        outputPositionToHashSlot.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
+
+    private void tombstoneSlot(final int hashSlot) {
+        final int slot = Math.toIntExact(hashSlot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
+        if ((hashSlot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+            mainOutputPosition.set(slot, TOMBSTONE_STATE);
+        } else {
+            alternateOutputPosition.set(slot, TOMBSTONE_STATE);
+        }
+    }
+
+    @Override
     public void beginUpdateCycle() {
         // Once we're past initial state processing, we want to rehash incrementally.
         fullRehash = false;
@@ -446,24 +585,4 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     @Override
     public void startTrackingPrevValues() {}
-
-    @Override
-    public boolean canReclaim() {
-        return false;
-    }
-
-    protected abstract void lookup(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            WritableLongChunk<RowKeys> outputPositions);
-
-    /**
-     * Search the table for a chunk of keys, without changing it. The search keeps no state in this manager, so that any
-     * number of readers may search at once.
-     */
-    @Override
-    public void findPositionsForKeys(
-            @NotNull final Chunk<? extends Values>[] keyChunks,
-            @NotNull final WritableLongChunk<RowKeys> positions) {
-        positions.setSize(keyChunks[0].size());
-        lookup(null, keyChunks, positions);
-    }
 }

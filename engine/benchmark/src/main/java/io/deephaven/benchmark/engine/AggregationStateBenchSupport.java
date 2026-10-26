@@ -6,7 +6,7 @@ package io.deephaven.benchmark.engine;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.by.ChunkedOperatorAggregationHelper;
-import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones;
+import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase;
 
 /**
  * Shared pieces of {@link AggregationBuildBenchmark} and {@link AggregationIncrementalBenchmark}.
@@ -43,10 +43,10 @@ final class AggregationStateBenchSupport {
     }
 
     /**
-     * @return the number of hash table rehashes begun so far by aggregations that reclaim states
+     * @return the number of hash table rehashes begun so far by refreshing aggregations
      */
     static long rehashCount() {
-        return IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.REHASH_COUNT.sum();
+        return IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.REHASH_COUNT.sum();
     }
 
     /**

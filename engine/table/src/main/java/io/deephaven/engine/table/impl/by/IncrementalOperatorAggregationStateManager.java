@@ -33,21 +33,12 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
             WritableIntChunk<RowKeys> outputPositions);
 
     /**
-     * Can this state manager actually reclaim states?
-     * 
-     * @return true if this state manager is capable of reclaiming states, false otherwise
-     */
-    boolean canReclaim();
-
-    /**
      * Remove the hash table entries for states that are empty at the end of an update cycle. Their output positions are
-     * not assigned to new states. Only supported when {@link #canReclaim()} is true.
+     * not assigned to new states.
      *
      * @param removed the output positions of the empty states
      */
-    default void tombstoneStates(RowSet removed) {
-        throw new UnsupportedOperationException();
-    }
+    void tombstoneStates(RowSet removed);
 
     /**
      * Release the storage for the blocks of the output position to hash slot mapping that lie entirely within a range
@@ -56,17 +47,13 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
      * @param firstOutputPosition the first output position
      * @param lastOutputPosition the last output position, inclusive
      */
-    default void releaseOutputPositionBlocks(long firstOutputPosition, long lastOutputPosition) {
-        throw new UnsupportedOperationException();
-    }
+    void releaseOutputPositionBlocks(long firstOutputPosition, long lastOutputPosition);
 
     /**
      * Move states to new output positions, updating the hash table to match. Every shift must move states toward lower
-     * positions. Only supported when {@link #canReclaim()} is true.
+     * positions.
      *
      * @param shiftData the shifts to apply to the states' output positions
      */
-    default void shiftOutputPositions(RowSetShiftData shiftData) {
-        throw new UnsupportedOperationException();
-    }
+    void shiftOutputPositions(RowSetShiftData shiftData);
 }

@@ -4643,6 +4643,55 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    public void testReclaimChurnWithTwoKeyColumns() {
+        // The same churn with a String and an int key column, which use a pregenerated hasher for two columns. The
+        // pairs cycle through a space of 3000, so a removed pair returns as a new state while its tombstone may remain.
+        final int window = 1000;
+        final int step = 500;
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(window).toTracking(),
+                stringCol("Key", pairKeys(0, window)), intCol("Bucket", pairBuckets(0, window)),
+                longCol("x", windowValues(0, window)));
+        final Table summed = table.sumBy("Key", "Bucket");
+
+        final TableUpdateValidator validated =
+                TableUpdateValidator.make("testReclaimChurnWithTwoKeyColumns", (QueryTable) summed);
+        final FailureListener failureListener = new FailureListener();
+        validated.getResultTable().addUpdateListener(failureListener);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int cycle = 0; cycle < 40; ++cycle) {
+            final long firstRemoved = (long) cycle * step;
+            final long firstAdded = firstRemoved + window;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final RowSet removed = RowSetFactory.fromRange(firstRemoved, firstRemoved + step - 1);
+                final RowSet added = RowSetFactory.fromRange(firstAdded, firstAdded + step - 1);
+                removeRows(table, removed);
+                addToTable(table, added, stringCol("Key", pairKeys(firstAdded, step)),
+                        intCol("Bucket", pairBuckets(firstAdded, step)),
+                        longCol("x", windowValues(firstAdded, step)));
+                table.notifyListeners(added, removed, i());
+            });
+            assertTableEquals(table.sumBy("Key", "Bucket").sort("Key", "Bucket"), summed.sort("Key", "Bucket"));
+        }
+    }
+
+    private static String[] pairKeys(final long firstRowKey, final int count) {
+        final String[] keys = new String[count];
+        for (int ii = 0; ii < count; ++ii) {
+            keys[ii] = "K" + ((firstRowKey + ii) % 1500);
+        }
+        return keys;
+    }
+
+    private static int[] pairBuckets(final long firstRowKey, final int count) {
+        final int[] buckets = new int[count];
+        for (int ii = 0; ii < count; ++ii) {
+            buckets[ii] = (int) (((firstRowKey + ii) / 1500) % 2);
+        }
+        return buckets;
+    }
+
+    @Test
     public void testCollapseSparseBlocksRandomChurn() {
         final double original = ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION;
         try (final SafeCloseable ignored = () -> ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION = original) {

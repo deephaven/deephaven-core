@@ -240,7 +240,7 @@ public class ChunkedOperatorAggregationHelper {
         final MutableInt outputPosition = new MutableInt();
         final Supplier<OperatorAggregationStateManager> stateManagerSupplier =
                 () -> makeStateManager(control, input, keySources, reinterpretedKeySources, ac,
-                        useSymbolTable ? symbolTable : null, reclaimStates);
+                        useSymbolTable ? symbolTable : null);
         final OperatorAggregationStateManager stateManager;
         if (initialKeys == null) {
             stateManager = stateManagerSupplier.get();
@@ -310,12 +310,12 @@ public class ChunkedOperatorAggregationHelper {
             final IncrementalOperatorAggregationStateManager incrementalStateManager =
                     (IncrementalOperatorAggregationStateManager) stateManager;
             incrementalStateManager.startTrackingPrevValues();
-            if (incrementalStateManager.canReclaim()) {
+            if (reclaimStates) {
                 // a reclaiming aggregation has no initial groups, so its result holds every position it assigned
                 Assert.assertion(resultRowSet.isFlat(), "resultRowSet.isFlat()");
                 Assert.eq(resultRowSet.size(), "resultRowSet.size()", outputPosition.get(), "outputPosition.get()");
             }
-            final OutputPositionBlockTracker blockTracker = incrementalStateManager.canReclaim()
+            final OutputPositionBlockTracker blockTracker = reclaimStates
                     ? new OutputPositionBlockTracker(outputPosition.get(), reclaimMode.collapseFreeFraction())
                     : null;
 
@@ -414,23 +414,14 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final AggregationControl control, @NotNull final QueryTable input,
             @NotNull final ColumnSource<?>[] keySources, @NotNull final ColumnSource<?>[] reinterpretedKeySources,
             @NotNull final AggregationContext ac,
-            @Nullable final Table symbolTableToUse,
-            final boolean reclaimStates) {
+            @Nullable final Table symbolTableToUse) {
         final OperatorAggregationStateManager stateManager;
         if (input.isRefreshing()) {
-            if (reclaimStates) {
-                stateManager = TypedHasherFactory.make(
-                        IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBaseWithTombstones.class,
-                        reinterpretedKeySources,
-                        keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
-                        control.getTargetLoadFactor());
-            } else {
-                stateManager = TypedHasherFactory.make(
-                        IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
-                        reinterpretedKeySources,
-                        keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
-                        control.getTargetLoadFactor());
-            }
+            stateManager = TypedHasherFactory.make(
+                    IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class,
+                    reinterpretedKeySources,
+                    keySources, control.initialHashTableSize(input), control.getMaximumLoadFactor(),
+                    control.getTargetLoadFactor());
         } else {
             if (symbolTableToUse != null) {
                 stateManager = new StaticSymbolTableChunkedOperatorAggregationStateManager(reinterpretedKeySources[0],
