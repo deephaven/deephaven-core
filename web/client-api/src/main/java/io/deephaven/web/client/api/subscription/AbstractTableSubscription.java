@@ -15,6 +15,7 @@ import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.Format;
 import io.deephaven.web.client.api.JsRangeSet;
+import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.LongWrapper;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.WorkerConnection;
@@ -143,6 +144,8 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
     private WebBarrageMessageReader reader;
 
     protected Status status = Status.STARTING;
+    /** Set when the stream was lost to a transport error, cleared once the subscription is re-sent. */
+    private boolean disconnected;
 
     private String failMsg;
 
@@ -209,6 +212,10 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
             doExchange.onEnd(this::onStreamEnd);
 
             sendFirstSubscriptionRequest();
+            if (disconnected) {
+                disconnected = false;
+                fireEvent(JsTable.EVENT_RECONNECT);
+            }
         },
                 // If the upstream table fails, kill the subscription
                 this::fail,
@@ -609,6 +616,8 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
         if (WorkerConnection.isTransportError(status)) {
             // If the subscription isn't closed and we hit a transport error, allow it to restart
             this.status = Status.STARTING;
+            disconnected = true;
+            fireEvent(JsTable.EVENT_DISCONNECT);
         } else {
             // Subscription failed somehow, fire an event
             fail(status.getDescription());
@@ -620,6 +629,21 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
         this.status = Status.DONE;
         doExchange = null;
         failMsg = message;
+    }
+
+    /**
+     * Called by the reviver when the subscribed state could not be re-established after a reconnect. The subscription
+     * is closed; a holder must create a new one.
+     */
+    @Override
+    public void die(Object failure) {
+        if (isClosed()) {
+            return;
+        }
+        this.status = Status.DONE;
+        doExchange = null;
+        failMsg = String.valueOf(failure);
+        fireEvent(JsTable.EVENT_RECONNECTFAILED, failure);
     }
 
     /**

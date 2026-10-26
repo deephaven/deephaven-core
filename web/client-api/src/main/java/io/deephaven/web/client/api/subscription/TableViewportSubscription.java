@@ -24,6 +24,7 @@ import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
@@ -43,6 +44,24 @@ import static io.deephaven.web.client.api.JsTable.EVENT_ROWUPDATED;
  */
 @TsName(namespace = "dh")
 public class TableViewportSubscription extends AbstractTableSubscription {
+    /**
+     * The connection to the server was lost. No {@code updated} events fire until it is back; the viewport is re-sent
+     * automatically, and {@link #EVENT_RECONNECT} fires when that has happened.
+     */
+    @JsProperty(namespace = "dh.TableViewportSubscription")
+    public static final String EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT;
+    /**
+     * The connection is back and the viewport has been re-sent to the server; data follows in {@code updated} events.
+     */
+    @JsProperty(namespace = "dh.TableViewportSubscription")
+    public static final String EVENT_RECONNECT = JsTable.EVENT_RECONNECT;
+    /**
+     * The table this viewport was made from could not be re-established after a reconnect. The subscription is closed;
+     * create a new one from a live table. {@code event.detail} describes the failure. This says nothing about the
+     * connection as a whole.
+     */
+    @JsProperty(namespace = "dh.TableViewportSubscription")
+    public static final String EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
 
     private DataOptions.ViewportSubscriptionOptions options;
     private double refresh;
@@ -169,17 +188,26 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     @Override
     public void fireEvent(String type) {
-        refire(new Event<>(type, null));
+        fireEvent(new Event<>(type, null));
     }
 
     @Override
     public <T> void fireEvent(String type, T detail) {
-        refire(new Event<T>(type, detail));
+        fireEvent(new Event<T>(type, detail));
     }
 
     @Override
     public <T> void fireEvent(Event<T> e) {
-        refire(e);
+        switch (e.getType()) {
+            case EVENT_DISCONNECT:
+            case EVENT_RECONNECT:
+            case EVENT_RECONNECTFAILED:
+                // The table reports its own lifecycle; these describe only this subscription
+                super.fireEvent(e);
+                return;
+            default:
+                refire(e);
+        }
     }
 
     @Override

@@ -80,7 +80,7 @@ public class TableReviver implements HasTableBinding {
                         state.forRevivables(t -> t.revive(state));
                         return null;
                     }, failure -> {
-                        state.forActiveLifecycles(t -> t.die(failure));
+                        state.forRevivables(t -> t.die(failure));
                         return null;
                     });
         }

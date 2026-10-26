@@ -30,6 +30,22 @@ import jsinterop.annotations.JsType;
  */
 @JsType(namespace = "dh")
 public final class TableSubscription extends AbstractTableSubscription {
+    /**
+     * The connection to the server was lost. No {@code updated} events fire until it is back; the subscription is
+     * re-sent automatically, and {@link #EVENT_RECONNECT} fires when that has happened.
+     */
+    public static final String EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT;
+    /**
+     * The connection is back and the subscription has been re-sent to the server; data follows in {@code updated}
+     * events.
+     */
+    public static final String EVENT_RECONNECT = JsTable.EVENT_RECONNECT;
+    /**
+     * The table this subscription was made from could not be re-established after a reconnect. The subscription is
+     * closed; create a new one from a live table. {@code event.detail} describes the failure. This says nothing about
+     * the connection as a whole.
+     */
+    public static final String EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
 
     private final JsArray<Column> columns;
     private final Double updateIntervalMs;
