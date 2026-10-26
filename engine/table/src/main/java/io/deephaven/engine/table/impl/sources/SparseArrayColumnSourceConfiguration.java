@@ -5,8 +5,7 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.configuration.Configuration;
 
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.stream.IntStream;
 
 /**
  * A central view of configuration options for sparse array column sources.
@@ -66,22 +65,11 @@ public abstract class SparseArrayColumnSourceConfiguration {
     public static final int SHORT_RECYCLER_CAPACITY0 = getRecyclerCapacity("short.0", SHORT_RECYCLER_CAPACITY);
     public static final int LONG_RECYCLER_CAPACITY0 = getRecyclerCapacity("long.0", LONG_RECYCLER_CAPACITY);
 
-    /**
-     * The default capacity InUse SoftRecycler for the lowest level should be the sum of all the other capacities.
-     */
-    public static final int IN_USE_RECYCLER_CAPACITY =
-            getRecyclerCapacity("inuse", getDefaultInUseLowestLevelRecyclerCapacity());
+    public static final int IN_USE_RECYCLER_CAPACITY = getInUseLowestLevelRecyclerCapacity();
 
-    /**
-     * The default capacity InUse SoftRecycler for all levels other than the lowest should be the max recycler capacity
-     * for any type.
-     */
-    public static final int IN_USE_RECYCLER_CAPACITY2 =
-            getRecyclerCapacity("inuse.2", getDefaultInUseRecyclerCapacity2());
-    public static final int IN_USE_RECYCLER_CAPACITY1 =
-            getRecyclerCapacity("inuse.1", getDefaultInUseRecyclerCapacity1());
-    public static final int IN_USE_RECYCLER_CAPACITY0 =
-            getRecyclerCapacity("inuse.0", getDefaultInUseRecyclerCapacity0());
+    public static final int IN_USE_RECYCLER_CAPACITY2 = getInUseRecyclerCapacity2();
+    public static final int IN_USE_RECYCLER_CAPACITY1 = getInUseRecyclerCapacity1();
+    public static final int IN_USE_RECYCLER_CAPACITY0 = getInUseRecyclerCapacity0();
 
     private static final String RECYCLER_MAXIMUM_CAPACITY_PROPERTY_PREFIX = "sparsearray.recycler.maximumCapacity.";
     /**
@@ -193,8 +181,21 @@ public abstract class SparseArrayColumnSourceConfiguration {
                 .getIntegerWithDefault(RECYCLER_MAXIMUM_CAPACITY_PROPERTY_PREFIX + thisType, defaultValue));
     }
 
-    private static int getDefaultInUseRecyclerCapacity2() {
-        final Integer[] CAPACITIES = {BOOLEAN_RECYCLER_CAPACITY2,
+    /**
+     * @return the sum of {@code values}, or {@link Integer#MAX_VALUE} if the sum would exceed it, as it does whenever a
+     *         value is the unlimited default maximum capacity
+     */
+    private static int saturatingSum(final int... values) {
+        return (int) Math.min(Integer.MAX_VALUE, IntStream.of(values).asLongStream().sum());
+    }
+
+    /**
+     * The level-2 in-use recycler is shared by every element type, each of which borrows and returns one level-2 in-use
+     * array with each level-2 array of previous-value blocks, so its capacity is the sum of the types' level-2
+     * capacities.
+     */
+    private static int getInUseRecyclerCapacity2() {
+        return saturatingSum(BOOLEAN_RECYCLER_CAPACITY2,
                 BYTE_RECYCLER_CAPACITY2,
                 CHAR_RECYCLER_CAPACITY2,
                 DOUBLE_RECYCLER_CAPACITY2,
@@ -202,13 +203,16 @@ public abstract class SparseArrayColumnSourceConfiguration {
                 INT_RECYCLER_CAPACITY2,
                 OBJECT_RECYCLER_CAPACITY2,
                 SHORT_RECYCLER_CAPACITY2,
-                LONG_RECYCLER_CAPACITY2
-        };
-        return Collections.max(Arrays.asList(CAPACITIES));
+                LONG_RECYCLER_CAPACITY2);
     }
 
-    private static int getDefaultInUseRecyclerCapacity1() {
-        final Integer[] CAPACITIES = {BOOLEAN_RECYCLER_CAPACITY1,
+    /**
+     * The level-1 in-use recycler is shared by every element type, each of which borrows and returns one level-1 in-use
+     * array with each level-1 array of previous-value blocks, so its capacity is the sum of the types' level-1
+     * capacities.
+     */
+    private static int getInUseRecyclerCapacity1() {
+        return saturatingSum(BOOLEAN_RECYCLER_CAPACITY1,
                 BYTE_RECYCLER_CAPACITY1,
                 CHAR_RECYCLER_CAPACITY1,
                 DOUBLE_RECYCLER_CAPACITY1,
@@ -216,13 +220,16 @@ public abstract class SparseArrayColumnSourceConfiguration {
                 INT_RECYCLER_CAPACITY1,
                 OBJECT_RECYCLER_CAPACITY1,
                 SHORT_RECYCLER_CAPACITY1,
-                LONG_RECYCLER_CAPACITY1
-        };
-        return Collections.max(Arrays.asList(CAPACITIES));
+                LONG_RECYCLER_CAPACITY1);
     }
 
-    private static int getDefaultInUseRecyclerCapacity0() {
-        final Integer[] CAPACITIES = {BOOLEAN_RECYCLER_CAPACITY0,
+    /**
+     * The level-0 in-use recycler is shared by every element type, each of which borrows and returns one level-0 in-use
+     * array with each level-0 array of previous-value blocks, so its capacity is the sum of the types' level-0
+     * capacities.
+     */
+    private static int getInUseRecyclerCapacity0() {
+        return saturatingSum(BOOLEAN_RECYCLER_CAPACITY0,
                 BYTE_RECYCLER_CAPACITY0,
                 CHAR_RECYCLER_CAPACITY0,
                 DOUBLE_RECYCLER_CAPACITY0,
@@ -230,21 +237,23 @@ public abstract class SparseArrayColumnSourceConfiguration {
                 INT_RECYCLER_CAPACITY0,
                 OBJECT_RECYCLER_CAPACITY0,
                 SHORT_RECYCLER_CAPACITY0,
-                LONG_RECYCLER_CAPACITY0
-        };
-        return Collections.max(Arrays.asList(CAPACITIES));
+                LONG_RECYCLER_CAPACITY0);
     }
 
-    private static int getDefaultInUseLowestLevelRecyclerCapacity() {
-        return BOOLEAN_RECYCLER_CAPACITY
-                + BYTE_RECYCLER_CAPACITY
-                + CHAR_RECYCLER_CAPACITY
-                + DOUBLE_RECYCLER_CAPACITY
-                + FLOAT_RECYCLER_CAPACITY
-                + INT_RECYCLER_CAPACITY
-                + OBJECT_RECYCLER_CAPACITY
-                + SHORT_RECYCLER_CAPACITY
-                + LONG_RECYCLER_CAPACITY;
+    /**
+     * The lowest-level in-use recycler is shared by every element type, each of which borrows and returns one in-use
+     * bitmap with each block of previous values, so its capacity is the sum of the types' capacities.
+     */
+    private static int getInUseLowestLevelRecyclerCapacity() {
+        return saturatingSum(BOOLEAN_RECYCLER_CAPACITY,
+                BYTE_RECYCLER_CAPACITY,
+                CHAR_RECYCLER_CAPACITY,
+                DOUBLE_RECYCLER_CAPACITY,
+                FLOAT_RECYCLER_CAPACITY,
+                INT_RECYCLER_CAPACITY,
+                OBJECT_RECYCLER_CAPACITY,
+                SHORT_RECYCLER_CAPACITY,
+                LONG_RECYCLER_CAPACITY);
     }
 }
 

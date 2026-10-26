@@ -5,8 +5,7 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.configuration.Configuration;
 
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.stream.IntStream;
 
 /**
  * A central view of configuration options for array column sources.
@@ -26,11 +25,7 @@ public class ArrayColumnSourceConfiguration {
     public static final int SHORT_RECYCLER_CAPACITY = getRecyclerCapacity("short", DEFAULT_RECYCLER_CAPACITY);
     public static final int LONG_RECYCLER_CAPACITY = getRecyclerCapacity("long", DEFAULT_RECYCLER_CAPACITY);
 
-    /**
-     * The default capacity InUse SoftRecycler for all levels other than the lowest should be the max recycler capacity
-     * for any type.
-     */
-    public static final int IN_USE_RECYCLER_CAPACITY = getRecyclerCapacity("inuse", getDefaultInUseRecyclerCapacity());
+    public static final int IN_USE_RECYCLER_CAPACITY = getInUseRecyclerCapacity();
 
     private static final String RECYCLER_MAXIMUM_CAPACITY_PROPERTY_PREFIX = "array.recycler.maximumCapacity.";
     /**
@@ -74,8 +69,20 @@ public class ArrayColumnSourceConfiguration {
                 .getIntegerWithDefault(RECYCLER_MAXIMUM_CAPACITY_PROPERTY_PREFIX + thisType, defaultValue));
     }
 
-    private static int getDefaultInUseRecyclerCapacity() {
-        final Integer[] CAPACITIES = {BOOLEAN_RECYCLER_CAPACITY,
+    /**
+     * @return the sum of {@code values}, or {@link Integer#MAX_VALUE} if the sum would exceed it, as it does whenever a
+     *         value is the unlimited default maximum capacity
+     */
+    private static int saturatingSum(final int... values) {
+        return (int) Math.min(Integer.MAX_VALUE, IntStream.of(values).asLongStream().sum());
+    }
+
+    /**
+     * The in-use recycler is shared by every element type, each of which borrows and returns one in-use bitmap with
+     * each block of previous values, so its capacity is the sum of the types' capacities.
+     */
+    private static int getInUseRecyclerCapacity() {
+        return saturatingSum(BOOLEAN_RECYCLER_CAPACITY,
                 BYTE_RECYCLER_CAPACITY,
                 CHAR_RECYCLER_CAPACITY,
                 DOUBLE_RECYCLER_CAPACITY,
@@ -83,8 +90,7 @@ public class ArrayColumnSourceConfiguration {
                 INT_RECYCLER_CAPACITY,
                 OBJECT_RECYCLER_CAPACITY,
                 SHORT_RECYCLER_CAPACITY,
-                LONG_RECYCLER_CAPACITY};
-        return Collections.max(Arrays.asList(CAPACITIES));
+                LONG_RECYCLER_CAPACITY);
     }
 }
 
