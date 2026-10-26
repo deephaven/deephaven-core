@@ -48,8 +48,9 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     public static final String EVENT_KEYADDED = "keyadded",
             /**
              * The connection to the server was lost. No keys are reported until it is back; the key subscription is
-             * re-sent automatically, and {@link #EVENT_RECONNECT} fires when that has happened. Constituent tables
-             * fetched with {@link #getTable(Object) getTable} report their own lifecycle.
+             * re-sent automatically, and {@link #EVENT_RECONNECT} fires when that has happened, or
+             * {@link #EVENT_RECONNECTFAILED} if it cannot be. Constituent tables fetched with {@link #getTable(Object)
+             * getTable} report their own lifecycle.
              */
             EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT,
             /**

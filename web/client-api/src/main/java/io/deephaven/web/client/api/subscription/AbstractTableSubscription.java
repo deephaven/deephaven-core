@@ -618,6 +618,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
             this.status = Status.STARTING;
             disconnected = true;
             fireEvent(JsTable.EVENT_DISCONNECT);
+            // Let the connection decide whether this was the whole connection going away; if so it reconnects and the
+            // reviver re-sends this subscription. Without this, a stream that fails alone would wait forever.
+            connection.checkStatus(status);
         } else {
             // Subscription failed somehow, fire an event
             fail(status.getDescription());
@@ -629,6 +632,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
         this.status = Status.DONE;
         doExchange = null;
         failMsg = message;
+        state.unretain(this);
     }
 
     /**
@@ -643,6 +647,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
         this.status = Status.DONE;
         doExchange = null;
         failMsg = String.valueOf(failure);
+        state.unretain(this);
         fireEvent(JsTable.EVENT_RECONNECTFAILED, failure);
     }
 

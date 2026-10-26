@@ -132,17 +132,17 @@ public class TableReviver implements HasTableBinding {
 
             if (!response.getSuccess()) {
                 ClientTableState dead = all.remove(new TableTicket(ticket));
-                dead.forActiveLifecycles(t -> t.die(response.getErrorInfo()));
+                dead.forRevivables(t -> t.die(response.getErrorInfo()));
             } else {
                 ClientTableState succeeded = all.remove(new TableTicket(ticket));
                 succeeded.setResolution(ClientTableState.ResolutionState.RUNNING);
-                succeeded.forActiveLifecycles(t -> ((JsTable) t).revive(succeeded));
+                succeeded.forRevivables(t -> t.revive(succeeded));
             }
         });
         stream.onEnd(status -> {
             if (!status.isOk()) {
                 for (ClientTableState failed : all.values()) {
-                    failed.forActiveLifecycles(t -> t.die(status.getDescription()));
+                    failed.forRevivables(t -> t.die(status.getDescription()));
                 }
             }
         });

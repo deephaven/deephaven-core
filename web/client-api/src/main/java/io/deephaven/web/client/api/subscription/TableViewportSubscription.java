@@ -46,7 +46,8 @@ import static io.deephaven.web.client.api.JsTable.EVENT_ROWUPDATED;
 public class TableViewportSubscription extends AbstractTableSubscription {
     /**
      * The connection to the server was lost. No {@code updated} events fire until it is back; the viewport is re-sent
-     * automatically, and {@link #EVENT_RECONNECT} fires when that has happened.
+     * automatically, and {@link #EVENT_RECONNECT} fires when that has happened, or {@link #EVENT_RECONNECTFAILED} if it
+     * cannot be.
      */
     @JsProperty(namespace = "dh.TableViewportSubscription")
     public static final String EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT;
@@ -56,9 +57,9 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     @JsProperty(namespace = "dh.TableViewportSubscription")
     public static final String EVENT_RECONNECT = JsTable.EVENT_RECONNECT;
     /**
-     * The table this viewport was made from could not be re-established after a reconnect. The subscription is closed;
-     * create a new one from a live table. {@code event.detail} describes the failure. This says nothing about the
-     * connection as a whole.
+     * The server-side table this viewport reads could not be re-established after a reconnect. The subscription is
+     * closed; create a new one from a live table. {@code event.detail} describes the failure. This says nothing about
+     * the connection as a whole.
      */
     @JsProperty(namespace = "dh.TableViewportSubscription")
     public static final String EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
@@ -184,16 +185,6 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     private static JsPropertyMap<?> wrap(SubscriptionRow rowObj, int row) {
         return JsPropertyMap.of("row", rowObj, "index", (double) row);
-    }
-
-    @Override
-    public void fireEvent(String type) {
-        fireEvent(new Event<>(type, null));
-    }
-
-    @Override
-    public <T> void fireEvent(String type, T detail) {
-        fireEvent(new Event<T>(type, detail));
     }
 
     @Override
@@ -329,6 +320,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         if (options.isReverseViewport == null) {
             options.isReverseViewport = false;
         }
+        // Keep the latest viewport, so a revive re-sends where the viewport was, not where it started
+        this.options = options;
         try {
             this.sendBarrageSubscriptionRequest(options.rows.asRangeSet().getRange(), options.columns,
                     options.updateIntervalMs, options.isReverseViewport, previewListLengthLimit);

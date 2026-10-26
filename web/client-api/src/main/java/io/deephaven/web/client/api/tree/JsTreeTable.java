@@ -126,7 +126,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     public static final String EVENT_UPDATED = "updated",
             /**
              * The connection to the server was lost. No events fire until it is back; the viewport is re-sent
-             * automatically, and {@link #EVENT_RECONNECT} fires when that has happened.
+             * automatically, and {@link #EVENT_RECONNECT} fires when that has happened, or
+             * {@link #EVENT_RECONNECTFAILED} if it cannot be.
              */
             EVENT_DISCONNECT = "disconnect",
             /**
@@ -784,6 +785,14 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             detail.setOffset(this.serverViewport.getFirstRow());
             fireEvent(EVENT_UPDATED, detail);
         }
+    }
+
+    @Override
+    public Promise<?> refetch() {
+        // TODO(deephaven-core#3604) a tree cannot be re-fetched into a new session; say so rather than reconnect
+        String reason = "Cannot reconnect a TreeTable with refetch(), see deephaven-core#3604";
+        die(reason);
+        return Promise.reject(reason);
     }
 
     @Override

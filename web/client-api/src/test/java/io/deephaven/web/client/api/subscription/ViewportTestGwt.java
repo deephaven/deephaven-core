@@ -358,10 +358,12 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     table.setViewport(0, 0, null);
                     return assertUpdateReceived(table, 1, 5055)
                             .then(t -> {
-                                // Only the viewport's stream ends, with UNAVAILABLE; every other stream stays up
+                                // Only the viewport's stream ends, with UNAVAILABLE; every other stream stays up.
+                                // The connection treats it as a lost connection and reconnects within the session
                                 transport.failStreams("DoExchange", 14, "stream lost by test");
                                 return Promise.race(
-                                        assertUpdateReceived(table, 1, 8056),
+                                        waitForEvent(ide, CoreClient.EVENT_RECONNECT, 8056).onInvoke(ide)
+                                                .then(reconnected -> assertUpdateReceived(table, 1, 8057)),
                                         delay(8000).then(late -> Promise.reject(
                                                 "viewport did not resume after its stream ended with UNAVAILABLE")));
                             })

@@ -49,9 +49,6 @@ import jsinterop.base.Js;
  * When using the {@link JsTotalsTableConfig#groupBy groupBy} feature, it may be desirable to also provide a row to the
  * user with all values across all rows. To achieve this, request the same Totals Table again, but remove the
  * {@link JsTotalsTableConfig#groupBy groupBy} setting.
- * <p>
- * Events are those of the {@link JsTable dh.Table} this wraps, under the same names: {@code disconnect},
- * {@code reconnect} and {@code reconnectfailed} report the lifecycle of the totals, independent of the source table.
  */
 @TsInterface
 @TsName(namespace = "dh", name = "TotalsTable")
