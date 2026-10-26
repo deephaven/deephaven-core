@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
@@ -46,6 +47,31 @@ public interface WhereFilter extends Filter {
     @InternalUseOnly
     static WhereFilter[] fromInternal(Filter filter) {
         return from(FilterToListImpl.of(filter));
+    }
+
+    /**
+     * {@link #beginOperation(Table) Begin} the operation for each of {@code filters}, in order. If any filter throws,
+     * the operations already begun are closed before the exception propagates.
+     *
+     * @param sourceTable The {@link Table} that will be filtered with {@code filters}
+     * @param filters The filters whose operations to begin
+     * @return A {@link SafeCloseable} that closes every operation begun
+     */
+    static SafeCloseable beginOperations(@NotNull final Table sourceTable, @NotNull final WhereFilter... filters) {
+        final SafeCloseableList operations = new SafeCloseableList();
+        try {
+            for (final WhereFilter filter : filters) {
+                operations.add(filter.beginOperation(sourceTable));
+            }
+        } catch (final RuntimeException | Error failure) {
+            try {
+                operations.close();
+            } catch (final RuntimeException closeFailure) {
+                failure.addSuppressed(closeFailure);
+            }
+            throw failure;
+        }
+        return operations;
     }
 
     /**
@@ -173,7 +199,8 @@ public interface WhereFilter extends Filter {
      *
      * @param sourceTable The {@link Table} that will be filtered with this WhereFilter
      * @return A {@link SafeCloseable} that will be {@link SafeCloseable#close() closed} when the operation is complete,
-     *         whether successful or not
+     *         whether successful or not, on the thread that began the operation; it may therefore release a lock
+     *         acquired here
      */
     default SafeCloseable beginOperation(@NotNull final Table sourceTable) {
         return () -> {

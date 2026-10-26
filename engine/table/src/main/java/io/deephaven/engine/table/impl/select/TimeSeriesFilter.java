@@ -346,34 +346,54 @@ public class TimeSeriesFilter
 
     @Override
     public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
-        String windowSourceName = "__Window_" + columnName;
-        while (sourceTable.hasColumns(windowSourceName)) {
-            windowSourceName = "_" + windowSourceName;
+        // Adding the time window initiates serial table operations, and the window listener must not process an update
+        // before the operation installs its recompute listener. A caller that may not initiate serial table operations
+        // (e.g. a gRPC handler coalescing a deferred table) therefore holds the shared lock until the operation is
+        // complete.
+        final UpdateGraph sourceUpdateGraph = sourceTable.getUpdateGraph();
+        final boolean acquireSharedLock = sourceTable.isRefreshing()
+                && !sourceUpdateGraph.serialTableOperationsSafe()
+                && !sourceUpdateGraph.exclusiveLock().isHeldByCurrentThread()
+                && !sourceUpdateGraph.sharedLock().isHeldByCurrentThread()
+                && !sourceUpdateGraph.currentThreadProcessesUpdates();
+        if (acquireSharedLock) {
+            sourceUpdateGraph.sharedLock().lock();
+        }
+        try {
+            String windowSourceName = "__Window_" + columnName;
+            while (sourceTable.hasColumns(windowSourceName)) {
+                windowSourceName = "_" + windowSourceName;
+            }
+
+            final Pair<Table, WindowCheck.TimeWindowListener> pair = WindowCheck.addTimeWindowInternal(clock,
+                    (QueryTable) sourceTable, columnName, periodNanos + 1, windowSourceName, true);
+            final QueryTable tableWithWindow = (QueryTable) pair.first;
+
+            windowListener = new TimeSeriesFilterWindowListener(
+                    "TimeSeriesFilter(" + columnName + ", " + Duration.ofNanos(periodNanos) + ", " + invert + ")",
+                    tableWithWindow, windowSourceName);
+
+            if (tableWithWindow.isRefreshing()) {
+                refreshFunctionForUnitTests = pair.second;
+                tableWithWindow.addUpdateListener(windowListener);
+                manage(windowListener);
+                isRefreshing = true;
+            } else {
+                refreshFunctionForUnitTests = () -> {
+                };
+                isRefreshing = false;
+            }
+
+            // we are doing the first match, which is based on the entire set of values in the table
+            windowListener.insertMatched(sourceTable.getRowSet());
+        } catch (final RuntimeException | Error failure) {
+            if (acquireSharedLock) {
+                sourceUpdateGraph.sharedLock().unlock();
+            }
+            throw failure;
         }
 
-        final Pair<Table, WindowCheck.TimeWindowListener> pair = WindowCheck.addTimeWindowInternal(clock,
-                (QueryTable) sourceTable, columnName, periodNanos + 1, windowSourceName, true);
-        final QueryTable tableWithWindow = (QueryTable) pair.first;
-
-        windowListener = new TimeSeriesFilterWindowListener(
-                "TimeSeriesFilter(" + columnName + ", " + Duration.ofNanos(periodNanos) + ", " + invert + ")",
-                tableWithWindow, windowSourceName);
-
-        if (tableWithWindow.isRefreshing()) {
-            refreshFunctionForUnitTests = pair.second;
-            tableWithWindow.addUpdateListener(windowListener);
-            manage(windowListener);
-            isRefreshing = true;
-        } else {
-            refreshFunctionForUnitTests = () -> {
-            };
-            isRefreshing = false;
-        }
-
-        // we are doing the first match, which is based on the entire set of values in the table
-        windowListener.insertMatched(sourceTable.getRowSet());
-
-        // the only thing we hold is our listener, which in turn holds the windowed table
-        return null;
+        // beyond the lock, the only thing we hold is our listener, which in turn holds the windowed table
+        return acquireSharedLock ? sourceUpdateGraph.sharedLock()::unlock : null;
     }
 }

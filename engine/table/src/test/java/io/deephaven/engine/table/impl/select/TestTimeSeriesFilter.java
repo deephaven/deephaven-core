@@ -19,6 +19,9 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.util.TestClock;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -31,7 +34,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
@@ -553,5 +561,128 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         assertEquals(expectedStaticSize, staticFiltered.size());
         assertFalse(staticTimeSeriesFilter.isRefreshing());
         assertFalse(staticComposed.isRefreshing());
+    }
+
+    /**
+     * A caller that may not initiate serial table operations, such as a gRPC handler, filters a refreshing table with a
+     * time series filter, both directly and composed with another filter.
+     */
+    @Test
+    public void testWhereWithoutLock() throws Exception {
+        final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2026-03-10T09:00:00 NY"));
+        final QueryTable source = minuteTable(start);
+        final TestClock testClock = new TestClock().setNanos(start + 30 * DateTimeUtils.MINUTE);
+
+        final TimeSeriesFilter timeSeriesFilter =
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).build();
+        final Table filtered = callWithoutLock(() -> source.where(timeSeriesFilter));
+
+        final TimeSeriesFilter composedTimeSeriesFilter =
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).build();
+        final WhereFilter composed =
+                DisjunctiveFilter.of(composedTimeSeriesFilter, WhereFilterFactory.getExpression("Sentinel < 0"));
+        final Table composedFiltered = callWithoutLock(() -> source.where(composed));
+
+        // Rows are one minute apart. At 30 minutes, rows 0 through 24 are older than the five minute window; at 40
+        // minutes, rows 0 through 34 are.
+        assertTrue(filtered.isRefreshing());
+        assertTrue(composedFiltered.isRefreshing());
+        assertEquals(35, filtered.size());
+        assertEquals(35, composedFiltered.size());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            testClock.setNanos(start + 40 * DateTimeUtils.MINUTE);
+            timeSeriesFilter.runForUnitTests();
+            composedTimeSeriesFilter.runForUnitTests();
+        });
+        assertEquals(25, filtered.size());
+        assertEquals(25, composedFiltered.size());
+    }
+
+    /**
+     * A filter that fails to begin its operation after a time series filter has done so leaves the calling thread
+     * holding no lock, whether the filters are applied directly, composed, or by wouldMatch.
+     */
+    @Test
+    public void testBeginOperationFailureWithoutLock() {
+        final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2026-03-10T09:00:00 NY"));
+        final QueryTable source = minuteTable(start);
+        final TestClock testClock = new TestClock().setNanos(start + 30 * DateTimeUtils.MINUTE);
+        final Supplier<TimeSeriesFilter> timeSeriesFilter =
+                () -> TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).build();
+
+        checkBeginOperationFailureWithoutLock(
+                () -> source.where(Filter.and(timeSeriesFilter.get(), failingBeginOperationFilter())));
+        checkBeginOperationFailureWithoutLock(
+                () -> source.where(DisjunctiveFilter.of(timeSeriesFilter.get(), failingBeginOperationFilter())));
+        checkBeginOperationFailureWithoutLock(() -> source.wouldMatch(
+                new WouldMatchPair("InWindow", timeSeriesFilter.get()),
+                new WouldMatchPair("Failing", failingBeginOperationFilter())));
+    }
+
+    private static final String BEGIN_OPERATION_FAILURE = "beginOperation failure";
+
+    private static WhereFilter failingBeginOperationFilter() {
+        return new RowSetCapturingFilter() {
+            @Override
+            public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+                throw new IllegalStateException(BEGIN_OPERATION_FAILURE);
+            }
+        };
+    }
+
+    private static void checkBeginOperationFailureWithoutLock(final Callable<Table> operation) {
+        final ExecutionException failure = assertThrows(ExecutionException.class, () -> callWithoutLock(operation));
+        Throwable cause = failure.getCause();
+        while (cause != null && !BEGIN_OPERATION_FAILURE.equals(cause.getMessage())) {
+            cause = cause.getCause();
+        }
+        if (cause == null) {
+            throw new AssertionError("Expected the beginOperation failure", failure);
+        }
+    }
+
+    /**
+     * A refreshing table of 60 rows, one minute apart beginning at {@code start}, with a Sentinel column holding the
+     * row position.
+     */
+    private static QueryTable minuteTable(final long start) {
+        final int size = 60;
+        final Instant[] times = new Instant[size];
+        final int[] sentinel = new int[size];
+        for (int ii = 0; ii < times.length; ++ii) {
+            sentinel[ii] = ii;
+            times[ii] = DateTimeUtils.epochNanosToInstant(start + (ii * DateTimeUtils.MINUTE));
+        }
+        return testRefreshingTable(RowSetFactory.flat(size).toTracking(), col("Timestamp", times),
+                intCol("Sentinel", sentinel));
+    }
+
+    /**
+     * Call {@code operation} on a thread that holds neither update graph lock and may not initiate serial table
+     * operations, as a gRPC handler does, and verify that the thread holds no lock once the operation returns or
+     * throws.
+     */
+    private static <T> T callWithoutLock(final Callable<T> operation) throws Exception {
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final UpdateGraph updateGraph = executionContext.getUpdateGraph();
+        final ExecutorService unlockedThread = Executors.newSingleThreadExecutor();
+        try {
+            return unlockedThread.submit(() -> {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    assertFalse(updateGraph.serialTableOperationsSafe());
+                    assertFalse(updateGraph.exclusiveLock().isHeldByCurrentThread());
+                    assertFalse(updateGraph.sharedLock().isHeldByCurrentThread());
+                    try {
+                        return operation.call();
+                    } finally {
+                        assertFalse(updateGraph.sharedLock().isHeldByCurrentThread());
+                    }
+                }
+            }).get();
+        } finally {
+            unlockedThread.shutdownNow();
+        }
     }
 }
