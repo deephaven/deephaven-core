@@ -77,7 +77,7 @@ public class TableReviver implements HasTableBinding {
             JsLog.debug("Attempting revive on ", state);
             state.maybeRevive().then(
                     success -> {
-                        state.forActiveLifecycles(t -> ((JsTable) t).revive(state));
+                        state.forRevivables(t -> t.revive(state));
                         return null;
                     }, failure -> {
                         state.forActiveLifecycles(t -> t.die(failure));

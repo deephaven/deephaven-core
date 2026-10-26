@@ -27,6 +27,7 @@ import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.client.state.ClientTableState;
+import io.deephaven.web.client.state.Revivable;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
 import io.deephaven.web.shared.fu.JsRunnable;
@@ -56,7 +57,7 @@ import java.util.BitSet;
  * that client code can listen to.
  */
 @TsIgnore
-public abstract class AbstractTableSubscription extends HasEventHandling {
+public abstract class AbstractTableSubscription extends HasEventHandling implements Revivable {
     /**
      * Indicates that some new data is available on the client, either an initial snapshot or a delta update. The
      * <b>detail</b> field of the event will contain a TableSubscriptionEventData detailing what has changed, or
@@ -154,6 +155,17 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         this.state = state;
         this.connection = connection;
 
+        revive();
+    }
+
+    /**
+     * Called by the reviver once the subscribed state is usable again after a reconnect. A subscription whose stream
+     * was cut by a transport error is back in {@link Status#STARTING} and reconnects here; one whose stream survived is
+     * left alone.
+     */
+    @Override
+    public void revive(ClientTableState revived) {
+        assert revived == state;
         revive();
     }
 

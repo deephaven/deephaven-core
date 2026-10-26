@@ -71,6 +71,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ActiveTableBinding;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
+import io.deephaven.web.client.state.Revivable;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsProvider;
@@ -107,7 +108,7 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
  * </ol>
  */
 @TsName(namespace = "dh", name = "Table")
-public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject {
+public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable, ServerObject, Revivable {
     /**
      * The table size has updated, so live scrollbars and the like can be updated accordingly.
      */
