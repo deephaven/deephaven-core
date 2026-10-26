@@ -15,6 +15,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
+import io.deephaven.engine.table.impl.sources.regioned.kernel.BinarySearchKernelHelper;
 import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 
 import java.time.Instant;
@@ -37,9 +38,19 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
     private final ChunkType chunkType;
     private final SetResult setResult;
 
+    /**
+     * @param type the data type of the values
+     * @param equalsConsistent true when values of the type compare equal exactly when they are equal (see
+     *        {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)}), which selects the
+     *        EqualsConsistentObject set and compact kernel that test Object equality with {@code equals}; other chunk
+     *        types ignore it
+     * @param minimum true for the minimum, false for the maximum
+     * @param name the name of the result column
+     */
     public SsmChunkedMinMaxOperator(
             // region extra constructor params
             Class<?> type,
+            boolean equalsConsistent,
             // endregion extra constructor params
             boolean minimum, String name) {
         this.name = name;
@@ -52,8 +63,8 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         } else {
             chunkType = ChunkType.fromElementType(type);
         }
-        compactAndCountKernel = CompactKernel.makeCompact(chunkType);
-        ssmFactory = SegmentedSortedMultiSet.makeFactory(chunkType, NODE_SIZE, type);
+        compactAndCountKernel = CompactKernel.makeCompact(chunkType, equalsConsistent);
+        ssmFactory = SegmentedSortedMultiSet.makeFactory(chunkType, NODE_SIZE, type, equalsConsistent);
         removeContextFactory = SegmentedSortedMultiSet.makeRemoveContextFactory(NODE_SIZE);
         setResult = makeSetResult(chunkType, type, minimum, resultColumn);
     }

@@ -3,6 +3,7 @@
 //
 package io.deephaven.kafka.testcontainers;
 
+import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.kafka.ConfluentKafkaContainer;
@@ -139,8 +140,14 @@ final class SingletonContainers {
             return CONTAINER.getBootstrapServers();
         }
 
+        public static String schemaRegistryAddress() {
+            return CONTAINER.getSchemaRegistryAddress();
+        }
+
         public static Map<String, Object> propertiesMap() {
-            return Map.of(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers());
+            return Map.of(
+                    CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers(),
+                    AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG, schemaRegistryAddress());
         }
 
         private Redpanda() {}

@@ -1,6 +1,5 @@
 ---
 title: Create a time table
-sidebar_label: Time tables
 ---
 
 This guide will show you how to create a time table. A time table is a ticking, in-memory table that adds new rows at a regular, user-defined interval. Its sole column is a timestamp column.

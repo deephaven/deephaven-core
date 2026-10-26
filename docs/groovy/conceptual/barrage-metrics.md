@@ -28,7 +28,7 @@ New subscriptions and subscription changes require initializing table state buil
 
 4. Propagation to gRPC listeners
 
-Each delta and snapshot is then propagated to subscribers. Barrage records `PropagateNanos`, the time it took to pass the message to the list of listeners.
+Each delta and snapshot is then propagated to its subscribers. When a message goes to more than one subscriber, the server can write it to several of them at once (see [Write to subscribers in parallel](../how-to-guides/performance/barrage-performance.md#write-to-subscribers-in-parallel)). Barrage records `PropagateNanos`, the time it took to pass the message to the list of listeners.
 
 > [!NOTE]
 > Barrage also records `UpdateJobNanos`, the aggregate time it took to coalesce deltas, fetch the snapshot, propagate, and housekeep.
@@ -59,7 +59,7 @@ The snapshot request is queued for processing. Barrage records `QueueNanos`, the
 
 2. The snapshot is constructed
 
-The snapshot request is then fulfilled. The process typically occurs concurrently with the UG, but larger snapshots may require holding the UG exclusive lock. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener.
+The snapshot request is then fulfilled. Barrage normally builds the snapshot concurrently with the UG, retrying if the table changes during an attempt. If those concurrent attempts keep failing, or a failed attempt takes too long, Barrage holds the UG shared lock for a final attempt. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener.
 
 Similar to subscription requests, Barrage records `WriteNanos` and `WriteBytes`, the time it took to write, and how many bytes were written.
 

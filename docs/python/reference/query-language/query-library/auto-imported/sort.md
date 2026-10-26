@@ -1,6 +1,5 @@
 ---
 title: Sort functions
-sidebar_label: Sort functions
 ---
 
 Sorting functions for arrays and vectors.

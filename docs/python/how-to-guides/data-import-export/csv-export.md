@@ -1,6 +1,5 @@
 ---
 title: Export data to CSV or other delimited files
-sidebar_label: Export CSV files
 ---
 
 This guide discusses how to export table data to CSV (or other delimited) files from Deephaven by using [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md).

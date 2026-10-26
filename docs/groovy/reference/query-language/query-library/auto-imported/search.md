@@ -1,6 +1,5 @@
 ---
 title: Search functions
-sidebar_label: Search functions
 ---
 
 Binary search and string matching utilities.

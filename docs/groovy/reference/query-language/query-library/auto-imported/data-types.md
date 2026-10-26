@@ -1,6 +1,5 @@
 ---
 title: Data types
-sidebar_label: Data types
 ---
 
 Type casting and data structure utilities.

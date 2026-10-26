@@ -42,6 +42,11 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
     private QueryPerformanceRecorder outerInstance;
     /** Counts installations, so that a closeable only ever uninstalls the one it was returned for; guarded by this. */
     private int installation;
+    /**
+     * Whether another query is resumed on top of this one, with this query's accruing entry (the catch-all, or the top
+     * user nugget) paused for the duration so that the inner query's time is not charged here too. Guarded by this.
+     */
+    private boolean pausedForNestedQuery;
 
     /**
      * Constructs a QueryPerformanceRecorderImpl.
@@ -76,6 +81,10 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
             return;
         }
         state = QueryState.INTERRUPTED;
+        if (pausedForNestedQuery) {
+            // a suspended nugget ignores abort(); resume the paused entry so that it closes below
+            resumeAccruingEntry();
+        }
         if (catchAllNugget != null) {
             stopCatchAll(true);
         } else {
@@ -171,7 +180,45 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
         QueryPerformanceRecorderState.resetInstance();
         if (outer != null) {
             QueryPerformanceRecorderState.setInstance(outer);
+            if (outer instanceof QueryPerformanceRecorderImpl) {
+                ((QueryPerformanceRecorderImpl) outer).onNestedQueryEnd();
+            }
         }
+    }
+
+    /**
+     * Pauses this query's accruing entry while another query runs on top of it on this thread. An aborted query stays
+     * installed until its scope closes, with its entries already closed, so there is nothing to pause for it.
+     */
+    private synchronized void onNestedQueryBegin() {
+        if (state == QueryState.INTERRUPTED) {
+            return;
+        }
+        Assert.eq(state, "state", QueryState.RUNNING, "QueryState.RUNNING");
+        Assert.eqFalse(pausedForNestedQuery, "pausedForNestedQuery");
+        pausedForNestedQuery = true;
+        accruingEntry().onBaseEntryEnd();
+    }
+
+    /**
+     * Resumes this query's accruing entry once the query that was running on top of it has handed the thread back,
+     * unless this query was aborted meanwhile, which already closed the entry.
+     */
+    private synchronized void onNestedQueryEnd() {
+        if (!pausedForNestedQuery) {
+            return;
+        }
+        resumeAccruingEntry();
+    }
+
+    private void resumeAccruingEntry() {
+        pausedForNestedQuery = false;
+        accruingEntry().onBaseEntryStart();
+    }
+
+    /** The entry currently charged for this query's time: the catch-all, or else the innermost open user nugget. */
+    private QueryPerformanceNugget accruingEntry() {
+        return catchAllNugget != null ? catchAllNugget : userNuggetStack.peekLast();
     }
 
     /**
@@ -206,6 +253,9 @@ public class QueryPerformanceRecorderImpl implements QueryPerformanceRecorder {
             throw new IllegalStateException("Can't start a query while another query is in operation");
         }
         outerInstance = current == QueryPerformanceRecorderState.DUMMY_RECORDER ? null : current;
+        if (outerInstance instanceof QueryPerformanceRecorderImpl) {
+            ((QueryPerformanceRecorderImpl) outerInstance).onNestedQueryBegin();
+        }
         final int thisInstallation = ++installation;
         QueryPerformanceRecorderState.setInstance(this);
 

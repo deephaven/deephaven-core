@@ -17,8 +17,14 @@ public class WhereFilterWithRespectedBarriersImpl extends WhereFilterDelegatingB
      * @param filter the filter to wrap
      * @param respectedBarriers the barriers that this filter respects
      * @return a new {@code WhereFilter} instance that respects the barriers
+     * @throws IllegalArgumentException if any barrier is null
      */
     public static WhereFilter of(WhereFilter filter, Object... respectedBarriers) {
+        for (final Object barrier : respectedBarriers) {
+            if (barrier == null) {
+                throw new IllegalArgumentException("A filter may not respect a null barrier: " + filter);
+            }
+        }
         return new WhereFilterWithRespectedBarriersImpl(filter, respectedBarriers);
     }
 

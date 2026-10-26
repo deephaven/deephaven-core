@@ -1,6 +1,5 @@
 ---
 title: Barrage metrics for performance monitoring
-sidebar_label: Barrage metrics
 ---
 
 Barrage is the name of Deephaven's IPC table transport. This guide explains what statistics are recorded and how to access them.
@@ -34,7 +33,7 @@ Subscription statistics are presented in percentiles bucketed over a time period
 | -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | EnqueueNanos         | Sender            | The time it took to record changes that occurred during a single update graph cycle                                                                                |
 | AggregateNanos       | Sender            | The time it took to aggregate pending updates into a message; recorded for every compaction and for every range a propagation packages, even a range of one update |
-| PropagateNanos       | Sender            | The time it took to deliver an aggregated message to all subscribers                                                                                               |
+| PropagateNanos       | Sender            | The elapsed time of one propagation phase: writing one message to the subscribers it goes to                                                                       |
 | SnapshotNanos        | Sender            | The time it took to snapshot data for a new or changed subscription                                                                                                |
 | UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic                                                                                         |
 | WriteNanos           | Sender            | The time it took to write the update to a single subscriber                                                                                                        |
@@ -122,7 +121,7 @@ This configuration limits each snapshot chunk to exactly 1 million cells — wel
 
 ## Compact pending deltas
 
-The server records one delta — the set of changes from a single update graph cycle — for each subscriber, then sends the accumulated deltas when that subscriber's [update interval](#update-interval) elapses. A subscriber served less often than its table ticks therefore holds every intervening cycle's data at once, even though the message it eventually receives is the size of the combined change rather than the sum of the individual ones. Memory grows with the number of cycles per update interval, not with the size of the update.
+The server records one delta — the set of changes from a single update graph cycle — for each table and update interval that has subscribers. Subscribers that use the same update interval share those deltas, and the server sends the accumulated deltas when the [update interval](#update-interval) elapses. When the table ticks more than once per update interval, the server therefore holds every intervening cycle's data at once, even though the message each subscriber eventually receives is the size of the combined change rather than the sum of the individual ones. Memory grows with both the size of each cycle's changes and the number of cycles per update interval.
 
 To limit that growth, the server combines the pending deltas in the background, before the interval elapses. Compacting costs processor time and saves memory, so the server pays for it only where there is memory to reclaim. It compares the storage the pending deltas occupy against the storage they would occupy compacted, and compacts when the saving clears both of two thresholds:
 
@@ -134,13 +133,22 @@ held - compacted >= max(compactionFloorBytes, compactionMinFreedFraction * held)
 
 The two thresholds answer different questions. The fraction asks whether compacting is worthwhile at all; the floor asks whether the saving is large enough to be worth the work.
 
-- `-DBarrageMessageProducer.compactionEnabled`: When `true` (the default), the server compacts a subscriber's pending deltas between update intervals. When `false`, deltas accumulate untouched until the interval elapses.
+- `-DBarrageMessageProducer.compactionEnabled`: When `true` (the default), the server compacts the pending deltas between update intervals. When `false`, deltas accumulate untouched until the interval elapses.
 - `-DBarrageMessageProducer.compactionMinFreedFraction`: The fraction of the pending deltas' storage that compacting must release for the server to do it. Default: `0.5`. A higher value copies less data but lets the pending deltas grow larger — at `0.9` the server copies about a ninth as much and holds about ten times the compacted footprint.
 - `-DBarrageMessageProducer.compactionFloorBytes`: The number of bytes compacting must release, whatever fraction of the total that represents. Default: `4194304` (4 MiB). This keeps a stream of very small updates from compacting on every cycle, where the work costs the same as a compaction that reclaims far more.
 - `-DBarrageMessageProducer.deltaChunkSize`: The number of rows in each chunk a delta records. Default: `65536`. A value that is not a power of two rounds up to the next one.
 
 > [!NOTE]
 > The `PendingDeltaCount` and `PendingDeltaBytes` metrics in the subscription table measure what the server holds for subscribers it has not yet served, so they are the place to look when tuning these properties.
+
+## Write to subscribers in parallel
+
+Each time the server propagates an update to a table's subscribers, it writes each subscriber its own view of the update, which holds only the columns, rows, and encoding that subscriber asked for. Writing a message serializes it into the gRPC stream's buffers. Serializing is processor work that does not wait for the client, so the server can write to several subscribers at once. Parallel writes need a message that goes to more than one subscriber and `BarrageMessageProducer.propagationThreads` greater than `1`. Even then, the other threads come from a pool that every table shares, and when that pool is busy, the propagation thread writes to the remaining subscribers itself.
+
+- `-DBarrageMessageProducer.propagationThreads`: The most threads that write one update to a table's subscribers at once, counting the thread that runs the propagation. Default: the number of available processors. Above `1`, the other threads come from a pool that every table shares, which never holds more than this number less one. A value of `1` or less writes to subscribers one after another on the propagation thread, and the server makes no pool.
+
+> [!NOTE]
+> `PropagateNanos` measures the elapsed time of one propagation phase: writing one message to the subscribers it goes to. An update can take several phases, such as a snapshot for new subscribers and a delta for the others, and each records its own sample. With parallel writes a phase can take much less than the sum of its writes' `WriteNanos`. A single subscriber's write still runs on one thread.
 
 ## Additional Barrage configuration
 
@@ -180,7 +188,7 @@ If `WriteNanos` is high or `WriteBytes` is large:
 
 If `PropagateNanos` is consistently high:
 
-- Many subscribers may be connected to the same table. Consider load balancing across multiple server instances.
+- Many subscribers may be connected to the same table. Their writes overlap only as far as `BarrageMessageProducer.propagationThreads` and idle processors allow: check that the property is above `1` and not well below the number of subscribers (see [Write to subscribers in parallel](#write-to-subscribers-in-parallel)), and whether the server's processors are already busy. Consider load balancing across multiple server instances.
 - The server may be under memory pressure. Check JVM heap usage and garbage collection metrics.
 
 ### Subscription errors

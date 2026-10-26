@@ -171,10 +171,17 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
      * Connects and authenticates to the configured server and runs the specified scripts.
      */
     protected Promise<IdeSession> connect(TableSourceBuilder tables) {
+        return connect(tables, null);
+    }
+
+    /**
+     * Connects and authenticates to the configured server with the given options, and runs the specified scripts.
+     */
+    protected Promise<IdeSession> connect(TableSourceBuilder tables, ConnectOptions connectOptions) {
         // start by delaying test finish by 1.0s so we fail fast in cases where we aren't set up right
         delayTestFinish(1007);
         return importDhInternal().then(module -> {
-            CoreClient coreClient = new CoreClient(localServer, null);
+            CoreClient coreClient = new CoreClient(localServer, connectOptions);
             return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
                     .then(ignore -> coreClient.getAsIdeConnection())
                     .then(ide -> {

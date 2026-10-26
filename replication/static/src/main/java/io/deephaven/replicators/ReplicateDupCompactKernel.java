@@ -60,12 +60,15 @@ public class ReplicateDupCompactKernel {
         final String className = new File(path).getName().replaceAll(".java$", "");
         final String newName = className.replace("DupCompactKernel", "ReverseDupCompactKernel");
 
-        // Skip, re-add file header
-        lines = Stream.concat(
-                ReplicationUtils.fileHeaderStream("replicateDupCompactKernel", ReplicationUtils.className(path)),
-                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
+        lines = globalReplacements(
+                lines.stream().dropWhile(line -> line.startsWith("//")).collect(Collectors.toList()),
+                className, newName);
 
-        return globalReplacements(lines, className, newName);
+        // the header names the Char class that every variant is replicated from, and follows the class name
+        // replacements because their patterns also match the source class name
+        final String charClassName = className.replaceFirst("^(Byte|Short|Int|Long|Float|Double|Object)", "Char");
+        return Stream.concat(ReplicationUtils.fileHeaderStream("replicateDupCompactKernel", charClassName),
+                lines.stream()).collect(Collectors.toList());
     }
 
     private static void fixupObjectDupCompact(String objectPath) throws IOException {

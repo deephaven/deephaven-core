@@ -11,6 +11,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.csv.util.MutableObject;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
@@ -45,6 +46,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.LongUnaryOperator;
+import java.util.stream.IntStream;
 
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -423,6 +425,56 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final QueryTable descending = (QueryTable) table.sort(List.of(SortColumn.desc(ColumnName.of("boolCol"))));
         show(descending);
         assertTableEquals(descending, testRefreshingTable(col("boolCol", true, true, false, false, null)));
+    }
+
+    /**
+     * The reverse lookup must never hold {@link RowSequence#NULL_ROW_KEY}: a slot the listener vacates during spreading
+     * is recorded as a NULL_ROW_KEY mapping, sorted by slot among the kept mappings, and only the kept ones belong in
+     * the reverse lookup. Interleaving many new rows into a dense sorted run forces spreading and its gap evictions.
+     */
+    @Test
+    public void testReverseLookupNeverHoldsNullRowKey() {
+        final int initial = 2000;
+        final QueryTable table = testRefreshingTable(RowSetFactory.flat(initial).toTracking(),
+                intCol("A", IntStream.range(0, initial).map(ii -> ii * 100).toArray()));
+        final QueryTable sorted = (QueryTable) table.sort("A");
+        final LongUnaryOperator reverse = SortOperation.getReverseLookup(table, sorted);
+        final RowRedirection forward = SortOperation.getRowRedirection(sorted);
+        assertNotNull(forward);
+        checkReverseLookup(table, sorted, forward, reverse);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final Random random = new Random(20261002);
+        long nextKey = initial;
+        for (int cycle = 0; cycle < 10; ++cycle) {
+            final int count = 300;
+            final long[] keys = new long[count];
+            final int[] values = new int[count];
+            for (int ii = 0; ii < count; ++ii) {
+                keys[ii] = nextKey++;
+                // between existing values, and past both ends, so that every cycle spreads somewhere
+                values[ii] = random.nextInt((initial + 20) * 100) - 1000;
+            }
+            final RowSet removed = table.getRowSet().subSetForPositions(
+                    RowSetFactory.fromKeys(IntStream.range(0, 100).mapToLong(ii -> 7L * ii).toArray()));
+            updateGraph.runWithinUnitTestCycle(() -> {
+                removeRows(table, removed);
+                addToTable(table, RowSetFactory.fromKeys(keys), intCol("A", values));
+                table.notifyListeners(RowSetFactory.fromKeys(keys), removed, i());
+            });
+            checkReverseLookup(table, sorted, forward, reverse);
+        }
+    }
+
+    private static void checkReverseLookup(final QueryTable source, final QueryTable sorted,
+            final RowRedirection forward, final LongUnaryOperator reverse) {
+        assertEquals(RowSequence.NULL_ROW_KEY, reverse.applyAsLong(RowSequence.NULL_ROW_KEY));
+        assertEquals(source.size(), sorted.size());
+        sorted.getRowSet().forAllRowKeys(outer -> {
+            final long inner = forward.get(outer);
+            assertTrue(source.getRowSet().containsRange(inner, inner));
+            assertEquals(outer, reverse.applyAsLong(inner));
+        });
     }
 
     @Test

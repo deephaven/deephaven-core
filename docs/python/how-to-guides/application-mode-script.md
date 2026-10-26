@@ -1,6 +1,5 @@
 ---
 title: Use Application Mode scripts
-sidebar_label: Application Mode scripts
 ---
 
 Deephaven's Application Mode allows you to [initialize server state](./application-mode.md). This guide covers how to use Application Mode scripts, allowing users to run Python or Groovy code when Deephaven is launched.

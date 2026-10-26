@@ -13,6 +13,7 @@ import org.apache.kafka.common.serialization.Serializer;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 
 public enum KafkaService {
@@ -26,6 +27,11 @@ public enum KafkaService {
         public Map<String, Object> propertiesMap() {
             return ConfluentKafka.propertiesMap();
         }
+
+        @Override
+        public Optional<String> schemaRegistryAddress() {
+            return Optional.empty();
+        }
     },
     KAFKA(SingletonContainers.Name.KAFKA) {
         @Override
@@ -36,6 +42,11 @@ public enum KafkaService {
         @Override
         public Map<String, Object> propertiesMap() {
             return Kafka.propertiesMap();
+        }
+
+        @Override
+        public Optional<String> schemaRegistryAddress() {
+            return Optional.empty();
         }
     },
     KAFKA_NATIVE(SingletonContainers.Name.KAFKA_NATIVE) {
@@ -48,6 +59,11 @@ public enum KafkaService {
         public Map<String, Object> propertiesMap() {
             return KafkaNative.propertiesMap();
         }
+
+        @Override
+        public Optional<String> schemaRegistryAddress() {
+            return Optional.empty();
+        }
     },
     REDPANDA(SingletonContainers.Name.REDPANDA) {
         @Override
@@ -58,6 +74,11 @@ public enum KafkaService {
         @Override
         public Map<String, Object> propertiesMap() {
             return Redpanda.propertiesMap();
+        }
+
+        @Override
+        public Optional<String> schemaRegistryAddress() {
+            return Optional.of(Redpanda.schemaRegistryAddress());
         }
     };
 
@@ -78,6 +99,8 @@ public enum KafkaService {
     public final AdminClient admin() {
         return AdminClient.create(propertiesMap());
     }
+
+    public abstract Optional<String> schemaRegistryAddress();
 
     public final <K, V> KafkaProducer<K, V> producer(Serializer<K> key, Serializer<V> value) {
         return new KafkaProducer<>(propertiesMap(), key, value);

@@ -1,6 +1,5 @@
 ---
 title: How does the console determine what objects tables and charts to display?
-sidebar_label: How do I control what objects are displayed in the console?
 ---
 
 In Groovy, you can often mark variables, methods, and classes with a leading underscore to indicate that they are for internal use only. In Deephaven, a leading underscore in a table name prevents the table from being displayed in the IDE.

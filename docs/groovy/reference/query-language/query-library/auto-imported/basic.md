@@ -1,6 +1,5 @@
 ---
 title: Basic functions
-sidebar_label: Basic functions
 ---
 
 Array manipulation, counting, null handling, and utility functions.

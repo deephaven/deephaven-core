@@ -1,6 +1,5 @@
 ---
 title: Built-in query language functions
-sidebar_label: Built-in functions
 ---
 
 Like [constants](./built-in-constants.md) and [variables](./built-in-variables.md), there are many built-in functions that can be called from the query language with no additional imports or setup. These built-in functions should be used over Python or other user-defined functions in query strings for two reasons:

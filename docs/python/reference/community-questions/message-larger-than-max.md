@@ -1,6 +1,5 @@
 ---
 title: How do I fix client errors saying "Received message larger than max"?
-sidebar_label: How do I increase the maximum message size?
 ---
 
 _I have a client query that gives an error `Received message larger than max`. How can I fix this?_

@@ -1,6 +1,5 @@
 ---
 title: How do I import one Python script into another in the Deephaven IDE?
-sidebar_label: How do I import one Python script into another in the Deephaven IDE?
 ---
 
 <em>I have a Python script that defines some functions, classes, variables, or other objects. Can I use these in a new Python script from the Deephaven IDE?</em>

@@ -1,6 +1,5 @@
 ---
 title: Designing the Deephaven Core API
-sidebar_label: Core API design
 ---
 
 <div className="comment-title">

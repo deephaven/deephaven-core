@@ -128,7 +128,6 @@ public class GeneratedFilterKernel implements io.deephaven.engine.table.impl.sel
             }
             final boolean __newResult = eq(v1_.size(), v2_.size());
             __results.set(__my_i__, __newResult);
-            __results.set(__my_i__, __newResult);
             // increment the count if the new result is TRUE
             __count += __newResult ? 1 : 0;
         }

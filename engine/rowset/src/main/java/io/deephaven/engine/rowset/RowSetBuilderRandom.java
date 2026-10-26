@@ -53,6 +53,17 @@ public interface RowSetBuilderRandom {
         addKeys(new IntChunkLongIterator(chunk));
     }
 
+    /**
+     * Add the row keys in positions {@code [offset, offset + length)} of {@code chunk}, which may be in any order.
+     *
+     * @param chunk the row keys
+     * @param offset the position of the first key to add
+     * @param length the number of keys to add
+     */
+    default void addRowKeysChunk(final LongChunk<? extends RowKeys> chunk, final int offset, final int length) {
+        addKeys(new LongChunkIterator(chunk, offset, length));
+    }
+
     default void addOrderedRowKeysChunk(final LongChunk<? extends OrderedRowKeys> chunk) {
         addRowKeysChunk(chunk);
     }

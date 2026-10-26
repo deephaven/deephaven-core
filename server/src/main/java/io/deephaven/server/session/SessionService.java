@@ -554,6 +554,7 @@ public class SessionService {
                 forgetToken(next);
 
                 if (next.session.isExpired()) {
+                    // a failure inside onExpired() is fatal either way, so there is nothing to isolate here
                     next.session.onExpired();
                 }
             }

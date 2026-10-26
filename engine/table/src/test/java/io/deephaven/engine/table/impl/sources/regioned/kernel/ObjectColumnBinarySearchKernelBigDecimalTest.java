@@ -27,6 +27,11 @@ import static org.junit.Assert.assertEquals;
  * ordering is inconsistent with equals, where the rows that compare equal to a search value must be tested for
  * equality. {@link ObjectColumnBinarySearchKernelTest} covers a type whose ordering is consistent with equals, through
  * {@link ObjectColumnBinarySearchKernel#binarySearchMatchWithConsistentEquality}.
+ *
+ * <p>
+ * These drive the search directly with {@link BigDecimal} at mixed scales, since {@code 1.0} and {@code 1.00} compare
+ * equal but are not equal. The engine itself matches BigDecimal by ordering, so a match filter never sends it to this
+ * search; {@link ObjectRegionBinarySearchKernelBigDecimalTest} covers that dispatch.
  */
 @Category(ParallelTest.class)
 public class ObjectColumnBinarySearchKernelBigDecimalTest {
@@ -36,7 +41,8 @@ public class ObjectColumnBinarySearchKernelBigDecimalTest {
      * and for a type whose natural ordering is inconsistent with equals those disagree:
      * {@code new BigDecimal("1.0").compareTo(new BigDecimal("1.00")) == 0} while the two are not equal. Ordering-equal
      * values therefore share a contiguous run, and only some members of that run may match. Exactly the equal ones must
-     * be returned -- the relation the chunk filter this feeds uses -- whichever member the search happens to land on.
+     * be returned -- the relation the chunk filter uses for such a type -- whichever member the search happens to land
+     * on.
      *
      * <p>
      * Row order within the run is significant, since a sort leaves ordering-equal values in their original order, so

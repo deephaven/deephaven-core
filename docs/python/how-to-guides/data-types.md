@@ -1,6 +1,5 @@
 ---
 title: Data types in Deephaven and Python
-sidebar_label: Data types
 ---
 
 For performance reasons, the Deephaven engine is implemented in Java. As such, Deephaven tables use Java data types for columns. These include both [Java primitive types](https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html) and [Java objects](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Object.html).

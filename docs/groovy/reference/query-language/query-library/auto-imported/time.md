@@ -1,6 +1,5 @@
 ---
 title: Time functions
-sidebar_label: Time functions
 ---
 
 Date and time utilities for parsing, formatting, arithmetic, and time zone handling.

@@ -1,6 +1,5 @@
 ---
 title: Java classes
-sidebar_label: Java classes
 ---
 
 Java standard library classes (String, Integer, List, Map, etc.).

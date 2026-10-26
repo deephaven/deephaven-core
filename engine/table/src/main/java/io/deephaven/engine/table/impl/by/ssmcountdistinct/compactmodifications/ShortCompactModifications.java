@@ -65,7 +65,8 @@ public class ShortCompactModifications {
         while (rRead < removedEnd && aRead < addedEnd) {
             final short removedValue = removedValues.get(rRead);
             final short addedValue = addedValues.get(aRead);
-            if (ShortComparisons.eq(removedValue, addedValue)) {
+            final int comparison = ShortComparisons.compare(removedValue, addedValue);
+            if (comparison == 0) {
                 final int removedRun = countRun(removedValues, rRead, removedEnd);
                 final int addedRun = countRun(addedValues, aRead, addedEnd);
                 rRead += removedRun;
@@ -81,7 +82,7 @@ public class ShortCompactModifications {
                         aWrite++;
                     }
                 }
-            } else if (ShortComparisons.lt(removedValue, addedValue)) {
+            } else if (comparison < 0) {
                 final int removedRun = countRun(removedValues, rRead, removedEnd);
                 rRead += removedRun;
                 if (!ignore(removedValue, countNull, countNaN)) {
@@ -131,10 +132,20 @@ public class ShortCompactModifications {
     private static int countRun(WritableShortChunk<? extends Values> values, int pos, int end) {
         final short value = values.get(pos);
         int run = 1;
-        while (pos + run < end && ShortComparisons.eq(values.get(pos + run), value)) {
+        while (pos + run < end && eq(values.get(pos + run), value)) {
             run++;
         }
         return run;
+    }
+
+    /**
+     * Test two values for equality consistent with the order in which the runs are sorted; each class of equal values
+     * forms one run.
+     */
+    private static boolean eq(short lhs, short rhs) {
+        // region equality function
+        return ShortComparisons.eq(lhs, rhs);
+        // endregion equality function
     }
 
     private static boolean ignore(short value, boolean countNull, boolean countNaN) {

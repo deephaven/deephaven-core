@@ -1,6 +1,5 @@
 ---
 title: Math functions
-sidebar_label: Math functions
 ---
 
 Mathematical operations including abs, sum, avg, min, max, trigonometry, and statistics.

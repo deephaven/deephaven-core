@@ -1,10 +1,9 @@
 ---
 title: Create and use input tables
-sidebar_label: Input tables
 ---
 
 > [!TIP]
-> This guide covers input tables created and used directly on the Deephaven server. To stream data from an external Python application using `pydeephaven`, see [Client input tables](./client-input-tables.md).
+> This guide covers input tables created and used directly on the Deephaven server. To stream data from an external Python application using `pydeephaven`, see [Send data to Deephaven from a Python client](./client-input-tables.md).
 
 Input tables allow users to enter new data into tables in two ways: programmatically, and manually through the UI.
 

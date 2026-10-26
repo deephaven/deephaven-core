@@ -1,6 +1,5 @@
 ---
 title: "How Deephaven works: A mental model and patterns of use"
-sidebar_label: Patterns of use
 ---
 
 <div className="comment-title">

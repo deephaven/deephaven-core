@@ -5,8 +5,16 @@ package io.deephaven.engine.table.impl.rangejoin;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Strings;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -92,6 +100,57 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
         public boolean matches(final double value) {
             return !Double.isNaN(value) && value != NULL_DOUBLE;
         }
+
+        // Identical code for all DoubleChunkFilter classes, replicated here to prevent megamorphism in the JVM
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = doubleChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(doubleChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final DoubleChunk<? extends Values> doubleChunk = values.asDoubleChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that remain true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(doubleChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
     }
 
     private static final class FloatFilter extends FloatChunkFilter {
@@ -103,6 +162,57 @@ class ValidFloatingPointFilter extends WhereFilterImpl {
         @Override
         public boolean matches(final float value) {
             return !Float.isNaN(value) && value != NULL_FLOAT;
+        }
+
+        // Identical code for all FloatChunkFilter classes, replicated here to prevent megamorphism in the JVM
+        @Override
+        public void filter(
+                final Chunk<? extends Values> values,
+                final LongChunk<OrderedRowKeys> keys,
+                final WritableLongChunk<OrderedRowKeys> results) {
+            final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
+            final int len = floatChunk.size();
+
+            results.setSize(0);
+            for (int ii = 0; ii < len; ++ii) {
+                if (matches(floatChunk.get(ii))) {
+                    results.add(keys.get(ii));
+                }
+            }
+        }
+
+        @Override
+        public int filter(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
+            final int len = values.size();
+            int count = 0;
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean newResult = matches(floatChunk.get(ii));
+                results.set(ii, newResult);
+                // count every true value
+                count += newResult ? 1 : 0;
+            }
+            return count;
+        }
+
+        @Override
+        public int filterAnd(final Chunk<? extends Values> values, final WritableBooleanChunk<Values> results) {
+            final FloatChunk<? extends Values> floatChunk = values.asFloatChunk();
+            final int len = values.size();
+            int count = 0;
+            // Count the values that remain true
+            for (int ii = 0; ii < len; ++ii) {
+                final boolean result = results.get(ii);
+                if (!result) {
+                    // already false, no need to compute or increment the count
+                    continue;
+                }
+                boolean newResult = matches(floatChunk.get(ii));
+                results.set(ii, newResult);
+                // increment the count if the new result is TRUE
+                count += newResult ? 1 : 0;
+            }
+            return count;
         }
     }
 

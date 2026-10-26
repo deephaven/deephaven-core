@@ -21,8 +21,10 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.exceptions.TableAlreadyFailedException;
 import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
@@ -212,9 +214,12 @@ public class QueryTable extends BaseTable<QueryTable> {
      * Before using a data index for a where filter, ensure that the index table size is at most this fraction of the
      * size of the rows remaining to be filtered. If the fraction is greater than this threshold, then the engine will
      * ignore the index table and filter the rows directly.
+     * <p>
+     * The default, {@code 1 / 16}, uses an index only when the rows to be filtered average more than 16 per index key:
+     * below that, reading and merging a row set per key costs more than matching each row.
      */
     public static double DATA_INDEX_FOR_WHERE_THRESHOLD =
-            Configuration.getInstance().getDoubleWithDefault("QueryTable.dataIndexForWhereThreshold", 0.25);
+            Configuration.getInstance().getDoubleWithDefault("QueryTable.dataIndexForWhereThreshold", 1.0 / 16);
 
     /**
      * If the Configuration property "QueryTable.useDataIndexForAggregation" is set to true (default), then permit
@@ -1683,7 +1688,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                     // the result reaches through its WhereListener, so no parent reference is needed here. Note that
                     // a reference to rightTable would in any case be the wrong table to retain, since the set table
                     // actually used may be a data index table or a selectDistinct of it.
-                    return whereInternal(new DynamicWhereFilter(rightTable, inclusion, columnsToMatch));
+                    // The filter listens to its set table before the where begins; an enclosed scope releases the
+                    // filter, and that listener, when the where fails.
+                    return LivenessScopeStack.computeEnclosed(
+                            () -> whereInternal(new DynamicWhereFilter(rightTable, inclusion, columnsToMatch)),
+                            rightTable.isRefreshing(),
+                            Table::isRefreshing);
                 });
     }
 
@@ -1794,7 +1804,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                     checkInitiateOperation();
                     final SelectAndViewAnalyzer.Mode mode;
                     if (isRefreshing()) {
-                        if (!isFlat() && ((flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE)
+                        if (!isFlat() && isAppendOnly()) {
+                            // rows of an append-only table never change position, so the result is stored densely
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_POSITIONAL;
+                        } else if (!isFlat() && ((flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE)
                                 || (flavor == Flavor.Select && USE_REDIRECTED_COLUMNS_FOR_SELECT))) {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_REFRESHING;
                         } else {
@@ -1802,7 +1815,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                     } else {
                         if (flavor == Flavor.Update && exceedsMaximumStaticSelectOverhead()) {
-                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_STATIC;
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_POSITIONAL;
                         } else {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_STATIC;
                         }
@@ -1835,18 +1848,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                     try (final SafeCloseable ignored1 = liveResultCapture != null ? liveResultCapture::release : null) {
                         try (final RowSet emptyRowSet = RowSetFactory.empty();
                                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
-                                        new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
+                                        new SelectAndViewAnalyzer.UpdateHelper(rowSet, fakeUpdate)) {
 
                             try {
-                                analyzer.applyUpdate(
-                                        fakeUpdate, emptyRowSet, updateHelper, jobScheduler, liveResultCapture,
-                                        () -> waitForResult.complete(null),
-                                        waitForResult::completeExceptionally);
-                            } catch (Exception e) {
-                                waitForResult.completeExceptionally(e);
-                            }
+                                try {
+                                    analyzer.applyUpdate(
+                                            fakeUpdate, emptyRowSet, updateHelper, jobScheduler, liveResultCapture,
+                                            () -> waitForResult.complete(null),
+                                            waitForResult::completeExceptionally);
+                                } catch (Exception e) {
+                                    waitForResult.completeExceptionally(e);
+                                }
 
-                            try {
                                 waitForResult.get();
                             } catch (InterruptedException e) {
                                 throw new CancellationException("interrupted while computing select or update");
@@ -1855,6 +1868,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         "an exception occurred while performing the initial select or update",
                                         e.getCause());
                             } finally {
+                                // On an operation initializer this waits for every job the analyzer submitted, so none
+                                // still uses updateHelper or emptyRowSet when they close, even if applyUpdate threw.
                                 final BasePerformanceEntry baseEntry = jobScheduler.getAccumulatedPerformance();
                                 if (baseEntry != null) {
                                     QueryPerformanceRecorder.getInstance().getEnclosingNugget().accumulate(baseEntry);
@@ -1862,13 +1877,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                             }
                         }
 
-                        final TrackingRowSet resultRowSet = analyzer.flatResult() && !rowSet.isFlat()
-                                ? RowSetFactory.flat(rowSet.size()).toTracking()
-                                : rowSet;
+                        // a refreshing flat result grows its own row set, as the parent's may not stay contiguous
+                        final TrackingRowSet resultRowSet =
+                                analyzer.flatResult() && (isRefreshing() || !rowSet.isFlat())
+                                        ? analyzerContext.getFlatResultRowSet()
+                                        : rowSet;
                         final Map<String, ColumnSource<?>> newMap = analyzerContext.getPublishedColumnSources();
                         final TableDefinition resultDef = TableDefinition.inferFrom(this, newMap);
                         resultTable = new QueryTable(resultDef, resultRowSet, newMap);
                         if (liveResultCapture != null) {
+                            if (analyzer.flatResult()) {
+                                resultTable.setFlat();
+                            }
                             analyzer.startTrackingPrev();
                             final Map<String, String[]> effects = analyzerContext.calcEffects();
                             final SelectOrUpdateListener soul = new SelectOrUpdateListener(
@@ -2415,9 +2435,12 @@ public class QueryTable extends BaseTable<QueryTable> {
             return QueryPerformanceRecorder.withNugget(
                     "raj(" + "rightTable, " + matchString(columnsToMatch) + ", " + joinRule + ", "
                             + matchString(columnsToAdd) + ")",
-                    () -> ajInternal(rightTableCoalesced.reverse(), columnsToMatch, columnsToAdd,
-                            SortingOrder.Descending,
-                            joinRule));
+                    // an enclosed scope releases the reversed right table, and its listener, when the join fails
+                    () -> LivenessScopeStack.computeEnclosed(
+                            () -> ajInternal(rightTableCoalesced.reverse(), columnsToMatch, columnsToAdd,
+                                    SortingOrder.Descending, joinRule),
+                            rightTableCoalesced.isRefreshing(),
+                            Table::isRefreshing));
         }
     }
 
@@ -2654,24 +2677,15 @@ public class QueryTable extends BaseTable<QueryTable> {
             ws.ensureCapacity(newCapacity);
         }
 
-        final int baseSize = baseRowSet.intSize();
-        long[] destOffsetHolder = new long[] {destOffset};
-        // For each key on the snapshotting side
-        triggerRowSet.forAllRowKeys(snapshotKey -> {
-            final long doff = destOffsetHolder[0];
-            destOffsetHolder[0] += baseSize;
-            try (final RowSet destRowSet = RowSetFactory.fromRange(doff, doff + baseSize - 1)) {
-                SnapshotUtils.copyStampColumns(triggerColumns, snapshotKey, dest, destRowSet);
-                SnapshotUtils.copyDataColumns(baseColumns, baseRowSet, dest, destRowSet, false);
-            }
-        });
+        SnapshotUtils.copyStampColumnsRepeated(triggerColumns, triggerRowSet, dest, destOffset, baseRowSet.size());
+        SnapshotUtils.copyDataColumnsRepeated(baseColumns, baseRowSet, dest, destOffset, triggerRowSet.size());
         return newCapacity;
     }
 
     private Table snapshotHistory(final String nuggetName, final Table baseTable,
             Collection<? extends JoinAddition> stampColumns) {
         return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(),
-                () -> ((QueryTable) withAttributes(Map.of(APPEND_ONLY_TABLE_ATTRIBUTE, TRUE)))
+                () -> ((QueryTable) assertAppendOnly())
                         .maybeViewForSnapshot(stampColumns)
                         .snapshotHistoryInternal(baseTable));
     }
@@ -2679,12 +2693,16 @@ public class QueryTable extends BaseTable<QueryTable> {
     private Table snapshotHistoryInternal(final Table baseTable) {
         checkInitiateBinaryOperation(this, baseTable);
 
-        // resultColumns initially contains the trigger columns, then we insert the base columns into it
-        final Map<String, WritableColumnSource<?>> resultColumns = SnapshotUtils
+        // the result holds the trigger columns, followed by the base columns
+        final Map<String, WritableColumnSource<?>> triggerColumns = SnapshotUtils
                 .createColumnSourceMap(this.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
         final Map<String, WritableColumnSource<?>> baseColumns = SnapshotUtils.createColumnSourceMap(
                 baseTable.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
+        final Map<String, WritableColumnSource<?>> resultColumns = new LinkedHashMap<>(triggerColumns);
         resultColumns.putAll(baseColumns);
+        if (resultColumns.size() != triggerColumns.size() + baseColumns.size()) {
+            throwColumnConflictMessage(triggerColumns.keySet(), baseColumns.keySet());
+        }
 
         // BTW, we don't track prev because these items are never modified or removed.
         final Table triggerTable = this; // For readability.
@@ -2697,33 +2715,39 @@ public class QueryTable extends BaseTable<QueryTable> {
         final TrackingWritableRowSet resultRowSet = RowSetFactory.flat(initialSize).toTracking();
         final QueryTable result = new QueryTable(resultRowSet, resultColumns);
         if (isRefreshing()) {
-            addUpdateListener(
-                    new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet(), this, result) {
-                        private long lastKey = rowSet.lastRowKey();
-
-                        @Override
-                        public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
-                            Assert.assertion(removed.size() == 0, "removed.size() == 0", removed, "removed");
-                            Assert.assertion(modified.size() == 0, "modified.size() == 0", modified, "modified");
-                            if (added.size() == 0 || baseTable.size() == 0) {
-                                return;
-                            }
-                            Assert.assertion(added.firstRowKey() > lastKey, "added.firstRowKey() > lastRowKey", lastKey,
-                                    "lastRowKey", added, "added");
-                            final long oldSize = resultRowSet.size();
-                            final long newSize = snapshotHistoryInternal(triggerStampColumns, added,
-                                    snapshotDataColumns, baseTable.getRowSet(), resultColumns, oldSize);
-                            final RowSet addedSnapshots = RowSetFactory.fromRange(oldSize, newSize - 1);
-                            resultRowSet.insert(addedSnapshots);
-                            lastKey = rowSet.lastRowKey();
-                            result.notifyListeners(addedSnapshots, RowSetFactory.empty(), RowSetFactory.empty());
-                        }
-
-                        @Override
-                        public boolean canExecute(final long step) {
-                            return baseTable.satisfied(step) && super.canExecute(step);
-                        }
-                    });
+            final ListenerRecorder triggerRecorder =
+                    new ListenerRecorder("snapshotHistory (triggerTable)", this, result);
+            final ListenerRecorder baseRecorder = baseTable.isRefreshing()
+                    ? new ListenerRecorder("snapshotHistory (baseTable)", baseTable, result)
+                    : null;
+            final MergedListener listener = new MergedListener(
+                    baseRecorder == null ? List.of(triggerRecorder) : List.of(triggerRecorder, baseRecorder),
+                    Collections.emptyList(), "snapshotHistory" + resultColumns.keySet(), result) {
+                @Override
+                protected void process() {
+                    if (!triggerRecorder.recordedVariablesAreValid()) {
+                        return;
+                    }
+                    // the trigger is asserted append-only, so its updates hold only rows added after its last row
+                    final RowSet added = triggerRecorder.getAdded();
+                    if (added.isEmpty() || baseTable.isEmpty()) {
+                        return;
+                    }
+                    final long oldSize = resultRowSet.size();
+                    final long newSize = snapshotHistoryInternal(triggerStampColumns, added,
+                            snapshotDataColumns, baseTable.getRowSet(), resultColumns, oldSize);
+                    final RowSet addedSnapshots = RowSetFactory.fromRange(oldSize, newSize - 1);
+                    resultRowSet.insert(addedSnapshots);
+                    result.notifyListeners(addedSnapshots, RowSetFactory.empty(), RowSetFactory.empty());
+                }
+            };
+            triggerRecorder.setMergedListener(listener);
+            if (baseRecorder != null) {
+                baseRecorder.setMergedListener(listener);
+            }
+            listener.addRecordersToParents();
+            result.addParentReference(listener);
+            result.setAttribute(APPEND_ONLY_TABLE_ATTRIBUTE, TRUE);
         }
         result.setFlat();
         return result;
@@ -2778,8 +2802,9 @@ public class QueryTable extends BaseTable<QueryTable> {
         // use a SingleValueColumnSource for these columns.
         final Map<String, SingleValueColumnSource<?>> triggerColumns = new LinkedHashMap<>();
         for (String stampColumn : stampColumns) {
-            final Class<?> stampColumnType = getColumnSource(stampColumn).getType();
-            triggerColumns.put(stampColumn, SingleValueColumnSource.getSingleValueColumnSource(stampColumnType));
+            final ColumnSource<?> stampSource = getColumnSource(stampColumn);
+            triggerColumns.put(stampColumn, SingleValueColumnSource.getSingleValueColumnSource(
+                    stampSource.getType(), stampSource.getComponentType()));
         }
 
         // make our result table
@@ -2791,8 +2816,19 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         final QueryTable result =
                 new QueryTable(RowSetFactory.empty().toTracking(), allColumns);
+        final ListenerRecorder triggerRecorder;
+        final ListenerRecorder baseRecorder;
+        if (isRefreshing()) {
+            triggerRecorder = new ListenerRecorder("snapshot (triggerTable)", this, result);
+            baseRecorder = !lazySnapshot && baseTable.isRefreshing()
+                    ? new ListenerRecorder("snapshot (baseTable)", baseTable, result)
+                    : null;
+        } else {
+            triggerRecorder = null;
+            baseRecorder = null;
+        }
         final SnapshotInternalListener listener = new SnapshotInternalListener(this, lazySnapshot, baseTable,
-                result, triggerColumns, baseColumns, result.getRowSet().writableCast());
+                result, triggerColumns, baseColumns, result.getRowSet().writableCast(), triggerRecorder, baseRecorder);
 
         if (doInitialSnapshot) {
             if (!isRefreshing() && baseTable.isRefreshing() && !lazySnapshot) {
@@ -2813,7 +2849,12 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         if (isRefreshing()) {
             startTrackingPrev(allColumns.values());
-            addUpdateListener(listener);
+            triggerRecorder.setMergedListener(listener);
+            if (baseRecorder != null) {
+                baseRecorder.setMergedListener(listener);
+            }
+            listener.addRecordersToParents();
+            result.addParentReference(listener);
         }
 
         result.setFlat();
@@ -2905,25 +2946,28 @@ public class QueryTable extends BaseTable<QueryTable> {
             resultTable.getRowSet().writableCast().initializePreviousValue();
         } else if (doInitialSnapshot) {
             SnapshotIncrementalListener.copyRowsToResult(baseTable.getRowSet(), this,
-                    SnapshotUtils.generateSnapshotDataColumns(baseTable),
+                    SnapshotUtils.dataColumnCopy(SnapshotUtils.generateSnapshotDataColumns(baseTable), resultColumns),
                     triggerColumns, resultColumns);
             resultTable.getRowSet().writableCast().insert(baseTable.getRowSet());
             resultTable.getRowSet().writableCast().initializePreviousValue();
         } else if (isRefreshing()) {
             // we are not doing an initial snapshot, but are refreshing so need to take a snapshot of our (static)
             // base table on the very first tick of the triggerTable
+            final SnapshotUtils.DataColumnCopy dataCopy =
+                    SnapshotUtils.dataColumnCopy(SnapshotUtils.generateSnapshotDataColumns(baseTable), resultColumns);
             addUpdateListener(
                     new ListenerImpl("snapshotIncremental (triggerTable)", this, resultTable) {
                         @Override
                         public void onUpdate(TableUpdate upstream) {
                             SnapshotIncrementalListener.copyRowsToResult(baseTable.getRowSet(),
-                                    QueryTable.this, SnapshotUtils.generateSnapshotDataColumns(baseTable),
-                                    triggerColumns, resultColumns);
+                                    QueryTable.this, dataCopy, triggerColumns, resultColumns);
                             resultTable.getRowSet().writableCast().insert(baseTable.getRowSet());
                             resultTable.notifyListeners(resultTable.getRowSet().copy(),
                                     RowSetFactory.empty(),
                                     RowSetFactory.empty());
+                            // the result can never change again, so it no longer depends on the trigger
                             removeUpdateListener(this);
+                            resultTable.unmanage(this);
                         }
                     });
         }
@@ -3202,7 +3246,6 @@ public class QueryTable extends BaseTable<QueryTable> {
      *
      * @return an identical table; but with a new set of attributes
      */
-    @Override
     public QueryTable copy() {
         return copy(StandardOptions.COPY_ALL);
     }
@@ -3211,6 +3254,14 @@ public class QueryTable extends BaseTable<QueryTable> {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return copy(definition, shouldCopy);
+        }
+    }
+
+    @Override
+    protected QueryTable copy(@NotNull final Map<String, Object> attributes) {
+        final UpdateGraph updateGraph = getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return copyInternal(definition, attributes);
         }
     }
 
@@ -3230,6 +3281,20 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     public QueryTable copy(TableDefinition definition, Predicate<String> shouldCopy) {
+        final Map<String, Object> attributes;
+        if (shouldCopy == StandardOptions.COPY_ALL) {
+            attributes = getAttributes();
+        } else if (shouldCopy == StandardOptions.COPY_NONE) {
+            attributes = null;
+        } else {
+            attributes = getAttributes(shouldCopy);
+        }
+        return copyInternal(definition, attributes);
+    }
+
+    private QueryTable copyInternal(
+            @NotNull final TableDefinition definition,
+            @Nullable final Map<String, Object> attributes) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
@@ -3238,11 +3303,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                 final OperationSnapshotControl snapshotControl =
                         createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                 initializeWithSnapshot("copy", snapshotControl, (usePrev, beforeClockValue) -> {
-                    final QueryTable resultTable = new CopiedTable(definition, this);
+                    final QueryTable resultTable = new CopiedTable(definition, this, attributes);
                     propagateFlatness(resultTable, usePrev);
-                    if (shouldCopy != StandardOptions.COPY_NONE) {
-                        copyAttributes(resultTable, shouldCopy);
-                    }
                     if (snapshotControl != null) {
                         final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
                         snapshotControl.setListenerAndResult(listener, resultTable);
@@ -3262,8 +3324,11 @@ public class QueryTable extends BaseTable<QueryTable> {
     static class CopiedTable extends QueryTable {
         private final QueryTable parent;
 
-        private CopiedTable(TableDefinition definition, QueryTable parent) {
-            super(definition, parent.rowSet, parent.columns, null, null);
+        private CopiedTable(
+                TableDefinition definition,
+                QueryTable parent,
+                @Nullable Map<String, Object> attributes) {
+            super(definition, parent.rowSet, parent.columns, null, attributes);
             this.parent = parent;
         }
 
@@ -3403,6 +3468,23 @@ public class QueryTable extends BaseTable<QueryTable> {
     public static void checkInitiateBinaryOperation(@NotNull final Table first, @NotNull final Table second) {
         if (first.isRefreshing() || second.isRefreshing()) {
             first.getUpdateGraph(second).checkInitiateSerialTableOperation();
+        }
+    }
+
+    /**
+     * Refuse a join of a failed input, as a failed table refuses a listener, even when the other input would make the
+     * result static.
+     *
+     * @param leftTable the left input of the join
+     * @param rightTable the right input of the join
+     * @throws TableAlreadyFailedException if either input has failed
+     */
+    public static void checkJoinInputsNotFailed(@NotNull final Table leftTable, @NotNull final Table rightTable) {
+        if (leftTable.isFailed()) {
+            throw new TableAlreadyFailedException("Can not join failed left table " + leftTable.getDescription());
+        }
+        if (rightTable.isFailed()) {
+            throw new TableAlreadyFailedException("Can not join failed right table " + rightTable.getDescription());
         }
     }
 

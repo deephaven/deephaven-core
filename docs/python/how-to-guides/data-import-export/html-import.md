@@ -366,4 +366,4 @@ deephaven_theme_colors = dhpd.to_table(df)
 
 ## Related documentation
 
-- [Export HTML files](./html-export.md)
+- [Convert tables to HTML strings](./html-export.md)

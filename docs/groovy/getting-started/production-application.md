@@ -1,6 +1,5 @@
 ---
 title: Install and run the Deephaven production application
-sidebar_label: Install the production application
 ---
 
 This guide shows you how to install and launch the Deephaven Community Core production application. The production application runs Deephaven from artifacts produced during each release cycle. It runs Deephaven without installing Docker or building from source code. It is the recommended way to run production applications that use Deephaven, hence its name. This guide only covers getting started with the production application. For more advanced configuration options, see [Configure the production application](../how-to-guides/configuration/configure-production-application.md).
@@ -30,10 +29,10 @@ The Deephaven artifacts are attached to each [Deephaven release](https://github.
 
 - The server artifact in tar format.
 
-It's recommended that you set your preferred version with an environment variable. The shell commands in this guide set and use the `DH_VERSION` environment variable:
+It's recommended that you set your preferred version with an environment variable. The shell commands in this guide set and use the `DH_VERSION` environment variable. Replace `LATEST_VERSION_HERE` with the version number of the [latest release](https://github.com/deephaven/deephaven-core/releases/latest), without the leading `v`:
 
 ```bash
-export DH_VERSION=0.39.2
+export DH_VERSION=LATEST_VERSION_HERE
 ```
 
 You can download release artifacts from your browser of choice or via the command line:

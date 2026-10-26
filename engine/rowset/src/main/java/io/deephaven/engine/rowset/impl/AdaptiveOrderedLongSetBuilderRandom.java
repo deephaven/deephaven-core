@@ -3,10 +3,12 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.datastructures.LongRangeIterator;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
@@ -96,13 +98,13 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
     }
 
     private void newKey(final long key) {
+        Assert.geqZero(key, "key");
         newRangeSafe(key, key);
     }
 
     private void newRange(final long firstKey, final long lastKey) {
-        if (firstKey > lastKey) {
-            throw new IllegalArgumentException("Illegal range start=" + firstKey + " > end=" + lastKey + ".");
-        }
+        Assert.leq(firstKey, "firstKey", lastKey, "lastKey");
+        Assert.geqZero(firstKey, "firstKey");
         newRangeSafe(firstKey, lastKey);
     }
 
@@ -198,7 +200,7 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
      */
     public void addOrderedRowKeysChunk(final LongChunk<? extends OrderedRowKeys> keys, final int offset,
             final int length) {
-        addOrderedRuns(keys::get, offset, length);
+        addRuns(keys::get, offset, length);
     }
 
     /**
@@ -211,10 +213,26 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
      */
     public void addOrderedRowKeysChunk(final IntChunk<? extends OrderedRowKeys> keys, final int offset,
             final int length) {
-        addOrderedRuns(keys::get, offset, length);
+        addRuns(keys::get, offset, length);
     }
 
-    private void addOrderedRuns(final IntToLongFunction keyAt, final int offset, final int length) {
+    /**
+     * Add the row keys in positions {@code [offset, offset + length)} of {@code keys}, which may be in any order. Each
+     * run of consecutive increasing keys is added as one range.
+     *
+     * @param keys the row keys
+     * @param offset the position of the first key to add
+     * @param length the number of keys to add
+     */
+    public void addRowKeysChunk(final LongChunk<? extends RowKeys> keys, final int offset, final int length) {
+        addRuns(keys::get, offset, length);
+    }
+
+    /**
+     * Add each run of consecutive increasing keys in positions {@code [offset, offset + length)} as one range; the runs
+     * may be in any order.
+     */
+    private void addRuns(final IntToLongFunction keyAt, final int offset, final int length) {
         final int end = offset + length;
         int position = offset;
         while (position < end) {
@@ -223,6 +241,9 @@ public class AdaptiveOrderedLongSetBuilderRandom implements OrderedLongSet.Build
             while (++position < end && keyAt.applyAsLong(position) == runEnd + 1) {
                 ++runEnd;
             }
+            // runEnd + 1 wraps at Long.MAX_VALUE, so a run can absorb a negative key and end before its start.
+            Assert.geqZero(runStart, "runStart");
+            Assert.leq(runStart, "runStart", runEnd, "runEnd");
             newRangeSafe(runStart, runEnd);
         }
     }

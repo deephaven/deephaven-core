@@ -73,9 +73,11 @@ public class ObjectRegionBinarySearchKernel {
      * is not applied here; the caller must invert the result itself.
      *
      * <p>
-     * The filter's column type chooses the search: {@link #binarySearchMatchWithConsistentEquality} when
-     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} holds for it, and
-     * {@link #binarySearchMatchWithGeneralEquality} otherwise.
+     * The filter's column type chooses the search: {@link #binarySearchMatchWithConsistentEquality}, which lets
+     * ordering alone decide a match, for {@link java.math.BigDecimal}, whose match filter matches by compareTo, and for
+     * a type for which {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} holds; and
+     * {@link #binarySearchMatchWithGeneralEquality}, which picks the matches out of each ordering-equal run by
+     * equality, for any other type.
      *
      * @param region The column region to search.
      * @param firstKey The first key in the column region to consider for the search.
@@ -94,7 +96,12 @@ public class ObjectRegionBinarySearchKernel {
             // Nothing to search for, so nothing matches, and the data need not be touched at all.
             return RowSetFactory.empty();
         }
-        return BinarySearchKernelHelper.compareConsistentWithEquality(filter.getColumnType())
+        final Class<?> columnType = filter.getColumnType();
+        // BigDecimal's equals is not consistent with its ordering, but its match filter matches by compareTo, as the
+        // query language's == does, so ordering alone decides a BigDecimal match.
+        final boolean matchByOrdering = columnType == java.math.BigDecimal.class
+                || BinarySearchKernelHelper.compareConsistentWithEquality(columnType);
+        return matchByOrdering
                 ? binarySearchMatchWithConsistentEquality(region, firstKey, lastKey, sortColumn, filter.getValues())
                 : binarySearchMatchWithGeneralEquality(region, firstKey, lastKey, sortColumn, filter.getValues());
     }
@@ -107,7 +114,8 @@ public class ObjectRegionBinarySearchKernel {
      * <p>
      * Ordering alone decides a match: every row that compares equal to a search value is returned. This is valid for
      * types whose values compare equal exactly when they are equal, as
-     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} describes; for any other type,
+     * {@link BinarySearchKernelHelper#compareConsistentWithEquality(Class)} describes, and for
+     * {@link java.math.BigDecimal}, whose match filter matches by compareTo; for any other type,
      * {@link #binarySearchMatchWithGeneralEquality} applies.
      *
      * @param region The column region in which the search will be performed.
@@ -387,7 +395,7 @@ public class ObjectRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (minInc && low <= lastKey) {
-            if (ObjectComparisons.eq(region.getObject(low), min)) {
+            if (ObjectComparisons.compareEquals(region.getObject(low), min)) {
                 return low;
             }
         }
@@ -437,7 +445,7 @@ public class ObjectRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (maxInc && high >= firstKey) {
-            if (ObjectComparisons.eq(region.getObject(high), max)) {
+            if (ObjectComparisons.compareEquals(region.getObject(high), max)) {
                 return high;
             }
         }
@@ -487,7 +495,7 @@ public class ObjectRegionBinarySearchKernel {
         }
         // low is now the insertion point. For inclusive searches, check for an exact match there.
         if (maxInc && low <= lastKey) {
-            if (ObjectComparisons.eq(region.getObject(low), max)) {
+            if (ObjectComparisons.compareEquals(region.getObject(low), max)) {
                 return low;
             }
         }
@@ -537,7 +545,7 @@ public class ObjectRegionBinarySearchKernel {
         // high is now the last satisfying position; low = high + 1 is the first non-satisfying position.
         // For inclusive searches, check for an exact match at high.
         if (minInc && high >= firstKey) {
-            if (ObjectComparisons.eq(region.getObject(high), min)) {
+            if (ObjectComparisons.compareEquals(region.getObject(high), min)) {
                 return high;
             }
         }

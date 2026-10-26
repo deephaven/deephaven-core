@@ -109,6 +109,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 final long firstKey = it.peekNextKey();
 
                 final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
+                if (isFreshBlock(block)) {
+                    // the block's previous values are the ones it was allocated with, and are shared
+                    final RowSequence ignored = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                    continue;
+                }
 
                 final long[] inUse;
                 if (prevBlocks[block] == null) {
@@ -262,15 +267,31 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
     }
 
     @Override
-    final long[] allocateNullFilledBlock(int size) {
+    final long[] allocateBlock(final int size, final boolean nullFilled) {
         final long[] newBlock = new long[size];
-        Arrays.fill(newBlock, NULL_LONG);
+        if (nullFilled) {
+            Arrays.fill(newBlock, NULL_LONG);
+        }
         return newBlock;
     }
 
+    /** The previous values of blocks allocated null-filled during the current update cycle; never written. */
+    private static final long[] FRESH_NULL_PREV_BLOCK = makeFreshNullPrevBlock();
+    /** The previous values of blocks allocated during the current update cycle without null-filling; never written. */
+    private static final long[] FRESH_DEFAULT_PREV_BLOCK = new long[BLOCK_SIZE];
+
+    private static long[] makeFreshNullPrevBlock() {
+        final long[] block = new long[BLOCK_SIZE];
+        Arrays.fill(block, NULL_LONG);
+        return block;
+    }
+
     @Override
-    final long[] allocateBlock(int size) {
-        return new long[size];
+    final long[] sharedFreshPrevBlock(final int size, final boolean nullFilled) {
+        if (size != BLOCK_SIZE) {
+            throw new IllegalArgumentException("Expected size=" + BLOCK_SIZE + ", got " + size);
+        }
+        return nullFilled ? FRESH_NULL_PREV_BLOCK : FRESH_DEFAULT_PREV_BLOCK;
     }
 
     @Override
@@ -852,10 +873,10 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 chunk.set(ii, NULL_LONG);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_LONG);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final long[] currentBlock = blocks[blockNo];
                 // region conversion
                 chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
@@ -879,10 +900,10 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 chunk.set(ii, null);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, null);
             } else {
+                final int blockNo = getBlockNo(fromIndex);
                 final long[] currentBlock = blocks[blockNo];
                 // region conversion
                 chunk.set(ii,converter.apply( currentBlock[(int) (fromIndex & INDEX_MASK)]));
@@ -909,11 +930,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 chunk.set(ii, NULL_LONG);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, NULL_LONG);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final long[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             // region conversion
             chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
@@ -936,11 +957,11 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
                 chunk.set(ii, null);
                 continue;
             }
-            final int blockNo = getBlockNo(fromIndex);
-            if (blockNo >= blocks.length) {
+            if (fromIndex > maxIndex) {
                 chunk.set(ii, null);
                 continue;
             }
+            final int blockNo = getBlockNo(fromIndex);
             final long[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
             // region conversion
             chunk.set(ii,converter.apply( currentBlock[(int) (fromIndex & INDEX_MASK)]));

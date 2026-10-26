@@ -63,7 +63,7 @@ There are only four unique keys in `X` and `Y` together. The resultant column `d
 
 All of the previous examples create tables with flat data indexes. A flat data index is one in which the row sets are sequential. However, it is not safe to assume that all data indexes are flat, as this is uncommon in practice. Consider the following example where the data index is not flat:
 
-```groovy test-set=3 order=sourceIndexTable,result skip-test
+```groovy order=result,sourceIndex,source
 import static io.deephaven.engine.table.impl.indexer.DataIndexer.*
 
 source = emptyTable(25).update("Key = 100 + randomInt(0, 4)", "Value = randomDouble(0, 100)")
@@ -208,8 +208,8 @@ Different joins will use indexes differently:
 | [`join`](../reference/table-operations/join/join.md)                     | :no_entry_sign:    | :no_entry_sign:           | :no_entry_sign:            |
 | [`leftOuterJoin`](../reference/table-operations/join/left-outer-join.md) | :no_entry_sign:    | :no_entry_sign:           | :no_entry_sign:            |
 | [`fullOuterJoin`](../reference/table-operations/join/full-outer-join.md) | :no_entry_sign:    | :no_entry_sign:           | :no_entry_sign:            |
-| [`multiJoin`](../reference/table-operations/join/multijoin.md)           | :no_entry_sign:    | :no_entry_sign:           | :no_entry_sign:            |
-| [`rangeJoin`](../reference/table-operations/join/rangeJoin.md)           | :no_entry_sign:    | :no_entry_sign:           | :no_entry_sign:            |
+| [`multiJoin`](../reference/table-operations/join/multi-join.md)          | :no_entry_sign:    | :no_entry_sign:           | :no_entry_sign:            |
+| [`rangeJoin`](../reference/table-operations/join/range-join.md)          | :white_check_mark: | :white_check_mark:        | :no_entry_sign:            |
 
 #### Natural join
 
@@ -344,8 +344,8 @@ try (SafeCloseable ignored = LivenessScopeStack.open(scope, false)) {
 diskTableNew = ParquetTools.readTable("/data/indexed.parquet")
 
 // Show that the table loaded from disk has indexes
-println hasDataIndex(diskTable, "Key1")
-println hasDataIndex(diskTable, "Key1", "Key2")
+println hasDataIndex(diskTableNew, "Key1")
+println hasDataIndex(diskTableNew, "Key1", "Key2")
 ```
 
 ## Performance

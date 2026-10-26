@@ -1,6 +1,5 @@
 ---
 title: Parse functions
-sidebar_label: Parse functions
 ---
 
 String-to-primitive parsing functions.

@@ -1,6 +1,5 @@
 ---
 title: File Explorer
-sidebar_label: Create and organize notebooks
 ---
 
 Deephaven notebooks can be used to develop query components, stage draft queries, or simply store notes. Think of the Notebook as a "sandbox" in which queries can be developed and refined, and then easily executed in Deephaven.

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -11,12 +12,10 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
-import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,10 +26,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private final QueryTable dependent;
+    private final TrackingRowSet parentRowSet;
     private final TrackingRowSet resultRowSet;
     private final ModifiedColumnSet.Transformer transformer;
     private final SelectAndViewAnalyzer analyzer;
-    private final SparseArrayColumnSource[] sparseArraysToFree;
+    private final SparseArrayColumnSource<?>[] sparseArraysToFree;
 
     private volatile boolean updateInProgress = false;
     private final boolean enableParallelUpdate;
@@ -45,6 +45,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             SelectAndViewAnalyzer analyzer) {
         super(description, parent, dependent);
         this.dependent = dependent;
+        this.parentRowSet = parent.getRowSet();
         this.resultRowSet = dependent.getRowSet();
 
         // Now calculate the other dependencies and invert
@@ -62,7 +63,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
                 columnsToFree.add((SparseArrayColumnSource<?>) resultSource);
             }
         }
-        sparseArraysToFree = columnsToFree.toArray(SparseArrayColumnSource[]::new);
+        sparseArraysToFree = columnsToFree.toArray(SparseArrayColumnSource<?>[]::new);
         transformer = parent.newModifiedColumnSetTransformer(parentNames, mcss);
         this.analyzer = analyzer;
         this.enableParallelUpdate =
@@ -86,9 +87,22 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         updateInProgress = true;
         final TableUpdate acquiredUpdate = upstream.acquire();
 
+        if (analyzer.flatResult()) {
+            // The parent is append-only, so its adds occupy the final positions, and the result row set grows by the
+            // same amount
+            Assert.assertion(acquiredUpdate.removed().isEmpty(), "acquiredUpdate.removed().isEmpty()");
+            Assert.assertion(acquiredUpdate.modified().isEmpty(), "acquiredUpdate.modified().isEmpty()");
+            Assert.assertion(acquiredUpdate.shifted().empty(), "acquiredUpdate.shifted().empty()");
+            if (acquiredUpdate.added().isNonempty()) {
+                final long firstAddedPosition = resultRowSet.size();
+                resultRowSet.writableCast().insertRange(
+                        firstAddedPosition, firstAddedPosition + acquiredUpdate.added().size() - 1);
+            }
+        }
+
         final WritableRowSet toClear = resultRowSet.copyPrev();
         final SelectAndViewAnalyzer.UpdateHelper updateHelper =
-                new SelectAndViewAnalyzer.UpdateHelper(resultRowSet, acquiredUpdate);
+                new SelectAndViewAnalyzer.UpdateHelper(parentRowSet, acquiredUpdate);
         toClear.remove(resultRowSet);
 
         JobScheduler jobScheduler;
@@ -133,10 +147,20 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private void completionRoutine(TableUpdate upstream, JobScheduler jobScheduler,
             WritableRowSet toClear, SelectAndViewAnalyzer.UpdateHelper updateHelper) {
         try {
-            clearUnusedCurrentBlocks(toClear);
+            SparseArrayColumnSource.clearBlocksWithoutLiveRows(toClear, resultRowSet, sparseArraysToFree);
 
-            final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
-                    upstream.modified().copy(), upstream.shifted(), dependent.getModifiedColumnSetForUpdates());
+            final TableUpdateImpl downstream;
+            if (analyzer.flatResult()) {
+                final long addedSize = upstream.added().size();
+                downstream = new TableUpdateImpl(
+                        addedSize == 0 ? RowSetFactory.empty()
+                                : RowSetFactory.fromRange(resultRowSet.size() - addedSize, resultRowSet.size() - 1),
+                        RowSetFactory.empty(), RowSetFactory.empty(), RowSetShiftData.EMPTY,
+                        dependent.getModifiedColumnSetForUpdates());
+            } else {
+                downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
+                        upstream.modified().copy(), upstream.shifted(), dependent.getModifiedColumnSetForUpdates());
+            }
             transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
             dependent.notifyListeners(downstream);
             upstream.release();
@@ -144,7 +168,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             updateHelper.close();
             final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
             // if the entry exists, then we install a terminal notification so that we don't lose the performance from
-            // this execution
+            // this execution: this runs on the last job to finish, which adds its own only after this returns
             if (accumulated != null) {
                 getUpdateGraph().addNotification(new TerminalNotification() {
                     @Override
@@ -160,65 +184,6 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             updateInProgress = false;
             decrementReferenceCount();
         }
-    }
-
-    private void clearUnusedCurrentBlocks(final WritableRowSet toClear) {
-        if (sparseArraysToFree.length == 0) {
-            return;
-        }
-
-        try (final RowSet removeBlocks = getLowestLevelRemovedBlocks(toClear);
-                final RowSet removeBlocks2 =
-                        removeBlocks.isNonempty() ? getBlock2RemovedBlock(toClear) : RowSetFactory.empty();
-                final RowSet removeBlocks1 =
-                        removeBlocks2.isNonempty() ? getBlock1RemovedBlock(toClear) : RowSetFactory.empty()) {
-            if (removeBlocks.isEmpty()) {
-                return;
-            }
-            for (final SparseArrayColumnSource<?> cs : sparseArraysToFree) {
-                cs.clearBlocks(removeBlocks, removeBlocks2, removeBlocks1, resultRowSet.isEmpty());
-            }
-        }
-    }
-
-    @NotNull
-    private RowSet getLowestLevelRemovedBlocks(final WritableRowSet toClear) {
-        return getRemovedBlocks(toClear, SparseConstants.LOG_BLOCK_SIZE);
-    }
-
-    @NotNull
-    private RowSet getBlock2RemovedBlock(final WritableRowSet toClear) {
-        return getRemovedBlocks(toClear, SparseConstants.LOG_BLOCK_SIZE + SparseConstants.LOG_BLOCK2_SIZE);
-    }
-
-    @NotNull
-    private RowSet getBlock1RemovedBlock(final WritableRowSet toClear) {
-        return getRemovedBlocks(toClear,
-                SparseConstants.LOG_BLOCK_SIZE + SparseConstants.LOG_BLOCK2_SIZE + SparseConstants.LOG_BLOCK1_SIZE);
-    }
-
-    @NotNull
-    private RowSet getRemovedBlocks(final WritableRowSet toClear, final int logBlockSize) {
-        final long blockSize = 1L << logBlockSize;
-        // if we have anything in our rowset that is clearing out an entire block; it is worth noting those blocks
-        final RowSet.SearchIterator remainingInterator = resultRowSet.searchIterator();
-        final RowSet.SearchIterator clearIterator = toClear.searchIterator();
-
-        final RowSetBuilderSequential removeBlockBuilder = RowSetFactory.builderSequential();
-        long startOfNextBlock = 0;
-        while (clearIterator.advance(startOfNextBlock)) {
-            final long clearValue = clearIterator.currentValue();
-            startOfNextBlock = (clearValue | (blockSize - 1)) + 1;
-
-            // noinspection PointlessBitwiseExpression (Charles understands this version better than -blockSize which
-            // IntelliJ suggests)
-            final long startOfClearingBlock = clearValue & ~(blockSize - 1);
-            if (!remainingInterator.advance(startOfClearingBlock)
-                    || remainingInterator.currentValue() >= startOfNextBlock) {
-                removeBlockBuilder.appendKey(clearValue >> logBlockSize);
-            }
-        }
-        return removeBlockBuilder.build();
     }
 
     @Override

@@ -1,6 +1,5 @@
 ---
 title: How can I bin times to a specific time?
-sidebar_label: How can I bin times to a specific time?
 ---
 
 _I have a table with time series data. I know I can bin my timestamps into fixed-duration bins. I need these bins to start at a specific time of day. How can I do this?_

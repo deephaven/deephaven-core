@@ -21,6 +21,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
@@ -73,6 +74,7 @@ import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.LongUnaryOperator;
 import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
@@ -1781,6 +1783,234 @@ public abstract class QueryTableWhereTest {
     }
 
     /**
+     * A pushdown source that, like a real one, declines to push down again once its pushdown has run at a cost at least
+     * its own, and that records the input row sets it is given and the results it hands out. It reports the first
+     * {@code matchFraction} of the rows its filter matches as matches, and the rest as maybe matches.
+     */
+    private static class RecordingPushdownIntTestSource extends IntTestSource {
+        private final long pushdownCost;
+        private final double matchFraction;
+
+        private final List<RowSet> inputs = new ArrayList<>();
+        private final List<PushdownResult> results = new ArrayList<>();
+
+        private RecordingPushdownIntTestSource(RowSet rowSet, long pushdownCost, double matchFraction,
+                int... data) {
+            super(rowSet, IntChunk.chunkWrap(data));
+            this.pushdownCost = pushdownCost;
+            this.matchFraction = matchFraction;
+        }
+
+        @Override
+        public PushdownFilterContext makePushdownFilterContext(
+                final WhereFilter filter,
+                final List<ColumnSource<?>> filterSources) {
+            return new BasePushdownFilterContextImpl(filter, filterSources);
+        }
+
+        @Override
+        public void estimatePushdownFilterCost(WhereFilter filter, RowSet selection, boolean usePrev,
+                PushdownFilterContext context, JobScheduler jobScheduler, LongConsumer onComplete,
+                Consumer<Exception> onError) {
+            onComplete.accept(context.executedFilterCost() >= pushdownCost
+                    ? PushdownResult.UNSUPPORTED_ACTION_COST
+                    : pushdownCost);
+        }
+
+        @Override
+        public void pushdownFilter(final WhereFilter filter, final RowSet input,
+                final boolean usePrev, final PushdownFilterContext context,
+                final long costCeiling, final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            inputs.add(input);
+            PushdownColumnSourceHeler.pushdownFilter(filter, input, usePrev, this, matchFraction, result -> {
+                results.add(result);
+                onComplete.accept(result);
+            });
+        }
+
+        private void assertAllClosed() {
+            assertFalse("sanity: the source must have pushed down", results.isEmpty());
+            for (final RowSet input : inputs) {
+                assertClosed("pushdown input", input);
+            }
+            for (final PushdownResult result : results) {
+                assertClosed("pushdown result match", result.match());
+                assertClosed("pushdown result maybeMatch", result.maybeMatch());
+            }
+        }
+    }
+
+    /**
+     * A filter that records the row sets it returns, so that a test can check the engine released them.
+     * <p>
+     * A filter's result belongs to its caller, here the filter driver, which must close it or move its contents into
+     * another row set. The leak tests below use this filter to check that every result was released. It extends
+     * {@link RowSetCapturingFilter} only to reuse its delegation to the wrapped filter; the captured input copies are
+     * unused, and are closed with the filter.
+     */
+    private static class OutputRecordingFilter extends RowSetCapturingFilter {
+        // References to the returned row sets themselves, not copies: a copy is never closed by the engine, so it could
+        // not show whether the original was released. They are owned by the engine and not safe to read, so this
+        // filter never closes or inspects their contents.
+        private final List<RowSet> outputs = new ArrayList<>();
+
+        private OutputRecordingFilter(final Filter filter) {
+            super(filter);
+        }
+
+        @NotNull
+        @Override
+        public WritableRowSet filter(
+                @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
+            final WritableRowSet output = super.filter(selection, fullSet, table, usePrev);
+            synchronized (outputs) {
+                outputs.add(output);
+            }
+            return output;
+        }
+
+        /**
+         * Returns this filter, rather than a copy wrapping a copied inner filter as the base does, so that a result
+         * produced by any copy the engine makes is recorded in {@link #outputs}.
+         */
+        @Override
+        public WhereFilter copy() {
+            return this;
+        }
+
+        /**
+         * Asserts that the filter ran, and that the engine released every row set it returned.
+         */
+        private void assertAllClosed() {
+            assertFalse("sanity: the filter must have run", outputs.isEmpty());
+            for (final RowSet output : outputs) {
+                assertClosed("filter output", output);
+            }
+        }
+    }
+
+    /**
+     * A row set that has been closed, or whose contents were moved into a tracking row set, has released its contents.
+     */
+    private static void assertClosed(final String description, final RowSet rowSet) {
+        assertNull(description + " must be closed", ((WritableRowSetImpl) rowSet).getInnerSet());
+    }
+
+    /**
+     * A pushdown that resolves every row replaces the filter input with its matches; both the replaced input and the
+     * pushdown result must be closed.
+     */
+    @Test
+    public void testWherePushdownFullyResolvingClosesResources() {
+        final WritableRowSet rowSet = RowSetFactory.flat(5);
+        final RecordingPushdownIntTestSource sourceA =
+                new RecordingPushdownIntTestSource(rowSet, 100L, 1.0, 1, 2, 3, 4, 5);
+        final Table source = new QueryTable(rowSet.toTracking(), Map.of("A", sourceA));
+
+        final Table result = source.where("A <= 4");
+        try (final RowSet expected = i(0, 1, 2, 3)) {
+            assertEquals(expected, result.getRowSet());
+        }
+        sourceA.assertAllClosed();
+    }
+
+    /**
+     * A pushdown that leaves maybe rows, after which another filter becomes cheapest, stores its result for its final
+     * filter to use later. Every input it replaced, every pushdown result and every row set the final filter produced
+     * must be closed.
+     */
+    @Test
+    public void testWherePushdownDeferredClosesResources() {
+        final WritableRowSet rowSet = RowSetFactory.flat(5);
+        // A is cheapest, and reports half its matches as maybe rows. It then declines to push down again, which makes B
+        // cheapest, and B resolves every row.
+        final RecordingPushdownIntTestSource sourceA =
+                new RecordingPushdownIntTestSource(rowSet, 50L, 0.5, 1, 2, 3, 4, 5);
+        final RecordingPushdownIntTestSource sourceB =
+                new RecordingPushdownIntTestSource(rowSet, 100L, 1.0, 1, 2, 3, 4, 5);
+        final Table source = new QueryTable(rowSet.toTracking(), Map.of("A", sourceA, "B", sourceB));
+
+        try (final OutputRecordingFilter filterA = new OutputRecordingFilter(RawString.of("A <= 4"))) {
+            final Table result = source.where(Filter.and(filterA, RawString.of("B >= 2")));
+            try (final RowSet expected = i(1, 2, 3)) {
+                assertEquals(expected, result.getRowSet());
+            }
+            assertEquals("sanity: A must have pushed down once", 1, sourceA.results.size());
+            assertEquals("sanity: B must have pushed down once", 1, sourceB.results.size());
+            sourceA.assertAllClosed();
+            sourceB.assertAllClosed();
+            filterA.assertAllClosed();
+        }
+    }
+
+    /**
+     * A disjunction accumulates its components' results; every one of them must be closed or become the result.
+     */
+    @Test
+    public void testDisjunctiveFilterClosesComponentResults() {
+        final Table source = TableTools.emptyTable(10).update("A = i");
+        try (final OutputRecordingFilter filterA = new OutputRecordingFilter(RawString.of("A < 3"));
+                final OutputRecordingFilter filterB = new OutputRecordingFilter(RawString.of("A > 7"))) {
+            final Table result = source.where(Filter.or(filterA, filterB));
+            try (final RowSet expected = i(0, 1, 2, 8, 9)) {
+                assertEquals(expected, result.getRowSet());
+            }
+            filterA.assertAllClosed();
+            filterB.assertAllClosed();
+        }
+    }
+
+    /**
+     * When a later component of a disjunction throws, the results accumulated from the earlier ones must be closed.
+     */
+    @Test
+    public void testDisjunctiveFilterClosesComponentResultsOnError() {
+        final Table source = TableTools.emptyTable(10).update("A = i");
+        try (final OutputRecordingFilter filterA = new OutputRecordingFilter(RawString.of("A < 3"));
+                final RowSetCapturingFilter filterB = new RowSetCapturingFilter(RawString.of("A > 7")) {
+                    @NotNull
+                    @Override
+                    public WritableRowSet filter(
+                            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table,
+                            boolean usePrev) {
+                        throw new IllegalStateException("injected component failure");
+                    }
+
+                    @Override
+                    public WhereFilter copy() {
+                        return this;
+                    }
+                }) {
+            final Exception thrown = assertThrows(Exception.class, () -> source.where(Filter.or(filterA, filterB)));
+            boolean found = false;
+            for (Throwable t = thrown; t != null; t = t.getCause()) {
+                found |= "injected component failure".equals(t.getMessage());
+            }
+            assertTrue("injected failure not found in cause chain of " + thrown, found);
+            filterA.assertAllClosed();
+        }
+    }
+
+    /**
+     * A disjunction of no filters matches nothing, and so does the inverse of a conjunction of no filters.
+     */
+    @Test
+    public void testEmptyDisjunctionMatchesNothing() {
+        final Table source = TableTools.emptyTable(10);
+        final WhereFilter emptyOr = DisjunctiveFilter.makeDisjunctiveFilter();
+        final WhereFilter emptyAnd = ConjunctiveFilter.makeConjunctiveFilter();
+        try (final WritableRowSet orResult =
+                emptyOr.filter(source.getRowSet(), source.getRowSet(), source, false);
+                final WritableRowSet andInverseResult =
+                        emptyAnd.filterInverse(source.getRowSet(), source.getRowSet(), source, false)) {
+            assertTrue("an empty disjunction matches nothing, but matched " + orResult, orResult.isEmpty());
+            assertTrue("the inverse of an empty conjunction matches nothing, but matched " + andInverseResult,
+                    andInverseResult.isEmpty());
+        }
+    }
+
+    /**
      * An {@link AbstractColumnSource} -- so it resolves as its own pushdown matcher -- whose pushdown context
      * construction fails.
      */
@@ -1988,7 +2218,7 @@ public abstract class QueryTableWhereTest {
         final WhereFilter filter = WhereFilter.of(RawString.of("A == ii"));
         filter.init(makeVirtualRowVariableTable().getDefinition());
         assertTrue("sanity: parses to a MatchFilter, was " + filter.getClass(), filter instanceof MatchFilter);
-        assertNotNull("sanity: fails over to a ConditionFilter", ((MatchFilter) filter).getFailoverFilterIfCached());
+        assertNotNull("sanity: fails over to a ConditionFilter", ((MatchFilter) filter).getFailoverFilter());
 
         assertIndexedWhereMatchesUnindexed(RawString.of("A == ii"));
     }
@@ -2323,6 +2553,22 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
+    public void testNullBarrierRejected() {
+        final WhereFilter filter = WhereFilterFactory.getExpression("A < 50");
+        final IllegalArgumentException declared =
+                assertThrows(IllegalArgumentException.class, () -> filter.withDeclaredBarriers((Object) null));
+        assertTrue(declared.getMessage().contains("may not declare a null barrier"));
+        final IllegalArgumentException respected =
+                assertThrows(IllegalArgumentException.class, () -> filter.withRespectedBarriers(new Object(), null));
+        assertTrue(respected.getMessage().contains("may not respect a null barrier"));
+
+        // A table-api filter reaches the same check when where converts it.
+        final Table source = emptyTable(10).update("A = ii");
+        final Filter apiFilter = RawString.of("A < 5").withDeclaredBarriers((Object) null);
+        assertThrows(IllegalArgumentException.class, () -> source.where(apiFilter));
+    }
+
+    @Test
     public void testDataIndexRespectBarrierThrowsIfNotFound() {
         QueryTable.PARALLEL_WHERE_SEGMENTS = 10;
         QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = 10_000;
@@ -2411,7 +2657,8 @@ public abstract class QueryTableWhereTest {
         assertEquals(25_000, numRowsFiltered(postFilter));
 
         assertEquals(100, filter1.numRowsProcessed()); // index table size
-        assertEquals(100, filter2.numRowsProcessed()); // index table size
+        // A barrier respecter is shown only the index keys in its selection: those filter1 kept.
+        assertEquals(50, filter2.numRowsProcessed());
     }
 
     @Test
@@ -2442,8 +2689,142 @@ public abstract class QueryTableWhereTest {
         assertEquals(100_000, numRowsFiltered(preFilter));
         assertEquals(100_000, numRowsFiltered(filter1)); // forced to be serial
         assertEquals(50_000, numRowsFiltered(midFilter));
-        assertEquals(100, numRowsFiltered(filter2)); // index table size
+        // A barrier respecter is shown only the index keys in its selection: those filter1 kept.
+        assertEquals(50, numRowsFiltered(filter2));
         assertEquals(25_000, numRowsFiltered(postFilter));
+    }
+
+    /**
+     * A {@link PushdownIntTestSource} whose values are its row keys, and that records the cost ceiling of every
+     * pushdown it runs.
+     */
+    private static class CeilingRecordingPushdownIntTestSource extends PushdownIntTestSource {
+        private final List<Long> costCeilings = Collections.synchronizedList(new ArrayList<>());
+
+        public CeilingRecordingPushdownIntTestSource(RowSet rowSet, long pushdownCost, double maybePercentage) {
+            super(rowSet, pushdownCost, maybePercentage, IntStream.range(0, rowSet.intSize()).toArray());
+        }
+
+        @Override
+        public void pushdownFilter(final WhereFilter filter, final RowSet input,
+                final boolean usePrev, final PushdownFilterContext context,
+                final long costCeiling, final JobScheduler jobScheduler, final Consumer<PushdownResult> onComplete,
+                final Consumer<Exception> onError) {
+            costCeilings.add(costCeiling);
+            super.pushdownFilter(filter, input, usePrev, context, costCeiling, jobScheduler, onComplete, onError);
+        }
+    }
+
+    /**
+     * Builds a flat table of {@code size} rows whose column {@code C<k>} holds the row key and pushes down at
+     * {@code costs[k]}, reporting {@code maybePercentages[k]} of its matches as maybe matches.
+     */
+    private static QueryTable barrierOrderingTable(final int size, final long[] costs,
+            final double[] maybePercentages) {
+        final WritableRowSet rowSet = RowSetFactory.flat(size);
+        final Map<String, ColumnSource<?>> csMap = new LinkedHashMap<>();
+        for (int ii = 0; ii < costs.length; ++ii) {
+            csMap.put("C" + ii, new CeilingRecordingPushdownIntTestSource(rowSet, costs[ii], maybePercentages[ii]));
+        }
+        return new QueryTable(rowSet.toTracking(), csMap);
+    }
+
+    @Test
+    public void testRespecterDoesNotRunBeforeDeclarerAcrossUnrelatedFilter() {
+        // User order is declarer, unrelated, respecter with strictly descending costs. Each adjacent pair is unrelated
+        // or ordered by cost, so a comparator that only consults barriers for directly related pairs lets a sort run
+        // the respecter, and its pushdown, before the declarer without ever comparing the two.
+        final QueryTable source = barrierOrderingTable(1_000,
+                new long[] {45_000L, 30_000L, 25_000L}, new double[] {0.5, 0.5, 0.5});
+        final CeilingRecordingPushdownIntTestSource declarerSource =
+                (CeilingRecordingPushdownIntTestSource) source.getColumnSourceMap().get("C0");
+
+        final Object barrier = new Object();
+        final RowSetCapturingFilter declarer = new RowSetCapturingFilter(RawString.of("C0 >= 500"));
+        final RowSetCapturingFilter unrelated = new RowSetCapturingFilter(RawString.of("C1 >= 0"));
+        final RowSetCapturingFilter respecter = new RowSetCapturingFilter(RawString.of("C2 >= 0"));
+
+        final Table result = source.where(Filter.and(
+                declarer.withDeclaredBarriers(barrier),
+                unrelated,
+                respecter.withRespectedBarriers(barrier)));
+        assertEquals(500, result.size());
+
+        // The respecter sees only what the declarer kept.
+        assertFalse(respecter.rowSets().isEmpty());
+        for (final RowSet rowSet : respecter.rowSets()) {
+            assertTrue("respecter saw a row the declarer removes: " + rowSet,
+                    rowSet.isEmpty() || rowSet.firstRowKey() >= 500);
+        }
+
+        // The respecter cannot run before the declarer, so its lower cost must not cap the declarer's pushdown.
+        assertFalse(declarerSource.costCeilings.isEmpty());
+        for (final long costCeiling : declarerSource.costCeilings) {
+            assertTrue("declarer pushdown capped below its own cost: " + costCeiling, costCeiling >= 45_000L);
+        }
+    }
+
+    @Test
+    public void testBarrierOrderingRandomized() {
+        final long[] costs = {1_000L, 5_000L, 10_000L, 25_000L, 30_000L, 45_000L, Long.MAX_VALUE};
+        final int size = 2_000;
+        for (int seed = 0; seed < 100; ++seed) {
+            final Random random = new Random(seed);
+            // Past 32 filters Arrays.sort merges runs, and can detect an inconsistent comparator and throw.
+            final int numFilters = 3 + random.nextInt(seed % 4 == 0 ? 45 : 12);
+
+            final long[] filterCosts = new long[numFilters];
+            final double[] maybePercentages = new double[numFilters];
+            for (int ii = 0; ii < numFilters; ++ii) {
+                filterCosts[ii] = costs[random.nextInt(costs.length)];
+                maybePercentages[ii] = random.nextDouble();
+            }
+            final QueryTable source = barrierOrderingTable(size, filterCosts, maybePercentages);
+
+            // Filter k removes the rows whose key is k modulo 4 * numFilters, and may declare barrier k and respect any
+            // barrier declared before it; mustFollow[k] collects every filter k must run after, transitively.
+            final int modulus = 4 * numFilters;
+            final RowSetCapturingFilter[] capturing = new RowSetCapturingFilter[numFilters];
+            final Filter[] filters = new Filter[numFilters];
+            final List<Integer> declarers = new ArrayList<>();
+            final List<Set<Integer>> mustFollow = new ArrayList<>();
+            for (int kk = 0; kk < numFilters; ++kk) {
+                capturing[kk] = new RowSetCapturingFilter(RawString.of("C" + kk + " % " + modulus + " != " + kk));
+                WhereFilter filter = capturing[kk];
+                final Set<Integer> follows = new HashSet<>();
+                for (final int declarer : declarers) {
+                    if (random.nextInt(3) == 0) {
+                        filter = filter.withRespectedBarriers("barrier" + declarer);
+                        follows.add(declarer);
+                        follows.addAll(mustFollow.get(declarer));
+                    }
+                }
+                if (random.nextBoolean()) {
+                    filter = filter.withDeclaredBarriers("barrier" + kk);
+                    declarers.add(kk);
+                }
+                filters[kk] = filter;
+                mustFollow.add(follows);
+            }
+
+            final Table result = source.where(Filter.and(filters));
+            final long expectedSize = IntStream.range(0, size).filter(key -> key % modulus >= numFilters).count();
+            assertEquals("seed " + seed, expectedSize, result.size());
+
+            for (int kk = 0; kk < numFilters; ++kk) {
+                final String context = "seed " + seed + ": filter " + kk;
+                final Set<Integer> follows = mustFollow.get(kk);
+                for (final RowSet rowSet : capturing[kk].rowSets()) {
+                    rowSet.forAllRowKeys(key -> {
+                        final int remover = (int) (key % modulus);
+                        if (follows.contains(remover)) {
+                            fail(context + " saw row " + key + " that filter " + remover
+                                    + ", which it must follow, removes");
+                        }
+                    });
+                }
+            }
+        }
     }
 
     private Table getMultiColumnTestSourceTable() {
@@ -2561,7 +2942,8 @@ public abstract class QueryTableWhereTest {
                 postFilter));
 
         assertEquals(100_000, preFilter.numRowsProcessed());
-        assertEquals(97, filterA.numRowsProcessed()); // indexA table size
+        // A barrier respecter is shown only the index keys in its selection: those filterB and tmpFilter kept.
+        assertEquals(86, filterA.numRowsProcessed());
         assertEquals(1_067, filterB.numRowsProcessed()); // indexAB table size
         assertEquals(97, tmpFilter.numRowsProcessed()); // indexA table size
         assertEquals(10969, postFilter.numRowsProcessed());

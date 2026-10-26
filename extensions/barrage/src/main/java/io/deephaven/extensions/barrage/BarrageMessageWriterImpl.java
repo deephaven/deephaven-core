@@ -81,6 +81,15 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         RowSet modRowOffsets(int col);
 
         /**
+         * Whether this view writes the data of column {@code col}. A column the view leaves out still gets a field node
+         * in every batch, as the schema requires, but no rows: it is written as if the message held no data for it.
+         *
+         * @param col the column's index in the message
+         * @return whether the view writes the column's added and modified rows
+         */
+        boolean isColumnIncluded(int col);
+
+        /**
          * Returns the {@link DictionaryWriterRegistry} for this stream, or {@code null} if no columns use dictionary
          * encoding. The manager is shared across all batches of the same stream so that {@link DictionaryWriterState}
          * instances survive across batch boundaries.
@@ -370,9 +379,19 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             long numModRows = 0;
             for (int ii = 0; ii < modColumnData.length; ++ii) {
                 final ModColumnWriter mcd = modColumnData[ii];
+                // the subscriber is sent no modified rows for a column it did not subscribe to
+                final boolean included = isColumnIncluded(ii);
 
                 if (keyspaceViewport == null) {
-                    numModRows = Math.max(numModRows, mcd.rowsModified.original.size());
+                    if (included) {
+                        numModRows = Math.max(numModRows, mcd.rowsModified.original.size());
+                    }
+                    continue;
+                }
+
+                if (!included) {
+                    clientModdedRows[ii] = RowSetFactory.empty();
+                    clientModdedRowOffsets[ii] = RowSetFactory.empty();
                     continue;
                 }
 
@@ -402,32 +421,29 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             final int maxBatchSize = batchSize();
 
             final MutableInt actualBatchSize = new MutableInt();
-
-            if (numClientIncludedRows == 0 && numClientModRows == 0) {
-                // we still need to send a message containing metadata when there are no rows
-                final List<DefensiveDrainable> messages = getInputStream(this, 0, 0, actualBatchSize, metadata,
-                        BarrageMessageWriterImpl.this::appendAddColumns);
-                for (final DefensiveDrainable msg : messages) {
-                    bytesWritten.add(msg.available());
-                    visitor.accept(msg);
-                }
-                final DictionaryWriterRegistry dictRegistry = dictionaryRegistry();
-                if (dictRegistry != null) {
-                    dictRegistry.resetDeltas();
-                }
-                writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
-                return;
-            }
-
-            // send the add batches (if any)
             try {
-                processBatches(visitor, this, numClientIncludedRows, maxBatchSize, metadata,
-                        BarrageMessageWriterImpl.this::appendAddColumns, bytesWritten);
+                if (numClientIncludedRows == 0 && numClientModRows == 0) {
+                    // we still need to send a message containing metadata when there are no rows
+                    final List<DefensiveDrainable> messages = getInputStream(this, 0, 0, actualBatchSize, metadata,
+                            BarrageMessageWriterImpl.this::appendAddColumns);
+                    for (final DefensiveDrainable msg : messages) {
+                        bytesWritten.add(msg.available());
+                        visitor.accept(msg);
+                    }
+                    final DictionaryWriterRegistry dictRegistry = dictionaryRegistry();
+                    if (dictRegistry != null) {
+                        dictRegistry.resetDeltas();
+                    }
+                } else {
+                    // send the add batches (if any)
+                    processBatches(visitor, this, numClientIncludedRows, maxBatchSize, metadata,
+                            BarrageMessageWriterImpl.this::appendAddColumns, bytesWritten);
 
-                // send the mod batches (if any) but don't send metadata twice
-                processBatches(visitor, this, numClientModRows, maxBatchSize,
-                        numClientIncludedRows > 0 ? null : metadata,
-                        BarrageMessageWriterImpl.this::appendModColumns, bytesWritten);
+                    // send the mod batches (if any) but don't send metadata twice
+                    processBatches(visitor, this, numClientModRows, maxBatchSize,
+                            numClientIncludedRows > 0 ? null : metadata,
+                            BarrageMessageWriterImpl.this::appendModColumns, bytesWritten);
+                }
             } finally {
                 SafeCloseable.closeAll(clientViewport, clientIncludedRows, clientIncludedRowOffsets, clientRemovedRows);
                 if (clientModdedRowOffsets != null) {
@@ -462,6 +478,18 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 return null;
             }
             return clientModdedRowOffsets[col];
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * <p>
+         * A producer's message carries data for every column that any of its subscriptions needs, so a subscription's
+         * view writes only the columns in its {@code subscribedColumns}. Final, as the constructor relies on it.
+         */
+        @Override
+        public final boolean isColumnIncluded(final int col) {
+            return subscribedColumns == null || subscribedColumns.get(col);
         }
 
         @Override
@@ -537,9 +565,12 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             for (int ii = 0; ii < modColumnData.length; ++ii) {
                 final int myModRowOffset;
                 if (hasViewport) {
+                    // already empty for a column this view leaves out
                     try (final RowSetWriter modRowsGen = new RowSetWriter(clientModdedRows[ii])) {
                         myModRowOffset = modRowsGen.addToFlatBuffer(metadata);
                     }
+                } else if (!isColumnIncluded(ii)) {
+                    myModRowOffset = EmptyRowSetWriter.INSTANCE.addToFlatBuffer(metadata);
                 } else {
                     myModRowOffset = modColumnData[ii].rowsModified.addToFlatBuffer(metadata);
                 }
@@ -640,6 +671,11 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             }
 
             numClientAddRows = clientAddedRowOffsets.size();
+        }
+
+        @Override
+        public boolean isColumnIncluded(final int col) {
+            return subscribedColumns == null || subscribedColumns.get(col);
         }
 
         @Override
@@ -1182,31 +1218,39 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             return view.addRowOffsets().intSize();
         }
 
-        // find the writer for the initial position-space key
-        final long startPos = view.addRowOffsets().get(startRange);
-        final int chunkIdx = findWriterForOffset(addColumnData[0].chunks(), startPos);
-
-        // adjust the batch size if we would cross a chunk boundary
+        final RowSet addRowOffsets = view.addRowOffsets();
+        int chunkIdx = 0;
         long shift = 0;
-        long endPos = view.addRowOffsets().get(startRange + targetBatchSize - 1);
-        if (endPos == RowSet.NULL_ROW_KEY) {
-            endPos = Long.MAX_VALUE;
-        }
-        if (addColumnData[0].chunks().length != 0) {
-            final ChunkWriter.Context writer = addColumnData[0].chunks()[chunkIdx];
-            endPos = Math.min(endPos, writer.getLastRowOffset());
-            shift = -writer.getRowOffset();
+        final WritableRowSet myAddedOffsets;
+        if (startRange >= addRowOffsets.size()) {
+            // nothing is left to add, but every column must still write an empty field node
+            myAddedOffsets = RowSetFactory.empty();
+        } else {
+            // find the writer for the initial position-space key
+            final long startPos = addRowOffsets.get(startRange);
+            chunkIdx = findWriterForOffset(addColumnData[0].chunks(), startPos);
+
+            // adjust the batch size if we would cross a chunk boundary
+            long endPos = addRowOffsets.get(startRange + targetBatchSize - 1);
+            if (endPos == RowSet.NULL_ROW_KEY) {
+                endPos = Long.MAX_VALUE;
+            }
+            if (addColumnData[0].chunks().length != 0) {
+                final ChunkWriter.Context writer = addColumnData[0].chunks()[chunkIdx];
+                endPos = Math.min(endPos, writer.getLastRowOffset());
+                shift = -writer.getRowOffset();
+            }
+            myAddedOffsets = addRowOffsets.subSetByKeyRange(startPos, endPos);
         }
 
         // all column writers have the same boundaries, so we can re-use the offsets internal to this chunkIdx
         final DictionaryWriterRegistry dictionaryRegistry = view.dictionaryRegistry();
-        try (final RowSet allowedRange = RowSetFactory.fromRange(startPos, endPos);
-                final WritableRowSet myAddedOffsets =
-                        view.addRowOffsets().intersect(allowedRange);
+        try (myAddedOffsets;
                 final RowSet adjustedOffsets = shift == 0 ? null : myAddedOffsets.shift(shift)) {
-            // every column must write to the stream
-            for (final ColumnChunksWriter<Chunk<Values>> chunkListWriter : addColumnData) {
-                final int numElements = chunkListWriter.chunks().length == 0
+            // every column must write to the stream, though a column the view leaves out writes no rows
+            for (int ci = 0; ci < addColumnData.length; ++ci) {
+                final ColumnChunksWriter<Chunk<Values>> chunkListWriter = addColumnData[ci];
+                final int numElements = chunkListWriter.chunks().length == 0 || !view.isColumnIncluded(ci)
                         ? 0
                         : myAddedOffsets.intSize("BarrageStreamWriterImpl");
                 if (view.options().columnsAsList()) {
@@ -1325,7 +1369,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
         for (int ii = 0; ii < modColumnData.length; ++ii) {
             final ModColumnWriter mcd = modColumnData[ii];
             final ChunkWriter.Context[] contexts = mcd.chunkListWriter.chunks();
-            if (contexts.length == 0) {
+            if (contexts.length == 0 || !view.isColumnIncluded(ii)) {
                 continue;
             }
 
@@ -1352,7 +1396,11 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
             final RowSet modOffsets = view.modRowOffsets(ii);
             final long startPos;
             long endPos;
-            if (modOffsets != null) {
+            if (!view.isColumnIncluded(ii)) {
+                // the view leaves this column out, so it writes no rows
+                startPos = RowSet.NULL_ROW_KEY;
+                endPos = RowSet.NULL_ROW_KEY;
+            } else if (modOffsets != null) {
                 startPos = modOffsets.get(startRange);
                 final long endRange = startRange + maxLength - 1;
                 endPos = endRange >= modOffsets.size() ? modOffsets.lastRowKey() : modOffsets.get(endRange);
@@ -1376,9 +1424,7 @@ public class BarrageMessageWriterImpl implements BarrageMessageWriter {
                 // not all mod columns have the same length
                 myModOffsets = RowSetFactory.empty();
             } else if (modOffsets != null) {
-                try (final RowSet allowedRange = RowSetFactory.fromRange(startPos, endPos)) {
-                    myModOffsets = modOffsets.intersect(allowedRange);
-                }
+                myModOffsets = modOffsets.subSetByKeyRange(startPos, endPos);
             } else {
                 myModOffsets = RowSetFactory.fromRange(startPos, endPos);
             }

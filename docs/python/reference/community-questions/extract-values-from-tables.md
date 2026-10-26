@@ -1,6 +1,5 @@
 ---
 title: How do I extract data from a Deephaven table?
-sidebar_label: How do I extract data from a table?
 ---
 
 _How can I get data out of a Deephaven table and into Python objects?_

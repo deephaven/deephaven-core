@@ -1,6 +1,5 @@
 ---
 title: "How can I construct a ring table of the first row of the last N update cycles of a blink table?"
-sidebar_label: "How can I store the first row of the last N blinks of a table?"
 ---
 
 _I have a blink table, from which I want to extract the first row of the last N blinks into a separate ring table. How can I do that?_

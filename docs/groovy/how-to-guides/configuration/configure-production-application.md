@@ -1,6 +1,5 @@
 ---
 title: Configure the Deephaven production application
-sidebar_label: Configure the production application
 ---
 
 This guide provides detailed information about the Deephaven production application bootstrap configuration and startup process. The Deephaven production application is the recommended way to run Deephaven for any production application, hence its name. It runs Deephaven directly from artifacts produced during each new release. These artifacts can be found in the GitHub [releases page](https://github.com/deephaven/deephaven-core/releases), listed under assets.

@@ -1,6 +1,5 @@
 ---
 title: Use URIs to share tables
-sidebar_label: URI
 ---
 
 This guide shows you how to use Deephaven's [URIs](https://deephaven.io/core/javadoc/io/deephaven/uri/package-summary.html) to share tables across server instances and networks.
@@ -11,7 +10,7 @@ A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uni
 > URIs can be used to share tables across Groovy and Python instances interchangeably. For how to use URIs in Python, see [the equivalent guide](/core/docs/how-to-guides/use-uris).
 
 > [!NOTE]
-> URI and Shared Tickets are two different ways to pull tables. Both work on static or dynamic tables. URI pulls tables already on the server via a URL-like string. Shared Tickets let you pull tables you create or access via the Python Client. Learn more about using Shared Tickets with Deephaven in the [Shared Tickets guide](./capture-tables.md).
+> URIs and shared tickets are two different ways to pull tables. Both work on static or dynamic tables. A URI pulls a table already on the server via a URL-like string. Shared tickets let you pull tables you create or access via the Python client. Learn more in [Capture Python client tables with Barrage](./capture-tables.md).
 
 > [!IMPORTANT]
 > URI resolution in Deephaven Community (Core) requires **anonymous authentication**. PSK (pre-shared key) authentication is not currently supported — attempting to resolve a URI when PSK is enabled will fail. This is a known limitation tracked in GitHub issues [#5383](https://github.com/deephaven/deephaven-core/issues/5383) and [#3421](https://github.com/deephaven/deephaven-core/issues/3421).
@@ -67,7 +66,7 @@ The components are:
   - A Docker container name (for container-to-container communication within the same Docker network).
   - A hostname/IP address (for network communication).
 - **`<port>`** is optional and only needed when:
-  - The Deephaven instance is running on a non-default port (something other than 10000).
+  - The Deephaven instance is running on a port other than the scheme's default: `10000` for `dh+plain`, `443` for `dh`.
   - You're connecting across a network to a specific port.
 - **`<scope>`** identifies the namespace where the resource exists. This is typically `scope` for variables created in interactive console sessions, or `app/<app_name>/field` for resources exported from Application Mode applications.
 - **`<resource_name>`** is the exact name of the table or resource you want to access.
@@ -88,26 +87,7 @@ table = resolve("dh+plain://hostname:9876/scope/table_name")
 
 The `resolve` method connects to the specified Deephaven instance, retrieves the table, and returns it as a local reference that you can use in your code.
 
-> [!CAUTION]
-> When you resolve a URI, the first update cycle of the subscribed table is empty. If you run `resolve` and immediately operate on the table data in the same execution, you may see an empty table. To work with the actual data, either:
->
-> - **In a notebook**: Run the `resolve` call in a separate execution before operating on the table.
-> - **In a script**: Use [`awaitUpdate`](../reference/table-operations/table-listeners/await-update.md) to wait for the table to populate before accessing its data.
-
-For example, the following code often prints 0:
-
-```groovy skip-test
-remoteTable = resolve("dh+plain://hostname/scope/someTable")
-println remoteTable.size()  // Often prints 0 before the table populates
-```
-
-To get the actual table size, use [`awaitUpdate`](../reference/table-operations/table-listeners/await-update.md) to wait for the table to populate:
-
-```groovy skip-test
-remoteTable = resolve("dh+plain://hostname/scope/someTable")
-remoteTable.awaitUpdate()
-println remoteTable.size()  // Prints the actual size
-```
+`resolve` waits until the table's initial snapshot arrives, so the returned table already holds the remote table's current data.
 
 Let's explore this with a couple of examples.
 
@@ -199,11 +179,8 @@ The `scope` namespace in URIs contains variables created in interactive console 
 ```groovy
 // This creates a table accessible in the 'scope' namespace
 myTable = emptyTable(100).update("X = i", "Y = i * 2")
-// Accessible via: dh://hostname/scope/myTable
+// Accessible via: dh+plain://hostname/scope/myTable
 ```
-
-> [!NOTE]
-> The `scope` in the URI path (`dh://hostname/scope/table_name`) refers to the server-side namespace, not Groovy's [`QueryScope`](./query-scope.md) mechanism for resolving variables in query strings. These are related but distinct concepts.
 
 ### Application scope (`app/<app_name>/field`)
 
@@ -211,7 +188,7 @@ The application scope contains fields exported from [Application Mode](./applica
 
 ```groovy syntax
 // In an Application Mode script, this exports a field
-// Accessible via: dh://hostname/app/trading_app/field/market_data
+// Accessible via: dh+plain://hostname/app/trading_app/field/market_data
 ```
 
 Scopes ensure that:
@@ -241,9 +218,9 @@ You can also share tables across networks, public or private. Just like the prev
 
 > [!NOTE]
 >
-> - When sharing tables across a network, you do **not** need to specify the port if Deephaven is running on the default port `10000`.
+> - When sharing tables across a network with `dh+plain`, you do **not** need to specify the port if Deephaven is running on the default port `10000`. A `dh` URI without a port uses `443`.
 > - You **must** specify the port in the URI when:
->   - The remote Deephaven instance runs on a non-default port (not 10000).
+>   - The remote Deephaven instance runs on a port other than the scheme's default (`10000` for `dh+plain`, `443` for `dh`).
 >   - You're connecting to a custom port forwarding configuration.
 >
 > Example format with port: `dh+plain://hostname:9876/scope/table_name`
@@ -291,7 +268,7 @@ When using URIs to share tables across instances, particularly over networks, th
 ### Optimization strategies
 
 - **Only share what's needed**: Filter, aggregate, and limit the amount of data you're sharing to only what a downstream consumer actually needs. This includes applying filters at the source, projecting only necessary columns, and pre-aggregating large datasets to reduce the volume of transferred data.
-- **Avoid repeated URI resolution**: Store resolved table references in variables rather than calling `resolve` multiple times for the same URI. Each call to `resolve` creates a new connection, so reuse the table reference when possible within your application.
+- **Avoid repeated URI resolution**: Store resolved table references in variables rather than calling `resolve` multiple times for the same URI. Each call to `resolve` creates a new subscription to the remote table, so reuse the table reference when possible within your application.
 - **Use appropriate data consistency models**: For analysis requiring consistent data across multiple operations, use table snapshots instead of live updating tables. Point-in-time consistency ensures all your data represents the same moment in time, preventing issues where some data updates mid-analysis while other data remains static. Snapshots freeze the table state at a specific moment, guaranteeing consistent results and reducing network overhead from continuous updates.
 
 ## Related documentation

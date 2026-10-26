@@ -6,6 +6,9 @@ package io.deephaven.engine.table.impl.dataindex;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.context.StandaloneQueryScope;
 import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
@@ -16,10 +19,12 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.filter.ExtractFilterWithoutBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.util.SafeCloseable;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -34,6 +39,9 @@ import java.util.stream.Collectors;
  */
 public class DataIndexPushdownManager implements PushdownPredicateManager {
 
+    /** The query scope name of the maybe-match rows, for the formula that finds the index rows overlapping them. */
+    private static final String MAYBE_MATCH_ROWS_PARAM = "__DH_MAYBE_MATCH_ROWS__";
+
     private final DataIndex dataIndex;
     private final PushdownFilterMatcher wrappedMatcher;
 
@@ -45,7 +53,17 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
         this.dataIndex = dataIndex;
         this.wrappedMatcher = wrappedMatcher;
 
-        selectionThreshold = (long) (dataIndex.table().size() / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
+        // Only the row count is needed, which the partial table reports without merging every location's row sets.
+        selectionThreshold = (long) (dataIndex.table(DataIndexOptions.USING_PARTIAL_TABLE).size()
+                / QueryTable.DATA_INDEX_FOR_WHERE_THRESHOLD);
+    }
+
+    /**
+     * Whether a selection of {@code size} rows is large enough, relative to the index table, for the index to pay off.
+     * The estimate and the pushdown must agree, or the estimate advertises a round that the pushdown then declines.
+     */
+    private boolean shouldUseDataIndex(final long size) {
+        return size > selectionThreshold;
     }
 
     @Override
@@ -60,9 +78,9 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
 
         final DataIndexPushdownContext ctx = (DataIndexPushdownContext) context;
 
-        final long dataIndexCost = selection.size() < selectionThreshold
-                ? PushdownResult.UNSUPPORTED_ACTION_COST
-                : PushdownResult.TABLE_IN_MEMORY_DATA_INDEX_COST;
+        final long dataIndexCost = shouldUseDataIndex(selection.size())
+                ? PushdownResult.TABLE_IN_MEMORY_DATA_INDEX_COST
+                : PushdownResult.UNSUPPORTED_ACTION_COST;
 
         if (wrappedMatcher != null) {
             // Retrieve the wrapped cost and return the minimum of it and the data index cost.
@@ -110,8 +128,8 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                     PushdownResult.TABLE_IN_MEMORY_DATA_INDEX_COST - 1,
                     jobScheduler,
                     result -> {
-                        // Run the data index filter if under the threshold.
-                        if (result.maybeMatch().size() > selectionThreshold) {
+                        // Run the data index filter if the selection is large enough.
+                        if (shouldUseDataIndex(result.maybeMatch().size())) {
                             onComplete.accept(pushdownDataIndex(
                                     selection,
                                     filter,
@@ -121,27 +139,52 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
                             return;
                         }
 
-                        // Skipping the data index filter, continue the wrapped filter up to the cost ceiling.
-                        wrappedMatcher.pushdownFilter(
-                                filter,
-                                result.maybeMatch(),
-                                usePrev,
-                                ctx.wrappedContext,
-                                costCeiling,
-                                jobScheduler,
-                                nextResult -> {
-                                    // Combine the match results from earlier pushdown
-                                    nextResult.match().insert(result.match());
-                                    onComplete.accept(nextResult);
-                                },
-                                onError);
+                        // Skipping the data index filter, continue the wrapped filter up to the cost ceiling. The
+                        // first result is released once, when its matches are combined or when the second round
+                        // fails.
+                        final MutableBoolean resultReleased = new MutableBoolean();
+                        final SafeCloseable releaseResult = () -> {
+                            if (resultReleased.isFalse()) {
+                                resultReleased.setTrue();
+                                result.close();
+                            }
+                        };
+                        try {
+                            wrappedMatcher.pushdownFilter(
+                                    filter,
+                                    result.maybeMatch(),
+                                    usePrev,
+                                    ctx.wrappedContext,
+                                    costCeiling,
+                                    jobScheduler,
+                                    nextResult -> {
+                                        // Combine the match results from earlier pushdown. The second result is ours
+                                        // until onComplete takes it, so close it if the combination fails.
+                                        try {
+                                            nextResult.match().insert(result.match());
+                                            releaseResult.close();
+                                        } catch (final RuntimeException | Error e) {
+                                            SafeCloseable.closeAllDuringFailure(e, nextResult, releaseResult);
+                                            throw e;
+                                        }
+                                        onComplete.accept(nextResult);
+                                    },
+                                    e -> {
+                                        SafeCloseable.closeAllDuringFailure(e, releaseResult);
+                                        onError.accept(e);
+                                    });
+                        } catch (final RuntimeException | Error e) {
+                            // A matcher that throws instead of calling onError would leave the first result open.
+                            SafeCloseable.closeAllDuringFailure(e, releaseResult);
+                            throw e;
+                        }
                     },
                     onError);
             return;
         }
 
-        // Run the data index filter if under the threshold.
-        if (selection.size() > selectionThreshold) {
+        // Run the data index filter if the selection is large enough.
+        if (shouldUseDataIndex(selection.size())) {
             onComplete.accept(pushdownDataIndex(
                     selection,
                     filter,
@@ -210,6 +253,8 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
 
     /**
      * Apply the filter to the data index table and return the result.
+     *
+     * @param result the result of any pushdown so far, whose maybe rows the index filters; this method closes it
      */
     @NotNull
     private PushdownResult pushdownDataIndex(
@@ -218,42 +263,56 @@ public class DataIndexPushdownManager implements PushdownPredicateManager {
             final Map<String, String> renameMap,
             final BasicDataIndex dataIndex,
             final PushdownResult result) {
-        final WritableRowSet matching;
-        // One row set per index row that passes the filter, so the unfiltered index bounds them. The batcher owns
-        // what it gathers, and outliving the liveness scope and the iterator leaves nothing that can throw between
-        // building the result and the caller taking it.
-        try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(dataIndex.table().size())) {
-            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                // Extract the fundamental filter, ignoring barriers.
-                final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
-                final Table toFilter;
-                if (!renameMap.isEmpty()) {
-                    final Collection<Pair> renamePairs = renameMap.entrySet().stream()
-                            .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
-                                    ColumnName.of(entry.getKey())))
-                            .collect(Collectors.toList());
-                    toFilter = dataIndex.table().renameColumns(renamePairs);
-                } else {
-                    toFilter = dataIndex.table();
-                }
-                try {
-                    final Table filteredTable = toFilter.where(copiedFilter);
-                    try (final CloseableIterator<RowSet> it =
-                            ColumnVectors.ofObject(filteredTable, dataIndex.rowSetColumnName(), RowSet.class)
-                                    .iterator()) {
-                        it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(result.maybeMatch())));
+        try (result) {
+            final WritableRowSet matching;
+            // One row set per index row that passes the filter, so the unfiltered index bounds them. The batcher owns
+            // what it gathers, and outliving the liveness scope and the iterator leaves nothing that can throw between
+            // building the result and the caller taking it.
+            try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(dataIndex.table().size())) {
+                try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                    // A filter that respects a barrier may see only the keys of rows in question, or it could observe
+                    // keys only in rows its declarers removed; decided before the barriers go.
+                    final boolean barrierActive = ExtractRespectedBarriers.stream(filter).findAny().isPresent();
+                    // Extract the fundamental filter, ignoring barriers.
+                    final WhereFilter copiedFilter = ExtractFilterWithoutBarriers.of(filter).copy();
+                    final String rowSetColumnName = dataIndex.rowSetColumnName();
+                    Table toFilter = dataIndex.table();
+                    if (!renameMap.isEmpty()) {
+                        final Collection<Pair> renamePairs = renameMap.entrySet().stream()
+                                .map(entry -> io.deephaven.api.Pair.of(ColumnName.of(entry.getValue()),
+                                        ColumnName.of(entry.getKey())))
+                                .collect(Collectors.toList());
+                        toFilter = toFilter.renameColumns(renamePairs);
                     }
-                } catch (final Exception e) {
-                    throw new TableInitializationException(
-                            "Error applying filter " + copiedFilter + " to data index table", e);
+                    try {
+                        if (barrierActive) {
+                            // Keep only the index rows whose row sets overlap the rows in question.
+                            final QueryScope scope = new StandaloneQueryScope();
+                            scope.putParam(MAYBE_MATCH_ROWS_PARAM, result.maybeMatch());
+                            try (final SafeCloseable ignoredScope =
+                                    ExecutionContext.getContext().withQueryScope(scope).open()) {
+                                toFilter = toFilter.where(
+                                        rowSetColumnName + ".overlaps(" + MAYBE_MATCH_ROWS_PARAM + ")");
+                            }
+                        }
+                        final Table filteredTable = toFilter.where(copiedFilter);
+                        try (final CloseableIterator<RowSet> it =
+                                ColumnVectors.ofObject(filteredTable, rowSetColumnName, RowSet.class)
+                                        .iterator()) {
+                            it.forEachRemaining(rowSet -> batcher.add(rowSet.intersect(result.maybeMatch())));
+                        }
+                    } catch (final Exception e) {
+                        throw new TableInitializationException(
+                                "Error applying filter " + copiedFilter + " to data index table", e);
+                    }
                 }
+                matching = batcher.build();
             }
-            matching = batcher.build();
-        }
-        // Retain only the maybe rows and add the previously found matches.
-        try (matching; final WritableRowSet empty = RowSetFactory.empty()) {
-            matching.insert(result.match());
-            return PushdownResult.of(selection, matching, empty);
+            // Retain only the maybe rows and add the previously found matches.
+            try (matching; final WritableRowSet empty = RowSetFactory.empty()) {
+                matching.insert(result.match());
+                return PushdownResult.of(selection, matching, empty);
+            }
         }
     }
 

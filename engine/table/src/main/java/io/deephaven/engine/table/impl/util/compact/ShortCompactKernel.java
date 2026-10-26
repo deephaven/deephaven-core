@@ -113,7 +113,7 @@ public class ShortCompactKernel implements CompactKernel {
             }
             // region maybeCountNaN
             // endregion maybeCountNaN
-            if (wpos == -1 || !ShortComparisons.eq(nextValue, lastValue)) {
+            if (wpos == -1 || !eq(nextValue, lastValue)) {
                 valueChunk.set(++wpos + start, nextValue);
                 counts.set(wpos + start, currentCount = 1);
                 lastValue = nextValue;
@@ -124,4 +124,16 @@ public class ShortCompactKernel implements CompactKernel {
         // endregion compactAndCount
         return wpos + 1;
     }
+
+    // region equality helper
+    /**
+     * Test two values for equality consistent with the order in which {@code compactAndCount} sorts them; each class of
+     * equal values is compacted to one value and its count.
+     */
+    private static boolean eq(short lhs, short rhs) {
+        // region equality function
+        return ShortComparisons.eq(lhs, rhs);
+        // endregion equality function
+    }
+    // endregion equality helper
 }

@@ -1,108 +1,92 @@
 ---
 title: Listen to ticking tables
-sidebar_label: Table listeners
 ---
 
-Deephaven makes it easy to create dynamic queries that update in real time. When a table updates, a message describing the changes is sent to all listeners of the table. This mechanism is what makes ticking queries work. It can also be used to create new, dynamic functionality.
+Deephaven queries update in real time. When a table updates, Deephaven sends a message describing the changes to each of the table's listeners. This mechanism makes ticking queries work, and you can use it to build your own dynamic functionality.
 
-As an example, consider using a Deephaven query to create a dynamic table that monitors for situations needing human intervention. You can create a table listener that sends a Slack message every time one or more tables tick. Similarly, you could have a table of orders to buy or sell stocks. If rows are added to the order table, new orders are sent to the broker, and if rows are removed from the order table, orders are canceled with the broker.
+As an example, consider using a Deephaven query to create a dynamic table that monitors for situations needing human intervention. You can create a table listener that sends a Slack message every time one or more tables tick. Similarly, you could have a table of orders to buy or sell stocks. When rows are added to the order table, a listener sends new orders to the broker, and when rows are removed, it cancels those orders with the broker.
 
-This guide will show you how to create your own table listeners in Groovy.
+This guide shows you how to create your own table listeners in Groovy.
 
 ## What is a table listener?
 
-A table listener is an object that listens to one or more tables for updates. When connected to a ticking table, a listener receives one or more [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) objects that can be used to access the added, modified, or removed data.
+A table listener is an object that listens to one or more tables for updates. When connected to a ticking table, a listener receives one or more [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) objects, which you use to access the added, modified, or removed data.
+
+Deephaven processes changes to ticking tables in batches called update cycles. In each update cycle, a listener receives one [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) for each of its tables that changed. Each `TableUpdate` describes the rows added, modified, and removed during that cycle. For details, see the [table update model](../conceptual/table-update-model.md).
+
+When listening to changes in a single table, extend [`InstrumentedTableUpdateListenerAdapter`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html), and when listening to changes in multiple tables, extend [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html).
 
 ## Listen to one ticking table
 
-To listen to a table, add an instance of the listener to the table with the [`Table.addUpdateListener(listener)`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#addUpdateListener(io.deephaven.engine.table.TableUpdateListener)) method. Once a listener is registered, it will begin receiving updates. To control what the listener does upon receiving an update, override the listener's [`onUpdate`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onUpdate(io.deephaven.engine.table.TableUpdate)) method.
+To listen to a table, create an instance of [`InstrumentedTableUpdateListenerAdapter`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html) and add it to the table with the [`Table.addUpdateListener(listener)`](/core/javadoc/io/deephaven/engine/table/Table.html#addUpdateListener(io.deephaven.engine.table.TableUpdateListener)) method. Once a listener is registered, it begins receiving updates. To control what the listener does upon receiving an update, override the listener's [`onUpdate`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onUpdate(io.deephaven.engine.table.TableUpdate)) method.
 
-In this simple example, the listener will keep track of how many times it has been called.
+In this example, the listener keeps track of how many times it has been called.
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 
-t1 = timeTable("PT1S").update("X=i").tail(5)
+t1 = timeTable("PT1S").update("X = i").tail(5)
 
 h1 = new InstrumentedTableUpdateListenerAdapter(t1, false) {
     def counter = 0
 
     @Override
     public void onUpdate(TableUpdate upstream) {
-        println "FUNCTION LISTENER: counter=${++counter} update=${upstream}"
+        println "LISTENER: counter=${++counter} update=${upstream}"
     }
 }
 
 t1.addUpdateListener(h1)
 ```
 
-![`t1` updates while `handle` prints updates to the log](../assets/how-to/listener-one-table.gif)
+![`t1` updates while `h1` prints updates to the log](../assets/how-to/listener-one-table.gif)
+
+The constructor takes the table to listen to and a `retain` flag. Set `retain` to `true` to keep the listener from being garbage collected even if no variable references it. An optional first argument provides a description, as in later examples on this page.
 
 ## Listen to multiple ticking tables
 
-To listen to more than one table at once, you will need to use a [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html). Once a listener is registered, it will begin receiving updates.
+To listen to more than one table at once, use a [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html). Once a listener is registered, it begins receiving updates.
 
-A [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html) takes four inputs:
+The [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html) constructor takes four arguments:
 
-- `recorders`: an iterable set of [`ListenerRecorder`](/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html) instances.
-- `dependencies`: An iterable set of dependencies (such as other Tables) for the [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html).
-- `listenerDescription`: A String description of the listener.
-- `result`: a result table that uses the listener's tables as sources. Can be null.
+- `recorders`: An iterable set of [`ListenerRecorder`](/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html) instances.
+- `dependencies`: Tables the listener waits on before it runs in each update cycle, so it can read them safely. See [Dependent tables](#dependent-tables).
+- `listenerDescription`: A `String` description of the listener.
+- `result`: A result table that uses the listener's tables as sources, or `null`.
 
-The following example listens to two time tables, one ticking every second and the other ticking every two seconds. [`getUpdate`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html#getUpdate()) returns a [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) object for each [`ListenerRecorder`](/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html), and the [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html)'s `process` function is overwritten to print updates if they have been received and to do nothing otherwise.
+Each [`ListenerRecorder`](/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html) listens to one table and records its update. Its constructor takes a description, the table to listen to, and an optional object that keeps the recorder alive. The example passes `null` for that object.
+
+To register the merged listener, call each recorder's [`setMergedListener`](/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html#setMergedListener(io.deephaven.engine.table.impl.MergedListener)) method so it notifies the merged listener. Then add each recorder to its table with [`addUpdateListener`](/core/javadoc/io/deephaven/engine/table/Table.html#addUpdateListener(io.deephaven.engine.table.TableUpdateListener)).
+
+The following example listens to two time tables, one ticking every second and the other ticking every two seconds, and passes an empty `dependencies` list. Each [`ListenerRecorder`](/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html)'s [`getUpdate`](/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html#getUpdate()) method returns a [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) if its table changed during the update cycle, and `null` otherwise. The example overrides the [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html)'s [`process`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html#process()) method to print each update it receives.
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
-import io.deephaven.engine.table.ColumnSource
 import io.deephaven.engine.table.impl.ListenerRecorder
 import io.deephaven.engine.table.impl.MergedListener
-import io.deephaven.engine.rowset.RowSet
-import java.time.Instant
 
-t1 = timeTable("PT1S").update("X=i").tail(5)
-t2 = timeTable("PT2S").update("X=i*2").tail(5)
+t1 = timeTable("PT1S").update("X = i").tail(5)
+t2 = timeTable("PT2S").update("X = i * 2").tail(5)
 
 recorder1 = new ListenerRecorder("t1", t1, null)
 recorder2 = new ListenerRecorder("t2", t2, null)
 
 h = new MergedListener([recorder1, recorder2], [], "Description", null) {
-  def counter = 0
+    def counter = 0
 
-  @Override
-  void process() {
-    counter++
-    TableUpdate tu1 = recorder1.getUpdate()
-    TableUpdate tu2 = recorder2.getUpdate()
-
-    ColumnSource<Instant> colSrc1 = t1.getColumnSource("Timestamp", Instant.class)
-    ColumnSource<Integer> colSrc2 = t1.getColumnSource("X", int.class)
-    ColumnSource<Instant> colSrc3 = t2.getColumnSource("Timestamp", Instant.class)
-    ColumnSource<Integer> colSrc4 = t2.getColumnSource("X", int.class)
-
-    if (tu1 != null) {
-        RowSet.Iterator iter1 = tu1.added().iterator()
-        while (iter1.hasNext()) {
-            long rowKey = iter1.next()
-            Instant col1Data = DateTimeUtils.epochNanosToInstant(colSrc1.getLong(rowKey))
-            Class<?> col1Type = colSrc1.getType()
-            int col2Data = colSrc2.getInt(rowKey)
-            Class<?> col2Type = colSrc2.getType()
-            println "t1 updates: {'Timestamp': [data=${col1Data}, ${col1Type}], 'X': [data=${col2Data}, ${col2Type}]"
+    @Override
+    void process() {
+        counter++
+        TableUpdate tu1 = recorder1.getUpdate()
+        TableUpdate tu2 = recorder2.getUpdate()
+        if (tu1 != null) {
+            println "MERGED LISTENER: counter=${counter} t1 update=${tu1}"
+        }
+        if (tu2 != null) {
+            println "MERGED LISTENER: counter=${counter} t2 update=${tu2}"
         }
     }
-    if (tu2 != null) {
-        RowSet.Iterator iter2 = tu2.added().iterator()
-        while (iter2.hasNext()) {
-            long rowKey = iter2.next()
-            Instant col3Data = DateTimeUtils.epochNanosToInstant(colSrc3.getLong(rowKey))
-            Class<?> col3Type = colSrc3.getType()
-            int col4Data = colSrc4.getInt(rowKey)
-            Class<?> col4Type = colSrc4.getType()
-            println "t2 updates: {'Timestamp': [data=${col3Data}, ${col3Type}], 'X': [data=${col4Data}, ${col4Type}]"
-        }
-    }
-  }
 }
 
 recorder1.setMergedListener(h)
@@ -112,22 +96,26 @@ t1.addUpdateListener(recorder1)
 t2.addUpdateListener(recorder2)
 ```
 
-![`t1` and `t2` update while `handle` prints updates to the log](../assets/how-to/listener-merged.gif)
+![`t1` and `t2` update while `h` prints updates to the log](../assets/how-to/listener-merged.gif)
 
 > [!IMPORTANT]
-> The `TableUpdate` returned by `getUpdate()` is `null` for any table that has not changed during the update cycle. These `null` values must be handled to avoid raising errors.
+> The [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) returned by [`getUpdate`](/core/javadoc/io/deephaven/engine/table/impl/ListenerRecorder.html#getUpdate()) is `null` for any table that has not changed during the update cycle. Check for `null` before using the update, or the listener throws a `NullPointerException`.
 
 ## Access table data
 
-A [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) object contains the added, modified, and removed rows from a table. There are several ways to access this data.
+A [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) object identifies the rows that changed (added, modified, and removed) by their [row keys](../conceptual/table-update-model.md#describing-table-updates). Unlike row positions, row keys usually stay the same when other rows are added or removed. When a row's key does change, the update records the change as a [shift](../conceptual/table-update-model.md#shifts).
 
-The following methods return a RowSet of the added, removed, or modified data:
+The following methods return a [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html) that identifies the added, removed, or modified rows:
 
-- [`acquire`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#acquire()) - Increments the reference count for the update.
-- [`added`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#added()) - rows added during the current update cycle.
-- [`modified`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#modified()) - rows modified during the current update cycle.
-- [`removed`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#removed()) - rows removed during the current update cycle.
-- [`getModifiedPreShift`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/TableUpdate.html#getModifiedPreShift()) - modified rows in their pre-shift row key positions (before any shifts were applied during this update cycle).
+- [`added`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#added()): Rows added during the current update cycle.
+- [`modified`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#modified()): Rows modified during the current update cycle.
+- [`removed`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#removed()): Rows removed during the current update cycle.
+- [`getModifiedPreShift`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#getModifiedPreShift()): Modified rows, identified by the row keys they had at the start of the update cycle. A row's key can change during a cycle when rows are inserted or removed ahead of it. See [shifts](../conceptual/table-update-model.md#shifts) in the table update model.
+
+These methods return row keys, not column values. To read a value, look up its row key in a [`ColumnSource`](/core/javadoc/io/deephaven/engine/table/ColumnSource.html) with the accessor that matches the key:
+
+- [`added`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#added()) and [`modified`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#modified()) return post-shift row keys, the keys rows have at the end of the update cycle. Read them with current-value accessors such as [`getInt`](/core/javadoc/io/deephaven/engine/table/ElementSource.html#getInt(long)).
+- [`removed`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#removed()) and [`getModifiedPreShift`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#getModifiedPreShift()) return pre-shift row keys. Read them with previous-value accessors such as [`getPrevInt`](/core/javadoc/io/deephaven/engine/table/ElementSource.html#getPrevInt(long)).
 
 The following example listens to added rows during each update cycle. It prints the data as the listener receives it.
 
@@ -138,7 +126,7 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 import io.deephaven.engine.rowset.RowSet
 import java.time.Instant
 
-t1 = timeTable("PT1S").update("X=100+i").tail(5)
+t1 = timeTable("PT1S").update("X = 100 + i").tail(5)
 
 h1 = new InstrumentedTableUpdateListenerAdapter(t1, false) {
 
@@ -150,7 +138,7 @@ h1 = new InstrumentedTableUpdateListenerAdapter(t1, false) {
 
         while (iter.hasNext()) {
             long rowKey = iter.next()
-            Instant col1data = DateTimeUtils.epochNanosToInstant(colSrc1.getLong(rowKey))
+            Instant col1data = colSrc1.get(rowKey)
             Class<?> col1type = colSrc1.getType()
             int col2data = colSrc2.getInt(rowKey)
             Class<?> col2type = colSrc2.getType()
@@ -172,7 +160,7 @@ import io.deephaven.engine.table.ColumnSource
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 import io.deephaven.engine.rowset.RowSet
 
-t1 = timeTable("PT0.1s").update("X = i").lastBy()
+t1 = timeTable("PT0.1S").update("X = i").lastBy()
 
 h1 = new InstrumentedTableUpdateListenerAdapter("listener", t1, false) {
     @Override
@@ -190,10 +178,10 @@ h1 = new InstrumentedTableUpdateListenerAdapter("listener", t1, false) {
         RowSet.Iterator currIt = currModified.iterator()
 
         while (prevIt.hasNext() && currIt.hasNext()) {
-            long prevRowIdx = prevIt.next()
-            long currRowIdx = currIt.next()
-            int prev = xCol.getPrevInt(prevRowIdx)
-            int curr = xCol.getInt(currRowIdx)
+            long prevRowKey = prevIt.next()
+            long currRowKey = currIt.next()
+            int prev = xCol.getPrevInt(prevRowKey)
+            int curr = xCol.getInt(currRowKey)
             println "Change previous=${prev} current=${curr}"
         }
     }
@@ -202,78 +190,60 @@ h1 = new InstrumentedTableUpdateListenerAdapter("listener", t1, false) {
 t1.addUpdateListener(h1)
 ```
 
-![`table` updates while `handle` prints modified rows](../assets/how-to/listener-mod-prev.gif)
+![`t1` updates while `h1` prints modified rows](../assets/how-to/listener-mod-prev.gif)
+
+> [!NOTE]
+> A [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html) is normally valid only inside [`onUpdate`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onUpdate(io.deephaven.engine.table.TableUpdate)). If you pass an update to code that runs later in the same update cycle, call [`acquire`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#acquire()) on it first and [`release`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html#release()) when that code is done. An acquired update is never valid after the cycle that created it ends.
+
+## Error handling
+
+If a listener encounters an error, it should throw an exception rather than catch and suppress it. When [`onUpdate`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onUpdate(io.deephaven.engine.table.TableUpdate)) throws an exception, or the table the listener listens to fails:
+
+- Deephaven logs the error and marks the listener as failed.
+- The failed listener stops receiving updates.
+- Deephaven calls the listener's [`onFailureInternal`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onFailureInternal(java.lang.Throwable,io.deephaven.engine.table.TableListener.Entry)) method.
+
+Override [`onFailureInternal`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onFailureInternal(java.lang.Throwable,io.deephaven.engine.table.TableListener.Entry)) to notify the user, client APIs, or other services, and call `super.onFailureInternal` to keep the default error reporting.
+
+In the following example, the listener throws a [`RuntimeException`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/RuntimeException.html) when it receives a value greater than 10. The overridden [`onFailureInternal`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onFailureInternal(java.lang.Throwable,io.deephaven.engine.table.TableListener.Entry)) method prints a message and then calls `super.onFailureInternal`.
+
+```groovy ticking-table order=null reset
+import io.deephaven.engine.table.TableListener
+import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
+
+source = timeTable("PT1S").update("X = i + 6")
+
+listener = new InstrumentedTableUpdateListenerAdapter("listener", source, false) {
+
+    @Override
+    void onUpdate(TableUpdate upstream) {
+        def x = source.getColumnSource("X", int.class)
+
+        upstream.added().forAllRowKeys { long rowKey ->
+            if (x.getInt(rowKey) > 10) {
+                throw new RuntimeException("Value over 10 detected!")
+            }
+        }
+    }
+
+    @Override
+    void onFailureInternal(Throwable originalException, TableListener.Entry sourceEntry) {
+        println "A value over 10 was detected. Please investigate."
+        super.onFailureInternal(originalException, sourceEntry)
+    }
+}
+
+source.addUpdateListener(listener)
+```
+
+![`source` updates while `listener` throws an exception when a value exceeds 10](../assets/how-to/listener-error.gif)
 
 ## Add and remove listeners
 
-Most applications that require the use of a table listener do so for the entirety of the application's lifetime. If a listener should only be registered for a specified period of time, a listener can be removed from a table using the [`Table.removeUpdateListener(listener)`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/TableAdapter.html#removeUpdateListener(io.deephaven.engine.table.TableUpdateListener)) method.
+Most applications keep a table listener for their whole lifetime. To register a listener for only part of that time, remove it from the table with [`Table.removeUpdateListener(listener)`](/core/javadoc/io/deephaven/engine/table/Table.html#removeUpdateListener(io.deephaven.engine.table.TableUpdateListener)).
 
-### Why use update graph locks?
-
-When code running outside the Deephaven console creates a ticking table and adds a listener, the table may update between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
-
-> [!NOTE]
-> Code run in the Deephaven console is already protected — consecutive lines in the console cannot have updates slip between them. This section applies to code running on other threads, such as timer callbacks or background workers.
-
-The [Update Graph](../conceptual/table-update-model.md) coordinates all table updates in Deephaven. By holding a lock while creating the table _and_ adding the listener, you ensure that no updates occur in between — your listener captures every update from the start.
-
-![Diagram showing how locks prevent missed updates](../assets/how-to/update-graph-lock.png)
-
-> [!TIP]
-> The lock ensures "create table" and "add listener" happen together as one unit — no updates can slip through.
-
-**Separate locks (race condition):**
-
-If you lock each operation separately, a race window exists between them:
-
-```groovy skip-test
-import io.deephaven.util.SafeCloseable
-
-// On background thread with reopened context
-try (SafeCloseable ignored = ctx.open()) {
-    // First lock: create the table
-    ctx.getUpdateGraph().sharedLock().doLocked(() -> {
-        t = timeTable("PT1s").update("X=i")
-    })
-    // RACE WINDOW: table can update here before listener is added
-    ctx.getUpdateGraph().sharedLock().doLocked(() -> {
-        t.addUpdateListener(listener)  // May miss updates!
-    })
-}
-```
-
-**Single lock (safe):**
-
-Wrap both operations in a single lock to eliminate the race:
-
-```groovy skip-test
-import io.deephaven.util.SafeCloseable
-
-// Before dispatching to background thread: capture the context
-ctx = ExecutionContext.getContext()
-
-// On background thread: reopen context, then lock both operations together
-try (SafeCloseable ignored = ctx.open()) {
-    ctx.getUpdateGraph().sharedLock().doLocked(() -> {
-        t = timeTable("PT1s").update("X=i")
-        t.addUpdateListener(listener)
-    })
-}
-```
-
-> [!NOTE]
-> Background threads don't have an execution context by default. Table operations like `timeTable` require a valid context. Capture the context before dispatching, then reopen it on the background thread. See [Execution context](../conceptual/execution-context.md) for details.
-
-Deephaven provides two types of locks:
-
-- **Shared lock** ([`sharedLock`](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock())): Pauses table updates while your code runs. Use this for table operations like creating tables and adding listeners.
-- **Exclusive lock** ([`exclusiveLock`](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#exclusiveLock())): Blocks all Update Graph activity. Use this only for advanced cases, such as waiting for specific update conditions.
-
-For more details on locks and thread safety, see [Synchronization and locking](../conceptual/query-engine/engine-locking.md).
-
-### Example: Add and remove a listener
-
-The following example uses [`java.util.Timer`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Timer.html) to remove a listener after 3 seconds and then add it back after 6 seconds. Since the timer callback runs on a background thread, it must acquire the shared lock when re-adding the listener.
+The following example uses [`java.util.Timer`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Timer.html) to remove a listener after 3 seconds and then add it back after 6 seconds. The timer callbacks run on a background thread. As a precaution, the callback that re-adds the listener holds the shared lock, so the listener is registered between update cycles. For more on locking from other threads, see [Update graph locks and thread safety](#update-graph-locks-and-thread-safety).
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
@@ -287,12 +257,12 @@ class ExampleListener extends InstrumentedTableUpdateListenerAdapter {
 
     @Override
     void onUpdate(TableUpdate upstream) {
-        println "FUNCTION LISTENER: update=${upstream}"
+        println "LISTENER: update=${upstream}"
     }
 }
 
 // Console code is already protected — no lock needed here
-t = timeTable("PT1s").update("X=i").tail(5)
+t = timeTable("PT1S").update("X = i").tail(5)
 listener = new ExampleListener("Test Listener", t, true)
 println "Adding listener"
 t.addUpdateListener(listener)
@@ -313,124 +283,74 @@ new Timer().runAfter(6000) {
 
 ![A listener is added and removed](../assets/how-to/listener-lock.gif)
 
-> [!NOTE]
-> Keep locks brief. Tables cannot update while a lock is held, so long-held locks can delay data.
-
-## Error handling
-
-If a listener encounters an error, it should throw an exception rather than catching and suppressing it. When a listener throws an exception:
-
-- In a **Persistent Query**, the exception crashes the query — which is the correct behavior, as it alerts you that something is wrong.
-- In a **Code Studio**, the error appears in the logs.
-
-The following example throws a `RuntimeException` if it receives a value greater than 9. The exception propagates and causes the listener to fail, which is the expected behavior for a broken listener.
-
-```groovy ticking-table order=null reset
-import io.deephaven.engine.table.TableUpdate
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
-
-source  = timeTableBuilder()
-    .period("PT0.33S")
-    .blinkTable(true)
-    .build()
-    .update("X = randomDouble(0,10)")
-    .dropColumns("Timestamp")
-
-listener = new InstrumentedTableUpdateListenerAdapter("listener", source, false) {
-
-    @Override
-    void onUpdate(TableUpdate upstream) {
-        def added = upstream.added()
-
-        if (added == null || added.isEmpty()) {
-            return
-        }
-        if (added.any{element -> element > 9}) {
-            throw new RuntimeException("Value exceeds 9")
-        }
-    }
-}
-
-source.addUpdateListener(listener)
-```
-
-![`source` updates while `listener` throws an exception when a value exceeds 9](../assets/how-to/listener-error.gif)
-
-## Reduce data volumes
-
-Tables often tick at high frequencies and with large quantities of incoming data. It's best practice to only listen to what's required for an operation. In such cases, applying [filters](./filters.md) and/or [reducing tick frequencies](./performance/reduce-update-frequency.md) will reduce both the quantity and frequency of incoming data to a listener.
-
-The following example listens to a table that has been filtered and had its tick frequency reduced to reduce the rate at which the listener receives data.
-
-```groovy ticking-table order=null reset
-import io.deephaven.engine.table.TableUpdate
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
-
-t1 = timeTable("PT1S").update("X=i").tail(5)
-
-h1 = new InstrumentedTableUpdateListenerAdapter(t1, false) {
-    def counter = 0
-
-    @Override
-    public void onUpdate(TableUpdate upstream) {
-        println "FUNCTION LISTENER for even values: update= ${upstream}"
-    }
-}
-
-source = timeTable("PT0.5s").update("X=i").tail(5)
-trigger = timeTable("PT2s").renameColumns("DateTime = Timestamp")
-result = source.where("X % 2 = 0").snapshotWhen(trigger)
-result.addUpdateListener(h1)
-```
-
-![`handle` receives filtered and downsampled updates](../assets/how-to/listener-downsampled.gif)
-
 ## Replay data
 
-A table listener can listen to data that existed before the listener was registered. For example, a listener that isn't registered until 10 seconds after a table starts ticking can be made to listen to the data that was created during those 10 seconds.
+A table listener can receive the rows a table already holds when the listener is registered. For example, a listener that isn't registered until 10 seconds after a time table starts ticking can receive the rows the table added during those 10 seconds.
 
-To make a listener listen to previously existing data, set the `replayInitialImage` parameter to `true` when calling [`addUpdateListener`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/impl/TableAdapter.html#addUpdateListener(io.deephaven.engine.table.ShiftObliviousListener,boolean)).
+The built-in replay option works only with a shift-oblivious listener, such as [`ShiftObliviousInstrumentedListenerAdapter`](/core/javadoc/io/deephaven/engine/table/impl/ShiftObliviousInstrumentedListenerAdapter.html), not the [`InstrumentedTableUpdateListenerAdapter`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html) used elsewhere on this page. A shift-oblivious listener differs in two ways:
 
-The following example registers two listeners with a time table a few seconds after it's created. Only the one that sets `replayInitialImage` to `true` receives data when it's first registered.
+- It receives no row shift information.
+- Its [`onUpdate`](/core/javadoc/io/deephaven/engine/table/ShiftObliviousListener.html#onUpdate(io.deephaven.engine.rowset.RowSet,io.deephaven.engine.rowset.RowSet,io.deephaven.engine.rowset.RowSet)) method receives the added, removed, and modified [`RowSet`](/core/javadoc/io/deephaven/engine/rowset/RowSet.html)s instead of a [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html).
 
-```groovy ticking-table order=null reset
-import io.deephaven.engine.table.TableUpdate
+Add the listener with the two-argument [`addUpdateListener`](/core/javadoc/io/deephaven/engine/table/Table.html#addUpdateListener(io.deephaven.engine.table.ShiftObliviousListener,boolean)) overload and set `replayInitialImage` to `true`. If the table is not empty, `addUpdateListener` immediately calls the listener's [`onUpdate`](/core/javadoc/io/deephaven/engine/table/ShiftObliviousListener.html#onUpdate(io.deephaven.engine.rowset.RowSet,io.deephaven.engine.rowset.RowSet,io.deephaven.engine.rowset.RowSet)) method with the existing rows as added rows.
+
+The following example creates a time table:
+
+```groovy ticking-table order=null test-set=replay reset
+source = timeTable("PT0.3S").update("X = i")
+```
+
+After a few seconds, run the following code to register two listeners with the table. Only the one added with `replayInitialImage` set to `true` receives the rows the table already holds when it is registered.
+
+```groovy ticking-table order=null test-set=replay reset
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListenerAdapter
 
-source = timeTable("PT0.3s").update("X = i")
-
-listener = new ShiftObliviousInstrumentedListenerAdapter("LISTENER", source, false) {
-
+noReplayListener = new ShiftObliviousInstrumentedListenerAdapter("No replay listener", source, false) {
     @Override
     void onUpdate(RowSet added, RowSet removed, RowSet modified) {
-        println "FUNCTION LISTENER for even values: update={added=${added}, removed=${removed}, modified=${modified}}"
+        println "NO REPLAY LISTENER: added=${added}, removed=${removed}, modified=${modified}"
     }
 }
 
-//Wait a few seconds, and then run the next two code blocks independently
+replayListener = new ShiftObliviousInstrumentedListenerAdapter("Replay listener", source, false) {
+    @Override
+    void onUpdate(RowSet added, RowSet removed, RowSet modified) {
+        println "REPLAY LISTENER: added=${added}, removed=${removed}, modified=${modified}"
+    }
+}
 
-// Set replayInitialImage=false to begin receiving updates on the cycle that the listener is added
-source.addUpdateListener(listener, false)
-source.removeUpdateListener(listener)
+// Set replayInitialImage=false to receive only changes made after the listener is added
+source.addUpdateListener(noReplayListener, false)
 
 // Set replayInitialImage=true to replay data that existed in the table before the listener was added
-source.addUpdateListener(listener, true)
+source.addUpdateListener(replayListener, true)
 ```
 
-![`handle_replay` receives all the data the table started with, while `handle_no_replay` only receives the updates after it was registered](../assets/how-to/listener-replay.gif)
+![The listener added with `replayInitialImage=true` receives the rows the table already held, while the other listener only receives the updates after it was registered](../assets/how-to/listener-replay.gif)
+
+When you no longer need the listeners, remove them:
+
+```groovy order=null test-set=replay reset
+source.removeUpdateListener(noReplayListener)
+source.removeUpdateListener(replayListener)
+```
 
 ## Dependent tables
 
-Listeners can use data from tables other than the one they are listening to if the additional tables are configured as dependencies. When one or more tables are listed as a dependency to a listener, the query engine will wait to call the listener until all dependent tables have been processed. When a table is not listed as a dependency, it may be in an inconsistent state when accessed.
+A listener can read tables other than the one it listens to. Register those tables as dependencies of the listener, and the query engine waits to call the listener until it has processed all of them. A table that isn't a dependency may be in an inconsistent state when the listener reads it.
 
-> [!WARNING]
-> Don't do table operations inside the listener. While performing operations on the dependent tables in the listener is safe, it is not recommended because reading or operating on the result tables of those operations may not be safe. It is best to perform the operations on the dependent tables beforehand and then add the result tables as dependencies to the listener so that they can be safely read in it.
+For example, `sourceA` and `sourceB` tick at the same time but share no key column, so instead of joining them, a listener on `sourceA` reads `sourceB` directly. Without a dependency, that listener might run before the engine finishes processing `sourceB`.
 
-For example, consider two tables, `sourceA` and `sourceB`, that tick simultaneously but cannot be joined. When listening to `sourceA`, it is not guaranteed that `sourceB` will have its updates processed in full before the listener receives the update from `sourceA`. To guarantee that all data is processed before the listener triggers, `sourceB` must be registered as a dependency for the listener.
+How you register a dependency depends on the listener class:
+
+- For a [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html), pass the tables in its `dependencies` constructor argument, as described in [Listen to multiple ticking tables](#listen-to-multiple-ticking-tables).
+- For an [`InstrumentedTableUpdateListenerAdapter`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html), override its [`canExecute`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#canExecute(long)) method so it also waits for each dependency. A dependency's [`satisfied`](/core/javadoc/io/deephaven/engine/updategraph/NotificationQueue.Dependency.html#satisfied(long)) method returns `true` once it has finished processing the current update cycle.
+
+The following example makes `sourceB` a dependency of a listener on `sourceA`, then reads `sourceB` directly in [`onUpdate`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onUpdate(io.deephaven.engine.table.TableUpdate)).
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
-import io.deephaven.engine.table.impl.BaseTable.ListenerImpl
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 
 def letters = ["A", "B", "C", "D"]
 def rng = new Random()
@@ -439,29 +359,40 @@ randomLetter = { ->
     return letters[rng.nextInt(4)]
 }
 
-sourceA = timeTable("PT2s").updateView("X = ii")
-sourceB = timeTable("PT5s")
+sourceA = timeTable("PT2S").updateView("X = ii")
+sourceB = timeTable("PT2S")
     .update("Letter = randomLetter()", "Y = randomDouble(0, 10)")
     .dropColumns("Timestamp")
     .lastBy("Letter")
 
 
-listener = new ListenerImpl("listener", sourceA, sourceB) {
+listener = new InstrumentedTableUpdateListenerAdapter("listener", sourceA, false) {
+
+    @Override
+    boolean canExecute(long step) {
+        // Wait until sourceB has finished processing the current update cycle
+        return super.canExecute(step) && sourceB.satisfied(step)
+    }
 
     @Override
     void onUpdate(TableUpdate upstream) {
-        added = upstream.added()
-        println "From Source A: ${added}"
-        dependentData = getDependent().select("Y")
-        iterator = dependentData.columnIterator("Y")
-        sourceBdata = ""
+        def x = sourceA.getColumnSource("X", long.class)
+        upstream.added().forAllRowKeys { long rowKey ->
+            println "From Source A: ${x.getLong(rowKey)}"
+        }
 
-        while (iterator.hasNext()) {
-            sourceBdata = sourceBdata + iterator.next() + ", "
+        def iterator = sourceB.columnIterator("Y")
+        def sourceBdata = ""
+
+        try {
+            while (iterator.hasNext()) {
+                sourceBdata = sourceBdata + iterator.next() + ", "
+            }
+        } finally {
+            iterator.close()
         }
 
         println "From Source B: ${sourceBdata}"
-
     }
 }
 
@@ -470,45 +401,155 @@ sourceA.addUpdateListener(listener)
 
 ![Log readout from the listener](../assets/how-to/listener-dependency.gif)
 
-## Example
+> [!WARNING]
+> Don't create derived tables inside the listener. A table you derive inside [`onUpdate`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#onUpdate(io.deephaven.engine.table.TableUpdate)) is not one the listener waits on, so reading it may return inconsistent data. Derive tables before you add the listener, and include each derived table in the [`canExecute`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html#canExecute(long)) check, as the example above does for `sourceB`.
 
-Table listeners are often used to trigger actions based on table updates. For example, a listener could notify Slack or send an email when data meets some criteria. The following example prints values that meet certain criteria. In a real-world use case, rather than print an outlier value, a notification could be sent to relevant parties via email, Slack, Discord, or other service.
+## Update graph locks and thread safety
+
+When code running outside the Deephaven console creates a ticking table and adds a listener, the table may update between the moment you create it and the moment you register the listener. If this happens, the listener misses those updates.
+
+The [Update Graph](../conceptual/table-update-model.md) coordinates all table updates in Deephaven. By holding a lock while creating the table _and_ adding the listener, you ensure no updates occur in between.
+
+Deephaven provides two types of locks:
+
+- **Shared lock** ([`sharedLock`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock())): Pauses table updates while your code runs. Use this for table operations like creating tables and adding listeners.
+- **Exclusive lock** ([`exclusiveLock`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#exclusiveLock())): Blocks all Update Graph activity. Use this only for advanced cases, such as waiting for specific update conditions.
+
+![Diagram showing how locks prevent missed updates](../assets/how-to/update-graph-lock.png)
+
+> [!NOTE]
+> Code you run in the Deephaven console already runs under the Update Graph's exclusive lock, so no updates can slip between the lines of a single console execution. Updates can still happen between separate executions. This section applies to code running on other threads, such as timer callbacks or background workers.
+
+> [!NOTE]
+> Background threads don't have an execution context by default. Table operations like [`timeTable`](../reference/table-operations/create/timeTable.md) require a valid context. Capture the context before dispatching, then reopen it on the background thread. See [Execution context](../conceptual/execution-context.md) for details.
+
+**Separate locks (race condition):**
+
+The following examples run on a background thread that [`Thread.start`](https://docs.groovy-lang.org/latest/html/groovy-jdk/java/lang/Thread.html#start(java.lang.Thread,%20groovy.lang.Closure)) creates. Assigning `t` and `listener` without `def` stores them in the script's variables, so they stay reachable after the thread ends.
+
+If you lock each operation separately, a race window exists between them:
+
+```groovy ticking-table order=null reset
+import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
+import io.deephaven.util.SafeCloseable
+
+// Capture the execution context before starting the thread
+ctx = ExecutionContext.getContext()
+
+Thread.start {
+    try (SafeCloseable ignored = ctx.open()) {
+        // First lock: create the table
+        ctx.getUpdateGraph().sharedLock().doLocked(() -> {
+            t = timeTable("PT1S").update("X = i")
+        })
+        // RACE WINDOW: the table can update here, before the listener is added
+        ctx.getUpdateGraph().sharedLock().doLocked(() -> {
+            listener = new InstrumentedTableUpdateListenerAdapter("listener", t, false) {
+                @Override
+                void onUpdate(TableUpdate upstream) { println "update=${upstream}" }
+            }
+            t.addUpdateListener(listener)
+        })
+    }
+}
+```
+
+**Single lock (safe):**
+
+Wrap both operations in a single lock to eliminate the race:
+
+```groovy ticking-table order=null reset
+import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
+import io.deephaven.util.SafeCloseable
+
+// Capture the execution context before starting the thread
+ctx = ExecutionContext.getContext()
+
+Thread.start {
+    try (SafeCloseable ignored = ctx.open()) {
+        // One lock: create the table and add the listener together
+        ctx.getUpdateGraph().sharedLock().doLocked(() -> {
+            t = timeTable("PT1S").update("X = i")
+            listener = new InstrumentedTableUpdateListenerAdapter("listener", t, false) {
+                @Override
+                void onUpdate(TableUpdate upstream) { println "update=${upstream}" }
+            }
+            t.addUpdateListener(listener)
+        })
+    }
+}
+```
+
+> [!NOTE]
+> Keep locks brief. Tables cannot update while a lock is held, so long-held locks can delay data.
+
+For more details on locks and thread safety, see [Synchronization and locking](../conceptual/query-engine/engine-locking.md).
+
+## Reduce data volumes
+
+Tables often tick at high frequencies and with large quantities of incoming data. Listen only to the data an operation needs. [Filters](./use-filters.md) and [reduced tick frequencies](./performance/reduce-update-frequency.md) cut both the amount of data a listener receives and how often it arrives.
+
+The following example filters a table and reduces its tick frequency before listening to it.
 
 ```groovy ticking-table order=null reset
 import io.deephaven.engine.table.TableUpdate
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
 
-source  = timeTableBuilder()
-    .period("PT0.33S")
-    .blinkTable(true)
-    .build()
-    .update("X = randomDouble(0,10)")
-    .dropColumns("Timestamp")
+source = timeTable("PT0.5S").update("X = i").tail(5)
+// Rename Timestamp so it doesn't clash with source's Timestamp column in the snapshot
+trigger = timeTable("PT2S").renameColumns("DateTime = Timestamp")
+result = source.where("X % 2 = 0").snapshotWhen(trigger)
 
-listener = new InstrumentedTableUpdateListenerAdapter("listener", source, false) {
+h1 = new InstrumentedTableUpdateListenerAdapter(result, false) {
+    @Override
+    public void onUpdate(TableUpdate upstream) {
+        println "LISTENER for even values: update=${upstream}"
+    }
+}
 
+result.addUpdateListener(h1)
+```
+
+![`h1` receives filtered and downsampled updates](../assets/how-to/listener-downsampled.gif)
+
+## Example: send and cancel orders
+
+This example follows the order scenario from the start of this page. `orders` holds the five most recent orders, so each new order pushes the oldest one out. The listener reads the added rows to send new orders and the removed rows to cancel old ones. In a real application, it would call a broker's API instead of printing.
+
+```groovy ticking-table order=null reset
+import io.deephaven.engine.table.TableUpdate
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter
+
+orders = timeTable("PT1S").update("OrderId = ii").tail(5)
+
+listener = new InstrumentedTableUpdateListenerAdapter("listener", orders, false) {
     @Override
     void onUpdate(TableUpdate upstream) {
-        added = upstream.added()
+        def orderId = orders.getColumnSource("OrderId", long.class)
 
-        if (added == null) {
-            return
+        upstream.added().forAllRowKeys { long rowKey ->
+            println "Send order ${orderId.getLong(rowKey)} to the broker"
         }
-        if (added.any{element -> element > 9}) {
-            println "value over 9 detected!"
+        // Removed rows have pre-shift keys, so read their previous values
+        upstream.removed().forAllRowKeys { long rowKey ->
+            println "Cancel order ${orderId.getPrevLong(rowKey)} with the broker"
         }
     }
 }
 
-source.addUpdateListener(listener)
+orders.addUpdateListener(listener)
 ```
 
-![Log readout from the listener](../assets/how-to/listener-over9.gif)
+![`orders` ticks while the listener prints a send line for each new order and a cancel line for each order that leaves the table](../assets/how-to/listener-orders.gif)
 
 ## Related documentation
 
 - [`timeTable`](../reference/table-operations/create/timeTable.md)
 - [`TableUpdate`](/core/javadoc/io/deephaven/engine/table/TableUpdate.html)
-- [Table](/core/javadoc/io/deephaven/engine/table/Table.html)
+- [`Table`](/core/javadoc/io/deephaven/engine/table/Table.html)
+- [`InstrumentedTableUpdateListenerAdapter`](/core/javadoc/io/deephaven/engine/table/impl/InstrumentedTableUpdateListenerAdapter.html)
+- [`MergedListener`](/core/javadoc/io/deephaven/engine/table/impl/MergedListener.html)
 - [Synchronization and locking](../conceptual/query-engine/engine-locking.md)
 - [`UpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html)
