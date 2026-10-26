@@ -12,12 +12,15 @@ import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 /**
@@ -111,9 +114,46 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
         return getResultRegion().getColumnLocation();
     }
 
+    // The pushdown entry points forward so that ColumnRegion's defaults test action eligibility against the result
+    // region rather than this deferred region.
+
+    @Override
+    public void estimatePushdownFilterCost(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final JobScheduler jobScheduler,
+            final LongConsumer onComplete,
+            final Consumer<Exception> onError) {
+        getResultRegion().estimatePushdownFilterCost(filter, selection, usePrev, context, jobScheduler, onComplete,
+                onError);
+    }
+
+    @Override
+    public void pushdownFilter(
+            final WhereFilter filter,
+            final RowSet selection,
+            final boolean usePrev,
+            final PushdownFilterContext context,
+            final long costCeiling,
+            final JobScheduler jobScheduler,
+            final Consumer<PushdownResult> onComplete,
+            final Consumer<Exception> onError) {
+        getResultRegion().pushdownFilter(filter, selection, usePrev, context, costCeiling, jobScheduler, onComplete,
+                onError);
+    }
+
     @Override
     public List<RegionedPushdownAction> supportedActions() {
         return getResultRegion().supportedActions();
+    }
+
+    @Override
+    public RegionedPushdownAction.EstimateContext makeEstimateContext(
+            final WhereFilter filter,
+            final PushdownFilterContext context) {
+        return getResultRegion().makeEstimateContext(filter, context);
     }
 
     @Override
@@ -126,6 +166,13 @@ public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE ext
             final RegionedPushdownAction.EstimateContext estimateContext) {
         return getResultRegion().estimatePushdownAction(action, filter, selection, usePrev, filterContext,
                 estimateContext);
+    }
+
+    @Override
+    public RegionedPushdownAction.ActionContext makeActionContext(
+            final WhereFilter filter,
+            final PushdownFilterContext context) {
+        return getResultRegion().makeActionContext(filter, context);
     }
 
     @Override

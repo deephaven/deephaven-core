@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.locations.InvalidatedRegionException;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
@@ -29,10 +30,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
@@ -164,5 +168,48 @@ public class TestDeferredColumnRegion {
         region.invalidate();
 
         assertThrows(InvalidatedRegionException.class, () -> region.getInt(7));
+    }
+
+    /**
+     * A pushdown on the first access must be evaluated against the materialized constant region, so that the constant
+     * region's action is eligible.
+     */
+    @Test
+    public void testConstantPushdownOnFirstAccess() {
+        checkSingleValuePushdownOnFirstAccess(new ColumnRegionInt.Constant<>(REGION_MASK, 5), true);
+    }
+
+    /**
+     * A pushdown on the first access must be evaluated against the materialized null region, so that the null region's
+     * action is eligible.
+     */
+    @Test
+    public void testNullPushdownOnFirstAccess() {
+        checkSingleValuePushdownOnFirstAccess(ColumnRegionInt.createNull(REGION_MASK), false);
+    }
+
+    private static void checkSingleValuePushdownOnFirstAccess(
+            final ColumnRegionInt<Values> resultRegion,
+            final boolean expectMatch) {
+        final WhereFilter filter = initializedFilter("A == 5");
+        final ImmediateJobScheduler jobScheduler = new ImmediateJobScheduler();
+        try (final RegionedPushdownFilterContextImpl context = makeFilterContext(filter);
+                final RowSet selection = RowSetFactory.flat(10)) {
+            // Each pushdown goes through a new deferred region, so that each is the first access.
+            final AtomicLong cost = new AtomicLong(-1);
+            new DeferredColumnRegionInt<>(REGION_MASK, () -> resultRegion).estimatePushdownFilterCost(
+                    filter, selection, false, context, jobScheduler, cost::set,
+                    e -> fail("unexpected failure " + e));
+            assertEquals(PushdownResult.REGION_SINGLE_VALUE_COST, cost.get());
+
+            final AtomicReference<PushdownResult> result = new AtomicReference<>();
+            new DeferredColumnRegionInt<>(REGION_MASK, () -> resultRegion).pushdownFilter(
+                    filter, selection, false, context, Long.MAX_VALUE, jobScheduler, result::set,
+                    e -> fail("unexpected failure " + e));
+            try (final PushdownResult pushdownResult = result.get()) {
+                assertEquals(expectMatch ? selection.size() : 0, pushdownResult.match().size());
+                assertTrue(pushdownResult.maybeMatch().isEmpty());
+            }
+        }
     }
 }
