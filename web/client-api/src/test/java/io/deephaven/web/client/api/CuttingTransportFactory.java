@@ -85,6 +85,24 @@ public class CuttingTransportFactory implements GrpcTransportFactory {
         return delegate.getSupportsClientStreaming();
     }
 
+    /**
+     * Ends every open stream whose URL contains {@code urlPart} as if the server had closed it with the given gRPC
+     * status. Use a code that is not a transport error, so the client treats it as a failure of that stream alone.
+     */
+    public void failStreams(String urlPart, int grpcStatus, String message) {
+        for (Open stream : new ArrayList<>(open)) {
+            if (!stream.options.url.href.contains(urlPart)) {
+                continue;
+            }
+            JsPropertyMap<HeaderValueUnion> trailers = JsPropertyMap.of();
+            trailers.set("grpc-status", HeaderValueUnion.of(String.valueOf(grpcStatus)));
+            trailers.set("grpc-message", HeaderValueUnion.of(message));
+            stream.options.onHeaders.onHeaders(trailers, 200);
+            stream.end(null);
+            stream.transport.cancel();
+        }
+    }
+
     /** Drops every stream that is open right now, as a lost connection would. */
     public void cutAll() {
         cuts++;

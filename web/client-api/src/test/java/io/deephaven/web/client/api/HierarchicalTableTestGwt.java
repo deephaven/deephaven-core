@@ -328,6 +328,47 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    /**
+     * When the server ends the viewport stream with an error, the tree table reports requestfailed and a new viewport
+     * works afterwards.
+     */
+    public void testTreeReportsViewportStreamFailure() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_043);
+                    return Promise.resolve(session);
+                })
+                .then(treeTable("ticking_tree_updates"))
+                .then(treeTable -> {
+                    List<String> failures = new ArrayList<>();
+                    treeTable.addEventListener(JsTreeTable.EVENT_REQUEST_FAILED,
+                            e -> failures.add(String.valueOf(e.getDetail())));
+                    treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                    return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
+                            (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 1, 5044)
+                            .then(t -> {
+                                // The server closes the viewport stream with a failure that is not a transport error
+                                transport.failStreams("DoExchange", 9, "viewport stream failed by test");
+                                return waitFor(() -> !failures.isEmpty(), 100, 5045, treeTable);
+                            })
+                            .then(t -> {
+                                assertEquals(Arrays.asList("viewport stream failed by test"), failures);
+                                // The tree is still usable: a new viewport subscribes afresh
+                                treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                                return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
+                                        (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 1, 5046);
+                            })
+                            .then(t -> {
+                                treeTable.close();
+                                return Promise.resolve(treeTable);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testTreeCustomColumnException() {
         connect(tables)
                 .then(treeTable("static_tree"))
