@@ -266,4 +266,13 @@ public class TestContainerEdgeCases {
         });
         assertEquals(List.of(0x7FFE, 0x8001), ranges);
     }
+
+    @Test
+    public void testSearchOverAnEmptyWindow() {
+        final short[] array = {5, 10};
+        // Everything in the array is below the target, so only the window keeps position 0 out of the answer.
+        final ContainerUtil.TargetComparator below20 = value -> Integer.compare(20, value);
+        assertEquals(-1, ContainerUtil.search(array, 1, 1, below20));
+        assertEquals(1, ContainerUtil.search(array, 1, 2, below20));
+    }
 }

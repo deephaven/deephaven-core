@@ -156,7 +156,7 @@ public final class ContainerUtil {
      *         comp.directionFrom(array[pos]) == 0, return any of them.
      */
     public static int search(final short[] array, final int begin, final int end, final TargetComparator comp) {
-        if (end < 1) {
+        if (end <= begin) {
             return -1;
         }
         int high = end - 1;
