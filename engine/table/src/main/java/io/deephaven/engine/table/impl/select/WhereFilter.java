@@ -17,7 +17,6 @@ import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
@@ -52,6 +51,9 @@ public interface WhereFilter extends Filter {
     /**
      * {@link #beginOperation(Table) Begin} the operation for each of {@code filters}, in order. If any filter throws,
      * the operations already begun are closed before the exception propagates.
+     * <p>
+     * Closing, whether on that failure or through the result, attempts every operation even when an earlier one throws,
+     * because an operation may hold a lock that must be released.
      *
      * @param sourceTable The {@link Table} that will be filtered with {@code filters}
      * @param filters The filters whose operations to begin
@@ -67,7 +69,29 @@ public interface WhereFilter extends Filter {
             SafeCloseable.closeAllDuringFailure(failure, operations);
             throw failure;
         }
-        return new SafeCloseableArray<>(operations);
+        return () -> {
+            Throwable closeFailure = null;
+            for (final SafeCloseable operation : operations) {
+                if (operation == null) {
+                    continue;
+                }
+                try {
+                    operation.close();
+                } catch (final RuntimeException | Error failure) {
+                    if (closeFailure == null) {
+                        closeFailure = failure;
+                    } else {
+                        closeFailure.addSuppressed(failure);
+                    }
+                }
+            }
+            if (closeFailure instanceof Error) {
+                throw (Error) closeFailure;
+            }
+            if (closeFailure != null) {
+                throw (RuntimeException) closeFailure;
+            }
+        };
     }
 
     /**

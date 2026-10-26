@@ -602,7 +602,8 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
 
     /**
      * A filter that fails to begin its operation after a time series filter has done so leaves the calling thread
-     * holding no lock, whether the filters are applied directly, composed, or by wouldMatch.
+     * holding no lock, whether the filters are applied directly, composed, or by wouldMatch, and even when another
+     * operation fails to close.
      */
     @Test
     public void testBeginOperationFailureWithoutLock() {
@@ -619,6 +620,10 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         checkBeginOperationFailureWithoutLock(() -> source.wouldMatch(
                 new WouldMatchPair("InWindow", timeSeriesFilter.get()),
                 new WouldMatchPair("Failing", failingBeginOperationFilter())));
+        // the operation begun before the time series filter's fails to close, which must not keep the lock held
+        checkBeginOperationFailureWithoutLock(() -> source.where(Filter.and(
+                DisjunctiveFilter.of(failingCloseFilter(), timeSeriesFilter.get()),
+                failingBeginOperationFilter())));
     }
 
     private static final String BEGIN_OPERATION_FAILURE = "beginOperation failure";
@@ -628,6 +633,17 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
             @Override
             public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
                 throw new IllegalStateException(BEGIN_OPERATION_FAILURE);
+            }
+        };
+    }
+
+    private static WhereFilter failingCloseFilter() {
+        return new RowSetCapturingFilter() {
+            @Override
+            public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+                return () -> {
+                    throw new AssertionError("close failure");
+                };
             }
         };
     }
