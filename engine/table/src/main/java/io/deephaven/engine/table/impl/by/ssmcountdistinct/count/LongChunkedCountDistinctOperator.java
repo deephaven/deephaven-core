@@ -7,7 +7,9 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.count;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -347,6 +349,27 @@ public class LongChunkedCountDistinctOperator implements IterativeChunkedAggrega
         return new SsmDistinctContext(ChunkType.Long, size);
     }
     // endregion
+
+    @Override
+    public boolean canReclaimStates() {
+        return true;
+    }
+
+    @Override
+    public void shift(RowSetShiftData shiftData) {
+        // the states whose deltas are cleared at the end of the cycle move with the shift; only a refreshing
+        // aggregation shifts, and it tracks them from startTrackingPrevValues
+        Assert.neqNull(touchedStates, "touchedStates");
+        shiftData.apply(touchedStates);
+        ssms.shift(shiftData);
+        resultColumn.shift(shiftData);
+    }
+
+    @Override
+    public void releaseBlocks(long firstOutputPosition, long lastOutputPosition) {
+        ssms.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        resultColumn.releaseBlocks(firstOutputPosition, lastOutputPosition);
+    }
 
     /**
      * Sorts {@code valueChunk}, compacts each run of equal values to one value, and sets each value's count in

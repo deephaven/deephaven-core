@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.StateReclamation;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
@@ -116,7 +117,17 @@ public abstract class MemoizedOperationKey {
             boolean preserveEmpty,
             Table initialGroups,
             Collection<? extends ColumnName> groupByColumns) {
-        return new AggBy(new ArrayList<>(aggregations), preserveEmpty, initialGroups, new ArrayList<>(groupByColumns));
+        return aggBy(aggregations, preserveEmpty, initialGroups, groupByColumns, StateReclamation.configured());
+    }
+
+    public static MemoizedOperationKey aggBy(
+            Collection<? extends Aggregation> aggregations,
+            boolean preserveEmpty,
+            Table initialGroups,
+            Collection<? extends ColumnName> groupByColumns,
+            StateReclamation stateReclamation) {
+        return new AggBy(new ArrayList<>(aggregations), preserveEmpty, initialGroups, new ArrayList<>(groupByColumns),
+                stateReclamation);
     }
 
     public static MemoizedOperationKey partitionBy(boolean dropKeys, Collection<? extends ColumnName> groupByColumns) {
@@ -125,7 +136,8 @@ public abstract class MemoizedOperationKey {
 
     public static MemoizedOperationKey rollup(Collection<? extends Aggregation> aggregations,
             Collection<? extends ColumnName> groupByColumns, boolean includeConstituents) {
-        return new Rollup(new AggBy(new ArrayList<>(aggregations), false, null, new ArrayList<>(groupByColumns)),
+        return new Rollup(new AggBy(new ArrayList<>(aggregations), false, null, new ArrayList<>(groupByColumns),
+                StateReclamation.configured()),
                 includeConstituents);
     }
 
@@ -377,6 +389,7 @@ public abstract class MemoizedOperationKey {
         private final boolean preserveEmpty;
         private final WeakReference<Table> initialGroups;
         private final List<? extends ColumnName> groupByColumns;
+        private final StateReclamation stateReclamation;
 
         private final int cachedHashCode;
 
@@ -384,16 +397,19 @@ public abstract class MemoizedOperationKey {
                 List<? extends Aggregation> aggregations,
                 boolean preserveEmpty,
                 Table initialGroups,
-                List<? extends ColumnName> groupByColumns) {
+                List<? extends ColumnName> groupByColumns,
+                StateReclamation stateReclamation) {
             this.aggregations = aggregations;
             this.preserveEmpty = preserveEmpty;
             this.initialGroups = initialGroups == null ? null : new WeakReference<>(initialGroups);
             this.groupByColumns = groupByColumns;
+            this.stateReclamation = stateReclamation;
 
             int hash = aggregations.hashCode();
             hash = 31 * hash + Boolean.hashCode(preserveEmpty);
             hash = 31 * hash + System.identityHashCode(initialGroups);
             hash = 31 * hash + groupByColumns.hashCode();
+            hash = 31 * hash + stateReclamation.hashCode();
             this.cachedHashCode = hash;
         }
 
@@ -409,7 +425,8 @@ public abstract class MemoizedOperationKey {
             return aggregations.equals(aggBy.aggregations)
                     && preserveEmpty == aggBy.preserveEmpty
                     && equalWeakRefsByReferentIdentity(initialGroups, aggBy.initialGroups)
-                    && groupByColumns.equals(aggBy.groupByColumns);
+                    && groupByColumns.equals(aggBy.groupByColumns)
+                    && stateReclamation.equals(aggBy.stateReclamation);
         }
 
         @Override

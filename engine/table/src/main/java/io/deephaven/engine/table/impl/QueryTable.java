@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptions;
 import io.deephaven.api.agg.AggregationOptimizer;
 import io.deephaven.api.agg.AggregationOutputs;
 import io.deephaven.api.agg.Partition;
@@ -957,9 +958,10 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public Table aggBy(
             final Collection<? extends Aggregation> aggregations,
-            final boolean preserveEmpty,
-            final Table initialGroups,
-            final Collection<? extends ColumnName> groupByColumns) {
+            final Collection<? extends ColumnName> groupByColumns,
+            final AggregationOptions<Table> options) {
+        final boolean preserveEmpty = options.preserveEmpty();
+        final Table initialGroups = options.initialGroups().orElse(null);
         final UpdateGraph updateGraph = getUpdateGraph(initialGroups);
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             if (aggregations.isEmpty()) {
@@ -968,10 +970,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 + toString(groupByColumns));
             }
             final List<? extends Aggregation> optimized = AggregationOptimizer.of(aggregations);
-            final MemoizedOperationKey aggKey =
-                    MemoizedOperationKey.aggBy(optimized, preserveEmpty, initialGroups, groupByColumns);
+            final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(optimized, preserveEmpty, initialGroups,
+                    groupByColumns, options.stateReclamation());
             final Table aggregationTable = memoizeResult(aggKey, () -> aggNoMemo(
-                    AggregationProcessor.forAggregation(optimized), preserveEmpty, initialGroups, groupByColumns));
+                    AggregationProcessor.forAggregation(optimized), preserveEmpty, initialGroups, groupByColumns,
+                    StateReclaimMode.of(options.stateReclamation())));
 
             final List<ColumnName> optimizedOrder = AggregationOutputs.of(optimized).collect(Collectors.toList());
             final List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
@@ -991,6 +994,27 @@ public class QueryTable extends BaseTable<QueryTable> {
             final boolean preserveEmpty,
             @Nullable final Table initialGroups,
             @NotNull final Collection<? extends ColumnName> groupByColumns) {
+        return aggNoMemo(aggregationContextFactory, preserveEmpty, initialGroups, groupByColumns,
+                StateReclaimMode.configured());
+    }
+
+    /**
+     * Aggregate this table, without memoizing the result, choosing how the states of groups whose rows have all been
+     * removed are reclaimed.
+     *
+     * @param aggregationContextFactory the factory for the aggregation's operators
+     * @param preserveEmpty whether groups with no rows remain in the result
+     * @param initialGroups a table whose groups are in the result from the start, or {@code null}
+     * @param groupByColumns the columns to group by
+     * @param reclaimMode how removed groups' states are reclaimed
+     * @return the aggregation
+     */
+    public QueryTable aggNoMemo(
+            @NotNull final AggregationContextFactory aggregationContextFactory,
+            final boolean preserveEmpty,
+            @Nullable final Table initialGroups,
+            @NotNull final Collection<? extends ColumnName> groupByColumns,
+            @NotNull final StateReclaimMode reclaimMode) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             final String description = "aggregation(" + aggregationContextFactory + ", " + groupByColumns + ")";
@@ -998,7 +1022,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                     USE_DATA_INDEX_FOR_AGGREGATION ? AggregationControl.DEFAULT : AggregationControl.IGNORE_INDEXING;
             return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(),
                     () -> ChunkedOperatorAggregationHelper.aggregation(aggregationControl,
-                            aggregationContextFactory, this, preserveEmpty, initialGroups, groupByColumns));
+                            aggregationContextFactory, this, preserveEmpty, initialGroups, reclaimMode,
+                            groupByColumns));
         }
     }
 

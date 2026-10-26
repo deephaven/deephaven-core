@@ -5,6 +5,7 @@ package io.deephaven.qst.table;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptions;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -185,14 +186,15 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public TableSpec aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
-            TableSpec initialGroups, Collection<? extends ColumnName> groupByColumns) {
+    public TableSpec aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends ColumnName> groupByColumns, AggregationOptions<TableSpec> options) {
         return AggregateTable.builder()
                 .parent(this)
                 .addAllGroupByColumns(groupByColumns)
                 .addAllAggregations(aggregations)
-                .preserveEmpty(preserveEmpty)
-                .initialGroups(Optional.ofNullable(initialGroups))
+                .preserveEmpty(options.preserveEmpty())
+                .initialGroups(options.initialGroups())
+                .stateReclamation(options.stateReclamation())
                 .build();
     }
 

@@ -13,6 +13,7 @@ import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptions;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -363,9 +364,9 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     @Override
     @ConcurrentMethod
-    public Table aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, Table initialGroups,
-            Collection<? extends ColumnName> groupByColumns) {
-        return coalesce().aggBy(aggregations, preserveEmpty, initialGroups, groupByColumns);
+    public Table aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns,
+            AggregationOptions<Table> options) {
+        return coalesce().aggBy(aggregations, groupByColumns, options);
     }
 
     @Override

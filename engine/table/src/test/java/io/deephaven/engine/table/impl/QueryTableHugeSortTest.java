@@ -31,6 +31,30 @@ public class QueryTableHugeSortTest {
     public final EngineCleanup rule = new EngineCleanup();
 
     @Test
+    public void testMegaMergeMovesWholeBlocks() {
+        // With these sizes the merge moves runs of whole blocks within its destination and then writes into the
+        // positions it moved them from.
+        final int megaSortSize = SortHelpers.megaSortSize;
+        final int sortChunkSize = SortHelpers.sortChunkSize;
+        try {
+            SortHelpers.megaSortSize = 4096;
+            SortHelpers.sortChunkSize = 2048;
+            final int size = 6144;
+            final Table descending = TableTools.emptyTable(size).updateView("SortCol=(long)(6144 - ii)",
+                    "StringCol=String.format(`%05d`, 6144 - ii)", "Sentinel=ii");
+            assertTableEquals(TableTools.emptyTable(size).updateView("SortCol=(long)(ii + 1)",
+                    "StringCol=String.format(`%05d`, ii + 1)", "Sentinel=(long)(6143 - ii)"),
+                    descending.sort("SortCol"));
+            assertTableEquals(TableTools.emptyTable(size).updateView("SortCol=(long)(ii + 1)",
+                    "StringCol=String.format(`%05d`, ii + 1)", "Sentinel=(long)(6143 - ii)"),
+                    descending.sort("StringCol"));
+        } finally {
+            SortHelpers.megaSortSize = megaSortSize;
+            SortHelpers.sortChunkSize = sortChunkSize;
+        }
+    }
+
+    @Test
     public void testHugeSort() {
         final int megaSortSize = SortHelpers.megaSortSize;
         final int sortChunkSize = SortHelpers.sortChunkSize;

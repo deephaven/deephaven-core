@@ -169,4 +169,10 @@ public abstract class BaseBlinkFirstOrLastChunkedOperator
             long destination) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public boolean canReclaimStates() {
+        // only used for blink input, whose removals do not remove rows from states, so no state becomes empty
+        return false;
+    }
 }

@@ -54,8 +54,12 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
+            int firstDeletedLocation = -1;
             MAIN_SEARCH: while (true) {
                 int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
+                if (firstDeletedLocation < 0 && isStateDeleted(outputPosition)) {
+                    firstDeletedLocation = tableLocation;
+                }
                 if (isStateEmpty(outputPosition)) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
@@ -64,6 +68,9 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
                         if (isStateEmpty(outputPosition)) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                            if (isStateDeleted(outputPosition)) {
+                                break;
+                            }
                             outputPositions.set(chunkPosition, outputPosition);
                             break MAIN_SEARCH;
                         } else {
@@ -73,7 +80,12 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
                             }
                         }
                     }
-                    numEntries++;
+                    if (firstDeletedLocation >= 0) {
+                        tableLocation = firstDeletedLocation;
+                    } else {
+                        numEntries++;
+                    }
+                    liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     outputPosition = ChunkedOperatorAggregationHelper.allocateOutputPosition(nextOutputPosition);
                     outputPositions.set(chunkPosition, outputPosition);
@@ -81,6 +93,16 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
                     outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    if (isStateDeleted(outputPosition)) {
+                        tableLocation = firstDeletedLocation;
+                        liveEntries++;
+                        mainKeySource0.set(tableLocation, k0);
+                        outputPosition = ChunkedOperatorAggregationHelper.allocateOutputPosition(nextOutputPosition);
+                        outputPositions.set(chunkPosition, outputPosition);
+                        mainOutputPosition.set(tableLocation, outputPosition);
+                        outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);
+                        break;
+                    }
                     outputPositions.set(chunkPosition, outputPosition);
                     break;
                 } else {
@@ -102,10 +124,15 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             boolean found = false;
+            boolean searchAlternate = true;
             int tableLocation = firstTableLocation;
             int outputPosition;
             while (!isStateEmpty(outputPosition = mainOutputPosition.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    if (isStateDeleted(outputPosition)) {
+                        searchAlternate = false;
+                        break;
+                    }
                     outputPositions.set(chunkPosition, outputPosition);
                     found = true;
                     break;
@@ -116,24 +143,31 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
                 }
             }
             if (!found) {
-                final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
-                boolean alternateFound = false;
-                if (firstAlternateTableLocation < rehashPointer) {
-                    int alternateTableLocation = firstAlternateTableLocation;
-                    while (!isStateEmpty(outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation))) {
-                        if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            outputPositions.set(chunkPosition, outputPosition);
-                            alternateFound = true;
-                            break;
-                        }
-                        alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                        if (alternateTableLocation == firstAlternateTableLocation) {
-                            throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                if (!searchAlternate) {
+                    outputPositions.set(chunkPosition, UNKNOWN_ROW);
+                } else {
+                    final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
+                    boolean alternateFound = false;
+                    if (firstAlternateTableLocation < rehashPointer) {
+                        int alternateTableLocation = firstAlternateTableLocation;
+                        while (!isStateEmpty(outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation))) {
+                            if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                                if (isStateDeleted(outputPosition)) {
+                                    break;
+                                }
+                                outputPositions.set(chunkPosition, outputPosition);
+                                alternateFound = true;
+                                break;
+                            }
+                            alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
-                }
-                if (!alternateFound) {
-                    outputPositions.set(chunkPosition, UNKNOWN_ROW);
+                    if (!alternateFound) {
+                        outputPositions.set(chunkPosition, UNKNOWN_ROW);
+                    }
                 }
             }
         }
@@ -147,10 +181,15 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             boolean found = false;
+            boolean searchAlternate = true;
             int tableLocation = firstTableLocation;
             int outputPosition;
             while (!isStateEmpty(outputPosition = mainOutputPosition.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    if (isStateDeleted(outputPosition)) {
+                        searchAlternate = false;
+                        break;
+                    }
                     outputPositions.set(chunkPosition, outputPosition);
                     found = true;
                     break;
@@ -161,24 +200,31 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
                 }
             }
             if (!found) {
-                final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
-                boolean alternateFound = false;
-                if (firstAlternateTableLocation < rehashPointer) {
-                    int alternateTableLocation = firstAlternateTableLocation;
-                    while (!isStateEmpty(outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation))) {
-                        if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            outputPositions.set(chunkPosition, outputPosition);
-                            alternateFound = true;
-                            break;
-                        }
-                        alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                        if (alternateTableLocation == firstAlternateTableLocation) {
-                            throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                if (!searchAlternate) {
+                    throw new IllegalStateException("Missing value in probe");
+                } else {
+                    final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
+                    boolean alternateFound = false;
+                    if (firstAlternateTableLocation < rehashPointer) {
+                        int alternateTableLocation = firstAlternateTableLocation;
+                        while (!isStateEmpty(outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation))) {
+                            if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                                if (isStateDeleted(outputPosition)) {
+                                    break;
+                                }
+                                outputPositions.set(chunkPosition, outputPosition);
+                                alternateFound = true;
+                                break;
+                            }
+                            alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
+                            if (alternateTableLocation == firstAlternateTableLocation) {
+                                throw Assert.statementNeverExecuted("alternateTableLocation wraps around to firstAlternateTableLocation");
+                            }
                         }
                     }
-                }
-                if (!alternateFound) {
-                    throw new IllegalStateException("Missing value in probe");
+                    if (!alternateFound) {
+                        throw new IllegalStateException("Missing value in probe");
+                    }
                 }
             }
         }
@@ -193,15 +239,25 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
         return state == EMPTY_OUTPUT_POSITION;
     }
 
-    private boolean migrateOneLocation(int locationToMigrate) {
+    private static boolean isStateDeleted(int state) {
+        return state == TOMBSTONE_STATE;
+    }
+
+    private boolean migrateOneLocation(int locationToMigrate, boolean trueOnDeletedEntry) {
         final int currentStateValue = alternateOutputPosition.getUnsafe(locationToMigrate);
         if (isStateEmpty(currentStateValue)) {
             return false;
         }
+        if (isStateDeleted(currentStateValue)) {
+            alternateEntries--;
+            alternateOutputPosition.set(locationToMigrate, EMPTY_OUTPUT_POSITION);
+            return trueOnDeletedEntry;
+        }
         final Object k0 = alternateKeySource0.getUnsafe(locationToMigrate);
         final int hash = hash(k0);
         int destinationTableLocation = hashToTableLocation(hash);
-        while (!isStateEmpty(mainOutputPosition.getUnsafe(destinationTableLocation))) {
+        int candidateState;
+        while (!isStateEmpty(candidateState = mainOutputPosition.getUnsafe(destinationTableLocation)) && !isStateDeleted(candidateState)) {
             destinationTableLocation = nextTableLocation(destinationTableLocation);
         }
         mainKeySource0.set(destinationTableLocation, k0);
@@ -209,18 +265,25 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
         mainOutputPosition.set(destinationTableLocation, currentStateValue);
         outputPositionToHashSlot.set(currentStateValue, mainInsertMask | destinationTableLocation);
         alternateOutputPosition.set(locationToMigrate, EMPTY_OUTPUT_POSITION);
+        if (!isStateDeleted(candidateState)) {
+            numEntries++;
+        }
+        alternateEntries--;
         return true;
     }
 
     @Override
     protected int rehashInternalPartial(int entriesToRehash) {
-        int rehashedEntries = 0;
-        while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
-            if (migrateOneLocation(--rehashPointer)) {
-                rehashedEntries++;
-            }
+        final long slotsToExamine = (long) entriesToRehash * IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.REHASH_SLOTS_PER_ENTRY;
+        long examinedSlots = 0;
+        while (rehashPointer > 0 && examinedSlots < slotsToExamine) {
+            migrateOneLocation(--rehashPointer, false);
+            ++examinedSlots;
         }
-        return rehashedEntries;
+        if (rehashPointer == 0) {
+            return entriesToRehash;
+        }
+        return (int) (examinedSlots / IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.REHASH_SLOTS_PER_ENTRY);
     }
 
     @Override
@@ -238,7 +301,7 @@ final class IncrementalAggOpenHasherObject extends IncrementalChunkedOperatorAgg
     @Override
     protected void migrateFront() {
         int location = 0;
-        while (migrateOneLocation(location++) && location < alternateTableSize);
+        while (migrateOneLocation(location++, true) && location < alternateTableSize);
     }
 
     @Override
