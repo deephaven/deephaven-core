@@ -481,6 +481,9 @@ public final class SingletonContainer extends ImmutableContainer {
 
     @Override
     public Container select(final int startRank, final int endRank) {
+        if (endRank <= startRank) {
+            return Container.empty();
+        }
         if (startRank != 0 || endRank != 1) {
             throw new IllegalStateException("startRank=" + startRank + ", endRank=" + endRank);
         }

@@ -1718,7 +1718,10 @@ public final class BitmapContainer extends Container implements Cloneable {
 
     @Override
     public Container select(final int startRank, final int endRank) {
-        if (endRank <= startRank || endRank > cardinality) {
+        if (endRank <= startRank) {
+            return Container.empty();
+        }
+        if (endRank > cardinality) {
             throw new IllegalArgumentException(
                     "startRank=" + startRank + ", endRank=" + endRank + ", cardinality=" + cardinality);
         }

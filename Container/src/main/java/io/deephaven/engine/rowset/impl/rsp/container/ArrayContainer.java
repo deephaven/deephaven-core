@@ -1546,6 +1546,9 @@ public class ArrayContainer extends Container {
 
     @Override
     public Container select(final int startRank, final int endRank) {
+        if (endRank <= startRank) {
+            return Container.empty();
+        }
         return new ArrayContainer(this, startRank, endRank);
     }
 

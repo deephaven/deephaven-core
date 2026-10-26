@@ -1172,7 +1172,8 @@ public abstract class Container {
      *
      * @param startRank rank for the start of the range
      * @param endRank rank for the end of the range, exclusive
-     * @return a new Container with all the values between ranks [startPos, endPos)
+     * @return a new Container with all the values between ranks [startPos, endPos); empty when
+     *         {@code endRank <= startRank}
      */
     public abstract Container select(int startRank, int endRank);
 

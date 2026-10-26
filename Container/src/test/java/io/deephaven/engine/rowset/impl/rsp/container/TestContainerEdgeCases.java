@@ -61,6 +61,29 @@ public class TestContainerEdgeCases {
         return c.getClass().getSimpleName();
     }
 
+    @Test
+    public void testEmptyRankRangeSelectsNothing() {
+        for (final Supplier<Container> fixture : fixtures()) {
+            final Container c = fixture.get();
+            final int card = c.getCardinality();
+            for (final int r : new int[] {0, card / 2, card}) {
+                final Container selected = c.select(r, r);
+                selected.validate();
+                assertTrue(name(c) + " select(" + r + ", " + r + ")", selected.isEmpty());
+                if (r > 0) {
+                    final Container reversed = c.select(r, r - 1);
+                    reversed.validate();
+                    assertTrue(name(c) + " select(" + r + ", " + (r - 1) + ")", reversed.isEmpty());
+                }
+            }
+        }
+        final RunContainer run = new RunContainer(10, 20);
+        for (final int r : new int[] {0, 5, 10}) {
+            assertTrue("static select(" + r + ", " + r + ")", RunContainer.select(run, r, r).isEmpty());
+        }
+        assertTrue("static select(5, 4)", RunContainer.select(run, 5, 4).isEmpty());
+    }
+
     /** A {@code false} from advance leaves the iterator exhausted, whatever it had returned before. */
     @Test
     public void testReverseAdvanceFailureExhausts() {

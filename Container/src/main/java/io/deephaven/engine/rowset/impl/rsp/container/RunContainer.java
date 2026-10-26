@@ -187,7 +187,10 @@ public final class RunContainer extends Container {
         cardinality = d1 + d2;
     }
 
-    public static RunContainer select(final RunContainer src, final int startRank, final int endRank) {
+    public static Container select(final RunContainer src, final int startRank, final int endRank) {
+        if (endRank <= startRank) {
+            return Container.empty();
+        }
         final RunContainer ans = new RunContainer(src.valueslength.length);
         int k = 0;
         int kStart = toIntUnsigned(src.getValue(0));
@@ -2401,7 +2404,7 @@ public final class RunContainer extends Container {
     }
 
     @Override
-    public RunContainer select(final int startRank, final int endRank) {
+    public Container select(final int startRank, final int endRank) {
         return select(this, startRank, endRank);
     }
 
