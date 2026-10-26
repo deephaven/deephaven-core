@@ -620,9 +620,14 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         checkBeginOperationFailureWithoutLock(() -> source.wouldMatch(
                 new WouldMatchPair("InWindow", timeSeriesFilter.get()),
                 new WouldMatchPair("Failing", failingBeginOperationFilter())));
-        // the operation begun before the time series filter's fails to close, which must not keep the lock held
+        // the operations begun before the time series filter's fail to close, which must not keep the lock held
         checkBeginOperationFailureWithoutLock(() -> source.where(Filter.and(
-                DisjunctiveFilter.of(failingCloseFilter(), timeSeriesFilter.get()),
+                DisjunctiveFilter.of(failingCloseFilter(new AssertionError("close failure")), timeSeriesFilter.get()),
+                failingBeginOperationFilter())));
+        final AssertionError sharedCloseFailure = new AssertionError("shared close failure");
+        checkBeginOperationFailureWithoutLock(() -> source.where(Filter.and(
+                DisjunctiveFilter.of(failingCloseFilter(sharedCloseFailure), failingCloseFilter(sharedCloseFailure),
+                        timeSeriesFilter.get()),
                 failingBeginOperationFilter())));
     }
 
@@ -637,12 +642,12 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         };
     }
 
-    private static WhereFilter failingCloseFilter() {
+    private static WhereFilter failingCloseFilter(final Error closeFailure) {
         return new RowSetCapturingFilter() {
             @Override
             public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
                 return () -> {
-                    throw new AssertionError("close failure");
+                    throw closeFailure;
                 };
             }
         };

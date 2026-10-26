@@ -80,7 +80,7 @@ public interface WhereFilter extends Filter {
                 } catch (final RuntimeException | Error failure) {
                     if (closeFailure == null) {
                         closeFailure = failure;
-                    } else {
+                    } else if (closeFailure != failure) {
                         closeFailure.addSuppressed(failure);
                     }
                 }
