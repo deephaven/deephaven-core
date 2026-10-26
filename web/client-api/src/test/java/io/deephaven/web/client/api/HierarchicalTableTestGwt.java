@@ -369,6 +369,41 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    /**
+     * A tree table cannot be re-fetched into a new session; asked to, it reports reconnectfailed rather than reconnect.
+     */
+    public void testTreeRefetchReportsReconnectFailed() {
+        connect(tables)
+                .then(session -> {
+                    delayTestFinish(20_057);
+                    return Promise.resolve(session);
+                })
+                .then(treeTable("ticking_tree_updates"))
+                .then(treeTable -> {
+                    List<String> lifecycle = new ArrayList<>();
+                    treeTable.addEventListener(JsTreeTable.EVENT_RECONNECT, e -> lifecycle.add("reconnect"));
+                    treeTable.addEventListener(JsTreeTable.EVENT_RECONNECTFAILED,
+                            e -> lifecycle.add("reconnectfailed"));
+                    treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                    return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
+                            (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 1, 5058)
+                            .then(t -> {
+                                // What the connection asks of every object once a new session exists
+                                treeTable.refetch().then(ok -> null, err -> null);
+                                return Promise.race(
+                                        waitFor(() -> !lifecycle.isEmpty(), 100, 5059, treeTable),
+                                        delay(5000).then(late -> Promise.reject(
+                                                "tree reported nothing on refetch")));
+                            })
+                            .then(t -> {
+                                assertEquals(Arrays.asList("reconnectfailed"), lifecycle);
+                                treeTable.close();
+                                return Promise.resolve(treeTable);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testTreeCustomColumnException() {
         connect(tables)
                 .then(treeTable("static_tree"))
