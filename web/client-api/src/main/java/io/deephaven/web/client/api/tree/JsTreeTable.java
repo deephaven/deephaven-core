@@ -744,6 +744,10 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         @Override
         protected void onStreamEnd(io.grpc.Status status) {
             super.onStreamEnd(status);
+            if (WorkerConnection.isTransportError(status)) {
+                // The subscription is back in STARTING; reconnect() re-sends it once the connection is back
+                return;
+            }
             JsTreeTable.this.stream = null;
             if (!status.isOk()) {
                 failureHandled(status.getDescription());
@@ -766,6 +770,24 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             detail.setOffset(this.serverViewport.getFirstRow());
             fireEvent(EVENT_UPDATED, detail);
         }
+    }
+
+    @Override
+    public void reconnect() {
+        if (stream == null) {
+            super.reconnect();
+            return;
+        }
+        // The view state is not in the connection's cache, so the reviver never reaches this subscription; re-send
+        // it here before announcing the reconnect. A stream that survived is left alone by revive().
+        stream.then(subscription -> {
+            subscription.revive(subscription.state());
+            JsTreeTable.super.reconnect();
+            return null;
+        }, failure -> {
+            JsTreeTable.super.reconnect();
+            return null;
+        });
     }
 
     private void replaceSubscription(RebuildStep step) {
