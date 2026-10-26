@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Random;
+import java.util.TreeSet;
 import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
 
@@ -217,6 +219,39 @@ public class TestContainerEdgeCases {
         checkSelfOperand("iand", Container::iand, true);
         checkSelfOperand("iandNot", Container::iandNot, false);
         checkSelfOperand("ixor", Container::ixor, false);
+    }
+
+    /** OR into an array container with room to spare, so the merge happens in its own array. */
+    @Test
+    public void testArrayIorInPlace() {
+        final Random random = new Random(0);
+        for (int iter = 0; iter < 2000; ++iter) {
+            final TreeSet<Integer> expected = new TreeSet<>();
+            final int n1 = random.nextInt(200);
+            final ArrayContainer target = new ArrayContainer(1000);
+            // A narrow value range, so the two sides share values often.
+            for (int ii = 0; ii < n1; ++ii) {
+                final int v = random.nextInt(400);
+                if (expected.add(v)) {
+                    target.iset((short) v);
+                }
+            }
+            final int n2 = 3 + random.nextInt(200);
+            final TreeSet<Integer> otherValues = new TreeSet<>();
+            while (otherValues.size() < n2) {
+                otherValues.add(random.nextInt(400));
+            }
+            final short[] other = new short[n2];
+            int pos = 0;
+            for (final int v : otherValues) {
+                other[pos++] = (short) v;
+            }
+            expected.addAll(otherValues);
+            final Container result = target.ior(ArrayContainer.makeByCopying(other, 0, n2));
+            result.validate();
+            assertEquals("iter " + iter, new ArrayList<>(expected), valuesOf(result));
+            assertEquals("iter " + iter + " cardinality", expected.size(), result.getCardinality());
+        }
     }
 
     /** Galloping must be chosen by how many values each side holds, not by how much room its array has. */

@@ -964,8 +964,8 @@ public class ArrayContainer extends Container {
     }
 
     /**
-     * The capacity, in shorts, to allocate when {@link #iappend(int, int) iappend}, {@link #iadd(int, int) iadd} or
-     * {@link #inot(int, int) inot} has to grow the backing array in place.
+     * The capacity, in shorts, to allocate when {@link #iappend(int, int) iappend}, {@link #iadd(int, int) iadd},
+     * {@link #inot(int, int) inot} or {@link #ior(ArrayContainer) ior} has to grow the backing array in place.
      *
      * <p>
      * Enough to hold {@code newCardinality}, but also geometric in the current capacity, so that a container filled by
@@ -1092,17 +1092,39 @@ public class ArrayContainer extends Container {
             return bc;
         }
         if (sumOfCardinalities >= capacity()) {
-            int newCapacity = calculateCapacity(sumOfCardinalities);
-            final ArrayContainer ans = new ArrayContainer(newCapacity);
+            final ArrayContainer ans = new ArrayContainer(growthCapacity(sumOfCardinalities));
             ans.cardinality =
                     ContainerUtil.unsignedUnion2by2(content, 0, cardinality, value2.content, 0, value2.cardinality,
                             ans.content);
             return ans;
         }
-        System.arraycopy(content, 0, content, value2.cardinality, cardinality);
-        cardinality =
-                ContainerUtil.unsignedUnion2by2(content, value2.cardinality, cardinality, value2.content, 0,
-                        value2.cardinality, content);
+        // Merge from the back into [w, sumOfCardinalities): the write position never falls below a value of ours not
+        // yet read, so no copy is needed to make room first.
+        final short[] other = value2.content;
+        int i1 = cardinality - 1;
+        int i2 = value2.cardinality - 1;
+        int w = sumOfCardinalities;
+        while (i1 >= 0 && i2 >= 0) {
+            final int v1 = ContainerUtil.toIntUnsigned(content[i1]);
+            final int v2 = ContainerUtil.toIntUnsigned(other[i2]);
+            if (v1 > v2) {
+                content[--w] = content[i1--];
+            } else if (v2 > v1) {
+                content[--w] = other[i2--];
+            } else {
+                content[--w] = content[i1--];
+                --i2;
+            }
+        }
+        while (i2 >= 0) {
+            content[--w] = other[i2--];
+        }
+        // Our values below every value of value2 are still in place at [0, kept); duplicates leave a gap after them.
+        final int kept = i1 + 1;
+        if (w > kept) {
+            System.arraycopy(content, w, content, kept, sumOfCardinalities - w);
+        }
+        cardinality = kept + sumOfCardinalities - w;
         return this;
     }
 
