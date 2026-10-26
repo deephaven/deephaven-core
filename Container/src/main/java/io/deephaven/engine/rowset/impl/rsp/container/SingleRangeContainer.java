@@ -158,7 +158,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
 
     @Override
     public boolean contains(int rangeStart, int rangeEnd) {
-        return begin() <= rangeStart && rangeEnd <= end();
+        return rangeEnd <= rangeStart || (begin() <= rangeStart && rangeEnd <= end());
     }
 
     private boolean containsImpl(final Container c) {
@@ -665,6 +665,9 @@ public final class SingleRangeContainer extends ImmutableContainer {
 
     @Override
     public Container select(final int startRank, final int endRank) {
+        if (endRank <= startRank) {
+            return Container.empty();
+        }
         if (startRank == 0 && endRank >= getCardinality()) {
             return this;
         }
@@ -693,6 +696,9 @@ public final class SingleRangeContainer extends ImmutableContainer {
             inPositions.next();
             final int pBegin = inPositions.start();
             final int pEnd = inPositions.end();
+            if (pEnd <= pBegin) {
+                continue;
+            }
             outValues.accept(begin + pBegin, begin + pEnd);
         }
     }
@@ -704,10 +710,13 @@ public final class SingleRangeContainer extends ImmutableContainer {
         while (inValues.hasNext()) {
             inValues.next();
             final int vBegin = inValues.start();
+            final int vEnd = inValues.end();
+            if (vEnd <= vBegin) {
+                continue;
+            }
             if (vBegin < begin) {
                 throw new IllegalArgumentException("findRanges for invalid key=" + vBegin);
             }
-            final int vEnd = inValues.end();
             if (vEnd > end) {
                 throw new IllegalArgumentException("findRanges for invalid key=" + (vEnd - 1));
             }
@@ -813,7 +822,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
 
     @Override
     public boolean overlapsRange(final int rangeStart, final int rangeEnd) {
-        return !(end() <= rangeStart || rangeEnd <= begin());
+        return rangeStart < rangeEnd && !(end() <= rangeStart || rangeEnd <= begin());
     }
 
     @Override
