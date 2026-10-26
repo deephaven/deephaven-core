@@ -119,17 +119,16 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
 
             // TODO(deephaven-core#3604) in case of a new session, we should do a full refetch
             baseTable.addEventListener(JsTable.EVENT_DISCONNECT, event -> fireEvent(EVENT_DISCONNECT));
+            // The key subscription retains the base table's state and is revived with it, so nothing is re-requested
+            // here; a second subscription would announce every known key again
             baseTable.addEventListener(JsTable.EVENT_RECONNECT, event -> {
-                subscribeToBaseTable().then(ignore -> {
-                    unsuppressEvents();
-                    fireEvent(EVENT_RECONNECT);
-                    return null;
-                }, failure -> {
-                    unsuppressEvents();
-                    fireEvent(EVENT_RECONNECTFAILED, failure);
-                    suppressEvents();
-                    return null;
-                });
+                unsuppressEvents();
+                fireEvent(EVENT_RECONNECT);
+            });
+            baseTable.addEventListener(JsTable.EVENT_RECONNECTFAILED, event -> {
+                unsuppressEvents();
+                fireEvent(EVENT_RECONNECTFAILED, event.getDetail());
+                suppressEvents();
             });
             return subscribeToBaseTable();
         });
@@ -160,8 +159,9 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         added.indexIterator().forEachRemaining((long index) -> {
             // extract the key to use
             JsArray<Object> key = eventData.getColumns().map((c, p1) -> eventData.getData(index, c));
-            knownKeys.add(key.asList());
-            fireEvent(EVENT_KEYADDED, key);
+            if (knownKeys.add(key.asList())) {
+                fireEvent(EVENT_KEYADDED, key);
+            }
         });
     }
 
