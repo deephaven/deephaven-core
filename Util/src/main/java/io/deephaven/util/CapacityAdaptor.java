@@ -9,6 +9,15 @@ package io.deephaven.util;
  * the difference. The pool holds whatever lock it needs: this class is not thread-safe.
  *
  * <p>
+ * Terms: the <em>pool</em> is the bin of reusable <em>items</em> that this adaptor sizes, and its <em>capacity</em> is
+ * the most items it may hold at once. A <em>client</em> of the pool <em>borrows</em> an item and may later
+ * <em>return</em> it. A borrow from an empty pool is a <em>miss</em>: the client constructs an item instead. A return
+ * to a full pool is <em>turned away</em>: the pool discards the item instead. A <em>burst</em> is a run of borrows
+ * whose items are returned together. A <em>window</em> is a span of traffic, delimited by the pool's owner, over which
+ * one shrink decision is judged, and the <em>shrink fraction</em>, from 0 to 1, is the share of the items a window
+ * never needed, the fewest the pool held at any moment in it, that the capacity gives up when the window ends.
+ *
+ * <p>
  * The capacity adapts between the capacity the adaptor was created with and a maximum.
  *
  * <p>
