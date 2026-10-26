@@ -14,8 +14,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+import static io.deephaven.parquet.compress.CompressorAdapter.readNBytes;
 
 /**
  * A forward-only sparse read of one data page, opened by {@link ColumnPageReader#openSparse}: each read resumes at
@@ -27,6 +30,9 @@ public final class SparsePageCursor {
 
     private byte[] pageBytes = EMPTY;
     private byte[] levelBytes = EMPTY;
+    /** A view of {@link #pageBytes} holding the current page, or {@code null} if none. */
+    @Nullable
+    private ByteBuffer pageBuffer;
 
     private PageMaterializerFactory factory;
     private ValuesReader valuesReader;
@@ -38,13 +44,13 @@ public final class SparsePageCursor {
     /** Rows left in the current definition level run. */
     private int runRemaining;
     private boolean runIsNull;
-    private long nextRow;
+    private int nextRow;
     private int pageRowCount;
 
     /**
      * @return The page-relative row that the next read starts from; requested rows must not precede it
      */
-    public long nextRow() {
+    public int nextRow() {
         return nextRow;
     }
 
@@ -95,18 +101,27 @@ public final class SparsePageCursor {
         valuesReader = null;
         keyReader = null;
         dlDecoder = null;
+        pageBuffer = null;
     }
 
     /**
-     * @return A little-endian buffer of {@code size} bytes for the decompressed page, valid until the cursor opens
-     *         another page
+     * Read {@code size} bytes of decompressed page from {@code in} into the cursor's page buffer.
      */
-    ByteBuffer pageBuffer(final int size) {
+    void initPageBuffer(@NotNull final InputStream in, final int size) throws IOException {
         if (pageBytes.length < size) {
             // Rounded up, as page sizes vary.
             pageBytes = new byte[MathUtil.roundUpArraySize(size)];
         }
-        return ByteBuffer.wrap(pageBytes, 0, size).order(ByteOrder.LITTLE_ENDIAN);
+        readNBytes(in, pageBytes, 0, size);
+        pageBuffer = ByteBuffer.wrap(pageBytes, 0, size).order(ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * @return A little-endian buffer of the page read by {@link #initPageBuffer}, valid until the cursor opens another
+     *         page
+     */
+    ByteBuffer pageBuffer() {
+        return Require.neqNull(pageBuffer, "pageBuffer");
     }
 
     /**
@@ -159,16 +174,17 @@ public final class SparsePageCursor {
             Require.geq(first, "first", nextRow, "nextRow");
             Require.geq(last, "last", first, "first");
             Require.lt(last, "last", pageRowCount, "pageRowCount");
-            skip(dataReader, first - nextRow);
-            outPos = fill(materializer, outPos, (int) (last - first + 1));
+            // Both within the page, so they fit in an int.
+            skip(dataReader, (int) first - nextRow);
+            outPos = fill(materializer, outPos, (int) last - (int) first + 1);
         }
         return materializer.data();
     }
 
-    private void skip(final ValuesReader dataReader, long rows) throws IOException {
+    private void skip(final ValuesReader dataReader, int rows) throws IOException {
         if (dlDecoder == null) {
             if (rows > 0) {
-                dataReader.skip(Math.toIntExact(rows));
+                dataReader.skip(rows);
                 nextRow += rows;
             }
             return;
@@ -190,7 +206,7 @@ public final class SparsePageCursor {
             nextRow += rows;
             return outPos + rows;
         }
-        long remaining = rows;
+        int remaining = rows;
         while (remaining > 0) {
             final int count = nextRun(remaining);
             if (runIsNull) {
@@ -208,14 +224,14 @@ public final class SparsePageCursor {
      * Consume up to {@code rows} rows of the current definition level run, reading the next run as needed, and advance
      * {@link #nextRow}.
      */
-    private int nextRun(final long rows) throws IOException {
+    private int nextRun(final int rows) throws IOException {
         while (runRemaining == 0) {
             // noinspection DataFlowIssue
             dlDecoder.readNextRange();
             runRemaining = dlDecoder.currentRangeCount();
             runIsNull = dlDecoder.currentValue() == 0;
         }
-        final int count = (int) Math.min(rows, runRemaining);
+        final int count = Math.min(rows, runRemaining);
         runRemaining -= count;
         nextRow += count;
         return count;

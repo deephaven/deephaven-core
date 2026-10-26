@@ -14,26 +14,17 @@ import org.jetbrains.annotations.NotNull;
  */
 interface RunCopyKernel {
     static RunCopyKernel makeRunCopyKernel(@NotNull final ChunkType chunkType) {
-        switch (chunkType) {
-            case Char:
-                return CharRunCopyKernel.INSTANCE;
-            case Byte:
-                return ByteRunCopyKernel.INSTANCE;
-            case Short:
-                return ShortRunCopyKernel.INSTANCE;
-            case Int:
-                return IntRunCopyKernel.INSTANCE;
-            case Long:
-                return LongRunCopyKernel.INSTANCE;
-            case Float:
-                return FloatRunCopyKernel.INSTANCE;
-            case Double:
-                return DoubleRunCopyKernel.INSTANCE;
-            case Object:
-                return ObjectRunCopyKernel.INSTANCE;
-            default:
-                throw new IllegalArgumentException("Unsupported chunk type: " + chunkType);
-        }
+        return switch (chunkType) {
+            case Char -> CharRunCopyKernel.INSTANCE;
+            case Byte -> ByteRunCopyKernel.INSTANCE;
+            case Short -> ShortRunCopyKernel.INSTANCE;
+            case Int -> IntRunCopyKernel.INSTANCE;
+            case Long -> LongRunCopyKernel.INSTANCE;
+            case Float -> FloatRunCopyKernel.INSTANCE;
+            case Double -> DoubleRunCopyKernel.INSTANCE;
+            case Object -> ObjectRunCopyKernel.INSTANCE;
+            default -> throw new IllegalArgumentException("Unsupported chunk type: " + chunkType);
+        };
     }
 
     /**

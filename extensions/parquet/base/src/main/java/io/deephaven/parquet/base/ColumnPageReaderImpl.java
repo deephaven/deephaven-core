@@ -176,8 +176,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 case DATA_PAGE: {
                     final DataPageHeader header = pageHeader.getData_page_header();
                     final int uncompressedSize = pageHeader.getUncompressed_page_size();
-                    bytes = cursor.pageBuffer(uncompressedSize);
-                    readNBytes(readV1Unsafe(in, context), bytes.array(), bytes.arrayOffset(), uncompressedSize);
+                    cursor.initPageBuffer(readV1Unsafe(in, context), uncompressedSize);
+                    bytes = cursor.pageBuffer();
                     // No repetition levels precede the definition levels, since the column is not repeated.
                     dlDecoder = getDlDecoderPageV1(bytes);
                     encoding = header.getEncoding();
@@ -191,8 +191,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                             ? new RunLengthBitPackingHybridBufferDecoder(path.getMaxDefinitionLevel(),
                                     cursor.copyLevels(page.definitionLevels))
                             : null;
-                    bytes = cursor.pageBuffer(page.uncompressedSize);
-                    readNBytes(page.decompressedStream, bytes.array(), bytes.arrayOffset(), page.uncompressedSize);
+                    cursor.initPageBuffer(page.decompressedStream, page.uncompressedSize);
+                    bytes = cursor.pageBuffer();
                     encoding = header.getEncoding();
                     valueCount = header.getNum_values();
                     break;

@@ -60,7 +60,7 @@ final class SparsePage<ATTR extends Any> extends PageCache.IntrusivePage<ATTR> {
     /**
      * @return The index of the last checkpoint at or before {@code row}, or {@code -1} if none is
      */
-    int checkpointBefore(final long row) {
+    int checkpointBefore(final int row) {
         int lo = 0;
         int hi = checkpointRows.length;
         while (lo < hi) {
@@ -74,11 +74,11 @@ final class SparsePage<ATTR extends Any> extends PageCache.IntrusivePage<ATTR> {
         return lo - 1;
     }
 
-    long checkpointRow(final int checkpoint) {
+    int checkpointRow(final int checkpoint) {
         return checkpointRows[checkpoint];
     }
 
-    long checkpointPosition(final int checkpoint) {
+    int checkpointPosition(final int checkpoint) {
         return checkpointPositions[checkpoint];
     }
 }

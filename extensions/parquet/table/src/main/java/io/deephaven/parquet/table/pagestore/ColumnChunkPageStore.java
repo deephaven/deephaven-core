@@ -311,7 +311,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     /**
      * @return The number of rows in page {@code pageNum}
      */
-    abstract long pageRowCount(int pageNum);
+    abstract int pageRowCount(int pageNum);
 
     /**
      * @return Page {@code pageNum} if it is cached, touching it, else {@code null}
@@ -479,30 +479,28 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 final RowSet.RangeIterator destinationRanges = destinationPositions.rangeIterator();
                 final RunBatch runs = new RunBatch()) {
             runs.begin(runCopyKernel, source, destination);
-            long sourcePos = 0;
-            long sourceEnd = -1;
-            long destinationPos = 0;
-            long destinationEnd = -1;
-            while (true) {
+            // Positions in an array and a chunk, so they fit in an int.
+            int sourcePos = 0;
+            int sourceEnd = -1;
+            int destinationPos = 0;
+            int destinationEnd = -1;
+            while (sourcePos <= sourceEnd || sourceRanges.hasNext()) {
                 if (sourcePos > sourceEnd) {
-                    if (!sourceRanges.hasNext()) {
-                        runs.finish();
-                        return;
-                    }
                     sourceRanges.next();
-                    sourcePos = sourceRanges.currentRangeStart();
-                    sourceEnd = sourceRanges.currentRangeEnd();
+                    sourcePos = (int) sourceRanges.currentRangeStart();
+                    sourceEnd = (int) sourceRanges.currentRangeEnd();
                 }
                 if (destinationPos > destinationEnd) {
                     destinationRanges.next();
-                    destinationPos = destinationRanges.currentRangeStart();
-                    destinationEnd = destinationRanges.currentRangeEnd();
+                    destinationPos = (int) destinationRanges.currentRangeStart();
+                    destinationEnd = (int) destinationRanges.currentRangeEnd();
                 }
-                final int length = (int) Math.min(sourceEnd - sourcePos, destinationEnd - destinationPos) + 1;
-                runs.add((int) sourcePos, destinationOffset + (int) destinationPos, length);
+                final int length = Math.min(sourceEnd - sourcePos, destinationEnd - destinationPos) + 1;
+                runs.add(sourcePos, destinationOffset + destinationPos, length);
                 sourcePos += length;
                 destinationPos += length;
             }
+            runs.finish();
         }
     }
 
@@ -724,7 +722,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             }
             return false;
         }
-        final long cachedRows = (cached == null ? 0 : cached.rows.size())
+        final int cachedRows = (cached == null ? 0 : cached.rows.intSize())
                 + (onCursorPage ? contextWrapper.pendingSize(this, pageNum) : 0);
         if (cachedRows + decodeCount > maxDensity * pageRowCount(pageNum)) {
             // Enough of the page is wanted to cache it whole.
@@ -777,18 +775,18 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         int missingCount = 0;
         try (final CachedRanges cachedRanges = new CachedRanges(cached)) {
             for (int ii = 0; ii < requestRanges.size(); ii += 2) {
-                long first = requestRanges.get(ii) - pageFirstKey;
-                final long last = requestRanges.get(ii + 1) - pageFirstKey;
+                int first = (int) (requestRanges.get(ii) - pageFirstKey);
+                final int last = (int) (requestRanges.get(ii + 1) - pageFirstKey);
                 while (first <= last) {
                     final boolean found = cachedRanges.seek(first);
-                    final long end;
+                    final int end;
                     if (found && cachedRanges.start <= first) {
                         end = Math.min(last, cachedRanges.end);
                     } else {
                         end = found ? Math.min(last, cachedRanges.start - 1) : last;
                         missingRanges.add(first);
                         missingRanges.add(end);
-                        missingCount += (int) (end - first + 1);
+                        missingCount += end - first + 1;
                     }
                     first = end + 1;
                 }
@@ -823,19 +821,19 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         decodedRuns.begin(runCopyKernel, decoded, destination);
         try (final CachedRanges cachedRanges = new CachedRanges(cached)) {
             for (int ii = 0; ii < requestRanges.size(); ii += 2) {
-                long first = requestRanges.get(ii) - pageFirstKey;
-                final long last = requestRanges.get(ii + 1) - pageFirstKey;
+                int first = (int) (requestRanges.get(ii) - pageFirstKey);
+                final int last = (int) (requestRanges.get(ii + 1) - pageFirstKey);
                 while (first <= last) {
                     final boolean found = cachedRanges.seek(first);
-                    final long end;
+                    final int end;
                     if (found && cachedRanges.start <= first) {
                         end = Math.min(last, cachedRanges.end);
-                        final int length = (int) (end - first + 1);
-                        cachedRuns.add((int) cachedRanges.positionOf(first), destinationPos, length);
+                        final int length = end - first + 1;
+                        cachedRuns.add(cachedRanges.positionOf(first), destinationPos, length);
                         destinationPos += length;
                     } else {
                         end = found ? Math.min(last, cachedRanges.start - 1) : last;
-                        final int length = (int) (end - first + 1);
+                        final int length = end - first + 1;
                         // decoded holds every requested row that cached lacks
                         decodedRuns.add(decodedPos, destinationPos, length);
                         decodedPos += length;
@@ -920,10 +918,10 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         private final SparsePage<?> page;
         private final RowSet.RangeIterator ranges;
         /** The current range, or {@code -1} before the first seek. */
-        private long start = -1;
-        private long end = -1;
+        private int start = -1;
+        private int end = -1;
         /** The position of {@link #start} in the page's rows. */
-        private long startPosition;
+        private int startPosition;
         private boolean exhausted;
 
         private CachedRanges(@NotNull final SparsePage<?> page) {
@@ -936,7 +934,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
          *
          * @return Whether there is such a range
          */
-        private boolean seek(final long key) {
+        private boolean seek(final int key) {
             if (end >= key) {
                 return true;
             }
@@ -948,13 +946,11 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 // Past the current range: jump, rather than step over up to a checkpoint interval's ranges.
                 // A checkpoint row starts one of the page's ranges, so the advance finds it.
                 Assert.assertion(ranges.advance(page.checkpointRow(checkpoint)), "ranges.advance(checkpointRow)");
-                start = ranges.currentRangeStart();
-                end = ranges.currentRangeEnd();
+                readRange();
                 startPosition = page.checkpointPosition(checkpoint);
             } else if (start < 0) {
                 ranges.next();
-                start = ranges.currentRangeStart();
-                end = ranges.currentRangeEnd();
+                readRange();
                 startPosition = 0;
             }
             while (end < key) {
@@ -964,16 +960,21 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 }
                 startPosition += end - start + 1;
                 ranges.next();
-                start = ranges.currentRangeStart();
-                end = ranges.currentRangeEnd();
+                readRange();
             }
             return true;
+        }
+
+        private void readRange() {
+            // Page-relative, so they fit in an int.
+            start = (int) ranges.currentRangeStart();
+            end = (int) ranges.currentRangeEnd();
         }
 
         /**
          * @param key A row in the current range
          */
-        private long positionOf(final long key) {
+        private int positionOf(final int key) {
             return startPosition + key - start;
         }
 
@@ -1041,7 +1042,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             return sparseCursor;
         }
 
-        long pendingSize(@NotNull final ColumnChunkPageStore<?> store, final int pageNum) {
+        int pendingSize(@NotNull final ColumnChunkPageStore<?> store, final int pageNum) {
             return pendingStore == store && pendingPageNum == pageNum ? pendingCount : 0;
         }
 

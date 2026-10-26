@@ -195,9 +195,9 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
     }
 
     @Override
-    long pageRowCount(final int pageNum) {
+    int pageRowCount(final int pageNum) {
         final long nextFirstRow = pageNum + 1 < numPages ? offsetIndex.getFirstRowIndex(pageNum + 1) : numRows();
-        return nextFirstRow - offsetIndex.getFirstRowIndex(pageNum);
+        return Math.toIntExact(nextFirstRow - offsetIndex.getFirstRowIndex(pageNum));
     }
 
     @Override

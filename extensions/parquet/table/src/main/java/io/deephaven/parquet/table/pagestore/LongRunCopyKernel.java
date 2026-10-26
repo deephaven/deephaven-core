@@ -13,10 +13,8 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import org.jetbrains.annotations.NotNull;
 
-final class LongRunCopyKernel implements RunCopyKernel {
-    static final LongRunCopyKernel INSTANCE = new LongRunCopyKernel();
-
-    private LongRunCopyKernel() {}
+enum LongRunCopyKernel implements RunCopyKernel {
+    INSTANCE;
 
     @Override
     public void copyRuns(

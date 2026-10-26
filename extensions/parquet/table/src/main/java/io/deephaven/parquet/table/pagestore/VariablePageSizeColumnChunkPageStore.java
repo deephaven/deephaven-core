@@ -177,9 +177,9 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
     }
 
     @Override
-    long pageRowCount(final int pageNum) {
+    int pageRowCount(final int pageNum) {
         final long[] localPageRowOffsets = pageRowOffsets;
-        return localPageRowOffsets[pageNum + 1] - localPageRowOffsets[pageNum];
+        return Math.toIntExact(localPageRowOffsets[pageNum + 1] - localPageRowOffsets[pageNum]);
     }
 
     @Override
