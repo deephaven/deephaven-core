@@ -764,10 +764,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 // The subscription is back in STARTING; reconnect() re-sends it once the connection is back
                 return;
             }
+            // Closed or failed; the failure itself was reported through the requestfailed listener
             JsTreeTable.this.stream = null;
-            if (!status.isOk()) {
-                failureHandled(status.getDescription());
-            }
         }
 
         public void setViewport(double firstRow, double lastRow, JsArray<Column> columns, Double updateInterval) {
@@ -892,6 +890,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                                 handleUpdate(nextUpdateColumns, nextSort, nextFilters, detail,
                                         alwaysFireEvent);
                             });
+                    // The subscription is never exposed, so its failures are this tree's failures
+                    subscription.addEventListener(JsTable.EVENT_REQUEST_FAILED,
+                            e -> failureHandled(String.valueOf(e.getDetail())));
                     return Promise.resolve(subscription);
                 });
         stream.catch_(err -> {
