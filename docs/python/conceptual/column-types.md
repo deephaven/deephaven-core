@@ -328,7 +328,7 @@ t14 = empty_table(3).update(
 > [!IMPORTANT]
 > Always pass an explicit time zone when you convert an `Instant` to a zone-aware or local type. The same `Instant` has a different local date and hour in each time zone, and daylight saving time transitions shift local clock times, so an assumed zone gives subtly wrong results.
 
-#### Working with LocalDate and LocalTime
+#### Working with `LocalDate` and `LocalTime`
 
 `LocalDate` and `LocalTime` are useful for date-only or time-only operations:
 
@@ -633,7 +633,7 @@ sorted_time = t28.sort("Timestamp")
 sorted_with_nulls = t28.sort("NullableInt")
 ```
 
-### Choosing the right type
+### Choose the right type
 
 - **Integers**: Use the smallest type that fits your range (`byte` < `short` < `int` < `long`).
 - **Decimals**: Use `double` for most cases, [`BigDecimal`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/math/BigDecimal.html) only when exact precision is required.

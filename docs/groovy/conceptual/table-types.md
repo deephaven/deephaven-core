@@ -166,7 +166,7 @@ A [time table](../how-to-guides/time-table.md) is append-only unless you create 
 Add-only tables are relaxed versions of append-only tables. They have the following key properties:
 
 - Rows can only be added to the table. They may be added at _any position_, as long as each new row gets a new [row key](../reference/community-questions/shifts.md#key-terms).
-- Existing rows cannot be deleted, modified, or shifted to new row keys. Their positions, and so their `i` and `ii` values, can change when new rows are inserted before them.
+- Existing rows cannot be deleted, modified, or shifted to new row keys. Their positions - and consequently, their `i` and `ii` values - can change when new rows are inserted before them.
 - The table's size can grow without bound.
 
 These properties yield the following consequences:
