@@ -1995,6 +1995,10 @@ public final class RunContainer extends Container {
 
     @Override
     public Container ixor(final RunContainer x) {
+        if (x == this) {
+            // The in-place merge below reads x while overwriting this.
+            return Container.empty();
+        }
         if (shared) {
             return xor(x);
         }

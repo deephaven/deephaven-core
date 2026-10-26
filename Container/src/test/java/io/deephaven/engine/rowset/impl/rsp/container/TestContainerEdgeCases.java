@@ -8,6 +8,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
 
 import static io.deephaven.engine.rowset.impl.rsp.container.ContainerTestCommon.valuesOf;
@@ -91,6 +92,31 @@ public class TestContainerEdgeCases {
                 }
             }
         }
+    }
+
+    private static void checkSelfOperand(final String op, final BinaryOperator<Container> f,
+            final boolean keepsValues) {
+        for (final Supplier<Container> fixture : fixtures()) {
+            final Container c = fixture.get();
+            final List<Integer> expected = keepsValues ? valuesOf(c) : List.of();
+            final String m = name(c) + "." + op + "(itself)";
+            final Container result = f.apply(c, c);
+            result.validate();
+            assertEquals(m, expected, valuesOf(result));
+            assertEquals(m + " cardinality", expected.size(), result.getCardinality());
+        }
+    }
+
+    @Test
+    public void testSelfOperand() {
+        checkSelfOperand("or", Container::or, true);
+        checkSelfOperand("and", Container::and, true);
+        checkSelfOperand("andNot", Container::andNot, false);
+        checkSelfOperand("xor", Container::xor, false);
+        checkSelfOperand("ior", Container::ior, true);
+        checkSelfOperand("iand", Container::iand, true);
+        checkSelfOperand("iandNot", Container::iandNot, false);
+        checkSelfOperand("ixor", Container::ixor, false);
     }
 
     /** Galloping must be chosen by how many values each side holds, not by how much room its array has. */
