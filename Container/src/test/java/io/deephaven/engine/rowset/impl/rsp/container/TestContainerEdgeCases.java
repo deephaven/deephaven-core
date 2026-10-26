@@ -8,12 +8,14 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
 
 import static io.deephaven.engine.rowset.impl.rsp.container.ContainerTestCommon.valuesOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -274,5 +276,12 @@ public class TestContainerEdgeCases {
         final ContainerUtil.TargetComparator below20 = value -> Integer.compare(20, value);
         assertEquals(-1, ContainerUtil.search(array, 1, 1, below20));
         assertEquals(1, ContainerUtil.search(array, 1, 2, below20));
+    }
+
+    @Test
+    public void testEmptyContainerFirstAndLast() {
+        final Container empty = Container.empty();
+        assertThrows(NoSuchElementException.class, empty::first);
+        assertThrows(NoSuchElementException.class, empty::last);
     }
 }

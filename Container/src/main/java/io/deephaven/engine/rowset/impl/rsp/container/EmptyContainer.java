@@ -1,5 +1,7 @@
 package io.deephaven.engine.rowset.impl.rsp.container;
 
+import java.util.NoSuchElementException;
+
 public final class EmptyContainer extends ImmutableContainer {
     private EmptyContainer() {}
 
@@ -341,12 +343,12 @@ public final class EmptyContainer extends ImmutableContainer {
 
     @Override
     public int first() {
-        throw new IllegalStateException();
+        throw new NoSuchElementException();
     }
 
     @Override
     public int last() {
-        throw new IllegalStateException();
+        throw new NoSuchElementException();
     }
 
     @Override
