@@ -110,29 +110,41 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
      * @return The published coalesced result
      */
     private Table coalesceAndPublish() {
+        if (!isRefreshing()) {
+            // a static result holds no listeners, so one that is not published needs no cleanup
+            return publish(doCoalesce());
+        }
         final LivenessManager callerManager = LivenessScopeStack.peek();
         final LivenessScope coalesceScope = new LivenessScope();
-        final Table result;
-        try (final SafeCloseable ignored = LivenessScopeStack.open(coalesceScope, false)) {
-            result = doCoalesce();
-        } catch (final RuntimeException | Error failure) {
+        try {
+            final Table result;
+            try (final SafeCloseable ignored = LivenessScopeStack.open(coalesceScope, false)) {
+                result = doCoalesce();
+            }
+            final Table published = publish(result);
+            if (published == result) {
+                coalesceScope.transferTo(callerManager);
+            }
+            return published;
+        } finally {
             coalesceScope.release();
-            throw failure;
         }
-        final Table published;
+    }
+
+    /**
+     * Publish {@code result} unless another coalesce has already published a live result.
+     *
+     * @param result The result of a coalesce
+     * @return The published coalesced result
+     */
+    private Table publish(final Table result) {
         synchronized (publishLock) {
             final Table existing = coalesced;
             if (Liveness.verifyCachedObjectForReuse(existing)) {
-                published = existing;
-            } else {
-                published = coalesced = result;
+                return existing;
             }
+            return coalesced = result;
         }
-        if (published == result) {
-            coalesceScope.transferTo(callerManager);
-        }
-        coalesceScope.release();
-        return published;
     }
 
     @Override

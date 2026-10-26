@@ -12,6 +12,8 @@ import io.deephaven.api.literal.Literal;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.PoisonedUpdateGraph;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.StandaloneLivenessManager;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
@@ -751,6 +753,34 @@ public class TestPartitionAwareSourceTableNoMocks {
         }
         assertSame(exclusiveResult, lockFreeResult);
         return lockFreeResult;
+    }
+
+    /**
+     * A static source table coalesces while a {@link StandaloneLivenessManager} is the current liveness manager.
+     */
+    @Test
+    public void testStaticCoalesceWithStandaloneLivenessManager() {
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                partitionedLocationProvider(128);
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II"),
+                        ColumnDefinition.of("Timestamp", Type.find(Instant.class))),
+                tableLocationProvider.getKey().toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                null);
+        assertFalse(source.isRefreshing());
+        final StandaloneLivenessManager livenessManager = new StandaloneLivenessManager(false);
+        LivenessScopeStack.push(livenessManager);
+        try {
+            final Table coalesced = source.coalesce();
+            assertEquals(4 * 128, coalesced.size());
+            assertSame(coalesced, source.coalesce());
+        } finally {
+            LivenessScopeStack.pop(livenessManager);
+        }
     }
 
     /**
