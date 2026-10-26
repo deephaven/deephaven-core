@@ -72,7 +72,9 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
      * <p>
      * This may be invoked concurrently on more than one thread: a thread that holds the update graph lock, or processes
      * its updates, coalesces on its own rather than wait for a coalesce in progress on another thread. Only the first
-     * result is kept; the liveness referents produced by any other invocation are released.
+     * result is kept. For a refreshing table each invocation runs in its own {@link LivenessScope}, and the caller's
+     * liveness manager manages only the kept result, so every referent that result requires must be reachable from it;
+     * the liveness referents produced by any other invocation are released.
      *
      * @return The coalesced result table, suitable for caching
      */
@@ -122,8 +124,8 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
                 result = doCoalesce();
             }
             final Table published = publish(result);
-            if (published == result) {
-                coalesceScope.transferTo(callerManager);
+            if (published == result && result.isRefreshing()) {
+                callerManager.manage(result);
             }
             return published;
         } finally {

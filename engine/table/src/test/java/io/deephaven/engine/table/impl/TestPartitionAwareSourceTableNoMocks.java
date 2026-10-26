@@ -784,6 +784,31 @@ public class TestPartitionAwareSourceTableNoMocks {
     }
 
     /**
+     * A refreshing deferred table coalesces while a {@link StandaloneLivenessManager} is the current liveness manager.
+     * Its source is already coalesced and its where is memoized, so the coalesce reuses live cached results.
+     */
+    @Test
+    public void testRefreshingCachedCoalesceWithStandaloneLivenessManager() {
+        final Table source = refreshingPartitionedSource(partitionedLocationProvider(128));
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        try {
+            final Table filtered = source.coalesce().where(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
+            final Table deferred = source.where(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
+            assertTrue(deferred instanceof DeferredViewTable);
+            assertTrue(deferred.isRefreshing());
+            final StandaloneLivenessManager livenessManager = new StandaloneLivenessManager(false);
+            LivenessScopeStack.push(livenessManager);
+            try {
+                assertSame(filtered, deferred.coalesce());
+            } finally {
+                LivenessScopeStack.pop(livenessManager);
+            }
+        } finally {
+            QueryTable.setMemoizeResults(oldMemoize);
+        }
+    }
+
+    /**
      * A static source table built without a registered update graph coalesces.
      */
     @Test
