@@ -1829,7 +1829,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                     checkInitiateOperation();
                     final SelectAndViewAnalyzer.Mode mode;
                     if (isRefreshing()) {
-                        if (!isFlat() && ((flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE)
+                        if (!isFlat() && isAppendOnly()) {
+                            // rows of an append-only table never change position, so the result is stored densely
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_POSITIONAL;
+                        } else if (!isFlat() && ((flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE)
                                 || (flavor == Flavor.Select && USE_REDIRECTED_COLUMNS_FOR_SELECT))) {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_REFRESHING;
                         } else {
@@ -1837,7 +1840,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                     } else {
                         if (flavor == Flavor.Update && exceedsMaximumStaticSelectOverhead()) {
-                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_STATIC;
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_POSITIONAL;
                         } else {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_STATIC;
                         }
@@ -1870,7 +1873,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     try (final SafeCloseable ignored1 = liveResultCapture != null ? liveResultCapture::release : null) {
                         try (final RowSet emptyRowSet = RowSetFactory.empty();
                                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
-                                        new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
+                                        new SelectAndViewAnalyzer.UpdateHelper(rowSet, fakeUpdate)) {
 
                             try {
                                 try {
@@ -1899,13 +1902,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                             }
                         }
 
-                        final TrackingRowSet resultRowSet = analyzer.flatResult() && !rowSet.isFlat()
-                                ? analyzerContext.getFlatResultRowSet()
-                                : rowSet;
+                        // a refreshing flat result grows its own row set, as the parent's may not stay contiguous
+                        final TrackingRowSet resultRowSet =
+                                analyzer.flatResult() && (isRefreshing() || !rowSet.isFlat())
+                                        ? analyzerContext.getFlatResultRowSet()
+                                        : rowSet;
                         final Map<String, ColumnSource<?>> newMap = analyzerContext.getPublishedColumnSources();
                         final TableDefinition resultDef = TableDefinition.inferFrom(this, newMap);
                         resultTable = new QueryTable(resultDef, resultRowSet, newMap);
                         if (liveResultCapture != null) {
+                            if (analyzer.flatResult()) {
+                                resultTable.setFlat();
+                            }
                             analyzer.startTrackingPrev();
                             final Map<String, String[]> effects = analyzerContext.calcEffects();
                             final SelectOrUpdateListener soul = new SelectOrUpdateListener(

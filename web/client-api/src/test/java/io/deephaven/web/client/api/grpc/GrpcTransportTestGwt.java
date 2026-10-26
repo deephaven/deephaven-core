@@ -3,11 +3,17 @@
 //
 package io.deephaven.web.client.api.grpc;
 
+import elemental2.core.Uint8Array;
+import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.ConnectOptions;
 import io.deephaven.web.client.api.CoreClient;
+import io.deephaven.web.client.api.Sort;
+import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
+
+import java.util.Arrays;
 
 /**
  * Simple test to verify we can produce custom transports in JS. Only works with https, which means it can only be run
@@ -129,6 +135,86 @@ public class GrpcTransportTestGwt extends AbstractAsyncGwtTestCase {
             supportsClientStreaming: true
         };
     }-*/;
+
+    /**
+     * Delegates to the default websocket transport, but once armed, ends every TableService/Batch call with a
+     * {@code grpc-status} header and no {@code grpc-message}, as a proxy or server might when the connection drops. The
+     * resulting {@link io.grpc.Status} has a {@code null} description.
+     */
+    private static class FailingBatchTransportFactory implements GrpcTransportFactory {
+        private final GrpcTransportFactory delegate = new MultiplexedWebsocketTransport.Factory();
+        private boolean failBatches;
+        private int failedBatchCount;
+
+        @Override
+        public GrpcTransport create(GrpcTransportOptions options) {
+            if (!failBatches || !options.url.pathname.endsWith("TableService/Batch")) {
+                return delegate.create(options);
+            }
+            failedBatchCount++;
+            return new GrpcTransport() {
+                @Override
+                public void start(JsPropertyMap<HeaderValueUnion> metadata) {
+                    DomGlobal.setTimeout(ignore -> {
+                        options.onHeaders.onHeaders(Js.cast(JsPropertyMap.of("grpc-status", "14")), 200);
+                        options.onEnd.onEnd(null);
+                    }, 0);
+                }
+
+                @Override
+                public void sendMessage(Uint8Array msgBytes) {}
+
+                @Override
+                public void finishSend() {}
+
+                @Override
+                public void cancel() {}
+            };
+        }
+
+        @Override
+        public boolean getSupportsClientStreaming() {
+            return delegate.getSupportsClientStreaming();
+        }
+    }
+
+    /**
+     * A batch stream that ends with a non-OK status but no description must still fail the batch with a usable message,
+     * rather than tripping the "Failures must provide a reason!" assertion in ClientTableState.
+     */
+    public void testBatchFailureWithoutStatusDescription() {
+        FailingBatchTransportFactory transportFactory = new FailingBatchTransportFactory();
+        ConnectOptions connectOptions = new ConnectOptions();
+        connectOptions.transportFactory = transportFactory;
+        connect(new TableSourceBuilder()
+                .script("from deephaven import empty_table")
+                .script("batch_failure_table", "empty_table(10).update([\"I=i\"])"), connectOptions)
+                .then(table("batch_failure_table"))
+                .then(table -> {
+                    delayTestFinish(5003);
+                    // JsTable logs the failed sort as an error, so check the logged errors explicitly instead
+                    errorLogsDontFail();
+                    transportFactory.failBatches = true;
+                    table.applySort(new Sort[] {table.findColumn("I").sort().desc()});
+                    return waitFor(() -> !errorLogsSeen.isEmpty(), 10, 2004, table);
+                })
+                .then(table -> {
+                    assertEquals(1, transportFactory.failedBatchCount);
+                    assertEquals("Unexpected errors logged: " + errorLogsSeen, 1, errorLogsSeen.size());
+                    Object[] errorLog = errorLogsSeen.get(0);
+                    String logged = Arrays.toString(errorLog);
+                    assertTrue("Unexpected error logged: " + logged,
+                            String.valueOf(errorLog[0]).startsWith("Failed to apply sorts: "));
+                    assertEquals("Expected a failure reason: " + logged, 2, errorLog.length);
+                    assertTrue("Expected a failure reason: " + logged, "string".equals(Js.typeof(errorLog[1])));
+                    assertFalse("Expected a failure reason: " + logged, Js.asString(errorLog[1]).isEmpty());
+
+                    // the table rolls back to its last good state
+                    assertEquals(0, table.getSort().length);
+                    return Promise.resolve(table);
+                })
+                .then(this::finish).catch_(this::report);
+    }
 
     public void testDummyGrpcTransport() {
         setupDhInternal().then(ignore -> {
