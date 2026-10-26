@@ -986,6 +986,9 @@ public final class RunContainer extends Container {
 
     @Override
     public boolean contains(final int rangeStart, final int rangeEnd) {
+        if (rangeEnd <= rangeStart) {
+            return true;
+        }
         int ri = unsignedInterleavedBinarySearch(valueslength, 0, nbrruns, (short) rangeStart);
         if (ri >= 0) {
             final int len = getLengthAsInt(ri);
@@ -3193,7 +3196,7 @@ public final class RunContainer extends Container {
     // rangeEnd is exclusive.
     @Override
     public boolean overlapsRange(final int rangeStart, final int rangeEnd) {
-        if (isEmpty() || rangeEnd <= first() || rangeStart > last()) {
+        if (isEmpty() || rangeEnd <= rangeStart || rangeEnd <= first() || rangeStart > last()) {
             return false;
         }
         int i = searchFrom(lowbits(rangeStart), 0);

@@ -514,6 +514,9 @@ public class ArrayContainer extends Container {
 
     @Override
     public boolean contains(final int rangeStart, final int rangeEnd) {
+        if (rangeEnd <= rangeStart) {
+            return true;
+        }
         final int maximum = rangeEnd - 1;
         final int start = ContainerUtil.advanceUntil(content, -1, cardinality, (short) rangeStart);
         if (start >= cardinality) {
@@ -1910,6 +1913,9 @@ public class ArrayContainer extends Container {
     // rangeEnd is exclusive.
     @Override
     public boolean overlapsRange(final int rangeStart, final int rangeEnd) {
+        if (rangeEnd <= rangeStart) {
+            return false;
+        }
         int s = ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) rangeStart);
         if (s >= 0) {
             return true;

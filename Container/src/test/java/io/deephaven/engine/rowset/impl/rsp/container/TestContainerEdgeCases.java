@@ -62,6 +62,25 @@ public class TestContainerEdgeCases {
     }
 
     @Test
+    public void testEmptyRangeIsContainedAndOverlapsNothing() {
+        final int[][] ranges = {{0, 0}, {1, 1}, {10, 10}, {12, 12}, {30, 30}, {64, 64}, {70, 70}, {65535, 65535},
+                {65536, 65536}, {10, 5}, {65536, 0}};
+        for (final Supplier<Container> fixture : fixtures()) {
+            final Container c = fixture.get();
+            for (final int[] r : ranges) {
+                final String m = name(c) + " [" + r[0] + ", " + r[1] + ")";
+                assertTrue(m + " contains", c.contains(r[0], r[1]));
+                assertFalse(m + " overlapsRange", c.overlapsRange(r[0], r[1]));
+            }
+        }
+        // A bitmap whose first word is full used to index past the end for [0, 0).
+        final BitmapContainer full = new BitmapContainer();
+        full.iadd(0, 64);
+        assertTrue(full.contains(0, 0));
+        assertFalse(full.overlapsRange(0, 0));
+    }
+
+    @Test
     public void testEmptyRankRangeSelectsNothing() {
         for (final Supplier<Container> fixture : fixtures()) {
             final Container c = fixture.get();

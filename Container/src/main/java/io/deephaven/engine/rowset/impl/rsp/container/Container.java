@@ -510,7 +510,8 @@ public abstract class Container {
     public abstract boolean contains(short x);
 
     /**
-     * Checks whether the container contains the entire range
+     * Checks whether the container contains the entire range. Every container contains an empty range, one where
+     * {@code rangeEnd <= rangeStart}.
      *
      * @param rangeStart the inclusive lower bound of the range
      * @param rangeEnd the exclusive upper bound of the range
@@ -1438,7 +1439,8 @@ public abstract class Container {
     /**
      * @param start the beginning of the range, as an int.
      * @param end the end of the range (exclusive), as an int.
-     * @return true if there is any element in this container in the range provided.
+     * @return true if there is any element in this container in the range provided; false for an empty range, one
+     *         where {@code end <= start}.
      */
     public abstract boolean overlapsRange(int start, int end);
 

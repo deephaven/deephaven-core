@@ -158,7 +158,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
 
     @Override
     public boolean contains(int rangeStart, int rangeEnd) {
-        return begin() <= rangeStart && rangeEnd <= end();
+        return rangeEnd <= rangeStart || (begin() <= rangeStart && rangeEnd <= end());
     }
 
     private boolean containsImpl(final Container c) {
@@ -816,7 +816,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
 
     @Override
     public boolean overlapsRange(final int rangeStart, final int rangeEnd) {
-        return !(end() <= rangeStart || rangeEnd <= begin());
+        return rangeStart < rangeEnd && !(end() <= rangeStart || rangeEnd <= begin());
     }
 
     @Override

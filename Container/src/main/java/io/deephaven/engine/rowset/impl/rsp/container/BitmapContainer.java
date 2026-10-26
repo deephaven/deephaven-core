@@ -474,6 +474,9 @@ public final class BitmapContainer extends Container implements Cloneable {
 
     @Override
     public boolean contains(final int rangeStart, final int rangeEnd) {
+        if (rangeEnd <= rangeStart) {
+            return true;
+        }
         final ValuesInRangeContext ctx = new ValuesInRangeContext(rangeStart, rangeEnd);
         if (ctx.iFirst == ctx.iLast) {
             return ((bitmap[ctx.iLast] & ctx.maskFirst & ctx.maskLast) == (ctx.maskFirst & ctx.maskLast));
@@ -2248,6 +2251,9 @@ public final class BitmapContainer extends Container implements Cloneable {
     // rangeEnd is exclusive.
     @Override
     public boolean overlapsRange(final int rangeStart, final int rangeEnd) {
+        if (rangeEnd <= rangeStart) {
+            return false;
+        }
         final int ifirst = rangeStart >>> 6;
         final int last = rangeEnd - 1;
         final int ilast = last >>> 6;
