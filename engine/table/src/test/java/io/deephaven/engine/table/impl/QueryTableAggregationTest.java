@@ -6,7 +6,9 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptions;
 import io.deephaven.api.agg.Count;
+import io.deephaven.api.agg.StateReclamation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.Chunk;
@@ -4691,6 +4693,61 @@ public class QueryTableAggregationTest {
             });
             assertTableEquals(aggregation.get().sort("Key"), aggregated.sort("Key"));
         }
+    }
+
+    @Test
+    public void testAggByOptionsChooseStateReclamation() {
+        // With no reclamation, a group that empties and returns gets its row key back; by default it is reclaimed, so
+        // it returns as a new group after every other.
+        final QueryTable table = testRefreshingTable(i(0, 1).toTracking(),
+                stringCol("Key", "A", "B"), intCol("x", 1, 2));
+        final Table kept = table.aggBy(List.of(AggSum("x")), ColumnName.from("Key"),
+                AggregationOptions.<Table>builder().stateReclamation(StateReclamation.none()).build());
+        final Table reclaimed = table.aggBy(List.of(AggSum("x")), ColumnName.from("Key"),
+                AggregationOptions.<Table>builder().stateReclamation(StateReclamation.releaseBlocks()).build());
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(table, i(1));
+            table.notifyListeners(i(), i(1), i());
+        });
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(2), stringCol("Key", "B"), intCol("x", 3));
+            table.notifyListeners(i(2), i(), i());
+        });
+
+        final Table expected = TableTools.newTable(stringCol("Key", "A", "B"), longCol("x", 1, 3));
+        assertTableEquals(expected, kept);
+        assertEquals(i(0, 1), kept.getRowSet());
+        assertTableEquals(expected, reclaimed);
+        assertEquals(i(0, 2), reclaimed.getRowSet());
+    }
+
+    @Test
+    public void testAggByOptionsRejectExplicitReclamationThatCannotApply() {
+        final QueryTable table = testRefreshingTable(i(0).toTracking(), stringCol("Key", "A"), intCol("x", 1));
+        final AggregationOptions<Table> options = AggregationOptions.<Table>builder()
+                .preserveEmpty(true)
+                .stateReclamation(StateReclamation.releaseBlocks())
+                .build();
+        assertThrows(IllegalArgumentException.class,
+                () -> table.aggBy(List.of(AggSum("x")), ColumnName.from("Key"), options));
+        // the configured reclamation does not reclaim instead
+        final Table preserved = table.aggBy(List.of(AggSum("x")), ColumnName.from("Key"),
+                AggregationOptions.<Table>builder().preserveEmpty(true).build());
+        assertEquals(1, preserved.size());
+    }
+
+    @Test
+    public void testAggByOptionsInitialGroups() {
+        final QueryTable table = testRefreshingTable(i(0).toTracking(), stringCol("Key", "B"), intCol("x", 1));
+        final Table initialGroups = TableTools.newTable(stringCol("Key", "A", "B"));
+        final Table withOptions = table.aggBy(List.of(AggSum("x")), ColumnName.from("Key"),
+                AggregationOptions.<Table>builder().preserveEmpty(true).initialGroups(initialGroups).build());
+        final Table withArguments =
+                table.aggBy(List.of(AggSum("x")), true, initialGroups, ColumnName.from("Key"));
+        assertTableEquals(withArguments, withOptions);
+        assertEquals(2, withOptions.size());
     }
 
     @Test

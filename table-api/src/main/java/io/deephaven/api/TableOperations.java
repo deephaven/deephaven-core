@@ -4,6 +4,7 @@
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptions;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -900,6 +901,21 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     @ConcurrentMethod
     TOPS aggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty, TABLE initialGroups,
             Collection<? extends ColumnName> groupByColumns);
+
+    /**
+     * Produce an aggregated result by grouping {@code this} according to the {@code groupByColumns} and applying
+     * {@code aggregations} to each resulting group of rows, as {@link #aggBy(Collection, boolean, Object, Collection)}
+     * does, with the {@link AggregationOptions#preserveEmpty() empty groups}, {@link AggregationOptions#initialGroups()
+     * initial groups}, and {@link AggregationOptions#stateReclamation() state reclamation} given by {@code options}.
+     *
+     * @param aggregations The {@link Aggregation aggregations} to apply
+     * @param groupByColumns The {@link ColumnName columns} to group by
+     * @param options The options for the aggregation
+     * @return A new table aggregating the rows of {@code this}
+     */
+    @ConcurrentMethod
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns,
+            AggregationOptions<TABLE> options);
 
     // -------------------------------------------------------------------------------------------
 

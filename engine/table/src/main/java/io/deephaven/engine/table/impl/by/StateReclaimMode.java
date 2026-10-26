@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.api.agg.StateReclamation;
+
 /**
  * How an incremental aggregation reclaims the states of groups whose rows have all been removed.
  * <p>
@@ -86,6 +88,23 @@ public final class StateReclaimMode {
             return NONE;
         }
         return releaseBlocks(ChunkedOperatorAggregationHelper.COLLAPSE_FREE_FRACTION, true);
+    }
+
+    /**
+     * @param stateReclamation the reclamation requested through the table API
+     * @return the mode for {@code stateReclamation}
+     */
+    public static StateReclaimMode of(final StateReclamation stateReclamation) {
+        switch (stateReclamation.kind()) {
+            case CONFIGURED:
+                return configured();
+            case NONE:
+                return none();
+            case RELEASE_BLOCKS:
+                return releaseBlocks(stateReclamation.collapseFreeFraction());
+            default:
+                throw new IllegalStateException("Unexpected state reclamation " + stateReclamation);
+        }
     }
 
     /**

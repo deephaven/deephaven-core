@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptions;
 import io.deephaven.api.agg.AggregationOptimizer;
 import io.deephaven.api.agg.AggregationOutputs;
 import io.deephaven.api.agg.Partition;
@@ -957,9 +958,10 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public Table aggBy(
             final Collection<? extends Aggregation> aggregations,
-            final boolean preserveEmpty,
-            final Table initialGroups,
-            final Collection<? extends ColumnName> groupByColumns) {
+            final Collection<? extends ColumnName> groupByColumns,
+            final AggregationOptions<Table> options) {
+        final boolean preserveEmpty = options.preserveEmpty();
+        final Table initialGroups = options.initialGroups().orElse(null);
         final UpdateGraph updateGraph = getUpdateGraph(initialGroups);
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             if (aggregations.isEmpty()) {
@@ -968,10 +970,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 + toString(groupByColumns));
             }
             final List<? extends Aggregation> optimized = AggregationOptimizer.of(aggregations);
-            final MemoizedOperationKey aggKey =
-                    MemoizedOperationKey.aggBy(optimized, preserveEmpty, initialGroups, groupByColumns);
+            final MemoizedOperationKey aggKey = MemoizedOperationKey.aggBy(optimized, preserveEmpty, initialGroups,
+                    groupByColumns, options.stateReclamation());
             final Table aggregationTable = memoizeResult(aggKey, () -> aggNoMemo(
-                    AggregationProcessor.forAggregation(optimized), preserveEmpty, initialGroups, groupByColumns));
+                    AggregationProcessor.forAggregation(optimized), preserveEmpty, initialGroups, groupByColumns,
+                    StateReclaimMode.of(options.stateReclamation())));
 
             final List<ColumnName> optimizedOrder = AggregationOutputs.of(optimized).collect(Collectors.toList());
             final List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());

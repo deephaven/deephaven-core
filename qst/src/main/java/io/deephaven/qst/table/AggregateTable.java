@@ -5,6 +5,8 @@ package io.deephaven.qst.table;
 
 import io.deephaven.annotations.NodeStyle;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptions;
+import io.deephaven.api.agg.StateReclamation;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
@@ -32,6 +34,23 @@ public abstract class AggregateTable extends ByTableBase {
     }
 
     public abstract Optional<TableSpec> initialGroups();
+
+    @Default
+    public StateReclamation stateReclamation() {
+        return StateReclamation.configured();
+    }
+
+    /**
+     * @return the {@link #preserveEmpty() empty groups}, {@link #initialGroups() initial groups}, and
+     *         {@link #stateReclamation() state reclamation} of this aggregation, as options
+     */
+    public final AggregationOptions<TableSpec> options() {
+        final AggregationOptions.Builder<TableSpec> builder = AggregationOptions.<TableSpec>builder()
+                .preserveEmpty(preserveEmpty())
+                .stateReclamation(stateReclamation());
+        initialGroups().ifPresent(builder::initialGroups);
+        return builder.build();
+    }
 
     @Override
     public final <T> T walk(Visitor<T> visitor) {
@@ -65,5 +84,7 @@ public abstract class AggregateTable extends ByTableBase {
 
         Builder initialGroups(
                 @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<? extends TableSpec> initialGroups);
+
+        Builder stateReclamation(StateReclamation stateReclamation);
     }
 }

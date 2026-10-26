@@ -4,6 +4,7 @@
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptions;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -175,6 +176,12 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
             Collection<? extends ColumnName> groupByColumns) {
         return adapt(delegate.aggBy(aggregations, preserveEmpty, initialGroups == null ? null : adapt(initialGroups),
                 groupByColumns));
+    }
+
+    @Override
+    public TOPS_1 aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends ColumnName> groupByColumns,
+            AggregationOptions<TABLE_1> options) {
+        return adapt(delegate.aggBy(aggregations, groupByColumns, options.mapInitialGroups(this::adapt)));
     }
 
     @Override
