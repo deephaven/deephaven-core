@@ -6,6 +6,9 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.Liveness;
+import io.deephaven.engine.liveness.LivenessManager;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.util.SafeCloseable;
@@ -14,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * The standard implementation of an UncoalescedTable.
@@ -29,7 +33,15 @@ import java.util.Optional;
 public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IMPL_TYPE>>
         extends UncoalescedTable<IMPL_TYPE> {
 
-    private final Object coalescingLock = new Object();
+    /**
+     * Serializes coalescing among threads that may wait for one another.
+     */
+    private final ReentrantLock coalescingLock = new ReentrantLock();
+
+    /**
+     * Guards publication of {@link #coalesced}; never held while coalescing.
+     */
+    private final Object publishLock = new Object();
 
     private volatile Table coalesced;
 
@@ -57,6 +69,10 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
      * <p>
      * Also note that the implementation should copy attributes, as in
      * {@code copyAttributes(resultTable, CopyAttributeOperation.Coalesce)}.
+     * <p>
+     * This may be invoked concurrently on more than one thread: a thread that holds the update graph lock, or processes
+     * its updates, coalesces on its own rather than wait for a coalesce in progress on another thread. Only the first
+     * result is kept; the liveness referents produced by any other invocation are released.
      *
      * @return The coalesced result table, suitable for caching
      */
@@ -69,13 +85,58 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
             if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
                 return localCoalesced;
             }
-            synchronized (coalescingLock) {
+            // A coalesce in progress may be waiting for the update graph lock, so a thread that holds the lock, or that
+            // processes updates, must not wait for it.
+            if (updateGraph.exclusiveLock().isHeldByCurrentThread()
+                    || updateGraph.sharedLock().isHeldByCurrentThread()
+                    || updateGraph.currentThreadProcessesUpdates()) {
+                if (!coalescingLock.tryLock()) {
+                    return coalesceAndPublish();
+                }
+            } else {
+                coalescingLock.lock();
+            }
+            try {
                 if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
                     return localCoalesced;
                 }
-                return coalesced = doCoalesce();
+                return coalesceAndPublish();
+            } finally {
+                coalescingLock.unlock();
             }
         }
+    }
+
+    /**
+     * Coalesce, and publish the result unless another coalesce has already published a live result, in which case that
+     * result is returned and the liveness referents produced by this coalesce are released.
+     *
+     * @return The published coalesced result
+     */
+    private Table coalesceAndPublish() {
+        final LivenessManager callerManager = LivenessScopeStack.peek();
+        final LivenessScope coalesceScope = new LivenessScope();
+        final Table result;
+        try (final SafeCloseable ignored = LivenessScopeStack.open(coalesceScope, false)) {
+            result = doCoalesce();
+        } catch (final RuntimeException | Error failure) {
+            coalesceScope.release();
+            throw failure;
+        }
+        final Table published;
+        synchronized (publishLock) {
+            final Table existing = coalesced;
+            if (Liveness.verifyCachedObjectForReuse(existing)) {
+                published = existing;
+            } else {
+                published = coalesced = result;
+            }
+        }
+        if (published == result) {
+            coalesceScope.transferTo(callerManager);
+        }
+        coalesceScope.release();
+        return published;
     }
 
     @Override
@@ -90,7 +151,7 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
      * @param coalesced The coalesced result table, suitable for caching
      */
     protected final void setCoalesced(final Table coalesced) {
-        synchronized (coalescingLock) {
+        synchronized (publishLock) {
             Assert.eqNull(this.coalesced, "this.coalesced");
             this.coalesced = coalesced;
         }

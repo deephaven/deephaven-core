@@ -34,6 +34,7 @@ import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.testutil.filters.ReindexingRowSetCapturingFilter;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TestClock;
 import io.deephaven.qst.type.Type;
@@ -45,10 +46,17 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -583,6 +591,155 @@ public class TestPartitionAwareSourceTableNoMocks {
         final Table composedCoalesced = viaComposed.coalesce();
         assertEquals(expectedSize, composedCoalesced.size());
         assertEquals(expectRefreshing, composedCoalesced.isRefreshing());
+    }
+
+    /**
+     * One thread coalesces a deferred table during an update cycle without the update graph lock. Its condition uses a
+     * query scope parameter, so it cannot filter previous values, and the deferred where's snapshot waits for the
+     * shared lock. Another thread, already waiting for the exclusive lock when that happens, holds it once the cycle
+     * completes and coalesces the same deferred table. Both coalesces complete with the same result, and only that
+     * result filters rows added afterwards.
+     */
+    @Test
+    public void testDeferredCoalesceWhileExclusiveLockHolderCoalesces() throws Exception {
+        final long partitionSize = 128;
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                partitionedLocationProvider(partitionSize);
+        final Table source = refreshingPartitionedSource(tableLocationProvider);
+        // the source is coalesced up front, so that the deferred where's snapshot is the only one that needs the lock
+        source.coalesce();
+        ExecutionContext.getContext().getQueryScope().putParam("threshold", 0L);
+        // copies of the filter, one for each coalesce, share what they capture
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("II + threshold >= 0"));
+        final Table deferred = source.where(filter);
+        assertTrue(deferred instanceof DeferredViewTable);
+
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final UpdateGraph contextUpdateGraph = executionContext.getUpdateGraph();
+        final CompletableFuture<Table> exclusiveCoalesce = new CompletableFuture<>();
+        final Thread exclusiveThread = new Thread(() -> {
+            try (final SafeCloseable ignored = executionContext.open()) {
+                exclusiveCoalesce.complete(contextUpdateGraph.exclusiveLock().computeLocked(deferred::coalesce));
+            } catch (final Throwable failure) {
+                exclusiveCoalesce.completeExceptionally(failure);
+            }
+        }, "exclusive-coalesce");
+        final CompletableFuture<Table> lockFreeCoalesce = new CompletableFuture<>();
+        final Thread lockFreeThread = new Thread(() -> {
+            try (final SafeCloseable ignored = executionContext.open()) {
+                lockFreeCoalesce.complete(deferred.coalesce());
+            } catch (final Throwable failure) {
+                lockFreeCoalesce.completeExceptionally(failure);
+            }
+        }, "lock-free-coalesce");
+        exclusiveThread.setDaemon(true);
+        lockFreeThread.setDaemon(true);
+
+        updateGraph.getDelegate().startCycleForUnitTests(false);
+        try {
+            exclusiveThread.start();
+            awaitWaitingForUpdateGraphLock(exclusiveThread, exclusiveCoalesce);
+            lockFreeThread.start();
+            awaitWaitingForUpdateGraphLock(lockFreeThread, lockFreeCoalesce);
+        } finally {
+            updateGraph.refreshSources();
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.getDelegate().completeCycleForUnitTests();
+        }
+
+        final Table exclusiveResult;
+        final Table lockFreeResult;
+        try {
+            exclusiveResult = exclusiveCoalesce.get(30, TimeUnit.SECONDS);
+            lockFreeResult = lockFreeCoalesce.get(30, TimeUnit.SECONDS);
+        } catch (final TimeoutException timeout) {
+            final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+            final long[] deadlockedIds = threadMXBean.findDeadlockedThreads();
+            final StringBuilder deadlocked = new StringBuilder();
+            if (deadlockedIds != null) {
+                for (final ThreadInfo threadInfo : threadMXBean.getThreadInfo(deadlockedIds, true, true)) {
+                    deadlocked.append('\n').append(threadInfo.getThreadName()).append(" waiting on ")
+                            .append(threadInfo.getLockName()).append(" owned by ")
+                            .append(threadInfo.getLockOwnerName());
+                    for (final StackTraceElement frame : threadInfo.getStackTrace()) {
+                        deadlocked.append("\n\tat ").append(frame);
+                    }
+                }
+            }
+            throw new AssertionError("Coalescing did not complete; deadlocked threads:" + deadlocked, timeout);
+        }
+        assertSame(exclusiveResult, lockFreeResult);
+        assertEquals(4 * partitionSize, lockFreeResult.size());
+
+        filter.reset();
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(2 * partitionSize));
+        updateGraph.getDelegate().startCycleForUnitTests(false);
+        updateGraph.refreshSources();
+        updateGraph.markSourcesRefreshedForUnitTests();
+        updateGraph.getDelegate().completeCycleForUnitTests();
+        assertEquals(8 * partitionSize, lockFreeResult.size());
+        assertEquals(4 * partitionSize, filter.numRowsProcessed());
+    }
+
+    /**
+     * Wait until {@code thread} is parked waiting for the update graph lock. If {@code thread} completes first, its
+     * result or failure is reported instead.
+     */
+    private static void awaitWaitingForUpdateGraphLock(
+            final Thread thread,
+            final CompletableFuture<Table> result) throws Exception {
+        final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        while (true) {
+            if (result.isDone()) {
+                throw new AssertionError(thread.getName() + " completed without waiting for the update graph lock: "
+                        + result.get());
+            }
+            final ThreadInfo threadInfo = threadMXBean.getThreadInfo(thread.getId());
+            if (threadInfo != null && threadInfo.getLockInfo() != null
+                    && threadInfo.getLockInfo().getClassName().startsWith(ReentrantReadWriteLock.class.getName())) {
+                return;
+            }
+            if (System.nanoTime() > deadlineNanos) {
+                throw new AssertionError(thread.getName() + " is not waiting for the update graph lock: " + threadInfo);
+            }
+            Thread.sleep(10);
+        }
+    }
+
+    /**
+     * A table location provider with four partitions of {@code partitionSize} rows.
+     */
+    private static PartitionAwareSourceTableTestUtils.TableLocationProviderImpl partitionedLocationProvider(
+            final long partitionSize) {
+        final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds.getTableLocationProvider(tableKey);
+        for (char partition = 'A'; partition <= 'D'; partition++) {
+            tableLocationProvider.appendLocation(
+                    new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl(String.valueOf(partition)));
+        }
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(partitionSize));
+        return tableLocationProvider;
+    }
+
+    /**
+     * A refreshing partitioned source table over {@code tableLocationProvider}.
+     */
+    private static Table refreshingPartitionedSource(
+            final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider) {
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II"),
+                        ColumnDefinition.of("Timestamp", Type.find(Instant.class))),
+                tableLocationProvider.getKey().toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                ExecutionContext.getContext().getUpdateGraph());
+        assertTrue(source.isRefreshing());
+        return source;
     }
 
     @Test
