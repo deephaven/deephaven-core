@@ -1240,6 +1240,7 @@ public final class RunContainer extends Container {
                 return true;
             }
             if (nextRange < 0) {
+                curr = rangeStart;
                 return false;
             }
 
