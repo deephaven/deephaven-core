@@ -2433,6 +2433,7 @@ public final class RunContainer extends Container {
     @Override
     public void selectRanges(final RangeConsumer outValues, final RangeIterator inPositions) {
         if (nbrruns == 0) {
+            requireOnlyEmptyRanges(inPositions, "selectRanges for invalid pos=");
             return;
         }
         int k = 0;
@@ -2468,12 +2469,18 @@ public final class RunContainer extends Container {
                 }
             }
         }
-        outValues.accept(ostart, oend + 1);
+        if (ostart != -1) {
+            outValues.accept(ostart, oend + 1);
+        }
     }
 
     @Override
     public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues, final int maxPos) {
         if (!inValues.hasNext()) {
+            return false;
+        }
+        if (nbrruns == 0) {
+            requireOnlyEmptyRanges(inValues, "findRanges for invalid key=");
             return false;
         }
         int k = 0;
@@ -2521,8 +2528,20 @@ public final class RunContainer extends Container {
                 }
             }
         } while (inValues.hasNext());
-        outPositions.accept(ostart, oend + 1);
+        if (ostart != -1) {
+            outPositions.accept(ostart, oend + 1);
+        }
         return false;
+    }
+
+    /** With no runs to read, any range but an empty one is invalid. */
+    private static void requireOnlyEmptyRanges(final RangeIterator ranges, final String message) {
+        while (ranges.hasNext()) {
+            ranges.next();
+            if (ranges.start() < ranges.end()) {
+                throw new IllegalArgumentException(message + ranges.start());
+            }
+        }
     }
 
     private void setLength(final int index, final short v) {

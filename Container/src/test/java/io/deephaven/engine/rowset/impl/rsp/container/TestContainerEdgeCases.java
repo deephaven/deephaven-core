@@ -103,6 +103,61 @@ public class TestContainerEdgeCases {
         assertTrue("static select(5, 4)", RunContainer.select(run, 5, 4).isEmpty());
     }
 
+    private static List<Integer> selectRanges(final Container c, final int... positionRanges) {
+        final List<Integer> out = new ArrayList<>();
+        c.selectRanges((start, end) -> {
+            out.add(start);
+            out.add(end);
+        }, new RangeIterator.ArrayBacked(positionRanges));
+        return out;
+    }
+
+    private static List<Integer> findRanges(final Container c, final int... valueRanges) {
+        final List<Integer> out = new ArrayList<>();
+        final boolean reachedMax = c.findRanges((start, end) -> {
+            out.add(start);
+            out.add(end);
+        }, new RangeIterator.ArrayBacked(valueRanges), Integer.MAX_VALUE);
+        assertFalse(name(c) + " findRanges reached maxPos", reachedMax);
+        return out;
+    }
+
+    @Test
+    public void testSelectAndFindRangesOverNoValues() {
+        for (final Supplier<Container> fixture : fixtures()) {
+            final Container c = fixture.get();
+            final String m = name(c);
+            assertEquals(m + " selectRanges()", List.of(), selectRanges(c));
+            assertEquals(m + " findRanges()", List.of(), findRanges(c));
+            // An empty range past the last position is still empty, not out of bounds.
+            final int card = c.getCardinality();
+            assertEquals(m + " selectRanges([card + 1, card + 1))", List.of(), selectRanges(c, card + 1, card + 1));
+            if (c.isEmpty()) {
+                continue;
+            }
+            final int first = c.first();
+            assertEquals(m + " selectRanges([0, 0))", List.of(), selectRanges(c, 0, 0));
+            assertEquals(m + " findRanges([first, first))", List.of(), findRanges(c, first, first));
+            // An empty range among real ones contributes nothing.
+            assertEquals(m + " selectRanges([0, 0), [0, 1))", List.of(first, first + 1),
+                    selectRanges(c, 0, 0, 0, 1));
+            assertEquals(m + " findRanges([first, first), [first, first + 1))", List.of(0, 1),
+                    findRanges(c, first, first, first, first + 1));
+            final int last = c.last();
+            assertEquals(m + " selectRanges([card - 1, card), [card, card))", List.of(last, last + 1),
+                    selectRanges(c, card - 1, card, card, card));
+            assertEquals(m + " findRanges([last, last + 1), [last + 1, last + 1))", List.of(card - 1, card),
+                    findRanges(c, last, last + 1, last + 1, last + 1));
+        }
+        // An empty range asks nothing even of a container with no values to give.
+        for (final Container c : new Container[] {new ArrayContainer(), new BitmapContainer(), new RunContainer(),
+                RunContainer.makeByWrapping(new short[0], 0, 0), Container.empty()}) {
+            assertEquals(name(c) + " empty, selectRanges([0, 0))", List.of(), selectRanges(c, 0, 0));
+            assertEquals(name(c) + " empty, selectRanges([1, 1))", List.of(), selectRanges(c, 1, 1));
+            assertEquals(name(c) + " empty, findRanges([0, 0))", List.of(), findRanges(c, 0, 0));
+        }
+    }
+
     /** A {@code false} from advance leaves the iterator exhausted, whatever it had returned before. */
     @Test
     public void testReverseAdvanceFailureExhausts() {

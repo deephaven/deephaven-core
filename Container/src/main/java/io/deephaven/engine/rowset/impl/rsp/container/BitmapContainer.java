@@ -1769,14 +1769,17 @@ public final class BitmapContainer extends Container implements Cloneable {
         int ostart = -1;
         int oend = -1; // inclusive
         int wordIndex = 0;
-        if (isEmpty()) {
-            throw new IllegalArgumentException("select Ranges for invalid pos=" + inPositions.start());
-        }
         int wordAccumBitCount = Long.bitCount(bitmap[0]);
         int prevWordAccumBitCount = 0;
         do {
             inPositions.next();
             int istart = inPositions.start();
+            if (inPositions.end() <= istart) {
+                continue;
+            }
+            if (isEmpty()) {
+                throw new IllegalArgumentException("selectRanges for invalid pos=" + istart);
+            }
             while (istart >= wordAccumBitCount) {
                 ++wordIndex;
                 if (wordIndex >= bitmap.length) {
@@ -1815,16 +1818,15 @@ public final class BitmapContainer extends Container implements Cloneable {
                 }
             }
         } while (inPositions.hasNext());
-        outValues.accept(ostart, oend + 1);
+        if (ostart != -1) {
+            outValues.accept(ostart, oend + 1);
+        }
     }
 
     @Override
     public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues, final int maxPos) {
         if (!inValues.hasNext()) {
             return false;
-        }
-        if (isEmpty()) {
-            throw new IllegalArgumentException("find Ranges for invalid key=" + inValues.start());
         }
         int ostart = -1;
         int oend = -1; // inclusive
@@ -1833,6 +1835,12 @@ public final class BitmapContainer extends Container implements Cloneable {
         do {
             inValues.next();
             int istart = inValues.start();
+            if (inValues.end() <= istart) {
+                continue;
+            }
+            if (isEmpty()) {
+                throw new IllegalArgumentException("findRanges for invalid key=" + istart);
+            }
             int kistart = istart >>> 6; // istart / 64.
             int ristart = istart & 63; // istart % 64.
             while (k < kistart) {
@@ -1893,7 +1901,9 @@ public final class BitmapContainer extends Container implements Cloneable {
                 }
             }
         } while (inValues.hasNext());
-        outPositions.accept(ostart, oend + 1);
+        if (ostart != -1) {
+            outPositions.accept(ostart, oend + 1);
+        }
         return false;
     }
 

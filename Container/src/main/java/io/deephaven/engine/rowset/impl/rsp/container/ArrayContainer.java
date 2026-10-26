@@ -1571,6 +1571,9 @@ public class ArrayContainer extends Container {
             inPositions.next();
             int istart = inPositions.start();
             int iend = inPositions.end();
+            if (iend <= istart) {
+                continue;
+            }
             if (iend > cardinality) {
                 throw new IllegalArgumentException("selectRanges for invalid position=" + iend);
             }
@@ -1588,7 +1591,9 @@ public class ArrayContainer extends Container {
                 }
             }
         } while (inPositions.hasNext());
-        outValues.accept(ostart, oend + 1);
+        if (ostart != -1) {
+            outValues.accept(ostart, oend + 1);
+        }
     }
 
     @Override
@@ -1690,7 +1695,9 @@ public class ArrayContainer extends Container {
                 startSearch = pos + 1;
             }
         } while (inValues.hasNext());
-        outPositions.accept(ostart, oend + 1);
+        if (ostart != -1) {
+            outPositions.accept(ostart, oend + 1);
+        }
         return false;
     }
 

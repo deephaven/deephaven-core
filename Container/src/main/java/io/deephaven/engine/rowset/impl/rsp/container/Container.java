@@ -1196,7 +1196,7 @@ public abstract class Container {
      * As select but for all the positions in a range.
      *
      * @param outValues accept is called in this consumer for each resulting range.
-     * @param inPositions input iterator that provides the position ranges.
+     * @param inPositions input iterator that provides the position ranges; an empty range selects nothing.
      */
     public abstract void selectRanges(RangeConsumer outValues, RangeIterator inPositions);
 
@@ -1204,7 +1204,8 @@ public abstract class Container {
      * As find but for all the values in a range.
      *
      * @param outPositions accept is called in this consumer for each resulting position range.
-     * @param inValues input iterator that provides the key ranges; these must each exist in the container.
+     * @param inValues input iterator that provides the key ranges; these must each exist in the container. An empty
+     *        range finds nothing.
      * @param maxPos maximum position to add to outPositions; values of position &gt; maxPos are not added.
      * @return true if maxPos was reached, false otherwise.
      */
