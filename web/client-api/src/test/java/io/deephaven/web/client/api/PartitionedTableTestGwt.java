@@ -71,6 +71,13 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                     List<String> keysAdded = new ArrayList<>();
                     partitionedTable.addEventListener(JsPartitionedTable.EVENT_KEYADDED,
                             (Event<JsArray<Object>> e) -> keysAdded.add(String.valueOf(e.getDetail().getAt(0))));
+                    List<String> lifecycle = new ArrayList<>();
+                    partitionedTable.addEventListener(JsPartitionedTable.EVENT_DISCONNECT,
+                            e -> lifecycle.add("disconnect"));
+                    partitionedTable.addEventListener(JsPartitionedTable.EVENT_RECONNECT,
+                            e -> lifecycle.add("reconnect"));
+                    partitionedTable.addEventListener(JsPartitionedTable.EVENT_RECONNECTFAILED,
+                            e -> lifecycle.add("reconnectfailed"));
                     Set<String> keysAtCut = new HashSet<>();
                     JsTable[] constituent = {null};
                     return waitForEvent(partitionedTable, JsPartitionedTable.EVENT_KEYADDED, e -> {
@@ -111,6 +118,7 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                                                     .collect(Collectors.toList());
                                             assertTrue("keyadded fired again for keys known before the cut: "
                                                     + repeated, repeated.isEmpty());
+                                            assertEquals(List.of("disconnect", "reconnect"), lifecycle);
                                             return Promise.resolve(hot);
                                         });
                             })

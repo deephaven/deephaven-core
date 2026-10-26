@@ -25,6 +25,7 @@ import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.ide.IdeConnection;
+import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.base.Any;
@@ -179,6 +180,127 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                             });
                 })
                 .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * A table, its own viewport subscription and a standalone full subscription each report the transport loss and the
+     * recovery, in that order, before data resumes.
+     */
+    public void testLifecycleEventsAcrossTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_033);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    TableViewportSubscription viewport = table.setViewport(0, 0, null);
+                    DataOptions.SubscriptionOptions subOptions = new DataOptions.SubscriptionOptions();
+                    subOptions.columns = Js.cast(table.getColumns());
+                    TableSubscription full = table.createSubscription(subOptions);
+
+                    List<String> lifecycle = new ArrayList<>();
+                    recordLifecycle(table, "table", lifecycle);
+                    recordLifecycle(viewport, "viewport", lifecycle);
+                    recordLifecycle(full, "full", lifecycle);
+
+                    return assertUpdateReceived(table, 1, 5034)
+                            .then(ignore -> assertUpdateReceived(full, data -> assertEquals(1, data.getRows().length),
+                                    5035))
+                            .then(ignore -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5036).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(table, 1, 8037)
+                                            .then(t -> assertUpdateReceived(full,
+                                                    data -> assertEquals(1, data.getRows().length), 8038)),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "data did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                for (String name : Arrays.asList("table", "viewport", "full")) {
+                                    assertEquals(name + " lifecycle, all events: " + lifecycle,
+                                            Arrays.asList(name + ":disconnect", name + ":reconnect"),
+                                            lifecycle.stream().filter(e -> e.startsWith(name + ":"))
+                                                    .collect(Collectors.toList()));
+                                }
+                                full.close();
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * When a state cannot be re-established on reconnect, the table and the subscription over it report reconnectfailed
+     * instead of reconnect, and the subscription is closed.
+     */
+    public void testReconnectFailedWhenRevivalFails() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        IdeSession[] sessionHolder = {null};
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_039);
+                    sessionHolder[0] = session;
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    TableViewportSubscription viewport = table.setViewport(0, 0, null);
+                    List<String> lifecycle = new ArrayList<>();
+                    recordLifecycle(table, "table", lifecycle);
+                    recordLifecycle(viewport, "viewport", lifecycle);
+                    // A failed state also reports requestfailed to its tables, which is logged if unhandled
+                    table.addEventListener(JsTable.EVENT_REQUEST_FAILED, e -> lifecycle.add("table:requestfailed"));
+                    viewport.addEventListener(JsTable.EVENT_REQUEST_FAILED,
+                            e -> lifecycle.add("viewport:requestfailed"));
+
+                    return assertUpdateReceived(table, 1, 5040)
+                            .then(ignore -> {
+                                // Within one session a running state is not re-fetched on reconnect; mark both states
+                                // as needing a re-fetch, as a new session would, and remove the variable they would
+                                // be re-fetched from, so the revival fails.
+                                table.state().getHandle().setConnected(false);
+                                viewport.state().getHandle().setConnected(false);
+                                return sessionHolder[0].runCode("del ticking");
+                            })
+                            .then(ignore -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5041).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    waitFor(() -> lifecycle.contains("table:reconnectfailed")
+                                            && lifecycle.contains("viewport:reconnectfailed"), 100, 8042, table),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "reconnectfailed did not fire on both, events: " + lifecycle))))
+                            .then(ignore -> {
+                                assertFalse("no reconnect after a failed revival: " + lifecycle,
+                                        lifecycle.contains("table:reconnect")
+                                                || lifecycle.contains("viewport:reconnect"));
+                                assertTrue("subscription is closed after reconnectfailed", viewport.isClosed());
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    private static void recordLifecycle(HasEventHandling target, String name, List<String> into) {
+        target.addEventListener(JsTable.EVENT_DISCONNECT, e -> into.add(name + ":disconnect"));
+        target.addEventListener(JsTable.EVENT_RECONNECT, e -> into.add(name + ":reconnect"));
+        target.addEventListener(JsTable.EVENT_RECONNECTFAILED, e -> into.add(name + ":reconnectfailed"));
     }
 
     @SuppressWarnings("deprecation")

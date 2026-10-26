@@ -552,6 +552,11 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
                     });
                     Consumer<Event<ViewportData>> oneRow = e -> assertEquals(1, e.getDetail().getRows().length);
+                    // A totals table reports the lifecycle of the table it wraps
+                    List<String> lifecycle = new ArrayList<>();
+                    totals.addEventListener(JsTable.EVENT_DISCONNECT, e -> lifecycle.add("disconnect"));
+                    totals.addEventListener(JsTable.EVENT_RECONNECT, e -> lifecycle.add("reconnect"));
+                    totals.addEventListener(JsTable.EVENT_RECONNECTFAILED, e -> lifecycle.add("reconnectfailed"));
                     totals.setViewport(0, 100, null, null, null);
                     return waitForEvent(totals, JsTable.EVENT_UPDATED, oneRow, 5023)
                             // Every tick adds a source row, so the totals keep updating
@@ -567,6 +572,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                     delay(8000).then(late -> Promise.reject(
                                             "totals viewport did not resume after the transport was cut"))))
                             .then(ignore -> {
+                                assertEquals(List.of("disconnect", "reconnect"), lifecycle);
                                 totals.close();
                                 table.close();
                                 return Promise.resolve(table);

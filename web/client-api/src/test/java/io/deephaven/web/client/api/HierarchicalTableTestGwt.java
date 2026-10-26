@@ -16,6 +16,7 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -289,6 +290,11 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     // An unhandled disconnect event is logged as an error, which the harness treats as a failure
                     ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
                     });
+                    List<String> lifecycle = new ArrayList<>();
+                    treeTable.addEventListener(JsTreeTable.EVENT_DISCONNECT, e -> lifecycle.add("disconnect"));
+                    treeTable.addEventListener(JsTreeTable.EVENT_RECONNECT, e -> lifecycle.add("reconnect"));
+                    treeTable.addEventListener(JsTreeTable.EVENT_RECONNECTFAILED,
+                            e -> lifecycle.add("reconnectfailed"));
                     treeTable.setViewport(0, 99, treeTable.getColumns(), null);
                     return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
                             (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 1, 5017)
@@ -314,6 +320,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                     delay(8000).then(late -> Promise.reject(
                                             "tree viewport did not resume after the transport was cut"))))
                             .then(ignore -> {
+                                assertEquals(Arrays.asList("disconnect", "reconnect"), lifecycle);
                                 treeTable.close();
                                 return Promise.resolve(treeTable);
                             });
