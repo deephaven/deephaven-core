@@ -252,4 +252,18 @@ public class TestContainerEdgeCases {
         assertTrue(run.contains(evens));
         assertFalse(run.contains(lastOdd));
     }
+
+    /** Ranges are compared as unsigned values, so a run crossing 0x7FFF/0x8000 is one range. */
+    @Test
+    public void testArrayForEachRangeAcrossTheSignBoundary() {
+        final ArrayContainer c = new ArrayContainer(new short[] {(short) 0x7FFE, (short) 0x7FFF, (short) 0x8000,
+                (short) 0x8001});
+        final List<Integer> ranges = new ArrayList<>();
+        c.forEachRange(0, (start, endInclusive) -> {
+            ranges.add(ContainerUtil.toIntUnsigned(start));
+            ranges.add(ContainerUtil.toIntUnsigned(endInclusive));
+            return true;
+        });
+        assertEquals(List.of(0x7FFE, 0x8001), ranges);
+    }
 }

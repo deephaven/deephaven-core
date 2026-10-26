@@ -1816,7 +1816,7 @@ public class ArrayContainer extends Container {
 
         for (k = rankOffset + 1; k < cardinality; ++k) {
             final short v = content[k];
-            if (pendingEnd + 1 == v) {
+            if ((short) (pendingEnd + 1) == v) {
                 pendingEnd = v;
             } else {
                 if (!sc.accept(pendingStart, pendingEnd)) {
