@@ -145,6 +145,77 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testSubscriptionResumesAfterTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_008);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    // A full-table subscription, which no table ever owns
+                    DataOptions.SubscriptionOptions subOptions = new DataOptions.SubscriptionOptions();
+                    subOptions.columns = Js.cast(table.getColumns());
+                    TableSubscription sub = table.createSubscription(subOptions);
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    return assertUpdateReceived(sub, data -> assertEquals(1, data.getRows().length), 5009)
+                            .then(ignore -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5010).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(sub, data -> assertEquals(1, data.getRows().length), 8011),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "full subscription did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                sub.close();
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    @SuppressWarnings("deprecation")
+    public void testLegacySubscribeResumesAfterTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_012);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    // The older spelling of a full-table subscription, still present on the release branches
+                    TableSubscription sub = table.subscribe(table.getColumns());
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    return assertUpdateReceived(sub, data -> assertEquals(1, data.getRows().length), 5013)
+                            .then(ignore -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5014).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(sub, data -> assertEquals(1, data.getRows().length), 8015),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "subscribe() subscription did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                sub.close();
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testViewportOnStaticTable() {
         connect(tables)
                 .then(table("staticTable"))
