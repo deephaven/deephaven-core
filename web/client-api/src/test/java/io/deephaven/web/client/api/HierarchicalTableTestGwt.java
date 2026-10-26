@@ -4,12 +4,14 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
+import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.tree.JsRollupConfig;
 import io.deephaven.web.client.api.event.Event;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.tree.TreeViewportData;
 import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
+import io.deephaven.web.client.ide.IdeConnection;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
@@ -40,6 +42,11 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     "time_table('PT0.1s').update(['Y=Math.sin(i/3)', 'X=i%3', 'Z=`abc` + i']).format_columns(['Y=Y>0 ? GREEN : RED', 'Timestamp=RED'])")
             .script("ticking_rollup",
                     "table_to_rollup.rollup(aggs=[agg.first('Y')],by=['X'],include_constituents=True)")
+            .script("from datetime import datetime, timedelta")
+            // Five rows from the start, one of them replaced twice a second, so an expanded root keeps updating
+            .script("ticking_tree_updates",
+                    "time_table('PT0.5s', start_time=datetime.now() - timedelta(seconds=10))"
+                            + ".update(['ID=i%5', 'Parent=ID == 0 ? null : (int)0', 'X=i']).last_by(by='ID').tree('ID', 'Parent')")
             .script("from deephaven.query_library import import_class\n" +
                     "from deephaven import empty_table\n" +
                     "import_class('java.time.ZoneId')\n" +
@@ -258,6 +265,57 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 treeTable.close();
                                 assertTrue(treeTable.isClosed());
                                 return null;
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    private static Promise<Object> delay(int millis) {
+        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
+    }
+
+    public void testTreeViewportResumesAfterTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_016);
+                    return Promise.resolve(session);
+                })
+                .then(treeTable("ticking_tree_updates"))
+                .then(treeTable -> {
+                    IdeConnection ide = lastIdeConnection;
+                    // An unhandled disconnect event is logged as an error, which the harness treats as a failure
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                    return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
+                            (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 1, 5017)
+                            .then(t -> {
+                                treeTable.expand(JsTreeTable.RowReferenceUnion.of(0), null);
+                                return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
+                                        (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 5, 5018);
+                            })
+                            // Every tick modifies a visible row, so updates arrive continuously
+                            .then(t -> this.<JsTreeTable, TreeViewportData>waitForEvent(treeTable,
+                                    JsTreeTable.EVENT_UPDATED, e -> {
+                                    }, 5019))
+                            .then(t -> {
+                                // Every open stream dies, the tree's Barrage stream included; the connection sees
+                                // a transport error and reconnects within the same session
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5020).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    this.<JsTreeTable, TreeViewportData>waitForEvent(treeTable,
+                                            JsTreeTable.EVENT_UPDATED, e -> {
+                                            }, 8021),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "tree viewport did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                treeTable.close();
+                                return Promise.resolve(treeTable);
                             });
                 })
                 .then(this::finish).catch_(this::report);
