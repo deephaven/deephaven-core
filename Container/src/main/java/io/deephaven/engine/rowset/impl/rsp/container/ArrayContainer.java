@@ -446,7 +446,7 @@ public class ArrayContainer extends Container {
         if (value2.isEmpty()) {
             return cowRef();
         }
-        final ArrayContainer answer = new ArrayContainer(capacity());
+        final ArrayContainer answer = new ArrayContainer(cardinality);
         int pos = 0;
         for (int k = 0; k < cardinality; ++k) {
             short val = content[k];
