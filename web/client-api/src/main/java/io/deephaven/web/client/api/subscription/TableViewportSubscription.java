@@ -324,6 +324,10 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             throw new IllegalArgumentException(
                     "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
         }
+        if (options.updateIntervalMs == null) {
+            // Omitted means unchanged; keep the interval this subscription was created with
+            options.updateIntervalMs = this.options.updateIntervalMs;
+        }
         if (options.isReverseViewport == null) {
             options.isReverseViewport = false;
         }
