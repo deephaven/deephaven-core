@@ -761,13 +761,15 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         @Override
         protected void onStreamEnd(io.grpc.Status status) {
-            super.onStreamEnd(status);
-            if (WorkerConnection.isTransportError(status)) {
-                // The subscription is back in STARTING; reconnect() re-sends it once the connection is back
+            if (!isClosed() && WorkerConnection.isTransportError(status)) {
+                // The subscription goes back to STARTING; reconnect() re-sends it once the connection is back
+                super.onStreamEnd(status);
                 return;
             }
-            // Closed or failed; the failure itself was reported through the requestfailed listener
+            // Closed or failed: let go of this subscription before the failure is reported, so a retry from the
+            // requestfailed listener builds a new one instead of landing on this one
             JsTreeTable.this.stream = null;
+            super.onStreamEnd(status);
         }
 
         public void setViewport(double firstRow, double lastRow, JsArray<Column> columns, Double updateInterval) {
@@ -799,17 +801,33 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     @Override
     public void reconnect() {
         if (stream == null) {
-            super.reconnect();
-            return;
+            if (firstRow == null || lastRow == null || columns == null) {
+                super.reconnect();
+                return;
+            }
+            // A viewport was requested but its build failed, most likely with the connection. The intermediate
+            // tickets cache their failures too, so build everything again.
+            if (keyTable != null) {
+                keyTable.then(t -> {
+                    t.close();
+                    return null;
+                }, err -> null);
+                keyTable = null;
+            }
+            replaceSubscription(RebuildStep.UPDATE_VIEW);
         }
         // The view state is not in the connection's cache, so the reviver never reaches this subscription; re-send
         // it here before announcing the reconnect. A stream that survived is left alone by revive().
-        stream.then(subscription -> {
+        Promise<TreeSubscription> current = stream;
+        current.then(subscription -> {
             subscription.revive(subscription.state());
             JsTreeTable.super.reconnect();
             return null;
         }, failure -> {
+            // The connection is back, but the viewport could not be rebuilt: say both. The build's own report was
+            // suppressed while disconnected.
             JsTreeTable.super.reconnect();
+            failureHandled(String.valueOf(failure));
             return null;
         });
     }
@@ -906,8 +924,10 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     return Promise.resolve(subscription);
                 });
         stream.catch_(err -> {
-            // if this is the active attempt at a subscription, report the error
+            // if this is the active attempt at a subscription, let go of it and report the error, so the next
+            // setViewport or reconnect builds a new one
             if (this.stream == stream) {
+                this.stream = null;
                 failureHandled(err.toString());
             }
             return Promise.reject(err);
