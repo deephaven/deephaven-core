@@ -790,6 +790,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
     }
 
+    @JsIgnore
     @Override
     public Promise<?> refetch() {
         // TODO(deephaven-core#3604) a tree cannot be re-fetched into a new session; say so rather than reconnect
@@ -798,6 +799,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return Promise.reject(reason);
     }
 
+    @JsIgnore
     @Override
     public void reconnect() {
         if (stream == null) {
