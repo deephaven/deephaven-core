@@ -12,7 +12,7 @@ import java.util.Collections;
  * A central view of configuration options for sparse array column sources.
  */
 public abstract class SparseArrayColumnSourceConfiguration {
-    private static final String RECYCLER_CAPACITY_PROPERTY = "sparsearray.recycler.capacity.";
+    private static final String RECYCLER_CAPACITY_PROPERTY_PREFIX = "sparsearray.recycler.capacity.";
     private static final int DEFAULT_RECYCLER_CAPACITY_DEFAULT_VALUE = 1024;
 
     /**
@@ -83,7 +83,7 @@ public abstract class SparseArrayColumnSourceConfiguration {
     public static final int IN_USE_RECYCLER_CAPACITY0 =
             getRecyclerCapacity("inuse.0", getDefaultInUseRecyclerCapacity0());
 
-    private static final String RECYCLER_MAXIMUM_CAPACITY_PROPERTY = "sparsearray.recycler.maximumCapacity.";
+    private static final String RECYCLER_MAXIMUM_CAPACITY_PROPERTY_PREFIX = "sparsearray.recycler.maximumCapacity.";
     /**
      * The most items a recycler grows to hold if not specified by type. Unlimited by default, since the recycled items
      * are soft references, which the garbage collector reclaims under memory pressure.
@@ -180,7 +180,8 @@ public abstract class SparseArrayColumnSourceConfiguration {
             getRecyclerMaximumCapacity("inuse.0", IN_USE_RECYCLER_MAXIMUM_CAPACITY, IN_USE_RECYCLER_CAPACITY0);
 
     private static int getRecyclerCapacity(final String thisType, final int defaultValue) {
-        return Configuration.getInstance().getIntegerWithDefault(RECYCLER_CAPACITY_PROPERTY + thisType, defaultValue);
+        return Configuration.getInstance().getIntegerWithDefault(RECYCLER_CAPACITY_PROPERTY_PREFIX + thisType,
+                defaultValue);
     }
 
     /**
@@ -189,7 +190,7 @@ public abstract class SparseArrayColumnSourceConfiguration {
      */
     private static int getRecyclerMaximumCapacity(final String thisType, final int defaultValue, final int capacity) {
         return Math.max(capacity, Configuration.getInstance()
-                .getIntegerWithDefault(RECYCLER_MAXIMUM_CAPACITY_PROPERTY + thisType, defaultValue));
+                .getIntegerWithDefault(RECYCLER_MAXIMUM_CAPACITY_PROPERTY_PREFIX + thisType, defaultValue));
     }
 
     private static int getDefaultInUseRecyclerCapacity2() {
