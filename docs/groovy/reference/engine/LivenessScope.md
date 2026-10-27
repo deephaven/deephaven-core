@@ -20,7 +20,7 @@ An instance of a `LivenessScope` class.
 
 ## Examples
 
-The following example uses [function-generated tables](../table-operations/create/create.md) to produce a blink table with 5 new rows per second. Encapsulating the function-generated table inside a liveness scope enables the safe deletion of data once the scope has been released. Calling `scope.release()` drops the scope's reference to the table and stops `tableFromFunc` from updating, unless the table is open in the UI, which keeps it updating until you close it.
+The following example uses [function-generated tables](../table-operations/create/create.md) to produce a refreshing table that replaces its 5 rows every second. Encapsulating the function-generated table inside a liveness scope enables the safe deletion of data once the scope has been released. Calling `scope.release()` drops the scope's reference to the table and stops `tableFromFunc` from updating, unless the table is open in the UI, which keeps it updating until you close it.
 
 ```groovy ticking-table order=null
 import io.deephaven.engine.liveness.*
