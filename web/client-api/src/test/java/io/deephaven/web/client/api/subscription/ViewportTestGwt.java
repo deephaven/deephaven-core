@@ -145,6 +145,277 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    public void testSubscriptionResumesAfterTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_008);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    // A full-table subscription, which no table ever owns
+                    DataOptions.SubscriptionOptions subOptions = new DataOptions.SubscriptionOptions();
+                    subOptions.columns = Js.cast(table.getColumns());
+                    TableSubscription sub = table.createSubscription(subOptions);
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    return assertUpdateReceived(sub, data -> assertEquals(1, data.getRows().length), 5009)
+                            .then(ignore -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5010).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(sub, data -> assertEquals(1, data.getRows().length), 8011),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "full subscription did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                sub.close();
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * A table, its own viewport subscription and a standalone full subscription each report the transport loss and the
+     * recovery, in that order, before data resumes.
+     */
+    public void testLifecycleEventsAcrossTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_033);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    TableViewportSubscription viewport = table.setViewport(0, 0, null);
+                    DataOptions.SubscriptionOptions subOptions = new DataOptions.SubscriptionOptions();
+                    subOptions.columns = Js.cast(table.getColumns());
+                    TableSubscription full = table.createSubscription(subOptions);
+
+                    List<String> lifecycle = new ArrayList<>();
+                    recordLifecycle(table, "table", lifecycle);
+                    recordLifecycle(viewport, "viewport", lifecycle);
+                    recordLifecycle(full, "full", lifecycle);
+
+                    return assertUpdateReceived(table, 1, 5034)
+                            .then(ignore -> assertUpdateReceived(full, data -> assertEquals(1, data.getRows().length),
+                                    5035))
+                            .then(ignore -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5036).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(table, 1, 8037)
+                                            .then(t -> assertUpdateReceived(full,
+                                                    data -> assertEquals(1, data.getRows().length), 8038)),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "data did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                for (String name : Arrays.asList("table", "viewport", "full")) {
+                                    assertEquals(name + " lifecycle, all events: " + lifecycle,
+                                            Arrays.asList(name + ":disconnect", name + ":reconnect"),
+                                            lifecycle.stream().filter(e -> e.startsWith(name + ":"))
+                                                    .collect(Collectors.toList()));
+                                }
+                                full.close();
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * When a state cannot be re-established on reconnect, the table and the subscription over it report reconnectfailed
+     * instead of reconnect, and the subscription is closed.
+     */
+    public void testReconnectFailedWhenRevivalFails() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_039);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    TableViewportSubscription viewport = table.setViewport(0, 0, null);
+                    List<String> lifecycle = new ArrayList<>();
+                    recordLifecycle(table, "table", lifecycle);
+                    recordLifecycle(viewport, "viewport", lifecycle);
+                    // A failed state also reports requestfailed to its tables, which is logged if unhandled
+                    table.addEventListener(JsTable.EVENT_REQUEST_FAILED, e -> lifecycle.add("table:requestfailed"));
+                    viewport.addEventListener(JsTable.EVENT_REQUEST_FAILED,
+                            e -> lifecycle.add("viewport:requestfailed"));
+
+                    return assertUpdateReceived(table, 1, 5040)
+                            .then(ignore -> {
+                                // Within one session a running state is not re-fetched on reconnect; mark both states
+                                // as needing one, as a new session would. The re-fetch then fails, because the server
+                                // refuses a second export to the same id.
+                                table.state().getHandle().setConnected(false);
+                                viewport.state().getHandle().setConnected(false);
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5041).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    waitFor(() -> lifecycle.contains("table:reconnectfailed")
+                                            && lifecycle.contains("viewport:reconnectfailed"), 100, 8042, table),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "reconnectfailed did not fire on both, events: " + lifecycle))))
+                            .then(ignore -> {
+                                assertFalse("no reconnect after a failed revival: " + lifecycle,
+                                        lifecycle.contains("table:reconnect")
+                                                || lifecycle.contains("viewport:reconnect"));
+                                assertTrue("subscription is closed after reconnectfailed", viewport.isClosed());
+                                viewport.close();
+                                assertFalse("closing a failed subscription releases its state",
+                                        viewport.state().hasRetainer(viewport));
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * A viewport moved after it was created comes back at the rows it had when the connection was lost.
+     */
+    public void testMovedViewportResumesWhereItWas() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_049);
+                    return Promise.resolve(session);
+                })
+                .then(table("growingForward"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    table.setViewport(0, 4, null);
+                    return assertUpdateReceived(table, 5, 5050)
+                            .then(t -> {
+                                table.setViewport(10, 14, null);
+                                return this.<JsTable, ViewportData>waitForEventWhere(table, JsTable.EVENT_UPDATED,
+                                        e -> e.getDetail().getOffset() == 10, 5051);
+                            })
+                            .then(t -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5052).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    this.<JsTable, ViewportData>waitForEvent(table, JsTable.EVENT_UPDATED,
+                                            e -> assertEquals("viewport resumed at a different offset", 10d,
+                                                    e.getDetail().getOffset()),
+                                            8053),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "viewport did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * A subscription whose own stream ends with a transport status while the connection is otherwise fine must be
+     * re-established, not left waiting for a reconnect that never comes.
+     */
+    public void testViewportResumesAfterItsStreamEndsUnavailable() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_054);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    table.setViewport(0, 0, null);
+                    return assertUpdateReceived(table, 1, 5055)
+                            .then(t -> {
+                                // Only the viewport's stream ends, with UNAVAILABLE; every other stream stays up.
+                                // The connection treats it as a lost connection and reconnects within the session
+                                transport.failStreams("DoExchange", 14, "stream lost by test");
+                                return Promise.race(
+                                        waitForEvent(ide, CoreClient.EVENT_RECONNECT, 8056).onInvoke(ide)
+                                                .then(reconnected -> assertUpdateReceived(table, 1, 8057)),
+                                        delay(8000).then(late -> Promise.reject(
+                                                "viewport did not resume after its stream ended with UNAVAILABLE")));
+                            })
+                            .then(ignore -> {
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    private static void recordLifecycle(HasEventHandling target, String name, List<String> into) {
+        target.addEventListener(JsTable.EVENT_DISCONNECT, e -> into.add(name + ":disconnect"));
+        target.addEventListener(JsTable.EVENT_RECONNECT, e -> into.add(name + ":reconnect"));
+        target.addEventListener(JsTable.EVENT_RECONNECTFAILED, e -> into.add(name + ":reconnectfailed"));
+    }
+
+    @SuppressWarnings("deprecation")
+    public void testLegacySubscribeResumesAfterTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_012);
+                    return Promise.resolve(session);
+                })
+                .then(table("ticking"))
+                .then(table -> {
+                    // The older spelling of a full-table subscription, still present on the release branches
+                    TableSubscription sub = table.subscribe(table.getColumns());
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    return assertUpdateReceived(sub, data -> assertEquals(1, data.getRows().length), 5013)
+                            .then(ignore -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5014).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(sub, data -> assertEquals(1, data.getRows().length), 8015),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "subscribe() subscription did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                sub.close();
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testViewportOnStaticTable() {
         connect(tables)
                 .then(table("staticTable"))

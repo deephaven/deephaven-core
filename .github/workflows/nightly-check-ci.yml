@@ -27,7 +27,7 @@ jobs:
       COVER: ${{ (github.event_name == 'schedule' || startsWith(github.ref_name, 'coverage/')) && matrix.test-jvm-version == '21' }}
     steps:
       - name: Free Disk Space
-        uses: endersonmenezes/free-disk-space@2a22f8c59cae9cddae7194b33e6b92d023b2b4b8 # v4.0.0
+        uses: endersonmenezes/free-disk-space@8b8cd4e2277836962939a8f3b4ea0ee4bc006156 # v4.0.1
         with:
           remove_haskell: true
           remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/share/gradle"

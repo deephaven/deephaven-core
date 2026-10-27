@@ -6,7 +6,6 @@ package io.deephaven.server.barrage;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -16,14 +15,8 @@ import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.generator.StringGenerator;
 import io.deephaven.extensions.barrage.BarrageMessageWriter;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.server.session.SessionService;
 import io.grpc.stub.StreamObserver;
-import org.apache.arrow.vector.types.pojo.ArrowType;
-import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
-import org.apache.arrow.vector.types.pojo.Field;
-import org.apache.arrow.vector.types.pojo.FieldType;
-import org.apache.arrow.vector.types.pojo.Schema;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -32,11 +25,9 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
@@ -232,26 +223,6 @@ public class BarrageMessageParallelPropagationTest extends BarrageMessageRoundTr
             updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
             nugget.validate("step " + step);
         }
-    }
-
-    /**
-     * The natural schema of {@code definition}, with each named column dictionary encoded under its own id.
-     */
-    private static Schema dictionaryEncodedSchema(final TableDefinition definition, final String... columns) {
-        final List<String> encoded = List.of(columns);
-        final Schema natural =
-                BarrageUtil.makeSchema(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, definition, Map.of(), false);
-        final List<Field> fields = natural.getFields().stream().map(field -> {
-            final int id = encoded.indexOf(field.getName());
-            if (id < 0) {
-                return field;
-            }
-            return new Field(field.getName(),
-                    new FieldType(field.isNullable(), field.getType(),
-                            new DictionaryEncoding(id, false, new ArrowType.Int(32, true)), field.getMetadata()),
-                    field.getChildren());
-        }).collect(Collectors.toList());
-        return new Schema(fields, natural.getCustomMetadata());
     }
 
     /** Drains what it is sent; its first message waits at {@code allReceiving} for the other subscribers' first. */

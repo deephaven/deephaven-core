@@ -6,6 +6,7 @@ import glob
 import itertools
 import os
 import pathlib
+import re
 import types
 from typing import Dict, Iterator, List, Optional
 
@@ -22,8 +23,53 @@ def _compiler_directives() -> pathlib.Path:
     return _jars_path() / "dh-compiler-directives.txt"
 
 
-def _default_vmoptions() -> pathlib.Path:
+def _default_vmoptions(java_major_version: Optional[int] = None) -> pathlib.Path:
+    """The default VM options file for a Java major version, falling back to the generic file when there is no
+    version-specific one or the version is unknown."""
+    if java_major_version is not None:
+        versioned = _jars_path() / f"dh-default-{java_major_version}.vmoptions"
+        if versioned.is_file():
+            return versioned
     return _jars_path() / "dh-default.vmoptions"
+
+
+def _find_jvm_dll(
+    java_home: Optional[str], config: Optional[types.ModuleType]
+) -> Optional[str]:
+    """The JVM shared library that jpyutil.init_jvm would load for these arguments, found with its precedence: the
+    configuration's jvm_dll (the given config, else jpyconfig or JPY_PY_CONFIG), then a search from java_home or the
+    configuration's java_home. Returns None when it cannot be determined, leaving the search to jpyutil.init_jvm."""
+    try:
+        import jpyutil
+
+        config = config or jpyutil._get_python_api_config()
+        jvm_dll = getattr(config, "jvm_dll", None)
+        if not jvm_dll:
+            jvm_dll = jpyutil.find_jvm_dll_file(
+                java_home_dir=java_home or getattr(config, "java_home", None)
+            )
+        return jvm_dll
+    except Exception:
+        return None
+
+
+def _java_major_version(jvm_dll: Optional[str]) -> Optional[int]:
+    """Best-effort major version of the JDK that holds a JVM shared library, read from that JDK's release file.
+    Returns None when it cannot be determined."""
+    try:
+        # The shared library sits a few directories below the java home, for example <java_home>/lib/server/libjvm.so
+        homes = list(pathlib.Path(jvm_dll).parents)[:4] if jvm_dll else []
+        for home in homes:
+            release = home / "release"
+            if release.is_file():
+                match = re.search(
+                    r'^JAVA_VERSION="(\d+)', release.read_text(), re.MULTILINE
+                )
+                return int(match.group(1)) if match else None
+    except Exception:
+        # Not knowing the version only means using the generic VM options
+        pass
+    return None
 
 
 def _jars() -> Iterator[pathlib.Path]:
@@ -41,7 +87,7 @@ DEFAULT_JVM_PROPERTIES = {
     "stderr.toLogBuffer": "false",
     "logback.configurationFile": "logback-minimal.xml",
 }
-DEFAULT_JVM_ARGS = [
+_BASE_JVM_ARGS = [
     # Disable the JVM's signal handling for interactive python consoles - if python will
     # not be handling signals like ctrl-c (for KeyboardInterrupt), this should be safe to
     # remove for a small performance gain.
@@ -49,8 +95,10 @@ DEFAULT_JVM_ARGS = [
     # Disable JIT in certain cases
     "-XX:+UnlockDiagnosticVMOptions",
     f"-XX:CompilerDirectivesFile={_compiler_directives()}",
-    f"-XX:VMOptionsFile={_default_vmoptions()}",
 ]
+# The defaults with the generic VM options file. start_jvm uses the VM options file for the Java version it starts
+# instead, when there is one.
+DEFAULT_JVM_ARGS = _BASE_JVM_ARGS + [f"-XX:VMOptionsFile={_default_vmoptions()}"]
 
 
 # Provide a util func to start the JVM, will use its own defaults if none are offered
@@ -71,7 +119,8 @@ def start_jvm(
             related JVM options. Defaults to None.
         default_jvm_args (Optional[List[str]]): The advanced JVM arguments to use instead of the default ones that
             Deephaven recommends, such as a specific garbage collector and related tuning parameters, or whether to
-            let Python or Java handle signals. Defaults to None, the Deephaven defaults as defined in DEFAULT_JVM_ARGS.
+            let Python or Java handle signals. Defaults to None, the Deephaven defaults as defined in DEFAULT_JVM_ARGS,
+            using the VM options file for the major version of the JVM being started when there is one.
         jvm_properties (Optional[Dict[str, str]]): The JVM properties to use. Defaults to None, meaning to use the
             predefined DEFAULT_JVM_PROPERTIES .
         java_home (Optional[str]): The JAVA_HOME path to use. Defaults to None, meaning using the JAVA_HOME environment
@@ -81,11 +130,15 @@ def start_jvm(
         config (Optional[types.ModuleType]): The JPY configuration module to use. Defaults to None, meaning not providing
             a JPY configuration module for the jpyutil module to load and config the JVM.
     """
-    default_jvm_args = default_jvm_args or DEFAULT_JVM_ARGS
+    java_home = java_home or os.environ.get("JAVA_HOME", None)
+    # Resolve the JVM once and pass it to init_jvm, so the VM options are chosen for the JVM that is loaded
+    jvm_dll = _find_jvm_dll(java_home, config)
+    default_jvm_args = default_jvm_args or _BASE_JVM_ARGS + [
+        f"-XX:VMOptionsFile={_default_vmoptions(_java_major_version(jvm_dll))}"
+    ]
     jvm_args = default_jvm_args + jvm_args if jvm_args else default_jvm_args
 
     jvm_properties = jvm_properties or DEFAULT_JVM_PROPERTIES
-    java_home = java_home or os.environ.get("JAVA_HOME", None)
 
     system_properties = dict()
     if prop_file:
@@ -127,7 +180,7 @@ def start_jvm(
 
     jvm.init_jvm(
         java_home=java_home,
-        # jvm_dll=jvm_dll,
+        jvm_dll=jvm_dll,
         jvm_classpath=jvm_classpath,
         jvm_properties=system_properties,
         jvm_options=jvm_args,

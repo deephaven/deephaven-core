@@ -26,6 +26,7 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import org.jspecify.annotations.Nullable;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
@@ -45,6 +46,32 @@ import static io.deephaven.web.client.api.JsTable.EVENT_ROWUPDATED;
  */
 @TsName(namespace = "dh")
 public class TableViewportSubscription extends AbstractTableSubscription {
+    /**
+     * The connection to the server was lost. No {@code updated} events fire until it is back; the viewport is re-sent
+     * automatically, and {@link #EVENT_RECONNECT} fires when that has happened, or {@link #EVENT_RECONNECTFAILED} if it
+     * cannot be.
+     */
+    @JsProperty(namespace = "dh.TableViewportSubscription")
+    public static final String EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT;
+    /**
+     * The connection is back and the viewport has been re-sent to the server; data follows in {@code updated} events.
+     */
+    @JsProperty(namespace = "dh.TableViewportSubscription")
+    public static final String EVENT_RECONNECT = JsTable.EVENT_RECONNECT;
+    /**
+     * The server-side table this viewport reads could not be re-established after a reconnect. The subscription is
+     * closed; create a new one from a live table. {@code event.detail} describes the failure. This says nothing about
+     * the connection as a whole.
+     */
+    @JsProperty(namespace = "dh.TableViewportSubscription")
+    public static final String EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
+    /**
+     * The server ended this viewport with an error; {@code event.detail} is the server's message. The subscription is
+     * closed and no more data will come; such failures are not recoverable, create a new one. A viewport owned by a
+     * table also reports this on the table.
+     */
+    @JsProperty(namespace = "dh.TableViewportSubscription")
+    public static final String EVENT_REQUEST_FAILED = JsTable.EVENT_REQUEST_FAILED;
 
     private DataOptions.ViewportSubscriptionOptions options;
     private double refresh;
@@ -186,18 +213,17 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     }
 
     @Override
-    public void fireEvent(String type) {
-        refire(new Event<>(type, null));
-    }
-
-    @Override
-    public <T> void fireEvent(String type, T detail) {
-        refire(new Event<T>(type, detail));
-    }
-
-    @Override
     public <T> void fireEvent(Event<T> e) {
-        refire(e);
+        switch (e.getType()) {
+            case EVENT_DISCONNECT:
+            case EVENT_RECONNECT:
+            case EVENT_RECONNECTFAILED:
+                // The table reports its own lifecycle; these describe only this subscription
+                super.fireEvent(e);
+                return;
+            default:
+                refire(e);
+        }
     }
 
     @Override
@@ -323,6 +349,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         if (options.isReverseViewport == null) {
             options.isReverseViewport = false;
         }
+        // Keep the latest viewport, so a revive re-sends where the viewport was, not where it started
+        this.options = options;
         try {
             this.sendBarrageSubscriptionRequest(options.rows.asRangeSet().getRange(),
                     Js.uncheckedCast(options.columns),

@@ -86,8 +86,11 @@ createJmhTask('jmhRunRowSetSubsetOf', 'RowSetSubsetOfBench')
 createJmhTask('jmhRunRowSetSmallInsert', 'RowSetSmallInsertBench')
 createJmhTask('jmhRunRowSetSmallRemove', 'RowSetSmallRemoveBench')
 createJmhTask('jmhRunRowSetSubsume', 'RowSetSubsumeBench')
+createJmhTask('jmhRunArrayContainerIor', 'ArrayContainerIorBench')
 createJmhTask('jmhRunNullableLongLongMap', 'NullableLongLongMapBench')
 createJmhTask('jmhRunPercentileBy', 'PercentileByBenchmark', [], '12g')
+createJmhTask('jmhRunPositionalSelect', 'PositionalSelectBenchmark', [], '32g')
+createJmhTask('jmhRunPositionalSelectRead', 'PositionalSelectReadBenchmark', [], '16g')
 
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->

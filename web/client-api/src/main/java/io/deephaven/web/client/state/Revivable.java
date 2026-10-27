@@ -9,4 +9,9 @@ package io.deephaven.web.client.state;
  */
 public interface Revivable {
     void revive(ClientTableState state);
+
+    /**
+     * The state could not be revived; this object cannot reconnect and should report that to its holder.
+     */
+    void die(Object failure);
 }

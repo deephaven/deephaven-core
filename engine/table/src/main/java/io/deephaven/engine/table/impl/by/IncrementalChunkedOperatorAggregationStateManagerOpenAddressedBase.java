@@ -281,6 +281,13 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
         }
+        if (alternatingColumnSources != null) {
+            // Every state is in the main table now, so neither side of an alternating source is read through the
+            // alternate; pointing both at the main table lets the drained alternate's keys be collected.
+            for (int ai = 0; ai < alternatingColumnSources.length; ++ai) {
+                alternatingColumnSources[ai].setSources(mainKeySources[ai], mainKeySources[ai]);
+            }
+        }
         this.alternateOutputPosition = null;
     }
 
@@ -398,6 +405,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         // the alternate table.
         if (rehashPointer > 0) {
             rehashInternalPartial(CHUNK_SIZE);
+            if (rehashPointer == 0) {
+                clearAlternate();
+            }
         }
     }
 

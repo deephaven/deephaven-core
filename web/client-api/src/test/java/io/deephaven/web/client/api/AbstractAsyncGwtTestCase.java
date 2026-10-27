@@ -189,7 +189,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     protected IdeConnection lastIdeConnection;
 
     /**
-     * As {@link #connect(TableSourceBuilder)}, with connect options, for a test that needs its own transport.
+     * Connects and authenticates to the configured server with the given options, and runs the specified scripts.
      */
     protected Promise<IdeSession> connect(TableSourceBuilder tables, ConnectOptions connectOptions) {
         // start by delaying test finish by 1.0s so we fail fast in cases where we aren't set up right

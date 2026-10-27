@@ -126,9 +126,27 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * {@code event.detail} is the currently visible viewport data based on the active viewport configuration.
      */
     public static final String EVENT_UPDATED = "updated",
+            /**
+             * The connection to the server was lost. No events fire until it is back; the viewport is re-sent
+             * automatically, and {@link #EVENT_RECONNECT} fires when that has happened, or
+             * {@link #EVENT_RECONNECTFAILED} if it cannot be.
+             */
             EVENT_DISCONNECT = "disconnect",
+            /**
+             * The connection is back and the viewport has been re-sent to the server; data follows in
+             * {@link #EVENT_UPDATED} events.
+             */
             EVENT_RECONNECT = "reconnect",
+            /**
+             * This tree table could not be re-established after a reconnect and cannot be used again; fetch a new one.
+             * {@code event.detail} describes the failure. This says nothing about the connection as a whole.
+             */
             EVENT_RECONNECTFAILED = "reconnectfailed",
+            /**
+             * The server rejected a change to this tree table or ended its viewport stream with an error;
+             * {@code event.detail} is the server's message. The viewport is gone; the next {@code setViewport} starts a
+             * new one, and if that fails too the tree table cannot be used again.
+             */
             EVENT_REQUEST_FAILED = "requestfailed";
 
     private static final double ACTION_EXPAND = 0b001;
@@ -753,10 +771,12 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         @Override
         protected void onStreamEnd(io.grpc.Status status) {
             super.onStreamEnd(status);
-            JsTreeTable.this.stream = null;
-            if (!status.isOk()) {
-                failureHandled(status.getDescription());
+            if (WorkerConnection.isTransportError(status)) {
+                // The subscription is back in STARTING; reconnect() re-sends it once the connection is back
+                return;
             }
+            // Closed or failed; the failure itself was reported through the requestfailed listener
+            JsTreeTable.this.stream = null;
         }
 
         public void setViewport(double firstRow, double lastRow, JsArray<Column> columns, Double updateInterval) {
@@ -775,6 +795,32 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             detail.setOffset(this.serverViewport.getFirstRow());
             fireEvent(EVENT_UPDATED, detail);
         }
+    }
+
+    @Override
+    public Promise<?> refetch() {
+        // TODO(deephaven-core#3604) a tree cannot be re-fetched into a new session; say so rather than reconnect
+        String reason = "Cannot reconnect a TreeTable with refetch(), see deephaven-core#3604";
+        die(reason);
+        return Promise.reject(reason);
+    }
+
+    @Override
+    public void reconnect() {
+        if (stream == null) {
+            super.reconnect();
+            return;
+        }
+        // The view state is not in the connection's cache, so the reviver never reaches this subscription; re-send
+        // it here before announcing the reconnect. A stream that survived is left alone by revive().
+        stream.then(subscription -> {
+            subscription.revive(subscription.state());
+            JsTreeTable.super.reconnect();
+            return null;
+        }, failure -> {
+            JsTreeTable.super.reconnect();
+            return null;
+        });
     }
 
     private void replaceSubscription(RebuildStep step) {
@@ -863,6 +909,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                                 handleUpdate(nextUpdateColumns, nextSort, nextFilters, detail,
                                         alwaysFireEvent);
                             });
+                    // The subscription is never exposed, so its failures are this tree's failures
+                    subscription.addEventListener(JsTable.EVENT_REQUEST_FAILED,
+                            e -> failureHandled(String.valueOf(e.getDetail())));
                     return Promise.resolve(subscription);
                 });
         stream.catch_(err -> {

@@ -4,6 +4,8 @@ plugins {
 }
 
 evaluationDependsOn ':docker-server-jetty'
+// For its deephaven.javaOpts / JAVA_OPTS override, which replaces the default VM options in the wheel
+evaluationDependsOn ':py-embedded-server-java-runtime'
 
 configurations {
     classpath
@@ -51,6 +53,11 @@ def testEmbeddedServer = Docker.registerDockerTask(project, 'testEmbeddedServer'
         copyFile('wheels', '/wheels')
 
         workingDir('/project')
+        // test_vmoptions.py expects an override of the default VM options instead of the defaults
+        def javaOptsOverride = project(':py-embedded-server-java-runtime').deephavenJavaOptsOverride
+        if (javaOptsOverride != null) {
+            environmentVariable('DH_JAVA_OPTS_OVERRIDE', '"' + javaOptsOverride.join(' ') + '"')
+        }
         runCommand '''set -eux; \\
                       mkdir -p /out/report; \\
                       pip install --upgrade pip; \\

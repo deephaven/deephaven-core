@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -25,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private final QueryTable dependent;
+    private final TrackingRowSet parentRowSet;
     private final TrackingRowSet resultRowSet;
     private final ModifiedColumnSet.Transformer transformer;
     private final SelectAndViewAnalyzer analyzer;
@@ -43,6 +45,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             SelectAndViewAnalyzer analyzer) {
         super(description, parent, dependent);
         this.dependent = dependent;
+        this.parentRowSet = parent.getRowSet();
         this.resultRowSet = dependent.getRowSet();
 
         // Now calculate the other dependencies and invert
@@ -84,9 +87,22 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         updateInProgress = true;
         final TableUpdate acquiredUpdate = upstream.acquire();
 
+        if (analyzer.flatResult()) {
+            // The parent is append-only, so its adds occupy the final positions, and the result row set grows by the
+            // same amount
+            Assert.assertion(acquiredUpdate.removed().isEmpty(), "acquiredUpdate.removed().isEmpty()");
+            Assert.assertion(acquiredUpdate.modified().isEmpty(), "acquiredUpdate.modified().isEmpty()");
+            Assert.assertion(acquiredUpdate.shifted().empty(), "acquiredUpdate.shifted().empty()");
+            if (acquiredUpdate.added().isNonempty()) {
+                final long firstAddedPosition = resultRowSet.size();
+                resultRowSet.writableCast().insertRange(
+                        firstAddedPosition, firstAddedPosition + acquiredUpdate.added().size() - 1);
+            }
+        }
+
         final WritableRowSet toClear = resultRowSet.copyPrev();
         final SelectAndViewAnalyzer.UpdateHelper updateHelper =
-                new SelectAndViewAnalyzer.UpdateHelper(resultRowSet, acquiredUpdate);
+                new SelectAndViewAnalyzer.UpdateHelper(parentRowSet, acquiredUpdate);
         toClear.remove(resultRowSet);
 
         JobScheduler jobScheduler;
@@ -133,8 +149,18 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         try {
             SparseArrayColumnSource.clearBlocksWithoutLiveRows(toClear, resultRowSet, sparseArraysToFree);
 
-            final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
-                    upstream.modified().copy(), upstream.shifted(), dependent.getModifiedColumnSetForUpdates());
+            final TableUpdateImpl downstream;
+            if (analyzer.flatResult()) {
+                final long addedSize = upstream.added().size();
+                downstream = new TableUpdateImpl(
+                        addedSize == 0 ? RowSetFactory.empty()
+                                : RowSetFactory.fromRange(resultRowSet.size() - addedSize, resultRowSet.size() - 1),
+                        RowSetFactory.empty(), RowSetFactory.empty(), RowSetShiftData.EMPTY,
+                        dependent.getModifiedColumnSetForUpdates());
+            } else {
+                downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
+                        upstream.modified().copy(), upstream.shifted(), dependent.getModifiedColumnSetForUpdates());
+            }
             transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
             dependent.notifyListeners(downstream);
             upstream.release();
