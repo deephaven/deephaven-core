@@ -816,6 +816,15 @@ public class DeferredViewTableTest {
     }
 
     @Test
+    public void testFilterMixingShiftedAndPlainColumnsThroughRename() {
+        final Table source = TableTools.newTable(
+                TableTools.intCol("A", 0, 10, 20),
+                TableTools.intCol("B", 10, 20, 30));
+        assertDeferredMatchesInMemory(source, t -> t.renameColumns("A = B", "B = A").where("A_[i - 1] == B"));
+        assertDeferredMatchesInMemory(source, t -> t.renameColumns("X = A").where("X_[i - 1] < X"));
+    }
+
+    @Test
     public void testFilterOnColumnAndItsArrayThroughRename() {
         for (final Function<Table, Table> rename : partialRenames()) {
             for (final String filter : new String[] {

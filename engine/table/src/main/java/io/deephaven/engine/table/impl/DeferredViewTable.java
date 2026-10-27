@@ -344,6 +344,14 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             final WhereFilter preFilter = filter.walk(new WhereFilter.Visitor<>() {
                 @Override
                 public WhereFilter visitOther(WhereFilter filter) {
+                    if (ConditionFilter.extractConditionFilter(filter)
+                            .map(AbstractConditionFilter::hasConstantArrayAccess)
+                            .orElse(false)) {
+                        // a filter with constant array access, such as A_[i - 1], is rebuilt from the formula text
+                        // where the filter is executed (ShiftedColumnsFactory.where), which drops the renames, so
+                        // the filter stays after the view
+                        return null;
+                    }
                     if (filter instanceof RenameableFilter renameable) {
                         return renameable.renameFilter(myRenames);
                     }
