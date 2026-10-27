@@ -32,6 +32,8 @@ import org.jpy.PyObject;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFIX;
@@ -135,7 +137,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl implements
 
                 // apply renames to shift column pairs immediately
                 if (!outerToInnerNames.isEmpty()) {
-                    String newFormula = formulaShiftedColumnDefinitions.getFirst();
+                    final Map<String, String> shiftedColumnRenames = new HashMap<>();
                     final Set<ShiftedColumnDefinition> resultSet = new LinkedHashSet<>();
                     for (final ShiftedColumnDefinition shift : formulaShiftedColumnDefinitions.getSecond()) {
                         if (outerToInnerNames.containsKey(shift.getColumnName())) {
@@ -143,11 +145,20 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl implements
                             final ShiftedColumnDefinition newDefinition =
                                     new ShiftedColumnDefinition(innerName, shift.getShiftAmount());
                             resultSet.add(newDefinition);
-                            newFormula = newFormula.replaceAll(shift.getResultColumnName(),
-                                    newDefinition.getResultColumnName());
+                            shiftedColumnRenames.put(shift.getResultColumnName(), newDefinition.getResultColumnName());
                         } else {
                             resultSet.add(shift);
                         }
+                    }
+                    String newFormula = formulaShiftedColumnDefinitions.getFirst();
+                    if (!shiftedColumnRenames.isEmpty()) {
+                        // replace every shifted column in one pass: a swap maps A to B and B to A, so replacing one
+                        // shifted column at a time would replace the first replacement again
+                        newFormula = Pattern.compile(shiftedColumnRenames.keySet().stream()
+                                .map(Pattern::quote)
+                                .collect(Collectors.joining("|")))
+                                .matcher(newFormula)
+                                .replaceAll(match -> Matcher.quoteReplacement(shiftedColumnRenames.get(match.group())));
                     }
                     formulaShiftedColumnDefinitions = new Pair(newFormula, resultSet);
                 }

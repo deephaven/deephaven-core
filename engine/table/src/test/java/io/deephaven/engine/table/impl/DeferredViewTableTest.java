@@ -802,6 +802,20 @@ public class DeferredViewTableTest {
     }
 
     @Test
+    public void testFilterWithShiftedColumnsThroughSwap() {
+        // a swap maps A to B and B to A, so both shifted columns must be renamed at once
+        final Table source = TableTools.newTable(
+                TableTools.intCol("A", 1, 2, 3, 4),
+                TableTools.intCol("B", 10, 20, 30, 40));
+        for (final String filter : new String[] {
+                "A_[i - 1] != B_[i - 1]",
+                "A_[i - 1] == 20",
+                "B_[i + 1] == 3 || A_[i + 1] == 30"}) {
+            assertDeferredMatchesInMemory(source, t -> t.renameColumns("A = B", "B = A").where(filter));
+        }
+    }
+
+    @Test
     public void testFilterOnColumnAndItsArrayThroughRename() {
         for (final Function<Table, Table> rename : partialRenames()) {
             for (final String filter : new String[] {
