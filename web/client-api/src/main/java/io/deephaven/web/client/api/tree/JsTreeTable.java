@@ -141,8 +141,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
              */
             EVENT_RECONNECTFAILED = "reconnectfailed",
             /**
-             * An error occurred on this tree table on the server or while communicating with it. {@code event.detail}
-             * describes it; recent operations were likely unsuccessful and may need to be reapplied.
+             * The server rejected a change to this tree table or ended its viewport stream with an error;
+             * {@code event.detail} is the server's message. The viewport is gone; the next {@code setViewport} starts a
+             * new one, and if that fails too the tree table cannot be used again.
              */
             EVENT_REQUEST_FAILED = "requestfailed";
 

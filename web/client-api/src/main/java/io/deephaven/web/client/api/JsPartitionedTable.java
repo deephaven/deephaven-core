@@ -64,6 +64,13 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
              */
             EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
 
+    /**
+     * The server ended the key subscription with an error, so no new keys will be reported; keys already known can
+     * still be fetched. Such failures are not recoverable: fetch a new partitioned table. {@code event.detail} is the
+     * server's message.
+     */
+    public static final String EVENT_REQUEST_FAILED = JsTable.EVENT_REQUEST_FAILED;
+
     private final WorkerConnection connection;
     private final JsWidget widget;
     private List<String> keyColumnTypes;
@@ -155,6 +162,9 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             fireEvent(EVENT_RECONNECTFAILED, e.getDetail());
             suppressEvents();
         });
+        // The subscription is never exposed, so its failures are this table's failures
+        subscription.addEventListener(JsTable.EVENT_REQUEST_FAILED,
+                e -> failureHandled(String.valueOf(e.getDetail())));
 
         LazyPromise<JsPartitionedTable> promise = new LazyPromise<>();
         subscription.addEventListenerOneShot(TableSubscription.EVENT_UPDATED, data -> promise.succeed(this));

@@ -63,6 +63,13 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      */
     @JsProperty(namespace = "dh.TableViewportSubscription")
     public static final String EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
+    /**
+     * The server ended this viewport with an error; {@code event.detail} is the server's message. The subscription is
+     * closed and no more data will come; such failures are not recoverable, create a new one. A viewport owned by a
+     * table also reports this on the table.
+     */
+    @JsProperty(namespace = "dh.TableViewportSubscription")
+    public static final String EVENT_REQUEST_FAILED = JsTable.EVENT_REQUEST_FAILED;
 
     private DataOptions.ViewportSubscriptionOptions options;
     private double refresh;
