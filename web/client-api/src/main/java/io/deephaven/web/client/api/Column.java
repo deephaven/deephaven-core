@@ -252,7 +252,7 @@ public class Column {
      */
     @JsMethod
     public FilterValue filter() {
-        return new FilterValue(this);
+        return FilterValue.ofColumn(getName());
     }
 
     /**
