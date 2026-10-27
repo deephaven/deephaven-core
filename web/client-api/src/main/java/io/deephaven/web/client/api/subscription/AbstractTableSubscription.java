@@ -146,6 +146,11 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
     protected Status status = Status.STARTING;
     /** Set when the stream was lost to a transport error, cleared once the subscription is re-sent. */
     private boolean disconnected;
+    /**
+     * The rows a full subscription held when it was re-sent; reported as removed by the first update after that, so a
+     * consumer accumulating rows replaces them with the snapshot instead of adding it on top.
+     */
+    private RangeSet rowsBeforeRevive;
 
     private String failMsg;
 
@@ -194,6 +199,12 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
 
             // Replace the reader, it holds state that varies per stream
             reader = new WebBarrageMessageReader();
+
+            // If this is an attempt to reconnect, store a reference to the last known rowset so we can report it
+            // to be removed to consumers for the first succesful update after the revive.
+            if (disconnected && barrageSubscription != null && subscriptionType == SubscriptionType.FULL_SUBSCRIPTION) {
+                rowsBeforeRevive = barrageSubscription.getCurrentRowSet().copy();
+            }
 
             // In order to create the subscription, we need to already have the table resolved, so we know if it
             // is a blink table or not. In turn, we can't be prepared to handle any messages from the server until
@@ -339,6 +350,13 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
             BitSet modifiedColumnSet) {
         if (!isSubscriptionReady()) {
             return;
+        }
+        if (rowsBeforeRevive != null) {
+            // First update after a revive: everything known before is gone unless the snapshot adds it again
+            RangeSet removed = rowsBeforeRevive;
+            rowsBeforeRevive = null;
+            removed.addRangeSet(rowsRemoved);
+            rowsRemoved = removed;
         }
 
         notifyUpdate(rowsAdded, rowsRemoved, totalMods, shifted);
