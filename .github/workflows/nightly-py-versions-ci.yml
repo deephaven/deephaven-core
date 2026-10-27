@@ -119,8 +119,8 @@ jobs:
           docker compose -f Integrations/docker-compose.yml up -d --wait
 
       - name: Run tests
-        # Developers run py/run-tests-venv.sh, which this calls, in their own venv. See py/<suite>/TESTING.md. On older
-        # Pythons, uv installs older numpy, pandas, pyarrow and numba, since the newest releases dropped them.
+        # See .github/py-versions/README.md. On older Pythons, uv installs older numpy, pandas, pyarrow and numba, since
+        # the newest releases dropped them.
         run: .github/scripts/py-versions-test.sh ${{ matrix.suite }} ${{ matrix.python-version }}
 
       - name: Upload Test Results

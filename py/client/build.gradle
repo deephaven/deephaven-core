@@ -77,7 +77,7 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
         from ('README.md') {
             into 'project/'
         }
-        from ('run-tests-docker.sh') {
+        from ('run-tests.sh') {
             into 'project/'
         }
     }
@@ -100,7 +100,7 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
         environmentVariable 'DH_PORT', '10000'
     }
     parentContainers = [ Docker.registryTask(project, 'python') ]
-    entrypoint = ['./run-tests-docker.sh', project.hasProperty("coverage.enabled")?project.property("coverage.enabled"):'false']
+    entrypoint = ['./run-tests.sh', project.hasProperty("coverage.enabled")?project.property("coverage.enabled"):'false']
     copyOut {
         into layout.buildDirectory.dir('test-results')
     }

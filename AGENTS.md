@@ -82,13 +82,6 @@ part of `.github/workflows/check-ci.yml`, so auto-merge on such a PR is gated on
 Test JVMs run with assertions enabled and use `dh-tests.prop` as the configuration root.
 `@Category(ParallelTest.class)` opts a test into parallel execution.
 
-The Python tests in `py/server/tests` and `py/client/tests` run in Docker through `check`
-(`:Integrations:test-py-deephaven` and `:py-client:testPyClient`, on the Docker images' Python), or
-without Docker in an active venv with `py/run-tests-venv.sh <server|client> [test ...]`, on any
-Python version. The venv path is faster to iterate on. Read `py/server/TESTING.md` or
-`py/client/TESTING.md` for the venv setup before running it. The nightly
-`.github/workflows/nightly-py-versions-ci.yml` runs both suites this way on every supported Python.
-
 ## Lint / Format / Verification tasks
 
 Code style is enforced by **Spotless** (Google-derived style, see `style/`); generated checked-in

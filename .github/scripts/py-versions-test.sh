@@ -5,8 +5,8 @@ set -o pipefail
 set -o nounset
 
 # CI only, for the Nightly Python Versions CI workflow. Makes a fresh venv for one Python version, installs the
-# Deephaven wheels and the test dependencies, then calls py/run-tests-venv.sh. Developers call that script in their own
-# venv, see py/<suite>/TESTING.md.
+# Deephaven wheels and the test dependencies, then calls .github/py-versions/run-tests-venv.sh. See
+# .github/py-versions/README.md.
 # Each run gets the newest patch release of the Python version that uv knows and the newest release of every
 # dependency, so the matrix catches breaking releases early.
 #
@@ -53,8 +53,8 @@ while IFS= read -r req; do
     req="${req%%#*}"
     [[ -z "${req// /}" ]] && continue
     uv pip install --quiet --python "${VENV}/bin/python" "${req}" || echo "Skipping ${req}: not installable on ${PY_VERSION}"
-done < "${ROOT}/py/${SUITE}/requirements-test.txt"
+done < "${ROOT}/.github/py-versions/requirements-${SUITE}.txt"
 
 export VIRTUAL_ENV="${VENV}"
 export PATH="${VENV}/bin:${PATH}"
-exec "${ROOT}/py/run-tests-venv.sh" "${SUITE}" "$@"
+exec "${ROOT}/.github/py-versions/run-tests-venv.sh" "${SUITE}" "$@"

@@ -8,7 +8,7 @@ set -o pipefail
 # tracking off (false)
 
 if [[ $# != 1 ]]; then
-        echo "$0: run-tests-docker.sh <true | false>"
+        echo "$0: run-tests.sh <true | false>"
         exit 1
 fi
 
