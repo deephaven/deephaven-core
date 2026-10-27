@@ -161,8 +161,9 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table("ticking"))
                 .then(table -> {
                     IdeConnection ide = lastIdeConnection;
-                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
-                    });
+                    // The connection itself reports the loss once, however many streams it had open
+                    int[] connectionDisconnects = {0};
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> connectionDisconnects[0]++);
                     TableViewportSubscription viewport = table.setViewport(0, 0, null);
                     DataOptions.SubscriptionOptions subOptions = new DataOptions.SubscriptionOptions();
                     subOptions.columns = Js.cast(table.getColumns());
@@ -193,6 +194,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                                             lifecycle.stream().filter(e -> e.startsWith(name + ":"))
                                                     .collect(Collectors.toList()));
                                 }
+                                assertEquals("connection reports one disconnect per cut", 1, connectionDisconnects[0]);
                                 full.close();
                                 table.close();
                                 return Promise.resolve(table);
