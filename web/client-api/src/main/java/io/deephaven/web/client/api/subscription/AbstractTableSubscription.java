@@ -201,8 +201,10 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
             reader = new WebBarrageMessageReader();
 
             // If this is an attempt to reconnect, store a reference to the last known rowset so we can report it
-            // to be removed to consumers for the first succesful update after the revive.
-            if (disconnected && barrageSubscription != null && subscriptionType == SubscriptionType.FULL_SUBSCRIPTION) {
+            // to be removed to consumers for the first successful update after the revive. If one is already
+            // stored, the consumer has seen nothing since it was taken, so it stays.
+            if (rowsBeforeRevive == null && disconnected && barrageSubscription != null
+                    && subscriptionType == SubscriptionType.FULL_SUBSCRIPTION) {
                 rowsBeforeRevive = barrageSubscription.getCurrentRowSet().copy();
             }
 
