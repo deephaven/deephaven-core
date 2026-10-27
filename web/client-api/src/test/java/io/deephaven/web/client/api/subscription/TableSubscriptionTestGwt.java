@@ -152,6 +152,67 @@ public class TableSubscriptionTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    /**
+     * If the replacement stream is itself cut before it delivers a snapshot, the rows the consumer knows are still the
+     * ones from before the first cut, and the snapshot that finally arrives must remove those.
+     */
+    public void testSecondCutBeforeSnapshotStillRemovesTheRowsItKnew() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(30_090);
+                    return Promise.resolve(session);
+                })
+                .then(table("growingForward"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    DataOptions.SubscriptionOptions subOptions = new DataOptions.SubscriptionOptions();
+                    subOptions.columns = Js.cast(table.getColumns());
+                    TableSubscription sub = table.createSubscription(subOptions);
+                    double[] knownRows = {0};
+                    sub.addEventListener(TableSubscription.EVENT_UPDATED,
+                            (Event<AbstractTableSubscription.SubscriptionEventData> e) -> knownRows[0] =
+                                    e.getDetail().getFullIndex().getSize());
+                    return assertUpdateReceived(sub, data -> assertTrue(data.getRows().length > 0), 5091)
+                            .then(ignore -> {
+                                double knownAtCut = knownRows[0];
+                                assertTrue("rows known before the cut", knownAtCut > 0);
+                                // Nothing the replacement stream sends reaches the client until released
+                                transport.holdStreams("DoExchange");
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5092).onInvoke(ide)
+                                        // the subscription has re-sent; its new stream is held, so no snapshot
+                                        .then(reconnected -> waitFor(() -> transport.hasOpenStream("DoExchange"), 10,
+                                                5093, ide))
+                                        .then(replaced -> {
+                                            transport.cutAll();
+                                            return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5094).onInvoke(ide);
+                                        })
+                                        .then(reconnected -> {
+                                            transport.holdStreams(null);
+                                            return Promise.race(
+                                                    this.<TableSubscription, AbstractTableSubscription.SubscriptionEventData>waitForEvent(
+                                                            sub, TableSubscription.EVENT_UPDATED, e -> assertEquals(
+                                                                    "first update after two cuts must remove the rows known before the first",
+                                                                    knownAtCut, e.getDetail().getRemoved().getSize()),
+                                                            8095),
+                                                    delay(8000).then(late -> Promise.reject(
+                                                            "full subscription did not resume after the second cut")));
+                                        });
+                            })
+                            .then(ignore -> {
+                                sub.close();
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     @Override
     public String getModuleName() {
         return "io.deephaven.web.DeephavenIntegrationTest";
