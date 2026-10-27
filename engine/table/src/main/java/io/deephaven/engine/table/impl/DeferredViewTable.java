@@ -13,6 +13,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
+import io.deephaven.engine.table.impl.filter.ExtractShiftedColumnDefinitions;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -201,8 +202,21 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             return coalesce();
         }
 
+        // A filter with constant array access, such as A_[i - 1], reads shifted columns built over every row that the
+        // where receives (ShiftedColumnsFactory.where). Run the whole where on the coalesced table, as a QueryTable
+        // would, rather than split the where's filters before and after the deferred operations.
+        final WhereFilter[] initializedFilters = WhereFilter.copyFrom(innerFilters);
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        for (final WhereFilter whereFilter : initializedFilters) {
+            whereFilter.init(definition, compilationProcessor);
+        }
+        compilationProcessor.compile();
+        if (Arrays.stream(initializedFilters).anyMatch(ExtractShiftedColumnDefinitions::hasAny)) {
+            return coalesce().where(filter);
+        }
+
         // only the pre-view filters are passed down to the coalesce check and enable automatic coalescing
-        final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(innerFilters));
+        final PreAndPostFilters preAndPostFilters = applyFilterRenamings(initializedFilters);
         if (tableReference.shouldCoalesce(preAndPostFilters.preViewFilters)) {
             final WhereFilter[] allFilters = concat(deferredFilters, innerFilters);
             SplitAndApply splitAndApply = splitAndApplyFilters(allFilters, tableReference);
@@ -344,14 +358,6 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             final WhereFilter preFilter = filter.walk(new WhereFilter.Visitor<>() {
                 @Override
                 public WhereFilter visitOther(WhereFilter filter) {
-                    if (ConditionFilter.extractConditionFilter(filter)
-                            .map(AbstractConditionFilter::hasConstantArrayAccess)
-                            .orElse(false)) {
-                        // a filter with constant array access, such as A_[i - 1], is rebuilt from the formula text
-                        // where the filter is executed (ShiftedColumnsFactory.where), which drops the renames, so
-                        // the filter stays after the view
-                        return null;
-                    }
                     if (filter instanceof RenameableFilter renameable) {
                         return renameable.renameFilter(myRenames);
                     }

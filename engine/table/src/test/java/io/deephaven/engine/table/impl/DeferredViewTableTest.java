@@ -825,6 +825,20 @@ public class DeferredViewTableTest {
     }
 
     @Test
+    public void testShiftedFilterSeesTheRowsOfItsWhere() {
+        // a filter with constant array access reads shifted columns built over the rows that the filter's where
+        // receives, so no sibling filter of the same where may run first
+        final Table source = TableTools.newTable(
+                TableTools.intCol("A", 1, 2, 3),
+                TableTools.intCol("C", 0, 3, 3));
+        assertDeferredMatchesInMemory(source, t -> t.renameColumns("B = A").where("B_[i - 1] == 1", "C == 3"));
+        assertDeferredMatchesInMemory(source, t -> t.renameColumns("B = A").where("C == 3").where("B_[i - 1] == 2"));
+        // the shifted filter reads only a column that the rename passes through, and A names the query-scope variable
+        ExecutionContext.getContext().getQueryScope().putParam("A", 0);
+        assertDeferredMatchesInMemory(source, t -> t.renameColumns("B = A").where("C_[i - 1] == A"));
+    }
+
+    @Test
     public void testFilterOnColumnAndItsArrayThroughRename() {
         for (final Function<Table, Table> rename : partialRenames()) {
             for (final String filter : new String[] {
