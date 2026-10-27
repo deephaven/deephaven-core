@@ -786,6 +786,22 @@ public class DeferredViewTableTest {
     }
 
     @Test
+    public void testFilterThroughTwoSwaps() {
+        // after both swaps, A reads the source's C, B reads the source's A, and C reads the source's B
+        final Function<Table, Table> twoSwaps = t -> t.renameColumns("A = B", "B = A").renameColumns("A = C", "C = A");
+        final Table source = TableTools.newTable(
+                TableTools.intCol("A", 1, 4, 7),
+                TableTools.intCol("B", 2, 5, 8),
+                TableTools.intCol("C", 3, 6, 9));
+        for (final String filter : new String[] {"B == 1 && A == 3", "A == 6", "C == 8", "A + C == 11"}) {
+            assertDeferredMatchesInMemory(source, twoSwaps.andThen(t -> t.where(filter)));
+        }
+        // with three column types, a filter that reads the wrong column fails to compile or selects the wrong row
+        assertDeferredMatchesInMemory(renameSource(),
+                twoSwaps.andThen(t -> t.where("A > 2.0 && C.equals(`y`) && B == 2")));
+    }
+
+    @Test
     public void testFilterOnColumnAndItsArrayThroughRename() {
         for (final Function<Table, Table> rename : partialRenames()) {
             for (final String filter : new String[] {

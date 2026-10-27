@@ -9,6 +9,13 @@ import java.util.Map;
  * This interface marks WhereFilters that can produce a copy that reads the filter's columns under other names. A
  * {@link io.deephaven.engine.table.impl.DeferredViewTable DeferredViewTable} uses the copy to move a filter written
  * after a view to before the view, so that the view's source table can apply the filter before coalescing.
+ * <p>
+ * Only single filters implement this interface. Filters that wrap or combine other filters (NOT, serial, barriers, AND,
+ * OR) do not: the {@code DeferredViewTable} visitor that executes filters before a view renames the single filters
+ * inside them and decides for each wrapper whether the result may be executed before the view. An AND or OR may be
+ * executed before the view only if every sub-filter can be renamed, and a serial filter never is, since a serial filter
+ * must stay in order with the other filters. Both are decisions about where a filter is executed; a renamed copy is
+ * used only when the whole filter can be executed before the view.
  */
 public interface RenameableFilter extends WhereFilter {
 

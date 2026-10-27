@@ -40,10 +40,10 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl implements
     private static final Logger log = LoggerFactory.getLogger(AbstractConditionFilter.class);
     final Map<String, String> outerToInnerNames;
     /**
-     * The formula names that may resolve as columns, or null for a filter that was never renamed, where any column of
-     * the table being filtered may. A renamed filter keeps the names that the original filter resolved as columns, so
-     * that a name the original filter read as a query-scope variable never resolves as a column that a view hid, once
-     * the filter moves before the view.
+     * The formula input this filter reads from columns, recorded when the filter is renamed; null if the filter was
+     * never renamed. A renamed filter is executed before a view, on the view's source table, which may have columns
+     * that the view hides. Restricting column reads to this set keeps any other input, such as a query-scope variable,
+     * from reading a hidden column of the same name.
      */
     @Nullable
     final Set<String> formulaColumns;
@@ -110,8 +110,9 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl implements
                         formula, tableDefinition.getColumnNameMap(), outerToInnerNames,
                         compilationProcessor.getFormulaImports(), unboxArguments);
             } else {
-                // offer the parser only the formula's own columns, under the formula's names; the other columns of
-                // the table being filtered must not shadow a query-scope variable of the same name
+                // offer the parser a column for each formula input in formulaColumns, as the formula writes the input,
+                // and no other column, so the other columns of the table being filtered cannot shadow a query-scope
+                // variable
                 final Map<String, ColumnDefinition<?>> availableColumns = new LinkedHashMap<>();
                 for (final String formulaColumn : formulaColumns) {
                     final ColumnDefinition<?> column = tableDefinition.getColumn(
@@ -384,8 +385,9 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl implements
     public abstract AbstractConditionFilter renameFilter(Map<String, String> renames);
 
     /**
-     * Whether the formula name {@code formulaName} resolves as a column of {@code tableDefinition}: the name must read
-     * a column of the table, and a renamed filter must have resolved the name as a column before the rename.
+     * Whether the formula input {@code formulaName} reads a column of {@code tableDefinition}: the input must name a
+     * column of the table, through any rename, and a renamed filter must have read the input from a column before the
+     * rename.
      */
     private boolean resolvesAsColumn(
             @NotNull final TableDefinition tableDefinition,

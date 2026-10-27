@@ -339,11 +339,13 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 continue;
             }
 
+            // Single filters rename through RenameableFilter; this visitor handles wrappers and AND/OR itself, see
+            // RenameableFilter.
             final WhereFilter preFilter = filter.walk(new WhereFilter.Visitor<>() {
                 @Override
                 public WhereFilter visitOther(WhereFilter filter) {
-                    if (filter instanceof RenameableFilter) {
-                        return ((RenameableFilter) filter).renameFilter(myRenames);
+                    if (filter instanceof RenameableFilter renameable) {
+                        return renameable.renameFilter(myRenames);
                     }
                     return null;
                 }
