@@ -344,8 +344,11 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(treeTable("ticking_tree_updates"))
                 .then(treeTable -> {
                     List<String> failures = new ArrayList<>();
-                    treeTable.addEventListener(JsTreeTable.EVENT_REQUEST_FAILED,
-                            e -> failures.add(String.valueOf(e.getDetail())));
+                    treeTable.addEventListener(JsTreeTable.EVENT_REQUEST_FAILED, e -> {
+                        failures.add(String.valueOf(e.getDetail()));
+                        // The tree is still usable: retrying from inside the listener subscribes afresh
+                        treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                    });
                     treeTable.setViewport(0, 99, treeTable.getColumns(), null);
                     return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
                             (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 1, 5044)
@@ -356,11 +359,57 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                             })
                             .then(t -> {
                                 assertEquals(Arrays.asList("viewport stream failed by test"), failures);
-                                // The tree is still usable: a new viewport subscribes afresh
-                                treeTable.setViewport(0, 99, treeTable.getColumns(), null);
-                                return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
-                                        (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 1, 5046);
+                                return Promise.race(
+                                        waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
+                                                (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 1,
+                                                8046),
+                                        delay(8000).then(late -> Promise.reject(
+                                                "tree viewport did not come back after a retry from the requestfailed listener")));
                             })
+                            .then(t -> {
+                                treeTable.close();
+                                return Promise.resolve(treeTable);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * A connection lost while the tree is still building its view fails that build; on reconnect the tree rebuilds it
+     * and the viewport resumes.
+     */
+    public void testTreeViewportCutDuringSetupResumes() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_065);
+                    return Promise.resolve(session);
+                })
+                .then(treeTable("ticking_tree_updates"))
+                .then(treeTable -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    List<String> failures = new ArrayList<>();
+                    treeTable.addEventListener(JsTreeTable.EVENT_REQUEST_FAILED,
+                            e -> failures.add(String.valueOf(e.getDetail())));
+                    // Hold the view request open so the cut lands in the middle of the build
+                    transport.holdStreams("HierarchicalTableService/View");
+                    treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                    return waitFor(() -> transport.hasOpenStream("HierarchicalTableService/View"), 10, 5066, treeTable)
+                            .then(t -> {
+                                transport.holdStreams(null);
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5067).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
+                                            (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 1, 8068),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "tree viewport did not resume after a cut during its setup; failures: "
+                                                    + failures))))
                             .then(t -> {
                                 treeTable.close();
                                 return Promise.resolve(treeTable);

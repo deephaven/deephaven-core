@@ -24,6 +24,7 @@ public class CuttingTransportFactory implements GrpcTransportFactory {
     private final GrpcTransportFactory delegate = new MultiplexedWebsocketTransport.Factory();
     private final List<Open> open = new ArrayList<>();
     private int cuts;
+    private String holdUrlPart;
 
     private final class Open implements GrpcTransport {
         private final GrpcTransportOptions options;
@@ -35,10 +36,26 @@ public class CuttingTransportFactory implements GrpcTransportFactory {
             GrpcTransportOptions wrapped = new GrpcTransportOptions();
             wrapped.url = options.url;
             wrapped.debug = options.debug;
-            wrapped.onHeaders = options.onHeaders;
-            wrapped.onChunk = options.onChunk;
-            wrapped.onEnd = error -> end(error);
+            wrapped.onHeaders = (headers, status) -> {
+                if (!held()) {
+                    options.onHeaders.onHeaders(headers, status);
+                }
+            };
+            wrapped.onChunk = chunk -> {
+                if (!held()) {
+                    options.onChunk.onChunk(chunk);
+                }
+            };
+            wrapped.onEnd = error -> {
+                if (!held()) {
+                    end(error);
+                }
+            };
             transport = delegate.create(wrapped);
+        }
+
+        private boolean held() {
+            return holdUrlPart != null && options.url.href.contains(holdUrlPart);
         }
 
         private void end(JsError error) {
@@ -114,5 +131,23 @@ public class CuttingTransportFactory implements GrpcTransportFactory {
 
     public int openStreams() {
         return open.size();
+    }
+
+    /**
+     * While set, responses on streams whose URL contains {@code urlPart} are not delivered, so such a request stays
+     * pending until the streams are cut. {@code null} clears it.
+     */
+    public void holdStreams(String urlPart) {
+        holdUrlPart = urlPart;
+    }
+
+    /** True while a stream whose URL contains {@code urlPart} is open. */
+    public boolean hasOpenStream(String urlPart) {
+        for (Open stream : open) {
+            if (stream.options.url.href.contains(urlPart)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
