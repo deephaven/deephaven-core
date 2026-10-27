@@ -116,4 +116,21 @@ public class LocalTimeWrapper {
                 + ":" + TWO_DIGIT_FORMAT.format(second)
                 + "." + NANOS_FORMAT.format(nano);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof LocalTimeWrapper)) {
+            return false;
+        }
+        LocalTimeWrapper that = (LocalTimeWrapper) o;
+        return hour == that.hour && minute == that.minute && second == that.second && nano == that.nano;
+    }
+
+    @Override
+    public int hashCode() {
+        return ((hour * 31 + minute) * 31 + second) * 31 + nano;
+    }
 }

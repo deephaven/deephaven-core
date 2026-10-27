@@ -47,6 +47,12 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
             .script("from datetime import datetime, timedelta")
             .script("growing_keys = time_table('PT0.25s', start_time=datetime.now() - timedelta(seconds=10))"
                     + ".update(['MyKey = i % 2 == 0 ? `hot` : ``+(int)(i/6)', 'Slot = i % 4', 'x = i'])"
+                    + ".last_by(by=['MyKey', 'Slot']).partition_by(by=['MyKey'])")
+            // The same shape keyed by a date, which the client holds as a wrapper object rather than a string
+            .script("from deephaven.query_library import import_class\nimport_class('java.time.LocalDate')")
+            .script("growing_date_keys = time_table('PT0.25s', start_time=datetime.now() - timedelta(seconds=10))"
+                    + ".update(['MyKey = i % 2 == 0 ? LocalDate.ofEpochDay(0) : LocalDate.ofEpochDay((int)(i/6) + 1)',"
+                    + " 'Slot = i % 4', 'x = i'])"
                     + ".last_by(by=['MyKey', 'Slot']).partition_by(by=['MyKey'])");
 
     private static Promise<Object> delay(int millis) {
@@ -75,6 +81,64 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                     return waitFor(() -> !failures.isEmpty(), 100, 5048, partitionedTable)
                             .then(t -> {
                                 assertEquals(List.of("key stream failed by test"), failures);
+                                partitionedTable.close();
+                                return Promise.resolve(partitionedTable);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
+     * Keys that arrive as wrapper objects, here dates, are recognized after a reconnect as well: no known key is
+     * announced again, and a key created during the outage is.
+     */
+    public void testDateKeyedPartitionedTableResumesAfterTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tickingTables, options)
+                .then(session -> {
+                    delayTestFinish(25_072);
+                    return Promise.resolve(session);
+                })
+                .then(partitionedTable("growing_date_keys"))
+                .then(partitionedTable -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    List<String> keysAdded = new ArrayList<>();
+                    partitionedTable.addEventListener(JsPartitionedTable.EVENT_KEYADDED,
+                            (Event<JsArray<Object>> e) -> keysAdded.add(String.valueOf(e.getDetail().getAt(0))));
+                    Set<String> keysAtCut = new HashSet<>();
+                    return waitForEvent(partitionedTable, JsPartitionedTable.EVENT_KEYADDED, e -> {
+                    }, 5073)
+                            .then(ignore -> {
+                                for (Object key : JsItr.iterate(partitionedTable.getKeys().values())) {
+                                    keysAtCut.add(String.valueOf(key));
+                                }
+                                int keyEventsBeforeCut = keysAdded.size();
+                                int sizeAtCut = partitionedTable.size();
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5074).onInvoke(ide)
+                                        .then(reconnected -> Promise.race(
+                                                waitForEventWhere(partitionedTable, JsPartitionedTable.EVENT_KEYADDED,
+                                                        (Event<JsArray<Object>> e) -> !keysAtCut.contains(
+                                                                String.valueOf(e.getDetail().getAt(0))),
+                                                        8075),
+                                                delay(8000).then(late -> Promise.reject(
+                                                        "partitioned table keys did not resume after the transport was cut"))))
+                                        .then(all -> {
+                                            List<String> repeated = keysAdded.subList(keyEventsBeforeCut,
+                                                    keysAdded.size()).stream().filter(keysAtCut::contains)
+                                                    .collect(Collectors.toList());
+                                            assertTrue("keyadded fired again for keys known before the cut: "
+                                                    + repeated, repeated.isEmpty());
+                                            assertEquals("size counts each key once", sizeAtCut + 1,
+                                                    partitionedTable.size());
+                                            return null;
+                                        });
+                            })
+                            .then(ignore -> {
                                 partitionedTable.close();
                                 return Promise.resolve(partitionedTable);
                             });
