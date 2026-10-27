@@ -301,11 +301,17 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     public void setInternalViewport(DataOptions.ViewportSubscriptionOptions options) {
         // Until we've created the stream, we just cache the requested viewport
         if (status == Status.STARTING) {
-            // Assign the two properties that we cannot change later
-            this.refresh = options.updateIntervalMs == null ? 1000.0 : options.updateIntervalMs;
-            this.previewListLengthLimit = getPreviewListLengthLimit(options);
+            if (this.options == null) {
+                // The first call fixes the two properties that cannot change later
+                this.refresh = options.updateIntervalMs == null ? 1000.0 : options.updateIntervalMs;
+                this.previewListLengthLimit = getPreviewListLengthLimit(options);
+            } else {
+                // A later call before the stream exists, or while it is being re-established, follows the same
+                // rules as a running one
+                keepUpdateInterval(options);
+            }
 
-            // Track the rest of the initial options for later use
+            // Track the rest of the latest options for later use
             this.options = options;
             return;
         }
@@ -320,14 +326,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             options.columns = options.columns.slice();
             options.columns.sort(Comparator.comparing(Column::getIndex)::compare);
         }
-        if (options.updateIntervalMs != null && refresh != options.updateIntervalMs) {
-            throw new IllegalArgumentException(
-                    "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
-        }
-        if (options.updateIntervalMs == null) {
-            // Omitted means unchanged; keep the interval this subscription was created with
-            options.updateIntervalMs = this.options.updateIntervalMs;
-        }
+        keepUpdateInterval(options);
         if (options.isReverseViewport == null) {
             options.isReverseViewport = false;
         }
@@ -338,6 +337,20 @@ public class TableViewportSubscription extends AbstractTableSubscription {
                     options.updateIntervalMs, options.isReverseViewport, previewListLengthLimit);
         } catch (Exception e) {
             fireEvent(JsTable.EVENT_REQUEST_FAILED, e.getMessage());
+        }
+    }
+
+    /**
+     * A later call may repeat the update interval or omit it; omitted means unchanged, since the interval cannot change
+     * once set.
+     */
+    private void keepUpdateInterval(DataOptions.ViewportSubscriptionOptions options) {
+        if (options.updateIntervalMs != null && refresh != options.updateIntervalMs) {
+            throw new IllegalArgumentException(
+                    "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
+        }
+        if (options.updateIntervalMs == null) {
+            options.updateIntervalMs = this.options.updateIntervalMs;
         }
     }
 
