@@ -406,10 +406,7 @@ public class WorkerConnection {
             // fire deprecated event for now
             info.notifyConnectionError(status);
 
-            // signal that there has been a connection failure of some kind and attempt to reconnect
-            info.fireEvent(CoreClient.EVENT_DISCONNECT);
-
-            // Try again after a backoff, this may happen several times
+            // Try again after a backoff, this may happen several times; connectionLost() reports the disconnect
             connectionLost();
         } // others probably are meaningful to the caller
         return false;
@@ -559,6 +556,10 @@ public class WorkerConnection {
     // @Override
 
     public void connectionLost() {
+        if (state == State.Reconnecting) {
+            // Every open stream fails when the connection goes; the first one already did all of this
+            return;
+        }
         // notify all active tables and widgets that the connection is closed
         // TODO(deephaven-core#3604) when a new session is created, refetch all widgets and use that to drive reconnect
         simpleReconnectableInstances.forEach((item, index, array) -> {

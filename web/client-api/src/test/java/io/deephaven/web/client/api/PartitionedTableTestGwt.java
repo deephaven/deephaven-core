@@ -133,7 +133,11 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                                                     .collect(Collectors.toList());
                                             assertTrue("keyadded fired again for keys known before the cut: "
                                                     + repeated, repeated.isEmpty());
-                                            assertEquals("size counts each key once", sizeAtCut + 1,
+                                            // The snapshot may carry more than one new key if the outage spanned
+                                            // several key boundaries; each is announced once and counted once
+                                            Set<String> newKeys = new HashSet<>(
+                                                    keysAdded.subList(keyEventsBeforeCut, keysAdded.size()));
+                                            assertEquals("size counts each key once", sizeAtCut + newKeys.size(),
                                                     partitionedTable.size());
                                             return null;
                                         });

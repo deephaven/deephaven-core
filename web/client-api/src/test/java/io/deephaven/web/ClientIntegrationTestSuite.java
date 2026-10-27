@@ -8,6 +8,7 @@ import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.grpc.GrpcTransportTestGwt;
 import io.deephaven.web.client.api.storage.JsStorageServiceTestGwt;
 import io.deephaven.web.client.api.subscription.ConcurrentTableTestGwt;
+import io.deephaven.web.client.api.subscription.TableSubscriptionTestGwt;
 import io.deephaven.web.client.api.subscription.ViewportTestGwt;
 import io.deephaven.web.client.api.widget.plot.ChartDataTestGwt;
 import io.deephaven.web.client.api.widget.plot.JsFigureTestGwt;
@@ -25,6 +26,7 @@ public class ClientIntegrationTestSuite extends GWTTestSuite {
 
         // Actual integration tests
         suite.addTestSuite(ViewportTestGwt.class);
+        suite.addTestSuite(TableSubscriptionTestGwt.class);
         suite.addTestSuite(TableManipulationTestGwt.class);
         suite.addTestSuite(ConcurrentTableTestGwt.class);
         suite.addTestSuite(NullValueTestGwt.class);
