@@ -626,6 +626,29 @@ public final class ParquetTableFilterTest {
     }
 
     @Test
+    public void partitionedColumnSwapTest() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_partitionedColumnSwapTest").toString();
+        final Table source = TableTools.emptyTable(10_000).update(
+                "Part = `p` + (ii % 5)",
+                "Data = `d` + (ii % 7)",
+                "Value = ii");
+        ParquetTools.writeKeyValuePartitionedTable(source.partitionBy("Part"), destPath, EMPTY);
+
+        // swap the partitioning column with a data column of the same type; rename the materialized table for the
+        // expected result, since select() on the renamed disk table would coalesce the rename under test
+        final Table diskTable = ParquetTools.readTable(destPath).renameColumns("Part = Data", "Data = Part");
+        final Table memTable = ParquetTools.readTable(destPath).select().renameColumns("Part = Data", "Data = Part");
+
+        assertTableEquals(memTable, diskTable);
+
+        filterAndVerifyResults(diskTable, memTable, "Part = `d3`");
+        filterAndVerifyResults(diskTable, memTable, "Data = `p2`");
+        filterAndVerifyResults(diskTable, memTable, "Data = `p2`", "Part = `d3`");
+        filterAndVerifyResults(diskTable, memTable, "Data.startsWith(`p`) && Part == `d1`");
+        filterAndVerifyResults(diskTable, memTable, Filter.or(Filter.from("Data = `p2`", "Part = `d3`")));
+    }
+
+    @Test
     public void flatPartitionsColumnRenameTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_flatPartitionsTest").toString();
         final int tableSize = 1_000_000;

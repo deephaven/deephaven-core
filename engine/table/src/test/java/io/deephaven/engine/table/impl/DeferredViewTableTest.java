@@ -3,8 +3,12 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterComparison;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
@@ -30,15 +34,15 @@ import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.gui.table.filters.Condition;
-import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.util.QueryConstants;
 import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -58,13 +62,8 @@ public class DeferredViewTableTest {
                 Selectable.parse("X = ii"),
                 Selectable.parse("Y = 2 * X"));
 
-        final DeferredViewTable deferredTable = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                viewColumns,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+        final DeferredViewTable deferredTable = DeferredViewTable.withView(resultDef, "test",
+                new DeferredViewTable.TableReference(sourceTable), viewColumns);
 
         final Table resultTable = deferredTable.coalesce();
         final Table expectedTable = sourceTable.update(Arrays.asList(viewColumns));
@@ -86,13 +85,8 @@ public class DeferredViewTableTest {
             sourceTable.setRefreshing(true);
         }
 
-        final DeferredViewTable deferredTable = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+        final DeferredViewTable deferredTable =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null);
 
         Assert.eq(deferredTable.isRefreshing(), "deferredTable.isRefreshing()", sourceRefreshing, "sourceRefreshing");
     }
@@ -109,13 +103,8 @@ public class DeferredViewTableTest {
         };
         Assert.eqTrue(whereFilters[0].isRefreshing(), "whereFilters[0].isRefreshing()");
 
-        final DeferredViewTable deferredTable = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                whereFilters);
+        final DeferredViewTable deferredTable = DeferredViewTable.withFilters(resultDef, "test",
+                new DeferredViewTable.TableReference(sourceTable), whereFilters);
 
         Assert.eqTrue(deferredTable.isRefreshing(), "deferredTable.isRefreshing()");
     }
@@ -129,13 +118,8 @@ public class DeferredViewTableTest {
         final SelectColumn[] viewColumns = SelectColumn.from(
                 Selectable.parse("X = (int)X"));
 
-        final DeferredViewTable deferredTable = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                viewColumns,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+        final DeferredViewTable deferredTable = DeferredViewTable.withView(resultDef, "test",
+                new DeferredViewTable.TableReference(sourceTable), viewColumns);
 
         final Class<?> resultType = deferredTable.coalesce().getDefinition().getColumn("X").getDataType();
         Assert.eq(resultType, "resultType", int.class, "int.class");
@@ -153,16 +137,11 @@ public class DeferredViewTableTest {
         final RowSetCapturingFilter freeFilter =
                 new RowSetCapturingFilter(new RangeFilter("X", Condition.LESS_THAN, "25000"));
 
-        Table deferredTable = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
-                .updateView("Y = X")
-                .where(ConjunctiveFilter.of(serialFilter, freeFilter))
-                .coalesce();
+        Table deferredTable =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null)
+                        .updateView("Y = X")
+                        .where(ConjunctiveFilter.of(serialFilter, freeFilter))
+                        .coalesce();
 
         Assert.eq(deferredTable.size(), "deferredTable.size()", 25000);
         Assert.eq(numRowsFiltered(serialFilter), "numRowsFiltered(serialFilter)", 100_000);
@@ -173,16 +152,11 @@ public class DeferredViewTableTest {
                 new RowSetCapturingFilter(new RangeFilter("Y", Condition.LESS_THAN, "50000"));
         freeFilter.reset();
 
-        deferredTable = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
-                .updateView("Y = X")
-                .where(ConjunctiveFilter.of(notSerialFilter, freeFilter))
-                .coalesce();
+        deferredTable =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null)
+                        .updateView("Y = X")
+                        .where(ConjunctiveFilter.of(notSerialFilter, freeFilter))
+                        .coalesce();
 
         Assert.eq(deferredTable.size(), "deferredTable.size()", 25000);
         Assert.eq(numRowsFiltered(notSerialFilter), "numRowsFiltered(notSerialFilter)", 25_000);
@@ -205,19 +179,14 @@ public class DeferredViewTableTest {
                 new RowSetCapturingFilter(new RangeFilter("Y", Condition.LESS_THAN, "10000"));
 
         // filter0 and filter1 should both jump over filter2
-        final Table deferredTable = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
-                .updateView("Y = X")
-                .where(ConjunctiveFilter.of(
-                        filter2,
-                        filter0.withDeclaredBarriers(barrier),
-                        filter1.withRespectedBarriers(barrier)))
-                .coalesce();
+        final Table deferredTable =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null)
+                        .updateView("Y = X")
+                        .where(ConjunctiveFilter.of(
+                                filter2,
+                                filter0.withDeclaredBarriers(barrier),
+                                filter1.withRespectedBarriers(barrier)))
+                        .coalesce();
 
         Assert.eq(deferredTable.size(), "deferredTable.size()", 10_000);
         Assert.eq(numRowsFiltered(filter0), "filter0.numRowsFiltered(filter0)", 100_000);
@@ -241,19 +210,14 @@ public class DeferredViewTableTest {
                 new RowSetCapturingFilter(new RangeFilter("X", Condition.LESS_THAN, "10000"));
 
         // filter2 jumps over filter0 and filter1
-        final Table deferredTable = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
-                .updateView("Y = X")
-                .where(ConjunctiveFilter.of(
-                        filter0.withDeclaredBarriers(barrier),
-                        filter1.withRespectedBarriers(barrier),
-                        filter2))
-                .coalesce();
+        final Table deferredTable =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null)
+                        .updateView("Y = X")
+                        .where(ConjunctiveFilter.of(
+                                filter0.withDeclaredBarriers(barrier),
+                                filter1.withRespectedBarriers(barrier),
+                                filter2))
+                        .coalesce();
 
         Assert.eq(deferredTable.size(), "deferredTable.size()", 5_000);
         Assert.eq(numRowsFiltered(filter0), "numRowsFiltered(filter0)", 10_000);
@@ -275,18 +239,13 @@ public class DeferredViewTableTest {
                 new RowSetCapturingFilter(new RangeFilter("Y", Condition.LESS_THAN, "25000"));
 
         // filter0 can move over, but filter1 is blocked by a new column
-        Table deferredTable = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
-                .updateView("Y = ii")
-                .where(ConjunctiveFilter.of(
-                        filter0.withDeclaredBarriers(barrier),
-                        filter1.withRespectedBarriers(barrier)))
-                .coalesce();
+        Table deferredTable =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null)
+                        .updateView("Y = ii")
+                        .where(ConjunctiveFilter.of(
+                                filter0.withDeclaredBarriers(barrier),
+                                filter1.withRespectedBarriers(barrier)))
+                        .coalesce();
 
         Assert.eq(deferredTable.size(), "deferredTable.size()", 25_000);
         Assert.eq(numRowsFiltered(filter0), "numRowsFiltered(filter0)", 100_000);
@@ -308,13 +267,8 @@ public class DeferredViewTableTest {
         final Table sourceTable = TableTools.newTable(
                 TableTools.intCol("Lhs", 1, 2, 3),
                 TableTools.intCol("Src", 1, 3, 3));
-        final DeferredViewTable deferredTable = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+        final DeferredViewTable deferredTable =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null);
 
         // Rhs is a column, so Lhs == Rhs fails over to a ConditionFilter that uses Lhs and Rhs, and only Rhs is
         // renamed
@@ -490,14 +444,9 @@ public class DeferredViewTableTest {
                 new RowSetCapturingFilter(new RangeFilter("I", Condition.LESS_THAN, "25000"));
 
         // here we expect that filter0 can jump over filter1 w/a rename
-        final Table source = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)
-                .updateView("Y = X", "Y2 = Y", "I = I + 0");
+        final Table source =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null)
+                        .updateView("Y = X", "Y2 = Y", "I = I + 0");
 
         final Table deferredTable = source
                 .withAttributes(Collections.singletonMap("Key", "Value"))
@@ -530,13 +479,8 @@ public class DeferredViewTableTest {
         final Table sourceTable = TableTools.emptyTable(100_000)
                 .update("X = values[i % 4]", "I = ii");
 
-        final Table source = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+        final Table source =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null);
 
         final Table unusedCoalescedTable;
         if (coalesceFirst) {
@@ -564,13 +508,8 @@ public class DeferredViewTableTest {
         final Table sourceTable = TableTools.emptyTable(100_000)
                 .update("X = values[i % 4]", "I = ii");
 
-        final Table source = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+        final Table source =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null);
 
         final Table selectDistinct = source.where("X != `B`").selectDistinct("X");
         Assert.eq(selectDistinct.size(), "selectDistinct.size()", values.length - 1);
@@ -587,13 +526,8 @@ public class DeferredViewTableTest {
         final Table sourceTable = TableTools.emptyTable(100_000)
                 .update("X = values[i % 4]", "I = ii");
 
-        final Table source = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+        final Table source =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null);
 
         final Table selectDistinct = source.selectDistinct("J=I_[i - 1]");
         TstUtils.assertTableEquals(sourceTable.selectDistinct("J=I_[i - 1]"), selectDistinct);
@@ -611,13 +545,8 @@ public class DeferredViewTableTest {
                 ColumnDefinition.ofString("X"),
                 ColumnDefinition.ofLong("I"));
 
-        final Table source = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+        final Table source =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null);
 
         final Table view1 = source.view("I", "X");
 
@@ -652,13 +581,8 @@ public class DeferredViewTableTest {
         final Table sourceTable = TableTools.emptyTable(100_000)
                 .update("X = values[i % 4]", "I = ii");
 
-        final Table source = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+        final Table source =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null);
 
         final Table view1 = source.view("I", "X");
 
@@ -679,13 +603,8 @@ public class DeferredViewTableTest {
         final Table sourceTable = TableTools.emptyTable(100_000)
                 .update("X = values[i % 4]", "I = ii");
 
-        final Table source = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+        final Table source =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null);
 
         final Table view1 = source.view("I", "X", "Y=X + `_`");
         final Table view2 = view1.dropColumns("X");
@@ -707,13 +626,9 @@ public class DeferredViewTableTest {
         final Table sourceTable = TableTools.emptyTable(100_000)
                 .update("X = values[i % 4]", "I = ii");
 
-        final Table source = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                new WhereFilter[] {WhereFilterFactory.getExpression("X=`B`")});
+        final Table source =
+                DeferredViewTable.withFilters(resultDef, "test", new DeferredViewTable.TableReference(sourceTable),
+                        new WhereFilter[] {WhereFilterFactory.getExpression("X=`B`")});
 
         final Table view2 = source.view("K=I * 2");
         Assertions.assertThat(view2).isInstanceOf(DeferredViewTable.class);
@@ -726,33 +641,234 @@ public class DeferredViewTableTest {
     }
 
     @Test
-    public void testBadConstructor() {
-        final String[] values = new String[] {"A", "B", "C", "D"};
-        ExecutionContext.getContext().getQueryScope().putParam("values", values);
+    public void testRenameSwap() {
+        assertDeferredMatchesInMemory(renameSource(), t -> t.renameColumns("A = B", "B = A"));
+        assertDeferredMatchesInMemory(renameSource(), t -> t.renameColumns("C = A", "A = C"));
+    }
 
-        final TableDefinition resultDef = TableDefinition.of(
-                ColumnDefinition.ofString("X"),
-                ColumnDefinition.ofLong("I"));
-        final Table sourceTable = TableTools.emptyTable(100_000)
-                .update("X = values[i % 4]", "I = ii");
+    @Test
+    public void testRenameSwapSameType() {
+        final Table source = TableTools.newTable(
+                TableTools.intCol("X", 1, 2, 3),
+                TableTools.intCol("Y", 10, 20, 30));
+        assertDeferredMatchesInMemory(source, t -> t.renameColumns("X = Y", "Y = X"));
+    }
 
-        final IllegalStateException ise1 = assertThrows(IllegalStateException.class, () -> new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                new SelectColumn[] {SelectColumnFactory.getExpression("Y=X")},
-                new WhereFilter[] {WhereFilterFactory.getExpression("X=`B`")}));
-        assertEquals("Why do we have a view and a filter all at the same time?", ise1.getMessage());
+    @Test
+    public void testRenameShift() {
+        assertDeferredMatchesInMemory(renameSource(), t -> t.renameColumns("B = A", "C = B"));
+    }
 
-        final IllegalStateException ise2 = assertThrows(IllegalStateException.class, () -> new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                new String[] {"I"},
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                new WhereFilter[] {WhereFilterFactory.getExpression("X=`B`")}));
-        assertEquals("Why do we have a drop and a filter all at the same time?", ise2.getMessage());
+    @Test
+    public void testRenameRotation() {
+        assertDeferredMatchesInMemory(renameSource(), t -> t.renameColumns("A = B", "B = C", "C = A"));
+    }
+
+    @Test
+    public void testRenameWithoutCollision() {
+        assertDeferredMatchesInMemory(renameSource(), t -> t.renameColumns("A_r = A", "B_r = B"));
+        assertDeferredMatchesInMemory(renameSource(), t -> t.renameColumns("B = A"));
+    }
+
+    @Test
+    public void testRenameSwapTwice() {
+        assertDeferredMatchesInMemory(renameSource(),
+                t -> t.renameColumns("A = B", "B = A").renameColumns("A = B", "B = A"));
+        assertDeferredMatchesInMemory(renameSource(),
+                t -> t.renameColumns("A = B", "B = A").renameColumns("B = C", "C = B"));
+    }
+
+    @Test
+    public void testRenameSwapThenMerge() {
+        assertDeferredMatchesInMemory(renameSource(), t -> {
+            final Table swapped = t.renameColumns("A = B", "B = A");
+            return TableTools.merge(swapped, swapped);
+        });
+    }
+
+    @Test
+    public void testRenameSwapThenFilter() {
+        for (final String filter : new String[] {"A == `y`", "B == 2", "A == `y` && B == 2", "A == `y` || C > 3"}) {
+            assertDeferredMatchesInMemory(renameSource(), t -> t.renameColumns("A = B", "B = A").where(filter));
+        }
+        assertDeferredMatchesInMemory(renameSource(), t -> t.renameColumns("A = B", "B = A").where(Filter.or(
+                FilterComparison.eq(ColumnName.of("A"), Literal.of("x")),
+                FilterComparison.eq(ColumnName.of("B"), Literal.of(3)))));
+    }
+
+    @Test
+    public void testRenameSwapFilterIsPushedDown() {
+        final Table sourceTable = renameSource();
+        final List<String> pushedColumns = new ArrayList<>();
+        final DeferredViewTable.TableReference recordingReference = new DeferredViewTable.TableReference(sourceTable) {
+            @Override
+            protected TableAndRemainingFilters getWithWhere(final WhereFilter... whereFilters) {
+                Arrays.stream(whereFilters).forEach(filter -> pushedColumns.addAll(filter.getColumns()));
+                return super.getWithWhere(whereFilters);
+            }
+        };
+        final Table swapped = DeferredViewTable.wrap(sourceTable.getDefinition(), "test", recordingReference, null)
+                .renameColumns("A = B", "B = A");
+
+        // a match filter and a formula filter, each on a swapped column, so each must reach the source table reading
+        // the other column
+        final Table result = swapped.where("A == `y`", "B + 0 == 2").coalesce();
+
+        assertEquals(List.of("B", "A"), pushedColumns);
+        TstUtils.assertTableEquals(
+                sourceTable.renameColumns("A = B", "B = A").where("A == `y`", "B + 0 == 2"),
+                result);
+    }
+
+    @Test
+    public void testRenameSwapSelectDistinct() {
+        assertDeferredMatchesInMemory(renameSource(), t -> t.renameColumns("A = B", "B = A").selectDistinct("A"));
+        assertDeferredMatchesInMemory(renameSource(), t -> t.renameColumns("A = B", "B = A").selectDistinct("C"));
+    }
+
+    @Test
+    public void testSequentialViewOverDeferredTable() {
+        // unlike a rename, a view evaluates in order: a later column reads the result of an earlier column
+        assertDeferredMatchesInMemory(renameSource(), t -> t.view("B = A", "A = B"));
+        assertDeferredMatchesInMemory(renameSource(), t -> t.updateView("B = A", "A = B"));
+        assertDeferredMatchesInMemory(renameSource(), t -> t.updateView("T = A", "A = B", "B = T"));
+        assertDeferredMatchesInMemory(renameSource(), t -> t.view("B = A", "A = B").where("A == 2 && B == 2"));
+        assertDeferredMatchesInMemory(renameSource(), t -> t.renameColumns("D = C").view("B = A", "A = B"));
+    }
+
+    @Test
+    public void testDisjunctionOfRenamedAndUnrenamedMatchFilters() {
+        final Filter renamedNotNull = Filter.isNotNull(ColumnName.of("Renamed"));
+        final Filter otherIsNull = Filter.isNull(ColumnName.of("Other"));
+        final Filter[] filters = {
+                Filter.or(renamedNotNull, otherIsNull),
+                Filter.or(otherIsNull, renamedNotNull),
+                Filter.or(FilterComparison.eq(ColumnName.of("Renamed"), Literal.of(1L)),
+                        FilterComparison.eq(ColumnName.of("Other"), Literal.of("c"))),
+                Filter.and(Filter.or(renamedNotNull, otherIsNull),
+                        FilterComparison.neq(ColumnName.of("Renamed"), Literal.of(2L))),
+        };
+        for (final Function<Table, Table> rename : partialRenames()) {
+            for (final Filter filter : filters) {
+                assertDeferredMatchesInMemory(partialRenameSource(), rename.andThen(t -> t.where(filter)));
+            }
+        }
+        // the value names a column, so the match filter fails over to a formula
+        assertDeferredMatchesInMemory(partialRenameSource(), t -> t.renameColumns("Renamed = Value")
+                .where(Filter.or(RawString.of("Renamed == Twin"), otherIsNull)));
+    }
+
+    @Test
+    public void testFilterThroughNestedRenames() {
+        final Function<Table, Table> renameThenDuplicate =
+                t -> t.renameColumns("Renamed = Value").updateView("Dup = Renamed");
+        for (final String filter : new String[] {
+                "Renamed != null && Dup != null && Renamed == Dup",
+                "Dup == 2",
+                "Renamed == Dup && Other == `a`",
+                "Renamed == null || Dup == 1"}) {
+            assertDeferredMatchesInMemory(partialRenameSource(), renameThenDuplicate.andThen(t -> t.where(filter)));
+        }
+        assertDeferredMatchesInMemory(partialRenameSource(), renameThenDuplicate
+                .andThen(t -> t.updateView("Dup2 = Dup").where("Renamed == Dup2 && Dup2 == 1")));
+        // the value names a column, so the match filter fails over to a formula before the first rename
+        assertDeferredMatchesInMemory(partialRenameSource(), t -> t.renameColumns("Renamed = Value", "Twin2 = Twin")
+                .updateView("Dup = Renamed")
+                .where("Dup == Twin2"));
+    }
+
+    @Test
+    public void testFilterThroughSwapAfterRename() {
+        // the swap maps P to Q and Q to P; the first rename maps Q to B and P to A, so P must end at B, not A
+        assertDeferredMatchesInMemory(renameSource(), t -> t.renameColumns("P = A", "Q = B")
+                .renameColumns("P = Q", "Q = P")
+                .where("P.equals(`y`) && Q == 2"));
+    }
+
+    @Test
+    public void testFilterOnColumnAndItsArrayThroughRename() {
+        for (final Function<Table, Table> rename : partialRenames()) {
+            for (final String filter : new String[] {
+                    "Renamed == Renamed_[0]",
+                    "Renamed_[0] == 1",
+                    "Renamed == Renamed_[1]",
+                    "Renamed == Renamed_[0] && Other == Other_[0]",
+                    "Renamed == Renamed_[0] && Other == `a`"}) {
+                assertDeferredMatchesInMemory(partialRenameSource(), rename.andThen(t -> t.where(filter)));
+            }
+        }
+        assertDeferredMatchesInMemory(partialRenameSource(), t -> t.renameColumns("Renamed = Value", "Other2 = Other")
+                .where("Renamed == Renamed_[0] && Other2 == Other2_[0]"));
+    }
+
+    @Test
+    public void testFilterBeforeViewKeepsQueryScopeVariable() {
+        // after each view, A names the query-scope variable; before the view, A names the source column that the view
+        // hides
+        ExecutionContext.getContext().getQueryScope().putParam("A", 5);
+        final Table source = TableTools.newTable(
+                TableTools.intCol("A", 1, 5, 7),
+                TableTools.intCol("C", 5, 7, 5));
+        final List<Function<Table, Table>> hidingA = List.of(
+                t -> t.renameColumns("B = A"),
+                t -> t.view("B = A", "C"));
+        for (final Function<Table, Table> hide : hidingA) {
+            for (final String filter : new String[] {
+                    "B == A",
+                    "B + 0 == A",
+                    "B in A, 7",
+                    "B_[1] == A",
+                    "C == A",
+                    "C + 0 == A",
+                    "B == A || C == A",
+                    "B == C"}) {
+                assertDeferredMatchesInMemory(source, hide.andThen(t -> t.where(filter)));
+            }
+            assertDeferredMatchesInMemory(source, hide.andThen(t -> t.where(Filter.or(
+                    FilterComparison.eq(ColumnName.of("B"), Literal.of(7)), RawString.of("C == A")))));
+        }
+        // two levels of renames, so the filter is renamed twice
+        for (final String filter : new String[] {"D == A", "D + 0 == A", "D == A && C == A"}) {
+            assertDeferredMatchesInMemory(source, t -> t.renameColumns("B = A").renameColumns("D = B").where(filter));
+        }
+    }
+
+    private static Table renameSource() {
+        return TableTools.newTable(
+                TableTools.intCol("A", 1, 2, 3),
+                TableTools.stringCol("B", "x", "y", "z"),
+                TableTools.doubleCol("C", 1.5, 2.5, 3.5));
+    }
+
+    private static Table partialRenameSource() {
+        return TableTools.newTable(
+                TableTools.longCol("Value", 1L, 2L, QueryConstants.NULL_LONG),
+                TableTools.stringCol("Other", "a", null, "c"),
+                TableTools.longCol("Twin", 1L, 3L, QueryConstants.NULL_LONG));
+    }
+
+    private static List<Function<Table, Table>> partialRenames() {
+        return List.of(
+                t -> t.renameColumns("Renamed = Value"),
+                t -> t.view("Renamed = Value", "Other"));
+    }
+
+    private static Table deferred(final Table source) {
+        return DeferredViewTable.wrap(source.getDefinition(), "test", new DeferredViewTable.TableReference(source),
+                null);
+    }
+
+    /**
+     * Apply {@code operation} to {@code source} and to a {@link DeferredViewTable} over {@code source}, and verify that
+     * the deferred result has the same definition before and after coalescing, and the same data.
+     */
+    private static void assertDeferredMatchesInMemory(final Table source, final Function<Table, Table> operation) {
+        final Table expected = operation.apply(source);
+        final Table actual = operation.apply(deferred(source));
+        assertEquals(expected.getDefinition(), actual.getDefinition());
+        final Table coalesced = actual.coalesce();
+        assertEquals(expected.getDefinition(), coalesced.getDefinition());
+        TstUtils.assertTableEquals(expected, coalesced);
     }
 
     private void verifyFilterIsPrioritized(final Filter filterToTest) {
@@ -796,13 +912,8 @@ public class DeferredViewTableTest {
                 new RowSetCapturingFilter(new RangeFilter("I", Condition.LESS_THAN, "25000"));
 
         // here we expect that filter0 can jump over filter1 w/a rename
-        final DeferredViewTable originalDeferred = new DeferredViewTable(
-                resultDef,
-                "test",
-                new DeferredViewTable.TableReference(sourceTable),
-                ArrayTypeUtils.EMPTY_STRING_ARRAY,
-                SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
+        final DeferredViewTable originalDeferred =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null);
         final Table withUpdate = updateFunction.apply(originalDeferred);
         final Table deferredTable = withUpdate
                 .where(ConjunctiveFilter.of(

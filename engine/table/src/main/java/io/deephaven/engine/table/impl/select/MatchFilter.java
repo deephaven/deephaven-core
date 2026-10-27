@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
@@ -36,7 +35,7 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
-public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
+public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, RenameableFilter {
 
     private static final long serialVersionUID = 1L;
 
@@ -119,7 +118,17 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return failedOver ? failoverFilter.get() : null;
     }
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The renamed filter keeps the values this filter converted, rather than converting the values again against the
+     * table being filtered, where a name that this filter read as a query-scope variable may name a column.
+     */
+    @Override
     public WhereFilter renameFilter(Map<String, String> renames) {
+        if (!initialized) {
+            throw new IllegalStateException("Filter must be initialized to invoke renameFilter");
+        }
         final ConditionFilter failover = getFailoverFilter();
         if (failover != null) {
             // The failover defines this filter, and uses columns that the renames may cover without covering ours. A
@@ -127,17 +136,17 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
             // compares with may instead resolve as a query-scope variable.
             return failover.renameFilter(renames);
         }
-        final String newName = renames.get(columnName);
-        Assert.neqNull(newName, "newName");
-        if (strValues == null) {
-            // when we're constructed with values then there is no failover filter
-            return new MatchFilter(matchOptions, newName, values);
-        } else {
-            return new MatchFilter(
-                    failoverFilter != null ? new CachingSupplier<>(
-                            () -> failoverFilter.get().renameFilter(renames)) : null,
-                    matchOptions, newName, strValues, null);
-        }
+        // A rename keeps the column's type, so the converted values suit the renamed column. The renamed filter starts
+        // out initialized, so the renamed filter never converts again and never fails over.
+        final String newName = renames.getOrDefault(columnName, columnName);
+        final MatchFilter renamed = strValues == null
+                ? new MatchFilter(matchOptions, newName, values)
+                : new MatchFilter(null, matchOptions, newName, strValues, null);
+        renamed.initialized = true;
+        renamed.chunkFilter = chunkFilter;
+        renamed.values = values;
+        renamed.columnType = columnType;
+        return renamed;
     }
 
     /**

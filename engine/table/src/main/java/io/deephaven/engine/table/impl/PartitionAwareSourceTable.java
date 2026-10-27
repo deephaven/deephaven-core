@@ -248,10 +248,9 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 getDescription() + "-retainColumns",
                 componentFactory, locationProvider, updateSourceRegistrar, null, partitioningColumnDefinitions,
                 copyFilters(partitioningColumnFilters));
-        return new DeferredViewTable(newDefinition, getDescription() + "-retainColumns",
+        return DeferredViewTable.withDropColumns(newDefinition, getDescription() + "-retainColumns",
                 new PartitionAwareTableReference(redefined),
-                droppedPartitioningColumnDefinitions.stream().map(ColumnDefinition::getName).toArray(String[]::new),
-                null, null);
+                droppedPartitioningColumnDefinitions.stream().map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
     @Override
@@ -261,8 +260,14 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         DeferredViewTable.TableReference reference = redefined instanceof PartitionAwareSourceTable
                 ? new PartitionAwareTableReference((PartitionAwareSourceTable) redefined)
                 : new DeferredViewTable.TableReference(redefined);
-        return new DeferredViewTable(newDefinitionExternal, getDescription() + "-redefined",
-                reference, null, viewColumns, null);
+        return DeferredViewTable.withView(newDefinitionExternal, getDescription() + "-redefined", reference,
+                viewColumns);
+    }
+
+    @Override
+    protected final Table redefineWithRename(TableDefinition newDefinitionExternal, SourceColumn[] renameColumns) {
+        return DeferredViewTable.withRename(newDefinitionExternal, getDescription() + "-redefined",
+                new PartitionAwareTableReference(this), renameColumns);
     }
 
     private static final String KEY_SUPPLIER_COLUMN_NAME = "__PartitionAwareSourceTable_KeySupplier__";
@@ -381,8 +386,8 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             }
 
             // If we have no partition filters, we defer all filters.
-            return new DeferredViewTable(definition, getDescription() + "-withDeferredFilters",
-                    new PartitionAwareTableReference(this), null, null,
+            return DeferredViewTable.withFilters(definition, getDescription() + "-withDeferredFilters",
+                    new PartitionAwareTableReference(this),
                     otherFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
         }
 
