@@ -660,6 +660,11 @@ public abstract class AbstractTableSubscription extends HasEventHandling impleme
         return columns;
     }
 
+    /** The options of the most recent subscription request sent to the server; for tests. */
+    BarrageSubscriptionOptions sentOptions() {
+        return options;
+    }
+
     /**
      * Stops the subscription on the server.
      */

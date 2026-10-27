@@ -295,6 +295,51 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     /**
+     * A viewport created with an update interval and later moved without repeating it keeps that interval when it is
+     * re-sent after a reconnect.
+     */
+    public void testMovedViewportKeepsItsUpdateInterval() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_076);
+                    return Promise.resolve(session);
+                })
+                .then(table("growingForward"))
+                .then(table -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    TableViewportSubscription viewport = table.setViewport(0, 4, null, 2500.0, null);
+                    return assertUpdateReceived(table, 5, 5077)
+                            .then(t -> {
+                                assertEquals(2500, viewport.sentOptions().minUpdateIntervalMs());
+                                // Move without repeating the interval, which the docs allow
+                                table.setViewport(10, 14, null);
+                                return this.<JsTable, ViewportData>waitForEventWhere(table, JsTable.EVENT_UPDATED,
+                                        e -> e.getDetail().getOffset() == 10, 5078);
+                            })
+                            .then(t -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5079).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    assertUpdateReceived(table, 5, 8080),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "viewport did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                assertEquals("interval re-sent after the reconnect", 2500,
+                                        viewport.sentOptions().minUpdateIntervalMs());
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
+    /**
      * A viewport moved after it was created comes back at the rows it had when the connection was lost.
      */
     public void testMovedViewportResumesWhereItWas() {
