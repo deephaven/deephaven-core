@@ -4,13 +4,13 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-# CI only, for the Nightly Python Versions CI workflow. Makes a fresh venv for one Python version, installs the
-# Deephaven wheels and the test dependencies, then calls .github/py-versions/run-tests-venv.sh. See
-# .github/py-versions/README.md.
+# CI only, for the Nightly Python Test Matrix CI workflow. Makes a fresh venv for one Python version, installs the
+# Deephaven wheels and the test dependencies, then calls .github/py-test-matrix/run-tests-venv.sh. Developers call
+# that script in their own venv, see .github/py-test-matrix/README.md.
 # Each run gets the newest patch release of the Python version that uv knows and the newest release of every
 # dependency, so the matrix catches breaking releases early.
 #
-# usage: py-versions-test.sh <server|client> <python-version> [test ...]
+# usage: py-test-matrix.sh <server|client> <python-version> [test ...]
 #   python-version  any version uv accepts, for example 3.10, 3.14 or 3.14t (free-threaded)
 #   test            optional unittest names, passed on to run-tests-venv.sh. Default: all of tests/.
 #
@@ -25,7 +25,7 @@ PY_VERSION=$2
 shift 2
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-VENV="${ROOT}/py/${SUITE}/build/py-versions/${PY_VERSION}/venv"
+VENV="${ROOT}/py/${SUITE}/build/py-test-matrix/${PY_VERSION}/venv"
 
 # deephaven-server pins deephaven-core to its own version, so all three wheels must come from one build.
 WHEELS=()
@@ -53,8 +53,8 @@ while IFS= read -r req; do
     req="${req%%#*}"
     [[ -z "${req// /}" ]] && continue
     uv pip install --quiet --python "${VENV}/bin/python" "${req}" || echo "Skipping ${req}: not installable on ${PY_VERSION}"
-done < "${ROOT}/.github/py-versions/requirements-${SUITE}.txt"
+done < "${ROOT}/.github/py-test-matrix/requirements-test-${SUITE}.txt"
 
 export VIRTUAL_ENV="${VENV}"
 export PATH="${VENV}/bin:${PATH}"
-exec "${ROOT}/.github/py-versions/run-tests-venv.sh" "${SUITE}" "$@"
+exec "${ROOT}/.github/py-test-matrix/run-tests-venv.sh" "${SUITE}" "$@"

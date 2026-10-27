@@ -1,8 +1,0 @@
-# Packages py/client/tests needs beyond deephaven-core, deephaven-server and pydeephaven. run-tests-venv.sh warns about
-# any that are missing. Versions are open, so the tests run against the latest releases.
-unittest-xml-reporting
-# tests/test_flightsql.py
-flightsql-dbapi
-adbc-driver-flightsql
-# tests/test_console.py runs a server-side script that imports numba.
-numba

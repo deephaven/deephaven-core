@@ -1,4 +1,4 @@
-name: Nightly Python Versions CI
+name: Nightly Python Test Matrix CI
 
 # Runs the py/server and py/client tests on every supported Python version, without Docker. The Docker suites in check
 # cover only the images' Python.
@@ -16,7 +16,7 @@ on:
     - cron: '0 7 * * *'
   workflow_dispatch:
   push:
-    branches: [ 'nightly/**', 'py-versions/**' ]
+    branches: [ 'nightly/**', 'py-test-matrix/**' ]
 
 jobs:
   build:
@@ -50,7 +50,7 @@ jobs:
       - name: Upload the build outputs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: py-versions-build
+          name: py-test-matrix-build
           path: |
             py/embedded-server/build/wheel/*.whl
             py/server/build/wheel/*.whl
@@ -81,9 +81,9 @@ jobs:
       - name: Download the wheels
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: py-versions-build
+          name: py-test-matrix-build
           # upload-artifact stores files relative to their deepest common folder, py/. Downloading into py/ puts each
-          # wheel back where py-versions-test.sh looks for it.
+          # wheel back where py-test-matrix.sh looks for it.
           path: py
 
       - name: Setup JDKs
@@ -94,7 +94,7 @@ jobs:
             21
 
       - name: Setup uv
-        # py-versions-test.sh uses uv to get the Python version and make the venv.
+        # py-test-matrix.sh uses uv to get the Python version and make the venv.
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           # uv compiles any dependency that has no wheel for the job's Python, often grpcio and numba on free-threaded
@@ -119,22 +119,23 @@ jobs:
           docker compose -f Integrations/docker-compose.yml up -d --wait
 
       - name: Run tests
-        # See .github/py-versions/README.md. On older Pythons, uv installs older numpy, pandas, pyarrow and numba, since
-        # the newest releases dropped them.
-        run: .github/scripts/py-versions-test.sh ${{ matrix.suite }} ${{ matrix.python-version }}
+        # Developers run .github/py-test-matrix/run-tests-venv.sh, which this calls, in their own venv. See
+        # .github/py-test-matrix/README.md. On older Pythons, uv installs older numpy, pandas, pyarrow and numba,
+        # since the newest releases dropped them.
+        run: .github/scripts/py-test-matrix.sh ${{ matrix.suite }} ${{ matrix.python-version }}
 
       - name: Upload Test Results
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: nightly-py-versions-${{ matrix.suite }}-py${{ matrix.python-version }}-ci-results
+          name: nightly-py-test-matrix-${{ matrix.suite }}-py${{ matrix.python-version }}-ci-results
           path: py/${{ matrix.suite }}/build/test-results/test-venv/**
 
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
-          name: nightly-py-versions-${{ matrix.suite }}-py${{ matrix.python-version }}-ci-jvm-err
+          name: nightly-py-test-matrix-${{ matrix.suite }}-py${{ matrix.python-version }}-ci-jvm-err
           path: |
             **/*_pid*.log
             **/core.*
@@ -155,7 +156,7 @@ jobs:
           errors: true
           payload: |
             {
-              "slack_message": "Nightly Python versions failure @ ${{ github.ref_name }} ${{ github.sha }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "slack_message": "Nightly Python test matrix failure @ ${{ github.ref_name }} ${{ github.sha }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}

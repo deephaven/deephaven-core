@@ -1,8 +1,0 @@
-# Packages py/server/tests needs beyond deephaven-core, deephaven-server and pydeephaven. run-tests-venv.sh warns about
-# any that are missing. Versions are open, so the tests run against the latest releases.
-unittest-xml-reporting
-numba
-adbc-driver-manager
-adbc-driver-postgresql
-# tests/test_dbc.py skips its connectorx test off x86_64.
-connectorx; platform_machine == "x86_64"

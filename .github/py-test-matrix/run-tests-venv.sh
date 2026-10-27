@@ -12,8 +12,8 @@
 # usage: run-tests-venv.sh <server|client> [test ...]
 #   test  optional unittest names, for example tests.test_csv. Default: all of tests/.
 #
-# The venv also needs requirements-<suite>.txt from this folder. The script warns about missing packages and never
-# changes the venv. See README.md in this folder.
+# The venv also needs .github/py-test-matrix/requirements-test-<suite>.txt. The script warns about missing packages
+# and never changes the venv. See .github/py-test-matrix/README.md.
 
 set -o errexit
 set -o nounset
@@ -29,7 +29,7 @@ shift
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${HERE}/../.." && pwd)"
 SUITE_DIR="${ROOT}/py/${SUITE}"
-DOC=".github/py-versions/README.md"
+DOC=".github/py-test-matrix/README.md"
 
 if [[ -z "${VIRTUAL_ENV:-}" || ! -x "${VIRTUAL_ENV}/bin/python" ]]; then
     echo "Activate a venv first. See ${DOC}." >&2
@@ -59,7 +59,7 @@ mkdir -p "${BUILD}/data" "${BUILD}/cache" "${BUILD}/config" "${WORK}" "${RESULTS
 
 # Warn about missing test dependencies. A line with an environment marker is checked only if the packaging library is
 # installed to evaluate it.
-"${PYTHON}" - "${HERE}/requirements-${SUITE}.txt" "${PIP_INSTALL}" << 'EOF'
+"${PYTHON}" - "${HERE}/requirements-test-${SUITE}.txt" "${PIP_INSTALL}" << 'EOF'
 import importlib.metadata, re, sys
 missing = []
 for line in open(sys.argv[1]):
