@@ -4,11 +4,15 @@
 package io.deephaven.extensions.barrage;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.AttributeMap;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -93,13 +97,22 @@ public class BarragePerformanceLog {
         return null;
     }
 
+    /**
+     * Manages the blink tables for the life of the process. The constructor creates the blink tables with
+     * {@code livenessScope} on top of the {@link LivenessScopeStack}, so releasing the caller's scope does not destroy
+     * the blink tables. Only {@link #resetForUnitTests()} releases {@code livenessScope}.
+     */
+    private final LivenessScope livenessScope = new LivenessScope();
+
     private final BarrageSubscriptionPerformanceLoggerImpl subImpl;
     private final BarrageSnapshotPerformanceLoggerImpl snapImpl;
 
     private BarragePerformanceLog() {
         final BarrageTableLoggers.Factory loggerFactory = BarrageTableLoggers.get();
-        subImpl = new BarrageSubscriptionPerformanceLoggerImpl(loggerFactory.subscriptionPerformanceSink());
-        snapImpl = new BarrageSnapshotPerformanceLoggerImpl(loggerFactory.snapshotPerformanceSink());
+        try (final SafeCloseable ignored = LivenessScopeStack.open(livenessScope, false)) {
+            subImpl = new BarrageSubscriptionPerformanceLoggerImpl(loggerFactory.subscriptionPerformanceSink());
+            snapImpl = new BarrageSnapshotPerformanceLoggerImpl(loggerFactory.snapshotPerformanceSink());
+        }
     }
 
     public QueryTable getSubscriptionTable() {
@@ -135,6 +148,21 @@ public class BarragePerformanceLog {
             BarragePerformanceLog.getInstance()
                     .getSnapshotLogger()
                     .log(this, writeNanos, bytesWritten);
+        }
+    }
+
+    /**
+     * Discard the singleton instance and release the liveness scope that manages the instance's blink tables. The next
+     * {@link #getInstance()} creates a new instance.
+     */
+    @TestUseOnly
+    static void resetForUnitTests() {
+        synchronized (BarragePerformanceLog.class) {
+            if (INSTANCE == null) {
+                return;
+            }
+            INSTANCE.livenessScope.release();
+            INSTANCE = null;
         }
     }
 }

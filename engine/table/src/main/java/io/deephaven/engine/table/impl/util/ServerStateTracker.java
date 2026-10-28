@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -15,6 +17,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 import org.jetbrains.annotations.NotNull;
@@ -47,6 +50,13 @@ public class ServerStateTracker {
         return local;
     }
 
+    /**
+     * Manages the blink table for the life of the process. The constructor creates the blink table with
+     * {@code livenessScope} on top of the {@link LivenessScopeStack}, so releasing the caller's scope does not destroy
+     * the blink table. Only {@link #resetForUnitTests()} releases {@code livenessScope}.
+     */
+    private final LivenessScope livenessScope = new LivenessScope();
+
     private final Logger logger;
 
     private final ServerStateLogLogger processMemLogger;
@@ -62,12 +72,14 @@ public class ServerStateTracker {
         logger = LoggerFactory.getLogger(ServerStateTracker.class);
         processMemLogger = EngineTableLoggers.get().serverStateLogLogger();
         publisher = new ServerStateStreamPublisher();
-        adapter = new StreamToBlinkTableAdapter(
-                ServerStateStreamPublisher.definition(),
-                publisher,
-                ExecutionContext.getContext().getUpdateGraph(),
-                ServerStateTracker.class.getName());
-        blink = adapter.table();
+        try (final SafeCloseable ignored = LivenessScopeStack.open(livenessScope, false)) {
+            adapter = new StreamToBlinkTableAdapter(
+                    ServerStateStreamPublisher.definition(),
+                    publisher,
+                    ExecutionContext.getContext().getUpdateGraph(),
+                    ServerStateTracker.class.getName());
+            blink = adapter.table();
+        }
         ugpAccumCycleStats = new PeriodicUpdateGraph.AccumulatedCycleStats();
     }
 
@@ -268,5 +280,21 @@ public class ServerStateTracker {
 
     public QueryTable getQueryTable() {
         return (QueryTable) BlinkTableTools.blinkToAppendOnly(blink);
+    }
+
+    /**
+     * Discard the singleton instance and release the liveness scope that manages the instance's blink table. The next
+     * {@link #getInstance()} creates a new instance. A driver thread from {@link #start()} keeps logging to the
+     * discarded instance.
+     */
+    @TestUseOnly
+    static void resetForUnitTests() {
+        synchronized (ServerStateTracker.class) {
+            if (INSTANCE == null) {
+                return;
+            }
+            INSTANCE.livenessScope.release();
+            INSTANCE = null;
+        }
     }
 }
