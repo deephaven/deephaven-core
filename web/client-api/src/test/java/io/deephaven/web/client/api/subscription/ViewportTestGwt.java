@@ -416,8 +416,10 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
                     });
                     table.setViewport(0, 0, null);
+                    int[] streamsBefore = {0};
                     return assertUpdateReceived(table, 1, 5055)
                             .then(t -> {
+                                streamsBefore[0] = transport.openStreams();
                                 // Only the viewport's stream ends, with UNAVAILABLE; every other stream stays up.
                                 // The connection treats it as a lost connection and reconnects within the session
                                 transport.failStreams("DoExchange", 14, "stream lost by test");
@@ -427,6 +429,12 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                                         delay(8000).then(late -> Promise.reject(
                                                 "viewport did not resume after its stream ended with UNAVAILABLE")));
                             })
+                            // Every long-lived stream was replaced, none added: the count settles back to what it was
+                            .then(t -> Promise.race(
+                                    waitFor(() -> transport.openStreams() == streamsBefore[0], 50, 3058, table),
+                                    delay(3000).then(late -> Promise.reject(
+                                            "streams leaked across an isolated reconnect: " + streamsBefore[0]
+                                                    + " before, " + transport.openStreams() + " after"))))
                             .then(ignore -> {
                                 table.close();
                                 return Promise.resolve(table);

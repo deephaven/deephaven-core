@@ -804,6 +804,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     public Promise<?> refetch() {
         // TODO(deephaven-core#3604) a tree cannot be re-fetched into a new session; say so rather than reconnect
         String reason = "Cannot reconnect a TreeTable with refetch(), see deephaven-core#3604";
+        // Dead for good: a later recovery of the connection must not revive it or announce it as reconnected
+        connection.unregisterSimpleReconnectable(this);
         die(reason);
         return Promise.reject(reason);
     }
@@ -831,10 +833,17 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         // it here before announcing the reconnect. A stream that survived is left alone by revive().
         Promise<TreeSubscription> current = stream;
         current.then(subscription -> {
+            if (closed) {
+                // Closed while this was pending, e.g. from the connection's reconnect listener
+                return null;
+            }
             subscription.revive(subscription.state());
             JsTreeTable.super.reconnect();
             return null;
         }, failure -> {
+            if (closed) {
+                return null;
+            }
             // The connection is back, but the viewport could not be rebuilt: say both. The build's own report was
             // suppressed while disconnected.
             JsTreeTable.super.reconnect();
