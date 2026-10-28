@@ -102,6 +102,40 @@ public abstract class TableParquetWriterOptions extends TableWriterOptions {
         return builder.build();
     }
 
+    static ParquetInstructions toParquetInstructions(
+            @NotNull final ParquetInstructions other,
+            @NotNull final ParquetInstructions.OnWriteCompleted onWriteCompleted,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final Map<Integer, String> fieldIdToName,
+            @NotNull final SeekableChannelsProvider seekableChannelsProvider) {
+        final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
+
+        if (other.getSpecialInstructions() != null) {
+            builder.setSpecialInstructions(other.getSpecialInstructions());
+        }
+
+        // Add parquet writing specific instructions.
+        builder.setTableDefinition(other.getTableDefinition().orElse(tableDefinition));
+        for (final Map.Entry<Integer, String> entry : fieldIdToName.entrySet()) {
+            builder.setFieldId(entry.getValue(), other.getFieldId(entry.getValue()).orElse(entry.getKey()));
+        }
+
+        builder.setCompressionCodecName(other.getCompressionCodecName());
+        builder.setMaximumDictionaryKeys(other.getMaximumDictionaryKeys());
+        builder.setMaximumDictionarySize(other.getMaximumDictionarySize());
+        builder.setTargetPageSize(other.getTargetPageSize());
+        if (other.onWriteCompleted().isPresent()) {
+            throw new IllegalStateException("Cannot have duplicated OnWriteComplete");
+        }
+        builder.setOnWriteCompleted(onWriteCompleted);
+        if (other.getSeekableChannelsProviderForWriting().isPresent()) {
+            throw new IllegalStateException("Cannot have duplicated SeekableChannelsProviders");
+        }
+        builder.setSeekableChannelsProviderForWriting(seekableChannelsProvider);
+
+        return builder.build();
+    }
+
     public interface Builder extends TableWriterOptions.Builder<Builder> {
         Builder compressionCodecName(String compressionCodecName);
 

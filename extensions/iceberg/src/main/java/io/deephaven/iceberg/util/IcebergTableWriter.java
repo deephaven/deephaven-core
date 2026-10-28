@@ -129,6 +129,7 @@ public class IcebergTableWriter {
      * provider-specific instructions).
      */
     private final Object specialInstructions;
+    private final ParquetInstructions parquetInstructions;
 
     /**
      * The provider for creating channels to write data.
@@ -184,6 +185,47 @@ public class IcebergTableWriter {
         final String uriScheme = tableAdapter.locationUri().getScheme();
         this.specialInstructions = tableWriterOptions.dataInstructions()
                 .orElseGet(() -> dataInstructionsProvider.load(uriScheme));
+        this.parquetInstructions = null;
+        this.channelsProvider = tableAdapter.seekableChannelsProvider(specialInstructions);
+    }
+
+    IcebergTableWriter(
+            final TableWriterOptions tableWriterOptions,
+            final ParquetInstructions parquetInstructions,
+            final IcebergTableAdapter tableAdapter) {
+        this.tableWriterOptions = verifyWriterOptions(tableWriterOptions);
+        this.parquetInstructions = Objects.requireNonNull(parquetInstructions);
+
+        final Resolver resolver = tableAdapter.resolver();
+        this.table = tableAdapter.icebergTable();
+
+        this.tableSpec = resolver.specOrUnpartitioned();
+        this.tableDefinition = resolver.definition();
+
+        this.nonPartitioningTableDefinition = nonPartitioningTableDefinition(tableDefinition);
+        verifyRequiredFields(table.schema(), tableDefinition);
+        verifyPartitioningColumns(resolver, tableDefinition);
+
+        this.userSchema = resolver.schema();
+
+        // Create a copy of the fieldIdToColumnName map since we might need to add new entries for columns which are not
+        // provided by the user.
+        // this.fieldIdToColumnName = new HashMap<>(tableWriterOptions.fieldIdToColumnName());
+        this.fieldIdToColumnName = new HashMap<>(resolver.schema().idToName());
+        verifyFieldIdsInSchema(fieldIdToColumnName.keySet(), userSchema);
+        addFieldIdsForAllColumns();
+
+        outputFileFactory = OutputFileFactory.builderFor(table, 0, 0)
+                .format(FileFormat.PARQUET)
+                .build();
+
+        final SortOrderProviderInternal.SortOrderProviderImpl sortOrderProvider =
+                ((SortOrderProviderInternal.SortOrderProviderImpl) tableWriterOptions.sortOrderProvider());
+        sortColumnNames =
+                computeSortColumns(sortOrderProvider.getSortOrderToUse(table), sortOrderProvider.failOnUnmapped());
+        sortOrderToWrite = sortOrderProvider.getSortOrderToWrite(table);
+
+        this.specialInstructions = tableWriterOptions.dataInstructions().orElse(null);
         this.channelsProvider = tableAdapter.seekableChannelsProvider(specialInstructions);
     }
 
@@ -589,8 +631,15 @@ public class IcebergTableWriter {
         // Build the parquet instructions
         final List<CompletedParquetWrite> parquetFilesWritten = new ArrayList<>(dhTables.size());
         final ParquetInstructions.OnWriteCompleted onWriteCompleted = parquetFilesWritten::add;
-        final ParquetInstructions parquetInstructions = tableWriterOptions.toParquetInstructions(
-                onWriteCompleted, tableDefinition, fieldIdToColumnName, specialInstructions, channelsProvider);
+
+        final ParquetInstructions parquetInstructions;
+        if (this.parquetInstructions != null) {
+            parquetInstructions = TableParquetWriterOptions.toParquetInstructions(this.parquetInstructions,
+                    onWriteCompleted, tableDefinition, fieldIdToColumnName, channelsProvider);
+        } else {
+            parquetInstructions = tableWriterOptions.toParquetInstructions(
+                    onWriteCompleted, tableDefinition, fieldIdToColumnName, specialInstructions, channelsProvider);
+        }
 
         // Write the data to parquet files
         final int numTables = dhTables.size();
