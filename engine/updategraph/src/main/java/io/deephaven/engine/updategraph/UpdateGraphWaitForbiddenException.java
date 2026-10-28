@@ -9,7 +9,6 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Runtime exception thrown when a thread would wait for an {@link UpdateGraph}, either to acquire one of its locks or
  * for its update cycle to satisfy a dependency, while {@link UpdateGraphWaitGuard#forbidWaits() forbidden} to do so.
- * The work that was in progress is abandoned, and may be retried by a caller that is permitted to wait.
  */
 public class UpdateGraphWaitForbiddenException extends UncheckedDeephavenException {
 

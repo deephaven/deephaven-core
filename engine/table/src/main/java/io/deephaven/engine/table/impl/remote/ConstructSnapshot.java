@@ -1197,8 +1197,8 @@ public class ConstructSnapshot {
                     // locked attempt they fall back to is worth the update graph lock it would take.
                     throw ce;
                 } catch (UpdateGraphWaitForbiddenException forbidden) {
-                    // A nested snapshot would have waited for the update graph, which this thread is forbidden to do;
-                    // the work that encloses this snapshot is abandoned, to be retried by a caller that may wait.
+                    // A nested snapshot would have waited for the update graph, which this thread is forbidden to do,
+                    // and neither another concurrent attempt nor a locked attempt would be permitted to wait either.
                     throw forbidden;
                 } catch (Exception e) {
                     functionSuccessful = false;
