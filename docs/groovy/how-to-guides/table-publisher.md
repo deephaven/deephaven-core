@@ -271,7 +271,7 @@ trig_plot = FigureFactory.figure()
 
 ### DynamicTableWriter and the Update Graph
 
-Both the Groovy script session and the [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md) require the [UpdateGraph lock](../conceptual/query-engine/engine-locking.md#query-engine-locks) to execute. As a result, new rows will not appear in output tables until the next update graph cycle. As an example, what would you expect the `println` statement below to produce?
+Writing a row with [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md) doesn't need a lock. The writer queues the row, and the update graph adds it to the output table during its next update cycle. That cycle can't run while the Groovy script session holds the exclusive [UpdateGraph lock](../conceptual/query-engine/engine-locking.md#query-engine-locks), which it does while a command executes. As a result, new rows don't appear in output tables until the command finishes and the next update graph cycle runs. As an example, what would you expect the `println` statement below to produce?
 
 ```groovy order=result test-set=1 reset
 import io.deephaven.engine.table.impl.util.DynamicTableWriter
