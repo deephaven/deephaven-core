@@ -4,7 +4,7 @@ title: Access table metadata
 
 This guide shows how to use the methods of Deephaven [tables](/core/javadoc/io/deephaven/engine/table/Table.html) to access the metadata for your table, and how to use the static [`string`](#string) and [`diff`](../reference/table-operations/metadata/diff.md) methods from [`TableTools`](/core/javadoc/io/deephaven/engine/util/TableTools.html) to preview a table and compare two tables.
 
-A table's metadata describes the table itself: its [table type](../conceptual/table-types.md) and size, whether it is [refreshing](../conceptual/table-types.md#standard-streaming-tables), and the data type of each column. You might use it to confirm that a column is an `int` or a `double`, or to check whether a column is a partitioning column. A partitioning column gets its values from how the data is laid out in storage, not from the data files. For example, the `key=value` directory names of a [nested Parquet dataset](./data-import-export/parquet-formats.md#nested-parquet-files) become partitioning columns.
+A table's metadata describes the table itself: its [table type](../conceptual/table-types.md) and size, whether it is [refreshing](../conceptual/table-types.md#standard-streaming-tables), and the data type of each column. You might use it to confirm that a column is an `int` or a `double`, or to check whether a column is a partitioning column. A partitioning column gets its values from how the data is laid out in storage, not from the data files. For example, the `key=value` directory names of a [key-value partitioned Parquet directory](./data-import-export/parquet-formats.md#key-value-partitioned-directories) become partitioning columns.
 
 ## `meta`
 
