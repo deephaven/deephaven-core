@@ -42,7 +42,9 @@ import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.testutil.filters.ReindexingRowSetCapturingFilter;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TestClock;
@@ -655,6 +657,108 @@ public class TestPartitionAwareSourceTableNoMocks {
             assertEquals(4 * partitionSize, coalesced.size());
         } finally {
             QueryTable.setMemoizeResults(oldMemoize);
+        }
+    }
+
+    /**
+     * As {@link #testDeferredCoalesceWhileExclusiveLockHolderCoalesces()}, but the deferred where filters in parallel,
+     * and on each worker its filter performs a nested snapshot that needs the update graph lock during an update cycle.
+     */
+    @Test
+    public void testDeferredParallelCoalesceWhileExclusiveLockHolderCoalesces() throws Exception {
+        final long partitionSize = 128;
+        final Table source = refreshingPartitionedSource(partitionedLocationProvider(partitionSize));
+        // the source is coalesced up front, so that the nested snapshots are the only ones that need the lock
+        source.coalesce();
+        final boolean oldForceParallelWhere = QueryTable.FORCE_PARALLEL_WHERE;
+        final boolean oldDisableParallelWhere = QueryTable.DISABLE_PARALLEL_WHERE;
+        final int oldParallelWhereSegments = QueryTable.PARALLEL_WHERE_SEGMENTS;
+        final long oldParallelWhereRowsPerSegment = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
+        QueryTable.FORCE_PARALLEL_WHERE = true;
+        QueryTable.DISABLE_PARALLEL_WHERE = false;
+        QueryTable.PARALLEL_WHERE_SEGMENTS = 2;
+        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = partitionSize;
+        try {
+            final NestedSnapshotFilter filter =
+                    new NestedSnapshotFilter(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
+            final Table coalesced = coalesceWhileExclusiveLockHolderCoalesces(source.where(filter));
+            assertEquals(4 * partitionSize, coalesced.size());
+            assertTrue(filter.workerSnapshots.get() > 0);
+        } finally {
+            QueryTable.FORCE_PARALLEL_WHERE = oldForceParallelWhere;
+            QueryTable.DISABLE_PARALLEL_WHERE = oldDisableParallelWhere;
+            QueryTable.PARALLEL_WHERE_SEGMENTS = oldParallelWhereSegments;
+            QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = oldParallelWhereRowsPerSegment;
+        }
+    }
+
+    /**
+     * Before filtering, performs a nested snapshot that cannot run concurrently with an update cycle, so that it needs
+     * the update graph lock while one is updating. Counts, over this filter and its copies, the nested snapshots that
+     * ran on a thread other than the one that created the filter.
+     */
+    private static class NestedSnapshotFilter extends WhereFilterDelegatingBase {
+        private final Thread creatingThread;
+        private final AtomicInteger workerSnapshots;
+
+        private NestedSnapshotFilter(final WhereFilter filter) {
+            this(filter, Thread.currentThread(), new AtomicInteger());
+        }
+
+        private NestedSnapshotFilter(
+                final WhereFilter filter,
+                final Thread creatingThread,
+                final AtomicInteger workerSnapshots) {
+            super(filter);
+            this.creatingThread = creatingThread;
+            this.workerSnapshots = workerSnapshots;
+        }
+
+        @NotNull
+        @Override
+        public WritableRowSet filter(
+                @NotNull final RowSet selection,
+                @NotNull final RowSet fullSet,
+                @NotNull final Table table,
+                final boolean usePrev) {
+            final UpdateGraph updateGraph = table.getUpdateGraph();
+            ConstructSnapshot.callDataSnapshotFunction("NestedSnapshotFilter", new ConstructSnapshot.SnapshotControl() {
+                @Override
+                public Boolean usePreviousValues(final long beforeClockValue) {
+                    return false;
+                }
+
+                @Override
+                public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
+                    return true;
+                }
+
+                @Override
+                public UpdateGraph getUpdateGraph() {
+                    return updateGraph;
+                }
+            }, (final boolean snapshotUsePrev, final long beforeClockValue) -> {
+                if (LogicalClock.getState(beforeClockValue) == LogicalClock.State.Updating
+                        && !updateGraph.sharedLock().isHeldByCurrentThread()
+                        && !updateGraph.exclusiveLock().isHeldByCurrentThread()) {
+                    throw new ConstructSnapshot.NoSnapshotAllowedException();
+                }
+                return true;
+            });
+            if (Thread.currentThread() != creatingThread) {
+                workerSnapshots.incrementAndGet();
+            }
+            return super.filter(selection, fullSet, table, usePrev);
+        }
+
+        @Override
+        public WhereFilter maybeUnwrapFilter() {
+            return this;
+        }
+
+        @Override
+        public WhereFilter copy() {
+            return new NestedSnapshotFilter(filter.copy(), creatingThread, workerSnapshots);
         }
     }
 
