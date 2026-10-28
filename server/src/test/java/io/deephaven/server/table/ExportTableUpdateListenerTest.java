@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
@@ -29,6 +30,7 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,6 +43,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -413,6 +416,60 @@ public class ExportTableUpdateListenerTest {
             lockedSnapshotSrc.notifyListeners(added, i(), i());
         });
         expectSizes(lockedSnapshotExport.getExportId(), 15);
+    }
+
+    @Test
+    public void testInitialSizeOvertakenByUpdateIsNotSent() throws Exception {
+        final ExportedTableUpdateListener listener = createListener(session, observer);
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            session.addExportListener(listener);
+        }
+        expectNoMessage(); // the run is empty
+
+        // a table that pauses its exporter after subscribing the export's listener
+        final CountDownLatch subscribed = new CountDownLatch(1);
+        final CountDownLatch resume = new CountDownLatch(1);
+        final QueryTable src = new QueryTable(RowSetFactory.flat(10).toTracking(), Map.of()) {
+            @Override
+            public boolean addUpdateListener(
+                    @NotNull final TableUpdateListener updateListener, final long requiredLastNotificationStep) {
+                final boolean added = super.addUpdateListener(updateListener, requiredLastNotificationStep);
+                if (added) {
+                    subscribed.countDown();
+                    try {
+                        Assert.eqTrue(resume.await(30, TimeUnit.SECONDS), "resume.await(30, TimeUnit.SECONDS)");
+                    } catch (final InterruptedException ie) {
+                        throw new UncheckedDeephavenException(ie);
+                    }
+                }
+                return added;
+            }
+        };
+        src.setRefreshing(true);
+
+        final CompletableFuture<SessionState.ExportObject<QueryTable>> t1 = new CompletableFuture<>();
+        final Thread exportThread = new Thread(() -> {
+            try (final SafeCloseable ignored = LivenessScopeStack.open();
+                    final SafeCloseable ignored2 = executionContext.open()) {
+                t1.complete(session.newServerSideExport(src));
+            } catch (final Throwable failure) {
+                t1.completeExceptionally(failure);
+            }
+        }, "paused-exporter");
+        exportThread.setDaemon(true);
+        exportThread.start();
+        Assert.eqTrue(subscribed.await(30, TimeUnit.SECONDS), "subscribed.await(30, TimeUnit.SECONDS)");
+
+        // the subscribed listener sends the updated size before the exporter sends the initial size
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet added = RowSetFactory.fromRange(10, 14);
+            src.getRowSet().writableCast().insert(added);
+            src.notifyListeners(added, i(), i());
+        });
+        resume.countDown();
+
+        expectSizes(t1.get(30, TimeUnit.SECONDS).getExportId(), 15);
+        expectNoMessage();
     }
 
     /**
