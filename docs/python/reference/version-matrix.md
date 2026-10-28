@@ -6,14 +6,17 @@ This page lists the Python versions, server Python dependencies, Java (JDK) vers
 
 ## Python versions
 
-A :white_check_mark: indicates that the Deephaven version supports the Python version, and a blank cell indicates that it does not.
+A :white_check_mark: indicates that the Deephaven version supports the Python version, and a blank cell indicates that it does not. The Python 3.14/t and 3.15/t columns cover both the regular and the free-threaded build of that Python version, for example Python 3.14 and Python 3.14t.
 
-| Deephaven version |     Python 3.8     |     Python 3.9     |    Python 3.10     |    Python 3.11     |    Python 3.12     |    Python 3.13     |
-| ----------------- | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
-| 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| 41.x and later    |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Deephaven version |     Python 3.9     |    Python 3.10     |    Python 3.11     |    Python 3.12     |    Python 3.13     |   Python 3.14/t    |   Python 3.15/t    |
+| ----------------- | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
+| 41.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
+| 42.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |                    |
+| 43.x              |                    |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
-Deephaven tests primarily with Python 3.12.
+Python 3.9 and 3.10 reached their end of life in October 2025 and October 2026. Deephaven Community Core may keep working with a Python version after its end of life, but Deephaven does not officially support it.
+
+Free-threaded Python is the build of Python that runs without the global interpreter lock (GIL). Deephaven does not support the experimental free-threaded build of Python 3.13.
 
 Plugins in the [deephaven-plugins](https://github.com/deephaven/deephaven-plugins) repository support Python 3.9 through 3.13, and Deephaven tests them with each of those versions.
 
@@ -21,7 +24,7 @@ Plugins in the [deephaven-plugins](https://github.com/deephaven/deephaven-plugin
 
 When the Deephaven server uses Python rather than Groovy as its query language, the server and web UI have hard dependencies on the Python packages `jpy`, `deephaven-plugin`, `numpy`, `pandas`, and `pyarrow` (Apache Arrow). The server requires every hard dependency to run.
 
-The server also has soft dependencies on `numba` and `jedi`, which are optional packages that turn on extra features. To install `jedi`, use the `autocomplete` extra: `pip install "deephaven-core[autocomplete]"`. In 0.40.x through 41.2, `pip` installs `numba` automatically on Python versions earlier than 3.13. Soft dependencies might not work on every supported Python version, though Deephaven makes a best effort to support them.
+The server also has soft dependencies on `numba` and `jedi`, which are optional packages that turn on extra features. To install `jedi`, use the `autocomplete` extra: `pip install "deephaven-core[autocomplete]"`. In 41.x, `pip` installs `numba` automatically on Python versions earlier than 3.13. Soft dependencies might not work on every supported Python version, though Deephaven makes a best effort to support them.
 
 The [`deephaven-core` package metadata on PyPI](https://pypi.org/project/deephaven-core/) declares the hard dependencies, including minimum versions for `jpy`, `deephaven-plugin`, and `pandas`. `pip` resolves these dependencies at install time. Deephaven cannot test every combination of dependency versions, and some combinations conflict with each other.
 
@@ -31,16 +34,15 @@ Each Deephaven release requires a minimum JDK version. Deephaven aims to support
 
 A :white_check_mark: indicates that Deephaven tests that release against the JDK version. For each release, the leftmost checked column is its minimum JDK version. A blank cell to the left of it is unsupported, and a blank cell to the right of it is untested.
 
-In 0.40.x through 42.x, JDK 11 support covers the Deephaven libraries and the Jetty 11 and Netty server variants. The default Jetty 12 server and the pip-installed `deephaven-server` package require JDK 17 or later.
+In 41.x and 42.x, JDK 11 support covers the Deephaven libraries and the Jetty 11 and Netty server variants. The default Jetty 12 server and the pip-installed `deephaven-server` package require JDK 17 or later.
 
 | Deephaven version |    JDK 11 (LTS)    |    JDK 17 (LTS)    |    JDK 21 (LTS)    |    JDK 25 (LTS)    |
 | ----------------- | :----------------: | :----------------: | :----------------: | :----------------: |
-| 0.40.x            | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
 | 41.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: |                    |
 | 42.x              | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | 43.x              |                    | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
-The table shows only LTS versions. Deephaven also tested 0.40.x and 41.x against JDK 24, a non-LTS release.
+The table shows only LTS versions. Deephaven also tested 41.x against JDK 24, a non-LTS release.
 
 Deephaven builds and tests with OpenJDK packages. Deephaven does not regularly run or test with GraalVM.
 
