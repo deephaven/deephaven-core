@@ -161,7 +161,7 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                 }
                 // The GenericContainer.class.isAssignableFrom(dataType) case is also covered by the generic object
                 // field copier.
-                return new GenericRecordObjectFieldCopier(fieldPathStr, separator, schema);
+                return new GenericRecordObjectFieldCopier(fieldPathStr, separator, schema, dataType);
         }
         throw new IllegalArgumentException("Can not convert field of type " + dataType);
     }
