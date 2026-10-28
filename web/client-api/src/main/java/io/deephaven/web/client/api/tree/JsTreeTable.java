@@ -824,10 +824,17 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         // it here before announcing the reconnect. A stream that survived is left alone by revive().
         Promise<TreeSubscription> current = stream;
         current.then(subscription -> {
+            if (closed) {
+                // Closed while this was pending, e.g. from the connection's reconnect listener
+                return null;
+            }
             subscription.revive(subscription.state());
             JsTreeTable.super.reconnect();
             return null;
         }, failure -> {
+            if (closed) {
+                return null;
+            }
             // The connection is back, but the viewport could not be rebuilt: say both. The build's own report was
             // suppressed while disconnected.
             JsTreeTable.super.reconnect();
