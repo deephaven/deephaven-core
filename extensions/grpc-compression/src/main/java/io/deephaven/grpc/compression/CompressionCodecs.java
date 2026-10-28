@@ -166,8 +166,7 @@ public final class CompressionCodecs {
      *         the same compression type replaces
      */
     private static boolean isBuiltIn(@NotNull final CompressionCodecProvider provider) {
-        return provider instanceof DeflateCodec.Provider || provider instanceof GzipCodecProvider
-                || provider instanceof SnappyCodec.Provider || provider instanceof ZstdCodec.Provider;
+        return provider instanceof DeephavenCompressionCodecProvider;
     }
 
     /**

@@ -7,6 +7,7 @@ import com.github.luben.zstd.BufferPool;
 import com.github.luben.zstd.RecyclingBufferPool;
 import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
 import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
+import com.github.luben.zstd.util.Native;
 import com.google.auto.service.AutoService;
 import io.grpc.Codec;
 
@@ -27,9 +28,7 @@ public final class ZstdCodec implements Codec {
     public static final String ENCODING = "zstd";
 
     /**
-     * zstd-jni's shared buffer pool. Initializing the pool loads zstd-jni's native library, so a library that cannot
-     * load fails when {@link CompressionCodecs} loads this codec, which then leaves zstd out, rather than at the first
-     * compressed message. Declared before {@link #INSTANCE}, so that no instance exists without the library.
+     * zstd-jni's shared buffer pool.
      */
     private static final BufferPool POOL = RecyclingBufferPool.INSTANCE;
 
@@ -39,6 +38,12 @@ public final class ZstdCodec implements Codec {
      * zstd's default compression level.
      */
     private static final int LEVEL = 3;
+
+    /**
+     * The base-2 logarithm of the largest window that a frame may declare for decompression: 8 MiB, the largest window
+     * that zstd's compression levels 1 through 19 use. {@link #LEVEL} uses a window of at most 2 MiB.
+     */
+    static final int WINDOW_LOG_MAX = 23;
 
     private ZstdCodec() {}
 
@@ -57,7 +62,7 @@ public final class ZstdCodec implements Codec {
     public InputStream decompress(final InputStream is) throws IOException {
         // gRPC closes each message stream after parsing it, including when the call is cancelled, so it needs no
         // finalizer
-        return new ZstdInputStreamNoFinalizer(is, POOL);
+        return new ZstdInputStreamNoFinalizer(is, POOL).setLongMax(WINDOW_LOG_MAX);
     }
 
     /**
@@ -65,9 +70,13 @@ public final class ZstdCodec implements Codec {
      * with {@link java.util.ServiceLoader} like every other type.
      */
     @AutoService(CompressionCodecProvider.class)
-    public static final class Provider implements CompressionCodecProvider {
+    public static final class Provider implements DeephavenCompressionCodecProvider {
         @Override
         public Codec codec() {
+            // loads zstd-jni's native library now, before ZstdCodec is initialized, so that a library that cannot load
+            // fails here with zstd-jni's own error, where CompressionCodecs leaves zstd out, rather than at the first
+            // compressed message
+            Native.load();
             return INSTANCE;
         }
     }

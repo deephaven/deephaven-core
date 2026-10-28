@@ -47,7 +47,7 @@ public final class DeflateCodec implements Codec {
      * it with {@link java.util.ServiceLoader} like every other type.
      */
     @AutoService(CompressionCodecProvider.class)
-    public static final class Provider implements CompressionCodecProvider {
+    public static final class Provider implements DeephavenCompressionCodecProvider {
         @Override
         public Codec codec() {
             return INSTANCE;

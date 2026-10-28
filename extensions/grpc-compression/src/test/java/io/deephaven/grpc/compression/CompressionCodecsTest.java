@@ -50,6 +50,16 @@ public class CompressionCodecsTest {
     }
 
     @Test
+    public void includedProvidersAreBuiltIn() {
+        // every provider on this module's classpath is one that the module includes, so a deployment's provider of the
+        // same type replaces each
+        assertThat(ServiceLoader.load(CompressionCodecProvider.class).stream()
+                .map(ServiceLoader.Provider::type)
+                .collect(Collectors.toList()))
+                .allMatch(DeephavenCompressionCodecProvider.class::isAssignableFrom);
+    }
+
+    @Test
     public void codecsAreSortedByName() {
         final Codec lz4 = new NamedCodec("lz4");
         final Codec custom = new NamedCodec("x-lz4.v2+raw_1");

@@ -11,7 +11,7 @@ import io.grpc.Codec;
  * finds it with {@link java.util.ServiceLoader} like every other type.
  */
 @AutoService(CompressionCodecProvider.class)
-public final class GzipCodecProvider implements CompressionCodecProvider {
+public final class GzipCodecProvider implements DeephavenCompressionCodecProvider {
 
     @Override
     public Codec codec() {
