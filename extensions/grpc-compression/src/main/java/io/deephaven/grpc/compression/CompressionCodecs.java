@@ -90,12 +90,17 @@ public final class CompressionCodecs {
         // which provider supplied each name in byName, to settle a name that two providers supply
         final Map<String, CompressionCodecProvider> sources = new HashMap<>();
         final Iterator<CompressionCodecProvider> iterator = providers.iterator();
-        while (iterator.hasNext()) {
+        while (true) {
             final CompressionCodecProvider provider;
             try {
+                if (!iterator.hasNext()) {
+                    break;
+                }
                 provider = iterator.next();
-            } catch (final ServiceConfigurationError e) {
-                // ServiceLoader reports a provider class it cannot load or instantiate here, and moves on to the next
+            } catch (final ServiceConfigurationError | LinkageError e) {
+                // ServiceLoader throws from next() for a provider class that cannot be found or instantiated, and
+                // from hasNext() for a provider class whose superclass or interface is missing; either way,
+                // ServiceLoader moves on to the next provider
                 log.warn("Ignoring a compression codec provider that could not be loaded", e);
                 continue;
             }

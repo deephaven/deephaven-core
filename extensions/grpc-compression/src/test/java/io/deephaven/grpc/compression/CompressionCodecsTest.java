@@ -9,18 +9,22 @@ import io.grpc.CompressorRegistry;
 import io.grpc.Decompressor;
 import io.grpc.DecompressorRegistry;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 
@@ -85,25 +89,15 @@ public class CompressionCodecsTest {
     }
 
     @Test
-    public void providersThatCannotBeLoadedAreIgnored() {
-        // ServiceLoader's iterator reports a provider class that it cannot load from next(), then moves on
-        final Iterable<CompressionCodecProvider> providers = () -> new Iterator<>() {
-            private int next;
-
-            @Override
-            public boolean hasNext() {
-                return next < 2;
-            }
-
-            @Override
-            public CompressionCodecProvider next() {
-                if (next++ == 0) {
-                    throw new ServiceConfigurationError("Provider com.example.Missing not found");
-                }
-                return new GzipCodecProvider();
-            }
-        };
-        assertThat(codecsOf(providers).keySet()).containsExactly("gzip");
+    public void providersThatCannotBeLoadedAreIgnored(@TempDir final Path dir) throws IOException {
+        // ServiceLoader throws from next() for a provider class that cannot be found, and from hasNext() for a
+        // provider class whose superclass is missing; both come before a provider that loads
+        final Path services = dir.resolve(CompressionCodecProvider.class.getName());
+        Files.write(services, List.of("com.example.Missing", MissingBaseProvider.class.getName(),
+                GzipCodecProvider.class.getName()));
+        final ClassLoader loader = new MissingDependencyClassLoader(services.toUri().toURL());
+        assertThat(codecsOf(ServiceLoader.load(CompressionCodecProvider.class, loader)).keySet())
+                .containsExactly("gzip");
     }
 
     @Test
@@ -337,6 +331,56 @@ public class CompressionCodecsTest {
                 throw (Error) failure;
             }
             throw (RuntimeException) failure;
+        }
+    }
+
+    /** stands in for a class from a jar that a deployment's provider needs, but that is not on the classpath */
+    private static class MissingBase {
+    }
+
+    /** a deployment's provider whose superclass {@link MissingDependencyClassLoader} cannot load */
+    private static final class MissingBaseProvider extends MissingBase implements CompressionCodecProvider {
+        @Override
+        public Codec codec() {
+            return Codec.Identity.NONE;
+        }
+    }
+
+    /**
+     * Lists only the providers in a given services file, and cannot load {@link MissingBase}, as when a deployment's
+     * provider jar is on the classpath without a jar that the provider needs.
+     */
+    private static final class MissingDependencyClassLoader extends ClassLoader {
+        private final URL services;
+
+        private MissingDependencyClassLoader(final URL services) {
+            super(CompressionCodecsTest.class.getClassLoader());
+            this.services = services;
+        }
+
+        @Override
+        protected Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
+            if (name.equals(MissingBase.class.getName())) {
+                throw new ClassNotFoundException(name);
+            }
+            if (!name.equals(MissingBaseProvider.class.getName())) {
+                return super.loadClass(name, resolve);
+            }
+            // defined here rather than by the parent, so that MissingBaseProvider's superclass is looked up through
+            // this loader
+            try (final InputStream in = getParent().getResourceAsStream(name.replace('.', '/') + ".class")) {
+                final byte[] bytes = in.readAllBytes();
+                return defineClass(name, bytes, 0, bytes.length);
+            } catch (final IOException e) {
+                throw new ClassNotFoundException(name, e);
+            }
+        }
+
+        @Override
+        public Enumeration<URL> getResources(final String name) throws IOException {
+            return name.equals("META-INF/services/" + CompressionCodecProvider.class.getName())
+                    ? Collections.enumeration(List.of(services))
+                    : super.getResources(name);
         }
     }
 
