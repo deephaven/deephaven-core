@@ -43,6 +43,7 @@ import io.deephaven.engine.testutil.filters.ReindexingRowSetCapturingFilter;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TestClock;
 import io.deephaven.qst.type.Type;
@@ -63,6 +64,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -804,6 +806,51 @@ public class TestPartitionAwareSourceTableNoMocks {
         }
         assertSame(exclusiveResult, lockFreeResult);
         return lockFreeResult;
+    }
+
+    /**
+     * A refreshing deferred table coalesces on a thread that may wait for the update graph, so its coalesce runs in a
+     * liveness scope of its own. Once garbage is collected and the liveness referents it made unreachable are cleaned
+     * up, the coalesced result is still live and still updates, because the caller's liveness scope retains it.
+     */
+    @Test
+    public void testCoalescedResultSurvivesGarbageCollection() throws InterruptedException {
+        final long partitionSize = 128;
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                partitionedLocationProvider(partitionSize);
+        final Table deferred = refreshingPartitionedSource(tableLocationProvider)
+                .where(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
+        assertTrue(deferred instanceof DeferredViewTable);
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final Table coalesced = deferred.coalesce();
+            assertEquals(4 * partitionSize, coalesced.size());
+            for (int round = 0; round < 3; ++round) {
+                awaitLivenessCleanup();
+            }
+            assertTrue(coalesced.tryRetainReference());
+            coalesced.dropReference();
+
+            tableLocationProvider.locations.values().forEach(location -> location.setSize(2 * partitionSize));
+            updateGraph.getDelegate().startCycleForUnitTests(false);
+            updateGraph.refreshSources();
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.getDelegate().completeCycleForUnitTests();
+            assertEquals(8 * partitionSize, coalesced.size());
+        }
+    }
+
+    /**
+     * Collect garbage until the liveness cleanup processor has cleaned up a referent that became unreachable after this
+     * method was invoked.
+     */
+    private static void awaitLivenessCleanup() throws InterruptedException {
+        final CountDownLatch cleaned = new CountDownLatch(1);
+        CleanupReferenceProcessorInstance.LIVENESS.registerPhantom(new Object(), cleaned::countDown);
+        final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        while (!cleaned.await(10, TimeUnit.MILLISECONDS)) {
+            assertTrue("liveness cleanup did not run", System.nanoTime() < deadlineNanos);
+            System.gc();
+        }
     }
 
     /**

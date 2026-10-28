@@ -66,9 +66,10 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
      * <p>
      * This is never invoked concurrently for the same table. For a refreshing table, a thread that may wait for its
      * update graph first invokes this within its own {@link LivenessScope} while
-     * {@link UpdateGraphWaitGuard#forbidWaits() forbidden} to wait for any update graph. If the attempt would wait, it
-     * is abandoned, the liveness referents it produced are released, and this is invoked again while the thread holds
-     * the shared lock.
+     * {@link UpdateGraphWaitGuard#forbidWaits() forbidden} to wait for any update graph. If the attempt succeeds, the
+     * liveness referents it produced are transferred to the caller's liveness manager. If it would wait, it is
+     * abandoned, the liveness referents it produced are released, and this is invoked again while the thread holds the
+     * shared lock.
      *
      * @return The coalesced result table, suitable for caching
      */
@@ -105,7 +106,7 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
 
     /**
      * Attempt to coalesce while {@link UpdateGraphWaitGuard#forbidWaits() forbidden} to wait for any update graph, in a
-     * {@link LivenessScope} that the caller's liveness manager retains if the attempt succeeds.
+     * {@link LivenessScope} whose referents are transferred to the caller's liveness manager if the attempt succeeds.
      *
      * @return The coalesced result, or {@code null} if the attempt would have waited for an update graph
      */
@@ -124,7 +125,7 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
                 }
                 return null;
             }
-            callerManager.manage(coalesceScope);
+            coalesceScope.transferTo(callerManager);
             return result;
         } finally {
             coalesceScope.release();
