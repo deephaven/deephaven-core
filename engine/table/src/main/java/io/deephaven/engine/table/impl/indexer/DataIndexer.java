@@ -304,7 +304,8 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     }
 
     /**
-     * Test whether {@code dataIndex} is {@code null} or invalid for use. This test does not evaluate liveness.
+     * Test whether {@code dataIndex} is {@code null} or invalid for use. This test does not evaluate liveness, and does
+     * not create the index's table; a refreshing index whose table has not been created cannot yet have failed.
      *
      * @param dataIndex The {@link DataIndex} to test
      * @return Whether {@code dataIndex} is {@code null} or invalid for use
@@ -316,7 +317,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
         if (dataIndex instanceof AbstractDataIndex && !((AbstractDataIndex) dataIndex).isValid()) {
             return true;
         }
-        return dataIndex.isRefreshing() && dataIndex.table().isFailed();
+        return dataIndex.isRefreshing() && dataIndex.tableIsCached() && dataIndex.table().isFailed();
     }
 
     /**
@@ -363,12 +364,16 @@ public class DataIndexer implements TrackingRowSet.Indexer {
          * for it to become satisfied from an update graph thread. Consequently, it's best to pretend we don't have a
          * valid, live data index in this case. If a user or engine developer really wants to use a data index from an
          * update graph thread, they should have already looked it up and made their listener's Notification.canExecute
-         * dependent on the data index table's satisfaction.
+         * dependent on the data index table's satisfaction. An index whose table has not been created is not checked
+         * here, since creating it may wait for the update graph; its table is created by the caller that uses it.
          */
-        final UpdateGraph updateGraph = dataIndex.table().getUpdateGraph();
-        if (updateGraph.currentThreadProcessesUpdates()
-                && !dataIndex.table().satisfied(updateGraph.clock().currentStep())) {
-            return null;
+        if (dataIndex.tableIsCached()) {
+            final Table indexTable = dataIndex.table();
+            final UpdateGraph updateGraph = indexTable.getUpdateGraph();
+            if (updateGraph.currentThreadProcessesUpdates()
+                    && !indexTable.satisfied(updateGraph.clock().currentStep())) {
+                return null;
+            }
         }
         if (!LivenessScopeStack.peek().tryManage(dataIndex)) {
             return null;
