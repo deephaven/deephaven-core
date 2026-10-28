@@ -9,11 +9,14 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
@@ -30,9 +33,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.util.ArrayDeque;
+import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
 import static io.deephaven.engine.testutil.TstUtils.i;
@@ -267,9 +277,13 @@ public class ExportTableUpdateListenerTest {
         observer.onCompleted();
         addRowsToSource(src, 42);
         expectNoMessage();
-        Assert.eq(session.numExportListeners(), "session.numExportListeners()", 0);
         Assert.eq(observer.countPostComplete, "observer.countPostComplete", 1);
         Assert.eqFalse(src.hasListeners(), "src.hasListeners()");
+
+        // the session removes the listener when it next notifies it
+        Assert.eq(session.numExportListeners(), "session.numExportListeners()", 1);
+        t1.release();
+        Assert.eq(session.numExportListeners(), "session.numExportListeners()", 0);
 
         // the actual ExportedTableUpdateListener should be "live", and should no longer be listening
 
@@ -323,6 +337,108 @@ public class ExportTableUpdateListenerTest {
 
         // we should get both a run and the update in the same flush
         expectSizes(t1.getValue().getExportId(), 42, 84);
+    }
+
+    @Test
+    public void testNewExportWaitingForUpdateGraphLockDoesNotBlockUpdates() throws Exception {
+        // create and export the ticking table
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
+        final SessionState.ExportObject<QueryTable> t1;
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            t1 = session.newServerSideExport(src);
+        }
+
+        // now add the listener
+        final ExportedTableUpdateListener listener = createListener(session, observer);
+        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+            session.addExportListener(listener);
+        }
+        expectSizes(t1.getExportId(), 42);
+
+        // a table whose snapshots must wait for the update graph lock
+        final QueryTable lockedSnapshotSrc = new QueryTable(RowSetFactory.flat(10).toTracking(), Map.of()) {
+            @Override
+            public TrackingRowSet getRowSet() {
+                if (ConstructSnapshot.getConcurrentAttemptClockValue() != 0) {
+                    throw new ConstructSnapshot.NoSnapshotAllowedException();
+                }
+                return super.getRowSet();
+            }
+        };
+        lockedSnapshotSrc.setRefreshing(true);
+
+        final CompletableFuture<SessionState.ExportObject<QueryTable>> t2 = new CompletableFuture<>();
+        final Thread exportThread = new Thread(() -> {
+            try (final SafeCloseable ignored = LivenessScopeStack.open();
+                    final SafeCloseable ignored2 = executionContext.open()) {
+                t2.complete(session.newServerSideExport(lockedSnapshotSrc));
+            } catch (final Throwable failure) {
+                t2.completeExceptionally(failure);
+            }
+        }, "locked-snapshot-exporter");
+        exportThread.setDaemon(true);
+
+        // the update graph delivers src's update while the export's snapshot waits for the update graph lock
+        final CompletableFuture<Void> cycle = new CompletableFuture<>();
+        final Thread cycleThread = new Thread(() -> {
+            try (final SafeCloseable ignored = executionContext.open()) {
+                updateGraph.startCycleForUnitTests(false);
+                try {
+                    exportThread.start();
+                    awaitWaitingForUpdateGraphLock(exportThread, t2);
+                    final RowSet added = RowSetFactory.fromRange(42, 83);
+                    addToTable(src, added);
+                    src.notifyListeners(added, i(), i());
+                } finally {
+                    updateGraph.markSourcesRefreshedForUnitTests();
+                    updateGraph.completeCycleForUnitTests();
+                }
+                cycle.complete(null);
+            } catch (final Throwable failure) {
+                cycle.completeExceptionally(failure);
+            }
+        }, "update-cycle-driver");
+        cycleThread.setDaemon(true);
+        cycleThread.start();
+
+        cycle.get(30, TimeUnit.SECONDS);
+        final SessionState.ExportObject<QueryTable> lockedSnapshotExport = t2.get(30, TimeUnit.SECONDS);
+        expectSizes(t1.getExportId(), 84);
+        expectSizes(lockedSnapshotExport.getExportId(), 10);
+
+        // validate we're subscribed
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet added = RowSetFactory.fromRange(10, 14);
+            lockedSnapshotSrc.getRowSet().writableCast().insert(added);
+            lockedSnapshotSrc.notifyListeners(added, i(), i());
+        });
+        expectSizes(lockedSnapshotExport.getExportId(), 15);
+    }
+
+    /**
+     * Wait until {@code thread} is parked waiting for the update graph lock. If {@code thread} completes first, its
+     * result or failure is reported instead.
+     */
+    private static void awaitWaitingForUpdateGraphLock(
+            final Thread thread,
+            final CompletableFuture<?> result) throws Exception {
+        final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        while (true) {
+            if (result.isDone()) {
+                throw new AssertionError(thread.getName() + " completed without waiting for the update graph lock: "
+                        + result.get());
+            }
+            final ThreadInfo threadInfo = threadMXBean.getThreadInfo(thread.getId());
+            if (threadInfo != null && threadInfo.getLockInfo() != null
+                    && threadInfo.getLockInfo().getClassName().startsWith(ReentrantReadWriteLock.class.getName())) {
+                return;
+            }
+            if (System.nanoTime() > deadlineNanos) {
+                throw new AssertionError(thread.getName() + " is not waiting for the update graph lock: " + threadInfo);
+            }
+            Thread.sleep(10);
+        }
     }
 
     private void addRowsToSource(final QueryTable src, final long nRows) {
