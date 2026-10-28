@@ -504,6 +504,55 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    /**
+     * A tree closed from the connection's reconnect listener has been told it is done; its own reconnect handling,
+     * still pending at that point, must not announce it as reconnected afterward.
+     */
+    public void testTreeClosedOnReconnectStaysQuiet() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_075);
+                    return Promise.resolve(session);
+                })
+                .then(treeTable("ticking_tree_updates"))
+                .then(treeTable -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    List<String> afterClose = new ArrayList<>();
+                    treeTable.addEventListener(JsTreeTable.EVENT_RECONNECT, e -> {
+                        if (treeTable.isClosed()) {
+                            afterClose.add("reconnect");
+                        }
+                    });
+                    treeTable.addEventListener(JsTreeTable.EVENT_REQUEST_FAILED, e -> {
+                        if (treeTable.isClosed()) {
+                            afterClose.add("requestfailed");
+                        }
+                    });
+                    // The application gives up on the tree as soon as the connection is back
+                    ide.addEventListener(CoreClient.EVENT_RECONNECT, e -> treeTable.close());
+                    treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                    return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
+                            (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 1, 5076)
+                            .then(t -> {
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5077).onInvoke(ide);
+                            })
+                            // give the tree's pending reconnect handling time to run before looking
+                            .then(t -> delay(500))
+                            .then(t -> {
+                                assertTrue("tree was closed by the reconnect listener", treeTable.isClosed());
+                                assertEquals("a closed tree announces nothing", Arrays.asList(), afterClose);
+                                return Promise.resolve(treeTable);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testTreeCustomColumnException() {
         connect(tables)
                 .then(treeTable("static_tree"))
