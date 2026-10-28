@@ -8,6 +8,8 @@ import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.liveness.LivenessManager;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.flight.util.TicketRouterHelper;
@@ -18,6 +20,7 @@ import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
@@ -61,14 +64,20 @@ public class ScopeTicketResolver extends TicketResolverBase {
         if (!(scopeVar instanceof Table)) {
             throw newNotFoundSRE(logId, scopeName);
         }
-
-        final Table transformed = authorization.transform((Table) scopeVar);
-        if (transformed == null) {
-            throw newNotFoundSRE(logId, scopeName);
+        final LivenessManager peek = LivenessScopeStack.peek();
+        final Flight.FlightInfo flightInfo;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final Table transformed = authorization.transform((Table) scopeVar);
+            LivenessScopeStack.push(peek);
+            try {
+                if (transformed == null) {
+                    throw newNotFoundSRE(logId, scopeName);
+                }
+                flightInfo = TicketRouter.getFlightInfo(transformed, descriptor, flightTicketForName(scopeName));
+            } finally {
+                LivenessScopeStack.pop(peek);
+            }
         }
-        final Flight.FlightInfo flightInfo =
-                TicketRouter.getFlightInfo(transformed, descriptor, flightTicketForName(scopeName));
-
         return SessionState.wrapAsExport(flightInfo);
     }
 
@@ -79,11 +88,22 @@ public class ScopeTicketResolver extends TicketResolverBase {
         }
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table).forEach((name, table) -> {
-            final Table transformedTable = authorization.transform((Table) table);
-            if (transformedTable != null) {
-                visitor.accept(TicketRouter.getFlightInfo(
-                        transformedTable, descriptorForName(name), flightTicketForName(name)));
+            final LivenessManager peek = LivenessScopeStack.peek();
+            final Flight.FlightInfo flightInfo;
+            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+                final Table transformedTable = authorization.transform((Table) table);
+                LivenessScopeStack.push(peek);
+                try {
+                    if (transformedTable == null) {
+                        return;
+                    }
+                    flightInfo = TicketRouter.getFlightInfo(transformedTable, descriptorForName(name),
+                            flightTicketForName(name));
+                } finally {
+                    LivenessScopeStack.pop(peek);
+                }
             }
+            visitor.accept(flightInfo);
         });
     }
 
@@ -108,14 +128,22 @@ public class ScopeTicketResolver extends TicketResolverBase {
             export = (T) queryScope.unwrapObject(queryScope.readParamValue(scopeName));
         } catch (QueryScope.MissingVariableException ignored) {
         }
-
-        export = authorization.transform(export);
-
         if (export == null) {
             return SessionState.wrapAsFailedExport(newNotFoundSRE(logId, scopeName));
         }
-
-        return SessionState.wrapAsExport(export);
+        final LivenessManager peek = LivenessScopeStack.peek();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            export = authorization.transform(export);
+            LivenessScopeStack.push(peek);
+            try {
+                if (export == null) {
+                    return SessionState.wrapAsFailedExport(newNotFoundSRE(logId, scopeName));
+                }
+                return SessionState.wrapAsExport(export);
+            } finally {
+                LivenessScopeStack.pop(peek);
+            }
+        }
     }
 
     @Override
