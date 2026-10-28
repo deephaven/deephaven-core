@@ -137,8 +137,9 @@ public class ListChunkWriter<LIST_TYPE, COMPONENT_CHUNK_TYPE extends Chunk<Value
                 if (fixedSizeLength != 0) {
                     myOffsets = null;
                 } else {
-                    // note that we maintain dense offsets within the writer, but write per the wire format
-                    myOffsets = WritableIntChunk.makeWritableChunk(context.size() + 1);
+                    // note that we maintain dense offsets within the writer, but write per the wire format; one per row
+                    // of the subset after a leading zero, so a stream over part of a chunk holds no more than its own
+                    myOffsets = WritableIntChunk.makeWritableChunk(subset.intSize(DEBUG_NAME) + 1);
                     myOffsets.setSize(0);
                     myOffsets.add(0);
                 }
