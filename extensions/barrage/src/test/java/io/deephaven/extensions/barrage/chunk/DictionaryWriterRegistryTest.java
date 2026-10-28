@@ -240,8 +240,9 @@ public class DictionaryWriterRegistryTest {
         // The registry must have re-used the pre-existing shared dictionary
         assertThat(sharedDictionaries.get(7L)).isSameAs(preExisting);
 
-        // The new subscriber's first buildDeltaChunk() returns the pre-existing value
+        // The new subscriber's first batch to reference the dictionary carries the pre-existing value
         assertThat(sub.needsFullBatch()).isTrue();
+        assertThat(indexForObject(sub, "pre")).isZero();
         assertThat(deltaObjectValues(sub)).containsExactly("pre");
     }
 

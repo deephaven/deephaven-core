@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class DictionaryWriterStateTest {
 
@@ -113,8 +114,73 @@ public class DictionaryWriterStateTest {
 
         assertThat(sub.hasDelta()).isTrue();
         assertThat(sub.needsFullBatch()).isTrue();
-        // First batch must contain ALL current values so isDelta=false reset covers them
+        // The subscriber's first batch references the dictionary, so its isDelta=false batch must contain ALL current
+        // values
+        assertThat(indexForObject(sub, "beta")).isEqualTo(1);
         assertThat(deltaObjectValues(sub)).containsExactly("alpha", "beta");
+    }
+
+    /**
+     * A full subscriber that never writes a column using the dictionary, such as a subscriber not subscribed to that
+     * column, is sent only an empty first batch, however many values the other subscribers add. Once a batch of its own
+     * references the dictionary, it is sent every value, from the start, as a delta to the empty dictionary it holds.
+     */
+    @Test
+    public void testFullSubscriptionIsSentNoValuesUntilItReferencesTheDictionary() {
+        final SharedWriterDictionary shared = new SharedWriterDictionary(18L, ChunkType.Object);
+        final DictionaryWriterState other = new SharedDictionaryWriterState(shared);
+        final DictionaryWriterState sub = new SharedDictionaryWriterState(shared);
+
+        indexForObject(other, "alpha");
+        indexForObject(other, "beta");
+
+        // the first batch still defines the dictionary, but carries none of the values
+        assertThat(sub.hasDelta()).isTrue();
+        assertThat(sub.needsFullBatch()).isTrue();
+        assertThat(deltaObjectValues(sub)).isEmpty();
+        sub.resetDelta();
+        assertThat(sub.hasDelta()).isFalse();
+        assertThat(sub.needsFullBatch()).isFalse();
+
+        // values the other subscriber adds afterwards are not sent either
+        indexForObject(other, "gamma");
+        assertThat(sub.hasDelta()).isFalse();
+        sub.resetDelta();
+        assertThat(sub.hasDelta()).isFalse();
+
+        // a batch that references the dictionary is sent every value, as a delta
+        assertThat(indexForObject(sub, "alpha")).isZero();
+        assertThat(sub.hasDelta()).isTrue();
+        assertThat(sub.needsFullBatch()).isFalse();
+        assertThat(deltaObjectValues(sub)).containsExactly("alpha", "beta", "gamma");
+        sub.resetDelta();
+        assertThat(sub.hasDelta()).isFalse();
+    }
+
+    /**
+     * A subscriber that does not reference the dictionary is sent an empty full batch again after the shared dictionary
+     * is compacted, as {@code isDelta=false} batches always follow a reset, but still none of the values.
+     */
+    @Test
+    public void testUnreferencingFullSubscriptionIsSentNoValuesAfterSharedReset() {
+        final SharedWriterDictionary shared = new SharedWriterDictionary(19L, ChunkType.Object);
+        final DictionaryWriterState other = new SharedDictionaryWriterState(shared);
+        final DictionaryWriterState sub = new SharedDictionaryWriterState(shared);
+
+        indexForObject(other, "alpha");
+        assertThat(deltaObjectValues(sub)).isEmpty();
+        sub.resetDelta();
+
+        shared.reset();
+        indexForObject(other, "beta");
+
+        assertThat(sub.needsFullBatch()).isTrue();
+        assertThat(deltaObjectValues(sub)).isEmpty();
+        sub.resetDelta();
+        assertThat(sub.hasDelta()).isFalse();
+
+        assertThat(indexForObject(sub, "beta")).isZero();
+        assertThat(deltaObjectValues(sub)).containsExactly("beta");
     }
 
     @Test
@@ -176,12 +242,14 @@ public class DictionaryWriterStateTest {
         // Second subscriber joins after sub1 has already sent a, b, c
         final DictionaryWriterState sub2 = new SharedDictionaryWriterState(shared);
         assertThat(sub2.needsFullBatch()).isTrue();
-        // Must see all three values as the initial reset batch
+        // Must see all three values as the initial reset batch of its first batch to reference the dictionary
+        assertThat(indexForObject(sub2, "a")).isZero();
         assertThat(deltaObjectValues(sub2)).containsExactly("a", "b", "c");
         sub2.resetDelta();
 
-        // Now a new value is added; both sub1 and sub2 only see the delta
+        // Now a new value is added, and both write it; both sub1 and sub2 only see the delta
         indexForObject(sub1, "d");
+        indexForObject(sub2, "d");
         assertThat(deltaObjectValues(sub1)).containsExactly("d");
         assertThat(deltaObjectValues(sub2)).containsExactly("d");
     }
@@ -253,7 +321,7 @@ public class DictionaryWriterStateTest {
         assertThat(deltaObjectValues(sub)).isEmpty();
 
         // After re-adding values, subscriber sees them as a fresh full batch
-        indexForObject(shared, "c");
+        indexForObject(sub, "c");
         assertThat(deltaObjectValues(sub)).containsExactly("c");
     }
 
@@ -267,7 +335,7 @@ public class DictionaryWriterStateTest {
         sub.resetDelta();
 
         shared.reset();
-        indexForObject(shared, "b");
+        indexForObject(sub, "b");
 
         // The first call into the sub after a shared reset triggers syncGeneration, and the batch built after it is a
         // full replacement holding only the value re-added since the reset
@@ -319,6 +387,43 @@ public class DictionaryWriterStateTest {
         }
     }
 
+    /**
+     * A full subscription's state advances, but never moves back within a generation; only a reset returns it to the
+     * start.
+     */
+    @Test
+    public void testFullSubscriptionAdvancesButNeverMovesBack() {
+        final SharedWriterDictionary shared = new SharedWriterDictionary(13L, ChunkType.Object);
+        final SharedDictionaryWriterState sub = new SharedDictionaryWriterState(shared);
+        indexForObject(shared, "a");
+        indexForObject(shared, "b");
+        indexForObject(shared, "c");
+
+        sub.advanceTo(2, false);
+        assertThat(sub.flushedOffset()).isEqualTo(2);
+        assertThat(sub.needsFullBatch()).isFalse();
+        // staying where it is counts as advancing
+        sub.advanceTo(2, false);
+
+        // behind its own position, past the dictionary's end, or needing a full batch again: each is refused, and the
+        // state is left where it was
+        assertThatThrownBy(() -> sub.advanceTo(1, false)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> sub.advanceTo(4, false)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> sub.advanceTo(2, true)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> sub.advanceTo(0, true)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(sub.flushedOffset()).isEqualTo(2);
+        assertThat(sub.needsFullBatch()).isFalse();
+
+        // a reset starts a new generation, which returns the state to the start, needing a full batch
+        shared.reset();
+        indexForObject(shared, "x");
+        sub.advanceTo(0, true);
+        assertThat(sub.needsFullBatch()).isTrue();
+        sub.advanceTo(1, false);
+        assertThat(sub.flushedOffset()).isEqualTo(1);
+        assertThat(sub.needsFullBatch()).isFalse();
+    }
+
     @Test
     public void testFullSubscriptionTotalSizeAndDictId() {
         final SharedWriterDictionary shared = new SharedWriterDictionary(13L, ChunkType.Object);
@@ -347,7 +452,7 @@ public class DictionaryWriterStateTest {
 
         // New subscriber joins after the reset; it should not treat this as a post-reset event
         final DictionaryWriterState lateSubscriber = new SharedDictionaryWriterState(shared);
-        indexForObject(shared, "new");
+        indexForObject(lateSubscriber, "new");
 
         // needsFullBatch is true on first use regardless (normal first-batch behavior)
         assertThat(lateSubscriber.needsFullBatch()).isTrue();
@@ -378,15 +483,17 @@ public class DictionaryWriterStateTest {
         // sub1's batch is accepted
         sub1.resetDelta();
 
+        // "c" is still owed, and sub1's next batch to reference the dictionary carries it
+        assertThat(sub1.hasDelta()).isFalse();
+        assertThat(indexForObject(sub1, "a")).isZero();
         assertThat(sub1.hasDelta()).isTrue();
         assertThat(sub1.needsFullBatch()).isFalse();
         assertThat(deltaObjectValues(sub1)).containsExactly("c");
     }
 
     /**
-     * A batch that needed no DictionaryBatch still ends with the registry resetting every state that has a delta by
-     * then. If another subscriber added a value in the meantime, this state has a delta it never sent, and the reset
-     * must leave it owed.
+     * A batch that needed no DictionaryBatch still ends with the registry resetting every state. If another subscriber
+     * added a value in the meantime, this state has a delta it never sent, and the reset must leave it owed.
      */
     @Test
     public void testFullSubscriptionResetDeltaWithoutBuiltDeltaKeepsLateValues() {
@@ -405,9 +512,12 @@ public class DictionaryWriterStateTest {
         indexForObject(sub2, "b");
         assertThat(sub1.hasDelta()).isTrue();
 
-        // accepting sub1's batch resets each state that has a delta now, sub1's included
+        // accepting sub1's batch resets each state, sub1's included
         sub1.resetDelta();
 
+        // "b" is still owed, and sub1's next batch to reference the dictionary carries it
+        assertThat(sub1.hasDelta()).isFalse();
+        assertThat(indexForObject(sub1, "a")).isZero();
         assertThat(sub1.hasDelta()).isTrue();
         assertThat(deltaObjectValues(sub1)).containsExactly("b");
     }

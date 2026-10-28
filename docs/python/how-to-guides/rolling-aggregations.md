@@ -4,6 +4,8 @@ title: Rolling aggregations
 
 This guide shows how to use the [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) table operation for rolling calculations and aggregations. It returns a new table that adds columns calculated by one or more [`UpdateByOperation`](/core/pydoc/code/deephaven.updateby.html#deephaven.updateby.UpdateByOperation) objects. The calculations can be cumulative, windowed by rows (ticks) or by time, or exponentially weighted.
 
+To compare rolling aggregations with the other ways Deephaven summarizes data, and to choose between them, see [Aggregations in Deephaven](../conceptual/aggregations.md).
+
 [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) takes one or more [`UpdateByOperations`](/core/pydoc/code/deephaven.updateby.html#deephaven.updateby.UpdateByOperation) and zero or more key columns. The result contains every source column plus any new columns the operations create. An operation whose output column has the same name as an existing column replaces that column. Without key columns, each operation runs over all rows. With key columns (also called grouping columns), each operation runs separately on each unique group.
 
 For the full list of [`UpdateByOperations`](/core/pydoc/code/deephaven.updateby.html#deephaven.updateby.UpdateByOperation) you can pass to [`update_by`](../reference/table-operations/update-by-operations/updateBy.md), see the [`update_by` parameters reference](../reference/table-operations/update-by-operations/updateBy.md#parameters).
@@ -887,6 +889,7 @@ See [Handling erroneous data](#handling-erroneous-data).
 
 ## Related documentation
 
+- [Aggregations in Deephaven](../conceptual/aggregations.md)
 - [Create an empty table](./new-and-empty-table.md#empty_table)
 - [Create a time table](./time-table.md)
 - [Dedicated aggregations](./dedicated-aggregations.md)

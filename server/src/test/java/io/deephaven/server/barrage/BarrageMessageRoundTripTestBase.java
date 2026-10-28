@@ -14,6 +14,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.client.impl.BarrageSubscriptionImpl.BarrageDataMarshaller;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -75,8 +76,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import org.apache.arrow.flatbuf.DictionaryBatch;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
+import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -184,6 +187,34 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
         scheduler.runUntilQueueEmpty();
     }
 
+    /** The options a {@link RemoteClient} subscribes with unless it is given others. */
+    BarrageSubscriptionOptions defaultSubscriptionOptions() {
+        return BarrageSubscriptionOptions.builder()
+                .useDeephavenNulls(useDeephavenNulls)
+                .build();
+    }
+
+    /**
+     * The natural schema of {@code definition}, with each named column dictionary encoded under its own id: its
+     * position among {@code columns}.
+     */
+    static Schema dictionaryEncodedSchema(final TableDefinition definition, final String... columns) {
+        final List<String> encoded = List.of(columns);
+        final Schema natural =
+                BarrageUtil.makeSchema(BarrageUtil.DEFAULT_SNAPSHOT_OPTIONS, definition, Map.of(), false);
+        final List<Field> fields = natural.getFields().stream().map(field -> {
+            final int id = encoded.indexOf(field.getName());
+            if (id < 0) {
+                return field;
+            }
+            return new Field(field.getName(),
+                    new FieldType(field.isNullable(), field.getType(),
+                            new DictionaryEncoding(id, false, new ArrowType.Int(32, true)), field.getMetadata()),
+                    field.getChildren());
+        }).collect(Collectors.toList());
+        return new Schema(fields, natural.getCustomMetadata());
+    }
+
     // We should listen for failures on the table, and if we get any, the test case is no good.
     class FailureListener extends InstrumentedTableUpdateListener {
         final String tableName;
@@ -210,11 +241,37 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
         }
     }
 
+    /**
+     * Fails when a client's replicated table reports a column modified that the client has never subscribed to.
+     */
+    class ColumnSubscriptionValidator extends FailureListener {
+        final RemoteClient client;
+
+        ColumnSubscriptionValidator(final RemoteClient client) {
+            super("Column Subscription Validator");
+            this.client = client;
+        }
+
+        @Override
+        public void onUpdate(final TableUpdate upstream) {
+            final BitSet unsubscribed = upstream.modifiedColumnSet().extractAsBitSet();
+            unsubscribed.andNot(client.everSubscribedColumns);
+            if (!unsubscribed.isEmpty()) {
+                fail(client.name + " reported columns " + unsubscribed + " modified, but never subscribed to them");
+            }
+        }
+    }
+
     class RemoteClient {
         RowSet viewport;
         boolean reverseViewport;
 
         BitSet subscribedColumns;
+        /**
+         * Every column this client has subscribed to. The server must send no data for any other column, and the
+         * replicated table must read it as null and never report it modified.
+         */
+        final BitSet everSubscribedColumns;
 
         final String name;
 
@@ -231,10 +288,16 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
         TableUpdateValidator replicatedTUV;
         @ReferentialIntegrity
         FailureListener replicatedTUVListener;
+        @ReferentialIntegrity
+        ColumnSubscriptionValidator columnSubscriptionValidator;
+        /** How many of the observer's RecordBatches {@link #checkNoDataForUnsubscribedColumns} has checked. */
+        int numRecordBatchesChecked = 0;
 
         boolean subscribed = false;
         final Queue<BarrageMessage> commandQueue = new ArrayDeque<>();
         final DummyObserver dummyObserver;
+        /** the options this client subscribes, and reads what it is sent, with */
+        final BarrageSubscriptionOptions options;
 
         UnaryOperator<QueryTable> transform = null;
 
@@ -251,9 +314,20 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
                 final BarrageMessageProducer barrageMessageProducer,
                 final Table sourceTable,
                 final String name, final boolean reverseViewport, final boolean deferSubscription) {
+            this(viewport, subscribedColumns, barrageMessageProducer, sourceTable, name, reverseViewport,
+                    deferSubscription, defaultSubscriptionOptions());
+        }
+
+        RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
+                final BarrageMessageProducer barrageMessageProducer,
+                final Table sourceTable,
+                final String name, final boolean reverseViewport, final boolean deferSubscription,
+                final BarrageSubscriptionOptions options) {
+            this.options = options;
             this.viewport = viewport;
             this.reverseViewport = reverseViewport;
             this.subscribedColumns = subscribedColumns;
+            this.everSubscribedColumns = (BitSet) subscribedColumns.clone();
             this.name = name;
             this.barrageMessageProducer = barrageMessageProducer;
             this.isFullSubscription = viewport == null;
@@ -288,9 +362,6 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
                             });
             this.barrageTable.addSourceToRegistrar();
 
-            final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
-                    .useDeephavenNulls(useDeephavenNulls)
-                    .build();
             final BarrageMessageReaderImpl messageReader =
                     new BarrageMessageReaderImpl(barrageTable.getDeserializationTmConsumer());
             openMessageReaders.add(messageReader);
@@ -315,9 +386,6 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
 
         public void doSubscribe() {
             subscribed = true;
-            final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
-                    .useDeephavenNulls(useDeephavenNulls)
-                    .build();
             barrageMessageProducer.addSubscription(dummyObserver, options, subscribedColumns,
                     viewport == null ? null : viewport.copy(), reverseViewport);
         }
@@ -337,14 +405,63 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
             replicatedTUV.getResultTable().addUpdateListener(replicatedTUVListener);
         }
 
+        /**
+         * Attaches the {@link ColumnSubscriptionValidator}; for a full subscription, not before the replicated table is
+         * complete, for the reason {@link #maybeAttachUpdateValidator()} gives.
+         */
+        void maybeAttachColumnSubscriptionValidator() {
+            if (columnSubscriptionValidator != null || (isFullSubscription && !fullSubscriptionSatisfied)) {
+                return;
+            }
+            columnSubscriptionValidator = new ColumnSubscriptionValidator(this);
+            barrageTable.addUpdateListener(columnSubscriptionValidator);
+        }
+
+        /**
+         * Checks that {@code message}, and every RecordBatch received since the last check, carry no rows of a column
+         * this client has never subscribed to. A message's metadata names each column's modified rows, but its parsed
+         * data cannot show which rows were sent, as the reader sizes every column's chunk to its batch; the
+         * RecordBatches' field nodes count them.
+         */
+        void checkNoDataForUnsubscribedColumns(final BarrageMessage message) {
+            for (int ci = 0; ci < message.modColumnData.length; ++ci) {
+                if (!everSubscribedColumns.get(ci)) {
+                    assertTrue(name + " was sent modified rows of unsubscribed column " + ci,
+                            message.modColumnData[ci].rowsModified.isEmpty());
+                }
+            }
+            final List<long[]> batches = dummyObserver.observedRecordBatchColumnLengths;
+            for (; numRecordBatchesChecked < batches.size(); ++numRecordBatchesChecked) {
+                final long[] lengths = batches.get(numRecordBatchesChecked);
+                for (int ci = 0; ci < lengths.length; ++ci) {
+                    if (!everSubscribedColumns.get(ci)) {
+                        assertEquals(name + " was sent rows of unsubscribed column " + ci, 0, lengths[ci]);
+                    }
+                }
+            }
+        }
+
         public void validate(final String msg, QueryTable expected) {
             if (!subscribed) {
                 return; // no subscription implies no run implies no data -- so we're valid
             }
 
             maybeAttachUpdateValidator();
+            maybeAttachColumnSubscriptionValidator();
 
             // We expect all messages from original table to have been propagated to the replicated table at this point.
+
+            // A column this client never subscribed to holds no values.
+            for (int ci = 0; ci < barrageTable.numColumns(); ++ci) {
+                if (everSubscribedColumns.get(ci)) {
+                    continue;
+                }
+                final String columnName = barrageTable.getDefinition().getColumns().get(ci).getName();
+                final ColumnSource<?> source = barrageTable.getColumnSource(columnName);
+                barrageTable.getRowSet().forAllRowKeys(key -> assertNull(
+                        msg + ": " + name + " holds a value of unsubscribed column " + columnName + " at " + key,
+                        source.get(key)));
+            }
 
             QueryTable toCheck = barrageTable;
             if (viewport != null) {
@@ -418,8 +535,9 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
             }
         }
 
-        public void flushEventsToReplicatedTable() {
+        public void flushMessages() {
             for (final BarrageMessage msg : commandQueue) {
+                checkNoDataForUnsubscribedColumns(msg);
                 barrageTable.handleBarrageMessage(msg);
                 msg.close();
             }
@@ -434,12 +552,13 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
          * Delivers at most {@code maxMessages} of the queued messages, leaving the rest for a later flush. Callers use
          * this to spread a single server propagation across more than one consumer update graph cycle.
          */
-        public void flushEventsToReplicatedTable(final int maxMessages) {
+        public void flushMessages(final int maxMessages) {
             for (int ii = 0; ii < maxMessages; ++ii) {
                 final BarrageMessage msg = commandQueue.poll();
                 if (msg == null) {
                     return;
                 }
+                checkNoDataForUnsubscribedColumns(msg);
                 barrageTable.handleBarrageMessage(msg);
                 msg.close();
             }
@@ -460,6 +579,7 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
 
         public void setSubscribedColumns(final BitSet newColumns) {
             subscribedColumns = newColumns;
+            everSubscribedColumns.or(newColumns);
 
             // maintain the existing viewport and viewport direction
             barrageMessageProducer.updateSubscription(dummyObserver, viewport, subscribedColumns, reverseViewport);
@@ -475,6 +595,7 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
             viewport = newViewport;
             reverseViewport = newReverseViewport;
             subscribedColumns = newColumns;
+            everSubscribedColumns.or(newColumns);
             barrageMessageProducer.updateSubscription(dummyObserver, viewport, subscribedColumns, newReverseViewport);
         }
     }
@@ -524,7 +645,7 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
 
         public void flushClientEvents() {
             for (final RemoteClient client : clients) {
-                client.flushEventsToReplicatedTable();
+                client.flushMessages();
             }
         }
 
@@ -764,6 +885,15 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
          * message-ordering invariants that a lenient reader would otherwise paper over.
          */
         final List<Byte> observedHeaderTypes = new ArrayList<>();
+        /** The number of values each {@link MessageHeader#DictionaryBatch} received carries, in arrival order. */
+        final List<Long> observedDictionaryBatchLengths = new ArrayList<>();
+        /**
+         * For each {@link MessageHeader#RecordBatch} received, in arrival order, the number of elements in each
+         * column's top-level field node: the rows of the column the batch carries.
+         */
+        final List<long[]> observedRecordBatchColumnLengths = new ArrayList<>();
+        /** The number of field nodes each column contributes to a RecordBatch, from the schema received. */
+        private int[] fieldNodesPerColumn;
         /**
          * Every error the producer has sent this subscriber. Recorded because the producer delivers errors through
          * {@code GrpcUtil.safelyError}, which swallows what {@link #onError} throws.
@@ -780,15 +910,53 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
          * header parsing in {@link BarrageMessageReaderImpl}.
          */
         static byte peekHeaderType(final byte[] buf, final int len) throws IOException {
+            final Message message = peekMessage(buf, len);
+            return message == null ? MessageHeader.NONE : message.headerType();
+        }
+
+        private void recordFieldNodesPerColumn(final org.apache.arrow.flatbuf.Schema schema) {
+            fieldNodesPerColumn = new int[schema.fieldsLength()];
+            for (int ci = 0; ci < fieldNodesPerColumn.length; ++ci) {
+                fieldNodesPerColumn[ci] = countFieldNodes(schema.fields(ci));
+            }
+        }
+
+        /** A RecordBatch holds one field node for a field and each of its descendants, in pre-order. */
+        private static int countFieldNodes(final org.apache.arrow.flatbuf.Field field) {
+            int count = 1;
+            for (int ii = 0; ii < field.childrenLength(); ++ii) {
+                count += countFieldNodes(field.children(ii));
+            }
+            return count;
+        }
+
+        private void recordColumnLengths(final RecordBatch batch) {
+            if (fieldNodesPerColumn == null) {
+                // no schema has been received to say which field nodes belong to which column
+                return;
+            }
+            final long[] lengths = new long[fieldNodesPerColumn.length];
+            int node = 0;
+            for (int ci = 0; ci < lengths.length; ++ci) {
+                lengths[ci] = batch.nodes(node).length();
+                node += fieldNodesPerColumn[ci];
+            }
+            assertEquals("field nodes", batch.nodesLength(), node);
+            observedRecordBatchColumnLengths.add(lengths);
+        }
+
+        /** Extracts the flatbuffer {@link Message} from one FlightData-framed wire message, or null if it has none. */
+        @Nullable
+        static Message peekMessage(final byte[] buf, final int len) throws IOException {
             final CodedInputStream decoder = CodedInputStream.newInstance(buf, 0, len);
             for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
                 if (tag == BarrageProtoUtil.DATA_HEADER_TAG) {
                     final int size = decoder.readRawVarint32();
-                    return Message.getRootAsMessage(ByteBuffer.wrap(decoder.readRawBytes(size))).headerType();
+                    return Message.getRootAsMessage(ByteBuffer.wrap(decoder.readRawBytes(size)));
                 }
                 decoder.skipField(tag);
             }
-            return MessageHeader.NONE;
+            return null;
         }
 
         @Override
@@ -802,7 +970,20 @@ public abstract class BarrageMessageRoundTripTestBase extends RefreshingTableTes
                     try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
                         inputStream.drainTo(baos);
                         inputStream.close();
-                        observedHeaderTypes.add(peekHeaderType(baos.peekBuffer(), baos.size()));
+                        final Message header = peekMessage(baos.peekBuffer(), baos.size());
+                        final byte headerType = header == null ? MessageHeader.NONE : header.headerType();
+                        observedHeaderTypes.add(headerType);
+                        if (headerType == MessageHeader.DictionaryBatch) {
+                            final DictionaryBatch dictionaryBatch =
+                                    (DictionaryBatch) header.header(new DictionaryBatch());
+                            observedDictionaryBatchLengths.add(dictionaryBatch.data().length());
+                        } else if (headerType == MessageHeader.Schema) {
+                            recordFieldNodesPerColumn(
+                                    (org.apache.arrow.flatbuf.Schema) header.header(
+                                            new org.apache.arrow.flatbuf.Schema()));
+                        } else if (headerType == MessageHeader.RecordBatch) {
+                            recordColumnLengths((RecordBatch) header.header(new RecordBatch()));
+                        }
                         final BarrageMessage message =
                                 marshaller.parse(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                         // we skip schema messages, but can't suppress without propagating something...

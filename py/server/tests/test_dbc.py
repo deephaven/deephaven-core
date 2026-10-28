@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
+import importlib.util
 import platform
 import unittest
 
@@ -53,6 +54,10 @@ class DbcTestCase(BaseTestCase):
         platform.machine() != "x86_64",
         reason="connectorx not available on Linux/Arm64"
         "https://github.com/sfu-db/connector-x/issues/386",
+    )
+    @unittest.skipIf(
+        importlib.util.find_spec("connectorx") is None,
+        reason="connectorx is not installed, for example on a Python version it has no wheel for",
     )
     def test_read_sql_connectorx(self):
         query = "SELECT t_ts, t_id, t_instrument, t_exchange, t_price, t_size FROM CRYPTO_TRADES LIMIT 10"

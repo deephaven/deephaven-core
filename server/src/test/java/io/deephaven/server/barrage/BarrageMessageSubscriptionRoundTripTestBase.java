@@ -183,6 +183,48 @@ public abstract class BarrageMessageSubscriptionRoundTripTestBase extends Barrag
         }
     }
 
+    /**
+     * Subscriptions to some of a table's columns share a producer with subscriptions to all of them, so the producer's
+     * messages carry every column. {@link RemoteClient} checks that each subscription is sent only its own columns'
+     * data, and that its replicated table reads null in, and never reports modified, the others.
+     */
+    @Test
+    public void testColumnSubsetsShareProducerWithAllColumnSubscriptions() {
+        for (final int size : new int[] {10, 100, 1000}) {
+            for (final int numProducerCoalesce : new int[] {1, 4}) {
+                for (final int numConsumerCoalesce : new int[] {1, 4}) {
+                    final TestHelper helper = new SharedProducerForAllClients(numProducerCoalesce,
+                            numConsumerCoalesce, size, 0, new MutableInt(20)) {
+                        @Override
+                        void createNuggetsForTableMaker(final Supplier<Table> makeTable) {
+                            super.createNuggetsForTableMaker(makeTable);
+                            final RemoteNugget nugget = nuggets.get(nuggets.size() - 1);
+                            final int numColumns = nugget.originalTable.numColumns();
+                            final BitSet firstHalf = new BitSet();
+                            firstHalf.set(0, Math.max(1, numColumns / 2));
+                            final BitSet everyOther = new BitSet();
+                            for (int ci = 0; ci < numColumns; ci += 2) {
+                                everyOther.set(ci);
+                            }
+                            nugget.newClient(null, firstHalf, "full first half");
+                            nugget.newClient(null, everyOther, "full every other");
+                            nugget.newClient(RowSetFactory.fromRange(0, size / 10), everyOther, "header every other");
+                            nugget.newClient(RowSetFactory.fromRange(size / 2, size * 3L / 4), firstHalf, true,
+                                    "reverse floating first half");
+                        }
+                    };
+                    helper.runTest(() -> {
+                        final ControlledUpdateGraph updateGraph =
+                                ExecutionContext.getContext().getUpdateGraph().cast();
+                        updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                                GenerateTableUpdates.DEFAULT_PROFILE, helper.size, helper.random, helper.sourceTable,
+                                helper.columnInfo));
+                    });
+                }
+            }
+        }
+    }
+
     @Test
     public void testViewportSubscribeMidCycle() {
         // This is a regression test for IDS-6392. It catches a race between when a subscription becomes active and
@@ -526,7 +568,7 @@ public abstract class BarrageMessageSubscriptionRoundTripTestBase extends Barrag
         // deliver them one at a time, running an update graph cycle in between as a live client would
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         while (client.pendingMessageCount() > 0) {
-            client.flushEventsToReplicatedTable(1);
+            client.flushMessages(1);
             updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         }
 
@@ -582,7 +624,7 @@ public abstract class BarrageMessageSubscriptionRoundTripTestBase extends Barrag
         // Deliver only the first of the growth messages, leaving the subscription unsatisfied.
         flushProducerTable();
         assertTrue(client.pendingMessageCount() > 1);
-        client.flushEventsToReplicatedTable(1);
+        client.flushMessages(1);
         updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         assertNotNull(client.barrageTable.getServerViewport());
 
@@ -595,7 +637,7 @@ public abstract class BarrageMessageSubscriptionRoundTripTestBase extends Barrag
 
         // Once the subscription is satisfied the table may be listened to as usual.
         while (client.pendingMessageCount() > 0) {
-            client.flushEventsToReplicatedTable(1);
+            client.flushMessages(1);
             updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         }
         assertNull(client.barrageTable.getServerViewport());

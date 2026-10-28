@@ -5,7 +5,7 @@ title: ungroup
 `ungroup` ungroups column content. It is the reverse of the [`groupBy`](./groupBy.md) method. `ungroup` expands columns containing either Deephaven arrays or Java arrays.
 
 > [!CAUTION]
-> Arrays of different lengths within a row result in an error.
+> By default, arrays of different lengths within a row result in an error. Set `nullFill` to `true` to pad shorter arrays with null values instead.
 
 ## Syntax
 

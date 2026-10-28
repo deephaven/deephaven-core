@@ -347,7 +347,7 @@ table_writer = DynamicTableWriter(
 live_iris = table_writer.table
 
 
-# This function creates faux Iris measurements once per second for a minute
+# This function creates faux Iris measurements once per second for 30 seconds
 def write_to_iris():
     for i in range(30):
         petal_length = random.randint(10, 69) / 10
@@ -399,7 +399,7 @@ table_writer = DynamicTableWriter(
 live_iris = table_writer.table
 
 
-# This function creates faux Iris measurements once per second for a minute
+# This function creates faux Iris measurements once per second for 30 seconds
 def write_to_iris():
     for i in range(30):
         petal_length = random.randint(10, 69) / 10

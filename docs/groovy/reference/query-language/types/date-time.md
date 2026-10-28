@@ -1,5 +1,5 @@
 ---
-title: DateTime
+title: date-time
 ---
 
 A `date-time` value indicates a specific instance in time. In Deephaven, a `date-time` is typically represented by one of two data types:

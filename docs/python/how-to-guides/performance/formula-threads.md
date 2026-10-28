@@ -43,9 +43,9 @@ In this case, the formula is evaluated on one of the update executor threads (e.
 
 The `select` and `update` operations behave identically to each other, eagerly computing the result during initialization or in response to a table update.
 
-## `view` and `updateView`
+## `view` and `update_view`
 
-Unlike `select` and `update`, the `view` and `updateView` operations only compute the result when the result is accessed. This can happen on a variety of threads. For example, when performing another query operation, the results are read from the thread executing that operation:
+Unlike `select` and `update`, the `view` and `update_view` operations only compute the result when the result is accessed. This can happen on a variety of threads. For example, when performing another query operation, the results are read from the thread executing that operation:
 
 ```python order=thread_name,distinct_threads
 from deephaven import empty_table
@@ -107,9 +107,11 @@ print(used_threads)
 
 ## Table operations in formulas
 
-The Deephaven engine can create a new table by evaluating a formula, which is how a [Partitioned Table](../partitioned-tables.md) transform is implemented. A `select` or `update` that has a return type of [LivenessReferent](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessReferent.html) (of which a Table is a subtype) maintains the liveness of the resulting object, until it is removed or replaced in the result table. It is incorrect to use `view` or `updateView` to create a column of new Tables, because the `view` result does not have a well-defined [liveness scope](../../conceptual/liveness-scope-concept.md).
+The Deephaven engine can create a new table by evaluating a formula, which is how a [Partitioned Table](../partitioned-tables.md) transform is implemented. A `select` or `update` that has a return type of [LivenessReferent](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/liveness/LivenessReferent.html) (of which a Table is a subtype) maintains the liveness of the resulting object, until it is removed or replaced in the result table. It is incorrect to use `view` or `update_view` to create a column of new Tables, because the `view` result does not have a well-defined [liveness scope](../../conceptual/liveness-scope-concept.md).
 
-The threads used for formulas that result in a Table are evaluated in exactly the same manner as other `select` and `update` operations described above. This means that your table operations may not be executed on the same thread as you initiated them. If you have not explicitly defined an [`ExecutionContext`](../../conceptual/periodic-update-graph-configuration.md) before instantiating your operation, then `select` and `update` use a newly created context that shares the source table's update graph. The newly created context does not have a query library or query scope; therefore, you may not use table operations that include a formula. If you have opened an explicit ExecutionContext, the context is used for evaluation, and you may use table operations that include a formula. Partitioned tables automatically use the current context for `transform`.
+The threads used for formulas that result in a Table are evaluated in exactly the same manner as other `select` and `update` operations described above. This means that your table operations may not be executed on the same thread as you initiated them. If no user [`ExecutionContext`](../../conceptual/execution-context.md) is open when you instantiate your operation, then `select` and `update` use a newly created context that shares the source table's update graph. A user context is one that is not [systemic](../../conceptual/execution-context.md#systemic-vs-separate-executioncontext). The context that the console runs your script in is systemic. The newly created context does not have a query library or query scope; therefore, you may not use table operations that include a formula. If a user `ExecutionContext` is open, that context is used for evaluation, and you may use table operations that include a formula.
+
+Partitioned table `transform` follows the same rule: it uses the enclosing context only when that context is a user context. When a transform function uses formulas, create a user context with [`make_user_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.make_user_exec_ctx) and open it in a `with` block inside the function or around the `transform` call.
 
 ## Related documentation
 

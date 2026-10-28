@@ -6,7 +6,9 @@ This guide shows you how to collect summary information for groups of data using
 
 When working with data, you often need to break the data into subgroups and then perform calculations on each group. For example, a large multinational corporation may want to know its average employee salary by country, or a teacher might want to analyze test scores for various classes.
 
-The process of breaking a table into subgroups and then performing one or more calculations on the subgroups is known as "combined aggregation." The term comes from most operations creating a summary of data within a group (aggregation), and from more than one operation being computed at once (combined).
+Breaking a table into subgroups and then performing several calculations on each subgroup in one operation is known as "combined aggregation." The name joins two ideas: each calculation is an aggregation, which usually summarizes the data within a group, and several of them run together in one operation (combined).
+
+To compare multi-aggregation with the other ways Deephaven summarizes data, and to choose between them, see [Aggregations in Deephaven](../conceptual/aggregations.md).
 
 ## Why use combined aggregations?
 
@@ -149,6 +151,7 @@ result = source.agg_by(agg_list, by=["Period"])
 
 ## Related documentation
 
+- [Aggregations in Deephaven](../conceptual/aggregations.md)
 - [Create a new table](./new-and-empty-table.md#new_table)
 - [How to perform dedicated aggregations](./dedicated-aggregations.md)
 - [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md)

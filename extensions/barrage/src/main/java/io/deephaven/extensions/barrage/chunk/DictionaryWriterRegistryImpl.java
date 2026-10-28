@@ -6,6 +6,7 @@ package io.deephaven.extensions.barrage.chunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.annotations.InternalUseOnly;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -96,6 +97,23 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
         }
     }
 
+    /**
+     * The producer's shared dictionaries that this registry's states are backed by, or {@code null} for a local
+     * registry.
+     */
+    @InternalUseOnly
+    @Nullable
+    public Long2ObjectOpenHashMap<SharedWriterDictionary> sharedDictionaries() {
+        return sharedDictionaries;
+    }
+
+    /** Returns the entry registered for {@code dictId}, or {@code null} if there is none yet. */
+    @InternalUseOnly
+    @Nullable
+    public Entry getEntry(final long dictId) {
+        return entries.get(dictId);
+    }
+
     @Override
     @NotNull
     public Collection<Entry> entries() {
@@ -110,9 +128,7 @@ public final class DictionaryWriterRegistryImpl implements DictionaryWriterRegis
     @Override
     public void resetDeltas() {
         for (final Entry e : entries.values()) {
-            if (e.state.hasDelta()) {
-                e.state.resetDelta();
-            }
+            e.state.resetDelta();
         }
     }
 

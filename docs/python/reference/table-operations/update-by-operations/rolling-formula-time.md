@@ -103,7 +103,7 @@ result = source.update_by(
 )
 ```
 
-The following example performs an [`update_by`](./updateBy.md) on the `prices` table using a `rolling_formula_time` operation to calculate a rolling sum of squares of prices. Note that since the formula is applied to one column at a time, the `each` parameter is used to refer to the current column being processed.
+The following example performs an [`update_by`](./updateBy.md) on the `prices` table using a `rolling_formula_time` operation to calculate a rolling sum of squares of prices.
 
 ```python order=prices,result
 from deephaven.updateby import rolling_formula_tick, rolling_formula_time
@@ -119,9 +119,7 @@ prices = empty_table(20).update(
 
 formula_time = rolling_formula_time(
     ts_col="Timestamp",
-    formula="sum(x * x)",
-    formula_param="x",
-    cols="SumPriceSquared_Time = Price",
+    formula="SumPriceSquared_Time = sum(Price * Price)",
     rev_time="PT10s",
 )
 
