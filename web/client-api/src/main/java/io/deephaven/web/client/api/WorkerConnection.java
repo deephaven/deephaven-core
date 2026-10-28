@@ -515,12 +515,20 @@ public class WorkerConnection {
     }
 
     private void subscribeToTerminationNotification() {
-        terminationStream = Context.current().withCancellation();
-        terminationStream.run(
+        // A reconnect within the session can leave the previous stream open; replace it rather than add to it
+        if (terminationStream != null) {
+            terminationStream.cancel(null);
+        }
+        Context.CancellableContext context = Context.current().withCancellation();
+        terminationStream = context;
+        context.run(
                 () -> sessionServiceClient.terminationNotification(TerminationNotificationRequest.getDefaultInstance(),
                         new StreamObserver<TerminationNotificationResponse>() {
                             @Override
                             public void onNext(TerminationNotificationResponse success) {
+                                if (terminationStream != context) {
+                                    return;
+                                }
                                 // welp; the server is gone -- let everyone know
                                 connectionLost();
 
@@ -529,6 +537,10 @@ public class WorkerConnection {
 
                             @Override
                             public void onError(Throwable fail) {
+                                if (terminationStream != context) {
+                                    // Superseded or closed; this stream's end is not news
+                                    return;
+                                }
                                 // Errors are treated like connection issues, won't signal any shutdown
                                 if (checkStatus(fail)) {
                                     // restart the termination notification

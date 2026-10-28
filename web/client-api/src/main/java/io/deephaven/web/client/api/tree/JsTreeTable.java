@@ -795,6 +795,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     public Promise<?> refetch() {
         // TODO(deephaven-core#3604) a tree cannot be re-fetched into a new session; say so rather than reconnect
         String reason = "Cannot reconnect a TreeTable with refetch(), see deephaven-core#3604";
+        // Dead for good: a later recovery of the connection must not revive it or announce it as reconnected
+        connection.unregisterSimpleReconnectable(this);
         die(reason);
         return Promise.reject(reason);
     }
