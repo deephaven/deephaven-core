@@ -4,6 +4,7 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Forbids the current thread from waiting for any {@link UpdateGraph}, either to acquire one of its locks or for its
@@ -37,5 +38,21 @@ public final class UpdateGraphWaitGuard {
      */
     public static boolean waitsForbidden() {
         return waitsForbidden.get();
+    }
+
+    /**
+     * Whether the current thread is {@link #forbidWaits() forbidden} to wait for any update graph, or holds a lock of,
+     * or processes updates for, {@code updateGraph}. Such a thread must not wait for work in progress on another
+     * thread, because that work may itself be waiting for the update graph.
+     *
+     * @param updateGraph The update graph whose lock or updates the current thread may hold or process
+     * @return Whether the current thread must not wait for work in progress on another thread
+     */
+    public static boolean currentThreadMustNotWaitForOtherThreads(@NotNull final UpdateGraph updateGraph) {
+        return waitsForbidden()
+                || (updateGraph.supportsRefreshing()
+                        && (updateGraph.exclusiveLock().isHeldByCurrentThread()
+                                || updateGraph.sharedLock().isHeldByCurrentThread()
+                                || updateGraph.currentThreadProcessesUpdates()));
     }
 }

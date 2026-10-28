@@ -39,8 +39,12 @@ public class OperationInitializerJobScheduler implements JobScheduler {
             final Consumer<Exception> onError) {
         outstandingJobs.incrementAndGet();
         final AtomicBoolean started = new AtomicBoolean();
-        // the submitting thread waits for its jobs, so they may not wait for an update graph when it may not
-        final boolean waitsForbidden = UpdateGraphWaitGuard.waitsForbidden();
+        // The submitting thread waits for its jobs. When it must not wait for other threads, a job that waited for an
+        // update graph, or for another thread that may itself be waiting for one, could deadlock with it.
+        final boolean waitsForbidden = UpdateGraphWaitGuard.currentThreadMustNotWaitForOtherThreads(
+                ExecutionContext.getContext().getUpdateGraph())
+                || (executionContext != null && UpdateGraphWaitGuard.currentThreadMustNotWaitForOtherThreads(
+                        executionContext.getUpdateGraph()));
         try {
             operationInitializer.submit(() -> {
                 started.set(true);

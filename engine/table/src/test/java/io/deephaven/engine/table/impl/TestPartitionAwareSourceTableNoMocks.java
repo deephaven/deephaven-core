@@ -69,7 +69,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+import io.deephaven.engine.table.PartitionedTableFactory;
+import io.deephaven.engine.table.PartitionedTable;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.IntStream;
 
@@ -853,45 +858,59 @@ public class TestPartitionAwareSourceTableNoMocks {
      */
     private Table coalesceWhileExclusiveLockHolderCoalesces(final Table deferred) throws Exception {
         assertTrue(deferred instanceof DeferredViewTable);
+        final Table[] results = runWhileExclusiveLockHolderRuns(deferred::coalesce, deferred::coalesce);
+        assertSame(results[0], results[1]);
+        return results[1];
+    }
 
+    /**
+     * During an update cycle, one thread starts waiting for the exclusive lock, and then another thread without the
+     * update graph lock runs {@code lockFreeOperation} until it waits for the update graph lock. Once the cycle
+     * completes, the first thread runs {@code exclusiveOperation} while holding the exclusive lock. Both operations
+     * must complete.
+     *
+     * @return The results of {@code exclusiveOperation} and {@code lockFreeOperation}, in that order
+     */
+    private Table[] runWhileExclusiveLockHolderRuns(
+            final Supplier<Table> exclusiveOperation,
+            final Supplier<Table> lockFreeOperation) throws Exception {
         final ExecutionContext executionContext = ExecutionContext.getContext();
         final UpdateGraph contextUpdateGraph = executionContext.getUpdateGraph();
-        final CompletableFuture<Table> exclusiveCoalesce = new CompletableFuture<>();
+        final CompletableFuture<Table> exclusiveResult = new CompletableFuture<>();
         final Thread exclusiveThread = new Thread(() -> {
             try (final SafeCloseable ignored = executionContext.open()) {
-                exclusiveCoalesce.complete(contextUpdateGraph.exclusiveLock().computeLocked(deferred::coalesce));
+                exclusiveResult.complete(contextUpdateGraph.exclusiveLock().computeLocked(exclusiveOperation::get));
             } catch (final Throwable failure) {
-                exclusiveCoalesce.completeExceptionally(failure);
+                exclusiveResult.completeExceptionally(failure);
             }
-        }, "exclusive-coalesce");
-        final CompletableFuture<Table> lockFreeCoalesce = new CompletableFuture<>();
+        }, "exclusive-operation");
+        final CompletableFuture<Table> lockFreeResult = new CompletableFuture<>();
         final Thread lockFreeThread = new Thread(() -> {
             try (final SafeCloseable ignored = executionContext.open()) {
-                lockFreeCoalesce.complete(deferred.coalesce());
+                lockFreeResult.complete(lockFreeOperation.get());
             } catch (final Throwable failure) {
-                lockFreeCoalesce.completeExceptionally(failure);
+                lockFreeResult.completeExceptionally(failure);
             }
-        }, "lock-free-coalesce");
+        }, "lock-free-operation");
         exclusiveThread.setDaemon(true);
         lockFreeThread.setDaemon(true);
 
         updateGraph.getDelegate().startCycleForUnitTests(false);
         try {
             exclusiveThread.start();
-            awaitWaitingForUpdateGraphLock(exclusiveThread, exclusiveCoalesce);
+            awaitWaitingForUpdateGraphLock(exclusiveThread, exclusiveResult);
             lockFreeThread.start();
-            awaitWaitingForUpdateGraphLock(lockFreeThread, lockFreeCoalesce);
+            awaitWaitingForUpdateGraphLock(lockFreeThread, lockFreeResult);
         } finally {
             updateGraph.refreshSources();
             updateGraph.markSourcesRefreshedForUnitTests();
             updateGraph.getDelegate().completeCycleForUnitTests();
         }
 
-        final Table exclusiveResult;
-        final Table lockFreeResult;
         try {
-            exclusiveResult = exclusiveCoalesce.get(30, TimeUnit.SECONDS);
-            lockFreeResult = lockFreeCoalesce.get(30, TimeUnit.SECONDS);
+            return new Table[] {
+                    exclusiveResult.get(30, TimeUnit.SECONDS),
+                    lockFreeResult.get(30, TimeUnit.SECONDS)};
         } catch (final TimeoutException timeout) {
             final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
             final long[] deadlockedIds = threadMXBean.findDeadlockedThreads();
@@ -906,10 +925,46 @@ public class TestPartitionAwareSourceTableNoMocks {
                     }
                 }
             }
-            throw new AssertionError("Coalescing did not complete; deadlocked threads:" + deadlocked, timeout);
+            throw new AssertionError("Operations did not complete; deadlocked threads:" + deadlocked, timeout);
         }
-        assertSame(exclusiveResult, lockFreeResult);
-        return lockFreeResult;
+    }
+
+    /**
+     * One thread computes a memoized where during an update cycle without the update graph lock; the where cannot
+     * filter previous values, so it waits for the shared lock while computing. Another thread, already waiting for the
+     * exclusive lock when that happens, holds it once the cycle completes and transforms a partitioned table, whose
+     * transformation runs the same where on an initialization worker. Since the transforming thread holds the lock and
+     * waits for the worker, the worker must not wait for the other thread's memoized computation.
+     */
+    @Test
+    public void testTransformWorkerDoesNotWaitForMemoizedOperationWhileExclusiveLockHolderTransforms()
+            throws Exception {
+        final long partitionSize = 128;
+        final Table source = refreshingPartitionedSource(partitionedLocationProvider(partitionSize)).coalesce();
+        final WhereFilter filter = new PreviousRejectingFilter(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
+        final PartitionedTable partitioned = PartitionedTableFactory.ofTables(source);
+        final AtomicReference<Thread> exclusiveThread = new AtomicReference<>();
+        final AtomicBoolean transformedOnWorker = new AtomicBoolean();
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        final boolean oldForceParallelSelect = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
+        QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
+        try {
+            final Table[] results = runWhileExclusiveLockHolderRuns(() -> {
+                exclusiveThread.set(Thread.currentThread());
+                return partitioned.transform(constituent -> {
+                    if (Thread.currentThread() != exclusiveThread.get()) {
+                        transformedOnWorker.set(true);
+                    }
+                    return constituent.where(filter);
+                }).merge();
+            }, () -> source.where(filter));
+            assertTrue("the transformation must run on an initialization worker", transformedOnWorker.get());
+            assertEquals(4 * partitionSize, results[0].size());
+            assertEquals(4 * partitionSize, results[1].size());
+        } finally {
+            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = oldForceParallelSelect;
+            QueryTable.setMemoizeResults(oldMemoize);
+        }
     }
 
     /**

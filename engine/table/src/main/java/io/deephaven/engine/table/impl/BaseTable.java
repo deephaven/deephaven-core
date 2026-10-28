@@ -219,25 +219,16 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     }
 
     /**
-     * Whether the current thread is {@link UpdateGraphWaitGuard#forbidWaits() forbidden} to wait for any update graph,
-     * or holds the lock of, or processes updates for, this table's update graph or the update graph of the current
-     * {@link ExecutionContext}, which is the graph an operation that combines this table with others runs on. Such a
-     * thread must not wait for work in progress on another thread, because that work may itself be waiting for the
-     * lock.
+     * Whether the current thread {@link UpdateGraphWaitGuard#currentThreadMustNotWaitForOtherThreads(UpdateGraph) must
+     * not wait for other threads} on account of this table's update graph or the update graph of the current
+     * {@link ExecutionContext}, which is the graph an operation that combines this table with others runs on.
      *
      * @return Whether the current thread must not wait for work in progress on another thread
      */
     protected final boolean currentThreadMustNotWaitForOtherThreads() {
-        return UpdateGraphWaitGuard.waitsForbidden()
-                || currentThreadMustNotWaitForOtherThreads(updateGraph)
-                || currentThreadMustNotWaitForOtherThreads(ExecutionContext.getContext().getUpdateGraph());
-    }
-
-    private static boolean currentThreadMustNotWaitForOtherThreads(@NotNull final UpdateGraph graph) {
-        return graph.supportsRefreshing()
-                && (graph.exclusiveLock().isHeldByCurrentThread()
-                        || graph.sharedLock().isHeldByCurrentThread()
-                        || graph.currentThreadProcessesUpdates());
+        return UpdateGraphWaitGuard.currentThreadMustNotWaitForOtherThreads(updateGraph)
+                || UpdateGraphWaitGuard.currentThreadMustNotWaitForOtherThreads(
+                        ExecutionContext.getContext().getUpdateGraph());
     }
 
     @Override
