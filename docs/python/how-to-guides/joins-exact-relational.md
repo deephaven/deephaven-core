@@ -178,7 +178,7 @@ result = assigned.exact_join(table=departments, on=["DeptID"])
 result = employees.natural_join(table=departments, on=["DeptID"])
 ```
 
-By default, `natural_join` fails if the right table has more than one row for a key. To keep one of the matching rows instead, set `type` to [`NaturalJoinType`](/core/pydoc/code/deephaven.table.html#deephaven.table.NaturalJoinType) `.FIRST_MATCH` or `NaturalJoinType.LAST_MATCH`. The following example swaps the tables, using `departments` as the left table, and adds the first matching employee to each department. Departments 33 and 34 each have two employees, so the default join type would fail. Marketing has no employees, so its employee columns are null:
+By default, `natural_join` fails if a left-table row matches more than one right-table row. Duplicate right-table keys that no left-table row matches don't cause an error. To keep one of the matching rows instead, set `type` to [`NaturalJoinType`](/core/pydoc/code/deephaven.table.html#deephaven.table.NaturalJoinType) `.FIRST_MATCH` or `NaturalJoinType.LAST_MATCH`. The following example swaps the tables, using `departments` as the left table, and adds the first matching employee to each department. Departments 33 and 34 each have two employees, so the default join type would fail. Marketing has no employees, so its employee columns are null:
 
 ```python test-set=1 order=result
 from deephaven.table import NaturalJoinType
@@ -231,7 +231,7 @@ result = full_outer_join(l_table=departments, r_table=employees, on=["DeptID"])
 
 ## Join three or more tables
 
-[`multi_join`](../reference/table-operations/join/multi-join.md) joins any number of tables on a common set of key columns in a single operation. The result has one row for each distinct key found in any input table. Each input table adds its columns to that row. As with [`natural_join`](../reference/table-operations/join/natural-join.md) in its default mode, an input table can have at most one row per key, and `multi_join` fails if an input has duplicate keys. An input table with no row for a key contributes null values.
+[`multi_join`](../reference/table-operations/join/multi-join.md) joins any number of tables on a common set of key columns in a single operation. The result has one row for each distinct key found in any input table. Each input table adds its columns to that row. Each input table can have at most one row per key, and `multi_join` fails if an input has duplicate keys. An input table with no row for a key contributes null values.
 
 `multi_join` returns a [`MultiJoinTable`](/core/pydoc/code/deephaven.table.html#deephaven.table.MultiJoinTable) object rather than a table. To get the result table, use its `table` property.
 

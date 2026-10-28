@@ -134,7 +134,7 @@ result = assigned.exactJoin(departments, "DeptID")
 result = employees.naturalJoin(departments, "DeptID")
 ```
 
-By default, `naturalJoin` fails if the right table has more than one row for a key. To keep one of the matching rows instead, pass [`NaturalJoinType`](/core/javadoc/io/deephaven/api/NaturalJoinType.html) `.FIRST_MATCH` or `NaturalJoinType.LAST_MATCH` as the last argument. The following example swaps the tables, using `departments` as the left table, and adds the first matching employee to each department. Departments 33 and 34 each have two employees, so the default join type would fail. Marketing has no employees, so its employee columns are null:
+By default, `naturalJoin` fails if a left-table row matches more than one right-table row. Duplicate right-table keys that no left-table row matches don't cause an error. To keep one of the matching rows instead, pass [`NaturalJoinType`](/core/javadoc/io/deephaven/api/NaturalJoinType.html) `.FIRST_MATCH` or `NaturalJoinType.LAST_MATCH` as the last argument. The following example swaps the tables, using `departments` as the left table, and adds the first matching employee to each department. Departments 33 and 34 each have two employees, so the default join type would fail. Marketing has no employees, so its employee columns are null:
 
 ```groovy test-set=1 order=result
 import io.deephaven.api.NaturalJoinType
@@ -185,7 +185,7 @@ result = OuterJoinTools.fullOuterJoin(departments, employees, "DeptID")
 
 ## Join three or more tables
 
-[`MultiJoinFactory.of`](../reference/table-operations/join/multi-join.md) joins any number of tables on a common set of key columns in a single operation. The result has one row for each distinct key found in any input table. Each input table adds its columns to that row. As with [`naturalJoin`](../reference/table-operations/join/natural-join.md) in its default mode, an input table can have at most one row per key, and `MultiJoinFactory.of` fails if an input has duplicate keys. An input table with no row for a key contributes null values.
+[`MultiJoinFactory.of`](../reference/table-operations/join/multi-join.md) joins any number of tables on a common set of key columns in a single operation. The result has one row for each distinct key found in any input table. Each input table adds its columns to that row. Each input table can have at most one row per key, and `MultiJoinFactory.of` fails if an input has duplicate keys. An input table with no row for a key contributes null values.
 
 `MultiJoinFactory.of` returns a [`MultiJoinTable`](../reference/table-operations/join/MultiJoinTable.md) object rather than a table. To get the result table, call its `table` method.
 
