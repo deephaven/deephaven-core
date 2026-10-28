@@ -453,6 +453,57 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(this::finish).catch_(this::report);
     }
 
+    /**
+     * A tree that reported reconnectfailed is dead: a later recovery of the connection must not revive it or announce
+     * it as reconnected.
+     */
+    public void testDeadTreeStaysQuietOnLaterReconnect() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_070);
+                    return Promise.resolve(session);
+                })
+                .then(treeTable("ticking_tree_updates"))
+                .then(treeTable -> {
+                    IdeConnection ide = lastIdeConnection;
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    List<String> lifecycle = new ArrayList<>();
+                    treeTable.addEventListener(JsTreeTable.EVENT_DISCONNECT, e -> lifecycle.add("disconnect"));
+                    treeTable.addEventListener(JsTreeTable.EVENT_RECONNECT, e -> lifecycle.add("reconnect"));
+                    treeTable.addEventListener(JsTreeTable.EVENT_RECONNECTFAILED,
+                            e -> lifecycle.add("reconnectfailed"));
+                    treeTable.setViewport(0, 99, treeTable.getColumns(), null);
+                    return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
+                            (Event<TreeViewportData> d) -> d.getDetail().getTreeSize() == 1, 5071)
+                            .then(t -> {
+                                treeTable.refetch().then(ok -> null, err -> null);
+                                return Promise.race(
+                                        waitFor(() -> !lifecycle.isEmpty(), 100, 5072, treeTable),
+                                        delay(5000).then(late -> Promise.reject(
+                                                "tree reported nothing on refetch")));
+                            })
+                            .then(t -> {
+                                assertEquals(Arrays.asList("reconnectfailed"), lifecycle);
+                                // The connection goes away and comes back within the session
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5073).onInvoke(ide);
+                            })
+                            // give the connection's reconnect hooks time to run before looking
+                            .then(t -> delay(500))
+                            .then(t -> {
+                                assertEquals("a dead tree announces nothing on a later reconnect",
+                                        Arrays.asList("reconnectfailed"), lifecycle);
+                                treeTable.close();
+                                return Promise.resolve(treeTable);
+                            });
+                })
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testTreeCustomColumnException() {
         connect(tables)
                 .then(treeTable("static_tree"))
