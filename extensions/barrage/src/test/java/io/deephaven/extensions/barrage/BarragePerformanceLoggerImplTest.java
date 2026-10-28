@@ -4,6 +4,8 @@
 package io.deephaven.extensions.barrage;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
@@ -13,6 +15,7 @@ import io.deephaven.extensions.barrage.BarragePerformanceLog.SnapshotMetricsHelp
 import io.deephaven.extensions.barrage.BarrageSubscriptionPerformanceLogger.StatType;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import org.HdrHistogram.Histogram;
 import org.junit.Test;
 
@@ -268,5 +271,31 @@ public class BarragePerformanceLoggerImplTest extends RefreshingTableTestCase {
         // The blink table is unaffected by the sink's failure.
         runUpdateCycle(impl.adapter());
         assertThat(impl.blinkTable().size()).isEqualTo(2L);
+    }
+
+    /**
+     * The singleton is typically created on a request thread inside a transient liveness scope; the tables it hands out
+     * must survive that scope being released (DH-9016).
+     */
+    @Test
+    public void testBlinkTablesSurviveCreatorScopeRelease() {
+        final LivenessScope owner = new LivenessScope();
+        try {
+            final LivenessScope requestScope = new LivenessScope();
+            final BarragePerformanceLog log;
+            try (final SafeCloseable ignored = LivenessScopeStack.open(requestScope, false)) {
+                log = new BarragePerformanceLog(owner);
+            }
+            requestScope.release();
+
+            final Table snapshots = log.getSnapshotTable();
+            final Table subscriptions = log.getSubscriptionTable();
+            assertThat(snapshots.tryRetainReference()).isTrue();
+            snapshots.dropReference();
+            assertThat(subscriptions.tryRetainReference()).isTrue();
+            subscriptions.dropReference();
+        } finally {
+            owner.release();
+        }
     }
 }

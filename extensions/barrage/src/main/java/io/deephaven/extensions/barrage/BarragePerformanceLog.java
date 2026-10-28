@@ -4,11 +4,14 @@
 package io.deephaven.extensions.barrage;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.AttributeMap;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +37,12 @@ public class BarragePerformanceLog {
     public static final long CYCLE_DURATION_MILLIS = Configuration.getInstance().getLongForClassWithDefault(
             BarragePerformanceLog.class, "cycleDurationMillis", 60000);
 
+    /**
+     * Owns the singleton's blink tables for the life of the JVM. It is never released, so the request or export scope
+     * of whichever thread happens to create the instance cannot tear the tables down.
+     */
+    private static final LivenessScope INSTANCE_SCOPE = new LivenessScope(true);
+
     private static volatile BarragePerformanceLog INSTANCE;
 
     /**
@@ -45,7 +54,8 @@ public class BarragePerformanceLog {
      * NB: Creating the instance registers the in-memory blink tables with the update graph of the calling thread's
      * {@link io.deephaven.engine.context.ExecutionContext}, so the first call must come from a context that has a live
      * update graph. Callers should let the first real barrage activity create the instance rather than forcing it
-     * during startup, when no such context typically exists yet.
+     * during startup, when no such context typically exists yet. The tables are managed by a dedicated scope that is
+     * never released, regardless of the liveness scope active on the calling thread.
      *
      * @return the singleton {@link BarragePerformanceLog}
      */
@@ -54,7 +64,7 @@ public class BarragePerformanceLog {
         if ((local = INSTANCE) == null) {
             synchronized (BarragePerformanceLog.class) {
                 if ((local = INSTANCE) == null) {
-                    INSTANCE = local = new BarragePerformanceLog();
+                    INSTANCE = local = new BarragePerformanceLog(INSTANCE_SCOPE);
                 }
             }
         }
@@ -96,10 +106,15 @@ public class BarragePerformanceLog {
     private final BarrageSubscriptionPerformanceLoggerImpl subImpl;
     private final BarrageSnapshotPerformanceLoggerImpl snapImpl;
 
-    private BarragePerformanceLog() {
+    /**
+     * @param owner the scope that manages the blink tables, rather than the calling thread's current scope
+     */
+    BarragePerformanceLog(@NotNull final LivenessScope owner) {
         final BarrageTableLoggers.Factory loggerFactory = BarrageTableLoggers.get();
-        subImpl = new BarrageSubscriptionPerformanceLoggerImpl(loggerFactory.subscriptionPerformanceSink());
-        snapImpl = new BarrageSnapshotPerformanceLoggerImpl(loggerFactory.snapshotPerformanceSink());
+        try (final SafeCloseable ignored = LivenessScopeStack.open(owner, false)) {
+            subImpl = new BarrageSubscriptionPerformanceLoggerImpl(loggerFactory.subscriptionPerformanceSink());
+            snapImpl = new BarrageSnapshotPerformanceLoggerImpl(loggerFactory.snapshotPerformanceSink());
+        }
     }
 
     public QueryTable getSubscriptionTable() {
