@@ -2,16 +2,15 @@
 title: getDataIndex
 ---
 
-Retrieves an existing data index for a given table and specified key column(s). It can optionally create the index if it does not already exist.
+Retrieves an existing data index for a table and key column(s), or returns `null` if none exists. It never creates an index. To create one, use [`getOrCreateDataIndex`](./getOrCreateDataIndex.md).
 
 This method is part of the `io.deephaven.engine.table.impl.indexer.DataIndexer` class and is typically used via a static import.
 
 ## Syntax
 
 ```groovy syntax
-index = getOrCreateDataIndex(someTable, "KeyColumn1") // Create if missing
-index = getDataIndex(someTable, "KeyColumn1", "KeyColumn2") // Retrieve only if exists
-index = getOrCreateDataIndex(someTable, "KeyColumn1", "KeyColumn2") // Create if missing
+index = getDataIndex(someTable, "KeyColumn1")
+index = getDataIndex(someTable, "KeyColumn1", "KeyColumn2")
 ```
 
 ## Parameters
@@ -20,20 +19,17 @@ index = getOrCreateDataIndex(someTable, "KeyColumn1", "KeyColumn2") // Create if
 <Param name="table" type="Table">
 The table from which to retrieve the data index.
 </Param>
-<Param name="createIfAbsent" type="boolean">
-If `true`, creates the data index if it doesn't exist. If `false`, returns `null` if the index doesn't exist.
-</Param>
 <Param name="keyColumnNames" type="String...">
 The name(s) of the key column(s) defining the index (varargs).
 </Param>
-<Param name="keyColumnNames" type="String[]">
-The name(s) of the key column(s) defining the index (array).
+<Param name="keyColumnNames" type="Collection<String>">
+The name(s) of the key column(s) defining the index (collection).
 </Param>
 </ParamTable>
 
 ## Returns
 
-Returns the `DataIndex` object if found or created. Returns `null` if `createIfAbsent` is `false` and the index does not exist.
+The `DataIndex`, or `null` if no usable index exists.
 
 ## Examples
 
@@ -64,10 +60,10 @@ println "Index on Key1 (exists): ${indexKey1_exists}"  // Output: (DataIndex obj
 println "Is indexKey1_exists the same as actualIndexKey1? ${indexKey1_exists == actualIndexKey1}" // Output: true
 ```
 
-### Example 2: Retrieve an index, create if absent
+### Example 2: Create an index if absent
 
 ```groovy
-import static io.deephaven.engine.table.impl.indexer.DataIndexer.getDataIndex
+import static io.deephaven.engine.table.impl.indexer.DataIndexer.getOrCreateDataIndex
 import static io.deephaven.engine.table.impl.indexer.DataIndexer.hasDataIndex
 
 // Create a source table
@@ -76,7 +72,7 @@ def sourceTable2 = emptyTable(50).update(
     "Price = i * 1.1"
 )
 
-// Attempt to get an index on Symbol
+// Create an index on Symbol with getOrCreateDataIndex, since getDataIndex never creates one
 println "Has index on Symbol BEFORE: ${hasDataIndex(sourceTable2, "Symbol")}" // Output: false
 def indexSymbol_create = getOrCreateDataIndex(sourceTable2, "Symbol") // Create if missing
 println "Index on Symbol (create): ${indexSymbol_create}"  // Output: (DataIndex object)
@@ -87,5 +83,5 @@ println "Has index on Symbol AFTER: ${hasDataIndex(sourceTable2, "Symbol")}" // 
 
 - [Create data indexes](../../how-to-guides/data-indexes.md)
 - [`hasDataIndex`](./hasDataIndex.md)
-- [`getOrCreateDataIndex`](./getOrCreateDataIndex.md) (To be created)
+- [`getOrCreateDataIndex`](./getOrCreateDataIndex.md)
 - [`DataIndexer` Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/indexer/DataIndexer.html)

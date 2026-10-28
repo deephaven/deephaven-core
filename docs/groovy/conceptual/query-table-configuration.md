@@ -101,7 +101,7 @@ Parallelism for `where` operations is not enabled until the parent's size exceed
 
 | Property Name                                  | Default Value | Description                                                                                                               |
 | ---------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `QueryTable.enableParallelWhere`               | false         | Enables parallelized optimizations for `QueryTable#where` operations                                                      |
+| `QueryTable.disableParallelWhere`              | false         | Disables parallel evaluation of `where` filters                                                                           |
 | `QueryTable.parallelWhereRowsPerSegment`       | `1 << 16`     | The number of rows per segment when the number of segments is not fixed                                                   |
 | `QueryTable.parallelWhereSegments`             | -1            | The number of segments to use when dividing all work equally into a fixed number of tasks; -1 implies one thread per core |
 | `QueryTable.forceParallelWhere` (test-focused) | false         | Forces Where operations to parallelize even when row requirements are not met                                             |

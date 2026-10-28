@@ -5,10 +5,10 @@ title: data_index
 `data_index` gets the [`DataIndex`](/core/pydoc/code/deephaven.experimental.data_index.html#deephaven.experimental.data_index.DataIndex) for the given key columns on a table. It can also create a [`DataIndex`](/core/pydoc/code/deephaven.experimental.data_index.html#deephaven.experimental.data_index.DataIndex) when none is present. A [`DataIndex`](/core/pydoc/code/deephaven.experimental.data_index.html#deephaven.experimental.data_index.DataIndex) is an index that can make it faster for the engine to locate data by key. Some table operations have improved performance when a data index is present.
 
 > [!NOTE]
-> When a new data index is created, it is not immediately computed. The index is computed when a table operation first uses it, or when its `table` attribute is called. This is an important detail for performance considerations.
+> When a new data index is created, it is not immediately computed. The index is computed when a table operation first uses it, or when you access its `table` property. This is an important detail for performance considerations.
 
 > [!NOTE]
-> The Deephaven engine will only use a [`DataIndex`](/core/pydoc/code/deephaven.experimental.data_index.html#deephaven.experimental.data_index.DataIndex) when the keys _exactly_ match what is needed for an operation. For example, if a data index is present for the columns `X` and `Y`, it will not be used if the engine only needs an index for column `X`.
+> Which index an operation can use depends on its key columns. Joins and aggregations need an index whose key columns exactly match theirs. [`where`](../table-operations/filter/where.md) can use an index whose key columns include the filtered columns. For example, an index on `X` and `Y` can speed up a filter on `X`. A sort can use an index on all of its sort columns, or a single-column index on the first sort column. See [Data indexes](../../how-to-guides/data-indexes.md#usage-in-queries).
 
 ## Syntax
 
@@ -35,7 +35,7 @@ The names of the key column(s) to index.
 </Param>
 <Param name="create_if_absent" type="bool" optional>
 
-If `True`, create the index if it does not already exist. If `False`, return `None` if the index does not exist. Creating an index does not compute the index. The index is computed when first used by a table operation, or when the `table` attribute is called on the index. Default is `True`.
+If `True`, create the index if it does not already exist. If `False`, return `None` if the index does not exist. Creating an index does not compute the index. The index is computed when first used by a table operation, or when you access the index's `table` property. Default is `True`.
 
 </Param>
 </ParamTable>

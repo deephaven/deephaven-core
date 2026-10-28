@@ -393,7 +393,7 @@ If you are unsure whether partitioned tables could improve your query's performa
 
 ### Avoid tick amplification
 
-Partitioned tables also help avoid [tick amplification](../conceptual/troubleshooting-steps.md#tick-amplification). Tick amplification occurs when an operation produces downstream updates that touch many more cells than the upstream change. A common example is [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md) followed by [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md). If you use [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md) and [`merge`](../reference/table-operations/partitioned-tables/partitioned-table-merge.md) instead, the engine processes each constituent independently and does not check entire groups for changes.
+Partitioned tables also help avoid [tick amplification](../conceptual/troubleshooting-steps.md#tick-amplification). Tick amplification occurs when an operation produces downstream updates that touch many more cells than the upstream change. A common example is [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md) followed by [`ungroup`](../reference/table-operations/group-and-aggregate/ungroup.md). If you use [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md) and [`merge`](../reference/table-operations/partitioned-tables/partitioned-table-merge.md) instead, the engine updates each constituent independently, so a change to one row isn't spread to the other rows of its group.
 
 ## Related documentation
 

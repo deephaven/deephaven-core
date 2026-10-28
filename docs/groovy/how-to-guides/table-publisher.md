@@ -271,7 +271,7 @@ trig_plot = FigureFactory.figure()
 
 ### DynamicTableWriter and the Update Graph
 
-Both the Python interpreter and the [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md) require the [Update Graph (UG) lock](../conceptual/query-engine/engine-locking.md#query-engine-locks) to execute. As a result, new rows will not appear in output tables until the next UG cycle. As an example, what would you expect the `print` statement below to produce?
+Both the Groovy script session and the [`DynamicTableWriter`](../reference/table-operations/create/DynamicTableWriter.md) require the [UpdateGraph lock](../conceptual/query-engine/engine-locking.md#query-engine-locks) to execute. As a result, new rows will not appear in output tables until the next update graph cycle. As an example, what would you expect the `println` statement below to produce?
 
 ```groovy order=result test-set=1 reset
 import io.deephaven.engine.table.impl.util.DynamicTableWriter
@@ -293,9 +293,9 @@ tableWriter.logRow(4, "Writer")
 println result.isEmpty()
 ```
 
-You may be surprised, but the table does not contain rows when the `print` statement is reached. The Python interpreter holds the UG lock while the code block executes, preventing `result` from being updated with the new rows until the next UG cycle. Because `print` is in the code block, it sees the table before rows are added.
+You may be surprised, but the table does not contain rows when the `println` statement is reached. The Groovy script session holds the exclusive UpdateGraph lock while the code block executes. This prevents `result` from being updated with the new rows until the next update graph cycle. Because `println` is in the code block, it sees the table before rows are added.
 
-However, calling the same `print` statement as a second command produces the expected result.
+However, calling the same `println` statement as a second command produces the expected result.
 
 ```groovy test-set=1
 println result.isEmpty()

@@ -50,7 +50,7 @@ The options dictate whether to take an initial snapshot, do incremental snapshot
 </ParamTable>
 
 > [!CAUTION]
-> The trigger table's stamp columns appear in the result table. If the source table has a column with the same name as a stamp column, a snapshot without `HISTORY` raises an error. With `HISTORY`, Deephaven does not reliably detect the conflict. The stamp column's values can be silently lost, or the snapshot can fail. To avoid the conflict, rename the stamp column in the trigger table using [`renameColumns`](../select/rename-columns.md).
+> The trigger table's stamp columns appear in the result table. If the source table has a column with the same name as a stamp column, `snapshotWhen` throws an exception. To avoid the conflict, rename the stamp column in the trigger table with [`renameColumns`](../select/rename-columns.md), or rename it in the stamp columns (for example, `"TriggerTimestamp = Timestamp"`).
 
 ## Returns
 
@@ -63,18 +63,20 @@ The `snapshotWhen` method's `options` parameter takes a `SnapshotWhenOptions` ob
 ```
 import io.deephaven.api.snapshot.SnapshotWhenOptions
 
-myOpts = SnapshotWhenOptions.of(INITIAL, INCREMENTAL, HISTORY, stampColumns)
+myOpts = SnapshotWhenOptions.of(initial, incremental, history, stampColumns...)
 ```
 
-Where `INITIAL`, `INCREMENTAL`, and `HISTORY` are booleans and `stampColumns` is one or more string values corresponding to columns in the `trigger` table.
+Where `initial`, `incremental`, and `history` are booleans and `stampColumns` is zero or more string values corresponding to columns in the `trigger` table.
 
-- `INITIAL` (Boolean): Whether or not to take an initial snapshot upon creating the result table. The default is `false`.
-- `INCREMENTAL` (Boolean): Determines whether the resulting table should be incremental. The default value is `false`. When `false`, the stamp column in the resulting table will always contain the _latest_ value from the stamp column in the trigger table. This means that every row in the resulting table will be updated each time the trigger table updates. When `true`, only rows that have been added or updated to the source table since the last snapshot will have the latest value from the stamp column.
-- `HISTORY` (Boolean): Determines whether the resulting table should keep history. The default value is `false`. When `true`, the result appends a full snapshot of the source table and the stamp columns for each row the trigger table already has when you create the result, and for each row it adds later, so the result grows very fast. The trigger table must be append-only; if it modifies or removes rows, the result fails and stops updating. When `false`, the result holds only the latest snapshot.
+You can also build the options from [`SnapshotWhenOptions.Flag`](/core/javadoc/io/deephaven/api/snapshot/SnapshotWhenOptions.Flag.html) values. `SnapshotWhenOptions.of(Flag...)` takes only flags. `SnapshotWhenOptions.of(Iterable<Flag>, String...)` takes a collection of flags and the stamp columns.
+
+- `initial` (Boolean): Whether or not to take an initial snapshot upon creating the result table. The default is `false`.
+- `incremental` (Boolean): Determines whether the resulting table should be incremental. The default value is `false`. When `false`, the stamp column in the resulting table will always contain the _latest_ value from the stamp column in the trigger table. This means that every row in the resulting table will be updated each time the trigger table updates. When `true`, only rows that have been added or updated to the source table since the last snapshot will have the latest value from the stamp column.
+- `history` (Boolean): Determines whether the resulting table should keep history. The default value is `false`. When `true`, the result appends a full snapshot of the source table and the stamp columns for each row the trigger table already has when you create the result, and for each row it adds later, so the result grows very fast. The trigger table must be append-only; if it modifies or removes rows, the result fails and stops updating. When `false`, the result holds only the latest snapshot.
 - `stampColumns` (String...): One or more column names to act as stamp columns. Each stamp column will be included in the final result and will contain the value of the stamp column from the trigger table at the time of the snapshot. If you pass no stamp columns, all trigger table columns are appended to the source table.
 
 > [!NOTE]
-> If `HISTORY` is `true`, `INITIAL` and `INCREMENTAL` _must_ be `false`.
+> If `history` is `true`, `initial` and `incremental` _must_ be `false`.
 
 ## Examples
 
@@ -91,8 +93,8 @@ result = source.snapshotWhen(trigger)
 Notice three things:
 
 1. No stamp columns are passed, so every column from `trigger` is included in `result`.
-2. `INCREMENTAL` is `false`, so the _entire_ `TriggerTimestamp` column in `result` is updated each time the trigger table updates and always contains the latest value from the `TriggerTimestamp` column in `trigger`.
-3. `HISTORY` is `false`, so `result` holds only the latest snapshot of `source`. Each snapshot replaces the previous one instead of being appended.
+2. `incremental` is `false`, so the _entire_ `TriggerTimestamp` column in `result` is updated each time the trigger table updates and always contains the latest value from the `TriggerTimestamp` column in `trigger`.
+3. `history` is `false`, so `result` holds only the latest snapshot of `source`. Each snapshot replaces the previous one instead of being appended.
 
 In the following example, the code is nearly identical to the one above it. However, in this case, the `Y` column is given as the stamp key. Thus, the `Timestamp` column in the `trigger` table is omitted from the `result` table, which avoids a name conflict error. This is an alternative to renaming the column in the trigger table.
 
@@ -108,7 +110,7 @@ result = source.snapshotWhen(trigger, myOpts)
 
 ![The above `source`, `trigger`, and `result` tables](../../../assets/reference/table-operations/snapshot-when-2.gif)
 
-In the following example, `HISTORY` is set to `true`. Therefore, _every_ row in `source` gets snapshotted and appended to `result` each time `trigger` adds a row, regardless of whether `source` has changed.
+In the following example, `history` is set to `true`. Therefore, _every_ row in `source` gets snapshotted and appended to `result` each time `trigger` adds a row, regardless of whether `source` has changed.
 
 ```groovy ticking-table order=null
 import io.deephaven.api.snapshot.SnapshotWhenOptions
@@ -122,7 +124,7 @@ result = source.snapshotWhen(trigger, myOpts)
 
 ![The above `source`, `trigger`, and `result` tables](../../../assets/reference/table-operations/snapshot-when-3.gif)
 
-In the following example, `INCREMENTAL` is set to `true`. Thus, only the rows of `source` that were added or modified since the last snapshot get the latest `Y` value. Earlier rows keep the `Y` value from the snapshot that captured them. Contrast this with the first and second examples given above.
+In the following example, `incremental` is set to `true`. Thus, only the rows of `source` that were added or modified since the last snapshot get the latest `Y` value. Earlier rows keep the `Y` value from the snapshot that captured them. Contrast this with the first and second examples given above.
 
 ```groovy ticking-table order=null
 import io.deephaven.api.snapshot.SnapshotWhenOptions
