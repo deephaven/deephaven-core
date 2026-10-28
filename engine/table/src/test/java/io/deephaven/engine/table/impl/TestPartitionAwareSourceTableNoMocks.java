@@ -65,6 +65,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.IntStream;
 
@@ -606,8 +607,8 @@ public class TestPartitionAwareSourceTableNoMocks {
      * One thread coalesces a deferred table during an update cycle without the update graph lock. Its condition uses a
      * query scope parameter, so it cannot filter previous values, and the deferred where's snapshot waits for the
      * shared lock. Another thread, already waiting for the exclusive lock when that happens, holds it once the cycle
-     * completes and coalesces the same deferred table. Both coalesces complete with the same result, and only that
-     * result filters rows added afterwards.
+     * completes and coalesces the same deferred table. The two coalesces' where operations never overlap, both
+     * coalesces complete with the same result, and only that result filters rows added afterwards.
      */
     @Test
     public void testDeferredCoalesceWhileExclusiveLockHolderCoalesces() throws Exception {
@@ -618,10 +619,12 @@ public class TestPartitionAwareSourceTableNoMocks {
         // the source is coalesced up front, so that the deferred where's snapshot is the only one that needs the lock
         source.coalesce();
         ExecutionContext.getContext().getQueryScope().putParam("threshold", 0L);
-        // copies of the filter, one for each coalesce, share what they capture
+        // copies of the filters, one for each coalesce, share what they capture
         final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("II + threshold >= 0"));
-        final Table coalesced = coalesceWhileExclusiveLockHolderCoalesces(source.where(filter));
+        final OverlapRecordingFilter overlapRecordingFilter = new OverlapRecordingFilter(filter);
+        final Table coalesced = coalesceWhileExclusiveLockHolderCoalesces(source.where(overlapRecordingFilter));
         assertEquals(4 * partitionSize, coalesced.size());
+        assertEquals(1, overlapRecordingFilter.maxOperationsInProgress.get());
 
         filter.reset();
         tableLocationProvider.locations.values().forEach(location -> location.setSize(2 * partitionSize));
@@ -683,6 +686,54 @@ public class TestPartitionAwareSourceTableNoMocks {
         @Override
         public WhereFilter copy() {
             return new PreviousRejectingFilter(filter.copy());
+        }
+    }
+
+    /**
+     * Records the greatest number of where operations, over this filter and its copies, that are in progress at once.
+     */
+    private static class OverlapRecordingFilter extends WhereFilterDelegatingBase {
+        private final AtomicInteger operationsInProgress;
+        private final AtomicInteger maxOperationsInProgress;
+
+        private OverlapRecordingFilter(final WhereFilter filter) {
+            this(filter, new AtomicInteger(), new AtomicInteger());
+        }
+
+        private OverlapRecordingFilter(
+                final WhereFilter filter,
+                final AtomicInteger operationsInProgress,
+                final AtomicInteger maxOperationsInProgress) {
+            super(filter);
+            this.operationsInProgress = operationsInProgress;
+            this.maxOperationsInProgress = maxOperationsInProgress;
+        }
+
+        @Override
+        public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+            maxOperationsInProgress.accumulateAndGet(operationsInProgress.incrementAndGet(), Math::max);
+            final SafeCloseable delegateOperation;
+            try {
+                delegateOperation = super.beginOperation(sourceTable);
+            } catch (final RuntimeException | Error failure) {
+                operationsInProgress.decrementAndGet();
+                throw failure;
+            }
+            return () -> {
+                try (final SafeCloseable ignored = delegateOperation) {
+                    operationsInProgress.decrementAndGet();
+                }
+            };
+        }
+
+        @Override
+        public WhereFilter maybeUnwrapFilter() {
+            return this;
+        }
+
+        @Override
+        public WhereFilter copy() {
+            return new OverlapRecordingFilter(filter.copy(), operationsInProgress, maxOperationsInProgress);
         }
     }
 

@@ -17,6 +17,8 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraphWaitForbiddenException;
+import io.deephaven.engine.updategraph.UpdateGraphWaitGuard;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.thread.NamingThreadFactory;
@@ -230,6 +232,68 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
             }
         }).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertTrue(subsequentSnapshotConcurrent.get());
+    }
+
+    /**
+     * A nested snapshot that must fall back to a locked snapshot, on a thread forbidden to wait for the update graph
+     * while another thread holds the exclusive lock, abandons the enclosing snapshot without retrying it. The thread's
+     * snapshot state is left clean, so a later locked snapshot on it releases the lock it acquires.
+     */
+    @Test
+    public void testForbiddenWaitAbandonsEnclosingSnapshot()
+            throws InterruptedException, ExecutionException, TimeoutException {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final ExecutorService executor = Executors.newSingleThreadExecutor(
+                new NamingThreadFactory(TestConstructSnapshot.class, "TestConstructSnapshot Executor"));
+        try {
+            final ConstructSnapshot.SnapshotControl control = makeCurrentValuesControl(updateGraph);
+
+            final AtomicInteger innerConcurrentCalls = new AtomicInteger();
+            final AtomicInteger innerLockedCalls = new AtomicInteger();
+            final ConstructSnapshot.SnapshotFunction inner =
+                    makeLockForcingFunction(updateGraph, innerConcurrentCalls, innerLockedCalls);
+
+            final AtomicInteger outerCalls = new AtomicInteger();
+            final ConstructSnapshot.SnapshotFunction outer = (final boolean usePrev, final long beforeClockValue) -> {
+                outerCalls.incrementAndGet();
+                ConstructSnapshot.callDataSnapshotFunction("inner", control, inner);
+                return true;
+            };
+
+            updateGraph.exclusiveLock().lock();
+            try {
+                final Future<Long> snapshotStep = executor.submit(() -> {
+                    try (final SafeCloseable ignored = executionContext.open();
+                            final SafeCloseable ignored2 = UpdateGraphWaitGuard.forbidWaits()) {
+                        return ConstructSnapshot.callDataSnapshotFunction("outer", control, outer);
+                    }
+                });
+                try {
+                    snapshotStep.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                    fail("Expected UpdateGraphWaitForbiddenException");
+                } catch (ExecutionException e) {
+                    if (!(e.getCause() instanceof UpdateGraphWaitForbiddenException)) {
+                        throw e;
+                    }
+                }
+            } finally {
+                updateGraph.exclusiveLock().unlock();
+            }
+            assertEquals(1, outerCalls.get());
+            assertEquals(1, innerConcurrentCalls.get());
+            assertEquals(0, innerLockedCalls.get());
+
+            executor.submit(() -> {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    return ConstructSnapshot.callDataSnapshotFunction("locked", control, inner);
+                }
+            }).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            assertEquals(1, innerLockedCalls.get());
+            assertLockReleased(executor, executionContext, updateGraph, control);
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     /**

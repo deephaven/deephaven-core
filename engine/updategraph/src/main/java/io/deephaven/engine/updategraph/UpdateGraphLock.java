@@ -297,6 +297,10 @@ public abstract class UpdateGraphLock {
         @Override
         public final void lock() {
             checkForIllegalLockFromRefreshThread(updateGraph);
+            if (UpdateGraphWaitGuard.waitsForbidden()) {
+                lockWithoutWaiting();
+                return;
+            }
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
                 instrumentation.recordAction("Acquire UpdateGraph readLock", () -> {
@@ -317,6 +321,10 @@ public abstract class UpdateGraphLock {
         @Override
         public final void lockInterruptibly() throws InterruptedException {
             checkForIllegalLockFromRefreshThread(updateGraph);
+            if (UpdateGraphWaitGuard.waitsForbidden()) {
+                lockWithoutWaiting();
+                return;
+            }
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
                 instrumentation.recordActionInterruptibly("Acquire UpdateGraph readLock interruptibly",
@@ -366,6 +374,13 @@ public abstract class UpdateGraphLock {
         public final Condition newCondition() {
             throw new UnsupportedOperationException("Shared locks do not support conditions");
         }
+
+        private void lockWithoutWaiting() {
+            if (!tryLock()) {
+                throw new UpdateGraphWaitForbiddenException(
+                        "Waits are forbidden, and the shared lock of " + updateGraph + " is unavailable");
+            }
+        }
     }
 
     // endregion Shared Lock Implementation
@@ -406,6 +421,10 @@ public abstract class UpdateGraphLock {
         public final void lock() {
             checkForIllegalLockFromRefreshThread(updateGraph);
             checkForUpgradeAttempt();
+            if (UpdateGraphWaitGuard.waitsForbidden()) {
+                lockWithoutWaiting();
+                return;
+            }
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
                 instrumentation.recordAction("Acquire UpdateGraph writeLock", () -> {
@@ -428,6 +447,10 @@ public abstract class UpdateGraphLock {
         public final void lockInterruptibly() throws InterruptedException {
             checkForIllegalLockFromRefreshThread(updateGraph);
             checkForUpgradeAttempt();
+            if (UpdateGraphWaitGuard.waitsForbidden()) {
+                lockWithoutWaiting();
+                return;
+            }
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
                 instrumentation.recordActionInterruptibly("Acquire UpdateGraph writeLock interruptibly",
@@ -480,6 +503,13 @@ public abstract class UpdateGraphLock {
         @Override
         public final Condition newCondition() {
             return writeLock.newCondition();
+        }
+
+        private void lockWithoutWaiting() {
+            if (!tryLock()) {
+                throw new UpdateGraphWaitForbiddenException(
+                        "Waits are forbidden, and the exclusive lock of " + updateGraph + " is unavailable");
+            }
         }
 
         private void checkForUpgradeAttempt() {

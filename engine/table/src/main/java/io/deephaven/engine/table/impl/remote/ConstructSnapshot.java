@@ -266,8 +266,13 @@ public class ConstructSnapshot {
          */
         private void startLockedSnapshot(@NotNull final SnapshotControl control) {
             checkAndRecordUpdateGraph(control.getUpdateGraph());
+            try {
+                maybeAcquireLock();
+            } catch (final RuntimeException | Error failure) {
+                maybeClearUpdateGraph();
+                throw failure;
+            }
             ++lockedSnapshotDepth;
-            maybeAcquireLock();
         }
 
         /**
@@ -1191,6 +1196,10 @@ public class ConstructSnapshot {
                     // Nobody is waiting for this snapshot any more, so neither another concurrent attempt nor the
                     // locked attempt they fall back to is worth the update graph lock it would take.
                     throw ce;
+                } catch (UpdateGraphWaitForbiddenException forbidden) {
+                    // A nested snapshot would have waited for the update graph, which this thread is forbidden to do;
+                    // the work that encloses this snapshot is abandoned, to be retried by a caller that may wait.
+                    throw forbidden;
                 } catch (Exception e) {
                     functionSuccessful = false;
                     caughtException = e;

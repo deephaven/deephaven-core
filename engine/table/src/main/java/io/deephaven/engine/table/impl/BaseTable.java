@@ -219,15 +219,17 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     }
 
     /**
-     * Whether the current thread holds the lock of, or processes updates for, this table's update graph or the update
-     * graph of the current {@link ExecutionContext}, which is the graph an operation that combines this table with
-     * others runs on. Such a thread must not wait for work in progress on another thread, because that work may itself
-     * be waiting for the lock.
+     * Whether the current thread is {@link UpdateGraphWaitGuard#forbidWaits() forbidden} to wait for any update graph,
+     * or holds the lock of, or processes updates for, this table's update graph or the update graph of the current
+     * {@link ExecutionContext}, which is the graph an operation that combines this table with others runs on. Such a
+     * thread must not wait for work in progress on another thread, because that work may itself be waiting for the
+     * lock.
      *
      * @return Whether the current thread must not wait for work in progress on another thread
      */
     protected final boolean currentThreadMustNotWaitForOtherThreads() {
-        return currentThreadMustNotWaitForOtherThreads(updateGraph)
+        return UpdateGraphWaitGuard.waitsForbidden()
+                || currentThreadMustNotWaitForOtherThreads(updateGraph)
                 || currentThreadMustNotWaitForOtherThreads(ExecutionContext.getContext().getUpdateGraph());
     }
 
