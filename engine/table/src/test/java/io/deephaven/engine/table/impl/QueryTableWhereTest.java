@@ -2405,6 +2405,8 @@ public abstract class QueryTableWhereTest {
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
         final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
         final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        // where uses only data indexes whose tables are populated
+        dataIndex.table();
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
@@ -2452,6 +2454,8 @@ public abstract class QueryTableWhereTest {
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
         final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
         final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        // where uses only data indexes whose tables are populated
+        dataIndex.table();
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
@@ -2479,6 +2483,8 @@ public abstract class QueryTableWhereTest {
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
         final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
         final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        // where uses only data indexes whose tables are populated
+        dataIndex.table();
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter preFilter2 = new RowSetCapturingFilter();
@@ -2510,6 +2516,8 @@ public abstract class QueryTableWhereTest {
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
         final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
         final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        // where uses only data indexes whose tables are populated
+        dataIndex.table();
 
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
         final RowSetCapturingFilter postFilter = new RowSetCapturingFilter();
@@ -2633,6 +2641,8 @@ public abstract class QueryTableWhereTest {
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
         final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
         final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        // where uses only data indexes whose tables are populated
+        dataIndex.table();
 
         final Object barrier = new Object();
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
@@ -2668,6 +2678,8 @@ public abstract class QueryTableWhereTest {
         final QueryTable source = testRefreshingTable(RowSetFactory.flat(100_000).toTracking());
         final QueryTable sourceWithData = (QueryTable) source.update("A = ii % 100");
         final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(sourceWithData, "A");
+        // where uses only data indexes whose tables are populated
+        dataIndex.table();
 
         final Object barrier = new Object();
         final RowSetCapturingFilter preFilter = new RowSetCapturingFilter();
@@ -3010,6 +3022,9 @@ public abstract class QueryTableWhereTest {
 
         final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(source, "A");
         final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(source, "A", "B");
+        // where uses only data indexes whose tables are populated
+        dataIndexA.table();
+        dataIndexAB.table();
 
         testMultiColumnDataIndexInternal(source, "A", "B", "C");
     }
@@ -3020,6 +3035,9 @@ public abstract class QueryTableWhereTest {
 
         final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(source, "A");
         final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(source, "A", "B");
+        // where uses only data indexes whose tables are populated
+        dataIndexA.table();
+        dataIndexAB.table();
 
         final Table renamedTable = source.renameColumns("A_renamed=A", "B_renamed=B", "C_renamed=C");
 
@@ -3030,9 +3048,12 @@ public abstract class QueryTableWhereTest {
     public void testMultiColumnDataIndexOnRenamedColumns() {
         final Table source = getMultiColumnTestSourceTable();
         final DataIndex dataIndexA = DataIndexer.getOrCreateDataIndex(source, "A");
+        // where uses only data indexes whose tables are populated
+        dataIndexA.table();
 
         final Table renamedTable = source.renameColumns("A_renamed=A", "B_renamed=B", "C_renamed=C");
         final DataIndex dataIndexAB = DataIndexer.getOrCreateDataIndex(renamedTable, "A_renamed", "B_renamed");
+        dataIndexAB.table();
 
         testMultiColumnDataIndexInternal(renamedTable, "A_renamed", "B_renamed", "C_renamed");
     }

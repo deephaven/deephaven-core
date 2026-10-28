@@ -452,7 +452,8 @@ public class TestConcurrentInstantiation extends TestConcurrentInstantiationBase
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
         if (indexed) {
-            DataIndexer.getOrCreateDataIndex(table, "z");
+            // where uses only data indexes whose tables are populated
+            DataIndexer.getOrCreateDataIndex(table, "z").table();
         }
         final Table tableStart =
                 TstUtils.testRefreshingTable(i(2, 6).toTracking(),
