@@ -15,24 +15,27 @@ import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Chooses the compression type for a Barrage response from the table's {@link Table#TRANSPORT_COMPRESSION_ATTRIBUTE
  * allowed list}, or the server's {@link #DEFAULT_TYPES_PROPERTY default list}, and the compression types the client
- * accepts.
+ * accepts; and holds the compression types the server {@link #ENABLED_TYPES uses}.
  */
 public final class TransportCompression {
     private static final Logger log = LoggerFactory.getLogger(TransportCompression.class);
 
     /**
      * The problems already logged, so that each is logged once rather than on every fetch: malformed lists, and the
-     * names of compression types this server has no compressor for (the Netty server registers only {@code gzip}). The
-     * two never collide, because a single supported name always parses. Declared before {@link #DEFAULT_ALLOWED}, whose
-     * initializer may add to it.
+     * names of compression types this server has no compressor for (the Netty server registers only {@code gzip}) or
+     * that {@code TransportCompression.<type>.enabled} disables. The two never collide, because a single name always
+     * parses. Declared before {@link #DEFAULT_ALLOWED}, whose initializer may add to it.
      */
     private static final Set<String> ALREADY_LOGGED_LIST = ConcurrentHashMap.newKeySet();
 
@@ -47,6 +50,22 @@ public final class TransportCompression {
     private static final List<String> DEFAULT_ALLOWED =
             parseOrWarn(Configuration.getInstance().getStringWithDefault(DEFAULT_TYPES_PROPERTY, ""),
                     DEFAULT_TYPES_PROPERTY, List.of());
+
+    /**
+     * The compression types this server compresses responses and decompresses requests with, sorted by name: every
+     * {@link CompressionCodecs#SUPPORTED supported} type whose {@code TransportCompression.<type>.enabled} property the
+     * server's configuration does not set to {@code false}. The server's gRPC registries hold only these types.
+     */
+    public static final List<String> ENABLED_TYPES = enabledTypes(Configuration.getInstance());
+
+    /**
+     * The {@link CompressionCodecs#SUPPORTED supported} types that the server's configuration disables, sorted by name.
+     * The server neither compresses nor decompresses with them, but tables may still name them, and the server then
+     * uses the next type on the table's list.
+     */
+    public static final List<String> DISABLED_TYPES = CompressionCodecs.SUPPORTED.stream()
+            .filter(type -> !ENABLED_TYPES.contains(type))
+            .collect(Collectors.toUnmodifiableList());
 
     private TransportCompression() {}
 
@@ -101,6 +120,13 @@ public final class TransportCompression {
             if (!accepted.contains(type)) {
                 continue;
             }
+            if (DISABLED_TYPES.contains(type)) {
+                if (ALREADY_LOGGED_LIST.add(type)) {
+                    log.info().append("Not compressing ").append(logName).append(" with ").append(type)
+                            .append(", disabled by ").append(enabledProperty(type)).endl();
+                }
+                continue;
+            }
             try {
                 // lock as GrpcUtil does for every other call on this observer
                 // noinspection SynchronizationOnLocalVariableOrMethodParameter
@@ -124,6 +150,32 @@ public final class TransportCompression {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * @param type the name of a compression type
+     * @return the property that turns the type off on this server when set to {@code false}, in the server's
+     *         configuration file or as a system property: {@code TransportCompression.<type>.enabled}
+     */
+    private static String enabledProperty(@NotNull final String type) {
+        return "TransportCompression." + type + ".enabled";
+    }
+
+    /**
+     * @return the {@link CompressionCodecs#SUPPORTED supported} types that {@code configuration} leaves enabled; logs
+     *         each type that the configuration disables
+     */
+    static List<String> enabledTypes(@NotNull final Configuration configuration) {
+        final List<String> enabled = new ArrayList<>();
+        for (final String type : CompressionCodecs.SUPPORTED) {
+            if (configuration.getBooleanWithDefault(enabledProperty(type), true)) {
+                enabled.add(type);
+            } else {
+                log.info().append("Compression type '").append(type).append("' is disabled by ")
+                        .append(enabledProperty(type)).endl();
+            }
+        }
+        return Collections.unmodifiableList(enabled);
     }
 
     /**

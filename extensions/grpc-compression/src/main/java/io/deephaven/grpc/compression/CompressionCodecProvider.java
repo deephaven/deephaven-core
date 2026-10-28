@@ -18,8 +18,10 @@ import java.util.ServiceLoader;
  * The codec's {@link Codec#getMessageEncoding() encoding name} names the type in a table's {@code TransportCompression}
  * attribute, in {@code withCompression}, and in gRPC's {@code grpc-encoding} and {@code grpc-accept-encoding} headers.
  * It must be lower-case letters, digits, {@code .}, {@code _}, {@code +} and {@code -}, starting with a letter or
- * digit; must not be {@code identity}; and must differ from every other type's name. Otherwise
- * {@link CompressionCodecs} fails to initialize, and so does the server.
+ * digit, and must not be {@code identity}. Otherwise {@link CompressionCodecs} logs a warning and leaves the type out,
+ * as it does when {@link #codec()} throws. A provider whose type has the name of a built-in type replaces the built-in
+ * type. When two other providers supply the same name, the provider whose class name sorts first is used, and a warning
+ * is logged.
  * <p>
  * The Jetty server both compresses responses and decodes client requests with every codec, so a decompressor must
  * handle malformed input safely. The Netty server registers only {@code gzip}, and never uses a provided codec.

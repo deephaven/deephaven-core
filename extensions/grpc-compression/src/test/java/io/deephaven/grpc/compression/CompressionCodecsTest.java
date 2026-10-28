@@ -16,9 +16,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 
@@ -47,7 +49,7 @@ public class CompressionCodecsTest {
     public void codecsAreSortedByName() {
         final Codec lz4 = new NamedCodec("lz4");
         final Codec custom = new NamedCodec("x-lz4.v2+raw_1");
-        final Map<String, Codec> codecs = CompressionCodecs.byEncodingName(List.of(
+        final Map<String, Codec> codecs = codecsOf(List.of(
                 new ZstdCodec.Provider(), new FixedProvider(custom), new FixedProvider(lz4), new GzipCodecProvider()));
         assertThat(codecs.keySet()).containsExactly("gzip", "lz4", "x-lz4.v2+raw_1", "zstd");
         assertThat(codecs.get("lz4")).isSameAs(lz4);
@@ -56,31 +58,95 @@ public class CompressionCodecsTest {
     }
 
     @Test
-    public void providedNamesMustBeWellFormed() {
+    public void providersWithMalformedNamesAreIgnored() {
         // upper case could never match, commas and whitespace separate names, and identity means no compression
         for (final String name : Arrays.asList("LZ4", "lz 4", "lz4,zstd", " lz4", "-lz4", "", "identity", null)) {
-            assertThatThrownBy(() -> CompressionCodecs.byEncodingName(List.of(new FixedProvider(new NamedCodec(name)))))
+            assertThat(codecsOf(
+                    List.of(new FixedProvider(new NamedCodec(name)), new GzipCodecProvider())).keySet())
                     .as("'%s'", name)
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining(FixedProvider.class.getName());
+                    .containsExactly("gzip");
         }
-        assertThatThrownBy(() -> CompressionCodecs.byEncodingName(List.of(new FixedProvider(null))))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage(FixedProvider.class.getName() + " provides no codec");
+        assertThat(codecsOf(List.of(new FixedProvider(null), new GzipCodecProvider())).keySet())
+                .containsExactly("gzip");
     }
 
     @Test
-    public void providedNamesMustBeNew() {
-        assertThatThrownBy(() -> CompressionCodecs.byEncodingName(
-                List.of(new GzipCodecProvider(), new FixedProvider(new NamedCodec("gzip")))))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Compression type 'gzip' is provided by both " + GzipCodecProvider.class.getName() + " and "
-                        + FixedProvider.class.getName());
-        assertThatThrownBy(() -> CompressionCodecs.byEncodingName(
-                List.of(new FixedProvider(new NamedCodec("lz4")), new OtherProvider(new NamedCodec("lz4")))))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Compression type 'lz4' is provided by both " + FixedProvider.class.getName() + " and "
-                        + OtherProvider.class.getName());
+    public void failingProvidersAreIgnored() {
+        // a missing native library surfaces as an UnsatisfiedLinkError, and a failed static initializer as an
+        // ExceptionInInitializerError
+        for (final Throwable failure : List.of(new IllegalStateException("broken"),
+                new UnsatisfiedLinkError("no zstd-jni in java.library.path"),
+                new ExceptionInInitializerError("broken"))) {
+            assertThat(codecsOf(
+                    List.of(new FailingProvider(failure), new GzipCodecProvider())).keySet())
+                    .as(failure.toString())
+                    .containsExactly("gzip");
+        }
+    }
+
+    @Test
+    public void providersThatCannotBeLoadedAreIgnored() {
+        // ServiceLoader's iterator reports a provider class that it cannot load from next(), then moves on
+        final Iterable<CompressionCodecProvider> providers = () -> new Iterator<>() {
+            private int next;
+
+            @Override
+            public boolean hasNext() {
+                return next < 2;
+            }
+
+            @Override
+            public CompressionCodecProvider next() {
+                if (next++ == 0) {
+                    throw new ServiceConfigurationError("Provider com.example.Missing not found");
+                }
+                return new GzipCodecProvider();
+            }
+        };
+        assertThat(codecsOf(providers).keySet()).containsExactly("gzip");
+    }
+
+    @Test
+    public void deploymentProvidersReplaceBuiltInTypes() {
+        final Codec gzip = new NamedCodec("gzip");
+        // whatever the classpath order
+        assertThat(codecsOf(List.of(new GzipCodecProvider(), new FixedProvider(gzip)))
+                .get("gzip")).isSameAs(gzip);
+        assertThat(codecsOf(List.of(new FixedProvider(gzip), new GzipCodecProvider()))
+                .get("gzip")).isSameAs(gzip);
+    }
+
+    @Test
+    public void firstClassNameWinsBetweenDeploymentProviders() {
+        final Codec fixed = new NamedCodec("lz4");
+        final Codec other = new NamedCodec("lz4");
+        assertThat(FixedProvider.class.getName()).isLessThan(OtherProvider.class.getName());
+        // whatever the classpath order
+        assertThat(codecsOf(List.of(new FixedProvider(fixed), new OtherProvider(other)))
+                .get("lz4")).isSameAs(fixed);
+        assertThat(codecsOf(List.of(new OtherProvider(other), new FixedProvider(fixed)))
+                .get("lz4")).isSameAs(fixed);
+    }
+
+    @Test
+    public void registriesHoldOnlyTheGivenTypes() {
+        final CompressorRegistry compressors = CompressionCodecs.compressorRegistry(List.of("zstd", "snappy"));
+        assertThat(compressors.lookupCompressor("zstd")).isSameAs(ZstdCodec.INSTANCE);
+        assertThat(compressors.lookupCompressor("snappy")).isNotNull();
+        assertThat(compressors.lookupCompressor("gzip")).isNull();
+        assertThat(compressors.lookupCompressor("identity")).isNotNull();
+
+        final DecompressorRegistry decompressors =
+                CompressionCodecs.decompressorRegistry(List.of("zstd", "snappy"), List.of("zstd", "gzip"));
+        assertThat(decompressors.lookupDecompressor("zstd")).isSameAs(ZstdCodec.INSTANCE);
+        assertThat(decompressors.lookupDecompressor("snappy")).isNotNull();
+        assertThat(decompressors.lookupDecompressor("gzip")).isNull();
+        // a type advertised but not registered is not advertised
+        assertThat(decompressors.getAdvertisedMessageEncodings()).containsExactly("zstd");
+
+        assertThatThrownBy(() -> CompressionCodecs.compressorRegistry(List.of("lz4")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("lz4");
     }
 
     @Test
@@ -250,12 +316,34 @@ public class CompressionCodecsTest {
         }
     }
 
-    /** a second provider class, so that errors about a name two providers share can name both */
+    /** a second provider class, whose class name sorts after {@link FixedProvider}'s */
     private static final class OtherProvider extends FixedProvider {
         private OtherProvider(final Codec codec) {
             super(codec);
         }
     }
+
+    /** a provider whose {@link #codec()} fails, as when a codec's native library is missing */
+    private static final class FailingProvider implements CompressionCodecProvider {
+        private final Throwable failure;
+
+        private FailingProvider(final Throwable failure) {
+            this.failure = failure;
+        }
+
+        @Override
+        public Codec codec() {
+            if (failure instanceof Error) {
+                throw (Error) failure;
+            }
+            throw (RuntimeException) failure;
+        }
+    }
+
+    private static Map<String, Codec> codecsOf(final Iterable<CompressionCodecProvider> providers) {
+        return CompressionCodecs.byEncodingName(providers);
+    }
+
 
     private static byte[] compress(final Compressor compressor, final byte[] payload) throws IOException {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();

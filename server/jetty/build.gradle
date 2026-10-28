@@ -68,5 +68,17 @@ dependencies {
 
 test.systemProperty "PeriodicUpdateGraph.allowUnitTestMode", false
 
+// The round trip's compression tests again, with a configuration file that disables gzip and zstd with
+// TransportCompression.<type>.enabled=false, as a server's deephaven.prop would
+def testCompressionDisabled = tasks.register('testCompressionDisabled', Test) {
+    filter {
+        includeTestsMatching '*FlightRoundTripTest.test*Compress*'
+    }
+    systemProperty 'PeriodicUpdateGraph.allowUnitTestMode', false
+    systemProperty 'Configuration.rootFile', 'dh-tests-compression-disabled.prop'
+}
+
+check.dependsOn testCompressionDisabled
+
 apply plugin: 'io.deephaven.java-open-nio'
 apply plugin: 'io.deephaven.java-netty-unsafe'

@@ -5,6 +5,7 @@ package io.deephaven.grpc.compression;
 
 import com.google.auto.service.AutoService;
 import io.grpc.Codec;
+import org.xerial.snappy.Snappy;
 import org.xerial.snappy.SnappyFramedInputStream;
 import org.xerial.snappy.SnappyFramedOutputStream;
 
@@ -88,6 +89,9 @@ public final class SnappyCodec implements Codec {
     public static final class Provider implements CompressionCodecProvider {
         @Override
         public Codec codec() {
+            // loads snappy-java's native library now, so that a library that cannot load fails here, where
+            // CompressionCodecs leaves snappy out, rather than at the first compressed message
+            Snappy.getNativeLibraryVersion();
             return INSTANCE;
         }
     }

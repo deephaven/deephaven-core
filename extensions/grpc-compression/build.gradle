@@ -11,6 +11,7 @@ dependencies {
 
   implementation libs.zstd.jni
   implementation libs.snappy.java
+  implementation libs.slf4j.api
 
   compileOnly libs.jetbrains.annotations
 
@@ -23,6 +24,7 @@ dependencies {
   testRuntimeOnly libs.junit.platform.launcher
 
   testImplementation libs.assertj
+  testRuntimeOnly libs.slf4j.simple
 }
 
 test {

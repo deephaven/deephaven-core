@@ -8,16 +8,20 @@ import io.grpc.CompressorRegistry;
 import io.grpc.DecompressorRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
@@ -31,6 +35,11 @@ import java.util.regex.Pattern;
  * includes, plus every type that a deployment's own provider adds.
  */
 public final class CompressionCodecs {
+
+    /**
+     * Declared before {@link #CODECS}, whose initializer logs the providers it leaves out.
+     */
+    private static final Logger log = LoggerFactory.getLogger(CompressionCodecs.class);
 
     /**
      * The form of a compression type's name: lower-case, because names are matched lower-cased, and without the commas
@@ -58,53 +67,120 @@ public final class CompressionCodecs {
      * <li>{@code snappy}: the fastest of these types, but the one that saves the least.</li>
      * <li>{@code zstd}: Zstandard, which compresses nearly as well as {@code gzip}, and many times faster.</li>
      * </ul>
-     * Every other {@link CompressionCodecProvider} on the classpath adds its type.
+     * Every other {@link CompressionCodecProvider} on the classpath adds its type, or replaces the built-in type of the
+     * same name.
      */
     public static final List<String> SUPPORTED = List.copyOf(CODECS.keySet());
 
     private CompressionCodecs() {}
 
     /**
+     * Collects the codec of each of {@code providers}. Failures are logged, never thrown, because this runs in the
+     * static initializer: a provider that cannot be loaded, whose {@link CompressionCodecProvider#codec() codec()}
+     * throws, or that supplies no codec or a codec whose name is malformed or {@code identity} is logged and left out,
+     * and the other providers are still used. When two providers supply the same name, a deployment's provider replaces
+     * a {@link #isBuiltIn built-in} one, and of two deployment providers the one whose class name sorts first is kept,
+     * whatever the classpath order; the choice is logged.
+     *
      * @param providers the providers of the codecs
-     * @return the codec of each of {@code providers}, by encoding name, sorted by name
-     * @throws IllegalStateException if a provider supplies no codec, or one whose name is malformed, {@code identity},
-     *         or the name of another provider's codec
+     * @return the codec of each provider kept, by encoding name, sorted by name
      */
     static Map<String, Codec> byEncodingName(final Iterable<CompressionCodecProvider> providers) {
         final Map<String, Codec> byName = new TreeMap<>();
-        // which provider supplied each name, for errors about a repeated name
-        final Map<String, String> sources = new HashMap<>();
-        for (final CompressionCodecProvider provider : providers) {
+        // which provider supplied each name in byName, to settle a name that two providers supply
+        final Map<String, CompressionCodecProvider> sources = new HashMap<>();
+        final Iterator<CompressionCodecProvider> iterator = providers.iterator();
+        while (iterator.hasNext()) {
+            final CompressionCodecProvider provider;
+            try {
+                provider = iterator.next();
+            } catch (final ServiceConfigurationError e) {
+                // ServiceLoader reports a provider class it cannot load or instantiate here, and moves on to the next
+                log.warn("Ignoring a compression codec provider that could not be loaded", e);
+                continue;
+            }
             final String source = provider.getClass().getName();
-            final Codec codec = provider.codec();
+            final Codec codec;
+            try {
+                codec = provider.codec();
+            } catch (final Exception | LinkageError e) {
+                // LinkageError covers a missing or broken native library and a failed static initializer
+                log.warn("Ignoring compression codec provider {}, whose codec could not be created", source, e);
+                continue;
+            }
             if (codec == null) {
-                throw new IllegalStateException(source + " provides no codec");
+                log.warn("Ignoring compression codec provider {}, which supplies no codec", source);
+                continue;
             }
             final String name = codec.getMessageEncoding();
             if (name == null || !NAME.matcher(name).matches()
                     || name.equals(Codec.Identity.NONE.getMessageEncoding())) {
-                throw new IllegalStateException(source + " provides a codec named '" + name
-                        + "'; a compression type name must be lower-case letters, digits, '.', '_', '+' and '-',"
-                        + " starting with a letter or digit, and must not be 'identity'");
+                log.warn("Ignoring compression codec provider {}, which provides a codec named '{}'; a compression"
+                        + " type name must be lower-case letters, digits, '.', '_', '+' and '-', starting with a"
+                        + " letter or digit, and must not be 'identity'", source, name);
+                continue;
             }
-            final String existing = sources.putIfAbsent(name, source);
+            final CompressionCodecProvider existing = sources.get(name);
             if (existing != null) {
-                throw new IllegalStateException(
-                        "Compression type '" + name + "' is provided by both " + existing + " and " + source);
+                final boolean replace = shouldReplace(existing, provider);
+                final CompressionCodecProvider kept = replace ? provider : existing;
+                final CompressionCodecProvider ignored = replace ? existing : provider;
+                if (isBuiltIn(ignored) && !isBuiltIn(kept)) {
+                    log.info("Compression type '{}' from {} replaces the built-in type from {}",
+                            name, kept.getClass().getName(), ignored.getClass().getName());
+                } else {
+                    log.warn("Compression type '{}' is provided by both {} and {}; using {}",
+                            name, existing.getClass().getName(), source, kept.getClass().getName());
+                }
+                if (!replace) {
+                    continue;
+                }
             }
+            sources.put(name, provider);
             byName.put(name, codec);
         }
         return Collections.unmodifiableMap(byName);
     }
 
     /**
+     * @return whether {@code candidate} should replace {@code current} for a compression type both supply: a
+     *         deployment's provider replaces a {@link #isBuiltIn built-in} one, and otherwise the provider whose class
+     *         name sorts first is kept
+     */
+    private static boolean shouldReplace(
+            @NotNull final CompressionCodecProvider current,
+            @NotNull final CompressionCodecProvider candidate) {
+        if (isBuiltIn(candidate) != isBuiltIn(current)) {
+            return !isBuiltIn(candidate);
+        }
+        return candidate.getClass().getName().compareTo(current.getClass().getName()) < 0;
+    }
+
+    /**
+     * @return whether {@code provider} is one of the providers this module includes, which a deployment's provider of
+     *         the same compression type replaces
+     */
+    private static boolean isBuiltIn(@NotNull final CompressionCodecProvider provider) {
+        return provider instanceof DeflateCodec.Provider || provider instanceof GzipCodecProvider
+                || provider instanceof SnappyCodec.Provider || provider instanceof ZstdCodec.Provider;
+    }
+
+    /**
      * @return a registry holding a compressor for every supported encoding, plus {@code identity}
      */
     public static CompressorRegistry compressorRegistry() {
+        return compressorRegistry(SUPPORTED);
+    }
+
+    /**
+     * @param types the encodings to register; each must be {@link #SUPPORTED supported}
+     * @return a registry holding a compressor for each of {@code types}, plus {@code identity}
+     */
+    public static CompressorRegistry compressorRegistry(@NotNull final Collection<String> types) {
         final CompressorRegistry registry = CompressorRegistry.newEmptyInstance();
         registry.register(Codec.Identity.NONE);
-        for (final Codec codec : CODECS.values()) {
-            registry.register(codec);
+        for (final String type : types) {
+            registry.register(codec(type));
         }
         return registry;
     }
@@ -117,13 +193,28 @@ public final class CompressionCodecs {
      * @return the registry
      */
     public static DecompressorRegistry decompressorRegistry(@NotNull final Collection<String> advertised) {
+        return decompressorRegistry(SUPPORTED, advertised);
+    }
+
+    /**
+     * Builds a registry that can decode each of {@code types}, but advertises only those also in {@code advertised} in
+     * the {@code grpc-accept-encoding} header.
+     *
+     * @param types the encodings to decode; each must be {@link #SUPPORTED supported}
+     * @param advertised the encodings to advertise; each must be {@link #SUPPORTED supported}
+     * @return the registry
+     */
+    public static DecompressorRegistry decompressorRegistry(
+            @NotNull final Collection<String> types,
+            @NotNull final Collection<String> advertised) {
         final Set<String> advertise = new HashSet<>();
         for (final String name : advertised) {
             advertise.add(checkSupported(name));
         }
         DecompressorRegistry registry = DecompressorRegistry.emptyInstance().with(Codec.Identity.NONE, false);
-        for (final Map.Entry<String, Codec> entry : CODECS.entrySet()) {
-            registry = registry.with(entry.getValue(), advertise.contains(entry.getKey()));
+        for (final String type : types) {
+            final String name = checkSupported(type);
+            registry = registry.with(CODECS.get(name), advertise.contains(name));
         }
         return registry;
     }

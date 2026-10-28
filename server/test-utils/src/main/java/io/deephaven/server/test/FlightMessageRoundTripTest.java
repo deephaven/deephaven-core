@@ -46,6 +46,7 @@ import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.arrow.ExchangeMarshallerModule;
+import io.deephaven.server.arrow.TransportCompression;
 import io.deephaven.server.runner.scheduler.PropagationJobSchedulerTestModule;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.config.ConfigServiceModule;
@@ -351,10 +352,10 @@ public abstract class FlightMessageRoundTripTest {
 
     /**
      * @return the compression types the server under test can compress responses and decompress requests with; by
-     *         default every supported type, as the Jetty server registers them all
+     *         default every type the server's configuration leaves enabled, as the Jetty server registers them all
      */
     protected Set<String> serverCompressionTypes() {
-        return Set.copyOf(CompressionCodecs.SUPPORTED);
+        return Set.copyOf(TransportCompression.ENABLED_TYPES);
     }
 
     /**
@@ -2033,6 +2034,16 @@ public abstract class FlightMessageRoundTripTest {
         for (final Object session : ((Map<?, ?>) sessionsField.get(resolver)).values()) {
             ((BarrageSession) session).close();
         }
+    }
+
+    @Test
+    public void testCompressionDisabledInConfiguration() {
+        // the testCompressionDisabled task disables gzip and zstd in the server's configuration file; in that run,
+        // testEverySupportedTypeCompressesResponses and testServerAcceptsCompressedRequests check that the server
+        // neither sends nor accepts them
+        Assume.assumeFalse("no compression type is disabled in this run",
+                TransportCompression.DISABLED_TYPES.isEmpty());
+        assertEquals(List.of("gzip", "zstd"), TransportCompression.DISABLED_TYPES);
     }
 
     @Test

@@ -3,6 +3,7 @@
 //
 package io.deephaven.grpc.compression;
 
+import com.github.luben.zstd.BufferPool;
 import com.github.luben.zstd.RecyclingBufferPool;
 import com.github.luben.zstd.ZstdInputStreamNoFinalizer;
 import com.github.luben.zstd.ZstdOutputStreamNoFinalizer;
@@ -25,6 +26,13 @@ public final class ZstdCodec implements Codec {
      */
     public static final String ENCODING = "zstd";
 
+    /**
+     * zstd-jni's shared buffer pool. Initializing the pool loads zstd-jni's native library, so a library that cannot
+     * load fails when {@link CompressionCodecs} loads this codec, which then leaves zstd out, rather than at the first
+     * compressed message. Declared before {@link #INSTANCE}, so that no instance exists without the library.
+     */
+    private static final BufferPool POOL = RecyclingBufferPool.INSTANCE;
+
     public static final ZstdCodec INSTANCE = new ZstdCodec();
 
     /**
@@ -42,14 +50,14 @@ public final class ZstdCodec implements Codec {
     @Override
     public OutputStream compress(final OutputStream os) throws IOException {
         // gRPC creates and closes each compressing stream within one write, so it needs no finalizer
-        return new ZstdOutputStreamNoFinalizer(os, RecyclingBufferPool.INSTANCE, LEVEL);
+        return new ZstdOutputStreamNoFinalizer(os, POOL, LEVEL);
     }
 
     @Override
     public InputStream decompress(final InputStream is) throws IOException {
         // gRPC closes each message stream after parsing it, including when the call is cancelled, so it needs no
         // finalizer
-        return new ZstdInputStreamNoFinalizer(is, RecyclingBufferPool.INSTANCE);
+        return new ZstdInputStreamNoFinalizer(is, POOL);
     }
 
     /**
