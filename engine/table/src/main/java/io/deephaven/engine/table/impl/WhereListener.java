@@ -125,6 +125,10 @@ class WhereListener extends GuardedMergedListener {
 
             final List<DataIndex> compatibleIndexes = dataIndexer.getCompatibleDataIndexes(columnSources);
             for (final DataIndex dataIndex : compatibleIndexes) {
+                // A refreshing index's table is computed on first use, here, outside the indexer's monitors.
+                if (dataIndex.isRefreshing() && !dataIndex.tableIsCached()) {
+                    dataIndex.table();
+                }
                 // `where` calls only leverage data index tables which are fully populated.
                 if (dataIndex.tableIsCached()) {
                     result.compute(filter, (k, v) -> v == null
