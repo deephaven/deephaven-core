@@ -515,12 +515,15 @@ public class WorkerConnection {
     }
 
     private void subscribeToTerminationNotification() {
-        // A reconnect within the session can leave the previous stream open; replace it rather than add to it
-        if (terminationStream != null) {
-            terminationStream.cancel(null);
-        }
-        Context.CancellableContext context = Context.current().withCancellation();
+        // A reconnect within the session can leave the previous stream open; replace it rather than add to it. The
+        // new stream is current before the old one is canceled, so the old one's end is ignored even if it is
+        // delivered synchronously, and it hangs off the root context so it cannot be canceled along with the old one.
+        final Context.CancellableContext previous = terminationStream;
+        final Context.CancellableContext context = Context.ROOT.withCancellation();
         terminationStream = context;
+        if (previous != null) {
+            previous.cancel(null);
+        }
         context.run(
                 () -> sessionServiceClient.terminationNotification(TerminationNotificationRequest.getDefaultInstance(),
                         new StreamObserver<TerminationNotificationResponse>() {
