@@ -322,6 +322,9 @@ public abstract class UpdateGraphLock {
         public final void lockInterruptibly() throws InterruptedException {
             checkForIllegalLockFromRefreshThread(updateGraph);
             if (UpdateGraphWaitGuard.waitsForbidden()) {
+                if (Thread.interrupted()) {
+                    throw new InterruptedException();
+                }
                 lockWithoutWaiting();
                 return;
             }
@@ -448,6 +451,9 @@ public abstract class UpdateGraphLock {
             checkForIllegalLockFromRefreshThread(updateGraph);
             checkForUpgradeAttempt();
             if (UpdateGraphWaitGuard.waitsForbidden()) {
+                if (Thread.interrupted()) {
+                    throw new InterruptedException();
+                }
                 lockWithoutWaiting();
                 return;
             }

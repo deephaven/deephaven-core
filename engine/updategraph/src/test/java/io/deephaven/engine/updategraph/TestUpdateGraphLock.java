@@ -133,6 +133,16 @@ public class TestUpdateGraphLock {
             success.setFalse();
             lock.exclusiveLock().doLocked(() -> lock.exclusiveLock().doLockedInterruptibly(success::setTrue));
             assertTrue(success.getValue());
+
+            // a pending interrupt is honored, though the lock is available
+            Thread.currentThread().interrupt();
+            assertThrows(InterruptedException.class, () -> lock.sharedLock().lockInterruptibly());
+            assertFalse(Thread.currentThread().isInterrupted());
+            assertFalse(lock.sharedLock().isHeldByCurrentThread());
+            Thread.currentThread().interrupt();
+            assertThrows(InterruptedException.class, () -> lock.exclusiveLock().lockInterruptibly());
+            assertFalse(Thread.currentThread().isInterrupted());
+            assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
         }
         assertFalse(UpdateGraphWaitGuard.waitsForbidden());
 
