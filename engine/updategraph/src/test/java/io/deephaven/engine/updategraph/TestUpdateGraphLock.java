@@ -143,6 +143,14 @@ public class TestUpdateGraphLock {
             assertThrows(InterruptedException.class, () -> lock.exclusiveLock().lockInterruptibly());
             assertFalse(Thread.currentThread().isInterrupted());
             assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
+            Thread.currentThread().interrupt();
+            assertThrows(InterruptedException.class, () -> lock.sharedLock().tryLock(1, TimeUnit.MINUTES));
+            assertFalse(Thread.currentThread().isInterrupted());
+            assertFalse(lock.sharedLock().isHeldByCurrentThread());
+            Thread.currentThread().interrupt();
+            assertThrows(InterruptedException.class, () -> lock.exclusiveLock().tryLock(1, TimeUnit.MINUTES));
+            assertFalse(Thread.currentThread().isInterrupted());
+            assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
         }
         assertFalse(UpdateGraphWaitGuard.waitsForbidden());
 
@@ -156,6 +164,10 @@ public class TestUpdateGraphLock {
                 assertThrows(UpdateGraphWaitForbiddenException.class, () -> lock.exclusiveLock().lockInterruptibly());
                 assertFalse(lock.sharedLock().tryLock());
                 assertFalse(lock.exclusiveLock().tryLock());
+                final long beforeTimedAttempts = System.nanoTime();
+                assertFalse(lock.sharedLock().tryLock(1, TimeUnit.MINUTES));
+                assertFalse(lock.exclusiveLock().tryLock(1, TimeUnit.MINUTES));
+                assertTrue(System.nanoTime() - beforeTimedAttempts < TimeUnit.SECONDS.toNanos(30));
                 // forbidding waits again, as a nested caller may, leaves waits forbidden when it is done
                 try (final SafeCloseable ignored2 = UpdateGraphWaitGuard.forbidWaits()) {
                     assertTrue(UpdateGraphWaitGuard.waitsForbidden());

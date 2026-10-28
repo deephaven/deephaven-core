@@ -359,6 +359,12 @@ public abstract class UpdateGraphLock {
         @Override
         public final boolean tryLock(final long time, @NotNull final TimeUnit unit) throws InterruptedException {
             checkForIllegalLockFromRefreshThread(updateGraph);
+            if (UpdateGraphWaitGuard.waitsForbidden()) {
+                if (Thread.interrupted()) {
+                    throw new InterruptedException();
+                }
+                return tryLock();
+            }
             if (readLock.tryLock(time, unit)) {
                 maybeLogStackTrace("locked (shared)");
                 return true;
@@ -491,6 +497,12 @@ public abstract class UpdateGraphLock {
         public final boolean tryLock(final long time, @NotNull final TimeUnit unit) throws InterruptedException {
             checkForIllegalLockFromRefreshThread(updateGraph);
             checkForUpgradeAttempt();
+            if (UpdateGraphWaitGuard.waitsForbidden()) {
+                if (Thread.interrupted()) {
+                    throw new InterruptedException();
+                }
+                return tryLock();
+            }
             if (writeLock.tryLock(time, unit)) {
                 maybeLogStackTrace("locked (exclusive)");
                 return true;

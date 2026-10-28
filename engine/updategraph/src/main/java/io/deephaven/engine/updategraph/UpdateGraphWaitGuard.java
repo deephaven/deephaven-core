@@ -12,7 +12,8 @@ import io.deephaven.util.SafeCloseable;
  * A thread that holds a monitor other threads may wait for, while those threads hold an update graph lock or process
  * its updates, must not itself wait for the update graph. Such a thread may forbid waits, attempt its work, and if the
  * work would wait, abandon it with an {@link UpdateGraphWaitForbiddenException}, release the monitor and retry the work
- * while holding the update graph lock. A lock that is available without waiting may still be acquired.
+ * while holding the update graph lock. A lock that is available without waiting may still be acquired, and a timed
+ * attempt to acquire one does not wait for its timeout.
  */
 public final class UpdateGraphWaitGuard {
 
