@@ -5,6 +5,8 @@
 import time
 import unittest
 
+import jpy
+
 from deephaven import DHError
 from deephaven.liveness_scope import liveness_scope
 from deephaven.table import PartitionedTableProxy, Table, table_diff
@@ -17,6 +19,17 @@ def table_equals(table_a: Table, table_b: Table) -> bool:
         return False if table_diff(table_a, table_b, 1) else True
     except Exception as e:
         raise DHError(e, "table equality test failed.") from e
+
+
+def java_resource_path(resource_path: str) -> str:
+    """Returns the file path of a resource the JVM can see, such as "/TEST1.calendar". The test calendars live in
+    Integrations/src/test/resources, which the test runners put on the JVM classpath."""
+    url = jpy.get_type("java.lang.ClassLoader").getSystemResource(
+        resource_path.lstrip("/")
+    )
+    if url is None:
+        raise FileNotFoundError(resource_path)
+    return jpy.get_type("java.nio.file.Paths").get(url.toURI()).toString()
 
 
 class BaseTestCase(unittest.TestCase):
