@@ -112,6 +112,12 @@ public class FilteredTableDataService extends AbstractTableDataService {
     }
 
     @Override
+    public void shutdown() {
+        serviceToFilter.shutdown();
+        super.shutdown();
+    }
+
+    @Override
     @NotNull
     protected TableLocationProvider makeTableLocationProvider(@NotNull final TableKey tableKey) {
         final LocationKeyFilter filterForTable = locationKeyFilterProvider.forTable(tableKey);
