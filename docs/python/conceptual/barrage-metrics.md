@@ -28,14 +28,22 @@ New subscriptions and subscription changes require initializing table state buil
 
 4. Propagation to gRPC listeners
 
-Each delta and snapshot is then propagated to subscribers. Barrage records `PropagateNanos`, the time it took to pass the message to the list of listeners.
+Each delta and snapshot is then propagated to its subscribers. When a message goes to more than one subscriber, the server can write it to several of them at once (see [Write to subscribers in parallel](../how-to-guides/performance/barrage-performance.md#write-to-subscribers-in-parallel)). Barrage records `PropagateNanos`, the time it took to pass the message to the list of listeners.
 
 > [!NOTE]
 > Barrage also records `UpdateJobNanos`, the aggregate time it took to coalesce deltas, fetch the snapshot, propagate, and housekeep.
 
 5. Writing to the OutputStream
 
-Another thread writes the resulting bytes to the actual gRPC stream. Barrage records `WriteNanos`, the time it took to drain the subscriber-specific filtered view of the update (including coalesced and snapshots) to the OutputStream. Barrage records `WriteBytes`, the number of bytes that were written on a single message. To compare against the bandwidth allowed by the connected hardware, convert to megabits in a query: `Megabits = WriteBytes * 8 / 1e6`.
+Another thread writes the resulting bytes to the actual gRPC stream. Barrage records `WriteNanos`, the time it took to drain one write of the update (coalesced or snapshot) to the OutputStream, and `WriteBytes`, the number of bytes in that write, once for each subscriber it was sent to. `WriteBytes` is a size, not a rate. To compare the traffic against the bandwidth of the connected hardware, estimate the bytes sent during a reporting interval as the `WriteBytes` count multiplied by a typical size, such as the median, and divide by the interval's length. The interval is one minute unless `BarragePerformanceLog.cycleDurationMillis` sets another.
+
+Full-table subscribers that would receive identical bytes share one write of each update (see [Share one write among identical subscribers](../how-to-guides/performance/barrage-performance.md#share-one-write-among-identical-subscribers)). For a shared write:
+
+- Barrage records `WriteNanos` once, including the time to copy the bytes to every subscriber that shares the write.
+- Barrage records `WriteBytes` once for each subscriber that was sent the whole write, as the size of one copy, just as it would if each subscriber had a write of its own.
+- When a table has dictionary-encoded columns, the dictionary values sent before a shared write to subscribers that were behind the others are a write of their own: one `WriteNanos` sample, and one `WriteBytes` sample for each subscriber sent them.
+
+So the `WriteNanos` count is the number of writes, and the `WriteBytes` count is the number of times a subscriber was sent one. Sharing lowers the first, but not the second.
 
 6. Receiver bundles gRPC messages into an update (coalesced or snapshot)
 
@@ -59,7 +67,7 @@ The snapshot request is queued for processing. Barrage records `QueueNanos`, the
 
 2. The snapshot is constructed
 
-The snapshot request is then fulfilled. The process typically occurs concurrently with the UG, but larger snapshots may require holding the UG exclusive lock. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener.
+The snapshot request is then fulfilled. Barrage normally builds the snapshot concurrently with the UG, retrying if the table changes during an attempt. If those concurrent attempts keep failing, or a failed attempt takes too long, Barrage holds the UG shared lock for a final attempt. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener.
 
 Similar to subscription requests, Barrage records `WriteNanos` and `WriteBytes`, the time it took to write, and how many bytes were written.
 

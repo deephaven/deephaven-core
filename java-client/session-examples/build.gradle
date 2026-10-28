@@ -47,7 +47,7 @@ def createApplication = { String name, String mainClass ->
 }
 
 application.applicationDistribution.into('bin') {
-    from(createApplication('table-manager', 'io.deephaven.client.examples.TableManagerExample'))
+    from(createApplication('table-manager', 'io.deephaven.client.examples.tools.TableManagerExample'))
     from(createApplication('execute-script', 'io.deephaven.client.examples.ExecuteScript'))
     from(createApplication('execute-code', 'io.deephaven.client.examples.ExecuteCode'))
     from(createApplication('subscribe-fields', 'io.deephaven.client.examples.SubscribeToFields'))
@@ -55,11 +55,12 @@ application.applicationDistribution.into('bin') {
     from(createApplication('fetch-object', 'io.deephaven.client.examples.FetchObject'))
     from(createApplication('subscribe-to-logs', 'io.deephaven.client.examples.SubscribeToLogs'))
     from(createApplication('publish', 'io.deephaven.client.examples.Publish'))
-    from(createApplication('message-stream-send-receive', 'io.deephaven.client.examples.MessageStreamSendReceive'))
+    from(createApplication('message-stream-send-receive',
+            'io.deephaven.client.examples.tools.MessageStreamSendReceive'))
+    from(createApplication('unreferenceable', 'io.deephaven.client.examples.tools.UnreferenceableTableExample'))
     from(createApplication('filter-table', 'io.deephaven.client.examples.FilterTable'))
     from(createApplication('create-shared-id', 'io.deephaven.client.examples.CreateSharedId'))
     from(createApplication('print-configuration-constants', 'io.deephaven.client.examples.PrintConfigurationConstants'))
-    from(createApplication('unreferenceable', 'io.deephaven.client.examples.UnreferenceableTableExample'))
 
     filePermissions {
         unix('0755')

@@ -1,65 +1,76 @@
 ---
-title: Configure your Deephaven Instance
+title: Configure your Deephaven instance
 ---
 
-This last section covers configuration details needed to take your Deephaven instance beyond the defaults.
+This page shows how to take your Deephaven instance beyond the defaults: set up authentication, learn which images and example data are available, add Java packages, give it more memory, and keep it up to date. The Docker examples build on the command you ran in [Get started](./get-started.md).
 
 ## Authentication
 
-Keeping your real-time data secure is one of Deephaven's top priorities. As such, the default installation of Deephaven is equipped with [pre-shared key (PSK) authentication](../../how-to-guides/authentication/auth-psk.md). By default, this key is randomly generated and available in the Docker logs (if using Docker) on startup:
+Keeping your real-time data secure is one of Deephaven's top priorities. By default, Deephaven uses [pre-shared key (PSK) authentication](../../how-to-guides/authentication/auth-psk.md). In [Get started](./get-started.md), you set the key with the `-Dauthentication.psk` flag in the `docker run` command.
 
-![Docker logs showing the PSK](../../assets/how-to/docker-logs.png)
+- With the flag, your key stays the same across server restarts.
+- Without the flag, Deephaven generates a new random key each time the server starts.
 
-It is advised that you change the password from a randomly generated string to your own password for enhanced security. For the [Docker one-liner installation](../../getting-started/docker-install.md), you can set your password with the `-Dauthentication.psk` flag:
+For enhanced security, replace the placeholder `YOUR_PASSWORD_HERE` in the `-Dauthentication.psk` flag with your own long, hard-to-guess key:
 
 ```bash skip-test
 docker run --rm --name deephaven -p 10000:10000 -v "$(pwd)/data:/data" --env START_OPTS=-Dauthentication.psk=YOUR_PASSWORD_HERE ghcr.io/deephaven/server-slim:latest
 ```
 
-To learn more about PSK authentication, see the [user guide](../../how-to-guides/authentication/auth-psk.md) on the topic.
+In both cases, Deephaven prints the key in the server logs on startup, so you can find it there if you forget it. With the command from [Get started](./get-started.md), the logs print in the terminal where you ran `docker run`. The key appears in a line like this one from a Docker Compose log:
+
+![Docker Compose logs showing the PSK](../../assets/how-to/docker-logs.png)
+
+To learn more about PSK authentication, see the [PSK authentication guide](../../how-to-guides/authentication/auth-psk.md).
 
 In addition to PSK authentication, Deephaven supports the following types of authentication:
 
 - [Anonymous](../../how-to-guides/authentication/auth-anon.md)
 - [Keycloak](../../how-to-guides/authentication/auth-keycloak.md)
 - [mTLS](../../how-to-guides/authentication/auth-mtls.md)
-- [Username / Password](../../how-to-guides/authentication/auth-uname-pw.md)
+- [Username/password](../../how-to-guides/authentication/auth-uname-pw.md)
 
-## Deployments
+## Images and example data
 
-Deephaven provides [multiple Docker images](../../getting-started/docker-install.md#image-versions). Each of these images, called deployments, comes pre-installed with different Python packages. You also have the option of including [Deephaven's example data](https://github.com/deephaven/examples) in any of these images.
-Many of these images integrate with popular Python libraries. For example, the [`server-all-ai`](https://github.com/deephaven/deephaven-core/pkgs/container/server-all-ai) image comes pre-installed with [PyTorch](https://pytorch.org), [Tensorflow](https://www.tensorflow.org), [scikit-learn](https://scikit-learn.org/stable/), and [nltk](https://www.nltk.org). You can use this image with this Docker command:
+Deephaven provides [multiple Docker images](../../getting-started/docker-install.md#choose-a-deployment), called deployments. Each image is available in several [versions](../../getting-started/docker-install.md#image-versions), such as `latest` or a specific release. For Groovy, use `server-slim`, which starts a Groovy console. The other images, such as `server` and `server-all-ai`, start a Python console and come pre-installed with different Python libraries.
 
-```bash skip-test
-docker run --rm --name deephaven -p 10000:10000 ghcr.io/deephaven/server-all-ai:latest
-```
+Your [Get started](./get-started.md) command already runs `ghcr.io/deephaven/server-slim:latest`, the latest `server-slim` image.
+
+You can also run Deephaven with [Deephaven's example data](https://github.com/deephaven/examples), [Redpanda](https://redpanda.com/), or both. Deephaven publishes pre-built `docker-compose.yml` files that run `server-slim` this way. To pick one and start it, see [Choose a deployment](../../getting-started/docker-install.md#choose-a-deployment).
 
 To learn more about deployments, check out the guide for [installing Deephaven with Docker](../../getting-started/docker-install.md).
 
-## Installing Java packages
+## Install Java packages
 
-Even with a standard deployment, you may need to install new Java packages at some point. To install packages, the package must be added to a custom Docker image. This allows imports to persist across all instances of Deephaven that are started with the custom image. See the [user guide on installing Java packages](../../how-to-guides/install-and-use-java-packages.md) for more information.
+At some point, you may need a Java package that `server-slim` doesn't include. To make a Java package available, add its JAR to Deephaven's classpath. With Docker, you can either mount a directory of JARs to `/apps/libs` or build a custom image that includes them. A custom image keeps the package available in every container started from it. See the [user guide on installing Java packages](../../how-to-guides/install-and-use-java-packages.md) for more information.
 
-## RAM
+## Give Deephaven more memory
 
-Large datasets require significant memory — often much more than the 4G that Deephaven allocates by default. Fortunately, it's easy to give Deephaven more memory.
+Large datasets require significant memory. Deephaven runs on the Java Virtual Machine (JVM), and the JVM's maximum heap size caps how much memory Deephaven can use for data. You set it with the `-Xmx` flag. If you don't, the JVM picks a size based on the memory available, which is often too small for large data.
 
-If you're using Docker-installed Deephaven, Docker itself imposes memory constraints on processes it runs - you can raise this ceiling in [Docker Desktop](https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources) by going to `Settings > Resources` and raising the memory parameter. Then, you can specify the memory allocated to Deephaven with the `-Xmx` flag. Here's the command to pull and run the latest version of the Deephaven server with 16G of RAM:
+Fortunately, it's easy to give Deephaven more memory:
+
+1. On Docker Desktop, raise the memory limit under **Settings > Resources > Advanced**, as described in the [Docker Desktop settings documentation](https://docs.docker.com/desktop/settings-and-maintenance/settings/#resources). Containers can use only as much memory as Docker Desktop allows, which by default is half of your machine's memory.
+2. Add the `-Xmx` flag to the `START_OPTS` environment variable you used in [Get started](./get-started.md). Separate multiple JVM options with spaces. The new `START_OPTS` value replaces the old one, so include your pre-shared key in it too.
+
+Here's the `docker run` command from [Get started](./get-started.md) with a 16 GB maximum heap added:
 
 ```bash skip-test
-docker run --rm --name deephaven -p 10000:10000 --env START_OPTS=-Xmx16g ghcr.io/deephaven/server-slim:latest
+docker run --rm --name deephaven -p 10000:10000 -v "$(pwd)/data:/data" --env START_OPTS="-Xmx16g -Dauthentication.psk=YOUR_PASSWORD_HERE" ghcr.io/deephaven/server-slim:latest
 ```
 
 The [memory guide](../../how-to-guides/heap-size.md) explains more about allocating memory in Deephaven.
 
-## Keep your instance up-to-date
+## Keep your instance up to date
 
-The data world is ever-evolving, and so is Deephaven. It's easy to keep your instance up-to-date, taking advantage of the latest features and bug fixes.
+The data world is ever-evolving, and so is Deephaven. It's easy to keep your instance up to date and get the latest features and bug fixes.
 
-If you're running Deephaven with Docker, simply use `docker pull` to pull the latest version of the image from the repository:
+To update, pull the latest image:
 
 ```bash
 docker pull ghcr.io/deephaven/server-slim:latest
 ```
 
-Users with custom Docker installations should check out [this guide](../../how-to-guides/configuration/updating-deephaven.md#update-deephaven) for information on updating custom instances.
+Then stop your running container and start a new one with the same `docker run` command you used in [Get started](./get-started.md). To stop the container, press <kbd>Ctrl+C</kbd> in its terminal or run `docker stop deephaven`. Because the Get started command mounts `./data`, your saved files carry over.
+
+If you run Deephaven from a `docker-compose.yml` file or your own `Dockerfile`, see the [guide to updating Deephaven](../../how-to-guides/configuration/updating-deephaven.md#update-deephaven) to set the image version there.

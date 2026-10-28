@@ -9,7 +9,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 public class InverseWrappedRowSetRowRedirection implements RowRedirection {
@@ -21,14 +20,20 @@ public class InverseWrappedRowSetRowRedirection implements RowRedirection {
     private final RowSet wrappedRowSet;
 
     /**
-     * This class accepts a {@link RowSet} and attempts to cast to a {@link TrackingRowSet} if {@link #getPrev(long)} or
-     * {@link #fillPrevChunk(FillContext, WritableChunk, RowSequence)} is called. Calling these functions on a
-     * non-tracking RowSet will result in a {@link ClassCastException}.
+     * {@code wrappedRowSet} as a {@link TrackingRowSet}, used to map previous row keys; null if it is not tracking.
+     */
+    private final TrackingRowSet trackingRowSet;
+
+    /**
+     * The passed in {@link RowSet} may or may not be a {@link TrackingRowSet}. If you pass in a TrackingRowSet, then
+     * the getPrev and fillPrevChunk correctly provide previous values. If you pass in a RowSet that is not tracking,
+     * getPrev and fillPrevChunk have undefined results.
      *
      * @param wrappedRowSet the RowSet (or TrackingRowSet) to use as the redirection source
      */
     public InverseWrappedRowSetRowRedirection(final RowSet wrappedRowSet) {
         this.wrappedRowSet = wrappedRowSet;
+        this.trackingRowSet = wrappedRowSet.isTracking() ? wrappedRowSet.trackingCast() : null;
     }
 
     @Override
@@ -37,19 +42,19 @@ public class InverseWrappedRowSetRowRedirection implements RowRedirection {
     }
 
     @Override
-    public synchronized long get(long key) {
-        if (key < 0 || key > wrappedRowSet.lastRowKey()) {
+    public long get(long key) {
+        if (key < 0 || wrappedRowSet.lastRowKey() < key) {
             return RowSet.NULL_ROW_KEY;
         }
         return wrappedRowSet.find(key);
     }
 
     @Override
-    public synchronized long getPrev(long key) {
-        if (key < 0 || key > wrappedRowSet.trackingCast().lastRowKeyPrev()) {
+    public long getPrev(long key) {
+        if (key < 0 || trackingRowSet.lastRowKeyPrev() < key) {
             return RowSet.NULL_ROW_KEY;
         }
-        return wrappedRowSet.trackingCast().findPrev(key);
+        return trackingRowSet.findPrev(key);
     }
 
     @Override
@@ -57,10 +62,7 @@ public class InverseWrappedRowSetRowRedirection implements RowRedirection {
             @NotNull final FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap) {
-        final WritableLongChunk<? super RowKeys> mappedKeysOutTyped = mappedKeysOut.asWritableLongChunk();
-        try (final RowSequence.Iterator rsIt = wrappedRowSet.getRowSequenceIterator()) {
-            doMapping(mappedKeysOutTyped, keysToMap, rsIt);
-        }
+        doMapping(mappedKeysOut.asWritableLongChunk(), keysToMap, wrappedRowSet);
     }
 
     @Override
@@ -68,28 +70,32 @@ public class InverseWrappedRowSetRowRedirection implements RowRedirection {
             @NotNull final FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap) {
-        final WritableLongChunk<? super RowKeys> mappedKeysOutTyped = mappedKeysOut.asWritableLongChunk();
-        try (final RowSet prevWrappedRowSet = wrappedRowSet.trackingCast().copyPrev();
-                final RowSequence.Iterator prevOkIt = prevWrappedRowSet.getRowSequenceIterator()) {
-            doMapping(mappedKeysOutTyped, keysToMap, prevOkIt);
-        }
+        doMapping(mappedKeysOut.asWritableLongChunk(), keysToMap, trackingRowSet.prev());
     }
 
-    private void doMapping(
+    /**
+     * Fill {@code mappedKeysOut} with the positions of {@code keysToMap}, all of which must be in {@code rowSet}.
+     */
+    private static void doMapping(
             @NotNull final WritableLongChunk<? super RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap,
-            @NotNull final RowSequence.Iterator rsIt) {
-        final MutableLong currentPosition = new MutableLong(0);
-        mappedKeysOut.setSize(0);
-        keysToMap.forEachRowKeyRange((start, end) -> {
-            final long positionDelta = rsIt.advanceAndGetPositionDistance(start);
-            final long rangeStartPosition = currentPosition.addAndGet(positionDelta);
-            // handle start to end - 1, where we must increment
-            for (long keyToMap = start; keyToMap <= end; ++keyToMap) {
-                mappedKeysOut.add(rangeStartPosition + (keyToMap - start));
+            @NotNull final RowSet rowSet) {
+        final int size = keysToMap.intSize();
+        if (size == 0) {
+            mappedKeysOut.setSize(0);
+            return;
+        }
+        final long firstPosition = rowSet.find(keysToMap.firstRowKey());
+        final long lastPosition = rowSet.find(keysToMap.lastRowKey());
+        if (firstPosition >= 0 && lastPosition - firstPosition + 1 == size) {
+            // rowSet has exactly as many keys from first to last as keysToMap, so keysToMap is that slice of rowSet
+            for (int ii = 0; ii < size; ++ii) {
+                mappedKeysOut.set(ii, firstPosition + ii);
             }
-            return true;
-        });
+            mappedKeysOut.setSize(size);
+            return;
+        }
+        rowSet.invert(keysToMap.asRowKeyChunk(), mappedKeysOut);
     }
 
     @Override

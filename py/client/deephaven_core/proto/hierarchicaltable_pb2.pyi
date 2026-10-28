@@ -5,30 +5,30 @@ isort:skip_file
 Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 """
 
-import builtins
-import collections.abc
-import deephaven_core.proto.table_pb2
-import deephaven_core.proto.ticket_pb2
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.internal.enum_type_wrapper
-import google.protobuf.message
+from collections import abc as _abc
+from deephaven_core.proto import table_pb2 as _table_pb2
+from deephaven_core.proto import ticket_pb2 as _ticket_pb2
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
+import builtins as _builtins
 import sys
-import typing
+import typing as _typing
 
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
 class _RollupNodeType:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
 
-class _RollupNodeTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_RollupNodeType.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+class _RollupNodeTypeEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_RollupNodeType.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
     TYPE_NOT_SPECIFIED: _RollupNodeType.ValueType  # 0
     AGGREGATED: _RollupNodeType.ValueType  # 1
     CONSTITUENT: _RollupNodeType.ValueType  # 2
@@ -38,163 +38,176 @@ class RollupNodeType(_RollupNodeType, metaclass=_RollupNodeTypeEnumTypeWrapper):
 TYPE_NOT_SPECIFIED: RollupNodeType.ValueType  # 0
 AGGREGATED: RollupNodeType.ValueType  # 1
 CONSTITUENT: RollupNodeType.ValueType  # 2
-Global___RollupNodeType: typing_extensions.TypeAlias = RollupNodeType
+Global___RollupNodeType: _TypeAlias = RollupNodeType  # noqa: Y015
 
-@typing.final
-class RollupRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class RollupRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_ROLLUP_TABLE_ID_FIELD_NUMBER: builtins.int
-    SOURCE_TABLE_ID_FIELD_NUMBER: builtins.int
-    AGGREGATIONS_FIELD_NUMBER: builtins.int
-    INCLUDE_CONSTITUENTS_FIELD_NUMBER: builtins.int
-    GROUP_BY_COLUMNS_FIELD_NUMBER: builtins.int
-    include_constituents: builtins.bool
+    RESULT_ROLLUP_TABLE_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_TABLE_ID_FIELD_NUMBER: _builtins.int
+    AGGREGATIONS_FIELD_NUMBER: _builtins.int
+    INCLUDE_CONSTITUENTS_FIELD_NUMBER: _builtins.int
+    GROUP_BY_COLUMNS_FIELD_NUMBER: _builtins.int
+    include_constituents: _builtins.bool
     """Whether to include the leaf-level constituents in the result"""
-    @property
-    def result_rollup_table_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def result_rollup_table_id(self) -> _ticket_pb2.Ticket:
         """Ticket to use to hold the result RollupTable from the rollup operation"""
 
-    @property
-    def source_table_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def source_table_id(self) -> _ticket_pb2.Ticket:
         """Ticket for the source Table to rollup"""
 
-    @property
-    def aggregations(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[deephaven_core.proto.table_pb2.Aggregation]:
+    @_builtins.property
+    def aggregations(self) -> _containers.RepeatedCompositeFieldContainer[_table_pb2.Aggregation]:
         """The aggregations that should be applied at each level of the rollup"""
 
-    @property
-    def group_by_columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+    @_builtins.property
+    def group_by_columns(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
         """The names of the columns to rollup by"""
 
     def __init__(
         self,
         *,
-        result_rollup_table_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_table_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        aggregations: collections.abc.Iterable[deephaven_core.proto.table_pb2.Aggregation] | None = ...,
-        include_constituents: builtins.bool = ...,
-        group_by_columns: collections.abc.Iterable[builtins.str] | None = ...,
+        result_rollup_table_id: _ticket_pb2.Ticket | None = ...,
+        source_table_id: _ticket_pb2.Ticket | None = ...,
+        aggregations: _abc.Iterable[_table_pb2.Aggregation] | None = ...,
+        include_constituents: _builtins.bool = ...,
+        group_by_columns: _abc.Iterable[_builtins.str] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_rollup_table_id", b"result_rollup_table_id", "source_table_id", b"source_table_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["aggregations", b"aggregations", "group_by_columns", b"group_by_columns", "include_constituents", b"include_constituents", "result_rollup_table_id", b"result_rollup_table_id", "source_table_id", b"source_table_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_rollup_table_id", b"result_rollup_table_id", "source_table_id", b"source_table_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["aggregations", b"aggregations", "group_by_columns", b"group_by_columns", "include_constituents", b"include_constituents", "result_rollup_table_id", b"result_rollup_table_id", "source_table_id", b"source_table_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___RollupRequest: typing_extensions.TypeAlias = RollupRequest
+Global___RollupRequest: _TypeAlias = RollupRequest  # noqa: Y015
 
-@typing.final
-class RollupResponse(google.protobuf.message.Message):
+@_typing.final
+class RollupResponse(_message.Message):
     """Deliberately empty response, use /ObjectService/FetchObject to access the result_rollup_table_id ticket as
     a HierarchicalTableDescriptor. See HierarchicalTableDescriptor documentation for details.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___RollupResponse: typing_extensions.TypeAlias = RollupResponse
+Global___RollupResponse: _TypeAlias = RollupResponse  # noqa: Y015
 
-@typing.final
-class TreeRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class TreeRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_TREE_TABLE_ID_FIELD_NUMBER: builtins.int
-    SOURCE_TABLE_ID_FIELD_NUMBER: builtins.int
-    IDENTIFIER_COLUMN_FIELD_NUMBER: builtins.int
-    PARENT_IDENTIFIER_COLUMN_FIELD_NUMBER: builtins.int
-    PROMOTE_ORPHANS_FIELD_NUMBER: builtins.int
-    identifier_column: builtins.str
+    RESULT_TREE_TABLE_ID_FIELD_NUMBER: _builtins.int
+    SOURCE_TABLE_ID_FIELD_NUMBER: _builtins.int
+    IDENTIFIER_COLUMN_FIELD_NUMBER: _builtins.int
+    PARENT_IDENTIFIER_COLUMN_FIELD_NUMBER: _builtins.int
+    PROMOTE_ORPHANS_FIELD_NUMBER: _builtins.int
+    identifier_column: _builtins.str
     """The name of the column containing the unique identifier for each row in the source table"""
-    parent_identifier_column: builtins.str
+    parent_identifier_column: _builtins.str
     """The name of the column containing the parent row's unique identifier for each row in the source table"""
-    promote_orphans: builtins.bool
+    promote_orphans: _builtins.bool
     """Whether to promote "orphaned" nodes to be children of the root node. Orphans are nodes whose parent identifiers do
     not occur as identifiers for any row in the source Table.
     """
-    @property
-    def result_tree_table_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def result_tree_table_id(self) -> _ticket_pb2.Ticket:
         """Ticket to use to hold the result TreeTable from the tree operation"""
 
-    @property
-    def source_table_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def source_table_id(self) -> _ticket_pb2.Ticket:
         """Ticket for the source Table to tree"""
 
     def __init__(
         self,
         *,
-        result_tree_table_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        source_table_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        identifier_column: builtins.str = ...,
-        parent_identifier_column: builtins.str = ...,
-        promote_orphans: builtins.bool = ...,
+        result_tree_table_id: _ticket_pb2.Ticket | None = ...,
+        source_table_id: _ticket_pb2.Ticket | None = ...,
+        identifier_column: _builtins.str = ...,
+        parent_identifier_column: _builtins.str = ...,
+        promote_orphans: _builtins.bool = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["result_tree_table_id", b"result_tree_table_id", "source_table_id", b"source_table_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["identifier_column", b"identifier_column", "parent_identifier_column", b"parent_identifier_column", "promote_orphans", b"promote_orphans", "result_tree_table_id", b"result_tree_table_id", "source_table_id", b"source_table_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["result_tree_table_id", b"result_tree_table_id", "source_table_id", b"source_table_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["identifier_column", b"identifier_column", "parent_identifier_column", b"parent_identifier_column", "promote_orphans", b"promote_orphans", "result_tree_table_id", b"result_tree_table_id", "source_table_id", b"source_table_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___TreeRequest: typing_extensions.TypeAlias = TreeRequest
+Global___TreeRequest: _TypeAlias = TreeRequest  # noqa: Y015
 
-@typing.final
-class TreeResponse(google.protobuf.message.Message):
+@_typing.final
+class TreeResponse(_message.Message):
     """Deliberately empty response, use /ObjectService/FetchObject to access the result_tree_table_id ticket as
     a HierarchicalTableDescriptor. See HierarchicalTableDescriptor documentation for details.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___TreeResponse: typing_extensions.TypeAlias = TreeResponse
+Global___TreeResponse: _TypeAlias = TreeResponse  # noqa: Y015
 
-@typing.final
-class UpdateViewRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class UpdateViewRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    COLUMN_SPEC_FIELD_NUMBER: builtins.int
-    NODE_TYPE_FIELD_NUMBER: builtins.int
+    COLUMN_SPEC_FIELD_NUMBER: _builtins.int
+    NODE_TYPE_FIELD_NUMBER: _builtins.int
     node_type: Global___RollupNodeType.ValueType
     """The node types that will have this update_view applied. Ignored for TreeTable."""
-    @property
-    def column_spec(self) -> deephaven_core.proto.table_pb2.Selectable: ...
+    @_builtins.property
+    def column_spec(self) -> _table_pb2.Selectable: ...
     def __init__(
         self,
         *,
-        column_spec: deephaven_core.proto.table_pb2.Selectable | None = ...,
+        column_spec: _table_pb2.Selectable | None = ...,
         node_type: Global___RollupNodeType.ValueType = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_spec", b"column_spec"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["column_spec", b"column_spec", "node_type", b"node_type"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["column_spec", b"column_spec"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["column_spec", b"column_spec", "node_type", b"node_type"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___UpdateViewRequest: typing_extensions.TypeAlias = UpdateViewRequest
+Global___UpdateViewRequest: _TypeAlias = UpdateViewRequest  # noqa: Y015
 
-@typing.final
-class HierarchicalTableApplyRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class HierarchicalTableApplyRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_HIERARCHICAL_TABLE_ID_FIELD_NUMBER: builtins.int
-    INPUT_HIERARCHICAL_TABLE_ID_FIELD_NUMBER: builtins.int
-    FILTERS_FIELD_NUMBER: builtins.int
-    SORTS_FIELD_NUMBER: builtins.int
-    FORMAT_VIEWS_FIELD_NUMBER: builtins.int
-    UPDATE_VIEWS_FIELD_NUMBER: builtins.int
-    @property
-    def result_hierarchical_table_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    RESULT_HIERARCHICAL_TABLE_ID_FIELD_NUMBER: _builtins.int
+    INPUT_HIERARCHICAL_TABLE_ID_FIELD_NUMBER: _builtins.int
+    FILTERS_FIELD_NUMBER: _builtins.int
+    SORTS_FIELD_NUMBER: _builtins.int
+    FORMAT_VIEWS_FIELD_NUMBER: _builtins.int
+    UPDATE_VIEWS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_hierarchical_table_id(self) -> _ticket_pb2.Ticket:
         """Ticket to use to hold the result HierarchicalTable (RollupTable or TreeTable) from the applying the operations"""
 
-    @property
-    def input_hierarchical_table_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def input_hierarchical_table_id(self) -> _ticket_pb2.Ticket:
         """Ticket for the input HierarchicalTable (RollupTable or TreeTable) to apply operations to"""
 
-    @property
-    def filters(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[deephaven_core.proto.table_pb2.Condition]:
+    @_builtins.property
+    def filters(self) -> _containers.RepeatedCompositeFieldContainer[_table_pb2.Condition]:
         """Filters to apply to the input HierarchicalTable to produce the result HierarchicalTable. Never expressed against
         the "structural" columns included in the a HierarchicalTableDescriptor's snapshot_schema.
         For RollupTables, only the group-by columns may be filtered. The names are always expressed as they appear
@@ -204,8 +217,8 @@ class HierarchicalTableApplyRequest(google.protobuf.message.Message):
         nodes (resulting in filtering at snapshot time).
         """
 
-    @property
-    def sorts(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[deephaven_core.proto.table_pb2.SortDescriptor]:
+    @_builtins.property
+    def sorts(self) -> _containers.RepeatedCompositeFieldContainer[_table_pb2.SortDescriptor]:
         """Sorts to apply to the input HierarchicalTable to produce the result HierarchicalTable. Never expressed against
         the "structural" columns included in the a HierarchicalTableDescriptor's snapshot_schema.
         For TreeTables, these are simply applied to the nodes at snapshot time.
@@ -213,15 +226,15 @@ class HierarchicalTableApplyRequest(google.protobuf.message.Message):
         appropriate sorts are applied to the nodes at snapshot time.
         """
 
-    @property
-    def format_views(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___UpdateViewRequest]:
+    @_builtins.property
+    def format_views(self) -> _containers.RepeatedCompositeFieldContainer[Global___UpdateViewRequest]:
         """Format operations to apply to the nodes of the table.
         For RollupTables, the update is applied only to the specified node types.
         For TreeTables, the node type is ignored and the update is applied to all nodes.
         """
 
-    @property
-    def update_views(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[Global___UpdateViewRequest]:
+    @_builtins.property
+    def update_views(self) -> _containers.RepeatedCompositeFieldContainer[Global___UpdateViewRequest]:
         """User-supplied update_view operations to apply to the nodes of the table.
         For RollupTables, the update is applied only to the specified node types.
         For TreeTables, the node type is ignored and the update is applied to all nodes.
@@ -230,41 +243,47 @@ class HierarchicalTableApplyRequest(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        result_hierarchical_table_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        input_hierarchical_table_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        filters: collections.abc.Iterable[deephaven_core.proto.table_pb2.Condition] | None = ...,
-        sorts: collections.abc.Iterable[deephaven_core.proto.table_pb2.SortDescriptor] | None = ...,
-        format_views: collections.abc.Iterable[Global___UpdateViewRequest] | None = ...,
-        update_views: collections.abc.Iterable[Global___UpdateViewRequest] | None = ...,
+        result_hierarchical_table_id: _ticket_pb2.Ticket | None = ...,
+        input_hierarchical_table_id: _ticket_pb2.Ticket | None = ...,
+        filters: _abc.Iterable[_table_pb2.Condition] | None = ...,
+        sorts: _abc.Iterable[_table_pb2.SortDescriptor] | None = ...,
+        format_views: _abc.Iterable[Global___UpdateViewRequest] | None = ...,
+        update_views: _abc.Iterable[Global___UpdateViewRequest] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["input_hierarchical_table_id", b"input_hierarchical_table_id", "result_hierarchical_table_id", b"result_hierarchical_table_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["filters", b"filters", "format_views", b"format_views", "input_hierarchical_table_id", b"input_hierarchical_table_id", "result_hierarchical_table_id", b"result_hierarchical_table_id", "sorts", b"sorts", "update_views", b"update_views"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["input_hierarchical_table_id", b"input_hierarchical_table_id", "result_hierarchical_table_id", b"result_hierarchical_table_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["filters", b"filters", "format_views", b"format_views", "input_hierarchical_table_id", b"input_hierarchical_table_id", "result_hierarchical_table_id", b"result_hierarchical_table_id", "sorts", b"sorts", "update_views", b"update_views"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___HierarchicalTableApplyRequest: typing_extensions.TypeAlias = HierarchicalTableApplyRequest
+Global___HierarchicalTableApplyRequest: _TypeAlias = HierarchicalTableApplyRequest  # noqa: Y015
 
-@typing.final
-class HierarchicalTableApplyResponse(google.protobuf.message.Message):
+@_typing.final
+class HierarchicalTableApplyResponse(_message.Message):
     """Deliberately empty response, use /ObjectService/FetchObject to access the result_hierarchical_table_id ticket as
     a HierarchicalTableDescriptor. See HierarchicalTableDescriptor documentation for details.
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___HierarchicalTableApplyResponse: typing_extensions.TypeAlias = HierarchicalTableApplyResponse
+Global___HierarchicalTableApplyResponse: _TypeAlias = HierarchicalTableApplyResponse  # noqa: Y015
 
-@typing.final
-class HierarchicalTableDescriptor(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class HierarchicalTableDescriptor(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SNAPSHOT_SCHEMA_FIELD_NUMBER: builtins.int
-    IS_STATIC_FIELD_NUMBER: builtins.int
-    snapshot_schema: builtins.bytes
+    SNAPSHOT_SCHEMA_FIELD_NUMBER: _builtins.int
+    IS_STATIC_FIELD_NUMBER: _builtins.int
+    snapshot_schema: _builtins.bytes
     """Schema to be used for snapshot or subscription requests as described in Arrow Message.fbs::Message.
     Field metadata is used to convey additional information about the structure of the HierarchicalTable, the
     special roles some columns play, and the relationships between columns.
@@ -312,44 +331,47 @@ class HierarchicalTableDescriptor(google.protobuf.message.Message):
     "treeTable.isParentIdentifierColumn" is always "true" if set, and is set on the single column that links a
     TreeTable row to its parent row.
     """
-    is_static: builtins.bool
+    is_static: _builtins.bool
     """Whether or not this table might change."""
     def __init__(
         self,
         *,
-        snapshot_schema: builtins.bytes = ...,
-        is_static: builtins.bool = ...,
+        snapshot_schema: _builtins.bytes = ...,
+        is_static: _builtins.bool = ...,
     ) -> None: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["is_static", b"is_static", "snapshot_schema", b"snapshot_schema"]
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["is_static", b"is_static", "snapshot_schema", b"snapshot_schema"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___HierarchicalTableDescriptor: typing_extensions.TypeAlias = HierarchicalTableDescriptor
+Global___HierarchicalTableDescriptor: _TypeAlias = HierarchicalTableDescriptor  # noqa: Y015
 
-@typing.final
-class HierarchicalTableViewRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class HierarchicalTableViewRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_VIEW_ID_FIELD_NUMBER: builtins.int
-    HIERARCHICAL_TABLE_ID_FIELD_NUMBER: builtins.int
-    EXISTING_VIEW_ID_FIELD_NUMBER: builtins.int
-    EXPANSIONS_FIELD_NUMBER: builtins.int
-    @property
-    def result_view_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    RESULT_VIEW_ID_FIELD_NUMBER: _builtins.int
+    HIERARCHICAL_TABLE_ID_FIELD_NUMBER: _builtins.int
+    EXISTING_VIEW_ID_FIELD_NUMBER: _builtins.int
+    EXPANSIONS_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_view_id(self) -> _ticket_pb2.Ticket:
         """Ticket to use to hold the result HierarchicalTableView"""
 
-    @property
-    def hierarchical_table_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def hierarchical_table_id(self) -> _ticket_pb2.Ticket:
         """Ticket for the HierarchicalTable (RollupTable or TreeTable) to expand"""
 
-    @property
-    def existing_view_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def existing_view_id(self) -> _ticket_pb2.Ticket:
         """Ticket for an existing HierarchicalTableView. The result view will inherit the HierarchicalTable from the
         existing view. The two views will share state used for caching snapshot data, but the server implementation may
         limit parallelism when performing snapshots for either view.
         Use this field when you intend to stop using the existing view and instead begin to use the result view.
         """
 
-    @property
+    @_builtins.property
     def expansions(self) -> Global___HierarchicalTableViewKeyTableDescriptor:
         """Description for the expansions that define this view of the HierarchicalTable. If not present, the result will
         have default expansions, For RollupTables this will be the root (single row, top-level aggregation) and the next
@@ -360,35 +382,35 @@ class HierarchicalTableViewRequest(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        result_view_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        hierarchical_table_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        existing_view_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_view_id: _ticket_pb2.Ticket | None = ...,
+        hierarchical_table_id: _ticket_pb2.Ticket | None = ...,
+        existing_view_id: _ticket_pb2.Ticket | None = ...,
         expansions: Global___HierarchicalTableViewKeyTableDescriptor | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["existing_view_id", b"existing_view_id", "expansions", b"expansions", "hierarchical_table_id", b"hierarchical_table_id", "result_view_id", b"result_view_id", "target", b"target"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["existing_view_id", b"existing_view_id", "expansions", b"expansions", "hierarchical_table_id", b"hierarchical_table_id", "result_view_id", b"result_view_id", "target", b"target"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["existing_view_id", b"existing_view_id", "expansions", b"expansions", "hierarchical_table_id", b"hierarchical_table_id", "result_view_id", b"result_view_id", "target", b"target"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["existing_view_id", b"existing_view_id", "expansions", b"expansions", "hierarchical_table_id", b"hierarchical_table_id", "result_view_id", b"result_view_id", "target", b"target"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_target: typing_extensions.TypeAlias = typing.Literal["hierarchical_table_id", "existing_view_id"]
-    _WhichOneofArgType_target: typing_extensions.TypeAlias = typing.Literal["target", b"target"]
+    _WhichOneofReturnType_target: _TypeAlias = _typing.Literal["hierarchical_table_id", "existing_view_id"]  # noqa: Y015
+    _WhichOneofArgType_target: _TypeAlias = _typing.Literal["target", b"target"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_target) -> _WhichOneofReturnType_target | None: ...
 
-Global___HierarchicalTableViewRequest: typing_extensions.TypeAlias = HierarchicalTableViewRequest
+Global___HierarchicalTableViewRequest: _TypeAlias = HierarchicalTableViewRequest  # noqa: Y015
 
-@typing.final
-class HierarchicalTableViewKeyTableDescriptor(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class HierarchicalTableViewKeyTableDescriptor(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    KEY_TABLE_ID_FIELD_NUMBER: builtins.int
-    KEY_TABLE_ACTION_COLUMN_FIELD_NUMBER: builtins.int
-    key_table_action_column: builtins.str
+    KEY_TABLE_ID_FIELD_NUMBER: _builtins.int
+    KEY_TABLE_ACTION_COLUMN_FIELD_NUMBER: _builtins.int
+    key_table_action_column: _builtins.str
     """The name of a column of bytes found in the key table that specifies the action desired for the node selected by
     the other columns for each row. Takes on the value 1 for nodes that should be expanded, 3 for nodes that should be
     expanded along with their descendants, and 4 for nodes that should be contracted.
     If this column name is not present, all nodes in the key table will be expanded without their descendants.
     """
-    @property
-    def key_table_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def key_table_id(self) -> _ticket_pb2.Ticket:
         """Ticket that represents a Table of expanded or contracted keys from a HierarchicalTable (RollupTable or TreeTable).
         The format for the key Table is dictated by the schema from the corresponding HierarchicalTableDescriptor. It is
         expected to have one column for each "expand-by column", including the "row depth column" for RollupTables only,
@@ -399,56 +421,62 @@ class HierarchicalTableViewKeyTableDescriptor(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        key_table_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        key_table_action_column: builtins.str | None = ...,
+        key_table_id: _ticket_pb2.Ticket | None = ...,
+        key_table_action_column: _builtins.str | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["_key_table_action_column", b"_key_table_action_column", "key_table_action_column", b"key_table_action_column", "key_table_id", b"key_table_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["_key_table_action_column", b"_key_table_action_column", "key_table_action_column", b"key_table_action_column", "key_table_id", b"key_table_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["_key_table_action_column", b"_key_table_action_column", "key_table_action_column", b"key_table_action_column", "key_table_id", b"key_table_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["_key_table_action_column", b"_key_table_action_column", "key_table_action_column", b"key_table_action_column", "key_table_id", b"key_table_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType__key_table_action_column: typing_extensions.TypeAlias = typing.Literal["key_table_action_column"]
-    _WhichOneofArgType__key_table_action_column: typing_extensions.TypeAlias = typing.Literal["_key_table_action_column", b"_key_table_action_column"]
+    _WhichOneofReturnType__key_table_action_column: _TypeAlias = _typing.Literal["key_table_action_column"]  # noqa: Y015
+    _WhichOneofArgType__key_table_action_column: _TypeAlias = _typing.Literal["_key_table_action_column", b"_key_table_action_column"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType__key_table_action_column) -> _WhichOneofReturnType__key_table_action_column | None: ...
 
-Global___HierarchicalTableViewKeyTableDescriptor: typing_extensions.TypeAlias = HierarchicalTableViewKeyTableDescriptor
+Global___HierarchicalTableViewKeyTableDescriptor: _TypeAlias = HierarchicalTableViewKeyTableDescriptor  # noqa: Y015
 
-@typing.final
-class HierarchicalTableViewResponse(google.protobuf.message.Message):
+@_typing.final
+class HierarchicalTableViewResponse(_message.Message):
     """Deliberately empty response, use /FlightService/DoExchange to snapshot or subscribe to snapshots from the result
     result_view_id
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___HierarchicalTableViewResponse: typing_extensions.TypeAlias = HierarchicalTableViewResponse
+Global___HierarchicalTableViewResponse: _TypeAlias = HierarchicalTableViewResponse  # noqa: Y015
 
-@typing.final
-class HierarchicalTableSourceExportRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class HierarchicalTableSourceExportRequest(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    RESULT_TABLE_ID_FIELD_NUMBER: builtins.int
-    HIERARCHICAL_TABLE_ID_FIELD_NUMBER: builtins.int
-    @property
-    def result_table_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    RESULT_TABLE_ID_FIELD_NUMBER: _builtins.int
+    HIERARCHICAL_TABLE_ID_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def result_table_id(self) -> _ticket_pb2.Ticket:
         """Ticket to use to hold an export of the HierarchicalTable's source Table"""
 
-    @property
-    def hierarchical_table_id(self) -> deephaven_core.proto.ticket_pb2.Ticket:
+    @_builtins.property
+    def hierarchical_table_id(self) -> _ticket_pb2.Ticket:
         """Ticket for the (existing) HierarchicalTable (RollupTable or TreeTable) to export the source Table for"""
 
     def __init__(
         self,
         *,
-        result_table_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
-        hierarchical_table_id: deephaven_core.proto.ticket_pb2.Ticket | None = ...,
+        result_table_id: _ticket_pb2.Ticket | None = ...,
+        hierarchical_table_id: _ticket_pb2.Ticket | None = ...,
     ) -> None: ...
-    _HasFieldArgType: typing_extensions.TypeAlias = typing.Literal["hierarchical_table_id", b"hierarchical_table_id", "result_table_id", b"result_table_id"]
-    def HasField(self, field_name: _HasFieldArgType) -> builtins.bool: ...
-    _ClearFieldArgType: typing_extensions.TypeAlias = typing.Literal["hierarchical_table_id", b"hierarchical_table_id", "result_table_id", b"result_table_id"]
+    _HasFieldArgType: _TypeAlias = _typing.Literal["hierarchical_table_id", b"hierarchical_table_id", "result_table_id", b"result_table_id"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["hierarchical_table_id", b"hierarchical_table_id", "result_table_id", b"result_table_id"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
-Global___HierarchicalTableSourceExportRequest: typing_extensions.TypeAlias = HierarchicalTableSourceExportRequest
+Global___HierarchicalTableSourceExportRequest: _TypeAlias = HierarchicalTableSourceExportRequest  # noqa: Y015

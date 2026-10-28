@@ -1,6 +1,6 @@
 project(create_table_with_table_maker)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 add_executable(create_table_with_table_maker main.cc)
 
