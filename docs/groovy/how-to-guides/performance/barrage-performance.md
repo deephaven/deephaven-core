@@ -40,8 +40,8 @@ These are the values of `StatType`:
 | PropagateNanos       | Sender            | The elapsed time of one propagation phase: writing one message to the subscribers it goes to                                                                                                        |
 | SnapshotNanos        | Sender            | The time it took to take one snapshot step for a new or changed subscription; for tree and rollup subscriptions, every update is sent as a snapshot and records a value                             |
 | UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic                                                                                                                          |
-| WriteNanos           | Sender            | The time it took to write the update to a single subscriber                                                                                                                                         |
-| WriteBytes           | Sender            | The size in bytes of the record batches written for an update to a single subscriber (dictionary messages are not counted, except in a message that carries no rows)                                |
+| WriteNanos           | Sender            | The elapsed time of one write of the update, to one subscriber or to every subscriber that shares an update                                                                                         |
+| WriteBytes           | Sender            | The size in bytes of one write of the update, every message in it including dictionary batches; recorded once for each subscriber it was sent to                                                    |
 | PendingDeltaCount    | Sender            | How many pending updates the server was holding, un-propagated, after recording an update graph cycle's changes; a compacted update counts once, even though it stands for every cycle it coalesced |
 | PendingDeltaBytes    | Sender            | Approximate heap footprint, in bytes, of the chunk storage those pending updates own                                                                                                                |
 | DeserializationNanos | Receiver          | The time it took to read and deserialize one incoming gRPC message; an update split across several messages records one value per message                                                           |
@@ -52,18 +52,18 @@ These are the values of `StatType`:
 
 Snapshot statistics are recorded for snapshots requested with a Barrage snapshot request or Arrow Flight `DoGet`. Each row also includes the `TableId` and `TableKey` of the table and the `RequestTime` at which the request was received. A refreshing table produces one row per request. A static table is sent in chunks and produces one row per chunk, all with the same `RequestTime`: `SnapshotNanos` is the total so far, and `WriteNanos` and `WriteBytes` are for that chunk.
 
-| Column        | Description                                                                                                                                 |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| QueueNanos    | The time from receiving the request until work on it began, including waiting for the requested table to be ready and for a thread          |
-| SnapshotNanos | The time it took to construct a consistent snapshot of the source table                                                                     |
-| WriteNanos    | The time it took to write the snapshot (or chunk)                                                                                           |
-| WriteBytes    | The size of the snapshot (or chunk) record batches in bytes (dictionary messages are not counted, except in a message that carries no rows) |
+| Column        | Description                                                                                                                        |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| QueueNanos    | The time from receiving the request until work on it began, including waiting for the requested table to be ready and for a thread |
+| SnapshotNanos | The time it took to construct a consistent snapshot of the source table                                                            |
+| WriteNanos    | The time it took to write the snapshot (or chunk)                                                                                  |
+| WriteBytes    | The size in bytes of the snapshot (or chunk), every message in it including dictionary batches                                     |
 
 > [!NOTE]
 > `PendingDeltaCount` and `PendingDeltaBytes` are gauges rather than durations: each is sampled once per update graph cycle in which the table changes while it has at least one subscriber, so the useful value over a reporting window is the maximum rather than the average. They measure what the server is holding on behalf of subscribers it has not yet served, which rises with the number of update graph cycles that elapse per update interval and with the size of each cycle's changes. The byte figure is approximate: it counts the capacity of the chunks a pending update owns, which is what the server allocated, not the rows actually stored in them. It also counts those chunks alone. A `String` or other object column is charged eight bytes per row — the widest a reference can be, which overstates it wherever the JVM uses compressed references — and never the object that reference points at. For a subscription carrying object columns, `PendingDeltaBytes` therefore measures the chunk storage rather than the memory those rows retain, and can fall on either side of it.
 
 > [!NOTE]
-> All durations are nanoseconds and all payload sizes are bytes, stored as `long`. This matches Deephaven's other performance tables. Convert in a query when you want different units — for example `WriteMillis = WriteNanos / 1e6` in the snapshot table. In the subscription table, `WriteNanos` and `WriteBytes` are `StatType` values, so filter on `StatType` and convert a percentile column, such as `MaxMegabits = Max * 8 / 1e6`. Byte counts are sizes per write, not rates: divide by the time between writes before comparing against link bandwidth.
+> All durations are nanoseconds and all payload sizes are bytes, stored as `long`. This matches Deephaven's other performance tables. Convert in a query when you want different units — for example `WriteMillis = WriteNanos / 1e6` in the snapshot table. In the subscription table, `WriteNanos` and `WriteBytes` are `StatType` values, so filter on `StatType` and convert a percentile column, such as `MaxMegabits = Max * 8 / 1e6`. `WriteBytes` is a size, not a rate. To compare against link bandwidth, take a `WriteBytes` row's `Count` multiplied by a typical size, such as its `Pct50`, as an estimate of the bytes sent during the interval, and divide by the interval's length (`BarragePerformanceLog.cycleDurationMillis`, one minute by default).
 
 ## Identify a table
 
@@ -155,10 +155,38 @@ The two thresholds answer different questions. The fraction asks whether compact
 
 Each time the server propagates an update to a table's subscribers, it writes each subscriber its own view of the update, which holds only the columns, rows, and encoding that subscriber asked for. Writing a message serializes it into the gRPC stream's buffers. Serializing is processor work that does not wait for the client, so the server can write to several subscribers at once. Parallel writes need a message that goes to more than one subscriber and `BarrageMessageProducer.propagationThreads` greater than `1`. Even then, the other threads come from a pool that every table shares, and when that pool is busy, the propagation thread writes to the remaining subscribers itself.
 
-- `-DBarrageMessageProducer.propagationThreads`: The most threads that write one update to a table's subscribers at once, counting the thread that runs the propagation. Default: the number of available processors. Above `1`, the other threads come from a pool that every table shares, which never holds more than this number less one. A value of `1` or less writes to subscribers one after another on the propagation thread, and the server makes no pool.
+- `-DBarrageMessageProducer.propagationThreads`: The most threads that write one update to a table's subscribers at once, counting the thread that runs the propagation. Default: the number of available processors. Above `1`, the other threads come from a pool that every table shares, which never holds more than this number less one. A value of `1` or less writes to subscribers one after another on the propagation thread, and the server makes no pool. The same threads also copy a shared write to its subscribers (see [Share one write among identical subscribers](#share-one-write-among-identical-subscribers)), so this setting limits that too: with `1` or less, the server copies to one subscriber after another.
 
 > [!NOTE]
-> `PropagateNanos` measures the elapsed time of one propagation phase: writing one message to the subscribers it goes to. An update can take several phases, such as a snapshot for new subscribers and a delta for the others, and each records its own sample. With parallel writes a phase can take much less than the sum of its writes' `WriteNanos`. A single subscriber's write still runs on one thread.
+> `PropagateNanos` measures the elapsed time of one propagation phase: writing one message to the subscribers it goes to. An update can take several phases, such as a snapshot for new subscribers and a delta for the others, and each records its own sample. With parallel writes a phase can take much less than the sum of its writes' `WriteNanos`. A single subscriber's write still runs on one thread, while a shared write can copy to its subscribers on several.
+
+## Share one write among identical subscribers
+
+A subscriber to a whole table, rather than to a viewport of it, is a full-table subscriber. Full-table subscribers that would receive identical bytes share one write of each update. The server writes the update once and copies the bytes to each of them, which saves the processor time of writing it again for every subscriber.
+
+Full-table subscribers share a write when they:
+
+- Have received the whole table, rather than still receiving it in parts (see [Control subscription snapshot size](#control-subscription-snapshot-size)).
+- Use the same subscription options, such as the batch size, the maximum message size, and how nulls are sent.
+- Subscribe to the same columns.
+
+Viewport subscribers always get a write of their own.
+
+The server copies a shared write to its subscribers one message at a time:
+
+- Each message holds exactly one batch, either a record batch or a dictionary batch. A message never holds both.
+- For a table with dictionary-encoded columns, each dictionary batch is its own message, sent ahead of the record batch that uses its values.
+- The server copies each message to every subscriber before it writes the next, so sharing holds at most one extra batch in memory for each write in progress.
+- The server copies a large message to the subscribers in parallel: when the message's size, multiplied by one less than the number of subscribers that share the write, reaches `BarrageMessageProducer.parallelCopyMinBytes`. The copies use the same threads as [parallel writes](#write-to-subscribers-in-parallel), so they also depend on `BarrageMessageProducer.propagationThreads`.
+- A record batch or dictionary batch is no larger than the subscriber's maximum message size, which is `BarrageMessageWriterImpl.maxOutboundMessageSize` unless the subscriber sets its own (see [Message batching](#message-batching)). The exception is a single row, or a single dictionary value, too large to fit, which the server sends anyway.
+
+When a table has dictionary-encoded columns, subscribers that share a write may have been sent different amounts of each dictionary, for example when one of them subscribed more recently. Before the shared write, the server sends each subscriber that is behind the values it lacks: one message per dictionary, or several when the values would exceed the maximum message size. After that, subscribers that share a write stay level, so they need no more of these messages until another subscriber joins them.
+
+- `-DBarrageMessageProducer.dedupIdenticalSubscribers`: When `true` (the default), identical full-table subscribers share one write of each update. When `false`, every subscriber gets a write of its own.
+- `-DBarrageMessageProducer.parallelCopyMinBytes`: The amount of copying, in bytes, at which the server copies a message to the subscribers that share a write in parallel: the message's size multiplied by one less than the number of those subscribers. Default: `4194304` (4 MiB). The server copies smaller messages to one subscriber after another. With `BarrageMessageProducer.propagationThreads` of `1` or less, it copies every message to one subscriber after another.
+
+> [!NOTE]
+> A shared write records one `WriteNanos` sample, and one `WriteBytes` sample for each subscriber that was sent all of it. `WriteNanos` includes copying the write to every subscriber, whether or not the copies run in parallel. Each `WriteBytes` sample is the size of one copy, so `WriteBytes` reads as it would if every subscriber had a write of its own, while the `WriteNanos` count falls to the number of writes. The dictionary values sent before a shared write to subscribers that were behind are a write of their own, recorded the same way.
 
 ## Additional Barrage configuration
 
@@ -170,9 +198,9 @@ The following properties control other aspects of Barrage behavior:
 
 ### Message batching
 
-- `-DBarrageMessageWriterImpl.batchSize`: Maximum rows per Arrow record batch when the client does not specify a batch size. Default: `Integer.MAX_VALUE`. Reduce this if clients have trouble processing very large batches.
+- `-DBarrageMessageWriterImpl.batchSize`: Maximum rows per Arrow record batch, and values per dictionary batch, when the client does not specify a batch size. Default: `Integer.MAX_VALUE`. Reduce this if clients have trouble processing very large batches.
 - `-DBarrageMessageWriterImpl.initialBatchSize`: The starting row count for the first record batch of each message (capped by `batchSize`, and retried smaller if the batch is too large). Default: `4096`. Later batches in the same message are sized from the observed bytes per row, with a margin, to stay under the maximum message size.
-- `-DBarrageMessageWriterImpl.maxOutboundMessageSize`: Maximum size (in bytes) for outbound messages. Default: `104857600` (100 MB). This matches the default incoming message limit for Java clients.
+- `-DBarrageMessageWriterImpl.maxOutboundMessageSize`: Maximum size (in bytes) for outbound messages. Default: `104857600` (100 MB). This matches the default incoming message limit for Java clients. The server splits record batches, and the dictionary batches of dictionary-encoded columns, to stay under it.
 
 ## Troubleshooting
 
@@ -201,6 +229,7 @@ If `PropagateNanos` is consistently high:
 - `PropagateNanos` includes writing each subscriber's message, so check `WriteNanos` first.
 
 - Many subscribers may be connected to the same table. Their writes overlap only as far as `BarrageMessageProducer.propagationThreads` and idle processors allow: check that the property is above `1` and not well below the number of subscribers (see [Write to subscribers in parallel](#write-to-subscribers-in-parallel)), and whether the server's processors are already busy. Consider load balancing across multiple server instances.
+- Subscribers whose options or viewports differ each need a write of their own. Full-table subscribers with matching options share one (see [Share one write among identical subscribers](#share-one-write-among-identical-subscribers)).
 - The server may be under memory pressure. Check JVM heap usage and garbage collection metrics.
 
 ### Subscription errors

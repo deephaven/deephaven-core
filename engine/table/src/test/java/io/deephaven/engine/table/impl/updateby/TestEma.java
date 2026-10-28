@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.updateby;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
@@ -42,6 +43,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -660,7 +663,8 @@ public class TestEma extends BaseUpdateByTest {
         final String groupSuffix = groups == null || groups.length == 0 ? ""
                 : "," + String.join(", ", groups);
 
-        final Table expected = source.update(
+        // bes accumulates each EMA in row order, so the formulas must be evaluated serially
+        final Table expected = source.update(Stream.of(
                 "byteCol   = " + clausePrefix + "(double)byteCol   , `b`" + groupSuffix + ")",
                 "shortCol  = " + clausePrefix + "(double)shortCol  , 's'" + groupSuffix + ")",
                 "intCol    = " + clausePrefix + "(double)intCol    , `i`" + groupSuffix + ")",
@@ -672,6 +676,8 @@ public class TestEma extends BaseUpdateByTest {
                 "bigDecimalCol = " + clausePrefix
                         + "(bigDecimalCol == null ? NULL_DOUBLE : bigDecimalCol.doubleValue()) , `bd`" + groupSuffix
                         + ")")
+                .map(formula -> Selectable.parse(formula).withSerial())
+                .collect(Collectors.toList()))
                 .updateView(
                         "byteCol= Double.isNaN(byteCol) ? NULL_DOUBLE : byteCol",
                         "shortCol= Double.isNaN(shortCol) ? NULL_DOUBLE : shortCol",

@@ -42,7 +42,15 @@ Each delta and snapshot is then propagated to its subscribers. When a message go
 
 5. Writing to the gRPC stream
 
-For each subscriber, Barrage writes the subscriber-specific filtered view of the update (including coalesced deltas and snapshots) to the subscriber's gRPC stream. Barrage records `WriteNanos`, the time it took to encode that view and hand it to gRPC, and `WriteBytes`, the size of the record batches written for that update to that subscriber (dictionary messages are not counted, except in a message that carries no rows). A single update may be split across several gRPC messages. `WriteBytes` is a size per write, not a rate; see [Barrage metrics](../how-to-guides/performance/barrage-performance.md) for converting it in a query.
+Barrage writes each subscriber its view of the update (coalesced deltas or a snapshot) to that subscriber's gRPC stream. Barrage records `WriteNanos`, the time it took to encode one write of the update and hand it to gRPC, and `WriteBytes`, the number of bytes in that write, once for each subscriber it was sent to. `WriteBytes` counts every message in the write, dictionary batches included, and a single update may be split across several gRPC messages. `WriteBytes` is a size, not a rate. To compare the traffic against the bandwidth of the connected hardware, estimate the bytes sent during a reporting interval as the `WriteBytes` count multiplied by a typical size, such as the median, and divide by the interval's length. The interval is one minute unless `BarragePerformanceLog.cycleDurationMillis` sets another.
+
+Full-table subscribers that would receive identical bytes share one write of each update (see [Share one write among identical subscribers](../how-to-guides/performance/barrage-performance.md#share-one-write-among-identical-subscribers)). For a shared write:
+
+- Barrage records `WriteNanos` once, including the time to copy the bytes to every subscriber that shares the write.
+- Barrage records `WriteBytes` once for each subscriber that was sent the whole write, as the size of one copy, just as it would if each subscriber had a write of its own.
+- When a table has dictionary-encoded columns, the dictionary values sent before a shared write to subscribers that were behind the others are a write of their own: one `WriteNanos` sample, and one `WriteBytes` sample for each subscriber sent them.
+
+So the `WriteNanos` count is the number of writes, and the `WriteBytes` count is the number of times a subscriber was sent one. Sharing lowers the first, but not the second.
 
 6. Receiver deserializes gRPC messages into an update (coalesced or snapshot)
 
@@ -66,7 +74,7 @@ The snapshot request is queued for processing. Barrage records `QueueNanos`, the
 
 2. The snapshot is constructed
 
-The snapshot request is then fulfilled. For a refreshing table, Barrage normally builds the snapshot concurrently with the UG, retrying if the table changes during an attempt. If those concurrent attempts keep failing, or a failed attempt takes too long, Barrage holds the UG shared lock for a final attempt. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener, and `WriteNanos` and `WriteBytes`, the time it took to write, and the size of the record batches written (dictionary messages are not counted, except in a message that carries no rows).
+The snapshot request is then fulfilled. For a refreshing table, Barrage normally builds the snapshot concurrently with the UG, retrying if the table changes during an attempt. If those concurrent attempts keep failing, or a failed attempt takes too long, Barrage holds the UG shared lock for a final attempt. Barrage records `SnapshotNanos`, the time it took to construct the snapshot for the listener, and `WriteNanos` and `WriteBytes`, the time it took to write, and the size of every message written, dictionary batches included.
 
 A static table is snapshotted in chunks, without locking. Each chunk that is written produces its own row, with that chunk's `WriteNanos` and `WriteBytes` and the `SnapshotNanos` accumulated so far, so a large static snapshot can produce several rows.
 
