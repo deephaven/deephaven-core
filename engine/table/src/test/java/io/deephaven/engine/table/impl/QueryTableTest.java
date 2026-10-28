@@ -3960,6 +3960,48 @@ public class QueryTableTest extends QueryTableTestBase {
         dualPool.shutdownNow();
     }
 
+    /**
+     * While one caller computes a memoized result, a caller that may not wait computes its own result without waiting,
+     * and that result is not cached; the first caller's result is.
+     */
+    @Test
+    public void testMemoizedResultCallerThatMayNotWait() throws Exception {
+        final MemoizedResult<Object> memoizedResult = new MemoizedResult<>();
+        final Object firstResult = new Object();
+        final Object uncachedResult = new Object();
+        final CountDownLatch firstComputing = new CountDownLatch(1);
+        final CountDownLatch releaseFirst = new CountDownLatch(1);
+
+        final ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            final Future<Object> firstCall = executor.submit(() -> memoizedResult.getOrCompute(() -> {
+                firstComputing.countDown();
+                try {
+                    assertTrue(releaseFirst.await(30, TimeUnit.SECONDS));
+                } catch (final InterruptedException e) {
+                    throw new AssertionError(e);
+                }
+                return firstResult;
+            }, true));
+            try {
+                assertTrue(firstComputing.await(30, TimeUnit.SECONDS));
+                final Future<Object> mayNotWaitCall =
+                        executor.submit(() -> memoizedResult.getOrCompute(() -> uncachedResult, false));
+                // completes while the first computation is still in progress
+                assertSame(uncachedResult, mayNotWaitCall.get(30, TimeUnit.SECONDS));
+                assertFalse(firstCall.isDone());
+            } finally {
+                releaseFirst.countDown();
+            }
+            assertSame(firstResult, firstCall.get(30, TimeUnit.SECONDS));
+            assertSame(firstResult, memoizedResult.getOrCompute(() -> {
+                throw new AssertionError("the cached result should be reused");
+            }, false));
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
     @Test
     public void testWhereInGrouped() throws IOException {
         diskBackedTestHarness(t -> {

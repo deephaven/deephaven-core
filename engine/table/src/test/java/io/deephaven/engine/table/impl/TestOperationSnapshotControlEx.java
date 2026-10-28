@@ -19,6 +19,8 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraphWaitForbiddenException;
+import io.deephaven.engine.updategraph.UpdateGraphWaitGuard;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -38,6 +40,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -157,6 +160,42 @@ public class TestOperationSnapshotControlEx {
 
             // The aware extra changed on this step, which is irrelevant to a current values read.
             assertTrue(control.snapshotConsistent(clockValue, false));
+        } finally {
+            pool.shutdownNow();
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+        }
+    }
+
+    /**
+     * When the source is satisfied but an extra is not, the control waits for the extra; on a thread forbidden to wait
+     * for the update graph, that wait is refused instead. Once the extra is satisfied, the cycle completes normally,
+     * delivering the notification the refused wait left queued.
+     */
+    @Test
+    public void testPartialSatisfactionWaitRefusedWhileWaitsForbidden() throws Exception {
+        final QueryTable source = refreshingSource();
+        final TestObliviousStepSource oblivious = new TestObliviousStepSource();
+        final OperationSnapshotControlEx control = new OperationSnapshotControlEx(source, oblivious);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final ExecutorService pool = Executors.newSingleThreadExecutor();
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            final long clockValue = updateGraph.clock().currentValue();
+            source.setLastNotificationStep(LogicalClock.getStep(clockValue));
+
+            // Decided off-thread with a timeout, so that a wait shows up as a failure rather than a hang.
+            final Future<Boolean> decision = pool.submit(() -> {
+                try (final SafeCloseable ignored = UpdateGraphWaitGuard.forbidWaits()) {
+                    return control.usePreviousValues(clockValue);
+                }
+            });
+            final ExecutionException failure =
+                    assertThrows(ExecutionException.class, () -> decision.get(5, TimeUnit.SECONDS));
+            assertTrue(String.valueOf(failure.getCause()),
+                    failure.getCause() instanceof UpdateGraphWaitForbiddenException);
+            oblivious.satisfied = true;
         } finally {
             pool.shutdownNow();
             updateGraph.markSourcesRefreshedForUnitTests();

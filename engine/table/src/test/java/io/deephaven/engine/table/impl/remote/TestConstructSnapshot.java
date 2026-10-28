@@ -269,14 +269,10 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
                         return ConstructSnapshot.callDataSnapshotFunction("outer", control, outer);
                     }
                 });
-                try {
-                    snapshotStep.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-                    fail("Expected UpdateGraphWaitForbiddenException");
-                } catch (ExecutionException e) {
-                    if (!(e.getCause() instanceof UpdateGraphWaitForbiddenException)) {
-                        throw e;
-                    }
-                }
+                final ExecutionException failure = assertThrows(ExecutionException.class,
+                        () -> snapshotStep.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+                assertTrue(String.valueOf(failure.getCause()),
+                        failure.getCause() instanceof UpdateGraphWaitForbiddenException);
             } finally {
                 updateGraph.exclusiveLock().unlock();
             }
