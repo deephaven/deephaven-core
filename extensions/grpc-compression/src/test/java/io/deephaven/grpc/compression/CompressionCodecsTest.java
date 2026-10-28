@@ -10,6 +10,8 @@ import io.grpc.Decompressor;
 import io.grpc.DecompressorRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.xerial.snappy.SnappyError;
+import org.xerial.snappy.SnappyErrorCode;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -86,16 +88,25 @@ public class CompressionCodecsTest {
 
     @Test
     public void failingProvidersAreIgnored() {
-        // a missing native library surfaces as an UnsatisfiedLinkError, and a failed static initializer as an
-        // ExceptionInInitializerError
+        // a missing native library surfaces as an UnsatisfiedLinkError from zstd-jni and as a SnappyError from
+        // snappy-java, and a failed static initializer as an ExceptionInInitializerError
         for (final Throwable failure : List.of(new IllegalStateException("broken"),
                 new UnsatisfiedLinkError("no zstd-jni in java.library.path"),
+                new SnappyError(SnappyErrorCode.FAILED_TO_LOAD_NATIVE_LIBRARY,
+                        "no native library is found for os.name=Unknown and os.arch=unknown"),
                 new ExceptionInInitializerError("broken"))) {
             assertThat(codecsOf(
                     List.of(new FailingProvider(failure), new GzipCodecProvider())).keySet())
                     .as(failure.toString())
                     .containsExactly("gzip");
         }
+    }
+
+    @Test
+    public void virtualMachineErrorsFromProvidersAreThrown() {
+        final OutOfMemoryError failure = new OutOfMemoryError("test");
+        assertThatThrownBy(() -> codecsOf(List.of(new FailingProvider(failure), new GzipCodecProvider())))
+                .isSameAs(failure);
     }
 
     @Test

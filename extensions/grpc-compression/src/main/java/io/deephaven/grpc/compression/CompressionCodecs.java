@@ -78,9 +78,10 @@ public final class CompressionCodecs {
      * Collects the codec of each of {@code providers}. Failures are logged, never thrown, because this runs in the
      * static initializer: a provider that cannot be loaded, whose {@link CompressionCodecProvider#codec() codec()}
      * throws, or that supplies no codec or a codec whose name is malformed or {@code identity} is logged and left out,
-     * and the other providers are still used. When two providers supply the same name, a deployment's provider replaces
-     * a {@link #isBuiltIn built-in} one, and of two deployment providers the one whose class name sorts first is kept,
-     * whatever the classpath order; the choice is logged.
+     * and the other providers are still used. Only a {@link VirtualMachineError}, such as {@link OutOfMemoryError}, is
+     * thrown. When two providers supply the same name, a deployment's provider replaces a {@link #isBuiltIn built-in}
+     * one, and of two deployment providers the one whose class name sorts first is kept, whatever the classpath order;
+     * the choice is logged.
      *
      * @param providers the providers of the codecs
      * @return the codec of each provider kept, by encoding name, sorted by name
@@ -108,8 +109,12 @@ public final class CompressionCodecs {
             final Codec codec;
             try {
                 codec = provider.codec();
-            } catch (final Exception | LinkageError e) {
-                // LinkageError covers a missing or broken native library and a failed static initializer
+            } catch (final VirtualMachineError e) {
+                // the JVM failing, such as running out of memory, rather than the provider
+                throw e;
+            } catch (final Exception | Error e) {
+                // Error covers a native library that cannot load, which zstd-jni reports as a LinkageError and
+                // snappy-java as SnappyError, and a failed static initializer
                 log.warn("Ignoring compression codec provider {}, whose codec could not be created", source, e);
                 continue;
             }
