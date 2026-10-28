@@ -244,6 +244,13 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     /**
      * Create a {@link DataIndex} for {@code table} indexing {@code keyColumns}, if no valid, live data index already
      * exists for these inputs.
+     * <p>
+     * The returned index's {@link DataIndex#table() table} may not be {@link DataIndex#tableIsCached() cached}; it is
+     * created when first requested. Some operations, such as {@link Table#where(io.deephaven.api.filter.Filter) where},
+     * use only data indexes whose tables are cached, and do not create them. To ensure that the table is cached, the
+     * caller must call {@link DataIndex#table()} on the returned index. The index retains its table once created, but
+     * this DataIndexer may reference the index only weakly, so the caller must keep the index reachable and live for as
+     * long as other operations should find it with its table cached.
      *
      * @param table The {@link Table} to index
      * @param keyColumnNames The key column names to include
@@ -259,6 +266,13 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     /**
      * Create a {@link DataIndex} for {@code table} indexing {@code keyColumns}, if no valid, live data index already
      * exists for these inputs.
+     * <p>
+     * The returned index's {@link DataIndex#table() table} may not be {@link DataIndex#tableIsCached() cached}; it is
+     * created when first requested. Some operations, such as {@link Table#where(io.deephaven.api.filter.Filter) where},
+     * use only data indexes whose tables are cached, and do not create them. To ensure that the table is cached, the
+     * caller must call {@link DataIndex#table()} on the returned index. The index retains its table once created, but
+     * this DataIndexer may reference the index only weakly, so the caller must keep the index reachable and live for as
+     * long as other operations should find it with its table cached.
      *
      * @param table The {@link Table} to index
      * @param keyColumnNames The key column names to include
