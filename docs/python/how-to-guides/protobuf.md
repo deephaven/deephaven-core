@@ -204,7 +204,7 @@ The `inputtable.proto` file defines a service that lets a client API add rows to
 
 ## Streaming RPCs: the console service
 
-Deephaven's [`ConsoleService`](/core/client-api/protobuf/) is the gRPC service behind the web IDE's code console. The [console service guide](./configuration/console-service.md) shows how to configure it. `ConsoleService` is more complex than the input table service, which only adds and removes rows with simple request/response calls. `ConsoleService` lets a client run commands on the server, cancel them, check heap usage, use autocomplete, subscribe to logs, and more.
+Deephaven's [`ConsoleService`](/core/client-api/protobuf/) is the gRPC service behind the web IDE's code console. The [console service guide](./configuration/console-service.md) shows how to configure it. `ConsoleService` is more complex than the input table service, which only adds and removes rows with simple request/response calls. `ConsoleService` lets a client run commands on the server, check heap usage, use autocomplete, subscribe to logs, and more.
 
 The following excerpt shows the `ConsoleService` service definition. See the full [`console.proto`](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/console.proto) on GitHub for the messages it uses.
 
@@ -244,6 +244,8 @@ service ConsoleService {
     rpc NextAutoCompleteStream(AutoCompleteRequest) returns (BrowserNextResponse) {}
 }
 ```
+
+The service definition includes `CancelCommand`, but the server doesn't implement it yet. A call to it returns an `UNIMPLEMENTED` error.
 
 The `stream` keyword marks a request or response as a stream of messages instead of a single message. Where `stream` appears in a method sets the method's kind. `ConsoleService` uses three kinds of RPC method:
 
