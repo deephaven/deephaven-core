@@ -5,7 +5,7 @@ title: Periodic Update Graph
 This guide discusses how to control the update frequency of your Deephaven tables, which allows you to fine-tune your application's latency. It also covers the thread pool that initializes new table operations.
 
 > [!IMPORTANT]
-> The thread settings on this page (`updateThreads`, `interCycleYield`, and `OperationInitializationThreadPool.threads`) do not let Python code run in parallel. Python's Global Interpreter Lock (GIL) allows only one thread to run Python code at a time, so Python functions called from table operations run serially. Built-in operations that run in Java still use these thread pools.
+> Python builds that use the Global Interpreter Lock (GIL) cannot execute Python bytecode on multiple threads at once. In free-threaded builds, eligible Python functions in table operations can run in parallel. Built-in operations that run in Java can use these thread pools regardless of the Python threading model.
 >
 > The timing settings `targetCycleDurationMillis` and `minimumInterCycleSleep` control when refresh cycles start. They do not change how fast Python code runs.
 
