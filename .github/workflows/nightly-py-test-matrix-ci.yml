@@ -97,11 +97,10 @@ jobs:
         # py-test-matrix.sh uses uv to get the Python version and make the venv.
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
-          # uv compiles any dependency that has no wheel for the job's Python, often grpcio and numba on free-threaded
-          # builds. The cache keeps the built wheels for later runs.
-          enable-cache: true
-          cache-dependency-glob: 'py/*/setup.py'
-          cache-suffix: ${{ matrix.suite }}-${{ matrix.python-version }}
+          # setup-uv caches by default. Each job's cache is 0.4 to 1.4 GB, so the 16 jobs would fill most of the repo's
+          # 10 GB Actions cache and evict the Gradle caches that PR builds use. Without it, uv compiles grpcio and numba
+          # on the free-threaded jobs every run, which adds about 17 minutes to each of them.
+          enable-cache: false
 
       - name: Install Graphviz
         if: ${{ matrix.suite == 'server' }}
