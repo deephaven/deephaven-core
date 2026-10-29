@@ -933,7 +933,7 @@ public class WindowCheck {
      */
     private static final class Times {
         /**
-         * The time that previous values are computed against, once the update graph has captured a new time.
+         * The time that previous values are computed against while {@link #clockStep} is the current step.
          */
         private final long prevTime;
         /**
@@ -977,15 +977,13 @@ public class WindowCheck {
          * values while the update graph captures a new time reads a consistent set of them.
          */
         private volatile Times times;
-        private final long initialStep;
 
         InWindowColumnSource(Table table, String timestampColumn, long windowNanos) {
             super(Boolean.class);
             this.windowNanos = windowNanos;
             this.timeStampName = timestampColumn;
 
-            initialStep = updateGraph.clock().currentStep();
-            times = new Times(0, 0, initialStep);
+            times = new Times(0, 0, updateGraph.clock().currentStep());
 
             final ColumnSource<?> timeStampSource = table.getColumnSource(timestampColumn);
             final ColumnSource<?> reinterpreted = ReinterpretUtils.maybeConvertToPrimitive(timeStampSource);
@@ -1000,11 +998,12 @@ public class WindowCheck {
         }
 
         /**
-         * Initialize the first currentTime. Called outside the constructor, because subclasses may overload
-         * getTimeNanos().
+         * Initialize the first time, which previous values are also computed against until the update graph captures a
+         * new one. Called outside the constructor, because subclasses may overload getTimeNanos().
          */
         private void init() {
-            times = new Times(0, getTimeNanos(), initialStep);
+            final long initialTime = getTimeNanos();
+            times = new Times(initialTime, initialTime, times.clockStep);
         }
 
         long getTimeNanos() {
@@ -1110,9 +1109,7 @@ public class WindowCheck {
         private long timeStampForPrev() {
             final Times localTimes = times;
             final long currentStep = updateGraph.clock().currentStep();
-            return (localTimes.clockStep < currentStep || localTimes.clockStep == initialStep)
-                    ? localTimes.currentTime
-                    : localTimes.prevTime;
+            return localTimes.clockStep < currentStep ? localTimes.currentTime : localTimes.prevTime;
         }
 
         @Override
