@@ -11,6 +11,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -94,60 +95,116 @@ public class WindowCheck {
     @InternalUseOnly
     public static Pair<Table, TimeWindowListener> addTimeWindowInternal(Clock clock, QueryTable table,
             String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
-        final OperationSnapshotControl snapshotControl =
-                table.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
+        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        // registered before any attempt, so that it is in place for every cycle after the committing attempt activates
+        // its listener
+        final TimeWindowUpdateSource updateSource = addToMonitor ? new TimeWindowUpdateSource() : null;
         final MutableObject<QueryTable> resultHolder = new MutableObject<>();
         final MutableObject<TimeWindowListenerImpl> listenerHolder = new MutableObject<>();
         final MutableBoolean rowsCanBeUpdatedHolder = new MutableBoolean();
 
-        BaseTable.initializeWithSnapshot("addTimeWindow", snapshotControl, (usePrev, beforeClockValue) -> {
-            final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
+        final OperationSnapshotControl snapshotControl = table.isRefreshing()
+                ? new OperationSnapshotControl(table) {
+                    @Override
+                    public synchronized boolean snapshotCompletedConsistently(
+                            final long afterClockValue,
+                            final boolean usedPreviousValues) {
+                        if (!super.snapshotCompletedConsistently(afterClockValue, usedPreviousValues)) {
+                            return false;
+                        }
+                        if (updateSource != null) {
+                            updateSource.activate(listenerHolder.get());
+                        }
+                        return true;
+                    }
+                }
+                : null;
 
-            final InWindowColumnSource inWindowColumnSource;
-            if (clock == null) {
-                inWindowColumnSource = new InWindowColumnSource(table, timestampColumn, windowNanos);
-            } else {
-                inWindowColumnSource =
-                        new InWindowColumnSourceWithClock(clock, table, timestampColumn, windowNanos);
-            }
-            inWindowColumnSource.init();
-            resultColumns.put(inWindowColumn, inWindowColumnSource);
-
-            final QueryTable result = new QueryTable(table.getRowSet(), resultColumns);
-            final WindowListenerRecorder recorder = new WindowListenerRecorder(table, result);
-            final TimeWindowListenerImpl timeWindowListenerImpl =
-                    new TimeWindowListenerImpl(inWindowColumn, inWindowColumnSource, recorder, table, result);
-            // the queue holds row keys in the same space as the values read, and the listener's first update moves
-            // them from previous to current space
-            timeWindowListenerImpl.addRowSequence(usePrev ? table.getRowSet().prev() : table.getRowSet(), false,
-                    usePrev);
-
-            // if we cannot update any rows (because everything is already outside our window),
-            // then there is no sense in having a refreshing output
-            final boolean rowsCanBeUpdated = table.isRefreshing() || !timeWindowListenerImpl.priorityQueue.isEmpty();
-            if (rowsCanBeUpdated) {
-                recorder.setMergedListener(timeWindowListenerImpl);
-                result.addParentReference(timeWindowListenerImpl);
-            }
-            if (snapshotControl != null) {
-                snapshotControl.setListenerAndResult(recorder, result);
-            } else {
-                // the window over a static table has not yet notified on any step, including the one it is created on
-                result.setLastNotificationStep(NotificationStepReceiver.NULL_NOTIFICATION_STEP);
-            }
-            resultHolder.setValue(result);
-            listenerHolder.setValue(timeWindowListenerImpl);
-            rowsCanBeUpdatedHolder.setValue(rowsCanBeUpdated);
-            return true;
-        });
-
-        final QueryTable result = resultHolder.get();
-        final TimeWindowListenerImpl timeWindowListenerImpl = listenerHolder.get();
-        if (rowsCanBeUpdatedHolder.booleanValue() && addToMonitor) {
-            // only the successful attempt's listener is monitored, so that no rejected attempt's listener runs
-            result.getUpdateGraph().addSource(timeWindowListenerImpl);
+        if (updateSource != null) {
+            updateGraph.addSource(updateSource);
         }
-        return new Pair<>(result, timeWindowListenerImpl);
+        try {
+            BaseTable.initializeWithSnapshot("addTimeWindow", snapshotControl, (usePrev, beforeClockValue) -> {
+                final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
+
+                final InWindowColumnSource inWindowColumnSource;
+                if (clock == null) {
+                    inWindowColumnSource = new InWindowColumnSource(table, timestampColumn, windowNanos);
+                } else {
+                    inWindowColumnSource =
+                            new InWindowColumnSourceWithClock(clock, table, timestampColumn, windowNanos);
+                }
+                inWindowColumnSource.init();
+                resultColumns.put(inWindowColumn, inWindowColumnSource);
+
+                final QueryTable result = new QueryTable(table.getRowSet(), resultColumns);
+                final WindowListenerRecorder recorder = new WindowListenerRecorder(table, result);
+                final TimeWindowListenerImpl timeWindowListenerImpl =
+                        new TimeWindowListenerImpl(inWindowColumn, inWindowColumnSource, recorder, table, result);
+                // the queue holds row keys in the same space as the values read, and the listener's first update moves
+                // them from previous to current space
+                timeWindowListenerImpl.addRowSequence(usePrev ? table.getRowSet().prev() : table.getRowSet(), false,
+                        usePrev);
+
+                // if we cannot update any rows (because everything is already outside our window),
+                // then there is no sense in having a refreshing output
+                final boolean rowsCanBeUpdated =
+                        table.isRefreshing() || !timeWindowListenerImpl.priorityQueue.isEmpty();
+                if (rowsCanBeUpdated) {
+                    recorder.setMergedListener(timeWindowListenerImpl);
+                    result.addParentReference(timeWindowListenerImpl);
+                }
+                if (snapshotControl != null) {
+                    snapshotControl.setListenerAndResult(recorder, result);
+                } else {
+                    // the window over a static table has not yet notified on any step, including the one it is created
+                    // on
+                    result.setLastNotificationStep(NotificationStepReceiver.NULL_NOTIFICATION_STEP);
+                }
+                resultHolder.setValue(result);
+                listenerHolder.setValue(timeWindowListenerImpl);
+                rowsCanBeUpdatedHolder.setValue(rowsCanBeUpdated);
+                return true;
+            });
+        } catch (final RuntimeException | Error failure) {
+            if (updateSource != null) {
+                updateGraph.removeSource(updateSource);
+            }
+            throw failure;
+        }
+
+        if (snapshotControl == null && updateSource != null) {
+            // a static table's window is built once, without a snapshot to commit
+            if (rowsCanBeUpdatedHolder.booleanValue()) {
+                updateSource.activate(listenerHolder.get());
+            } else {
+                updateGraph.removeSource(updateSource);
+            }
+        }
+        return new Pair<>(resultHolder.get(), listenerHolder.get());
+    }
+
+    /**
+     * The update source that captures a window's time. It is registered before the window's snapshot begins, and runs
+     * only the listener of the attempt that commits, once that attempt has committed. Until then it does nothing, so
+     * the window's time stays at its creation time, as do the values and notifications computed against it.
+     */
+    private static final class TimeWindowUpdateSource implements Runnable {
+
+        private volatile TimeWindowListenerImpl listener;
+
+        private void activate(@NotNull final TimeWindowListenerImpl listener) {
+            listener.updateSource = this;
+            this.listener = listener;
+        }
+
+        @Override
+        public void run() {
+            final TimeWindowListenerImpl localListener = listener;
+            if (localListener != null) {
+                localListener.run();
+            }
+        }
     }
 
     /**
@@ -184,6 +241,10 @@ public class WindowCheck {
         private final ModifiedColumnSet mcsSourceTimestamp;
         private final Table source;
         private final ListenerRecorder recorder;
+        /**
+         * The update source that runs this listener, if it is monitored.
+         */
+        private volatile Runnable updateSource;
 
         /**
          * An intrusive entry in priorityQueue, also stored in rowKeyToEntry (for tables with
@@ -926,8 +987,10 @@ public class WindowCheck {
         @Override
         public void destroy() {
             super.destroy();
-            UpdateGraph updateGraph = result.getUpdateGraph();
-            updateGraph.removeSource(this);
+            final Runnable localUpdateSource = updateSource;
+            if (localUpdateSource != null) {
+                result.getUpdateGraph().removeSource(localUpdateSource);
+            }
         }
     }
 
