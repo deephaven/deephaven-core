@@ -2,9 +2,10 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
+import threading
 import unittest
 from dataclasses import dataclass
-from time import sleep
+from time import monotonic, sleep
 
 import jpy
 import numpy as np
@@ -650,26 +651,38 @@ class TableFactoryTestCase(BaseTestCase):
         ]
         t = new_table(cols=cols)
 
+        # The callbacks run on Java's ForkJoinPool threads, sometimes two at once. With the GIL off, an unlocked
+        # success_count += 1 can lose a count, and the wait for it then never ends.
+        count_lock = threading.Lock()
+        success_count = 0
+
+        def on_success():
+            nonlocal success_count
+            with count_lock:
+                success_count += 1
+
+        def wait_for_success_count(n: int, timeout: float = 30):
+            deadline = monotonic() + timeout
+            while success_count < n:
+                if monotonic() > deadline:
+                    self.fail(
+                        f"got {success_count} of {n} on_success calls after {timeout} seconds"
+                    )
+                sleep(0.1)
+
         with self.subTest("async add"):
             self.assertEqual(t.size, 2)
-            success_count = 0
-
-            def on_success():
-                nonlocal success_count
-                success_count += 1
 
             append_only_input_table = input_table(col_defs=t.definition)
             append_only_input_table.add_async(t, on_success=on_success)
             append_only_input_table.add_async(t, on_success=on_success)
-            while success_count < 2:
-                sleep(0.1)
+            wait_for_success_count(2)
             self.assertEqual(append_only_input_table.size, 4)
 
             keyed_input_table = input_table(col_defs=t.definition, key_cols="String")
             keyed_input_table.add_async(t, on_success=on_success)
             keyed_input_table.add_async(t, on_success=on_success)
-            while success_count < 4:
-                sleep(0.1)
+            wait_for_success_count(4)
             self.assertEqual(keyed_input_table.size, 2)
 
         with self.subTest("async delete"):
@@ -677,8 +690,7 @@ class TableFactoryTestCase(BaseTestCase):
             keyed_input_table.delete_async(
                 t.select(["String", "Double"]), on_success=on_success
             )
-            while success_count < 5:
-                sleep(0.1)
+            wait_for_success_count(5)
             self.assertEqual(keyed_input_table.size, 0)
             t1 = t.drop_columns("String")
 
