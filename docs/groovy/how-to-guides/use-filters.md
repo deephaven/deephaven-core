@@ -206,7 +206,7 @@ Use it to simulate ticking data during development, or to limit the number of ro
 The [`IncrementalReleaseFilter`](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/table/impl/select/IncrementalReleaseFilter.html) constructor takes two parameters:
 
 - The initial number of rows to present in the resulting table.
-- The number of rows to release at the beginning of each [update graph](../conceptual/dag.md#update-graph-ug-cycles) cycle, which is one round in which Deephaven processes table updates.
+- The number of rows to release at the beginning of each [update graph](../conceptual/dag.md#update-graph-cycles) cycle, which is one round in which Deephaven processes table updates.
 
 ```groovy test-set=1 ticking-table order=null
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter

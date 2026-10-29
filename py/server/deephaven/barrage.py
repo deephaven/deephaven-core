@@ -6,9 +6,12 @@ for accessing resources on remote Deephaven servers."""
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import jpy
 
 from deephaven import DHError
+from deephaven.jcompat import j_hashset, to_str_sequence
 from deephaven.table import Table
 
 _JURI = jpy.get_type("java.net.URI")
@@ -130,6 +133,7 @@ def barrage_session(
     use_tls: bool = False,
     tls_root_certs: bytes | None = None,
     extra_headers: dict[str, str] | None = None,
+    accept_compression: str | Sequence[str] | None = None,
 ) -> BarrageSession:
     """Returns a Deephaven gRPC session to a remote server if a cached session is available; otherwise, creates a new
     session.
@@ -150,6 +154,10 @@ def barrage_session(
              If not None implies use a TLS connection and the use_tls argument should have been passed
              as True. Defaults to None
         extra_headers (Optional[dict[str, str]]): extra headers to set when configuring the gRPC channel. Defaults to None.
+        accept_compression (Optional[Union[str, Sequence[str]]]): the compression type, or types, that the session
+            accepts, such as "gzip", "zstd" and "snappy". The remote server compresses only tables that allow one of
+            them. None accepts every supported type; an empty sequence accepts none, so data is always sent
+            uncompressed. Defaults to None.
 
     Returns:
         a Deephaven Barrage session
@@ -168,7 +176,7 @@ def barrage_session(
             target_uri = f"dh+plain://{target_uri}"
 
         j_client_config = _build_client_config(
-            target_uri, tls_root_certs, extra_headers
+            target_uri, tls_root_certs, extra_headers, accept_compression
         )
         if not auth_token:
             auth = auth_type
@@ -246,12 +254,16 @@ def _build_client_config(
     target_uri: str,
     tls_root_certs: bytes | None,
     extra_headers: dict[str, str] | None = None,
+    accept_compression: str | Sequence[str] | None = None,
 ) -> jpy.JType:
     j_client_config_builder = _JClientConfig.builder()
     j_client_config_builder.target(_JDeephavenTarget.of(_JURI(target_uri)))
     if extra_headers:
         for header, value in extra_headers.items():
             j_client_config_builder.putExtraHeaders(header, value)
+    if accept_compression is not None:
+        names = to_str_sequence(accept_compression, "compression type name")
+        j_client_config_builder.acceptCompression(j_hashset(set(names)))
     if tls_root_certs:
         j_ssl_config = (
             _JSSLConfig.builder()
