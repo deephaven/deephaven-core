@@ -256,6 +256,9 @@ project(':extensions-barrage').projectDir = file('extensions/barrage')
 include(':extensions-barrage-benchmark')
 project(':extensions-barrage-benchmark').projectDir = file('extensions/barrage/benchmark')
 
+include(':extensions-grpc-compression')
+project(':extensions-grpc-compression').projectDir = file('extensions/grpc-compression')
+
 include(':extensions-classgraph')
 project(':extensions-classgraph').projectDir = file('extensions/classgraph')
 

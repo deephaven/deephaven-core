@@ -17,6 +17,7 @@ barrage_session(
   use_tls: bool = False,
   tls_root_certs: bytes = None,
   extra_headers: dict[str, str] = None,
+  accept_compression: Union[str, Sequence[str]] = None
 ) -> BarrageSession
 ```
 
@@ -58,6 +59,11 @@ The PEM-encoded root certificates to use for TLS connection, or `None` (or an em
 Extra headers to set when configuring the gRPC channel. Defaults to `None`.
 
 </Param>
+<Param name="accept_compression" type="Union[str, Sequence[str]]" optional>
+
+The compression type, or types, that the session accepts, such as `"gzip"`, `"zstd"`, and `"snappy"`. The remote server compresses only tables that allow one of these types; see [Compress Barrage data](../../../how-to-guides/performance/barrage-performance.md#compress-barrage-data). `None` accepts every supported type. An empty sequence accepts none, so data is always sent uncompressed. Defaults to `None`.
+
+</Param>
 </ParamTable>
 
 ## Returns
@@ -66,7 +72,7 @@ A [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.B
 
 ## Examples
 
-The following example creates a [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) on a Deephaven server running on `localhost` at port `10000`. This and the next two examples use the default anonymous authentication, so the target server must allow [anonymous authentication](../../../how-to-guides/authentication/auth-anon.md) (`-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler`); the default server configuration uses [pre-shared key authentication](../../../how-to-guides/authentication/auth-psk.md).
+The following example creates a [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) on a Deephaven server running on `localhost` at port `10000`. Every example except the pre-shared-key one uses the default anonymous authentication, so the target server must allow [anonymous authentication](../../../how-to-guides/authentication/auth-anon.md) (`-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler`); the default server configuration uses [pre-shared key authentication](../../../how-to-guides/authentication/auth-psk.md).
 
 ```python skip-test
 from deephaven.barrage import barrage_session
@@ -101,6 +107,14 @@ barrage_sesh = barrage_session(
     auth_type="io.deephaven.authentication.psk.PskAuthenticationHandler",
     auth_token="PASSWORD",
 )
+```
+
+The following example creates a session that accepts only `zstd` compression from the remote server. Tables that do not allow `zstd` still arrive uncompressed.
+
+```python skip-test
+from deephaven.barrage import barrage_session
+
+barrage_sesh = barrage_session("localhost", 10000, accept_compression="zstd")
 ```
 
 ## Related documentation

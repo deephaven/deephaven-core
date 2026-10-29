@@ -11,6 +11,8 @@ import io.deephaven.uri.DeephavenUri;
 import picocli.CommandLine.Option;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ConnectOptions {
 
@@ -52,6 +54,16 @@ public class ConnectOptions {
     @Option(names = {"--header"})
     Map<String, String> headers;
 
+    @Option(names = {"--accept-compression"}, split = ",",
+            description = "The compression types to accept, such as gzip, zstd and snappy; "
+                    + "defaults to every supported type. Pass an empty value to accept none.")
+    Set<String> acceptCompression;
+
+    @Option(names = {"--request-compression"},
+            description = "The compression type to compress DoPut uploads with, such as gzip or zstd; "
+                    + "uploads are sent uncompressed by default.")
+    String requestCompression;
+
     public ClientConfig config() {
         final Builder builder = ClientConfig.builder().target(target);
         if (userAgent != null) {
@@ -68,6 +80,15 @@ public class ConnectOptions {
         }
         if (headers != null) {
             builder.putAllExtraHeaders(headers);
+        }
+        if (acceptCompression != null) {
+            // an empty --accept-compression value parses as a single blank entry
+            builder.acceptCompression(acceptCompression.stream()
+                    .filter(name -> !name.isBlank())
+                    .collect(Collectors.toSet()));
+        }
+        if (requestCompression != null) {
+            builder.requestCompression(requestCompression);
         }
         return builder.build();
     }
