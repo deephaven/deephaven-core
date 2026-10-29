@@ -33,7 +33,7 @@ A blink table.
 
 The following example creates an append-only table with [`time_table`](./timeTable.md) and then converts it to a blink table with `add_only_to_blink`. This example uses `add_only_to_blink` on an in-memory table, which is not recommended, but it illustrates the syntax of the method.
 
-```python order=null
+```python ticking-table order=null
 from deephaven.stream import add_only_to_blink
 from deephaven import time_table
 

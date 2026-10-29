@@ -8,44 +8,67 @@ A quick reference for table operations
 
 </div>
 
-For the concepts behind table operations — immutability, formulas, dependencies — see [Understanding the Table API](./table-api.md). This page is a quick-reference index of what's available; each guide linked below covers its operation in full, with examples.
+This page is a quick-reference index of common table operations in Deephaven. Find your task in the table, then follow the link to the operation's reference page for its syntax and examples.
+
+These operations work the same way on [static tables and on real-time tables that tick](./table-types.md). When the source data changes, their results update with it. The one exception in the quick-reference table below is [`range_join`](../reference/table-operations/join/range-join.md), which supports only static tables.
+
+To learn a group of operations by task, see the how-to guides:
+
+- [Filter table data](../how-to-guides/use-filters.md)
+- [Select and create columns](../how-to-guides/use-select-view-update.md)
+- [Drop, move, and rename columns](../how-to-guides/drop-move-rename-columns.md)
+- [Sort table data](../how-to-guides/sort.md)
+- [Exact and relational joins](../how-to-guides/joins-exact-relational.md)
+- [Inexact, time-series, and range joins](../how-to-guides/joins-timeseries-range.md)
+- [Group and ungroup data](../how-to-guides/grouping-data.md)
+- [Single aggregation](../how-to-guides/dedicated-aggregations.md)
+- [Multi-aggregation](../how-to-guides/combined-aggregations.md)
+- [Rolling aggregations](../how-to-guides/rolling-aggregations.md)
+- [Merge tables](../how-to-guides/merge-tables.md)
+
+To choose among the aggregation operations, see [Aggregations in Deephaven](./aggregations.md). To learn the concepts behind table operations, such as immutability, formula strings, and the dependency graph, see [Understanding the Table API](./table-api.md). For formulas in depth, see [Formulas](../how-to-guides/formulas.md).
 
 ## Quick reference
 
-| I want to...                                          | Use this                                                                                                              |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Keep rows matching a condition                        | [`where("condition")`](../reference/table-operations/filter/where.md)                                                 |
-| Get first/last N rows                                 | [`head(n)`](../reference/table-operations/filter/head.md) / [`tail(n)`](../reference/table-operations/filter/tail.md) |
-| Add columns (stored)                                  | [`update(["NewColumn = formula"])`](../reference/table-operations/select/update.md)                                   |
-| Add columns (computed on demand)                      | [`update_view(["NewColumn = formula"])`](../reference/table-operations/select/update-view.md)                         |
-| Keep only specific columns                            | [`select(["Column1", "Column2"])`](../reference/table-operations/select/select.md)                                    |
-| Compute specific columns on demand, dropping the rest | [`view(["Column1", "NewColumn = formula"])`](../reference/table-operations/select/view.md)                            |
-| Sort by column                                        | [`sort("Column")`](../reference/table-operations/sort/sort.md)                                                        |
-| Sort in reverse order                                 | [`sort_descending("Column")`](../reference/table-operations/sort/sort-descending.md)                                  |
-| Join lookup data                                      | [`natural_join(other, on=["Key"])`](../reference/table-operations/join/natural-join.md)                               |
-| Join requiring exactly one match                      | [`exact_join(other, on=["Key"])`](../reference/table-operations/join/exact-join.md)                                   |
-| Cross or key-matched join                             | [`join(other, on=["Key"])`](../reference/table-operations/join/join.md)                                               |
-| Match on a timestamp/ordered key                      | [`aj(other, on=["Key"])`](../reference/table-operations/join/aj.md)                                                   |
-| Aggregate by groups                                   | [`agg_by([agg.sum_(...)], by=["Key"])`](../reference/table-operations/group-and-aggregate/aggBy.md)                   |
+| I want to...                                                                           | Use this                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Keep rows matching a condition                                                         | [`where("condition")`](../reference/table-operations/filter/where.md)                                                                                                                                                                                                                                                                                                                              |
+| Keep rows whose key values appear, or don't appear, in another table                   | [`where_in(filter_table, cols=["Key"])`](../reference/table-operations/filter/where-in.md) / [`where_not_in(filter_table, cols=["Key"])`](../reference/table-operations/filter/where-not-in.md)                                                                                                                                                                                                    |
+| Get the first or last `n` rows                                                         | [`head(n)`](../reference/table-operations/filter/head.md) / [`tail(n)`](../reference/table-operations/filter/tail.md)                                                                                                                                                                                                                                                                              |
+| Add columns (stored in memory)                                                         | [`update(["NewColumn = formula"])`](../reference/table-operations/select/update.md)                                                                                                                                                                                                                                                                                                                |
+| Add columns (computed on demand)                                                       | [`update_view(["NewColumn = formula"])`](../reference/table-operations/select/update-view.md)                                                                                                                                                                                                                                                                                                      |
+| Keep or compute specific columns (stored in memory), dropping the rest                 | [`select(["Column1", "NewColumn = formula"])`](../reference/table-operations/select/select.md)                                                                                                                                                                                                                                                                                                     |
+| Keep or compute specific columns (computed on demand), dropping the rest               | [`view(["Column1", "NewColumn = formula"])`](../reference/table-operations/select/view.md)                                                                                                                                                                                                                                                                                                         |
+| Remove columns                                                                         | [`drop_columns(["Column1"])`](../reference/table-operations/select/drop-columns.md)                                                                                                                                                                                                                                                                                                                |
+| Rename columns                                                                         | [`rename_columns(["NewName = OldName"])`](../reference/table-operations/select/rename-columns.md)                                                                                                                                                                                                                                                                                                  |
+| Sort by column                                                                         | [`sort("Column")`](../reference/table-operations/sort/sort.md)                                                                                                                                                                                                                                                                                                                                     |
+| Sort in descending order                                                               | [`sort_descending("Column")`](../reference/table-operations/sort/sort-descending.md)                                                                                                                                                                                                                                                                                                               |
+| Add columns from a lookup table (at most one match per row, null if no match)          | [`natural_join(other, on=["Key"], joins=["AddedColumn"])`](../reference/table-operations/join/natural-join.md)                                                                                                                                                                                                                                                                                     |
+| Add columns from a table where every row must have exactly one match                   | [`exact_join(other, on=["Key"], joins=["AddedColumn"])`](../reference/table-operations/join/exact-join.md)                                                                                                                                                                                                                                                                                         |
+| Join every matching row, or cross join with no key                                     | [`join(other, on=["Key"])`](../reference/table-operations/join/join.md)                                                                                                                                                                                                                                                                                                                            |
+| Match on a timestamp or other ordered key (closest at or before)                       | [`aj(other, on=["Key", "Timestamp"], joins=["AddedColumn"])`](../reference/table-operations/join/aj.md)                                                                                                                                                                                                                                                                                            |
+| Match on a timestamp or other ordered key (closest at or after)                        | [`raj(other, on=["Key", "Timestamp"], joins=["AddedColumn"])`](../reference/table-operations/join/raj.md)                                                                                                                                                                                                                                                                                          |
+| Group right-table values that fall in a range ([static](./table-types.md) tables only) | [`range_join(other, on=["Key", "Start <= Timestamp <= End"], aggs=[agg.group(...)])`](../reference/table-operations/join/range-join.md)                                                                                                                                                                                                                                                            |
+| Apply one aggregation to every non-key column, per group                               | [`sum_by(by=["Key"])`](../reference/table-operations/group-and-aggregate/sumBy.md) (also [`avg_by`](../reference/table-operations/group-and-aggregate/avgBy.md), [`max_by`](../reference/table-operations/group-and-aggregate/maxBy.md), [`min_by`](../reference/table-operations/group-and-aggregate/minBy.md), and similar [dedicated aggregations](../how-to-guides/dedicated-aggregations.md)) |
+| Count the rows in each group                                                           | [`count_by("Count", by=["Key"])`](../reference/table-operations/group-and-aggregate/countBy.md)                                                                                                                                                                                                                                                                                                    |
+| Apply different aggregations to different columns, per group                           | [`agg_by([agg.sum_(...)], by=["Key"])`](../reference/table-operations/group-and-aggregate/aggBy.md)                                                                                                                                                                                                                                                                                                |
+| Collect each group's values into arrays, or expand arrays back into rows               | [`group_by(by=["Key"])`](../reference/table-operations/group-and-aggregate/groupBy.md) / [`ungroup()`](../reference/table-operations/group-and-aggregate/ungroup.md)                                                                                                                                                                                                                               |
+| Compute cumulative or rolling values                                                   | [`update_by([updateby.cum_sum(...)], by=["Key"])`](../reference/table-operations/update-by-operations/updateBy.md)                                                                                                                                                                                                                                                                                 |
+| Stack tables on top of each other                                                      | [`merge([table1, table2])`](../reference/table-operations/merge/merge.md)                                                                                                                                                                                                                                                                                                                          |
+
+Most entries are methods on a table. [`merge`](../reference/table-operations/merge/merge.md) is a function.
+
+The arguments to [`agg_by`](../reference/table-operations/group-and-aggregate/aggBy.md) come from the [`agg`](/core/pydoc/code/deephaven.agg.html#module-deephaven.agg) module, such as [`agg.sum_`](../reference/table-operations/group-and-aggregate/AggSum.md) and [`agg.group`](../reference/table-operations/group-and-aggregate/AggGroup.md). The arguments to [`update_by`](../reference/table-operations/update-by-operations/updateBy.md) come from the [`updateby`](/core/pydoc/code/deephaven.updateby.html) module, such as [`updateby.cum_sum`](../reference/table-operations/update-by-operations/cum-sum.md). Import `merge` and both modules with:
+
+```python syntax
+from deephaven import agg, merge, updateby
+```
 
 ## Diving deeper: API references
 
-When you need complete method signatures, parameter details, or edge case behavior:
+For complete signatures, type hints, and operation contracts, see the generated API documentation:
 
-- **Pydoc** — [deephaven.table.Table](/core/pydoc/code/deephaven.table.html#deephaven.table.Table): All Python Table methods with type hints and docstrings
-- **Javadoc** — [TableOperations](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html): The operation contracts that define behavior across all languages
+- The [Pydoc for `deephaven.table.Table`](/core/pydoc/code/deephaven.table.html#deephaven.table.Table) lists every Python table method with its type hints and docstring.
+- The [Javadoc for `TableOperations`](/core/javadoc/io/deephaven/api/TableOperations.html) defines the Java operations that the Python methods call.
 
-The reference documentation for each operation (e.g., [`where`](../reference/table-operations/filter/where.md), [`update`](../reference/table-operations/select/update.md)) also links to the relevant Pydoc and Javadoc.
-
-## Related documentation
-
-- [Aggregations in Deephaven](./aggregations.md)
-- [Understanding the Table API](./table-api.md)
-- [Deephaven's design](./deephaven-design.md)
-- [Table types](./table-types.md)
-- [How to use filters](../how-to-guides/use-filters.md)
-- [How to use select, view, and update](../how-to-guides/use-select-view-update.md)
-- [Sort table data](../how-to-guides/sort.md)
-- [Exact and relational joins](../how-to-guides/joins-exact-relational.md)
-- [Time-series and range joins](../how-to-guides/joins-timeseries-range.md)
-- [How to use dedicated aggregations](../how-to-guides/dedicated-aggregations.md)
+Each operation's reference page, such as [`where`](../reference/table-operations/filter/where.md) or [`update`](../reference/table-operations/select/update.md), also links to its Pydoc.

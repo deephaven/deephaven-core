@@ -260,7 +260,7 @@ tAppendOnly = BlinkTableTools.blinkToAppendOnly(t)
 
 ### Create a blink table from an add-only table
 
-It may be useful to create a blink table from an add-only table. This will only provide real benefit if the upstream add-only table is not fully in-memory. If the upstream add-only table is already fully in-memory, the operation will not fail, but there will be no memory savings. Use [`AddOnlyToBlinkTableAdapter.toBlink`](../reference/table-operations/create/addOnlyToBlink.md) to accomplish this:
+It may be useful to create a blink table from an add-only table. This will only provide real benefit if the upstream add-only table is not fully in-memory. If the upstream add-only table is already fully in-memory, the operation still works. However, it increases memory use rather than reducing it. Use [`AddOnlyToBlinkTableAdapter.toBlink`](../reference/table-operations/create/addOnlyToBlink.md) to accomplish this:
 
 ```groovy ticking-table order=null
 import io.deephaven.engine.table.impl.AddOnlyToBlinkTableAdapter
