@@ -452,6 +452,52 @@ public class TestStreamToBlinkTableAdapter {
     }
 
     @Test
+    public void testEnqueuedFailureShutsDownPublisherOutsideAdapterLock() {
+        checkFailureShutsDownPublisherOutsideAdapterLock(false);
+    }
+
+    @Test
+    public void testFailureDuringFlushShutsDownPublisherOutsideAdapterLock() {
+        checkFailureShutsDownPublisherOutsideAdapterLock(true);
+    }
+
+    /**
+     * Deliver a failure from {@link StreamConsumer#acceptFailure} and check that the adapter shuts down the publisher
+     * without holding the adapter's lock.
+     *
+     * @param failDuringFlush Whether the publisher reports the failure from {@link StreamPublisher#flush()}, rather
+     *        than before the update cycle
+     */
+    private static void checkFailureShutsDownPublisherOutsideAdapterLock(final boolean failDuringFlush) {
+        final TableDefinition tableDefinition = TableDefinition.from(List.of("L"), List.of(long.class));
+        final LockRecordingStreamPublisher streamPublisher = new LockRecordingStreamPublisher();
+
+        final StreamToBlinkTableAdapter adapter = new StreamToBlinkTableAdapter(
+                tableDefinition, streamPublisher, ExecutionContext.getContext().getUpdateGraph(), "test");
+        final Table result = adapter.table();
+
+        final MutableBoolean listenerFailed = new MutableBoolean();
+        final SimpleListener listener = new SimpleListener(result) {
+            @Override
+            public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
+                listenerFailed.setTrue();
+            }
+        };
+        result.addUpdateListener(listener);
+
+        if (failDuringFlush) {
+            streamPublisher.failOnFlush = true;
+        } else {
+            adapter.acceptFailure(new RuntimeException("I am a fake failure"));
+        }
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(adapter::run);
+        assertTrue(listenerFailed.booleanValue());
+        assertTrue(streamPublisher.shutdown);
+        assertFalse(streamPublisher.shutdownHeldAdapterLock);
+    }
+
+    @Test
     public void testCleanup() {
         final TableDefinition tableDefinition = TableDefinition.from(
                 List.of("O", "B", "S", "I", "L", "F", "D", "C"),
@@ -496,5 +542,37 @@ public class TestStreamToBlinkTableAdapter {
 
         @Override
         public void shutdown() {}
+    }
+
+    /**
+     * Records whether {@link #shutdown()} ran under the adapter's lock. A publisher may hold the publisher's own lock
+     * while calling {@link StreamConsumer#accept}, which takes the adapter's lock, so a {@code shutdown()} that takes
+     * the publisher's lock under the adapter's lock can deadlock.
+     */
+    private static class LockRecordingStreamPublisher implements StreamPublisher {
+
+        private StreamConsumer consumer;
+        private boolean failOnFlush;
+        private boolean shutdown;
+        private boolean shutdownHeldAdapterLock;
+
+        @Override
+        public void register(@NotNull StreamConsumer consumer) {
+            this.consumer = consumer;
+        }
+
+        @Override
+        public void flush() {
+            if (failOnFlush) {
+                failOnFlush = false;
+                consumer.acceptFailure(new RuntimeException("I am a fake failure"));
+            }
+        }
+
+        @Override
+        public void shutdown() {
+            shutdown = true;
+            shutdownHeldAdapterLock = Thread.holdsLock(consumer);
+        }
     }
 }
