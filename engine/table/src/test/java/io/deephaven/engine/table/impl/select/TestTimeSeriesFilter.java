@@ -605,65 +605,29 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         assertEquals(25, composedFiltered.size());
     }
 
-    /**
-     * A caller that holds no lock filters a refreshing table with a time series filter during an update cycle, before
-     * the table has been notified. The where reads previous values without waiting for the cycle, and its result then
-     * follows the rows the cycle adds and the rows that later leave the window.
-     */
     @Test
     public void testWhereWithoutLockDuringCycle() throws Exception {
-        final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2026-03-10T09:00:00 NY"));
-        final QueryTable source = minuteTable(start, true);
-        final TestClock testClock = new TestClock().setNanos(start + 30 * DateTimeUtils.MINUTE);
-        final TimeSeriesFilter timeSeriesFilter =
-                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).build();
+        checkWhereWithoutLockDuringCycle(true);
+    }
 
-        final ExecutionContext executionContext = ExecutionContext.getContext();
-        final ControlledUpdateGraph updateGraph = executionContext.getUpdateGraph().cast();
-        final ExecutorService unlockedThread = Executors.newSingleThreadExecutor();
-        final Table filtered;
-        updateGraph.startCycleForUnitTests(false);
-        try {
-            addToTable(source, i(60, 61),
-                    col("Timestamp", DateTimeUtils.epochNanosToInstant(start + 60 * DateTimeUtils.MINUTE),
-                            DateTimeUtils.epochNanosToInstant(start + 61 * DateTimeUtils.MINUTE)),
-                    intCol("Sentinel", 60, 61));
-            // a where that waited for the update graph would not complete until the cycle does
-            filtered = unlockedThread.submit(() -> {
-                try (final SafeCloseable ignored = executionContext.open()) {
-                    return source.where(timeSeriesFilter);
-                }
-            }).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            // At 30 minutes, rows 0 through 24 are older than the five minute window.
-            assertEquals(35, filtered.size());
-            source.notifyListeners(i(60, 61), i(), i());
-        } finally {
-            unlockedThread.shutdownNow();
-            updateGraph.markSourcesRefreshedForUnitTests();
-            updateGraph.completeCycleForUnitTests();
-        }
-        assertEquals(37, filtered.size());
-
-        updateGraph.runWithinUnitTestCycle(() -> {
-            testClock.setNanos(start + 40 * DateTimeUtils.MINUTE);
-            timeSeriesFilter.runForUnitTests();
-        });
-        // at 40 minutes, rows 0 through 34 are
-        assertEquals(27, filtered.size());
+    @Test
+    public void testWhereWithoutLockDuringCycleOnStaticTable() throws Exception {
+        checkWhereWithoutLockDuringCycle(false);
     }
 
     /**
-     * A caller that holds no lock filters a static table with a time series filter during an update cycle. The window
-     * over the static table still refreshes, and has not yet notified, so the where reads previous values without
-     * waiting for the cycle, and its result then follows the rows that leave the window.
+     * A caller that holds no lock filters a table with a time series filter during an update cycle, before the windowed
+     * table has been notified. The where reads previous values without waiting for the cycle, and its result then
+     * follows the rows that later leave the window. A refreshing source adds two rows on the cycle, which the result
+     * also follows; the window over a static source still refreshes.
      */
-    @Test
-    public void testWhereWithoutLockDuringCycleOnStaticTable() throws Exception {
+    private static void checkWhereWithoutLockDuringCycle(final boolean refreshing) throws Exception {
         final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2026-03-10T09:00:00 NY"));
-        final QueryTable source = minuteTable(start, false);
+        final QueryTable source = minuteTable(start, refreshing);
         final TestClock testClock = new TestClock().setNanos(start + 30 * DateTimeUtils.MINUTE);
         final TimeSeriesFilter timeSeriesFilter =
                 TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).build();
+        final int addedRows = refreshing ? 2 : 0;
 
         final ExecutionContext executionContext = ExecutionContext.getContext();
         final ControlledUpdateGraph updateGraph = executionContext.getUpdateGraph().cast();
@@ -671,6 +635,12 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         final Table filtered;
         updateGraph.startCycleForUnitTests(false);
         try {
+            if (refreshing) {
+                addToTable(source, i(60, 61),
+                        col("Timestamp", DateTimeUtils.epochNanosToInstant(start + 60 * DateTimeUtils.MINUTE),
+                                DateTimeUtils.epochNanosToInstant(start + 61 * DateTimeUtils.MINUTE)),
+                        intCol("Sentinel", 60, 61));
+            }
             // a where that waited for the update graph would not complete until the cycle does
             filtered = unlockedThread.submit(() -> {
                 try (final SafeCloseable ignored = executionContext.open()) {
@@ -679,19 +649,23 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
             }).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
             // At 30 minutes, rows 0 through 24 are older than the five minute window.
             assertEquals(35, filtered.size());
+            if (refreshing) {
+                source.notifyListeners(i(60, 61), i(), i());
+            }
         } finally {
             unlockedThread.shutdownNow();
             updateGraph.markSourcesRefreshedForUnitTests();
             updateGraph.completeCycleForUnitTests();
         }
         assertTrue(filtered.isRefreshing());
+        assertEquals(35 + addedRows, filtered.size());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             testClock.setNanos(start + 40 * DateTimeUtils.MINUTE);
             timeSeriesFilter.runForUnitTests();
         });
         // at 40 minutes, rows 0 through 34 are
-        assertEquals(25, filtered.size());
+        assertEquals(25 + addedRows, filtered.size());
     }
 
     /**
