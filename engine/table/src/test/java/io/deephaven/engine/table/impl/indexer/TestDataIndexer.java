@@ -9,6 +9,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.testutil.ColumnInfo;
@@ -22,6 +23,8 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
+
+import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
@@ -74,6 +77,40 @@ public class TestDataIndexer extends RefreshingTableTestCase {
         assertFalse(created.tableIsCached());
 
         assertEquals(2, created.table().size());
+    }
+
+    /**
+     * A listener sorts its refreshing source during an update cycle, after the source has notified. The sort creates
+     * the table of the source's data index on the update thread, and that table is satisfied, so the sort uses the
+     * index.
+     */
+    @Test
+    public void testSortOnUpdateThreadCreatesSatisfiedIndexTable() {
+        final QueryTable source = TstUtils.testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                intCol("Key", 3, 1, 3, 1), intCol("Sentinel", 0, 1, 2, 3));
+        final DataIndex dataIndex = DataIndexer.getOrCreateDataIndex(source, "Key");
+        assertFalse(dataIndex.tableIsCached());
+
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final MutableObject<Table> sorted = new MutableObject<>();
+        source.addUpdateListener(new InstrumentedTableUpdateListenerAdapter("sort on update", source, false) {
+            @Override
+            public void onUpdate(final TableUpdate upstream) {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    sorted.setValue(source.sort("Key"));
+                }
+            }
+        });
+        final ControlledUpdateGraph updateGraph = executionContext.getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(source, i(4), intCol("Key", 2), intCol("Sentinel", 4));
+            source.notifyListeners(i(4), i(), i());
+        });
+
+        assertTrue(dataIndex.tableIsCached());
+        TstUtils.assertTableEquals(
+                TableTools.newTable(intCol("Key", 1, 1, 2, 3, 3), intCol("Sentinel", 1, 3, 4, 0, 2)),
+                sorted.get());
     }
 
     /**
