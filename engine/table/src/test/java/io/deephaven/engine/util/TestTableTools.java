@@ -294,14 +294,10 @@ public class TestTableTools {
 
     @Test
     public void testNewTableValidatesColumnNames() {
-        final TableDefinition badDefinition = TableDefinition.of(ColumnDefinition.ofInt("Asdf:"));
-
-        // newTable(TableDefinition)
-        Assert.assertThrows(NameValidator.InvalidNameException.class, () -> TableTools.newTable(badDefinition));
-
-        // newTable(TableDefinition, ColumnHolder...)
-        Assert.assertThrows(NameValidator.InvalidNameException.class,
-                () -> TableTools.newTable(badDefinition, ColumnHolder.ZERO_LENGTH_COLUMN_HOLDER_ARRAY));
+        // Column definitions validate their names, so newTable(TableDefinition) and
+        // newTable(TableDefinition, ColumnHolder...) can never be given a definition with an invalid column name: the
+        // definition cannot be created in the first place
+        Assert.assertThrows(NameValidator.InvalidNameException.class, () -> ColumnDefinition.ofInt("Asdf:"));
 
         // newTable(long, Map<String, ColumnSource>)
         final Map<String, ColumnSource<?>> badColumns = new LinkedHashMap<>();

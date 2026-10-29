@@ -8,7 +8,6 @@ import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.FailureListener;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
@@ -41,14 +40,9 @@ public class TestKeyedArrayBackedInputTable {
 
     @Test
     public void testInputTablesValidateColumnNames() {
-        final TableDefinition badDefinition = TableDefinition.of(
-                ColumnDefinition.ofString("Name"),
-                ColumnDefinition.ofInt("Asdf:"));
-
-        assertThrows(NameValidator.InvalidNameException.class,
-                () -> AppendOnlyArrayBackedInputTable.make(badDefinition));
-        assertThrows(NameValidator.InvalidNameException.class,
-                () -> KeyedArrayBackedInputTable.make(badDefinition, "Name"));
+        // Column definitions validate their names, so an input table can never be given a definition with an invalid
+        // column name: the definition cannot be created in the first place
+        assertThrows(NameValidator.InvalidNameException.class, () -> ColumnDefinition.ofInt("Asdf:"));
     }
 
     @Test
