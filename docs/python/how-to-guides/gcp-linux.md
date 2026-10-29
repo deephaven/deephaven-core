@@ -87,7 +87,7 @@ To configure the startup script:
 1. Expand the **Advanced options** section at the bottom of the VM creation page.
 2. Expand the **Management** section.
 3. In the **Automation** section, find the **Startup script** text box.
-4. Paste the following script, replacing `YOUR_PASSWORD_HERE` with your own password. You use this password to log in to the IDE. The password must not contain spaces, quotes, or `$`.
+4. Paste the following script, replacing `YOUR_PASSWORD_HERE` with your own password. You use this password to log in to the IDE. The password must contain only letters and digits, because the startup script's launcher parses `START_OPTS` with `xargs`, which strips quotes and backslashes and splits on spaces. Use a long, random password.
 
 ```bash
 #!/bin/bash
@@ -224,7 +224,7 @@ With the tunnel running, open `localhost:10000/ide/` in your browser and enter t
 2. Delete the VM so you are not billed for it. In the Google Cloud console, go to **Compute Engine** > **VM instances** and delete `dhc-how-to`. Or run:
 
    ```bash
-   gcloud compute instances delete dhc-how-to --zone us-central1-a
+   gcloud compute instances delete dhc-how-to --zone us-central1-a --project my-project
    ```
 
 ## Related documentation
