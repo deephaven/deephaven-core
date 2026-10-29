@@ -201,7 +201,7 @@ name = "my-deephaven-project"
 version = "0.1.0"
 requires-python = ">=3.9"
 dependencies = [
-  "deephaven-server>=42.5",
+  "deephaven-server>=42.7",
 ]
 
 [project.optional-dependencies]

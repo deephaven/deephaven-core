@@ -22,7 +22,7 @@ repositories {
     mavenCentral()
 }
 
-def dhcVersion = '42.5' // Use the version that matches your Deephaven server
+def dhcVersion = '42.7' // Use the version that matches your Deephaven server
 
 dependencies {
     implementation "io.deephaven:deephaven-engine-api:$dhcVersion"
@@ -45,7 +45,7 @@ Add dependencies to your `pom.xml`:
 
 ```xml
 <properties>
-    <dhc.version>42.5</dhc.version> <!-- Use the version that matches your Deephaven server -->
+    <dhc.version>42.7</dhc.version> <!-- Use the version that matches your Deephaven server -->
 </properties>
 
 <dependencies>
