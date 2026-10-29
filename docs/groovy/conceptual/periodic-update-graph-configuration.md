@@ -15,7 +15,7 @@ This page covers the first process, which the PUG controls. [What is Barrage?](.
 
 ## Periodic Update Graph
 
-The Periodic Update Graph is an [`UpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html), the component that controls how often data is refreshed on the server. At the beginning of a cycle, the PUG thread refreshes each source table. When a source table has new data, it enqueues a notification of the changes for all registered [listeners](../how-to-guides/table-listeners-groovy.md). Listeners then do the following:
+The Periodic Update Graph is an [`UpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html), the component that controls how often data is refreshed on the server. At the beginning of a cycle, the PUG schedules a refresh of each source table. With more than one update thread, those refreshes can run on the update threads rather than only on the PUG thread. When a source table has new data, it enqueues a notification of the changes for all registered [listeners](../how-to-guides/table-listeners-groovy.md). Listeners then do the following:
 
 - Generate derived tables and send further notifications to their children.
 - Send table updates across the wire using [Barrage](./what-is-barrage.md).
@@ -70,7 +70,7 @@ The operation initialization thread pool has one user-configurable property, des
 | Property                                        | Default | Description                                                                                  |
 | ----------------------------------------------- | ------- | -------------------------------------------------------------------------------------------- |
 | `PeriodicUpdateGraph.updateThreads`             | `-1`    | Threads the refresh cycle uses to process update notifications.                              |
-| `PeriodicUpdateGraph.targetCycleDurationMillis` | `1000`  | Target time in milliseconds for one refresh cycle to complete.                               |
+| `PeriodicUpdateGraph.targetCycleDurationMillis` | `1000`  | Target time in milliseconds between the starts of consecutive refresh cycles.                |
 | `PeriodicUpdateGraph.minimumInterCycleSleep`    | `0`     | Minimum time in milliseconds to wait between the end of one cycle and the start of the next. |
 | `PeriodicUpdateGraph.interCycleYield`           | `false` | Whether the refresh thread calls `Thread.yield` after each cycle.                            |
 | `OperationInitializationThreadPool.threads`     | `-1`    | Threads the operation initialization thread pool uses.                                       |
@@ -83,7 +83,7 @@ The `PeriodicUpdateGraph.updateThreads` property sets how many threads the refre
 
 ### `targetCycleDurationMillis`
 
-The `PeriodicUpdateGraph.targetCycleDurationMillis` property sets the target time in milliseconds for one PUG refresh cycle to complete. The default is 1000 milliseconds (one second).
+The `PeriodicUpdateGraph.targetCycleDurationMillis` property sets the target time in milliseconds between the start of one PUG refresh cycle and the start of the next. The default is 1000 milliseconds (one second).
 
 Setting this to 500 milliseconds asks the PUG to start a refresh cycle every 500 milliseconds instead of every 1000 milliseconds. That frequency holds only while each cycle finishes within 500 milliseconds.
 
@@ -103,7 +103,7 @@ Consider a situation where `targetCycleDurationMillis` keeps its default value o
 
 ### `interCycleYield`
 
-The `PeriodicUpdateGraph.interCycleYield` property controls whether the refresh thread calls `Thread.yield` after each cycle, which hints to the scheduler that other threads may run. The property does not change when the next cycle starts. `targetCycleDurationMillis` and `minimumInterCycleSleep` still set the start time of the next cycle.
+The `PeriodicUpdateGraph.interCycleYield` property controls whether the refresh thread calls `Thread.yield` after each cycle, which hints to the scheduler that other threads may run. Yielding does not bypass the waits set by `targetCycleDurationMillis` and `minimumInterCycleSleep`, and it can delay the next cycle when a minimum sleep is set.
 
 ### `OperationInitializationThreadPool.threads`
 
