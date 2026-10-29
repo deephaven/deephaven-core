@@ -276,3 +276,4 @@ try {
 - [Send data to Deephaven from a Java client](./java-client-input-tables.md)
 - [Arrow Flight](./data-import-export/arrow-flight.md)
 - [Servers and clients](../conceptual/client-server-model.md)
+- [Protocol Buffers and remote procedure calls](./protobuf.md)
