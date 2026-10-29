@@ -141,12 +141,23 @@ void ImmerTableState::AddData(const std::vector<std::shared_ptr<ColumnSource>> &
 }
 
 std::shared_ptr<RowSequence> ImmerTableState::Erase(const RowSequence &rows_to_erase_key_space) {
-  auto result = spaceMapper_.ConvertKeysToIndices(rows_to_erase_key_space);
+  // Only the rows we hold can be erased. A full subscription is sent the server's entire removed
+  // set, which while the initial snapshot is still arriving can name rows this client has not been
+  // given yet; those are skipped rather than rejected.
+  auto result = spaceMapper_.ConvertPresentKeysToIndices(rows_to_erase_key_space);
+  if (result->Empty()) {
+    // None of the named rows is held, so there is nothing to do, not even to the key mapping.
+    return result;
+  }
 
   auto erase_chunk = [this](uint64_t begin_key, uint64_t end_key) {
-    auto size = end_key - begin_key;
+    // The keys held in [begin_key, end_key) occupy consecutive ranks, so they are one slice of
+    // every column. Both ranks are taken before the erasure changes them.
+    auto end_index = spaceMapper_.ZeroBasedRank(end_key);
     auto begin_index = spaceMapper_.EraseRange(begin_key, end_key);
-    auto end_index = begin_index + size;
+    if (begin_index == end_index) {
+      return;
+    }
 
     for (auto &fv : flexVectors_) {
       auto fv_temp = std::move(fv);
@@ -162,6 +173,39 @@ std::shared_ptr<RowSequence> ImmerTableState::Erase(const RowSequence &rows_to_e
 std::shared_ptr<RowSequence> ImmerTableState::ConvertKeysToIndices(
     const RowSequence &keys_row_space) const {
   return spaceMapper_.ConvertKeysToIndices(keys_row_space);
+}
+
+std::shared_ptr<RowSequence> ImmerTableState::PresentKeys(const RowSequence &keys_key_space) const {
+  return spaceMapper_.PresentKeys(keys_key_space);
+}
+
+std::shared_ptr<RowSequence> ImmerTableState::CombineErasures(const RowSequence &first,
+    const RowSequence &second) {
+  RowSequenceBuilder builder;
+  std::vector<std::pair<uint64_t, uint64_t>> first_intervals;
+  first.ForEachInterval([&builder, &first_intervals](uint64_t begin, uint64_t end) {
+    if (begin == end) {
+      return;
+    }
+    builder.AddInterval(begin, end);
+    first_intervals.emplace_back(begin, end);
+  });
+
+  // A position q in the later index space is position q + k in the original, where k counts the
+  // rows of 'first' that lie ahead of it there. Walking both in ascending order, k only ever grows.
+  size_t next_first = 0;
+  uint64_t lifted = 0;
+  second.ForEachInterval([&](uint64_t begin, uint64_t end) {
+    for (auto position = begin; position != end; ++position) {
+      while (next_first != first_intervals.size() &&
+          first_intervals[next_first].first <= position + lifted) {
+        lifted += first_intervals[next_first].second - first_intervals[next_first].first;
+        ++next_first;
+      }
+      builder.Add(position + lifted);
+    }
+  });
+  return builder.Build();
 }
 
 void ImmerTableState::ModifyData(size_t col_num, const ColumnSource &src, size_t begin, size_t end,

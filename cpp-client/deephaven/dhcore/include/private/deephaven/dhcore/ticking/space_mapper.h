@@ -75,6 +75,25 @@ public:
   std::shared_ptr<RowSequence> ConvertKeysToIndices(const RowSequence &keys) const;
 
   /**
+   * Like ConvertKeysToIndices, but keys that are not in the map are skipped rather than being an
+   * error, so the result can be smaller than 'keys'. Removes need this: a full subscription is sent
+   * the server's entire removed set, and while the initial snapshot is still arriving that set can
+   * name rows this client has not been given yet.
+   * @param keys Keys represented in key space, not all of which need be present
+   * @return The positions, in index space, of those keys that are present
+   */
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> ConvertPresentKeysToIndices(const RowSequence &keys) const;
+
+  /**
+   * Returns the subset of 'keys' that are in the map.
+   * @param keys Keys represented in key space
+   * @return Those of the keys that are present, represented in key space
+   */
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> PresentKeys(const RowSequence &keys) const;
+
+  /**
    * Note: this call iterates over the Roaring64Map and is not constant-time.
    */
   [[nodiscard]]
