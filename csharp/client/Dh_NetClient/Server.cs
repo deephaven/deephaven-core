@@ -25,6 +25,7 @@ public class Server : IDisposable {
     var cfs = new ConfigService.ConfigServiceClient(channel);
     var its = new InputTableService.InputTableServiceClient(channel);
     var fc = new FlightClient(channel);
+    var rawFc = new ArrowFlightProtocol.FlightService.FlightServiceClient(channel);
 
     string sessionToken;
     TimeSpan expirationInterval;
@@ -49,7 +50,7 @@ public class Server : IDisposable {
       }
     }
 
-    var result = new Server(channel, aps, cs, ss, ts, cfs, its, fc,
+    var result = new Server(channel, aps, cs, ss, ts, cfs, its, fc, rawFc,
       clientOptions.ExtraHeaders, sessionToken, expirationInterval);
     return result;
   }
@@ -65,6 +66,12 @@ public class Server : IDisposable {
   public ConfigService.ConfigServiceClient ConfigStub { get; }
   public InputTableService.InputTableServiceClient InputTableStub { get; }
   public FlightClient FlightClient { get; }
+  /// <summary>
+  /// A raw gRPC stub for the Arrow Flight service, used where we need access to the
+  /// FlightData messages themselves rather than the (limited) interpretation provided
+  /// by the Apache.Arrow.Flight library. See proto/flight.proto for details.
+  /// </summary>
+  public ArrowFlightProtocol.FlightService.FlightServiceClient RawFlightStub { get; }
   private readonly IReadOnlyList<(string, string)> _extraHeaders;
   private readonly TimeSpan _expirationInterval;
 
@@ -96,6 +103,7 @@ public class Server : IDisposable {
     ConfigService.ConfigServiceClient configStub,
     InputTableService.InputTableServiceClient inputTableStub,
     FlightClient flightClient,
+    ArrowFlightProtocol.FlightService.FlightServiceClient rawFlightStub,
     IReadOnlyList<(string, string)> extraHeaders,
     string sessionToken,
     TimeSpan expirationInterval) {
@@ -108,6 +116,7 @@ public class Server : IDisposable {
     ConfigStub = configStub;
     InputTableStub = inputTableStub;
     FlightClient = flightClient;
+    RawFlightStub = rawFlightStub;
     _extraHeaders = extraHeaders.ToArray();
     _expirationInterval = expirationInterval;
     var keepalive = new Timer(SendKeepaliveMessage);
