@@ -3,7 +3,7 @@ const path = require('path');
 // Workaround for broken codegen from protoc-gen-js using import_style=commonjs_strict, both in
 // the grpc-web protoc-gen-ts plugin, and in protoc-gen-js itself:
 const aliases = {};
-for (const proto of ['application', 'config', 'console', 'hierarchicaltable', 'inputtable', 'object', 'partitionedtable', 'session', 'storage', 'table', 'ticket']) {
+for (const proto of ['application', 'config', 'console', 'hierarchicaltable', 'inputtable', 'object', 'partitionedtable', 'remotefilesource', 'session', 'storage', 'table', 'ticket']) {
     // Allows a reference to the real proto files, to be made from the shim
     aliases[`real/${proto}_pb`] =  `${__dirname}/build/js-src/deephaven_core/proto/${proto}_pb`;
 
