@@ -249,7 +249,7 @@ public class ChunkedOperatorAggregationHelper {
             // lookup map of every key on the first probe, so its key column is scanned instead.
             resultColumnSourceMap.put(keyNames[kci], keyHashTableSources.length == 1
                     && !(stateManager instanceof StaticSymbolTableChunkedOperatorAggregationStateManager)
-                            ? new AggregationKeyColumnSource<>(resultKeySource, stateManager,
+                            ? AggregationKeyColumnSource.create(resultKeySource, stateManager,
                                     keySources[kci] != reinterpretedKeySources[kci], input.getUpdateGraph())
                             : resultKeySource);
         }

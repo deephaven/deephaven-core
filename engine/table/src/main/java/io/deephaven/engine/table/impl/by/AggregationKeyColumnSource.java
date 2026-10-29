@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterDelegating;
+import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.table.impl.util.JobScheduler;
@@ -29,6 +30,9 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.invoke.VarHandle;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -45,8 +49,13 @@ import java.util.function.LongConsumer;
  * cycle, which it {@link IncrementalOperatorAggregationStateManager#updateCycleStep() marks} before the first change. A
  * probe on another thread is abandoned, and the filter scans the column, when a cycle began during the probe, or when
  * filtering previous values after this cycle began.
+ *
+ * <p>
+ * The key source's time conversions are delegated as well, and the result is a {@link ConvertibleTimeSource.Zoned} if
+ * and only if the key source is, so that a key column reinterprets as the column it was grouped from does.
  */
-public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T> implements FillUnordered<Values> {
+public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
+        implements FillUnordered<Values>, ConvertibleTimeSource {
 
     private final ColumnSource<T> keySource;
     private final OperatorAggregationStateManager stateManager;
@@ -56,13 +65,28 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T> 
     private final UpdateGraph updateGraph;
 
     /**
+     * Create the key column for {@code keySource}.
+     *
      * @param keySource the result's key source, of the group-by column's type
      * @param stateManager the aggregation's state manager, whose output positions are the result's row keys
      * @param reinterpretedKeys whether {@code stateManager} hashes the keys reinterpreted as primitives, per
      *        {@link io.deephaven.engine.table.impl.sources.ReinterpretUtils#maybeConvertToPrimitive}
      * @param updateGraph the aggregation's update graph
+     * @return the key column, which is a {@link ConvertibleTimeSource.Zoned} if and only if {@code keySource} is
      */
-    AggregationKeyColumnSource(
+    static <T> AggregationKeyColumnSource<T> create(
+            @NotNull final ColumnSource<T> keySource,
+            @NotNull final OperatorAggregationStateManager stateManager,
+            final boolean reinterpretedKeys,
+            @NotNull final UpdateGraph updateGraph) {
+        if (keySource instanceof ConvertibleTimeSource.Zoned) {
+            return new Zoned<>(keySource, stateManager, reinterpretedKeys, updateGraph,
+                    ((ConvertibleTimeSource.Zoned) keySource).getZone());
+        }
+        return new AggregationKeyColumnSource<>(keySource, stateManager, reinterpretedKeys, updateGraph);
+    }
+
+    private AggregationKeyColumnSource(
             @NotNull final ColumnSource<T> keySource,
             @NotNull final OperatorAggregationStateManager stateManager,
             final boolean reinterpretedKeys,
@@ -75,6 +99,56 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T> 
                 ? (IncrementalOperatorAggregationStateManager) stateManager
                 : null;
         this.updateGraph = updateGraph;
+    }
+
+    private static final class Zoned<T> extends AggregationKeyColumnSource<T> implements ConvertibleTimeSource.Zoned {
+        private final ZoneId zone;
+
+        private Zoned(
+                @NotNull final ColumnSource<T> keySource,
+                @NotNull final OperatorAggregationStateManager stateManager,
+                final boolean reinterpretedKeys,
+                @NotNull final UpdateGraph updateGraph,
+                @NotNull final ZoneId zone) {
+            super(keySource, stateManager, reinterpretedKeys, updateGraph);
+            this.zone = zone;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return zone;
+        }
+    }
+
+    @Override
+    public boolean supportsTimeConversion() {
+        return keySource instanceof ConvertibleTimeSource
+                && ((ConvertibleTimeSource) keySource).supportsTimeConversion();
+    }
+
+    @Override
+    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {
+        return ((ConvertibleTimeSource) keySource).toZonedDateTime(zone);
+    }
+
+    @Override
+    public ColumnSource<LocalDate> toLocalDate(@NotNull final ZoneId zone) {
+        return ((ConvertibleTimeSource) keySource).toLocalDate(zone);
+    }
+
+    @Override
+    public ColumnSource<LocalTime> toLocalTime(@NotNull final ZoneId zone) {
+        return ((ConvertibleTimeSource) keySource).toLocalTime(zone);
+    }
+
+    @Override
+    public ColumnSource<Instant> toInstant() {
+        return ((ConvertibleTimeSource) keySource).toInstant();
+    }
+
+    @Override
+    public ColumnSource<Long> toEpochNano() {
+        return ((ConvertibleTimeSource) keySource).toEpochNano();
     }
 
     @Override

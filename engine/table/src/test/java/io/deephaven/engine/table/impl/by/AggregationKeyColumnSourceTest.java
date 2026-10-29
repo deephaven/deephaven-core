@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -96,6 +97,23 @@ public class AggregationKeyColumnSourceTest {
         // a ZonedDateTime column without a fixed time zone is hashed as objects
         checkStatic(reinterpreted(false, withKeyFormula(base, "Key = Base == 3 ? null : DateTimeUtils.toZonedDateTime("
                 + "DateTimeUtils.plus(T0, (long) Base), UTC)")), zoned(1), zoned(4), null, zoned(9));
+    }
+
+    @Test
+    public void testWhereInDistinctReinterpretedKeys() {
+        // a set table's key column must reinterpret as its source's does
+        final Table base = TableTools.emptyTable(12).update("Base = (int) (ii % 5)");
+        for (final Table keyed : new Table[] {
+                reinterpreted(true, withZonedKey(base, 3)),
+                reinterpreted(true,
+                        withKeyFormula(base, "Key = Base == 3 ? null : DateTimeUtils.plus(T0, (long) Base)")),
+                reinterpreted(true, withKeyFormula(base, "Key = Base == 3 ? null : Base % 2 == 0"))}) {
+            final Table distinct = keyed.selectDistinct("Key");
+            assertEquals(keyed.getColumnSource("Key") instanceof ConvertibleTimeSource.Zoned,
+                    distinct.getColumnSource("Key") instanceof ConvertibleTimeSource.Zoned);
+            assertTableEquals(keyed, keyed.whereIn(distinct, "Key"));
+            assertTableEquals(keyed.head(0), keyed.whereNotIn(distinct, "Key"));
+        }
     }
 
     @Test
