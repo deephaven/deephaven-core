@@ -196,7 +196,7 @@ println miami.size()
 
 ### `getUpdateGraph`
 
-To get the [UpdateGraph](../conceptual/dag.md#update-graph-ug-cycles) that schedules a table's updates, use [`getUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/NotificationQueue.Dependency.html#getUpdateGraph()):
+To get the [UpdateGraph](../conceptual/dag.md#update-graph-cycles) that schedules a table's updates, use [`getUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/NotificationQueue.Dependency.html#getUpdateGraph()):
 
 ```groovy test-set=2 order=:log
 println miami.getUpdateGraph()
