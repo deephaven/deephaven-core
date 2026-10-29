@@ -40,6 +40,7 @@ import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.testutil.filters.ReindexingRowSetCapturingFilter;
+import io.deephaven.engine.testutil.filters.PreviousRejectingFilter;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.LogicalClock;
@@ -799,39 +800,6 @@ public class TestPartitionAwareSourceTableNoMocks {
         @Override
         public WhereFilter copy() {
             return new NestedSnapshotFilter(filter.copy(), creatingThread, workerSnapshots);
-        }
-    }
-
-    /**
-     * A memoizable filter that cannot filter previous values, so that its where falls back to the update graph lock
-     * during an update cycle.
-     */
-    private static class PreviousRejectingFilter extends WhereFilterDelegatingBase {
-        private PreviousRejectingFilter(final WhereFilter filter) {
-            super(filter);
-        }
-
-        @NotNull
-        @Override
-        public WritableRowSet filter(
-                @NotNull final RowSet selection,
-                @NotNull final RowSet fullSet,
-                @NotNull final Table table,
-                final boolean usePrev) {
-            if (usePrev) {
-                throw new PreviousFilteringNotSupported();
-            }
-            return super.filter(selection, fullSet, table, usePrev);
-        }
-
-        @Override
-        public WhereFilter maybeUnwrapFilter() {
-            return this;
-        }
-
-        @Override
-        public WhereFilter copy() {
-            return new PreviousRejectingFilter(filter.copy());
         }
     }
 
