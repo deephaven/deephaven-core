@@ -142,8 +142,11 @@ public class WindowCheck {
                 final WindowListenerRecorder recorder = new WindowListenerRecorder(table, result);
                 final TimeWindowListenerImpl timeWindowListenerImpl =
                         new TimeWindowListenerImpl(inWindowColumn, inWindowColumnSource, recorder, table, result);
-                // the queue holds row keys in the same space as the values read, and the listener's first update moves
-                // them from previous to current space
+                // When the snapshot reads previous values, the queue holds the source's previous row keys and
+                // timestamps.
+                // The listener's first update is then this cycle's, which removes, shifts, re-checks and adds rows as
+                // any
+                // update does, leaving the queue consistent with the current row set.
                 timeWindowListenerImpl.addRowSequence(usePrev ? table.getRowSet().prev() : table.getRowSet(), false,
                         usePrev);
 
