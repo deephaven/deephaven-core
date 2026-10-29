@@ -68,6 +68,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongConsumer;
@@ -3998,5 +3999,39 @@ public abstract class QueryTableWhereTest {
         final Table source = emptyTable(100).update("X = ii");
         final Table result = source.where(new DeclaredColumnsFilter("X", "Phantom"));
         assertTableEquals(source, result);
+    }
+
+    /**
+     * When a filter's operation fails to begin, the operations already begun by the filters before it are closed,
+     * whether the filters are applied directly, composed in a disjunction, or matched by wouldMatch.
+     */
+    @Test
+    public void testBeginOperationFailureClosesOperationsBegun() {
+        final Table source = emptyTable(10).update("A = ii");
+        checkBeginOperationFailureClosesOperationsBegun((begun, failing) -> source.where(Filter.and(begun, failing)));
+        checkBeginOperationFailureClosesOperationsBegun((begun, failing) -> source.where(Filter.or(begun, failing)));
+        checkBeginOperationFailureClosesOperationsBegun((begun, failing) -> source.wouldMatch(
+                new WouldMatchPair("Begun", begun), new WouldMatchPair("Failing", failing)));
+    }
+
+    private static void checkBeginOperationFailureClosesOperationsBegun(
+            final BiConsumer<WhereFilter, WhereFilter> operation) {
+        final AtomicInteger closed = new AtomicInteger();
+        final WhereFilter begun = new RowSetCapturingFilter() {
+            @Override
+            public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+                return closed::incrementAndGet;
+            }
+        };
+        final WhereFilter failing = new RowSetCapturingFilter() {
+            @Override
+            public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+                throw new IllegalStateException("beginOperation failed");
+            }
+        };
+        final IllegalStateException failure =
+                assertThrows(IllegalStateException.class, () -> operation.accept(begun, failing));
+        assertEquals("beginOperation failed", failure.getMessage());
+        assertEquals(1, closed.get());
     }
 }
