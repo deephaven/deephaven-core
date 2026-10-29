@@ -301,6 +301,58 @@ public class TestWindowCheck {
         Assert.assertEquals(Boolean.FALSE, resultSource.get(0));
     }
 
+    /**
+     * A window created during an update cycle after its source has notified reads the source's current values, so its
+     * result counts as notified on that cycle. Its update source, already registered, may still run on that cycle; it
+     * must not capture a new time until the next one, when the rows that left the window are notified.
+     */
+    @Test
+    public void testWindowCheckCreatedAfterSourceNotified() {
+        final TestClock timeProvider = new TestClock();
+        timeProvider.now = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2022-07-14T09:30:00 NY"));
+        final QueryTable tableToCheck = testRefreshingTable(i(0).toTracking(),
+                col("Timestamp", DateTimeUtils.parseInstant("2022-07-14T09:29:30 NY")), intCol("Sentinel", 1));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final Pair<Table, WindowCheck.TimeWindowListener> windowed;
+        final Runnable updateSource;
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            addToTable(tableToCheck, i(1),
+                    col("Timestamp", DateTimeUtils.parseInstant("2022-07-14T09:29:40 NY")), intCol("Sentinel", 2));
+            tableToCheck.notifyListeners(i(1), i(), i());
+
+            windowed = WindowCheck.addTimeWindowInternal(
+                    timeProvider, tableToCheck, "Timestamp", DateTimeUtils.SECOND * 60, "InWindow", true);
+            assertEquals(updateGraph.clock().currentStep(),
+                    ((QueryTable) windowed.first).getLastNotificationStep());
+            updateSource = ((WindowCheck.TimeWindowListenerImpl) windowed.second).updateSource();
+            assertNotNull(updateSource);
+
+            // both rows have left the window by now, but the result has already notified on this cycle
+            timeProvider.now = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2022-07-14T09:31:00 NY"));
+            updateGraph.refreshUpdateSourceForUnitTests(updateSource);
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.flushAllNormalNotificationsForUnitTests();
+        } finally {
+            updateGraph.completeCycleForUnitTests();
+        }
+        final ColumnSource<Boolean> resultSource = windowed.first.getColumnSource("InWindow", Boolean.class);
+        Assert.assertEquals(Boolean.TRUE, resultSource.get(0));
+        Assert.assertEquals(Boolean.TRUE, resultSource.get(1));
+
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            updateGraph.refreshUpdateSourceForUnitTests(updateSource);
+            updateGraph.markSourcesRefreshedForUnitTests();
+        } finally {
+            updateGraph.completeCycleForUnitTests();
+        }
+        windowed.second.validateQueue();
+        Assert.assertEquals(Boolean.FALSE, resultSource.get(0));
+        Assert.assertEquals(Boolean.FALSE, resultSource.get(1));
+    }
+
     @Test
     public void testWindowCheckStatic() {
 

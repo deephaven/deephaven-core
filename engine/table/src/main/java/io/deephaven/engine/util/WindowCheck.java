@@ -30,6 +30,7 @@ import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.base.RAPriQueue;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.annotations.VisibleForTesting;
 import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.LongBidirectionalIterator;
@@ -192,8 +193,13 @@ public class WindowCheck {
     private static final class TimeWindowUpdateSource implements Runnable {
 
         private volatile TimeWindowListenerImpl listener;
+        /**
+         * The step the listener was activated on, published by {@link #listener}.
+         */
+        private long activationStep;
 
         private void activate(@NotNull final TimeWindowListenerImpl listener) {
+            activationStep = listener.getUpdateGraph().clock().currentStep();
             listener.updateSource = this;
             this.listener = listener;
         }
@@ -201,7 +207,10 @@ public class WindowCheck {
         @Override
         public void run() {
             final TimeWindowListenerImpl localListener = listener;
-            if (localListener != null) {
+            // The result may already count as notified on the step its listener was activated on, having read the
+            // source's values after it notified, so the listener captures its first new time on the next step.
+            if (localListener != null
+                    && localListener.getUpdateGraph().clock().currentStep() != activationStep) {
                 localListener.run();
             }
         }
@@ -981,6 +990,14 @@ public class WindowCheck {
                     System.out.println(x.getLongKey() + ": " + x.getValue());
                 }
             }
+        }
+
+        /**
+         * @return The update source that runs this listener, if it is monitored and its snapshot has committed
+         */
+        @VisibleForTesting
+        Runnable updateSource() {
+            return updateSource;
         }
 
         @OverridingMethodsMustInvokeSuper
