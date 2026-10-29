@@ -42,7 +42,7 @@ counts = result.count_by("Count")
 
 `source` keeps every row the [time table](../how-to-guides/time-table.md) has added, while `result` contains only the rows added during the most recent [update cycle](../conceptual/table-update-model.md). When you first create `result`, it holds all the rows `source` already has, and it drops them on the next [update cycle](../conceptual/table-update-model.md).
 
-![The `source` table on the left holds every row added so far, while the `result` blink table on the right holds only the rows from the latest update cycle](../assets/how-to/add-only-to-blink.png)
+![Three tables tick side by side. `source` grows by one row each second. `result` holds only the newest `source` row, and `Count` in `counts` keeps growing](../assets/how-to/add-only-to-blink.gif)
 
 The `Count` value in `counts` keeps growing even though `result` holds only the latest rows. That's [blink-table aggregation semantics](../conceptual/table-types.md#specialized-semantics-for-blink-tables): [`count_by`](../reference/table-operations/group-and-aggregate/countBy.md) counts every row `result` has held since you created `counts`. The count starts with the rows `result` held when you created `counts`.
 

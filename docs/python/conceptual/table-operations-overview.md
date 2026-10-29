@@ -25,6 +25,7 @@ To learn a group of operations by task, see the how-to guides:
 - [Multi-aggregation](../how-to-guides/combined-aggregations.md)
 - [Rolling aggregations](../how-to-guides/rolling-aggregations.md)
 - [Merge tables](../how-to-guides/merge-tables.md)
+- [Synchronize multiple tables](../how-to-guides/synchronizing-tables.md)
 
 To choose among the aggregation operations, see [Aggregations in Deephaven](./aggregations.md). To learn the concepts behind table operations, such as immutability, formula strings, and the dependency graph, see [Understanding the Table API](./table-api.md). For formulas in depth, see [Formulas](../how-to-guides/formulas.md).
 
