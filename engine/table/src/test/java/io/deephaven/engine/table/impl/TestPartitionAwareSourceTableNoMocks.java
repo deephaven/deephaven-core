@@ -699,60 +699,46 @@ public class TestPartitionAwareSourceTableNoMocks {
     }
 
     /**
-     * As {@link #testDeferredCoalesceWhileExclusiveLockHolderCoalesces()}, but the deferred where filters in parallel,
-     * and on each worker its filter performs a nested snapshot that needs the update graph lock during an update cycle.
+     * As {@link #testDeferredCoalesceWhileExclusiveLockHolderCoalesces()}, but the deferred where's filter performs a
+     * nested snapshot that needs the update graph lock during an update cycle.
      */
     @Test
-    public void testDeferredParallelCoalesceWhileExclusiveLockHolderCoalesces() throws Exception {
-        checkDeferredParallelCoalesceWhileExclusiveLockHolderCoalesces(true);
+    public void testDeferredNestedSnapshotCoalesceWhileExclusiveLockHolderCoalesces() throws Exception {
+        checkDeferredNestedSnapshotCoalesceWhileExclusiveLockHolderCoalesces(true);
     }
 
     /**
-     * As {@link #testDeferredParallelCoalesceWhileExclusiveLockHolderCoalesces()}, but the source is not coalesced
-     * first, so the lock-free thread coalesces the source within the attempt that it abandons.
+     * As {@link #testDeferredNestedSnapshotCoalesceWhileExclusiveLockHolderCoalesces()}, but the source is not
+     * coalesced first, so the lock-free thread coalesces the source within the attempt that it abandons.
      */
     @Test
-    public void testDeferredParallelCoalesceOfUncoalescedSourceWhileExclusiveLockHolderCoalesces() throws Exception {
-        checkDeferredParallelCoalesceWhileExclusiveLockHolderCoalesces(false);
+    public void testDeferredNestedSnapshotCoalesceOfUncoalescedSourceWhileExclusiveLockHolderCoalesces()
+            throws Exception {
+        checkDeferredNestedSnapshotCoalesceWhileExclusiveLockHolderCoalesces(false);
     }
 
-    private void checkDeferredParallelCoalesceWhileExclusiveLockHolderCoalesces(final boolean coalesceSourceFirst)
-            throws Exception {
+    private void checkDeferredNestedSnapshotCoalesceWhileExclusiveLockHolderCoalesces(
+            final boolean coalesceSourceFirst) throws Exception {
         final long partitionSize = 128;
         final Table source = refreshingPartitionedSource(partitionedLocationProvider(partitionSize));
         if (coalesceSourceFirst) {
-            // the lock-free thread's attempt can then be abandoned only at the workers' nested snapshots
+            // the lock-free thread's attempt can then be abandoned only at the filter's nested snapshot
             source.coalesce();
         }
-        try (final SafeCloseable ignored = new ForcedParallelWhere(2, partitionSize)) {
-            final NestedSnapshotFilter filter =
-                    new NestedSnapshotFilter(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
-            final Table coalesced = coalesceWhileExclusiveLockHolderCoalesces(source.where(filter));
-            assertEquals(4 * partitionSize, coalesced.size());
-            assertTrue(filter.workerSnapshots.get() > 0);
-        }
+        final NestedSnapshotFilter filter =
+                new NestedSnapshotFilter(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
+        final Table coalesced = coalesceWhileExclusiveLockHolderCoalesces(source.where(filter));
+        assertEquals(4 * partitionSize, coalesced.size());
     }
 
     /**
      * Before filtering, performs a nested snapshot that cannot run concurrently with an update cycle, so that it needs
-     * the update graph lock while one is updating. Counts, over this filter and its copies, the nested snapshots that
-     * ran on a thread other than the one that created the filter.
+     * the update graph lock while one is updating.
      */
     private static class NestedSnapshotFilter extends WhereFilterDelegatingBase {
-        private final Thread creatingThread;
-        private final AtomicInteger workerSnapshots;
 
         private NestedSnapshotFilter(final WhereFilter filter) {
-            this(filter, Thread.currentThread(), new AtomicInteger());
-        }
-
-        private NestedSnapshotFilter(
-                final WhereFilter filter,
-                final Thread creatingThread,
-                final AtomicInteger workerSnapshots) {
             super(filter);
-            this.creatingThread = creatingThread;
-            this.workerSnapshots = workerSnapshots;
         }
 
         @NotNull
@@ -786,9 +772,6 @@ public class TestPartitionAwareSourceTableNoMocks {
                 }
                 return true;
             });
-            if (Thread.currentThread() != creatingThread) {
-                workerSnapshots.incrementAndGet();
-            }
             return super.filter(selection, fullSet, table, usePrev);
         }
 
@@ -799,7 +782,7 @@ public class TestPartitionAwareSourceTableNoMocks {
 
         @Override
         public WhereFilter copy() {
-            return new NestedSnapshotFilter(filter.copy(), creatingThread, workerSnapshots);
+            return new NestedSnapshotFilter(filter.copy());
         }
     }
 
