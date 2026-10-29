@@ -34,6 +34,7 @@ import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.testutil.filters.ReindexingRowSetCapturingFilter;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TestClock;
 import io.deephaven.qst.type.Type;
@@ -49,6 +50,8 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -583,6 +586,70 @@ public class TestPartitionAwareSourceTableNoMocks {
         final Table composedCoalesced = viaComposed.coalesce();
         assertEquals(expectedSize, composedCoalesced.size());
         assertEquals(expectRefreshing, composedCoalesced.isRefreshing());
+    }
+
+    /**
+     * A gRPC handler may coalesce a deferred table, here through selectDistinct, on a thread that holds no update graph
+     * lock and may not initiate serial table operations.
+     */
+    @Test
+    public void testDeferredTimeSeriesFilterWithoutLock() throws Exception {
+        // the test locations' timestamps are a few nanoseconds after the epoch, so all of them are in the window
+        final TestClock clock = new TestClock().setNanos(DateTimeUtils.MINUTE);
+        checkDeferredTimeSeriesFilterWithoutLock(TimeSeriesFilter.newBuilder()
+                .columnName("Timestamp").period("PT5m").clock(clock).build());
+        checkDeferredTimeSeriesFilterWithoutLock(DisjunctiveFilter.of(
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(clock).build(),
+                WhereFilter.of(RawString.of("II < 0"))).withDeclaredBarriers(new Object()));
+    }
+
+    private void checkDeferredTimeSeriesFilterWithoutLock(final WhereFilter filter) throws Exception {
+        final long partitionSize = 128;
+
+        final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds.getTableLocationProvider(tableKey);
+        for (char partition = 'A'; partition <= 'D'; partition++) {
+            tableLocationProvider.appendLocation(
+                    new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl(String.valueOf(partition)));
+        }
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(partitionSize));
+
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final UpdateGraph contextUpdateGraph = executionContext.getUpdateGraph();
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II"),
+                        ColumnDefinition.of("Timestamp", Type.find(Instant.class))),
+                tableKey.toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                contextUpdateGraph);
+        assertTrue(source.isRefreshing());
+
+        final Table deferred = source.where(filter);
+        assertTrue(deferred instanceof DeferredViewTable);
+
+        final ExecutorService unlockedThread = Executors.newSingleThreadExecutor();
+        final Table distinct;
+        try {
+            distinct = unlockedThread.submit(() -> {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    assertFalse(contextUpdateGraph.serialTableOperationsSafe());
+                    assertFalse(contextUpdateGraph.exclusiveLock().isHeldByCurrentThread());
+                    assertFalse(contextUpdateGraph.sharedLock().isHeldByCurrentThread());
+                    final Table result = deferred.selectDistinct("partition");
+                    assertFalse(contextUpdateGraph.sharedLock().isHeldByCurrentThread());
+                    return result;
+                }
+            }).get();
+        } finally {
+            unlockedThread.shutdownNow();
+        }
+        assertTrue(distinct.isRefreshing());
+        assertEquals(4, distinct.size());
     }
 
     @Test

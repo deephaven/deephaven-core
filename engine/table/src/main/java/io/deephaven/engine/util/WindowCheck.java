@@ -32,6 +32,8 @@ import io.deephaven.util.annotations.InternalUseOnly;
 import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.LongBidirectionalIterator;
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -92,39 +94,56 @@ public class WindowCheck {
     @InternalUseOnly
     public static Pair<Table, TimeWindowListener> addTimeWindowInternal(Clock clock, QueryTable table,
             String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
-        if (table.isRefreshing()) {
-            table.getUpdateGraph().checkInitiateSerialTableOperation();
-        }
-        final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
+        final OperationSnapshotControl snapshotControl =
+                table.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
+        final MutableObject<QueryTable> resultHolder = new MutableObject<>();
+        final MutableObject<TimeWindowListenerImpl> listenerHolder = new MutableObject<>();
+        final MutableBoolean rowsCanBeUpdatedHolder = new MutableBoolean();
 
-        final InWindowColumnSource inWindowColumnSource;
-        if (clock == null) {
-            inWindowColumnSource = new InWindowColumnSource(table, timestampColumn, windowNanos);
-        } else {
-            inWindowColumnSource =
-                    new InWindowColumnSourceWithClock(clock, table, timestampColumn, windowNanos);
-        }
-        inWindowColumnSource.init();
-        resultColumns.put(inWindowColumn, inWindowColumnSource);
+        BaseTable.initializeWithSnapshot("addTimeWindow", snapshotControl, (usePrev, beforeClockValue) -> {
+            final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
 
-        final QueryTable result = new QueryTable(table.getRowSet(), resultColumns);
-        final WindowListenerRecorder recorder = new WindowListenerRecorder(table, result);
-        final TimeWindowListenerImpl timeWindowListenerImpl =
-                new TimeWindowListenerImpl(inWindowColumn, inWindowColumnSource, recorder, table, result);
-        timeWindowListenerImpl.addRowSequence(table.getRowSet(), false);
-
-        // if we cannot update any rows (because everything is already outside our window),
-        // then there is no sense in having a refreshing output
-        final boolean rowsCanBeUpdated = table.isRefreshing() || !timeWindowListenerImpl.priorityQueue.isEmpty();
-        if (rowsCanBeUpdated) {
-            recorder.setMergedListener(timeWindowListenerImpl);
-            if (table.isRefreshing()) {
-                table.addUpdateListener(recorder);
+            final InWindowColumnSource inWindowColumnSource;
+            if (clock == null) {
+                inWindowColumnSource = new InWindowColumnSource(table, timestampColumn, windowNanos);
+            } else {
+                inWindowColumnSource =
+                        new InWindowColumnSourceWithClock(clock, table, timestampColumn, windowNanos);
             }
-            result.addParentReference(timeWindowListenerImpl);
-            if (addToMonitor) {
-                result.getUpdateGraph().addSource(timeWindowListenerImpl);
+            inWindowColumnSource.init();
+            resultColumns.put(inWindowColumn, inWindowColumnSource);
+
+            final QueryTable result = new QueryTable(table.getRowSet(), resultColumns);
+            final WindowListenerRecorder recorder = new WindowListenerRecorder(table, result);
+            final TimeWindowListenerImpl timeWindowListenerImpl =
+                    new TimeWindowListenerImpl(inWindowColumn, inWindowColumnSource, recorder, table, result);
+            timeWindowListenerImpl.addRowSequence(usePrev ? table.getRowSet().prev() : table.getRowSet(), false,
+                    usePrev);
+
+            // if we cannot update any rows (because everything is already outside our window),
+            // then there is no sense in having a refreshing output
+            final boolean rowsCanBeUpdated = table.isRefreshing() || !timeWindowListenerImpl.priorityQueue.isEmpty();
+            if (rowsCanBeUpdated) {
+                recorder.setMergedListener(timeWindowListenerImpl);
+                result.addParentReference(timeWindowListenerImpl);
             }
+            if (snapshotControl != null) {
+                snapshotControl.setListenerAndResult(recorder, result);
+            } else {
+                // the window over a static table has not yet notified on any step, including the one it is created on
+                result.setLastNotificationStep(NotificationStepReceiver.NULL_NOTIFICATION_STEP);
+            }
+            resultHolder.setValue(result);
+            listenerHolder.setValue(timeWindowListenerImpl);
+            rowsCanBeUpdatedHolder.setValue(rowsCanBeUpdated);
+            return true;
+        });
+
+        final QueryTable result = resultHolder.get();
+        final TimeWindowListenerImpl timeWindowListenerImpl = listenerHolder.get();
+        if (rowsCanBeUpdatedHolder.booleanValue() && addToMonitor) {
+            // only the successful attempt's listener is monitored, so that no rejected attempt's listener runs
+            result.getUpdateGraph().addSource(timeWindowListenerImpl);
         }
         return new Pair<>(result, timeWindowListenerImpl);
     }
@@ -351,13 +370,13 @@ public class WindowCheck {
                     }
                     try (final RowSet changedTimestamps = changedTimestampRowsToAddPost.build()) {
                         if (changedTimestamps.isNonempty()) {
-                            addRowSequence(changedTimestamps, rowKeyToEntry != null);
+                            addRowSequence(changedTimestamps, rowKeyToEntry != null, false);
                         }
                     }
                 }
 
                 // now add the new timestamps
-                addRowSequence(upstream.added(), rowKeyToEntry != null);
+                addRowSequence(upstream.added(), rowKeyToEntry != null, false);
 
                 final TableUpdateImpl downstream =
                         TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
@@ -401,8 +420,11 @@ public class WindowCheck {
          * @param tryCombine try to combine newly added ranges with those already in the maps. For initial addition,
          *        there is nothing to combine with, so we do not spend the time on map lookups. For add-only tables, we
          *        do not maintain the rowKeyToEntry map, so cannot find adjacent ranges for combination.
+         * @param usePrev whether to read the previous timestamps of {@code rowSequence}, which must then be in previous
+         *        space; only the initial addition reads them, and it does not combine
          */
-        private void addRowSequence(RowSequence rowSequence, boolean tryCombine) {
+        private void addRowSequence(RowSequence rowSequence, boolean tryCombine, boolean usePrev) {
+            Assert.assertion(!(tryCombine && usePrev), "!(tryCombine && usePrev)");
             final int chunkSize = (int) Math.min(rowSequence.size(), 4096);
             Entry pendingEntry = null;
             long lastNanos = Long.MAX_VALUE;
@@ -413,8 +435,9 @@ public class WindowCheck {
                 while (rsit.hasMore()) {
                     final RowSequence chunkRows = rsit.getNextRowSequenceWithLength(chunkSize);
                     final LongChunk<OrderedRowKeys> rowKeys = chunkRows.asRowKeyChunk();
-                    final LongChunk<? extends Values> timestampValues =
-                            inWindowColumnSource.timeStampSource.getChunk(getContext, chunkRows).asLongChunk();
+                    final LongChunk<? extends Values> timestampValues = usePrev
+                            ? inWindowColumnSource.timeStampSource.getPrevChunk(getContext, chunkRows).asLongChunk()
+                            : inWindowColumnSource.timeStampSource.getChunk(getContext, chunkRows).asLongChunk();
                     for (int ii = 0; ii < rowKeys.size(); ++ii) {
                         final long currentRowKey = rowKeys.get(ii);
                         final long currentTimestamp = timestampValues.get(ii);
@@ -906,6 +929,30 @@ public class WindowCheck {
         }
     }
 
+    /**
+     * The times an {@link InWindowColumnSource} computes its values against.
+     */
+    private static final class Times {
+        /**
+         * The time that previous values are computed against while {@link #clockStep} is the current step.
+         */
+        private final long prevTime;
+        /**
+         * The time that current values are computed against.
+         */
+        private final long currentTime;
+        /**
+         * The step on which {@link #currentTime} was captured.
+         */
+        private final long clockStep;
+
+        private Times(final long prevTime, final long currentTime, final long clockStep) {
+            this.prevTime = prevTime;
+            this.currentTime = currentTime;
+            this.clockStep = clockStep;
+        }
+    }
+
     private static class InWindowColumnSourceWithClock extends InWindowColumnSource {
         final private Clock clock;
 
@@ -926,18 +973,18 @@ public class WindowCheck {
         private final ColumnSource<Long> timeStampSource;
         private final String timeStampName;
 
-        private long prevTime = 0;
-        private long currentTime = 0;
-        private long clockStep;
-        private final long initialStep;
+        /**
+         * The times that values are computed against. They are replaced together, so that a thread reading previous
+         * values while the update graph captures a new time reads a consistent set of them.
+         */
+        private volatile Times times;
 
         InWindowColumnSource(Table table, String timestampColumn, long windowNanos) {
             super(Boolean.class);
             this.windowNanos = windowNanos;
             this.timeStampName = timestampColumn;
 
-            clockStep = updateGraph.clock().currentStep();
-            initialStep = clockStep;
+            times = new Times(0, 0, updateGraph.clock().currentStep());
 
             final ColumnSource<?> timeStampSource = table.getColumnSource(timestampColumn);
             final ColumnSource<?> reinterpreted = ReinterpretUtils.maybeConvertToPrimitive(timeStampSource);
@@ -952,11 +999,12 @@ public class WindowCheck {
         }
 
         /**
-         * Initialize the first currentTime. Called outside the constructor, because subclasses may overload
-         * getTimeNanos().
+         * Initialize the first time, which previous values are also computed against until the update graph captures a
+         * new one. Called outside the constructor, because subclasses may overload getTimeNanos().
          */
         private void init() {
-            currentTime = getTimeNanos();
+            final long initialTime = getTimeNanos();
+            times = new Times(initialTime, initialTime, times.clockStep);
         }
 
         long getTimeNanos() {
@@ -966,7 +1014,7 @@ public class WindowCheck {
         @Override
         public Boolean get(long rowKey) {
             final long tableTimeStamp = timeStampSource.getLong(rowKey);
-            return computeInWindow(tableTimeStamp, currentTime);
+            return computeInWindow(tableTimeStamp, times.currentTime);
         }
 
         @Override
@@ -990,7 +1038,7 @@ public class WindowCheck {
         }
 
         private boolean computeInWindowUnsafe(long tableNanos) {
-            return computeInWindowUnsafe(tableNanos, currentTime);
+            return computeInWindowUnsafe(tableNanos, times.currentTime);
         }
 
         private boolean computeInWindowUnsafePrev(long tableNanos) {
@@ -1003,9 +1051,7 @@ public class WindowCheck {
         }
 
         private void captureTime() {
-            prevTime = currentTime;
-            currentTime = getTimeNanos();
-            clockStep = updateGraph.clock().currentStep();
+            times = new Times(times.currentTime, getTimeNanos(), updateGraph.clock().currentStep());
         }
 
         @Override
@@ -1036,12 +1082,13 @@ public class WindowCheck {
                 @NotNull FillContext context,
                 @NotNull WritableChunk<? super Values> destination,
                 @NotNull RowSequence rowSequence) {
+            final long time = times.currentTime;
             final WritableObjectChunk<Boolean, ? super Values> booleanObjectChunk = destination.asWritableObjectChunk();
             final LongChunk<? extends Values> timeChunk = timeStampSource.getChunk(
                     ((InWindowFillContext) context).innerContext, rowSequence).asLongChunk();
             destination.setSize(timeChunk.size());
             for (int ii = 0; ii < timeChunk.size(); ++ii) {
-                booleanObjectChunk.set(ii, computeInWindow(timeChunk.get(ii), currentTime));
+                booleanObjectChunk.set(ii, computeInWindow(timeChunk.get(ii), time));
             }
         }
 
@@ -1061,8 +1108,9 @@ public class WindowCheck {
         }
 
         private long timeStampForPrev() {
+            final Times localTimes = times;
             final long currentStep = updateGraph.clock().currentStep();
-            return (clockStep < currentStep || clockStep == initialStep) ? currentTime : prevTime;
+            return localTimes.clockStep < currentStep ? localTimes.currentTime : localTimes.prevTime;
         }
 
         @Override
@@ -1074,6 +1122,7 @@ public class WindowCheck {
             final boolean includeNull = keysList.contains(null) ^ matchOptions.inverted();
             final boolean includeTrue = keysList.contains(true) ^ matchOptions.inverted();
             final boolean includeFalse = keysList.contains(false) ^ matchOptions.inverted();
+            final long time = usePrev ? timeStampForPrev() : times.currentTime;
 
             final int getSize = (int) Math.min(4096, selection.size());
 
@@ -1093,7 +1142,7 @@ public class WindowCheck {
                     final int chunkSize = rowKeys.size();
                     for (int ii = 0; ii < chunkSize; ++ii) {
                         final long rowKey = rowKeys.get(ii);
-                        final Boolean inWindow = computeInWindow(timeStamps.get(ii), currentTime);
+                        final Boolean inWindow = computeInWindow(timeStamps.get(ii), time);
                         if (inWindow == null) {
                             if (includeNull) {
                                 builder.appendKey(rowKey);
