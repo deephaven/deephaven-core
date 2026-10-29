@@ -117,6 +117,18 @@ public class AggregationKeyColumnSourceTest {
     }
 
     @Test
+    public void testNoncanonicalBooleanBytes() {
+        // a byte column read as Boolean: every positive byte is true, and the aggregation groups by the byte
+        final QueryTable bytes = (QueryTable) newTable(byteCol("Byte", (byte) 2, (byte) 1, (byte) 0, (byte) -5,
+                QueryConstants.NULL_BYTE, (byte) 2, (byte) 7));
+        final Table booleans = bytes.withAdditionalColumns(Map.of("Key",
+                ReinterpretUtils.byteToBooleanSource(bytes.getColumnSource("Byte", byte.class))));
+        checkStatic(booleans, true);
+        checkStatic(booleans, false);
+        checkStatic(booleans, (Object) null);
+    }
+
+    @Test
     public void testNanMatch() {
         final Table distinct = newTable(doubleCol("Key", 1.5, Double.NaN, 2.5)).selectDistinct("Key");
         final MatchFilter filter =

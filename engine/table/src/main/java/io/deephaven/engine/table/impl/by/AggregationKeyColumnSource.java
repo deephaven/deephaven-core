@@ -23,7 +23,6 @@ import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
@@ -184,8 +183,11 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
         }
         final MatchFilter matchFilter =
                 MatchFilter.extractMatchFilter(WhereFilterDelegating.maybeUnwrapFilter(filter)).orElse(null);
-        // A BigDecimal match is decided by compareTo, but the aggregation groups BigDecimals by equals.
-        if (matchFilter == null || matchFilter.getMatchOptions().caseInsensitive() || getType() == BigDecimal.class) {
+        // A BigDecimal match is decided by compareTo, but the aggregation groups BigDecimals by equals. Every positive
+        // byte reads as a true Boolean, but the aggregation groups Booleans by their bytes, so a value has no one byte
+        // to probe; a Boolean key has few states anyway.
+        if (matchFilter == null || matchFilter.getMatchOptions().caseInsensitive()
+                || getType() == BigDecimal.class || getType() == Boolean.class) {
             return null;
         }
         // A probe costs about as much as testing one row, so a selection with fewer rows than values is scanned.
@@ -301,16 +303,13 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
     }
 
     /**
-     * Convert a match value of this column's type to the primitive the state manager hashes.
+     * Convert a match value of this column's type, an {@link Instant} or a {@link ZonedDateTime}, to the epoch
+     * nanoseconds the state manager hashes.
      */
     private Object reinterpretKey(final Object value) {
-        final Class<T> type = getType();
-        if (type == Instant.class) {
+        if (getType() == Instant.class) {
             return DateTimeUtils.epochNanos((Instant) value);
         }
-        if (type == ZonedDateTime.class) {
-            return DateTimeUtils.epochNanos((ZonedDateTime) value);
-        }
-        return BooleanUtils.booleanAsByte((Boolean) value);
+        return DateTimeUtils.epochNanos((ZonedDateTime) value);
     }
 }
