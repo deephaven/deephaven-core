@@ -135,7 +135,7 @@ This startup script does the following:
     - `-Dauthentication.psk` sets the password you use to log in. See [pre-shared key authentication](../how-to-guides/authentication/auth-psk.md).
 
 > [!IMPORTANT]
-> If you omit `-Dauthentication.psk`, the server generates a random key and prints it to the container log (`docker logs deephaven-server`).
+> If you omit `-Dauthentication.psk`, the server generates a random key and prints it to the container log (`sudo docker logs deephaven-server`).
 >
 > GCP stores the startup script in the VM's metadata, so anyone who can view the instance in your project can read the password in it.
 
@@ -180,7 +180,7 @@ This brings up a pop-up window where you can copy the command to SSH into your V
 
 Copy that into your terminal to connect.
 
-Run `docker container ls` to confirm the container is running. If the list is empty, wait a minute and run it again.
+Run `sudo docker container ls` to confirm the container is running. If the list is empty, wait a minute and run it again.
 
 ![terminal displaying docker container ls output showing running Deephaven container](../assets/how-to/gcloud-docker-ls-gr.png)
 
