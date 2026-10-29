@@ -13,7 +13,7 @@ Set these properties as JVM flags, such as `-Ddeephaven.console.disable=true`, o
 - `deephaven.console.disable`: Set to `true` to disable console-based code execution. The default is `false`.
 - `deephaven.console.autocomplete.disable`: Set to `true` to disable autocomplete for both Groovy and Python. The default is `false`.
 
-Disabling console code execution prevents API clients, including the web UI, from starting REPL sessions and from subscribing to server logs. It also stops the server from returning console types and from publishing [application mode](../application-mode.md) fields to clients. Those sessions run with the same privileges on the host as the server process.
+Disabling console code execution prevents API clients, including the web UI, from starting REPL sessions and from subscribing to server logs. It also stops the server from returning console types and from advertising [query-scope](../query-scope.md) variables to clients. Fields explicitly exported through [application mode](../application-mode.md) remain available. REPL sessions run with the same privileges on the host as the server process.
 
 ## Python autocomplete requirements
 
