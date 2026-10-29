@@ -33,6 +33,7 @@ import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseableList;
@@ -362,6 +363,10 @@ public class ChunkedOperatorAggregationHelper {
                         control.getTargetLoadFactor());
             }
         }
+        final IncrementalOperatorAggregationStateManager incrementalStateManager =
+                stateManager instanceof IncrementalOperatorAggregationStateManager
+                        ? (IncrementalOperatorAggregationStateManager) stateManager
+                        : null;
         ac.supplyRowLookup(() -> new AggregationRowLookup() {
             @Override
             public int get(@Nullable final Object key) {
@@ -373,6 +378,13 @@ public class ChunkedOperatorAggregationHelper {
                     @NotNull final Chunk<? extends Values>[] keyChunks,
                     @NotNull final WritableLongChunk<RowKeys> rowKeys) {
                 stateManager.findPositionsForKeys(keyChunks, rowKeys);
+            }
+
+            @Override
+            public long updateCycleStep() {
+                return incrementalStateManager == null
+                        ? QueryConstants.NULL_LONG
+                        : incrementalStateManager.updateCycleStep();
             }
         });
         return stateManager;

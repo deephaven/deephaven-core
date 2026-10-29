@@ -23,6 +23,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.invoke.VarHandle;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -149,7 +150,9 @@ public class TableBackedDataIndex extends AbstractDataIndex {
     @NotNull
     public RowKeyLookup rowKeyLookup(final DataIndexOptions options) {
         table(options);
-        // The aggregation's hash-based lookup is correct in prev or current space alike.
+        // A key's row never moves, so the aggregation's hash-based lookup answers in prev or current space alike, as
+        // long as no update cycle changes the hash table during the lookups.
+        final long creationStep = lookupFunction.updateCycleStep();
         return new RowKeyLookup() {
             @Override
             public long apply(@Nullable final Object key, final boolean usePrev) {
@@ -162,6 +165,18 @@ public class TableBackedDataIndex extends AbstractDataIndex {
                     @NotNull final WritableLongChunk<RowKeys> rowKeys,
                     final boolean usePrev) {
                 lookupFunction.get(keyChunks, rowKeys);
+            }
+
+            @Override
+            public boolean lookupsValid(final boolean usePrev) {
+                if (!isRefreshing) {
+                    return true;
+                }
+                // a volatile read does not keep the hash table reads before it from happening after it
+                VarHandle.acquireFence();
+                // the hash table no longer holds the previous keys once this cycle's changes begin
+                return lookupFunction.updateCycleStep() == creationStep
+                        && !(usePrev && creationStep == indexTable.getUpdateGraph().clock().currentStep());
             }
         };
     }
