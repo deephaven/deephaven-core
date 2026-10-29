@@ -621,12 +621,28 @@ public class TestPartitionAwareSourceTableNoMocks {
      */
     @Test
     public void testDeferredCoalesceWhileExclusiveLockHolderCoalesces() throws Exception {
+        checkDeferredCoalesceWhileExclusiveLockHolderCoalesces(true);
+    }
+
+    /**
+     * As {@link #testDeferredCoalesceWhileExclusiveLockHolderCoalesces()}, but the source is not coalesced first, so
+     * the lock-free thread coalesces the source within the attempt that it abandons.
+     */
+    @Test
+    public void testDeferredCoalesceOfUncoalescedSourceWhileExclusiveLockHolderCoalesces() throws Exception {
+        checkDeferredCoalesceWhileExclusiveLockHolderCoalesces(false);
+    }
+
+    private void checkDeferredCoalesceWhileExclusiveLockHolderCoalesces(final boolean coalesceSourceFirst)
+            throws Exception {
         final long partitionSize = 128;
         final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
                 partitionedLocationProvider(partitionSize);
         final Table source = refreshingPartitionedSource(tableLocationProvider);
-        // the source is coalesced up front, so that the deferred where's snapshot is the only one that needs the lock
-        source.coalesce();
+        if (coalesceSourceFirst) {
+            // the lock-free thread's attempt can then be abandoned only at the deferred where's snapshot
+            source.coalesce();
+        }
         ExecutionContext.getContext().getQueryScope().putParam("threshold", 0L);
         // copies of the filters, one for each coalesce, share what they capture
         final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("II + threshold >= 0"));
@@ -651,10 +667,26 @@ public class TestPartitionAwareSourceTableNoMocks {
      */
     @Test
     public void testDeferredMemoizedCoalesceWhileExclusiveLockHolderCoalesces() throws Exception {
+        checkDeferredMemoizedCoalesceWhileExclusiveLockHolderCoalesces(true);
+    }
+
+    /**
+     * As {@link #testDeferredMemoizedCoalesceWhileExclusiveLockHolderCoalesces()}, but the source is not coalesced
+     * first, so the lock-free thread coalesces the source within the attempt that it abandons.
+     */
+    @Test
+    public void testDeferredMemoizedCoalesceOfUncoalescedSourceWhileExclusiveLockHolderCoalesces() throws Exception {
+        checkDeferredMemoizedCoalesceWhileExclusiveLockHolderCoalesces(false);
+    }
+
+    private void checkDeferredMemoizedCoalesceWhileExclusiveLockHolderCoalesces(final boolean coalesceSourceFirst)
+            throws Exception {
         final long partitionSize = 128;
         final Table source = refreshingPartitionedSource(partitionedLocationProvider(partitionSize));
-        // the source is coalesced up front, so that the deferred where's snapshot is the only one that needs the lock
-        source.coalesce();
+        if (coalesceSourceFirst) {
+            // the lock-free thread's attempt can then be abandoned only at the deferred where's snapshot
+            source.coalesce();
+        }
         final WhereFilter filter = new PreviousRejectingFilter(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
         final boolean oldMemoize = QueryTable.setMemoizeResults(true);
         try {
@@ -671,10 +703,26 @@ public class TestPartitionAwareSourceTableNoMocks {
      */
     @Test
     public void testDeferredParallelCoalesceWhileExclusiveLockHolderCoalesces() throws Exception {
+        checkDeferredParallelCoalesceWhileExclusiveLockHolderCoalesces(true);
+    }
+
+    /**
+     * As {@link #testDeferredParallelCoalesceWhileExclusiveLockHolderCoalesces()}, but the source is not coalesced
+     * first, so the lock-free thread coalesces the source within the attempt that it abandons.
+     */
+    @Test
+    public void testDeferredParallelCoalesceOfUncoalescedSourceWhileExclusiveLockHolderCoalesces() throws Exception {
+        checkDeferredParallelCoalesceWhileExclusiveLockHolderCoalesces(false);
+    }
+
+    private void checkDeferredParallelCoalesceWhileExclusiveLockHolderCoalesces(final boolean coalesceSourceFirst)
+            throws Exception {
         final long partitionSize = 128;
         final Table source = refreshingPartitionedSource(partitionedLocationProvider(partitionSize));
-        // the source is coalesced up front, so that the nested snapshots are the only ones that need the lock
-        source.coalesce();
+        if (coalesceSourceFirst) {
+            // the lock-free thread's attempt can then be abandoned only at the workers' nested snapshots
+            source.coalesce();
+        }
         final boolean oldForceParallelWhere = QueryTable.FORCE_PARALLEL_WHERE;
         final boolean oldDisableParallelWhere = QueryTable.DISABLE_PARALLEL_WHERE;
         final int oldParallelWhereSegments = QueryTable.PARALLEL_WHERE_SEGMENTS;
