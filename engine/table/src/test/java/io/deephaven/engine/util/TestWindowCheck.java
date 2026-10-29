@@ -5,6 +5,7 @@ package io.deephaven.engine.util;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.PoisonedUpdateGraph;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -26,6 +27,7 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -351,6 +353,30 @@ public class TestWindowCheck {
         windowed.second.validateQueue();
         Assert.assertEquals(Boolean.FALSE, resultSource.get(0));
         Assert.assertEquals(Boolean.FALSE, resultSource.get(1));
+    }
+
+    /**
+     * A window over a static table whose rows are all outside the window can never change, so it needs no update graph
+     * that refreshes.
+     */
+    @Test
+    public void testWindowCheckStaticExpiredWithoutRefreshingUpdateGraph() {
+        final TestClock timeProvider = new TestClock();
+        timeProvider.now = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2022-07-14T09:30:00 NY"));
+        final QueryTable tableToCheck = testTable(i(0, 1).toTracking(),
+                col("Timestamp", DateTimeUtils.parseInstant("2022-07-14T09:20:00 NY"), null),
+                intCol("Sentinel", 1, 2));
+
+        final Pair<Table, WindowCheck.TimeWindowListener> windowed;
+        try (final SafeCloseable ignored =
+                ExecutionContext.getContext().withUpdateGraph(PoisonedUpdateGraph.INSTANCE).open()) {
+            windowed = WindowCheck.addTimeWindowInternal(
+                    timeProvider, tableToCheck, "Timestamp", DateTimeUtils.SECOND * 60, "InWindow", true);
+        }
+        Assert.assertFalse(windowed.first.isRefreshing());
+        final ColumnSource<Boolean> resultSource = windowed.first.getColumnSource("InWindow", Boolean.class);
+        Assert.assertEquals(Boolean.FALSE, resultSource.get(0));
+        Assert.assertNull(resultSource.get(1));
     }
 
     @Test

@@ -97,8 +97,8 @@ public class WindowCheck {
     public static Pair<Table, TimeWindowListener> addTimeWindowInternal(Clock clock, QueryTable table,
             String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
         final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        // registered before any attempt, so that it is in place for every cycle after the committing attempt activates
-        // its listener
+        // for a refreshing table, registered before any attempt, so that it is in place for every cycle after the
+        // committing attempt activates its listener
         final TimeWindowUpdateSource updateSource = addToMonitor ? new TimeWindowUpdateSource() : null;
         final MutableObject<QueryTable> resultHolder = new MutableObject<>();
         final MutableObject<TimeWindowListenerImpl> listenerHolder = new MutableObject<>();
@@ -121,7 +121,7 @@ public class WindowCheck {
                 }
                 : null;
 
-        if (updateSource != null) {
+        if (snapshotControl != null && updateSource != null) {
             updateGraph.addSource(updateSource);
         }
         try {
@@ -171,27 +171,26 @@ public class WindowCheck {
                 return true;
             });
         } catch (final RuntimeException | Error failure) {
-            if (updateSource != null) {
+            if (snapshotControl != null && updateSource != null) {
                 updateGraph.removeSource(updateSource);
             }
             throw failure;
         }
 
-        if (snapshotControl == null && updateSource != null) {
-            // a static table's window is built once, without a snapshot to commit
-            if (rowsCanBeUpdatedHolder.booleanValue()) {
-                updateSource.activate(listenerHolder.get());
-            } else {
-                updateGraph.removeSource(updateSource);
-            }
+        if (snapshotControl == null && updateSource != null && rowsCanBeUpdatedHolder.booleanValue()) {
+            // A static table's window is built once, without a snapshot to commit, and needs an update source only if
+            // rows can leave it.
+            updateSource.activate(listenerHolder.get());
+            updateGraph.addSource(updateSource);
         }
         return new Pair<>(resultHolder.get(), listenerHolder.get());
     }
 
     /**
-     * The update source that captures a window's time. It is registered before the window's snapshot begins, and runs
-     * only the listener of the attempt that commits, once that attempt has committed. Until then it does nothing, so
-     * the window's time stays at its creation time, as do the values and notifications computed against it.
+     * The update source that captures a window's time. For a refreshing table, it is registered before the window's
+     * snapshot begins, and runs only the listener of the attempt that commits, once that attempt has committed. Until
+     * then it does nothing, so the window's time stays at its creation time, as do the values and notifications
+     * computed against it. For a static table, it is registered once the window is built, if rows can leave the window.
      */
     private static final class TimeWindowUpdateSource implements Runnable {
 
