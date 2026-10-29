@@ -42,12 +42,118 @@ concurrency:
 #    main whenever its tag does not exist yet.
 #===============================================================================
 
+#===============================================================================
+# Credentials. Both build jobs hand GITHUB_TOKEN to code that a pull request
+# controls: the Linux job passes it into the deps-image build, where the PR's
+# Dockerfile and vcpkg manifest run; the Windows job gives it to vcpkg, which
+# runs the PR's portfiles and triplets on the host. The point is to let PR
+# builds read the nuget binary cache (item 2 above), which has no anonymous
+# access. This is only safe because of a GitHub rule: a run for a pull
+# request from a fork gets a read-only GITHUB_TOKEN no matter what
+# `permissions:` asks for, so whatever a fork PR could exfiltrate cannot
+# write to GitHub Packages. Same-repository PRs come from collaborators, who
+# can edit this file and read the token from any step anyway; that includes
+# Dependabot, whose runs get the permissions this file asks for.
+#
+# The verify_token job checks that rule on every run, and the build jobs do
+# not start until it passes. If the rule ever stops holding (a GitHub policy
+# change, a repository setting, someone switching this workflow to
+# pull_request_target, which runs with a write token against PR-controlled
+# code), the run fails before the token reaches PR code. Keep it that way:
+# every job that passes the token to a build must `needs: verify_token`.
+#===============================================================================
+
 env:
   GH_PACKAGES_USERNAME: ${{ github.repository_owner }}
   GH_PACKAGES_FEED: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+  DEEPHAVEN_CPP_DEPS_IMAGE_REPO: ghcr.io/${{ github.repository_owner }}/deephaven-core-cpp-deps
   DHINSTALL: ${{ github.workspace }}/dhinstall
 
 jobs:
+  #=============================================================================
+  # Verify GITHUB_TOKEN permissions
+  #
+  # Asks for the same permissions as the build jobs, so its token is issued
+  # under the same rules, then finds out what the token can actually do by
+  # asking ghcr.io (the registry protocol gives clean answers; the nuget feed
+  # does not). "push" means ghcr.io minted a registry token for pull+push and
+  # accepted the start of a blob upload, which is cancelled right away and
+  # stores nothing. Expected: push for pushes and same-repository pull
+  # requests (the positive control, so a broken probe cannot pass by
+  # accident), denied for pull requests from forks. Anything else fails.
+  #=============================================================================
+  verify_token:
+    name: "Verify GITHUB_TOKEN permissions"
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check what GITHUB_TOKEN can do on ghcr.io
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USERNAME: ${{ github.repository_owner }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          EXPECTED: ${{ (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) && 'push' || 'denied' }}
+        run: |
+          set -euo pipefail
+          registry=${DEEPHAVEN_CPP_DEPS_IMAGE_REPO%%/*}
+          image=${DEEPHAVEN_CPP_DEPS_IMAGE_REPO#*/}
+          token_url="https://${registry}/token?service=${registry}&scope=repository:${image}"
+
+          # The credential reaches curl through a config file on stdin, so it is never
+          # on a command line.
+          registry_token() { # $1 = the actions to ask for; prints the HTTP status, body in token.json
+            printf 'user = "%s:%s"\n' "$REGISTRY_USERNAME" "$GITHUB_TOKEN" |
+              curl -sS --retry 3 -K - -o token.json -w '%{http_code}' "${token_url}:$1"
+          }
+
+          # 1. Pull must work: that proves the credential is valid and the registry is
+          #    up (ghcr.io rejects a bad credential instead of falling back to anonymous
+          #    access), so a broken probe cannot pass as "denied".
+          status=$(registry_token pull)
+          if [ "$status" != 200 ]; then
+            echo "::error::Could not get a pull token for ${DEEPHAVEN_CPP_DEPS_IMAGE_REPO} with GITHUB_TOKEN (HTTP ${status}); the probe cannot run."
+            exit 1
+          fi
+
+          # 2. Then ask for push. ghcr.io refuses to mint the token (403) when the caller
+          #    cannot push. If it does mint one, confirm by starting a blob upload: 202
+          #    means the registry would accept data from this token. Nothing is stored
+          #    until an upload is completed; cancel it anyway.
+          status=$(registry_token pull,push)
+          case "$status" in
+            403) observed=denied ;;
+            200)
+              bearer=$(jq -r .token token.json)
+              status=$(printf 'header = "Authorization: Bearer %s"\n' "$bearer" |
+                curl -sS --retry 3 -K - -o /dev/null -D headers.txt -w '%{http_code}' \
+                  -X POST "https://${registry}/v2/${image}/blobs/uploads/")
+              case "$status" in
+                202)
+                  observed=push
+                  location=$(sed -n 's/^[Ll]ocation: *//p' headers.txt | tr -d '\r')
+                  case "$location" in /*) location="https://${registry}${location}" ;; esac
+                  printf 'header = "Authorization: Bearer %s"\n' "$bearer" |
+                    curl -sS -K - -o /dev/null -X DELETE "$location" || true ;;
+                401|403) observed=denied ;;
+                *) echo "::error::Unexpected HTTP ${status} when starting a blob upload on ${DEEPHAVEN_CPP_DEPS_IMAGE_REPO}; the probe cannot tell what the token can do."; exit 1 ;;
+              esac ;;
+            *) echo "::error::Unexpected HTTP ${status} from ${registry}/token for pull,push; the probe cannot tell what the token can do."; exit 1 ;;
+          esac
+
+          echo "GITHUB_TOKEN push access to ${DEEPHAVEN_CPP_DEPS_IMAGE_REPO}: ${observed}; expected: ${EXPECTED} (${GITHUB_EVENT_NAME}${HEAD_REPO:+ from $HEAD_REPO})"
+          if [ "$observed" = "$EXPECTED" ]; then
+            exit 0
+          fi
+          if [ "$EXPECTED" = denied ]; then
+            echo "::error::GITHUB_TOKEN can push to ${DEEPHAVEN_CPP_DEPS_IMAGE_REPO} in a run for a pull request from a fork (${HEAD_REPO}). The build jobs hand this token to PR-controlled code on the strength of GitHub's rule that such runs get a read-only token; the rule does not hold here, so the build jobs will not run. Check the workflow trigger (pull_request_target?) and the repository's Actions settings."
+          else
+            echo "::error::GITHUB_TOKEN cannot push to ${DEEPHAVEN_CPP_DEPS_IMAGE_REPO} although this job asks for packages: write and the run is not for a fork PR. This check can no longer tell a fork's read-only token from a broken probe; find out what changed (job permissions, the package's access settings on ghcr.io, GitHub policy) before trusting the build jobs' credentials."
+          fi
+          exit 1
+
   #=============================================================================
   # Build the C++ Client (Linux)
   #
@@ -61,6 +167,8 @@ jobs:
   #=============================================================================
   cpp_linux_job:
     name: "Build C++ (Linux)"
+    # Hands GITHUB_TOKEN to PR-controlled code; see "Credentials" at the top.
+    needs: verify_token
     permissions:
       contents: read
       packages: write
@@ -68,9 +176,6 @@ jobs:
     defaults:
       run:
         shell: bash
-
-    env:
-      DEEPHAVEN_CPP_DEPS_IMAGE_REPO: ghcr.io/${{ github.repository_owner }}/deephaven-core-cpp-deps
 
     steps:
       - name: Check out this repo
@@ -139,6 +244,8 @@ jobs:
   #=============================================================================
   cpp_windows_job:
     name: "Build C++ (Windows)"
+    # Hands GITHUB_TOKEN to PR-controlled code; see "Credentials" at the top.
+    needs: verify_token
     permissions:
       contents: read
       packages: write
