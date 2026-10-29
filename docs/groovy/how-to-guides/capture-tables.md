@@ -9,7 +9,7 @@ A Groovy Deephaven server can use the Deephaven Java client, which is included w
 
 ## Setup
 
-This guide covers capturing tables from a "remote" Deephaven server to a "local" Deephaven server. The servers do not need to run on different hosts, but the terminology helps distinguish the two.
+This guide covers capturing tables from a _remote_ Deephaven server to a _local_ Deephaven server. The servers do not need to run on different hosts, but the terminology helps distinguish the two.
 
 The local server opens a Barrage session to the remote server. The [`BarrageSession`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/BarrageSession.html) retrieves tables from the remote server. It wraps a Java client [`Session`](https://deephaven.io/core/javadoc/io/deephaven/client/impl/Session.html), available through its `session` method, that performs operations on the remote server.
 

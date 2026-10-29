@@ -10,7 +10,7 @@ Shared tickets let you capture tables that you create or access with the Python 
 
 ## Setup
 
-This guide covers capturing tables from a "remote" Deephaven server to a "local" Deephaven server. The servers do not need to run on different hosts, but the terminology helps distinguish the two.
+This guide covers capturing tables from a _remote_ Deephaven server to a _local_ Deephaven server. The servers do not need to run on different hosts, but the terminology helps distinguish the two.
 
 The local server creates two connections to the remote server. The first connection is from the Deephaven Python client, [`pydeephaven`](/core/client-api/python/). The local server uses it to run queries on the remote server. The second connection is a [Barrage session](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) that retrieves tables from the remote server. Here is a diagram of the setup:
 

@@ -9,7 +9,7 @@ This guide explains what each statistic Deephaven records about [Barrage](./what
 Barrage records statistics in two places:
 
 - **The publisher** (the server that owns the table) records the time it takes to capture, coalesce, snapshot, propagate, and write updates.
-- **The receiver** records the time it takes to deserialize and apply updates, but only when the receiver runs the Deephaven engine: the Java client, or a Deephaven server that subscribes to or snapshots a remote table with [`barrage_session`](../reference/data-import-export/barrage/barrage-session.md) or a [URI](../how-to-guides/use-uris.md). Receiver statistics appear in the receiving process's own metrics tables, not the publisher's. Clients that do not run the engine, such as `pydeephaven` and the JavaScript client, record no receiver statistics.
+- **The receiver** records the time it takes to deserialize and apply updates. Only receivers that run the Deephaven engine do this: the Java client, and a Deephaven server that subscribes to or snapshots a remote table with [`barrage_session`](../reference/data-import-export/barrage/barrage-session.md) or a [URI](../how-to-guides/use-uris.md). Receiver statistics appear in the receiving process's own metrics tables, not the publisher's. Clients that do not run the engine, such as `pydeephaven` and the JavaScript client, record no receiver statistics.
 
 ### Life of a Barrage update
 
