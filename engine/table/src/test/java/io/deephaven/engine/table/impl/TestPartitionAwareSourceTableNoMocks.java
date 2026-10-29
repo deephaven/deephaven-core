@@ -949,9 +949,7 @@ public class TestPartitionAwareSourceTableNoMocks {
         final AtomicReference<Thread> exclusiveThread = new AtomicReference<>();
         final AtomicBoolean transformedOnWorker = new AtomicBoolean();
         final boolean oldMemoize = QueryTable.setMemoizeResults(true);
-        final boolean oldForceParallelSelect = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
-        QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
-        try {
+        try (final SafeCloseable ignored = new ForcedParallelSelect()) {
             final Table[] results = runWhileExclusiveLockHolderRuns(() -> {
                 exclusiveThread.set(Thread.currentThread());
                 return partitioned.transform(constituent -> {
@@ -965,7 +963,6 @@ public class TestPartitionAwareSourceTableNoMocks {
             assertEquals(4 * partitionSize, results[0].size());
             assertEquals(4 * partitionSize, results[1].size());
         } finally {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = oldForceParallelSelect;
             QueryTable.setMemoizeResults(oldMemoize);
         }
     }
