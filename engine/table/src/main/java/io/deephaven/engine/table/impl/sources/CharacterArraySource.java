@@ -39,7 +39,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
 public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
         implements MutableColumnSourceGetDefaults.ForChar /* MIXIN_IMPLS */ {
     private static final SoftRecycler<char[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.CHAR_RECYCLER_CAPACITY,
-            () -> new char[BLOCK_SIZE], null);
+            ArrayColumnSourceConfiguration.CHAR_RECYCLER_MAXIMUM_CAPACITY, () -> new char[BLOCK_SIZE], null);
 
     private char[][] blocks;
     private transient char[][] prevBlocks;

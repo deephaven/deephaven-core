@@ -29,8 +29,9 @@ import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
  */
 public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]>
         implements MutableColumnSourceGetDefaults.ForBoolean {
-    private static final SoftRecycler<byte[]> recycler = new SoftRecycler<>(1024, () -> new byte[BLOCK_SIZE],
-            null);
+    private static final SoftRecycler<byte[]> recycler =
+            new SoftRecycler<>(ArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_CAPACITY,
+                    ArrayColumnSourceConfiguration.BOOLEAN_RECYCLER_MAXIMUM_CAPACITY, () -> new byte[BLOCK_SIZE], null);
     private byte[][] blocks;
     transient private byte[][] prevBlocks;
 
