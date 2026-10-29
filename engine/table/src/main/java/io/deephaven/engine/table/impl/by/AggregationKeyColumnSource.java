@@ -20,10 +20,13 @@ import io.deephaven.engine.table.impl.select.WhereFilterDelegating;
 import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
+import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.invoke.VarHandle;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -36,30 +39,41 @@ import java.util.function.LongConsumer;
  * value, at a cost independent of the result's size.
  *
  * <p>
- * The aggregation never moves or removes a key's state, so a key's row key is fixed once assigned. The probe reads the
- * hash table as it is now; when filtering previous values, the aggregation may be modifying its hash table
- * concurrently, so the pushdown declines and the filter scans the column.
+ * The aggregation never moves or removes a key's state, so a key's row key is fixed once assigned, and a probe answers
+ * for previous values as well as current ones. A refreshing aggregation changes its hash table only in its update
+ * cycle, which it {@link IncrementalOperatorAggregationStateManager#updateCycleStep() marks} before the first change. A
+ * probe on another thread is abandoned, and the filter scans the column, when a cycle began during the probe, or when
+ * filtering previous values after this cycle began.
  */
 public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T> implements FillUnordered<Values> {
 
     private final ColumnSource<T> keySource;
     private final OperatorAggregationStateManager stateManager;
     private final boolean reinterpretedKeys;
+    /** The state manager of a refreshing aggregation, or null for a static one, which never changes. */
+    private final IncrementalOperatorAggregationStateManager incrementalStateManager;
+    private final UpdateGraph updateGraph;
 
     /**
      * @param keySource the result's key source, of the group-by column's type
      * @param stateManager the aggregation's state manager, whose output positions are the result's row keys
      * @param reinterpretedKeys whether {@code stateManager} hashes the keys reinterpreted as primitives, per
      *        {@link io.deephaven.engine.table.impl.sources.ReinterpretUtils#maybeConvertToPrimitive}
+     * @param updateGraph the aggregation's update graph
      */
     AggregationKeyColumnSource(
             @NotNull final ColumnSource<T> keySource,
             @NotNull final OperatorAggregationStateManager stateManager,
-            final boolean reinterpretedKeys) {
+            final boolean reinterpretedKeys,
+            @NotNull final UpdateGraph updateGraph) {
         super(keySource.getType(), keySource.getComponentType(), keySource);
         this.keySource = keySource;
         this.stateManager = stateManager;
         this.reinterpretedKeys = reinterpretedKeys;
+        incrementalStateManager = stateManager instanceof IncrementalOperatorAggregationStateManager
+                ? (IncrementalOperatorAggregationStateManager) stateManager
+                : null;
+        this.updateGraph = updateGraph;
     }
 
     @Override
@@ -89,11 +103,8 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T> 
      * The match filter this column answers by probing, or null if {@code filter} is not one or probing would cost more
      * than scanning {@code selection}.
      */
-    private MatchFilter supportedMatchFilter(
-            @NotNull final WhereFilter filter,
-            @NotNull final RowSet selection,
-            final boolean usePrev) {
-        if (QueryTable.DISABLE_WHERE_PUSHDOWN_AGGREGATION_KEY || usePrev) {
+    private MatchFilter supportedMatchFilter(@NotNull final WhereFilter filter, @NotNull final RowSet selection) {
+        if (QueryTable.DISABLE_WHERE_PUSHDOWN_AGGREGATION_KEY) {
             return null;
         }
         final MatchFilter matchFilter =
@@ -118,7 +129,7 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T> 
             final JobScheduler jobScheduler,
             final LongConsumer onComplete,
             final Consumer<Exception> onError) {
-        final MatchFilter matchFilter = supportedMatchFilter(filter, selection, usePrev);
+        final MatchFilter matchFilter = supportedMatchFilter(filter, selection);
         if (matchFilter == null) {
             onComplete.accept(PushdownResult.UNSUPPORTED_ACTION_COST);
             return;
@@ -136,26 +147,66 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T> 
             final JobScheduler jobScheduler,
             final Consumer<PushdownResult> onComplete,
             final Consumer<Exception> onError) {
-        final MatchFilter matchFilter = supportedMatchFilter(filter, selection, usePrev);
+        final MatchFilter matchFilter = supportedMatchFilter(filter, selection);
         if (matchFilter == null || costCeiling < PushdownResult.TABLE_KEY_LOOKUP_COST) {
             onComplete.accept(PushdownResult.allMaybeMatch(selection));
             return;
         }
 
-        final Object[] values = matchFilter.getValues();
-        final RowSetBuilderRandom matchingBuilder = RowSetFactory.builderRandom();
+        final long startStep =
+                incrementalStateManager == null ? QueryConstants.NULL_LONG : incrementalStateManager.updateCycleStep();
+        if (usePrev && incrementalStateManager != null && startStep == updateGraph.clock().currentStep()) {
+            // this cycle's changes to the hash table have begun, so it no longer holds the previous keys
+            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+            return;
+        }
+        final RowSet found;
+        try {
+            found = probe(matchFilter.getValues());
+        } catch (final RuntimeException e) {
+            if (incrementalStateManager == null || unchangedSince(startStep)) {
+                throw e;
+            }
+            // a change to the hash table during the probe tore its reads
+            onComplete.accept(PushdownResult.allMaybeMatch(selection));
+            return;
+        }
+        try (found) {
+            if (incrementalStateManager != null && !unchangedSince(startStep)) {
+                // a change to the hash table overlapped the probe
+                onComplete.accept(PushdownResult.allMaybeMatch(selection));
+                return;
+            }
+            try (final RowSet matching = matchFilter.getMatchOptions().inverted()
+                    ? selection.minus(found)
+                    : found.intersect(selection)) {
+                onComplete.accept(PushdownResult.exactMatch(selection, matching));
+            }
+        }
+    }
+
+    /**
+     * The row keys of the states for {@code values}.
+     */
+    private RowSet probe(final Object[] values) {
+        final RowSetBuilderRandom foundBuilder = RowSetFactory.builderRandom();
         for (final Object value : values) {
             final int rowKey = stateManager.findPositionForKey(reinterpretedKeys ? reinterpretKey(value) : value);
             if (rowKey >= 0) {
-                matchingBuilder.addKey(rowKey);
+                foundBuilder.addKey(rowKey);
             }
         }
-        try (final RowSet found = matchingBuilder.build();
-                final RowSet matching = matchFilter.getMatchOptions().inverted()
-                        ? selection.minus(found)
-                        : found.intersect(selection)) {
-            onComplete.accept(PushdownResult.exactMatch(selection, matching));
-        }
+        return foundBuilder.build();
+    }
+
+    /**
+     * Whether no update cycle began since {@code startStep} was read, so no change to the hash table overlapped the
+     * reads in between.
+     */
+    private boolean unchangedSince(final long startStep) {
+        // a volatile read does not keep the hash table reads before it from happening after it
+        VarHandle.acquireFence();
+        return incrementalStateManager.updateCycleStep() == startStep;
     }
 
     /**

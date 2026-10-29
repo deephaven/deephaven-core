@@ -247,7 +247,7 @@ public class ChunkedOperatorAggregationHelper {
             // A single key column answers match filters by probing the hash table
             resultColumnSourceMap.put(keyNames[kci], keyHashTableSources.length == 1
                     ? new AggregationKeyColumnSource<>(resultKeySource, stateManager,
-                            keySources[kci] != reinterpretedKeySources[kci])
+                            keySources[kci] != reinterpretedKeySources[kci], input.getUpdateGraph())
                     : resultKeySource);
         }
         ac.getResultColumns(resultColumnSourceMap);
@@ -292,7 +292,7 @@ public class ChunkedOperatorAggregationHelper {
 
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {
-                    incrementalStateManager.beginUpdateCycle();
+                    incrementalStateManager.beginUpdateCycle(getUpdateGraph().clock().currentStep());
 
                     final TableUpdate upstreamToUse = isBlink ? adjustForBlinkTable(upstream) : upstream;
                     if (upstreamToUse.empty()) {

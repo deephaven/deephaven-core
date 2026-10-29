@@ -4,18 +4,24 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.NoPushdownColumnSourceWrapper;
+import io.deephaven.engine.table.impl.PushdownFilterContext;
+import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -24,6 +30,9 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
 import java.util.function.UnaryOperator;
 
@@ -117,6 +126,69 @@ public class AggregationKeyColumnSourceTest {
     public void testRefreshingBoolean() {
         checkRefreshing(table -> withKeyFormula(table, "Key = Base == 11 ? null : Base % 3 == 0"), true,
                 base -> base == 11 ? null : base % 3 == 0);
+    }
+
+    @Test
+    public void testPreviousValuesDuringCycle() throws Exception {
+        final QueryTable source = testRefreshingTable(i(2, 4).toTracking(),
+                intCol("Key", 3, 5), intCol("Value", 1, 2));
+        final QueryTable lastBy = (QueryTable) source.lastBy("Key");
+        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "Key", 3, 11);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final ExecutionContext context = ExecutionContext.getContext();
+        final ExecutorService pool = Executors.newSingleThreadExecutor();
+        try {
+            updateGraph.startCycleForUnitTests(false);
+            addToTable(source, i(6), intCol("Key", 11), intCol("Value", 3));
+            // before the aggregation's update, a where on another thread filters previous values
+            final Table filtered = pool.submit(() -> {
+                try (final SafeCloseable ignored = context.open()) {
+                    return lastBy.where(filter.copy());
+                }
+            }).get(30, TimeUnit.SECONDS);
+            assertEquals(1, filtered.size());
+
+            source.notifyListeners(i(6), i(), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
+            final long step = updateGraph.clock().currentStep();
+            while (!lastBy.satisfied(step)) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+
+            // the aggregation has changed its hash table this cycle, so a probe of previous values is abandoned
+            final AggregationKeyColumnSource<?> keySource =
+                    (AggregationKeyColumnSource<?>) lastBy.getColumnSource("Key");
+            filter.init(lastBy.getDefinition());
+            try (final RowSet prevRows = lastBy.getRowSet().copyPrev();
+                    final PushdownResult result = pushdown(keySource, filter, prevRows, true)) {
+                assertEquals(prevRows, result.maybeMatch());
+                assertTrue(result.match().isEmpty());
+            }
+            // the update is complete, so current values are probed; key 11 has the third state
+            try (final PushdownResult result = pushdown(keySource, filter, lastBy.getRowSet(), false)) {
+                assertEquals(i(0, 2), result.match());
+                assertTrue(result.maybeMatch().isEmpty());
+            }
+
+            updateGraph.completeCycleForUnitTests();
+            assertEquals(2, filtered.size());
+            assertTableEquals(scanned(lastBy, filter), filtered);
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    private static PushdownResult pushdown(
+            final AggregationKeyColumnSource<?> keySource,
+            final MatchFilter filter,
+            final RowSet selection,
+            final boolean usePrev) {
+        final MutableObject<PushdownResult> result = new MutableObject<>();
+        keySource.pushdownFilter(filter, selection, usePrev, PushdownFilterContext.NO_PUSHDOWN_CONTEXT,
+                Long.MAX_VALUE, new ImmediateJobScheduler(), result::setValue, e -> {
+                    throw new AssertionError(e);
+                });
+        return result.getValue();
     }
 
     /**

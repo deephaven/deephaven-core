@@ -28,6 +28,8 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.invoke.VarHandle;
+
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
@@ -47,6 +49,9 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     /** Should we rehash the entire table fully ({@code true}) or incrementally ({@code false})? */
     protected boolean fullRehash = true;
+
+    /** The step of the last update cycle that began; see {@link #updateCycleStep()}. */
+    private volatile long updateCycleStep = QueryConstants.NULL_LONG;
 
     /** How much of the alternate sources are necessary to rehash? */
     protected int rehashPointer = 0;
@@ -398,7 +403,10 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     }
 
     @Override
-    public void beginUpdateCycle() {
+    public void beginUpdateCycle(final long step) {
+        updateCycleStep = step;
+        // a volatile write does not keep the hash table writes that follow from becoming visible before it
+        VarHandle.storeStoreFence();
         // Once we're past initial state processing, we want to rehash incrementally.
         fullRehash = false;
         // At the beginning of the update cycle, we always want to do some rehash work so that we can eventually ditch
@@ -409,6 +417,11 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
                 clearAlternate();
             }
         }
+    }
+
+    @Override
+    public long updateCycleStep() {
+        return updateCycleStep;
     }
 
     protected abstract void probe(RowSequence chunkOk, Chunk[] sourceKeyChunks);
