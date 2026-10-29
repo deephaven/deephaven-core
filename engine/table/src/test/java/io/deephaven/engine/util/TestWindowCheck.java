@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
@@ -239,6 +240,15 @@ public class TestWindowCheck {
         Assert.assertEquals(resultSource.getPrev(1), Boolean.TRUE);
         Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
         Assert.assertNull(resultSource.getPrev(3));
+
+        // matching previous values uses the previous time, as getPrev does
+        try (final WritableRowSet prevInWindow =
+                resultSource.match(true, MatchOptions.REGULAR, i(0, 1, 2, 3), Boolean.TRUE);
+                final WritableRowSet inWindow =
+                        resultSource.match(false, MatchOptions.REGULAR, i(0, 1, 2, 3), Boolean.TRUE)) {
+            Assert.assertEquals(i(1, 2), prevInWindow);
+            Assert.assertEquals(i(2), inWindow);
+        }
 
         updateGraph.completeCycleForUnitTests();
     }
