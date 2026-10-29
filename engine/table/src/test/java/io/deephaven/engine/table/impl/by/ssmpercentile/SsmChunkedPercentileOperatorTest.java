@@ -53,7 +53,7 @@ public class SsmChunkedPercentileOperatorTest {
     @Rule
     public final EngineCleanup base = new EngineCleanup();
 
-    private static final String[] VALUE_COLUMNS = {"Few", "I", "L", "D", "C", "B"};
+    private static final String[] VALUE_COLUMNS = {"Few", "I", "L", "D", "C", "B", "Str"};
 
     private static List<Aggregation> aggregations() {
         return List.of(
@@ -131,14 +131,15 @@ public class SsmChunkedPercentileOperatorTest {
     private static void checkIncremental(final int size, final int updateSize, final int steps, final long seed) {
         final Random random = new Random(seed);
         final ColumnInfo<?, ?>[] columnInfo = initColumnInfos(
-                new String[] {"Sym", "Few", "I", "L", "D", "C", "B"},
+                new String[] {"Sym", "Few", "I", "L", "D", "C", "B", "Str"},
                 new SetGenerator<>("a", "b", "c"),
                 new SetGenerator<>(1.5, 2.5, 3.5, 4.5),
                 new IntGenerator(0, 20, 0.05),
                 new LongGenerator(-1_000_000, 1_000_000, 0.05),
                 new DoubleGenerator(0, 100, 0.05, 0.0005),
                 new CharGenerator('a', 'f', 0.05),
-                new BigDecimalGenerator(BigInteger.valueOf(-100), BigInteger.valueOf(100), 2, 0.05));
+                new BigDecimalGenerator(BigInteger.valueOf(-100), BigInteger.valueOf(100), 2, 0.05),
+                new SetGenerator<>("a", "b", "c", "d", "e"));
         final QueryTable table = getTable(size, random, columnInfo);
         final EvalNuggetInterface[] nuggets = {
                 new SnapshotComparison(table, "Sym"),

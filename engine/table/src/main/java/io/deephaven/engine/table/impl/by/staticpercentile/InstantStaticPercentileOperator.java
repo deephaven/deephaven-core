@@ -16,8 +16,8 @@ import java.util.Map;
 final class InstantStaticPercentileOperator extends LongStaticPercentileOperator {
     private final ColumnSource<?> instantResult;
 
-    InstantStaticPercentileOperator(final double percentile, final String name) {
-        super(percentile, false, name);
+    InstantStaticPercentileOperator(final double percentile, final String name, final long expectedSize) {
+        super(percentile, false, name, expectedSize);
         // noinspection unchecked
         instantResult = new LongAsInstantColumnSource((ColumnSource<Long>) resultColumn());
     }

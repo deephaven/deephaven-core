@@ -56,9 +56,11 @@ public class FloatStaticPercentileOperator extends StaticPercentileOperator {
      * @param percentile the percentile to compute
      * @param averageEvenlyDivided see {@link io.deephaven.api.agg.spec.AggSpecPercentile#averageEvenlyDivided()}
      * @param name the name of the result column
+     * @param expectedSize the number of values a destination's array grows to when its first array fills
      */
-    FloatStaticPercentileOperator(final double percentile, final boolean averageEvenlyDivided, final String name) {
-        super(percentile, name);
+    FloatStaticPercentileOperator(final double percentile, final boolean averageEvenlyDivided, final String name,
+            final long expectedSize) {
+        super(percentile, name, expectedSize);
         // region resultConstructor
         this.averageEvenlyDivided = averageEvenlyDivided;
         result = new FloatArraySource();

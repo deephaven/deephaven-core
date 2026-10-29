@@ -582,8 +582,9 @@ public class AggregationProcessor implements AggregationContextFactory {
         final IterativeChunkedAggregationOperator makePercentileOperator(final Class<?> type, final String name,
                 final double percentile, final boolean averageEvenlyDivided) {
             if (!table.isRefreshing()) {
+                // with no group-by columns, the one group receives every row of the table
                 return StaticPercentileOperator.make(type, compareConsistentWithEquality(type), percentile,
-                        averageEvenlyDivided, name);
+                        averageEvenlyDivided, name, groupByColumnNames.length == 0 ? table.size() : 0);
             }
             return new SsmChunkedPercentileOperator(type, compareConsistentWithEquality(type), percentile,
                     averageEvenlyDivided, name);
