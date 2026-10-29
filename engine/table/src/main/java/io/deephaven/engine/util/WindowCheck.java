@@ -131,6 +131,9 @@ public class WindowCheck {
             }
             if (snapshotControl != null) {
                 snapshotControl.setListenerAndResult(recorder, result);
+            } else {
+                // the window over a static table has not yet notified on any step, including the one it is created on
+                result.setLastNotificationStep(NotificationStepReceiver.NULL_NOTIFICATION_STEP);
             }
             resultHolder.setValue(result);
             listenerHolder.setValue(timeWindowListenerImpl);

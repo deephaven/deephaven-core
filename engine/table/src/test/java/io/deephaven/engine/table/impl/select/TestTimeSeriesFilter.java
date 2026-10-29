@@ -575,7 +575,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     @Test
     public void testWhereWithoutLock() throws Exception {
         final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2026-03-10T09:00:00 NY"));
-        final QueryTable source = minuteTable(start);
+        final QueryTable source = minuteTable(start, true);
         final TestClock testClock = new TestClock().setNanos(start + 30 * DateTimeUtils.MINUTE);
 
         final TimeSeriesFilter timeSeriesFilter =
@@ -613,7 +613,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     @Test
     public void testWhereWithoutLockDuringCycle() throws Exception {
         final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2026-03-10T09:00:00 NY"));
-        final QueryTable source = minuteTable(start);
+        final QueryTable source = minuteTable(start, true);
         final TestClock testClock = new TestClock().setNanos(start + 30 * DateTimeUtils.MINUTE);
         final TimeSeriesFilter timeSeriesFilter =
                 TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).build();
@@ -653,6 +653,48 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     }
 
     /**
+     * A caller that holds no lock filters a static table with a time series filter during an update cycle. The window
+     * over the static table still refreshes, and has not yet notified, so the where reads previous values without
+     * waiting for the cycle, and its result then follows the rows that leave the window.
+     */
+    @Test
+    public void testWhereWithoutLockDuringCycleOnStaticTable() throws Exception {
+        final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2026-03-10T09:00:00 NY"));
+        final QueryTable source = minuteTable(start, false);
+        final TestClock testClock = new TestClock().setNanos(start + 30 * DateTimeUtils.MINUTE);
+        final TimeSeriesFilter timeSeriesFilter =
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).build();
+
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final ControlledUpdateGraph updateGraph = executionContext.getUpdateGraph().cast();
+        final ExecutorService unlockedThread = Executors.newSingleThreadExecutor();
+        final Table filtered;
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            // a where that waited for the update graph would not complete until the cycle does
+            filtered = unlockedThread.submit(() -> {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    return source.where(timeSeriesFilter);
+                }
+            }).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            // At 30 minutes, rows 0 through 24 are older than the five minute window.
+            assertEquals(35, filtered.size());
+        } finally {
+            unlockedThread.shutdownNow();
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+        }
+        assertTrue(filtered.isRefreshing());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            testClock.setNanos(start + 40 * DateTimeUtils.MINUTE);
+            timeSeriesFilter.runForUnitTests();
+        });
+        // at 40 minutes, rows 0 through 34 are
+        assertEquals(25, filtered.size());
+    }
+
+    /**
      * A where that reads previous values during an update cycle cannot commit if the windowed table notifies on that
      * cycle before the where commits, because the filter would begin following the windowed table after the rows that
      * left the window were reported. The where reads again, and its result excludes those rows.
@@ -660,7 +702,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     @Test
     public void testWhereRetriesWhenWindowChangesBeforeCommit() throws Exception {
         final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2026-03-10T09:00:00 NY"));
-        final QueryTable source = minuteTable(start);
+        final QueryTable source = minuteTable(start, true);
         final TestClock testClock = new TestClock().setNanos(start + 30 * DateTimeUtils.MINUTE);
         final TimeSeriesFilter timeSeriesFilter =
                 TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).build();
@@ -728,10 +770,9 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     }
 
     /**
-     * A refreshing table of 60 rows, one minute apart beginning at {@code start}, with a Sentinel column holding the
-     * row position.
+     * A table of 60 rows, one minute apart beginning at {@code start}, with a Sentinel column holding the row position.
      */
-    private static QueryTable minuteTable(final long start) {
+    private static QueryTable minuteTable(final long start, final boolean refreshing) {
         final int size = 60;
         final Instant[] times = new Instant[size];
         final int[] sentinel = new int[size];
@@ -739,8 +780,11 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
             sentinel[ii] = ii;
             times[ii] = DateTimeUtils.epochNanosToInstant(start + (ii * DateTimeUtils.MINUTE));
         }
-        return testRefreshingTable(RowSetFactory.flat(size).toTracking(), col("Timestamp", times),
-                intCol("Sentinel", sentinel));
+        return refreshing
+                ? testRefreshingTable(RowSetFactory.flat(size).toTracking(), col("Timestamp", times),
+                        intCol("Sentinel", sentinel))
+                : testTable(RowSetFactory.flat(size).toTracking(), col("Timestamp", times),
+                        intCol("Sentinel", sentinel));
     }
 
     /**
