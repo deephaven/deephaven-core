@@ -20,6 +20,7 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Rule;
@@ -28,6 +29,7 @@ import org.junit.Test;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -77,10 +79,18 @@ public class AggregationKeyColumnSourceTest {
 
     @Test
     public void testStaticReinterpretedKeyTypes() {
-        final Table base = TableTools.emptyTable(12).update("Base = (int) (ii % 5)");
+        // more keys than any filter here has values, so that every filter probes
+        final Table base = TableTools.emptyTable(120).update("Base = (int) (ii % 50)");
+        // a time beyond the primitive's range, and a non-null time that converts to the null primitive
+        final Instant overflow = Instant.parse("3000-01-01T00:00:00Z");
+        final Instant nullNanos = Instant.ofEpochSecond(-9223372037L, 145224192L);
+        assertEquals(QueryConstants.NULL_LONG, DateTimeUtils.epochNanos(nullNanos));
         checkStatic(reinterpreted(true, withKeyFormula(base, "Key = Base == 3 ? null : DateTimeUtils.plus(T0, "
-                + "(long) Base)")), instant(1), instant(4), null, instant(9));
-        checkStatic(reinterpreted(true, withZonedKey(base, 3)), zoned(1), zoned(4), null, zoned(9));
+                + "(long) Base)")), instant(1), instant(4), null, instant(9), overflow, nullNanos);
+        // the same instant in another zone is not equal
+        checkStatic(reinterpreted(true, withZonedKey(base, 3)), zoned(1), zoned(4), null, zoned(9),
+                zoned(2).withZoneSameInstant(ZoneId.of("America/New_York")), overflow.atZone(UTC),
+                nullNanos.atZone(UTC));
         checkStatic(reinterpreted(true, withKeyFormula(base, "Key = Base == 3 ? null : Base % 2 == 0")), true, null);
         checkStatic(reinterpreted(true, withKeyFormula(base, "Key = Base % 2 == 0")), false);
         // a ZonedDateTime column without a fixed time zone is hashed as objects
@@ -299,7 +309,7 @@ public class AggregationKeyColumnSourceTest {
         return DateTimeUtils.plus(T0, base);
     }
 
-    private static Object zoned(final int base) {
+    private static ZonedDateTime zoned(final int base) {
         return DateTimeUtils.toZonedDateTime(instant(base), UTC);
     }
 }

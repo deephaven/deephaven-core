@@ -245,11 +245,13 @@ public class ChunkedOperatorAggregationHelper {
                         keyColumnsRaw[kci].getType());
             }
             final ColumnSource<?> resultKeySource = input.isRefreshing() ? keyColumnsCopied[kci] : keyColumnsRaw[kci];
-            // A single key column answers match filters by probing the hash table
+            // A single key column answers match filters by probing the hash table. The symbol table manager builds its
+            // lookup map of every key on the first probe, so its key column is scanned instead.
             resultColumnSourceMap.put(keyNames[kci], keyHashTableSources.length == 1
-                    ? new AggregationKeyColumnSource<>(resultKeySource, stateManager,
-                            keySources[kci] != reinterpretedKeySources[kci], input.getUpdateGraph())
-                    : resultKeySource);
+                    && !(stateManager instanceof StaticSymbolTableChunkedOperatorAggregationStateManager)
+                            ? new AggregationKeyColumnSource<>(resultKeySource, stateManager,
+                                    keySources[kci] != reinterpretedKeySources[kci], input.getUpdateGraph())
+                            : resultKeySource);
         }
         ac.getResultColumns(resultColumnSourceMap);
 

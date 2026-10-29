@@ -30,6 +30,7 @@ import java.lang.invoke.VarHandle;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
@@ -191,8 +192,24 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T> 
     private RowSet probe(final Object[] values) {
         final RowSetBuilderRandom foundBuilder = RowSetFactory.builderRandom();
         for (final Object value : values) {
-            final int rowKey = stateManager.findPositionForKey(reinterpretedKeys ? reinterpretKey(value) : value);
-            if (rowKey >= 0) {
+            if (!reinterpretedKeys) {
+                final int rowKey = stateManager.findPositionForKey(value);
+                if (rowKey >= 0) {
+                    foundBuilder.addKey(rowKey);
+                }
+                continue;
+            }
+            final Object lookupKey;
+            try {
+                lookupKey = reinterpretKey(value);
+            } catch (final DateTimeUtils.DateTimeOverflowException e) {
+                // no row holds a time that its primitive can not represent
+                continue;
+            }
+            final int rowKey = stateManager.findPositionForKey(lookupKey);
+            // The filter matches the column's values by equals, which distinguishes what the primitive does not: a
+            // ZonedDateTime's zone, and a time that converts to the null primitive.
+            if (rowKey >= 0 && Objects.equals(keySource.get(rowKey), value)) {
                 foundBuilder.addKey(rowKey);
             }
         }
