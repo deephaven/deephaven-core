@@ -155,6 +155,46 @@ public class SpaceMapper {
     return builder.Build();
   }
 
+  /// <summary>
+  /// Like <see cref="ConvertKeysToIndices"/>, but keys that are not in the map are skipped rather than being an
+  /// error, so the result can be smaller than 'keys'.
+  ///
+  /// Removes need this. A full subscription is sent the server's entire removed set, and while the initial snapshot
+  /// is still arriving that set can name rows this client has not been given yet. Within one interval of 'keys',
+  /// the keys that are present occupy consecutive ranks starting at the rank of the interval's first key, so each
+  /// interval still maps to a single range of positions, just a shorter one.
+  /// </summary>
+  /// <param name="keys">Keys represented in key space, not all of which need be present</param>
+  /// <returns>The positions, in index space, of those keys that are present</returns>
+  public RowSequence ConvertPresentKeysToIndices(RowSequence keys) {
+    var builder = new RowSequenceBuilder();
+    foreach (var interval in keys.Intervals) {
+      var presentCount = (UInt64)_set.RangeFromTo(interval.Begin, interval.End).Count;
+      if (presentCount == 0) {
+        continue;
+      }
+
+      var firstRank = ZeroBasedRank(interval.Begin);
+      builder.AddInterval(Interval.OfStartAndSize(firstRank, presentCount));
+    }
+    return builder.Build();
+  }
+
+  /// <summary>
+  /// Returns the subset of 'keys' that are in the map.
+  /// </summary>
+  /// <param name="keys">Keys represented in key space</param>
+  /// <returns>Those of the keys that are present, represented in key space</returns>
+  public RowSequence PresentKeys(RowSequence keys) {
+    var builder = new RowSequenceBuilder();
+    foreach (var interval in keys.Intervals) {
+      foreach (var key in _set.RangeFromTo(interval.Begin, interval.End)) {
+        builder.Add(key);
+      }
+    }
+    return builder.Build();
+  }
+
   public int Cardinality() {
     return _set.Count;
   }
