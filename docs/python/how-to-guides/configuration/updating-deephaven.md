@@ -2,82 +2,131 @@
 title: Update Deephaven
 ---
 
-This guide will show you how to update your Deephaven deployment.
+This guide shows you how to update your Deephaven deployment.
 
-It is typically recommended to keep up-to-date with the latest versions of software. Deephaven is no different. Each release brings new features, fixes, and quality-of-life improvements to the Deephaven experience. Updating is a quick and easy process, though the steps differ slightly depending on how you install and run Deephaven:
+Each Deephaven release adds features and fixes. Keep your deployment up to date. The steps depend on how you install and run Deephaven, so go to the section for your installation method or client.
 
-- [Docker-installed Deephaven instructions](#update-docker-installed-deephaven)
-- [pip-installed Deephaven instructions](#update-pip-installed-deephaven)
-- [Python client instructions](#update-the-python-client)
+> [!NOTE]
+> Read the [release notes](https://github.com/deephaven/deephaven-core/releases) before you update across a [major version](#deephaven-versioning).
 
 ## Deephaven versioning
 
-Each new Deephaven release increases the version number. Versions follow a nomenclature of three numbers separated by periods (e.g. `0.26.1`).
+Each Deephaven version is two numbers separated by a period, such as `42.7`. A major release increments the first number and resets the second, for example from `41.7` to `42.0`. Other releases increment the second number, for example from `42.6` to `42.7`.
 
-Deephaven's release and version history can be found [here](https://github.com/deephaven/deephaven-core/releases).
+Sometimes Deephaven keeps patching an older line. For example, `41.11` was released after `42.0`, so a higher second number does not always mean a newer release. The `latest` tag points to the current release, and the [Deephaven releases page](https://github.com/deephaven/deephaven-core/releases) lists every release.
 
-A major update is released approximately once per month, with occasional spot releases in between to roll out bug fixes and improvements to new features. Both release types are driven primarily by our user base.
+## Before you update
 
-Primary releases bump the middle of the three numbers (e.g., `0.25.0` -> `0.26.0`), whereas spot releases bump the last number (e.g., `0.26.0` -> `0.26.1`).
+- Note the version you run now, so you can roll back by returning to it. For example, set the previous image tag, or run `pip install -U deephaven-server==<old version>`.
+- Back up your Deephaven data directory (in Docker, `/data` or the mount or volume that holds it).
 
 ## Update Docker-installed Deephaven
 
-When using [Deephaven run from Docker](../../getting-started/docker-install.md), a user will build the application from a `docker-compose.yml` file or a `Dockerfile`. In both cases, you can specify a version via one of the following:
+Docker keeps a copy of each image tag it has already pulled and reuses it. Moving tags such as `latest` and `edge` can be stale, so pull them again before you recreate the container. A version tag you have not pulled yet downloads automatically with `docker run` and `docker compose up`.
 
-- A specific version number, e.g. `0.26.1`.
-- `latest`: The latest version to be released. The first release shown in the [releases](https://github.com/deephaven/deephaven-core/releases) page should always have this tag.
-- `edge`: Everything merged into [deephaven-core](https://github.com/deephaven/deephaven-core) prior to midnight ET (US Eastern Time) on the previous day.
+### Set the image version
+
+When you run [Deephaven from Docker](../../getting-started/docker-install.md), you choose the image version with a tag after the image name. You set the tag the same way with `docker run`, a `docker-compose.yml` file, or a `Dockerfile`. The tag is one of the following:
+
+- A specific version number, such as `42.7`. Not every release has an image, so check the [image tags on GitHub](https://github.com/deephaven/deephaven-core/pkgs/container/server) first.
+- The `latest` tag, which is the most recent Deephaven release.
+- The `edge` tag, which is a regularly rebuilt image of the [deephaven-core](https://github.com/deephaven/deephaven-core) `main` branch, built at least nightly.
 
 > [!NOTE]
-> Most users will use a specific version number or `latest` for their deployment. The `edge` version is typically used for internal testing, as it has undocumented features not included in the latest release.
+> Most deployments use a specific version number or `latest`. Use `edge` only for testing, because it includes unreleased changes.
 
-If deploying with `docker compose`, the `docker-compose.yml` file specifies the version based on the image in the Deephaven service:
+With `docker run`, the tag follows the image name:
 
-```yaml
-image: ghcr.io/deephaven/server:0.26.1
+```bash
+docker run --name deephaven -p 10000:10000 ghcr.io/deephaven/server:42.7
 ```
 
-The version is set at the end of this line, after the `:`. In this case, the version is `0.26.1`, but it could be any other release number, `latest`, or `edge`.
+If you deploy with Docker Compose, set the version in the `image` line of the Deephaven service in `docker-compose.yml`:
 
-The file above creates the `deephaven` docker image from the Deephaven `server` container. The version is specified at the end of the `image` line. In this case, it sets the image to the environment variable `VERSION`. If `VERSION` is not set, it uses `latest`.
+```yaml
+image: ghcr.io/deephaven/server:42.7
+```
 
-The version can also be set with an environment variable:
+In Docker Compose, you can also read the version from an environment variable:
 
 ```yaml
 image: ghcr.io/deephaven/server:${VERSION:-latest}
 ```
 
-In this case, the version is equal to the `VERSION` environment variable. If it is not set, `latest` is used.
+This line uses the value of the `VERSION` environment variable, or `latest` if `VERSION` is not set.
 
-If deploying with a `Dockerfile`, the syntax remains the same. The version is set after the image from which the container is built, separated by the `:` character.
+In a `Dockerfile`, put the tag after the image name in the `FROM` line:
+
+```dockerfile
+FROM ghcr.io/deephaven/server:42.7
+```
+
+### Pull and recreate
+
+> [!WARNING]
+> Before you remove a container, make sure `/data`, the Deephaven data directory in the container, is in a bind mount or named volume. Data in a mount persists when you recreate the container.
+>
+> Without a mount, `/data` is an anonymous volume tied to that container:
+>
+> - With `docker run`, a new container starts with an empty `/data`.
+> - The old data stays in an unreferenced volume.
+> - Docker deletes the old data if you remove the container with `docker rm -v` or run it with `--rm`.
+>
+> To mount the data directory:
+>
+> - With `docker run`, add `-v "$(pwd)/data":/data`.
+> - With Docker Compose, add a `volumes:` entry.
+
+After you set the new tag:
+
+1. Pull the image with `docker compose pull`, or with `docker pull ghcr.io/deephaven/server:<tag>`. If you use a different image, such as `server-pytorch`, use its name in place of `server`.
+2. Recreate the container with `docker compose up -d`, or stop and remove the old container (`docker stop deephaven` then `docker rm deephaven`), then run `docker run` again.
+
+If you build your own image from a Dockerfile, change the `FROM` tag and rebuild with `docker build` or `docker compose build --pull`. Then recreate the container.
 
 ## Update pip-installed Deephaven
 
-[pip-installed Deephaven](../../getting-started/pip-install.md) can be updated with [`pip`](https://packaging.python.org/en/latest/tutorials/installing-packages/) by adding the `-U` or `--upgrade` flag.
+Update [pip-installed Deephaven](../../getting-started/pip-install.md) with [`pip`](https://packaging.python.org/en/latest/tutorials/installing-packages/) by adding the `-U` or `--upgrade` flag.
 
-The command below will update to the latest version.
+To update to the latest version:
 
 ```bash
 pip install -U deephaven-server
 ```
 
-To update to a specific version, use `==` to denote the version number.
+To update to a specific version, add `==` and the version number:
 
 ```bash
-pip install -U deephaven-server==0.26.0
+pip install -U deephaven-server==42.7
 ```
+
+Then restart the server.
 
 ## Update the Python client
 
-The same rules apply to the [Deephaven Python client](/core/client-api/python/).
+Update the [Deephaven Python client](/core/client-api/python/) when you update the server, using [`pip`](https://packaging.python.org/en/latest/tutorials/installing-packages/):
 
 ```bash
 pip install -U pydeephaven
-pip install -U pydeephaven==0.26.0
 ```
+
+To update to a specific version, add `==` and the version number, such as `pydeephaven==42.7`.
+
+## Update a source build
+
+1. In your `deephaven-core` clone, run `git fetch --tags`.
+2. Check out the release tag or branch you want, such as `git checkout v42.7`.
+3. Rebuild and restart the server using the [build from source](../../getting-started/launch-build.md) guide.
+
+## Update the production application
+
+To update the [production application](../../getting-started/production-application.md), download and unpack the artifacts for the version you are updating to. Install the matching `deephaven-core` wheel in your virtual environment. Then restart the server.
 
 ## Related documentation
 
-- [How to configure the Deephaven Docker application](./docker-application.md)
+- [Configure the Deephaven Docker application](./docker-application.md)
 - [Install guide for Docker](../../getting-started/docker-install.md)
 - [Install guide for pip](../../getting-started/pip-install.md)
+- [Build and run Deephaven from source code](../../getting-started/launch-build.md)
+- [Install and run the Deephaven production application](../../getting-started/production-application.md)
+- [Python client](/core/client-api/python/)
