@@ -5,6 +5,7 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
 import elemental2.core.JsString;
+import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.event.Event;
@@ -12,6 +13,7 @@ import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
+import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.base.Js;
 
@@ -45,7 +47,17 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
             // totals rebase to fail slowly points a summed column at G instead
             .script("def slow_fail(x) -> float:\n    time.sleep(1.0)\n    raise Exception('slow failure')")
             .script("rebaseRace",
-                    "empty_table(5).update_view([\"I = (double)i\", \"S = slow(i)\", \"F = (double)i\", \"G = slow_fail(i)\"])");
+                    "empty_table(5).update_view([\"I = (double)i\", \"S = slow(i)\", \"F = (double)i\", \"G = slow_fail(i)\"])")
+            // Like hasTotals, but gaining a row twice a second, so the totals keep updating
+            .script("from deephaven import time_table\nfrom datetime import datetime, timedelta")
+            .script("tickingTotals",
+                    "time_table(\"PT0.5S\", start_time=datetime.now() - timedelta(seconds=10))"
+                            + ".update_view([\"I = (double)i\", \"J = (double) i * i\", \"K = (double) i % 2\"])"
+                            + ".with_attributes({'TotalsTable':'false,false,Count;J=Min:Avg,K=Skip,;'})");
+
+    private static Promise<Object> delay(int millis) {
+        return new Promise<>((resolve, reject) -> DomGlobal.setTimeout(p -> resolve.onInvoke((Object) null), millis));
+    }
 
     // This will need to be updated to reflect values from JsTotalsTableConfig.knownAggTypes
     // These are the values calculated for each Agg for column I of the "hasTotals" table
@@ -524,6 +536,51 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
      * A custom column added to the source shows up in the totals and in the grand totals, since it changes the
      * unfiltered table as well.
      */
+    public void testTotalsViewportResumesAfterTransportCut() {
+        CuttingTransportFactory transport = new CuttingTransportFactory();
+        ConnectOptions options = new ConnectOptions();
+        options.transportFactory = transport;
+        connect(tables, options)
+                .then(session -> {
+                    delayTestFinish(20_022);
+                    return Promise.resolve(session);
+                })
+                .then(table("tickingTotals"))
+                .then(table -> table.getTotalsTable(null).then(totals -> {
+                    IdeConnection ide = lastIdeConnection;
+                    // An unhandled disconnect event is logged as an error, which the harness treats as a failure
+                    ide.addEventListener(CoreClient.EVENT_DISCONNECT, e -> {
+                    });
+                    Consumer<Event<ViewportData>> oneRow = e -> assertEquals(1, e.getDetail().getRows().length);
+                    // A totals table reports the lifecycle of the table it wraps
+                    List<String> lifecycle = new ArrayList<>();
+                    totals.addEventListener(JsTable.EVENT_DISCONNECT, e -> lifecycle.add("disconnect"));
+                    totals.addEventListener(JsTable.EVENT_RECONNECT, e -> lifecycle.add("reconnect"));
+                    totals.addEventListener(JsTable.EVENT_RECONNECTFAILED, e -> lifecycle.add("reconnectfailed"));
+                    totals.setViewport(0, 100, null, null, null);
+                    return waitForEvent(totals, JsTable.EVENT_UPDATED, oneRow, 5023)
+                            // Every tick adds a source row, so the totals keep updating
+                            .then(t -> waitForEvent(totals, JsTable.EVENT_UPDATED, oneRow, 5024))
+                            .then(t -> {
+                                // Every open stream dies, the totals' Barrage stream included; the connection sees
+                                // a transport error and reconnects within the same session
+                                transport.cutAll();
+                                return waitForEvent(ide, CoreClient.EVENT_RECONNECT, 5025).onInvoke(ide);
+                            })
+                            .then(ignore -> Promise.race(
+                                    waitForEvent(totals, JsTable.EVENT_UPDATED, oneRow, 8026),
+                                    delay(8000).then(late -> Promise.reject(
+                                            "totals viewport did not resume after the transport was cut"))))
+                            .then(ignore -> {
+                                assertEquals(List.of("disconnect", "reconnect"), lifecycle);
+                                totals.close();
+                                table.close();
+                                return Promise.resolve(table);
+                            });
+                }))
+                .then(this::finish).catch_(this::report);
+    }
+
     public void testCustomColumnChangeRebasesTotals() {
         JsTotalsTable[] totalTables = {null, null};
         connect(tables)

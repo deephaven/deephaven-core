@@ -24,6 +24,7 @@ import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
@@ -43,6 +44,32 @@ import static io.deephaven.web.client.api.JsTable.EVENT_ROWUPDATED;
  */
 @TsName(namespace = "dh")
 public class TableViewportSubscription extends AbstractTableSubscription {
+    /**
+     * The connection to the server was lost. No {@code updated} events fire until it is back; the viewport is re-sent
+     * automatically, and {@link #EVENT_RECONNECT} fires when that has happened, or {@link #EVENT_RECONNECTFAILED} if it
+     * cannot be.
+     */
+    @JsProperty(namespace = "dh.TableViewportSubscription")
+    public static final String EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT;
+    /**
+     * The connection is back and the viewport has been re-sent to the server; data follows in {@code updated} events.
+     */
+    @JsProperty(namespace = "dh.TableViewportSubscription")
+    public static final String EVENT_RECONNECT = JsTable.EVENT_RECONNECT;
+    /**
+     * The server-side table this viewport reads could not be re-established after a reconnect. The subscription is
+     * closed; create a new one from a live table. {@code event.detail} describes the failure. This says nothing about
+     * the connection as a whole.
+     */
+    @JsProperty(namespace = "dh.TableViewportSubscription")
+    public static final String EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
+    /**
+     * The server ended this viewport with an error; {@code event.detail} is the server's message. The subscription is
+     * closed and no more data will come; such failures are not recoverable, create a new one. A viewport owned by a
+     * table also reports this on the table.
+     */
+    @JsProperty(namespace = "dh.TableViewportSubscription")
+    public static final String EVENT_REQUEST_FAILED = JsTable.EVENT_REQUEST_FAILED;
 
     private DataOptions.ViewportSubscriptionOptions options;
     private double refresh;
@@ -168,18 +195,17 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     }
 
     @Override
-    public void fireEvent(String type) {
-        refire(new Event<>(type, null));
-    }
-
-    @Override
-    public <T> void fireEvent(String type, T detail) {
-        refire(new Event<T>(type, detail));
-    }
-
-    @Override
     public <T> void fireEvent(Event<T> e) {
-        refire(e);
+        switch (e.getType()) {
+            case EVENT_DISCONNECT:
+            case EVENT_RECONNECT:
+            case EVENT_RECONNECTFAILED:
+                // The table reports its own lifecycle; these describe only this subscription
+                super.fireEvent(e);
+                return;
+            default:
+                refire(e);
+        }
     }
 
     @Override
@@ -275,11 +301,17 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     public void setInternalViewport(DataOptions.ViewportSubscriptionOptions options) {
         // Until we've created the stream, we just cache the requested viewport
         if (status == Status.STARTING) {
-            // Assign the two properties that we cannot change later
-            this.refresh = options.updateIntervalMs == null ? 1000.0 : options.updateIntervalMs;
-            this.previewListLengthLimit = getPreviewListLengthLimit(options);
+            if (this.options == null) {
+                // The first call fixes the two properties that cannot change later
+                this.refresh = options.updateIntervalMs == null ? 1000.0 : options.updateIntervalMs;
+                this.previewListLengthLimit = getPreviewListLengthLimit(options);
+            } else {
+                // A later call before the stream exists, or while it is being re-established, follows the same
+                // rules as a running one
+                keepUpdateInterval(options);
+            }
 
-            // Track the rest of the initial options for later use
+            // Track the rest of the latest options for later use
             this.options = options;
             return;
         }
@@ -294,18 +326,31 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             options.columns = options.columns.slice();
             options.columns.sort(Comparator.comparing(Column::getIndex)::compare);
         }
-        if (options.updateIntervalMs != null && refresh != options.updateIntervalMs) {
-            throw new IllegalArgumentException(
-                    "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
-        }
+        keepUpdateInterval(options);
         if (options.isReverseViewport == null) {
             options.isReverseViewport = false;
         }
+        // Keep the latest viewport, so a revive re-sends where the viewport was, not where it started
+        this.options = options;
         try {
             this.sendBarrageSubscriptionRequest(options.rows.asRangeSet().getRange(), options.columns,
                     options.updateIntervalMs, options.isReverseViewport, previewListLengthLimit);
         } catch (Exception e) {
             fireEvent(JsTable.EVENT_REQUEST_FAILED, e.getMessage());
+        }
+    }
+
+    /**
+     * A later call may repeat the update interval or omit it; omitted means unchanged, since the interval cannot change
+     * once set.
+     */
+    private void keepUpdateInterval(DataOptions.ViewportSubscriptionOptions options) {
+        if (options.updateIntervalMs != null && refresh != options.updateIntervalMs) {
+            throw new IllegalArgumentException(
+                    "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
+        }
+        if (options.updateIntervalMs == null) {
+            options.updateIntervalMs = this.options.updateIntervalMs;
         }
     }
 

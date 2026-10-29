@@ -15,6 +15,7 @@ import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.Format;
 import io.deephaven.web.client.api.JsRangeSet;
+import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.LongWrapper;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.WorkerConnection;
@@ -27,6 +28,7 @@ import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.event.HasEventHandling;
 import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.client.state.ClientTableState;
+import io.deephaven.web.client.state.Revivable;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
 import io.deephaven.web.shared.fu.JsRunnable;
@@ -56,7 +58,7 @@ import java.util.BitSet;
  * that client code can listen to.
  */
 @TsIgnore
-public abstract class AbstractTableSubscription extends HasEventHandling {
+public abstract class AbstractTableSubscription extends HasEventHandling implements Revivable {
     /**
      * Indicates that some new data is available on the client, either an initial snapshot or a delta update. The
      * <b>detail</b> field of the event will contain a TableSubscriptionEventData detailing what has changed, or
@@ -139,7 +141,16 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     private BiDiStream<Flight.FlightData, Flight.FlightData> doExchange;
     protected WebBarrageSubscription barrageSubscription;
 
+    private WebBarrageMessageReader reader;
+
     protected Status status = Status.STARTING;
+    /** Set when the stream was lost to a transport error, cleared once the subscription is re-sent. */
+    private boolean disconnected;
+    /**
+     * The rows a full subscription held when it was re-sent; reported as removed by the first update after that, so a
+     * consumer accumulating rows replaces them with the snapshot instead of adding it on top.
+     */
+    private RangeSet rowsBeforeRevive;
 
     private String failMsg;
 
@@ -152,6 +163,17 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         this.state = state;
         this.connection = connection;
 
+        revive();
+    }
+
+    /**
+     * Called by the reviver once the subscribed state is usable again after a reconnect. A subscription whose stream
+     * was cut by a transport error is back in {@link Status#STARTING} and reconnects here; one whose stream survived is
+     * left alone.
+     */
+    @Override
+    public void revive(ClientTableState revived) {
+        assert revived == state;
         revive();
     }
 
@@ -175,6 +197,17 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
             status = Status.SUBSCRIPTION_REQUESTED;
 
+            // Replace the reader, it holds state that varies per stream
+            reader = new WebBarrageMessageReader();
+
+            // If this is an attempt to reconnect, store a reference to the last known rowset so we can report it
+            // to be removed to consumers for the first successful update after the revive. If one is already
+            // stored, the consumer has seen nothing since it was taken, so it stays.
+            if (rowsBeforeRevive == null && disconnected && barrageSubscription != null
+                    && subscriptionType == SubscriptionType.FULL_SUBSCRIPTION) {
+                rowsBeforeRevive = barrageSubscription.getCurrentRowSet().copy();
+            }
+
             // In order to create the subscription, we need to already have the table resolved, so we know if it
             // is a blink table or not. In turn, we can't be prepared to handle any messages from the server until
             // we know this, so we can't race messages with this design.
@@ -192,6 +225,10 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             doExchange.onEnd(this::onStreamEnd);
 
             sendFirstSubscriptionRequest();
+            if (disconnected) {
+                disconnected = false;
+                fireEvent(JsTable.EVENT_RECONNECT);
+            }
         },
                 // If the upstream table fails, kill the subscription
                 this::fail,
@@ -315,6 +352,13 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             BitSet modifiedColumnSet) {
         if (!isSubscriptionReady()) {
             return;
+        }
+        if (rowsBeforeRevive != null) {
+            // First update after a revive: everything known before is gone unless the snapshot adds it again
+            RangeSet removed = rowsBeforeRevive;
+            rowsBeforeRevive = null;
+            removed.addRangeSet(rowsRemoved);
+            rowsRemoved = removed;
         }
 
         notifyUpdate(rowsAdded, rowsRemoved, totalMods, shifted);
@@ -572,8 +616,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         }
     }
 
-    private final WebBarrageMessageReader reader = new WebBarrageMessageReader();
-
     private void onFlightData(Flight.FlightData data) {
         WebBarrageMessage message;
         try {
@@ -594,6 +636,11 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         if (WorkerConnection.isTransportError(status)) {
             // If the subscription isn't closed and we hit a transport error, allow it to restart
             this.status = Status.STARTING;
+            disconnected = true;
+            fireEvent(JsTable.EVENT_DISCONNECT);
+            // Let the connection decide whether this was the whole connection going away; if so it reconnects and the
+            // reviver re-sends this subscription. Without this, a stream that fails alone would wait forever.
+            connection.checkStatus(status);
         } else {
             // Subscription failed somehow, fire an event
             fail(status.getDescription());
@@ -605,6 +652,23 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         this.status = Status.DONE;
         doExchange = null;
         failMsg = message;
+        state.unretain(this);
+    }
+
+    /**
+     * Called by the reviver when the subscribed state could not be re-established after a reconnect. The subscription
+     * is closed; a holder must create a new one.
+     */
+    @Override
+    public void die(Object failure) {
+        if (isClosed()) {
+            return;
+        }
+        this.status = Status.DONE;
+        doExchange = null;
+        failMsg = String.valueOf(failure);
+        state.unretain(this);
+        fireEvent(JsTable.EVENT_RECONNECTFAILED, failure);
     }
 
     /**
@@ -614,6 +678,11 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
      */
     public JsArray<Column> getColumns() {
         return columns;
+    }
+
+    /** The options of the most recent subscription request sent to the server; for tests. */
+    BarrageSubscriptionOptions sentOptions() {
+        return options;
     }
 
     /**
