@@ -39,7 +39,8 @@ class DataIndex(JObjectWrapper):
 
     @property
     def table(self) -> Table:
-        """The backing table of the DataIndex."""
+        """The backing table of the DataIndex. Accessing it creates the table if needed, after which operations such
+        as where can use the DataIndex."""
         return Table(self._j_data_index.table())
 
 
