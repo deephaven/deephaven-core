@@ -12,7 +12,7 @@ This guide assumes familiarity with installing and running the Deephaven product
 
 ## Prerequisites
 
-The production application requires [Java](https://www.java.com/en/) 17 or later. Deephaven recommends a long-term support (LTS) release of Java, such as Java 21 or 25. The Python console also requires [Python](https://www.python.org/) 3.9 or later. For the full list of requirements, see the [production application prerequisites](../../getting-started/production-application.md#prerequisites).
+The production application requires [Java](https://www.java.com/en/) 17 or later. Deephaven recommends Java 21, a long-term support (LTS) release. The Python console also requires [Python](https://www.python.org/) 3.9 or later. For the full list of requirements, see the [production application prerequisites](../../getting-started/production-application.md#prerequisites).
 
 The production application also requires Linux or macOS. It does not run natively on Windows, so Windows users need Windows Subsystem for Linux v2 (WSL 2).
 
