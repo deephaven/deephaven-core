@@ -723,25 +723,12 @@ public class TestPartitionAwareSourceTableNoMocks {
             // the lock-free thread's attempt can then be abandoned only at the workers' nested snapshots
             source.coalesce();
         }
-        final boolean oldForceParallelWhere = QueryTable.FORCE_PARALLEL_WHERE;
-        final boolean oldDisableParallelWhere = QueryTable.DISABLE_PARALLEL_WHERE;
-        final int oldParallelWhereSegments = QueryTable.PARALLEL_WHERE_SEGMENTS;
-        final long oldParallelWhereRowsPerSegment = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
-        QueryTable.FORCE_PARALLEL_WHERE = true;
-        QueryTable.DISABLE_PARALLEL_WHERE = false;
-        QueryTable.PARALLEL_WHERE_SEGMENTS = 2;
-        QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = partitionSize;
-        try {
+        try (final SafeCloseable ignored = new ForcedParallelWhere(2, partitionSize)) {
             final NestedSnapshotFilter filter =
                     new NestedSnapshotFilter(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
             final Table coalesced = coalesceWhileExclusiveLockHolderCoalesces(source.where(filter));
             assertEquals(4 * partitionSize, coalesced.size());
             assertTrue(filter.workerSnapshots.get() > 0);
-        } finally {
-            QueryTable.FORCE_PARALLEL_WHERE = oldForceParallelWhere;
-            QueryTable.DISABLE_PARALLEL_WHERE = oldDisableParallelWhere;
-            QueryTable.PARALLEL_WHERE_SEGMENTS = oldParallelWhereSegments;
-            QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT = oldParallelWhereRowsPerSegment;
         }
     }
 
