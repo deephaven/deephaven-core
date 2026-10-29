@@ -3,7 +3,7 @@ title: merge
 slug: ./merge
 ---
 
-`merge` combines two or more tables into one aggregate table. This essentially appends the tables one on top of the other. Null tables are ignored.
+`merge` combines two or more tables into one aggregate table. This essentially appends the tables one on top of the other.
 
 ## Syntax
 
@@ -19,7 +19,7 @@ merge(tables: list[Table]) -> Table
 Source tables to be merged.
 
 - The tables to be merged must include the same columns of the same type.
-- Null inputs are skipped.
+- Every element must be a table. `None` raises an error.
 
 </Param>
 </ParamTable>

@@ -155,7 +155,7 @@ result = departments.join(employees, "DeptID")
 ```
 
 > [!TIP]
-> [`join`](../reference/table-operations/join/join.md) produces a result row for every matching pair of left and right table rows and reserves space in each result row key for the matching right table rows. This makes it slow relative to [`naturalJoin`](../reference/table-operations/join/natural-join.md), so [`naturalJoin`](../reference/table-operations/join/natural-join.md) should be preferred in most places. Its result can also be much larger than either input, which costs more to maintain on [ticking tables](../conceptual/table-update-model.md).
+> [`join`](../reference/table-operations/join/join.md) produces a result row for every matching pair of left and right table rows and reserves space in each result row key for the matching right table rows. This makes it slower than [`naturalJoin`](../reference/table-operations/join/natural-join.md). Its result can also be much larger than either input, which costs more to maintain on [ticking tables](../conceptual/table-update-model.md). Use [`naturalJoin`](../reference/table-operations/join/natural-join.md) when each left row needs at most one matching right row. Use `join` when each left row needs every matching right row.
 
 ### `leftOuterJoin`
 
