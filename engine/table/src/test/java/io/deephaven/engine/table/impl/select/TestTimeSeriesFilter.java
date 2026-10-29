@@ -770,6 +770,34 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     }
 
     /**
+     * A time series filter belongs to the operation that began it, so a second operation must use a copy.
+     */
+    @Test
+    public void testReuseRefused() {
+        final long start = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2026-03-10T09:00:00 NY"));
+        final QueryTable source = minuteTable(start, true);
+        final TestClock testClock = new TestClock().setNanos(start + 30 * DateTimeUtils.MINUTE);
+        final TimeSeriesFilter timeSeriesFilter =
+                TimeSeriesFilter.newBuilder().columnName("Timestamp").period("PT5m").clock(testClock).build();
+
+        final Table filtered = source.where(timeSeriesFilter);
+        assertEquals(35, filtered.size());
+        final IllegalStateException failure =
+                assertThrows(IllegalStateException.class,
+                        () -> source.update("Other = Sentinel").where(timeSeriesFilter));
+        assertTrue(failure.getMessage(), failure.getMessage().contains("copy()"));
+
+        // the first result still follows the rows that leave the window
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            testClock.setNanos(start + 40 * DateTimeUtils.MINUTE);
+            timeSeriesFilter.runForUnitTests();
+        });
+        assertEquals(25, filtered.size());
+        assertEquals(25, source.where(timeSeriesFilter.copy()).size());
+    }
+
+    /**
      * A table of 60 rows, one minute apart beginning at {@code start}, with a Sentinel column holding the row position.
      */
     private static QueryTable minuteTable(final long start, final boolean refreshing) {

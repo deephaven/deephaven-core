@@ -368,6 +368,9 @@ public class TimeSeriesFilter
 
     @Override
     public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+        if (windowListener != null) {
+            throw new IllegalStateException("Inputs already initialized, use copy() instead of re-using a WhereFilter");
+        }
         String windowSourceName = "__Window_" + columnName;
         while (sourceTable.hasColumns(windowSourceName)) {
             windowSourceName = "_" + windowSourceName;
