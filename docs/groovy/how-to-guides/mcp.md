@@ -16,7 +16,7 @@ Deephaven MCP has three components:
 
 The [Deephaven MCP README on GitHub](https://github.com/deephaven/deephaven-mcp#readme) covers installation, configuration, and usage, including the `dhcli` command-line tool and setup for AI tools such as Claude Desktop, Cursor, VS Code, and Windsurf.
 
-You don't need a running Deephaven server to get started, because `dhcli` can start Community Core sessions for you. These sessions use Python by default. To start a Groovy session, run `dhcli session create` with `--language Groovy --launch-method docker`. Groovy sessions run in Docker, so you need Docker installed.
+You don't need a running Deephaven server to get started, because `dhcli` can start Community Core sessions for you. These sessions use Python by default. To start a Groovy session, run `dhcli session create dev --language Groovy --launch-method docker`, where `dev` is the name of the new session. A Community Core session needs a name. Groovy sessions run in Docker, so you need Docker installed.
 
 To use a Deephaven server you run yourself, start one with the [Quickstart](../getting-started/quickstart.md). Then add it as a session, following the [Community Core Quick Start](https://github.com/deephaven/deephaven-mcp#community-core-quick-start) in the README. Pass `--language Groovy` when you add it.
 
