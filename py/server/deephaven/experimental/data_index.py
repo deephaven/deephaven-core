@@ -77,6 +77,11 @@ def data_index(
     When the DataIndex doesn't already exist, if create_if_absent is True, creates the DataIndex first then returns it;
     otherwise returns None.
 
+    The returned DataIndex's backing table may not have been created yet; it is created when first accessed through
+    the DataIndex's table property. Operations such as where use only data indexes whose backing tables already exist,
+    and do not create them. To have such operations use the returned DataIndex, access its table property, and keep a
+    reference to the DataIndex for as long as they should use it.
+
     Args:
         table (Table): the table to index
         key_cols (Sequence[str]): the names of the key columns to index
