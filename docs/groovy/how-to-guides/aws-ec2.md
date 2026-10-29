@@ -10,7 +10,7 @@ This guide will show you how to run Deephaven on an [AWS EC2](https://aws.amazon
 
 This guide uses an EC2 instance running [Amazon Linux](https://aws.amazon.com/linux/amazon-linux-2023/). AWS offers a variety of other [operating systems](https://docs.aws.amazon.com/systems-manager/latest/userguide/prereqs-operating-systems.html) for cloud instances.
 
-The instance type you need depends on your data and your calculations. There are many different [AWS EC2 instance types](https://aws.amazon.com/ec2/instance-types/) to choose from. Tables you create in Deephaven live on the JVM heap, so choose an instance with enough memory for your data. You set the server's heap size when you install Deephaven. See [Install and run Deephaven](#install-and-run-deephaven).
+The instance type you need depends on your data and your calculations. There are many different [AWS EC2 instance types](https://aws.amazon.com/ec2/instance-types/) to choose from. Tables you create in Deephaven live on the JVM heap, so choose an instance with enough memory for the in-memory tables and results you expect. Tables read from Parquet files load on demand. You set the server's heap size when you install Deephaven. See [Install and run Deephaven](#install-and-run-deephaven).
 
 Create an instance with the following steps.
 

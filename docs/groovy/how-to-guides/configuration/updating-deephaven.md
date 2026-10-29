@@ -87,7 +87,7 @@ If you build your own image from a Dockerfile, change the `FROM` tag and rebuild
 ## Update a source build
 
 1. In your `deephaven-core` clone, run `git fetch --tags`.
-2. Check out the release tag or branch you want, such as `git checkout v42.7`.
+2. Check out the release tag or branch you want, such as `git checkout v42.7`. For a branch, run `git pull --ff-only` to update it from its upstream.
 3. Rebuild and restart the server using the [build from source](../../getting-started/launch-build.md) guide.
 
 ## Update the production application
