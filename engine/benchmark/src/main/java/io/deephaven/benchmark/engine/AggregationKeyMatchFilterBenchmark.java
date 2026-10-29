@@ -29,6 +29,10 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 public class AggregationKeyMatchFilterBenchmark {
 
+    /** Scan the key column, or probe the aggregation's hash table. */
+    @Param({"Scan", "Lookup"})
+    private String mode;
+
     @Param({"Int", "String"})
     private String keyType;
 
@@ -49,6 +53,7 @@ public class AggregationKeyMatchFilterBenchmark {
         // dh-tests.prop forces two-segment parallel where; measure with the production defaults
         setQueryTableField("FORCE_PARALLEL_WHERE", false);
         setQueryTableField("PARALLEL_WHERE_SEGMENTS", -1);
+        QueryTable.DISABLE_WHERE_PUSHDOWN_AGGREGATION_KEY = mode.equals("Scan");
 
         // Multiplying by an odd constant permutes the int keys, so the distinct keys are not in row order.
         final String keyFormula = keyType.equals("Int")
@@ -64,7 +69,8 @@ public class AggregationKeyMatchFilterBenchmark {
         filter = new MatchFilter(MatchOptions.REGULAR, "Key", values);
 
         final long matched = distinct.where(filter).size();
-        System.out.println("\nkeyType=" + keyType + ", distinctKeys=" + distinct.size() + ", matched=" + matched);
+        System.out.println("\nmode=" + mode + ", keyType=" + keyType + ", distinctKeys=" + distinct.size()
+                + ", matched=" + matched);
         if (distinct.size() != distinctKeys || matched != matchValues) {
             throw new IllegalStateException("Expected " + distinctKeys + " keys and " + matchValues + " matches");
         }

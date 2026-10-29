@@ -242,10 +242,13 @@ public class ChunkedOperatorAggregationHelper {
                 // noinspection ConstantConditions,unchecked
                 keyColumnsCopied[kci] = ArrayBackedColumnSource.getMemoryColumnSource(outputPosition.get(),
                         keyColumnsRaw[kci].getType());
-                resultColumnSourceMap.put(keyNames[kci], keyColumnsCopied[kci]);
-            } else {
-                resultColumnSourceMap.put(keyNames[kci], keyColumnsRaw[kci]);
             }
+            final ColumnSource<?> resultKeySource = input.isRefreshing() ? keyColumnsCopied[kci] : keyColumnsRaw[kci];
+            // A single key column answers match filters by probing the hash table
+            resultColumnSourceMap.put(keyNames[kci], keyHashTableSources.length == 1
+                    ? new AggregationKeyColumnSource<>(resultKeySource, stateManager,
+                            keySources[kci] != reinterpretedKeySources[kci])
+                    : resultKeySource);
         }
         ac.getResultColumns(resultColumnSourceMap);
 

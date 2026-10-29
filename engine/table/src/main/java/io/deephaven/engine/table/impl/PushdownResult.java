@@ -39,6 +39,14 @@ public final class PushdownResult implements SafeCloseable {
             Configuration.getInstance().getLongWithDefault("PredicatePushdown.tableSingleValueColumnCost", 5_000L);
 
     /**
+     * Probes an aggregation's hash table for each match value of a filter on its single key column.
+     * <p>
+     * Complexity/access: O(values) / In-Memory Data, resolves "yes", "no"
+     */
+    public static final long TABLE_KEY_LOOKUP_COST =
+            Configuration.getInstance().getLongWithDefault("PredicatePushdown.tableKeyLookupCost", 2_500L);
+
+    /**
      * Binary searches sorted data at the Table-level.
      * <p>
      * Complexity/access: O(log(rows)) / In-Memory or Storage Data, resolves "yes", "no"
