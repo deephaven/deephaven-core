@@ -13,6 +13,12 @@ from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
+# isort: split
+# Unused here. _udf evaluates a decorated UDF's hand-quoted type hints in the decorator's module, so
+# removing these names makes a UDF wrapped by shared_locked, exclusive_locked or auto_locking_op fail
+# with NameError when its hints use Optional or Union.
+from typing import Optional, Union  # noqa: F401
+
 import jpy
 
 from deephaven import DHError
