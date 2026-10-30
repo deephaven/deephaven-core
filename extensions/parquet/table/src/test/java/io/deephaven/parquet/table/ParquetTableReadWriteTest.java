@@ -1623,6 +1623,51 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void writeKeyValuePartitionedDataWithNoRows() {
+        // DH-23629: no rows means no partitions and no destinations; this used to throw ArrayIndexOutOfBoundsException.
+        // Writing nothing is the contract: the destination is left untouched, and is not created if it does not exist.
+        final Table inputData = newTable(stringCol("PC1"), intCol("I"));
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNoRows");
+        writeKeyValuePartitionedTable(inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), EMPTY);
+        assertFalse(parentDir.exists());
+
+        // The key-value layout records the schema only in its data files, so an empty directory cannot be read back
+        // without a table definition
+        assertTrue(parentDir.mkdirs());
+        assertThrowsWithMessage(() -> readTable(parentDir.getPath()), "Unable to infer schema");
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofString("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("I"));
+        final Table fromDisk = readTable(parentDir.getPath(),
+                ParquetInstructions.builder().setTableDefinition(definition).build());
+        assertEquals(definition.getColumnNames(), fromDisk.getDefinition().getColumnNames());
+        assertEquals(0, fromDisk.size());
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNoRowsAndMetadataFiles() {
+        // Metadata files describe data files, so none are written when there are no data files
+        final Table inputData = newTable(stringCol("PC1"), intCol("I"));
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsAndMetadataFiles");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeKeyValuePartitionedTable(inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), writeInstructions);
+        assertFalse(parentDir.exists());
+    }
+
+    @Test
+    public void writeKeyValuePartitionedDataWithNoRowsOverExistingData() {
+        // An empty write over a populated directory must leave the existing data intact
+        final Table inputData = newTable(stringCol("PC1", "aa", "bb"), intCol("I", 1, 2));
+        final File parentDir = new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsOverExistingData");
+        writeKeyValuePartitionedTable(inputData.partitionBy("PC1"), parentDir.getAbsolutePath(), EMPTY);
+        writeKeyValuePartitionedTable(inputData.head(0).partitionBy("PC1"), parentDir.getAbsolutePath(), EMPTY);
+        final Table fromDisk = readTable(parentDir.getPath()).select();
+        assertTableEquals(inputData.sort("PC1"), fromDisk.sort("PC1"));
+    }
+
+    @Test
     public void writeKeyValuePartitionedDataWithMixedPartitionsTest() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("PC1").withPartitioning(),
