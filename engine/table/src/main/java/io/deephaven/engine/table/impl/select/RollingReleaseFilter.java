@@ -111,6 +111,12 @@ public class RollingReleaseFilter
     }
 
     @Override
+    public boolean hasCrossRowDependencies() {
+        // releases a window, by position, of the rows that the where receives
+        return true;
+    }
+
+    @Override
     public void run() {
         releaseMoreEntries = true;
         listener.requestRecompute();

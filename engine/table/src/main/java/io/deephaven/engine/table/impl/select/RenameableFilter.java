@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * This interface marks WhereFilters that can produce a copy that reads the filter's columns under other names. A
@@ -26,7 +27,8 @@ public interface RenameableFilter extends WhereFilter {
      * filter was written for. A name that this filter read as a column reads the renamed column. A name that this
      * filter did not read as a column, such as a query-scope variable, keeps that meaning in the copy, even where the
      * table being filtered has a column of the same name: a view may hide a column of the view's source table, and a
-     * renamed filter must not read a hidden column in place of a variable.
+     * renamed filter must not read a hidden column in place of a variable. A query-scope variable keeps the value this
+     * filter read: the copy may be initialized when the view's table coalesces, under another query scope.
      * <p>
      * This filter must already be initialized.
      *
@@ -34,7 +36,7 @@ public interface RenameableFilter extends WhereFilter {
      *        {@link #getColumnArrays()}, to the names in the table being filtered. The map need not be total: a column
      *        absent from the map keeps the same name. A disjunction or conjunction passes one map to every sub-filter,
      *        so a sub-filter may receive a map that names only the columns of the sub-filter's siblings.
-     * @return the renamed filter
+     * @return the renamed filter, or empty if this filter cannot be renamed and must stay after the view
      */
-    WhereFilter renameFilter(Map<String, String> renames);
+    Optional<WhereFilter> renamedFilter(Map<String, String> renames);
 }

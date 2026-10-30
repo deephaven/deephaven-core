@@ -142,6 +142,11 @@ public abstract class WhereFilterDelegatingBase
     }
 
     @Override
+    public boolean hasCrossRowDependencies() {
+        return filter.hasCrossRowDependencies();
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o)
             return true;

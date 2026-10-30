@@ -13,7 +13,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
-import io.deephaven.engine.table.impl.filter.ExtractShiftedColumnDefinitions;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -101,6 +100,10 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
     /**
      * Create a DeferredViewTable that filters the referenced table.
+     * <p>
+     * No filter may {@link WhereFilter#hasCrossRowDependencies() depend on other rows}: the new table merges the
+     * filters with the filters of later wheres and applies the filters in any order. A where that holds a filter that
+     * depends on other rows runs on the coalesced table instead.
      *
      * @param definition The definition of the new table
      * @param description A description of the new table
@@ -202,21 +205,20 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             return coalesce();
         }
 
-        // A filter with constant array access, such as A_[i - 1], reads shifted columns built over every row that the
-        // where receives (ShiftedColumnsFactory.where). Run the whole where on the coalesced table, as a QueryTable
-        // would, rather than split the where's filters before and after the deferred operations.
-        final WhereFilter[] initializedFilters = WhereFilter.copyFrom(innerFilters);
+        // In order to match the equivalent memory table, run the full where on the coalesced table when any filter
+        // has cross-row dependencies (see WhereFilter#hasCrossRowDependencies). Ask before copying the filters: a
+        // filter with cross-row dependencies, such as a release filter, may not support copy().
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
-        for (final WhereFilter whereFilter : initializedFilters) {
+        for (final WhereFilter whereFilter : innerFilters) {
             whereFilter.init(definition, compilationProcessor);
         }
         compilationProcessor.compile();
-        if (Arrays.stream(initializedFilters).anyMatch(ExtractShiftedColumnDefinitions::hasAny)) {
+        if (Arrays.stream(innerFilters).anyMatch(WhereFilter::hasCrossRowDependencies)) {
             return coalesce().where(filter);
         }
 
         // only the pre-view filters are passed down to the coalesce check and enable automatic coalescing
-        final PreAndPostFilters preAndPostFilters = applyFilterRenamings(initializedFilters);
+        final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(innerFilters));
         if (tableReference.shouldCoalesce(preAndPostFilters.preViewFilters)) {
             final WhereFilter[] allFilters = concat(deferredFilters, innerFilters);
             SplitAndApply splitAndApply = splitAndApplyFilters(allFilters, tableReference);
@@ -359,7 +361,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 @Override
                 public WhereFilter visitOther(WhereFilter filter) {
                     if (filter instanceof RenameableFilter renameable) {
-                        return renameable.renameFilter(myRenames);
+                        return renameable.renamedFilter(myRenames).orElse(null);
                     }
                     return null;
                 }
@@ -509,9 +511,22 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             }
         }
 
+        final Table selectDistinct = selectDistinctWithoutCoalescing(columns);
+        return selectDistinct == null ? coalesce().selectDistinct(columns) : selectDistinct;
+    }
+
+    /**
+     * Ask the referenced table for the distinct values, without coalescing this table, when the referenced table can
+     * answer as the coalesced table would: a partitioned table answers from the location table, one row per location.
+     *
+     * @param columns the columns to select distinct values of
+     * @return the distinct values, or null if this table must coalesce to answer
+     */
+    @Nullable
+    private Table selectDistinctWithoutCoalescing(@NotNull final Collection<? extends Selectable> columns) {
         /* If we have any manual filters, then we must coalesce the table. */
-        if ((Arrays.stream(deferredFilters).anyMatch(sf -> !sf.isAutomatedFilter()))) {
-            return coalesce().selectDistinct(columns);
+        if (Arrays.stream(deferredFilters).anyMatch(sf -> !sf.isAutomatedFilter())) {
+            return null;
         }
 
         /* Determine if we are using any of the deferred views in this selectDistinct. */
@@ -520,21 +535,46 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             SelectAndViewAnalyzer.initializeSelectColumns(getDefinition().getColumnNameMap(),
                     selectColumns.toArray(SelectColumn[]::new));
         } catch (Exception e) {
-            return coalesce().selectDistinct(columns);
+            return null;
         }
 
         final Set<String> outputColumnNames = Arrays.stream(deferredViewColumns)
                 .filter(sc -> !sc.isRetain())
                 .map(SelectColumn::getName)
                 .collect(Collectors.toSet());
+        // Coalesce for a select column that reads a column the deferred view computes rather than retains, since the
+        // referenced table has no computed values, or that reads a column array, which the referenced table would
+        // evaluate against the referenced table's own rows.
         if (selectColumns.stream().anyMatch(sc -> !sc.getColumnArrays().isEmpty()
                 || sc.getColumns().stream().anyMatch(outputColumnNames::contains))) {
-            return coalesce().selectDistinct(columns);
+            return null;
         }
 
-        /* If the cachedResult is not yet created, we first ask for a selectDistinct cachedResult. */
-        Table selectDistinct = tableReference.selectDistinctInternal(columns);
-        return selectDistinct == null ? coalesce().selectDistinct(columns) : selectDistinct;
+        // Handle hidden columns, which a drop or a rename removes from this table but the referenced table still has:
+        // the referenced table parses the columns again, and would read a hidden column where this table reads a
+        // query-scope variable of the same name.
+        final Set<String> hiddenColumnNames = new HashSet<>(tableReference.getDefinition().getColumnNameSet());
+        hiddenColumnNames.removeAll(definition.getColumnNameSet());
+        if (!hiddenColumnNames.isEmpty()) {
+            final SelectColumn[] referencedSelectColumns = SelectColumn.from(columns);
+            try {
+                SelectAndViewAnalyzer.initializeSelectColumns(tableReference.getDefinition().getColumnNameMap(),
+                        referencedSelectColumns);
+            } catch (Exception e) {
+                return null;
+            }
+            for (int ii = 0; ii < referencedSelectColumns.length; ++ii) {
+                // this table's select columns read no column arrays, or this table would have coalesced above
+                final Set<String> usedColumns = new HashSet<>(selectColumns.get(ii).getColumns());
+                final Set<String> referencedUsedColumns = new HashSet<>(referencedSelectColumns[ii].getColumns());
+                if (!referencedSelectColumns[ii].getColumnArrays().isEmpty()
+                        || !usedColumns.equals(referencedUsedColumns)) {
+                    return null;
+                }
+            }
+        }
+
+        return tableReference.selectDistinctInternal(columns);
     }
 
     @Override

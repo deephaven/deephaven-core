@@ -169,4 +169,9 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
     public boolean hasVirtualRowVariables() {
         return Arrays.stream(componentFilters).anyMatch(WhereFilter::hasVirtualRowVariables);
     }
+
+    @Override
+    public boolean hasCrossRowDependencies() {
+        return Arrays.stream(componentFilters).anyMatch(WhereFilter::hasCrossRowDependencies);
+    }
 }

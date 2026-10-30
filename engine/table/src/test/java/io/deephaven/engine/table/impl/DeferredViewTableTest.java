@@ -11,7 +11,10 @@ import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.context.StandaloneQueryScope;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
@@ -19,22 +22,27 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
+import io.deephaven.engine.table.impl.select.DownsampledWhereFilter;
 import io.deephaven.engine.table.impl.select.LongRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.RangeFilter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
+import io.deephaven.engine.table.impl.select.RollingReleaseFilter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
+import io.deephaven.engine.table.impl.select.WhereFilterImpl;
 import io.deephaven.engine.table.impl.select.WhereFilterInvertedImpl;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.gui.table.filters.Condition;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,8 +52,10 @@ import static org.junit.Assert.assertEquals;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 public class DeferredViewTableTest {
@@ -803,7 +813,7 @@ public class DeferredViewTableTest {
 
     @Test
     public void testFilterWithShiftedColumnsThroughSwap() {
-        // a swap maps A to B and B to A, so both shifted columns must be renamed at once
+        // a swap maps A to B and B to A, so each shifted column of the filter reads the other source column
         final Table source = TableTools.newTable(
                 TableTools.intCol("A", 1, 2, 3, 4),
                 TableTools.intCol("B", 10, 20, 30, 40));
@@ -836,6 +846,98 @@ public class DeferredViewTableTest {
         // the shifted filter reads only a column that the rename passes through, and A names the query-scope variable
         ExecutionContext.getContext().getQueryScope().putParam("A", 0);
         assertDeferredMatchesInMemory(source, t -> t.renameColumns("B = A").where("C_[i - 1] == A"));
+    }
+
+    @Test
+    public void testShiftedFilterIsNotRenamed() {
+        // shifted columns read other rows of the table being filtered, so a shifted filter stays after the view
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("A"),
+                ColumnDefinition.ofInt("B"));
+        for (final String formula : new String[] {"A_[i - 1] == 1", "A_[ii + 2] == B", "A_[i] == 1"}) {
+            final ConditionFilter filter = (ConditionFilter) ConditionFilter.createConditionFilter(formula);
+            filter.init(definition);
+            Assertions.assertThat(filter.hasConstantArrayAccess()).as(formula).isTrue();
+            Assertions.assertThat(filter.renamedFilter(Map.of("A", "X"))).as(formula).isEmpty();
+        }
+        // a filter that reads the same column without constant array access is renamed
+        final ConditionFilter plain = (ConditionFilter) ConditionFilter.createConditionFilter("A == 1");
+        plain.init(definition);
+        Assertions.assertThat(plain.renamedFilter(Map.of("A", "X"))).isPresent();
+    }
+
+    @Test
+    public void testHasCrossRowDependencies() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("A"),
+                ColumnDefinition.ofInt("B"));
+        final WhereFilter rowLocal = WhereFilterFactory.getExpression("A + 1 > B");
+        rowLocal.init(definition);
+        for (final String formula : new String[] {"A > 1", "A == 1", "A + 1 > B"}) {
+            final WhereFilter filter = WhereFilterFactory.getExpression(formula);
+            filter.init(definition);
+            Assertions.assertThat(filter.hasCrossRowDependencies()).as(formula).isFalse();
+        }
+        for (final String formula : new String[] {"A_[i - 1] > 1", "A_[0] > 1", "i > 1", "ii > 1", "k > 1"}) {
+            final WhereFilter filter = WhereFilterFactory.getExpression(formula);
+            filter.init(definition);
+            Assertions.assertThat(filter.hasCrossRowDependencies()).as(formula).isTrue();
+            // a wrapper or a combination depends on other rows when any filter inside depends on other rows
+            for (final WhereFilter holding : new WhereFilter[] {
+                    WhereFilterInvertedImpl.of(filter),
+                    filter.withSerial(),
+                    filter.withDeclaredBarriers(new Object()),
+                    ConjunctiveFilter.makeConjunctiveFilter(rowLocal, filter),
+                    DisjunctiveFilter.makeDisjunctiveFilter(rowLocal, filter)}) {
+                Assertions.assertThat(holding.hasCrossRowDependencies()).as(holding.toString()).isTrue();
+            }
+        }
+        // a filter that reports a row variable or a column array depends on other rows without overriding the method
+        Assertions.assertThat(new ReportingFilter(false, List.of()).hasCrossRowDependencies()).isFalse();
+        Assertions.assertThat(new ReportingFilter(true, List.of()).hasCrossRowDependencies()).isTrue();
+        Assertions.assertThat(new ReportingFilter(false, List.of("A")).hasCrossRowDependencies()).isTrue();
+        Assertions.assertThat(new IncrementalReleaseFilter(1, 1).hasCrossRowDependencies()).isTrue();
+        Assertions.assertThat(new RollingReleaseFilter(1, 1).hasCrossRowDependencies()).isTrue();
+        Assertions.assertThat(new DownsampledWhereFilter("T", DateTimeUtils.MINUTE).hasCrossRowDependencies()).isTrue();
+    }
+
+    @Test
+    public void testReleaseFilterSeesTheRowsOfItsWhere() {
+        // a release filter keeps rows by position among the rows that the filter's where receives, so the where must
+        // not merge with the filters of an earlier where; an IncrementalReleaseFilter does not support copy() either
+        final Table source = TableTools.newTable(TableTools.intCol("A", 1, 6, 7, 8));
+        assertDeferredMatchesInMemory(source, t -> t.where("A > 5").where(new IncrementalReleaseFilter(2, 1)));
+        assertDeferredMatchesInMemory(source, t -> t.where("A > 5").where(new RollingReleaseFilter(2, 1)));
+        assertDeferredMatchesInMemory(source,
+                t -> t.renameColumns("B = A").where("B > 5").where(new RollingReleaseFilter(2, 1)));
+    }
+
+    @Test
+    public void testDownsampleSeesTheRowsOfItsWhere() {
+        // a downsample keeps the last row of each time bin among the rows that the filters before the downsample pass,
+        // so the filter of a later where must not move before the view, ahead of the downsample
+        final Table source = TableTools.emptyTable(10).update(
+                "Timestamp = epochNanosToInstant(ii * MINUTE)",
+                "A = ii % 5 == 4 ? 1 : 9");
+        assertDeferredMatchesInMemory(source, t -> t.renameColumns("T = Timestamp")
+                .where(new DownsampledWhereFilter("T", 5 * DateTimeUtils.MINUTE))
+                .where("A > 5"));
+    }
+
+    @Test
+    public void testRowReadingFilterSeesTheRowsOfItsWhere() {
+        // a column array or a row variable reads every row that the filter's where receives, so the where must neither
+        // merge with the filters of an earlier where nor run after the sibling filters that move before a view
+        final Table source = TableTools.newTable(
+                TableTools.intCol("A", 1, 2, 3),
+                TableTools.intCol("C", 0, 3, 3));
+        for (final String filter : new String[] {"A_[0] == 2", "A == A_[1]", "i == 0", "ii == 1"}) {
+            assertDeferredMatchesInMemory(source, t -> t.where("C == 3").where(filter));
+        }
+        assertDeferredMatchesInMemory(source, t -> t.renameColumns("B = A").where("C == 3").where("B_[0] == 2"));
+        // the view computes D, so the filter on D runs after the filter on A, which moves before the view
+        assertDeferredMatchesInMemory(source, t -> t.updateView("D = C * 2").where("A == 2", "D_[0] == 6"));
+        assertDeferredMatchesInMemory(source, t -> t.updateView("D = C * 2").where("A == 2", "D + i == 7"));
     }
 
     @Test
@@ -886,6 +988,93 @@ public class DeferredViewTableTest {
         }
     }
 
+    @Test
+    public void testFilterBeforeViewKeepsQueryScopeValue() {
+        // a filter that moves before a view is renamed again when the table coalesces, under the query scope of the
+        // coalesce; the renamed filter must read the value that the where read
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final Table source = TableTools.newTable(
+                TableTools.intCol("A", 1, 2, 3),
+                TableTools.intCol("C", 3, 2, 1));
+        final List<Function<Table, Table>> views = List.of(
+                t -> t.renameColumns("B = A"),
+                t -> t.view("B = A", "C"),
+                t -> t.renameColumns("D = A").renameColumns("B = D"));
+        for (final Function<Table, Table> view : views) {
+            for (final String filter : new String[] {
+                    "B == lim",
+                    "B + 0 == lim",
+                    "B + 0 == lim || C + 0 == lim",
+                    "C + 0 == lim"}) {
+                queryScope.putParam("lim", 2);
+                final Table expected = view.apply(source).where(filter);
+                final Table deferredResult = view.apply(deferred(source)).where(filter);
+                // the session reassigns the variable before the deferred table coalesces
+                queryScope.putParam("lim", 3);
+                TstUtils.assertTableEquals(expected, deferredResult.coalesce());
+            }
+        }
+
+        // the variable is gone when the deferred table coalesces, as a Python caller's local variables are once the
+        // where returns
+        queryScope.putParam("lim", 2);
+        final Table expected = source.renameColumns("B = A").where("B + 0 == lim");
+        final Table deferredResult = deferred(source).renameColumns("B = A").where("B + 0 == lim");
+        try (final SafeCloseable ignored =
+                ExecutionContext.getContext().withQueryScope(new StandaloneQueryScope()).open()) {
+            TstUtils.assertTableEquals(expected, deferredResult.coalesce());
+        }
+    }
+
+    @Test
+    public void testSelectDistinctKeepsQueryScopeVariable() {
+        // after each operation, A names the query-scope variable; before the operation, A names the source column that
+        // the operation hides
+        ExecutionContext.getContext().getQueryScope().putParam("A", 5);
+        final Table source = TableTools.newTable(
+                TableTools.intCol("A", 1, 5, 7),
+                TableTools.intCol("C", 5, 7, 5));
+        final List<String> pushedDown = new ArrayList<>();
+        final Table dropped = DeferredViewTable.withDropColumns(TableDefinition.of(ColumnDefinition.ofInt("C")),
+                "test", selectDistinctPushingReference(source, pushedDown), new String[] {"A"});
+        final Table renamed = DeferredViewTable.withRename(
+                TableDefinition.of(ColumnDefinition.ofInt("B"), ColumnDefinition.ofInt("C")), "test",
+                selectDistinctPushingReference(source, pushedDown),
+                new SourceColumn[] {new SourceColumn("A", "B"), new SourceColumn("C")});
+
+        // a column that reads the same columns before and after the operation is still pushed down; coalescing would
+        // cache the coalesced table, so these come first
+        TstUtils.assertTableEquals(source.dropColumns("A").selectDistinct("Z = C + 1"),
+                dropped.selectDistinct("Z = C + 1"));
+        TstUtils.assertTableEquals(source.renameColumns("B = A").selectDistinct("C"), renamed.selectDistinct("C"));
+        assertEquals(List.of("Z", "C"), pushedDown);
+
+        pushedDown.clear();
+        for (final String column : new String[] {"Z = A", "Z = C + A"}) {
+            TstUtils.assertTableEquals(source.dropColumns("A").selectDistinct(column), dropped.selectDistinct(column));
+            TstUtils.assertTableEquals(source.renameColumns("B = A").selectDistinct(column),
+                    renamed.selectDistinct(column));
+        }
+        assertEquals(List.of(), pushedDown);
+    }
+
+    /**
+     * A reference that pushes a selectDistinct down to {@code source}, parsing the columns again against the definition
+     * of {@code source}, as {@code PartitionAwareTableReference} does, and records the name of every pushed-down column
+     * in {@code pushedDown}.
+     */
+    private static DeferredViewTable.TableReference selectDistinctPushingReference(
+            final Table source,
+            final List<String> pushedDown) {
+        return new DeferredViewTable.TableReference(source) {
+            @Override
+            public Table selectDistinctInternal(final Collection<? extends Selectable> columns) {
+                columns.forEach(column -> pushedDown.add(column.newColumn().name()));
+                return table.selectDistinct(columns);
+            }
+        };
+    }
+
     private static Table renameSource() {
         return TableTools.newTable(
                 TableTools.intCol("A", 1, 2, 3),
@@ -922,6 +1111,57 @@ public class DeferredViewTableTest {
         final Table coalesced = actual.coalesce();
         assertEquals(expected.getDefinition(), coalesced.getDefinition());
         TstUtils.assertTableEquals(expected, coalesced);
+    }
+
+    /**
+     * A filter that reports row variables and column arrays, and relies on the default
+     * {@link WhereFilter#hasCrossRowDependencies()}.
+     */
+    private static final class ReportingFilter extends WhereFilterImpl {
+        private final boolean rowVariables;
+        private final List<String> columnArrays;
+
+        private ReportingFilter(final boolean rowVariables, final List<String> columnArrays) {
+            this.rowVariables = rowVariables;
+            this.columnArrays = columnArrays;
+        }
+
+        @Override
+        public List<String> getColumns() {
+            return List.of();
+        }
+
+        @Override
+        public List<String> getColumnArrays() {
+            return columnArrays;
+        }
+
+        @Override
+        public boolean hasVirtualRowVariables() {
+            return rowVariables;
+        }
+
+        @Override
+        public void init(final TableDefinition tableDefinition) {}
+
+        @Override
+        public WritableRowSet filter(final RowSet selection, final RowSet fullSet, final Table table,
+                final boolean usePrev) {
+            return selection.copy();
+        }
+
+        @Override
+        public boolean isSimpleFilter() {
+            return true;
+        }
+
+        @Override
+        public void setRecomputeListener(final RecomputeListener result) {}
+
+        @Override
+        public WhereFilter copy() {
+            return new ReportingFilter(rowVariables, columnArrays);
+        }
     }
 
     private void verifyFilterIsPrioritized(final Filter filterToTest) {

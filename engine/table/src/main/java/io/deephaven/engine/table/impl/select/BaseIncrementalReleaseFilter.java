@@ -330,6 +330,12 @@ public abstract class BaseIncrementalReleaseFilter
     }
 
     @Override
+    public boolean hasCrossRowDependencies() {
+        // releases a prefix, by position, of the rows that the where receives
+        return true;
+    }
+
+    @Override
     public void run() {
         if (!started) {
             throw new IllegalStateException();

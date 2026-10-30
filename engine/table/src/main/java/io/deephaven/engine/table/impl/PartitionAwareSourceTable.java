@@ -379,6 +379,12 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         }
         compilationProcessor.compile();
 
+        // In order to match the equivalent memory table, run the full where on the coalesced table when any filter
+        // has cross-row dependencies (see WhereFilter#hasCrossRowDependencies).
+        if (whereFilters.stream().anyMatch(WhereFilter::hasCrossRowDependencies)) {
+            return coalesce().where(Filter.and(whereFilters));
+        }
+
         if (partitionFilters.isEmpty()) {
             if (partitioningFilterFound) {
                 // unfortunately we found a partitioning filter but could not re-prioritize it
@@ -433,15 +439,16 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     /**
      * Whether {@code whereFilter} may be applied to the location keys before coalescing, rather than to the rows after.
      * Location discovery applies such filters once per discovered key, with no listener, so a refreshing filter cannot
-     * be one: it is deferred like any other row filter. Nor can a filter that uses virtual row variables, which would
-     * be evaluated against positions in the location table rather than in the coalesced table.
+     * be one: it is deferred like any other row filter. Nor can a filter that
+     * {@link WhereFilter#hasCrossRowDependencies() depends on other rows}, such as a filter that uses virtual row
+     * variables, which would be evaluated against positions in the location table rather than in the coalesced table.
      *
      * @param whereFilter The filter to test, already {@link WhereFilter#init(TableDefinition) initialized}
      * @return Whether {@code whereFilter} may be applied before coalescing
      */
     private boolean isPrioritizablePartitioningFilter(@NotNull final WhereFilter whereFilter) {
         return ExtractAllFilters.stream(whereFilter)
-                .noneMatch(f -> f instanceof ReindexingFilter || f.hasVirtualRowVariables())
+                .noneMatch(f -> f instanceof ReindexingFilter || f.hasCrossRowDependencies())
                 && !whereFilter.isRefreshing()
                 && isValidAgainstColumnPartitionTable(whereFilter.getColumns(), whereFilter.getColumnArrays());
     }

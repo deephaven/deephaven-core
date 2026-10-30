@@ -76,8 +76,8 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     private ConditionFilter(@NotNull String formula, Map<String, String> renames,
-            @Nullable Set<String> formulaColumns) {
-        super(formula, renames, formulaColumns, false);
+            @Nullable Set<String> formulaColumns, @Nullable Map<String, Object> formulaVariables) {
+        super(formula, renames, formulaColumns, formulaVariables, false);
     }
 
     public static WhereFilter createConditionFilter(@NotNull String formula, FormulaParserConfiguration parser) {
@@ -808,7 +808,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     public ConditionFilter copy() {
-        final ConditionFilter copy = new ConditionFilter(formula, outerToInnerNames, formulaColumns);
+        final ConditionFilter copy = new ConditionFilter(formula, outerToInnerNames, formulaColumns, formulaVariables);
         onCopy(copy);
         if (initialized) {
             copy.filterKernelClassFuture = filterKernelClassFuture;
@@ -825,9 +825,13 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
-    public ConditionFilter renameFilter(Map<String, String> renames) {
+    public Optional<WhereFilter> renamedFilter(Map<String, String> renames) {
         if (!initialized) {
-            throw new IllegalStateException("Filter must be initialized to invoke renameFilter: " + formula);
+            throw new IllegalStateException("Filter must be initialized to invoke renamedFilter: " + formula);
+        }
+        if (hasConstantArrayAccess()) {
+            // shifted columns read other rows of the table being filtered, so the filter stays after the view
+            return Optional.empty();
         }
         // renames maps the columns this filter reads to the table being filtered, and outerToInnerNames maps formula
         // names to the columns this filter reads; compose the two into a map from formula names to the table being
@@ -842,7 +846,14 @@ public class ConditionFilter extends AbstractConditionFilter {
         // the renamed filter may resolve as columns only the names this filter resolved as columns
         final Set<String> resolvedColumns = new HashSet<>(usedColumns);
         resolvedColumns.addAll(usedColumnArrays);
-        return new ConditionFilter(formula, composed, Collections.unmodifiableSet(resolvedColumns));
+        // the renamed filter reads the query-scope variables this filter read, with the values this filter read, even
+        // when initialized under another query scope
+        final Map<String, Object> readVariables = new HashMap<>();
+        for (final QueryScopeParam<?> param : params) {
+            readVariables.put(param.getName(), param.getValue());
+        }
+        return Optional.of(new ConditionFilter(formula, composed, Collections.unmodifiableSet(resolvedColumns),
+                Collections.unmodifiableMap(readVariables)));
     }
 
     @Override

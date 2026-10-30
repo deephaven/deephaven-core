@@ -129,6 +129,11 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements WhereFilte
     }
 
     @Override
+    public boolean hasCrossRowDependencies() {
+        return innerFilter != null && innerFilter.hasCrossRowDependencies();
+    }
+
+    @Override
     public void setRecomputeListener(WhereFilter.RecomputeListener result) {
         if (innerFilter != null) {
             innerFilter.setRecomputeListener(result);
