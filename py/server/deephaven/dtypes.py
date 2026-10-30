@@ -320,7 +320,9 @@ def _instant_array(data: Sequence | np.ndarray) -> jpy.JType:
 
 
 def array(
-    dtype: DType, seq: Sequence | None, remap: Callable[[Any], Any] | None = None
+    dtype: DType,
+    seq: Sequence | np.ndarray | None,
+    remap: Callable[[Any], Any] | None = None,
 ) -> jpy.JType | None:
     """Creates a Java array of the specified data type populated with values from a sequence.
 

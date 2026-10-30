@@ -11,20 +11,28 @@
 from __future__ import annotations
 
 import numbers
-from enum import Enum
 from collections.abc import Callable, Sequence
+from enum import Enum
 from typing import Any, get_origin
 
-import numpy
 import jpy
+import numpy
 
 from deephaven import DHError, dtypes
 from deephaven._wrapper import JObjectWrapper
-from deephaven.dtypes import Instant, PyObject, BusinessCalendar
-from deephaven.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
-    SelectableDataSet
-from deephaven.table import Table
+from deephaven.dtypes import BusinessCalendar, Instant
 from deephaven.jcompat import j_function
+from deephaven.plot import (
+    AxisFormat,
+    AxisTransform,
+    Color,
+    Font,
+    LineStyle,
+    PlotStyle,
+    SelectableDataSet,
+    Shape,
+)
+from deephaven.table import Table
 
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
@@ -94,7 +102,7 @@ def _convert_j(name: str, obj: Any, types: list) -> Any:
         np_array = numpy.array(obj)
         dtype = dtypes.from_np_dtype(np_array.dtype)
         return dtypes.array(dtype, np_array)
-    elif isinstance(obj, Callable):
+    elif callable(obj):
         return j_function(obj, dtypes.PyObject)
     else:
         raise DHError(message=f"Unsupported input type: name={name} type={type(obj)}")
@@ -126,10 +134,10 @@ class Figure(JObjectWrapper):
 
     def axes(
         self,
-        name: str = None,
-        axes: int = None,
-        remove_series: list[str] = None,
-        plot_style: str | PlotStyle = None,
+        name: str | None = None,
+        axes: int | None = None,
+        remove_series: list[str] | None = None,
+        plot_style: str | PlotStyle | None = None,
     ) -> Figure:
         """Gets specific axes from the chart and updates the chart's axes's configurations.
 
@@ -145,7 +153,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if name is not None:
             non_null_args.add("name")
@@ -190,20 +198,20 @@ class Figure(JObjectWrapper):
 
     def axis(
         self,
-        dim: int = None,
-        t: Table | SelectableDataSet = None,
-        label: str = None,
-        color: str | int | Color = None,
-        font: Font = None,
-        format: AxisFormat = None,
-        format_pattern: str = None,
-        min: str | float = None,
-        max: str | float = None,
-        invert: bool = None,
-        log: bool = None,
-        business_time: bool = None,
-        calendar: str | BusinessCalendar = None,
-        transform: AxisTransform = None,
+        dim: int | None = None,
+        t: Table | SelectableDataSet | None = None,
+        label: str | None = None,
+        color: str | int | Color | None = None,
+        font: Font | None = None,
+        format: AxisFormat | None = None,
+        format_pattern: str | None = None,
+        min: str | float | None = None,
+        max: str | float | None = None,
+        invert: bool | None = None,
+        log: bool | None = None,
+        business_time: bool | None = None,
+        calendar: str | BusinessCalendar | None = None,
+        transform: AxisTransform | None = None,
     ) -> Figure:
         """Gets a specific axis from a chart's axes and updates the axis's configurations.
 
@@ -229,7 +237,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if dim is not None:
             non_null_args.add("dim")
@@ -369,18 +377,18 @@ class Figure(JObjectWrapper):
 
     def chart(
         self,
-        multi_series_key: list[Any] = None,
-        remove_series: list[str] = None,
-        index: int = None,
-        row: int = None,
-        col: int = None,
-        row_span: int = None,
-        col_span: int = None,
-        orientation: str = None,
-        grid_visible: bool = None,
-        x_grid_visible: bool = None,
-        y_grid_visible: bool = None,
-        pie_label_format: str = None,
+        multi_series_key: list[Any] | None = None,
+        remove_series: list[str] | None = None,
+        index: int | None = None,
+        row: int | None = None,
+        col: int | None = None,
+        row_span: int | None = None,
+        col_span: int | None = None,
+        orientation: str | None = None,
+        grid_visible: bool | None = None,
+        x_grid_visible: bool | None = None,
+        y_grid_visible: bool | None = None,
+        pie_label_format: str | None = None,
     ) -> Figure:
         """Gets a chart from the figure's grid and updates a chart's configuration.
 
@@ -404,7 +412,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if multi_series_key is not None:
             non_null_args.add("multi_series_key")
@@ -519,9 +527,9 @@ class Figure(JObjectWrapper):
 
     def chart_legend(
         self,
-        color: str | int | Color = None,
-        font: Font = None,
-        visible: int = None,
+        color: str | int | Color | None = None,
+        font: Font | None = None,
+        visible: int | None = None,
     ) -> Figure:
         """Updates a chart's legend's configuration.
 
@@ -536,7 +544,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if color is not None:
             non_null_args.add("color")
@@ -573,14 +581,14 @@ class Figure(JObjectWrapper):
 
     def chart_title(
         self,
-        t: Table | SelectableDataSet = None,
-        title: str = None,
-        columns: list[str] = None,
-        format: str = None,
-        max_rows: int = None,
-        column_names_in_title: bool = None,
-        color: str | int | Color = None,
-        font: Font = None,
+        t: Table | SelectableDataSet | None = None,
+        title: str | None = None,
+        columns: list[str] | None = None,
+        format: str | None = None,
+        max_rows: int | None = None,
+        column_names_in_title: bool | None = None,
+        color: str | int | Color | None = None,
+        font: Font | None = None,
     ) -> Figure:
         """Sets the title of the chart.
 
@@ -600,7 +608,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if t is not None:
             non_null_args.add("t")
@@ -672,11 +680,11 @@ class Figure(JObjectWrapper):
 
     def figure(
         self,
-        remove_series: list[str] = None,
-        remove_chart_index: int = None,
-        remove_chart_row: int = None,
-        remove_chart_col: int = None,
-        update_millis: int = None,
+        remove_series: list[str] | None = None,
+        remove_chart_index: int | None = None,
+        remove_chart_row: int | None = None,
+        remove_chart_col: int | None = None,
+        update_millis: int | None = None,
     ) -> Figure:
         """Updates the figure's configuration.
 
@@ -693,7 +701,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if remove_series is not None:
             non_null_args.add("remove_series")
@@ -741,9 +749,9 @@ class Figure(JObjectWrapper):
 
     def figure_title(
         self,
-        title: str = None,
-        color: str | int | Color = None,
-        font: Font = None,
+        title: str | None = None,
+        color: str | int | Color | None = None,
+        font: Font | None = None,
     ) -> Figure:
         """Sets the title of the figure.
 
@@ -758,7 +766,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if title is not None:
             non_null_args.add("title")
@@ -795,9 +803,9 @@ class Figure(JObjectWrapper):
 
     def func(
         self,
-        xmin: float = None,
-        xmax: float = None,
-        npoints: int = None,
+        xmin: float | None = None,
+        xmax: float | None = None,
+        npoints: int | None = None,
     ) -> Figure:
         """Updates the configuration for plotting a function.
 
@@ -812,7 +820,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if xmin is not None:
             non_null_args.add("xmin")
@@ -849,10 +857,10 @@ class Figure(JObjectWrapper):
 
     def line(
         self,
-        multi_series_key: list[Any] = None,
-        color: str | int | Color = None,
-        style: str | LineStyle = None,
-        visible: int = None,
+        multi_series_key: list[Any] | None = None,
+        color: str | int | Color | None = None,
+        style: str | LineStyle | None = None,
+        visible: int | None = None,
     ) -> Figure:
         """Sets the line color, style, visibility.
 
@@ -868,7 +876,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if multi_series_key is not None:
             non_null_args.add("multi_series_key")
@@ -931,8 +939,8 @@ class Figure(JObjectWrapper):
 
     def new_axes(
         self,
-        name: str = None,
-        dim: int = None,
+        name: str | None = None,
+        dim: int | None = None,
     ) -> Figure:
         """Creates new axes.
 
@@ -946,7 +954,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if name is not None:
             non_null_args.add("name")
@@ -968,9 +976,9 @@ class Figure(JObjectWrapper):
 
     def new_chart(
         self,
-        index: int = None,
-        row: int = None,
-        col: int = None,
+        index: int | None = None,
+        row: int | None = None,
+        col: int | None = None,
     ) -> Figure:
         """Adds a new chart to this figure.
 
@@ -985,7 +993,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if index is not None:
             non_null_args.add("index")
@@ -1009,12 +1017,12 @@ class Figure(JObjectWrapper):
     def plot_cat(
         self,
         series_name: str,
-        t: Table | SelectableDataSet = None,
-        category: str | list[str] | list[int] | list[float] = None,
-        y: str | list[int] | list[float] | list[Instant] = None,
-        y_low: str | list[int] | list[float] | list[Instant] = None,
-        y_high: str | list[int] | list[float] | list[Instant] = None,
-        by: list[str] = None,
+        t: Table | SelectableDataSet | None = None,
+        category: str | list[str] | list[int] | list[float] | None = None,
+        y: str | list[int] | list[float] | list[Instant] | None = None,
+        y_low: str | list[int] | list[float] | list[Instant] | None = None,
+        y_high: str | list[int] | list[float] | list[Instant] | None = None,
+        by: list[str] | None = None,
     ) -> Figure:
         """Creates a plot with a discrete, categorical axis. Categorical data must not have duplicates.
 
@@ -1035,7 +1043,7 @@ class Figure(JObjectWrapper):
         """
         if not series_name:
             raise DHError("required parameter is not set: series_name")
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if series_name is not None:
             non_null_args.add("series_name")
@@ -1077,8 +1085,8 @@ class Figure(JObjectWrapper):
     def plot_cat_hist(
         self,
         series_name: str,
-        t: Table | SelectableDataSet = None,
-        category: str | list[str] | list[int] | list[float] = None,
+        t: Table | SelectableDataSet | None = None,
+        category: str | list[str] | list[int] | list[float] | None = None,
     ) -> Figure:
         """Creates a histogram with a discrete axis. Charts the frequency of each unique element in the input data.
 
@@ -1095,7 +1103,7 @@ class Figure(JObjectWrapper):
         """
         if not series_name:
             raise DHError("required parameter is not set: series_name")
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if series_name is not None:
             non_null_args.add("series_name")
@@ -1117,13 +1125,13 @@ class Figure(JObjectWrapper):
     def plot_ohlc(
         self,
         series_name: str,
-        t: Table | SelectableDataSet = None,
-        x: str | list[Instant] = None,
-        open: str | list[int] | list[float] | list[Instant] = None,
-        high: str | list[int] | list[float] | list[Instant] = None,
-        low: str | list[int] | list[float] | list[Instant] = None,
-        close: str | list[int] | list[float] | list[Instant] = None,
-        by: list[str] = None,
+        t: Table | SelectableDataSet | None = None,
+        x: str | list[Instant] | None = None,
+        open: str | list[int] | list[float] | list[Instant] | None = None,
+        high: str | list[int] | list[float] | list[Instant] | None = None,
+        low: str | list[int] | list[float] | list[Instant] | None = None,
+        close: str | list[int] | list[float] | list[Instant] | None = None,
+        by: list[str] | None = None,
     ) -> Figure:
         """Creates an open-high-low-close plot.
 
@@ -1145,7 +1153,7 @@ class Figure(JObjectWrapper):
         """
         if not series_name:
             raise DHError("required parameter is not set: series_name")
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if series_name is not None:
             non_null_args.add("series_name")
@@ -1184,9 +1192,9 @@ class Figure(JObjectWrapper):
     def plot_pie(
         self,
         series_name: str,
-        t: Table | SelectableDataSet = None,
-        category: str | list[str] | list[int] | list[float] = None,
-        y: str | list[int] | list[float] | list[Instant] = None,
+        t: Table | SelectableDataSet | None = None,
+        category: str | list[str] | list[int] | list[float] | None = None,
+        y: str | list[int] | list[float] | list[Instant] | None = None,
     ) -> Figure:
         """Creates a pie plot. Categorical data must not have duplicates.
 
@@ -1204,7 +1212,7 @@ class Figure(JObjectWrapper):
         """
         if not series_name:
             raise DHError("required parameter is not set: series_name")
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if series_name is not None:
             non_null_args.add("series_name")
@@ -1232,10 +1240,10 @@ class Figure(JObjectWrapper):
         t: Table | SelectableDataSet,
         id: str,
         parent: str,
-        value: str = None,
-        label: str = None,
-        hover_text: str = None,
-        color: str = None,
+        value: str | None = None,
+        label: str | None = None,
+        hover_text: str | None = None,
+        color: str | None = None,
     ) -> Figure:
         """Creates a treemap. Must have only one root.
 
@@ -1263,7 +1271,7 @@ class Figure(JObjectWrapper):
             raise DHError("required parameter is not set: id")
         if not parent:
             raise DHError("required parameter is not set: parent")
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if series_name is not None:
             non_null_args.add("series_name")
@@ -1298,17 +1306,17 @@ class Figure(JObjectWrapper):
     def plot_xy(
         self,
         series_name: str,
-        t: Table | SelectableDataSet = None,
-        x: str | list[int] | list[float] | list[Instant] = None,
-        x_low: str | list[int] | list[float] | list[Instant] = None,
-        x_high: str | list[int] | list[float] | list[Instant] = None,
-        y: str | list[int] | list[float] | list[Instant] = None,
-        y_low: str | list[int] | list[float] | list[Instant] = None,
-        y_high: str | list[int] | list[float] | list[Instant] = None,
-        function: Callable = None,
-        by: list[str] = None,
-        x_time_axis: bool = None,
-        y_time_axis: bool = None,
+        t: Table | SelectableDataSet | None = None,
+        x: str | list[int] | list[float] | list[Instant] | None = None,
+        x_low: str | list[int] | list[float] | list[Instant] | None = None,
+        x_high: str | list[int] | list[float] | list[Instant] | None = None,
+        y: str | list[int] | list[float] | list[Instant] | None = None,
+        y_low: str | list[int] | list[float] | list[Instant] | None = None,
+        y_high: str | list[int] | list[float] | list[Instant] | None = None,
+        function: Callable | None = None,
+        by: list[str] | None = None,
+        x_time_axis: bool | None = None,
+        y_time_axis: bool | None = None,
     ) -> Figure:
         """Creates an XY plot.
 
@@ -1334,7 +1342,7 @@ class Figure(JObjectWrapper):
         """
         if not series_name:
             raise DHError("required parameter is not set: series_name")
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if series_name is not None:
             non_null_args.add("series_name")
@@ -1407,11 +1415,11 @@ class Figure(JObjectWrapper):
     def plot_xy_hist(
         self,
         series_name: str,
-        t: Table | SelectableDataSet = None,
-        x: str | list[int] | list[float] | list[Instant] = None,
-        xmin: float = None,
-        xmax: float = None,
-        nbins: int = None,
+        t: Table | SelectableDataSet | None = None,
+        x: str | list[int] | list[float] | list[Instant] | None = None,
+        xmin: float | None = None,
+        xmax: float | None = None,
+        nbins: int | None = None,
     ) -> Figure:
         """Creates an XY histogram.
 
@@ -1431,7 +1439,7 @@ class Figure(JObjectWrapper):
         """
         if not series_name:
             raise DHError("required parameter is not set: series_name")
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if series_name is not None:
             non_null_args.add("series_name")
@@ -1467,15 +1475,15 @@ class Figure(JObjectWrapper):
 
     def point(
         self,
-        t: Table | SelectableDataSet = None,
-        category: str | list[str] | list[int] | list[float] = None,
-        multi_series_key: list[Any] = None,
-        color: str | int | Color | list[str] | list[int] | list[Color] | Callable | dict[Any,str] | dict[Any,int] | dict[Any,Color] = None,
-        label: str | list[str] | Callable | dict[Any,str] = None,
-        shape: str | Shape | list[str] | list[Shape] | Callable | dict[Any,str] | dict[Any,Shape] = None,
-        size: int | float | list[int] | list[float] | Callable | dict[Any,int] | dict[Any,float] = None,
-        label_format: str = None,
-        visible: int = None,
+        t: Table | SelectableDataSet | None = None,
+        category: str | list[str] | list[int] | list[float] | None = None,
+        multi_series_key: list[Any] | None = None,
+        color: str | int | Color | list[str] | list[int] | list[Color] | Callable | dict[Any,str] | dict[Any,int] | dict[Any,Color] | None = None,
+        label: str | list[str] | Callable | dict[Any,str] | None = None,
+        shape: str | Shape | list[str] | list[Shape] | Callable | dict[Any,str] | dict[Any,Shape] | None = None,
+        size: int | float | list[int] | list[float] | Callable | dict[Any,int] | dict[Any,float] | None = None,
+        label_format: str | None = None,
+        visible: int | None = None,
     ) -> Figure:
         """Sets the point color, label, size, visibility, etc.
 
@@ -1496,7 +1504,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if t is not None:
             non_null_args.add("t")
@@ -1741,10 +1749,10 @@ class Figure(JObjectWrapper):
     def save(
         self,
         path: str,
-        height: int = None,
-        width: int = None,
-        wait: bool = None,
-        timeout_seconds: int = None,
+        height: int | None = None,
+        width: int | None = None,
+        wait: bool | None = None,
+        timeout_seconds: int | None = None,
     ) -> Figure:
         """Saves the Figure as an image.
 
@@ -1763,7 +1771,7 @@ class Figure(JObjectWrapper):
         """
         if not path:
             raise DHError("required parameter is not set: path")
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if path is not None:
             non_null_args.add("path")
@@ -1794,17 +1802,17 @@ class Figure(JObjectWrapper):
 
     def series(
         self,
-        name: str = None,
-        axes: int = None,
-        group: int = None,
-        multi_series_key: list[Any] = None,
-        color: str | int | Color = None,
-        tool_tip_pattern: str = None,
-        x_tool_tip_pattern: str = None,
-        y_tool_tip_pattern: str = None,
-        error_bar_color: str | int | Color = None,
-        gradient_visible: bool = None,
-        naming_function: Callable = None,
+        name: str | None = None,
+        axes: int | None = None,
+        group: int | None = None,
+        multi_series_key: list[Any] | None = None,
+        color: str | int | Color | None = None,
+        tool_tip_pattern: str | None = None,
+        x_tool_tip_pattern: str | None = None,
+        y_tool_tip_pattern: str | None = None,
+        error_bar_color: str | int | Color | None = None,
+        gradient_visible: bool | None = None,
+        naming_function: Callable | None = None,
     ) -> Figure:
         """Gets a specific data series and updates the data series's configurations.
 
@@ -1827,7 +1835,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if name is not None:
             non_null_args.add("name")
@@ -1981,7 +1989,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if not non_null_args:
             return Figure(j_figure=self.j_figure.show())
@@ -1990,11 +1998,11 @@ class Figure(JObjectWrapper):
 
     def ticks(
         self,
-        font: Font = None,
-        gap: float = None,
-        loc: list[float] = None,
-        angle: int = None,
-        visible: int = None,
+        font: Font | None = None,
+        gap: float | None = None,
+        loc: list[float] | None = None,
+        angle: int | None = None,
+        visible: int | None = None,
     ) -> Figure:
         """Updates the configuration for major ticks of an axis.
 
@@ -2011,7 +2019,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if font is not None:
             non_null_args.add("font")
@@ -2064,8 +2072,8 @@ class Figure(JObjectWrapper):
 
     def ticks_minor(
         self,
-        nminor: int = None,
-        visible: int = None,
+        nminor: int | None = None,
+        visible: int | None = None,
     ) -> Figure:
         """Updates the configuration for minor ticks of an axis.
 
@@ -2079,7 +2087,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if nminor is not None:
             non_null_args.add("nminor")
@@ -2108,8 +2116,8 @@ class Figure(JObjectWrapper):
 
     def twin(
         self,
-        name: str = None,
-        dim: int = None,
+        name: str | None = None,
+        dim: int | None = None,
     ) -> Figure:
         """Creates a new Axes which shares one Axis with the current Axes. For example, this is used for creating plots with a common x-axis but two different y-axes.
 
@@ -2123,7 +2131,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if name is not None:
             non_null_args.add("name")
@@ -2145,19 +2153,19 @@ class Figure(JObjectWrapper):
 
     def x_axis(
         self,
-        t: Table | SelectableDataSet = None,
-        label: str = None,
-        color: str | int | Color = None,
-        font: Font = None,
-        format: AxisFormat = None,
-        format_pattern: str = None,
-        min: str | float = None,
-        max: str | float = None,
-        invert: bool = None,
-        log: bool = None,
-        business_time: bool = None,
-        calendar: str | BusinessCalendar = None,
-        transform: AxisTransform = None,
+        t: Table | SelectableDataSet | None = None,
+        label: str | None = None,
+        color: str | int | Color | None = None,
+        font: Font | None = None,
+        format: AxisFormat | None = None,
+        format_pattern: str | None = None,
+        min: str | float | None = None,
+        max: str | float | None = None,
+        invert: bool | None = None,
+        log: bool | None = None,
+        business_time: bool | None = None,
+        calendar: str | BusinessCalendar | None = None,
+        transform: AxisTransform | None = None,
     ) -> Figure:
         """Gets the x-Axis from a chart's axes and updates the x-Axis's configurations.
 
@@ -2182,7 +2190,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if t is not None:
             non_null_args.add("t")
@@ -2319,11 +2327,11 @@ class Figure(JObjectWrapper):
 
     def x_ticks(
         self,
-        font: Font = None,
-        gap: float = None,
-        loc: list[float] = None,
-        angle: int = None,
-        visible: int = None,
+        font: Font | None = None,
+        gap: float | None = None,
+        loc: list[float] | None = None,
+        angle: int | None = None,
+        visible: int | None = None,
     ) -> Figure:
         """Updates the configuration for major ticks of the x-Axis.
 
@@ -2340,7 +2348,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if font is not None:
             non_null_args.add("font")
@@ -2393,8 +2401,8 @@ class Figure(JObjectWrapper):
 
     def x_ticks_minor(
         self,
-        nminor: int = None,
-        visible: int = None,
+        nminor: int | None = None,
+        visible: int | None = None,
     ) -> Figure:
         """Updates the configuration for minor ticks of the x-Axis.
 
@@ -2408,7 +2416,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if nminor is not None:
             non_null_args.add("nminor")
@@ -2437,7 +2445,7 @@ class Figure(JObjectWrapper):
 
     def x_twin(
         self,
-        name: str = None,
+        name: str | None = None,
     ) -> Figure:
         """Creates a new Axes which shares the x-Axis with the current Axes. For example, this is used for creating plots with a common x-axis but two different y-axes.
 
@@ -2450,7 +2458,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if name is not None:
             non_null_args.add("name")
@@ -2465,19 +2473,19 @@ class Figure(JObjectWrapper):
 
     def y_axis(
         self,
-        t: Table | SelectableDataSet = None,
-        label: str = None,
-        color: str | int | Color = None,
-        font: Font = None,
-        format: AxisFormat = None,
-        format_pattern: str = None,
-        min: str | float = None,
-        max: str | float = None,
-        invert: bool = None,
-        log: bool = None,
-        business_time: bool = None,
-        calendar: str | BusinessCalendar = None,
-        transform: AxisTransform = None,
+        t: Table | SelectableDataSet | None = None,
+        label: str | None = None,
+        color: str | int | Color | None = None,
+        font: Font | None = None,
+        format: AxisFormat | None = None,
+        format_pattern: str | None = None,
+        min: str | float | None = None,
+        max: str | float | None = None,
+        invert: bool | None = None,
+        log: bool | None = None,
+        business_time: bool | None = None,
+        calendar: str | BusinessCalendar | None = None,
+        transform: AxisTransform | None = None,
     ) -> Figure:
         """Gets the y-Axis from a chart's axes and updates the y-Axis's configurations.
 
@@ -2502,7 +2510,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if t is not None:
             non_null_args.add("t")
@@ -2639,11 +2647,11 @@ class Figure(JObjectWrapper):
 
     def y_ticks(
         self,
-        font: Font = None,
-        gap: float = None,
-        loc: list[float] = None,
-        angle: int = None,
-        visible: int = None,
+        font: Font | None = None,
+        gap: float | None = None,
+        loc: list[float] | None = None,
+        angle: int | None = None,
+        visible: int | None = None,
     ) -> Figure:
         """Updates the configuration for major ticks of the y-Axis.
 
@@ -2660,7 +2668,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if font is not None:
             non_null_args.add("font")
@@ -2713,8 +2721,8 @@ class Figure(JObjectWrapper):
 
     def y_ticks_minor(
         self,
-        nminor: int = None,
-        visible: int = None,
+        nminor: int | None = None,
+        visible: int | None = None,
     ) -> Figure:
         """Updates the configuration for minor ticks of the y-Axis.
 
@@ -2728,7 +2736,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if nminor is not None:
             non_null_args.add("nminor")
@@ -2757,7 +2765,7 @@ class Figure(JObjectWrapper):
 
     def y_twin(
         self,
-        name: str = None,
+        name: str | None = None,
     ) -> Figure:
         """Creates a new Axes which shares the y-Axis with the current Axes. For example, this is used for creating plots with a common y-axis but two different x-axes.
 
@@ -2770,7 +2778,7 @@ class Figure(JObjectWrapper):
         Raises:
             DHError
         """
-        non_null_args = set()
+        non_null_args: set[str] = set()
 
         if name is not None:
             non_null_args.add("name")
