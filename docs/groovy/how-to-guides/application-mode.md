@@ -87,7 +87,7 @@ In this example, we have one method (`start`) that we pass to [`ApplicationConte
 Once you have these two files inside the `app.d` directory, configure the server to find them.
 
 > [!NOTE]
-> The Docker images already set `deephaven.console.type` (`python` for `server`, `groovy` for `server-slim`). Set the other runtime flags in `START_OPTS` in your `docker-compose.yml`. See [Runtime JVM flags](#runtime-jvm-flags).
+> The `server` image uses Python by default, and `server-slim` sets `-Ddeephaven.console.type=groovy` in its own `START_OPTS`. Setting `START_OPTS` in your `docker-compose.yml` replaces the image's value, so include `-Ddeephaven.console.type=groovy` there when you use `server-slim`. See [Runtime JVM flags](#runtime-jvm-flags).
 
 For this Groovy example, use the `server-slim` image by setting `image` for the Deephaven service in `docker-compose.yml` to `ghcr.io/deephaven/server-slim:<version>`. Or keep the `server` image and add `-Ddeephaven.console.type=groovy` to `START_OPTS`, as the YAML below shows.
 

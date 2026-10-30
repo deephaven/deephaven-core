@@ -58,8 +58,6 @@ This application file runs the script named in the `file_` line. For this exampl
 from deephaven.appmode import ApplicationState, get_app_state
 from deephaven import time_table, empty_table
 
-from typing import Callable
-
 
 def start(app: ApplicationState):
     size = 42
@@ -67,15 +65,10 @@ def start(app: ApplicationState):
     app["world"] = time_table("PT1S")
 
 
-def initialize(func: Callable[[ApplicationState], None]):
-    app = get_app_state()
-    func(app)
-
-
-initialize(start)
+start(get_app_state())
 ```
 
-In our "hello world" example, we get the application state through the [`get_app_state`](/core/pydoc/code/deephaven.appmode.html#deephaven.appmode.get_app_state) function. [`ApplicationState`](/core/pydoc/code/deephaven.appmode.html) collects the state of each application. The `initialize` function gets the application state with [`get_app_state`](/core/pydoc/code/deephaven.appmode.html#deephaven.appmode.get_app_state) and passes it to `start`, so the server runs `start` when it loads this file.
+In our "hello world" example, we get the application state through the [`get_app_state`](/core/pydoc/code/deephaven.appmode.html#deephaven.appmode.get_app_state) function. [`ApplicationState`](/core/pydoc/code/deephaven.appmode.html) collects the state of each application. The last line passes that state to `start`, so the server runs `start` when it loads this file.
 
 Setting a field on the provided [`ApplicationState`](/core/pydoc/code/deephaven.appmode.html) exports it to connecting clients, as described in the introduction.
 
@@ -92,7 +85,7 @@ In this example, we have one method (`start`) that runs when the container start
 Once you have these two files inside the `app.d` directory, configure the server to find them.
 
 > [!NOTE]
-> The Docker images already set `deephaven.console.type` (`python` for `server`, `groovy` for `server-slim`). Set the other runtime flags in `START_OPTS` in your `docker-compose.yml`. See [Runtime JVM flags](#runtime-jvm-flags).
+> The `server` image uses Python by default, so you don't need to set `deephaven.console.type`. Set runtime flags in `START_OPTS` in your `docker-compose.yml`. See [Runtime JVM flags](#runtime-jvm-flags).
 
 Before you start the containers, tell the server where to find the `app.d` folder, as described in [Runtime JVM flags](#runtime-jvm-flags). Add `-Ddeephaven.application.dir=/data/app.d` to `START_OPTS` in your `docker-compose.yml`:
 
@@ -136,8 +129,6 @@ The fields that `firstApp.py` sets through [`ApplicationState`](/core/pydoc/code
 ```python skip-test
 from deephaven.appmode import ApplicationState, get_app_state
 
-from typing import Callable
-
 
 def start(app: ApplicationState):
     global my_new_table
@@ -145,12 +136,7 @@ def start(app: ApplicationState):
     my_new_table = my_new_table.update(formulas=["A = i"])
 
 
-def initialize(func: Callable[[ApplicationState], None]):
-    app = get_app_state()
-    func(app)
-
-
-initialize(start)
+start(get_app_state())
 ```
 
 Declaring `my_new_table` with `global` makes it a module-level variable, which the script session adds to the [query scope](./query-scope.md). The other tables are only available in the **Panels** menu. If you want to perform queries on fields defined in Application Mode, you must explicitly assign them to the [query scope](./query-scope.md) inside the applications.
