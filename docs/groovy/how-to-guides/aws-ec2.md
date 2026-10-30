@@ -4,7 +4,7 @@ title: Use Deephaven with AWS EC2
 
 [Amazon Web Services](https://aws.amazon.com/) (AWS) is the world's most popular cloud computing service. It offers a wide variety of cloud solutions, and these tend to pair well with Deephaven Community Core.
 
-This guide will show you how to run Deephaven on an [AWS EC2](https://aws.amazon.com/ec2/) (Elastic Compute Cloud) instance, then connect to the user interface (UI) from your local machine and run queries.
+This guide shows you how to run Deephaven on an [AWS EC2](https://aws.amazon.com/ec2/) (Elastic Compute Cloud) instance, then connect to the user interface (UI) from your local machine and run queries.
 
 ## Create an AWS EC2 instance
 
