@@ -12,7 +12,7 @@ When launching Deephaven, you may want to initialize the server state before any
 
 A script application can also bind objects to [REPL variables](https://en.wikipedia.org/wiki/Read-eval-print_loop).
 
-Exported fields appear in the IDE under the **Panels** menu. Use this to share helper functions or full dashboards that you build as scripts.
+Exported fields appear in the IDE under the **Panels** menu. Use fields to share tables, plots, and other objects that clients can open. To make helper functions callable from queries, bind them to the query scope instead.
 
 Each application is described by an `*.app` file. The [Syntax](#syntax) section lists the keys in these files, for reference.
 
