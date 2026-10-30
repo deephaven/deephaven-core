@@ -2,25 +2,39 @@
 title: Use Numba in Deephaven queries
 ---
 
-This guide will show you how to use [Numba](https://numba.pydata.org/) in your Python queries in Deephaven.
+This guide shows how to use [Numba](https://numba.pydata.org/) in Deephaven Python queries. The first sections cover the Numba basics the examples rely on: JIT compilation, Numba's decorators, lazy and eager compilation, and how `@jit`, `@vectorize`, and `@guvectorize` differ. [Use Numba functions in query strings](#use-numba-functions-in-query-strings) covers how Deephaven calls Numba functions in [table operations](../conceptual/table-operations-overview.md) and the rules those functions must follow.
 
-[Numba](https://numba.pydata.org/) is an open-source just-in-time (JIT) compiler for Python. It can be used to translate portions of Python code into optimized machine code using [LLVM](https://llvm.org/). The use of [Numba](https://numba.pydata.org/) can make some Python code faster.
+Numba is an open-source just-in-time (JIT) compiler for Python. It uses [LLVM](https://llvm.org/) to translate portions of Python code into optimized machine code, which can make your queries faster and more responsive.
 
-> [!IMPORTANT]
-> Numba currently supports NumPy 2.4 and earlier, but Deephaven ships with NumPy 2.5. As a result, the Numba examples on this page do not run in a default Deephaven deployment. To run them, reconfigure Deephaven to use a NumPy version below 2.5 (for example, by building a custom Docker image that installs `numpy<2.5`).
+A [Python function](./python-functions.md) in a [query string](./query-string-overview.md) runs for every row Deephaven computes, including the new and modified rows [each time a real-time table updates](../conceptual/table-update-model.md). A faster function speeds up every update cycle.
+
+> [!NOTE]
+> Numba is an optional package, and whether you already have it depends on how you run Deephaven:
+>
+> - Since 41.3, the `deephaven-core` and `deephaven-server` pip packages don't install it.
+> - The `ghcr.io/deephaven/server` Docker images include it from version 43.0. The 41.3 through 42.x images don't.
+>
+> Each example on this page runs `pip install numba` first, which does nothing if Numba is already installed. For the fastest [query string](./query-string-overview.md) calls, install Numba before Deephaven starts, as [Use Numba functions in query strings](#use-numba-functions-in-query-strings) explains.
 
 ## What is just-in-time (JIT) compilation?
 
-JIT compiles code into optimized machine code at runtime. When using [Numba](https://numba.pydata.org/), you can specify which functions and blocks of code you want to be compiled at runtime. Compiling code blocks into optimized machine code adds some overhead, but subsequent function calls can be much faster. Thus, JIT can be powerful when used on functions that are complex, large, or will be used many times.
+JIT compiles code into optimized machine code at runtime. With Numba, you mark which functions to compile at runtime. Compiling code blocks into optimized machine code adds some overhead, but subsequent function calls can be much faster. JIT is most useful for functions that are complex, large, or called many times.
 
 > [!CAUTION]
-> JIT does not guarantee faster code. Sometimes, code cannot be optimized well by [Numba](https://numba.pydata.org/) and may actually run slower.
+> JIT does not guarantee faster code. Numba can't optimize some code well, and that code may run slower.
 
-## Usage
+## Numba decorators and compilation
 
-[Numba](https://numba.pydata.org/) uses [decorators](https://peps.python.org/pep-0318/) to specify which blocks of code to JIT compile. Common [Numba](https://numba.pydata.org/) decorators include [`@jit`](https://numba.readthedocs.io/en/stable/user/jit.html), [`@vectorize`](https://numba.readthedocs.io/en/stable/user/vectorize.html), and [`@guvectorize`](https://numba.readthedocs.io/en/stable/user/vectorize.html#the-guvectorize-decorator). See [Numba's documentation](https://numba.readthedocs.io/en/stable/index.html) for more details.
+Numba uses [decorators](https://peps.python.org/pep-0318/) to specify which functions to JIT compile. Common Numba decorators include [`@jit`](https://numba.readthedocs.io/en/stable/user/jit.html), [`@vectorize`](https://numba.readthedocs.io/en/stable/user/vectorize.html), and [`@guvectorize`](https://numba.readthedocs.io/en/stable/user/vectorize.html#the-guvectorize-decorator). See [Numba's documentation](https://numba.readthedocs.io/en/stable/index.html) for more details.
 
-In the following example, `@jit` and `@vectorize` are used to JIT compile `function_one` and `function_two`.
+`@jit` and `@vectorize` differ in what they're for:
+
+- `@jit` is a general-purpose decorator that can optimize a wide variety of functions.
+- `@vectorize` lets you write a function that takes scalars, and Numba applies it element-wise to arrays.
+
+[`@jit` vs `@vectorize`](#jit-vs-vectorize) shows this difference in action, and [`@vectorize` vs `@guvectorize`](#vectorize-vs-guvectorize) covers how `@guvectorize` differs from `@vectorize`.
+
+The following example uses `@jit` to compile `function_one` and `@vectorize` to compile `function_two`, then calls each one. `function_one` takes two scalars. `function_two` is written for scalars, and Numba applies it element-wise to the two arrays.
 
 ```python docker-config=numba
 import math
@@ -28,6 +42,7 @@ import os
 
 os.system("pip install numba")
 from numba import jit, vectorize, double, int64
+import numpy as np
 
 
 @jit
@@ -38,13 +53,24 @@ def function_one(a, b):
 @vectorize([double(double, int64)])
 def function_two(decimal_value, integer_value):
     return decimal_value * integer_value
+
+
+print(function_one(3.0, 4.0))
+print(function_two(np.array([1.5, 2.5]), np.array([2, 3])))
 ```
+
+> [!NOTE]
+> Since Numba 0.59, `@jit` compiles in [nopython mode](https://numba.readthedocs.io/en/stable/glossary.html#term-nopython-mode) by default. Nopython mode produces machine code that runs without the Python interpreter. Numba no longer falls back to the slower [object mode](https://numba.readthedocs.io/en/stable/glossary.html#term-object-mode) when it can't compile a function this way. Passing `nopython=True`, or using the equivalent `@njit` decorator, makes this explicit.
 
 ### Lazy compilation
 
-If the decorator is used without a function signature, Numba will infer the argument types at call time and generate optimized code based upon the inferred types. Numba will also compile separate specializations for different input types. The compilation is deferred to the first function call. This is called lazy compilation.
+A function signature lists the input and output data types a compiled function accepts, such as `double(double, int64)` in the earlier `function_two` example. When you use a Numba decorator such as `@jit` or `@vectorize` without a function signature, Numba waits until the first call to compile the function. This is called lazy compilation. With lazy compilation, Numba:
 
-The example below uses lazy compilation on the function `func`. When the code is first run, the function is compiled to optimized machine code, which takes extra overhead and results in longer execution time. On the second function call, Python uses the already optimized machine code, which results in very fast execution.
+- Infers the argument types at call time.
+- Generates optimized code for those types.
+- Compiles a separate specialization for each new combination of input types.
+
+The example below uses lazy compilation on the function `func`. The first call is slow because Numba compiles `func` to machine code before running it. The second call reuses the compiled code and runs much faster.
 
 ```python docker-config=numba
 import numpy as np
@@ -64,13 +90,13 @@ def func(x, y):
 x = 0.01 * np.arange(100000)
 y = 0.02 * np.arange(100000)
 
-# This function call is slow.  It has to be compiled into optimized machine code.
+# This function call is slow. It has to be compiled into optimized machine code.
 start = time.time()
 z1 = func(x, y)
 end = time.time()
 print("First function call took " + str(end - start) + " seconds.")
 
-# This function call is fast.  It uses the previously JIT-compiled machine code.
+# This function call is fast. It uses the previously JIT-compiled machine code.
 start = time.time()
 z2 = func(x, y)
 end = time.time()
@@ -79,9 +105,9 @@ print("Second function call took " + str(end - start) + " seconds.")
 
 ### Eager compilation
 
-If the decorator is used with a function signature, Numba will compile the function when the function is defined. This is called eager compilation
+When you use a Numba decorator such as `@jit` or `@vectorize` with a function signature, Numba compiles the function when Python defines it. This is called eager compilation.
 
-The example below uses eager compilation on the function `func` by specifying one or more function signatures. These function signatures denote the allowed input and output data types to and from the function. With eager compilation, the code is compiled into optimized machine code at the function definition. When the code is run the first time, it has already been compiled into optimized machine code, so it's just as fast as the second function call. If the compiled function is used with a data type not specified in the function signature, an error will occur.
+The example below uses eager compilation on the function `func` by specifying two function signatures. Numba compiles `func` when Python defines it, so even the first call on each input type skips compilation and runs about as fast as the second call.
 
 ```python docker-config=numba
 import os
@@ -130,18 +156,13 @@ print("Add vectors of integers (second run): " + str(end - start) + " seconds.")
 ```
 
 > [!CAUTION]
-> Eager compilation creates functions that only support specific function signatures. If these functions are applied to arguments of mismatched types, an error will occur.
+> Eager compilation creates functions that only support specific function signatures. Arguments that Numba can't convert to one of the declared signatures raise an error.
 
-## @jit vs @vectorize
+## `@jit` vs `@vectorize`
 
-We've seen the `@jit` and `@vectorize` decorators used to optimize various functions. So far, they've been used without an explanation of how they differ. So, what is different about each decorator?
+The difference between [`@jit`](https://numba.readthedocs.io/en/stable/user/jit.html) and [`@vectorize`](https://numba.readthedocs.io/en/stable/user/vectorize.html) shows up when you pass arrays to a function compiled with a scalar signature. In the following example, both decorators compile the same addition function with the scalar signature `int64(int64, int64)`. The `@jit` call is wrapped in `try`/`except` so the example prints the error instead of stopping:
 
-- `@jit` is a general-purpose decorator that can optimize a wide variety of different functions.
-- `@vectorize` is a decorator meant to allow functions that operate on arrays to be written as if they operate on scalars.
-
-This can be visualized with a simple example:
-
-```python skip-test
+```python order=:log docker-config=numba
 import os
 
 os.system("pip install numba")
@@ -166,22 +187,28 @@ z1 = vectorize_add_arrays(x, y)
 
 print(z1)
 
-z2 = jit_add_arrays(x, y)
-
-print(z2)
+try:
+    z2 = jit_add_arrays(x, y)
+    print(z2)
+except TypeError as e:
+    print(e)
 ```
 
-![An error message in the Deephaven IDE log](../assets/how-to/Numba_jit_error.png)
+Functions created with `@vectorize` apply their scalar signature element-wise to arrays, so `vectorize_add_arrays` prints `[ 5  7  9 11 13]`. A `@jit` function compiled with a scalar signature such as `int64(int64, int64)` rejects array arguments, so the call to `jit_add_arrays` raises a `TypeError` because Numba has no compiled definition for array arguments. The lazily compiled `@jit` function in [Lazy compilation](#lazy-compilation) accepts arrays because Numba compiles it for the argument types it receives.
 
-Functions created using `@vectorize` can be applied to arrays. However, attempting to do the same with `@jit` results in an error.
+## `@vectorize` vs `@guvectorize`
 
-## @vectorize vs @guvectorize
+The [`@vectorize`](https://numba.readthedocs.io/en/stable/user/vectorize.html) decorator turns a Python function that takes scalar arguments into a [NumPy ufunc](https://numpy.org/doc/stable/reference/ufuncs.html). Without Numba, a fast ufunc has to be written in C.
 
-The `@vectorize` decorator allows Python functions taking scalar input arguments to be used as [NumPy ufuncs](https://numpy.org/doc/stable/reference/ufuncs.html). Creating these `ufuncs` with NumPy alone is a tricky process, but `@vectorize` makes it significantly easier. It allows users to write functions as if they're working on scalars, even though they're working on arrays.
+The [`@guvectorize`](https://numba.readthedocs.io/en/stable/user/vectorize.html#the-guvectorize-decorator) decorator creates [generalized ufuncs](https://numpy.org/doc/stable/reference/c-api/generalized-ufuncs.html), which differ from `@vectorize` functions in these ways:
 
-The `@guvectorize` decorator takes the concepts from `@vectorize` one step further. It allows users to write ufuncs that work on an arbitrary number of elements of input arrays, as well as take and return arrays of differing dimensions. Functions decorated with `@guvectorize` don't return their result value; rather, thay take it as an array input argument, which will be filled in by the function itself.
+- They can work on any number of elements of the input arrays at once.
+- They can take and return arrays of different dimensions.
+- They don't return their result. Instead, the function fills in an output array that it takes as its last parameter.
 
-The following example shows a `@guvectorize` decorated function.
+When you call a `@guvectorize` function, you can leave out the output argument, and NumPy creates the output array and returns it.
+
+The following example defines `g`, a `@guvectorize` function that adds a scalar to every element of an array, and calls it on `[0, 1, 2, 3, 4]` with the scalar `2`.
 
 ```python order=:log docker-config=numba
 import os
@@ -201,78 +228,34 @@ a = np.arange(5)
 print(g(a, 2))
 ```
 
-The `@guvectorize` decorator is much different than the previous `@vectorize` decorators used in this document.
+The `@guvectorize` decorator in this example takes two arguments:
 
-- The first part, `[(int64[:], int64, int64[:])]`, is largely similar. It tells Numba that the function takes three inputs: an array, a scalar, and another array, all of Numba's `int64` data type.
-- The second part (after the comma), tells NumPy that the function takes an n-element one dimensional array (`(n)`) and a scalar (`()`) as input, and returns an n-element one dimensional array (`(n)`).
+- The first, `[(int64[:], int64, int64[:])]`, is a list of type signatures like the one passed to `@vectorize`. It tells Numba that the function takes three parameters: a one-dimensional `int64` input array (`int64[:]`), an `int64` input scalar, and a one-dimensional `int64` output array.
+- The second, `"(n),()->(n)"`, is the layout signature. In it, `(n)` before the arrow is an n-element one-dimensional input array, `()` is a scalar input, and `(n)` after the arrow is the n-element one-dimensional output array, which the function fills in.
 
-## Examples
+## Use Numba functions in query strings
 
-### [NumPy](./use-numpy.md) matrix
+You call a Numba function in a [query string](./query-string-overview.md) by name, like any other [Python function](./python-functions.md). Deephaven checks whether Numba is installed when the server starts, and the result decides how Deephaven calls the function.
 
-The following example uses `@jit` to calculate the element-wise sum of a 250x250 matrix. This is a total of 62,500 additions.
+Deephaven treats a `@jit` function like a plain [Python function](./python-functions.md), whether or not Numba was installed at startup. Each call receives one row's values.
 
-Here, the `nopython=True` option is used. This option produces faster, primitive-optimized code that does not need the Python interpreter to execute. Without this flag, Numba will fall back to the slower [object mode](https://numba.readthedocs.io/en/stable/glossary.html#term-object-mode) in some circumstances.
+When Numba is installed at startup, these rules apply to `@vectorize` and `@guvectorize` functions in [query strings](./query-string-overview.md):
 
-This example looks at three cases:
+- For both decorators, Deephaven reads argument and return types from the function's Numba signature, so the function must have exactly one explicit signature. A function with no signature or with several signatures, such as the two-signature `func` in [Eager compilation](#eager-compilation), raises an error.
+- Deephaven passes a `@vectorize` function whole [chunks](../conceptual/vectorization-and-recipes.md#the-chunk-architecture) of column data as arrays, so one call computes many rows. A `@guvectorize` function still receives one row's values per call.
+- A `@vectorize` function must be the whole [formula](./formulas.md), as in `"C = f(A, B)"`. You can't use it inside a larger expression or cast its result.
+- Each argument to a `@vectorize` function must be a column, a variable, or a constant.
 
-- A regular function without JIT.
-- A JIT function that needs compilation.
-- A JIT function that is already compiled.
+If you install Numba with `pip` in a running session instead, Deephaven treats `@vectorize` and `@guvectorize` functions like plain [Python functions](./python-functions.md) until the server restarts. Each call receives one row's values, and Deephaven takes the column types from [type hints](./python-functions.md#type-hints), not from the Numba signature.
 
-The first time the JIT-enabled function is run on a matrix of integers, it's almost ten times slower than the standard function. However, after compilation, the JIT-enabled function is almost two hundred times faster!
+> [!IMPORTANT]
+> To install Numba before the server starts, use a `ghcr.io/deephaven/server` image at version 43.0 or later, or build a [custom Docker image](./install-and-use-python-packages.md#permanently-add-packages-to-a-custom-docker-image) that adds it. If you run Deephaven from the `deephaven-server` pip package, install Numba in the same Python environment before you start the server.
 
-```python docker-config=numba
-import os
+### Compare `@jit` and `@vectorize` in a query
 
-os.system("pip install numba")
-from numba import jit
-import numpy as np
-import time
+The following example compares the performance of [`@jit`](https://numba.readthedocs.io/en/stable/user/jit.html) and [`@vectorize`](https://numba.readthedocs.io/en/stable/user/vectorize.html) on Deephaven tables. It defines a column addition function and a cubic polynomial function, each in three versions: plain Python, `@jit`, and `@vectorize`. It then times how long each version takes to create a new column in a 625,000-row table.
 
-x = np.arange(62500).reshape(250, 250)
-y = 0.01 * x
-
-
-def calc(a):
-    matrix_sum = 0.0
-    for i in range(a.shape[0]):
-        for j in range(a.shape[1]):
-            matrix_sum += a[i, j]
-    return matrix_sum
-
-
-@jit(nopython=True)
-def jit_calc(a):
-    matrix_sum = 0.0
-    for i in range(a.shape[0]):
-        for j in range(a.shape[1]):
-            matrix_sum += a[i, j]
-    return matrix_sum
-
-
-# Time without JIT
-start = time.time()
-calc(x)
-end = time.time()
-print("Execution time (without JIT) = %s" % (end - start))
-
-# Time with compilation and JIT
-start = time.time()
-jit_calc(x)
-end = time.time()
-print("Execution time (JIT + compilation) = %s" % (end - start))
-
-# Time with JIT (already compiled)
-start = time.time()
-jit_calc(x)
-end = time.time()
-print("Execution time (JIT) = %s" % (end - start))
-```
-
-### Using Deephaven tables
-
-To show how the performance of `@jit` and `@vectorize` differ when applied to Deephaven tables, we will create identical functions that use these decorators. We then measure the performance of creating new columns in a 625,000 row table when using the functions.
+If this example's `pip install` is what installs Numba, the `@vectorize` functions run like plain [Python functions](./python-functions.md), and Deephaven takes their column types from the `-> int` and `-> float` [type hints](./python-functions.md#type-hints). To time chunked `@vectorize` calls, run the example on a server that had Numba installed at startup.
 
 ```python order=t,t2,t3,t4,t5,t6,t7 docker-config=numba
 from deephaven import empty_table
@@ -283,32 +266,32 @@ from numba import jit, vectorize, double, int64
 import time
 
 
-def add_columns(A, B) -> int:
-    return A + B
+def add_columns(a, b) -> int:
+    return a + b
 
 
 @jit([int64(int64, int64)])
-def jit_add_columns(A, B) -> int:
-    return A + B
+def jit_add_columns(a, b) -> int:
+    return a + b
 
 
 @vectorize([int64(int64, int64)])
-def vectorize_add_columns(A, B) -> int:
-    return A + B
+def vectorize_add_columns(a, b) -> int:
+    return a + b
 
 
-def cubic_func(C) -> double:
-    return 0.0025 * C**3 - 1.75 * C**2 - C + 10
+def cubic_func(c) -> float:
+    return 0.0025 * c**3 - 1.75 * c**2 - c + 10
 
 
 @jit([double(int64)])
-def jit_cubic_func(C) -> double:
-    return 0.0025 * C**3 - 1.75 * C**2 - C + 10
+def jit_cubic_func(c) -> float:
+    return 0.0025 * c**3 - 1.75 * c**2 - c + 10
 
 
 @vectorize([double(int64)])
-def vectorize_cubic_func(C) -> double:
-    return 0.0025 * C**3 - 1.75 * C**2 - C + 10
+def vectorize_cubic_func(c) -> float:
+    return 0.0025 * c**3 - 1.75 * c**2 - c + 10
 
 
 t = empty_table(625000).update(formulas=["A = ii", "B = ii"])
@@ -343,18 +326,20 @@ t6 = t2.update(formulas=["D = jit_cubic_func(C)"])
 end = time.time()
 print("cubic polynomial - Execution time (jit) = %s" % (end - start))
 
-# Time a cubic polynomial with vectorize
+# Time cubic polynomial with vectorize
 start = time.time()
 t7 = t2.update(formulas=["D = vectorize_cubic_func(C)"])
 end = time.time()
 print("cubic polynomial - Execution time (vectorize) = %s" % (end - start))
 ```
 
-When you use a `@vectorize` function in a query string, Deephaven passes it whole chunks of column data, so the compiled function handles many rows in each call. Deephaven calls a `@jit` function once per row, the same way it calls a plain Python function. How much either decorator speeds up a formula depends on the workload, so benchmark your own queries before you decide to use Numba.
+How much either decorator speeds up a [formula](./formulas.md) depends on the workload, so benchmark your own queries before you decide to use Numba.
 
-### @guvectorize
+### Use `@guvectorize` in a query
 
-The following example uses the `@guvectorize` decorator on the function `g`, which is used in an [`update`](../reference/table-operations/select/update.md) operation.
+The following example calls a `@guvectorize` function in an [`update`](../reference/table-operations/select/update.md) operation. The plain Python function `array_from_val` builds the array column `Y`, and `g`, the function from [`@vectorize` vs `@guvectorize`](#vectorize-vs-guvectorize), adds each row's `X` to it.
+
+This version of `g` also has the return type hint `-> npt.NDArray[np.int64]`. Deephaven uses that [type hint](./python-functions.md#type-hints) for the type of column `Z` when Numba was installed in the running session rather than at startup.
 
 ```python order=result,source docker-config=numba
 import os
@@ -380,8 +365,21 @@ source = empty_table(5).update(["X = i", "Y = array_from_val(X)"])
 result = source.update(["Z = g(Y, X)"])
 ```
 
+Each row of `Z` is the array in `Y` with that row's `X` added to every element.
+
 ## Related documentation
 
-- [How to select data in tables](./use-select-view-update.md)
+- [Table operations overview](../conceptual/table-operations-overview.md)
+- [The Python-Java boundary and how it affects query efficiency](../conceptual/python-java-boundary.md)
+- [Vectorization and the recipe paradigm](../conceptual/vectorization-and-recipes.md)
+- [The table update model](../conceptual/table-update-model.md)
+- [Select and create columns](./use-select-view-update.md)
+- [Python functions in query strings](./python-functions.md)
+- [Query string overview](./query-string-overview.md)
+- [Formulas](./formulas.md)
+- [Install and use Python packages](./install-and-use-python-packages.md)
+- [Use NumPy in Deephaven queries](./use-numpy.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`update`](../reference/table-operations/select/update.md)
+- [`empty_table` Pydoc](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.empty_table)
+- [`update` Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.update)

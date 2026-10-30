@@ -242,9 +242,9 @@ The examples and considerations throughout this document provide a framework for
 
 ## Related documentation
 
+- [What is Barrage?](./what-is-barrage.md)
 - [Core API design](./deephaven-core-api.md)
 - [Incremental update model](./table-update-model.md)
-- [What is Barrage?](./what-is-barrage.md)
 - [Aggregations](./aggregations.md)
 - [Python client quickstart](/core/docs/getting-started/pyclient-quickstart/)
 - [Java client](../how-to-guides/java-client.md)
