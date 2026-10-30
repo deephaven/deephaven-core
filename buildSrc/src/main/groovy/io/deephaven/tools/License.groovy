@@ -1,7 +1,10 @@
 package io.deephaven.tools
 
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.github.jengelman.gradle.plugins.shadow.transformers.MergeLicenseResourceTransformer
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
+import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.plugins.BasePluginExtension
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.SourceSet
@@ -18,6 +21,19 @@ class License {
     private static final String OUTPUT_NOTICE_NAME = 'NOTICE'
 
     private static final String LICENSE_SOURCE_SET_NAME = 'license'
+
+    private static final String COPYRIGHT_YEARS = '2016-2026'
+
+    // The jar tasks whose output is published. A shadow project publishes 'shadowJar' instead of 'jar', which receives
+    // the license through transformers instead, see configureShadowJar.
+    private static final List<String> PUBLISHED_JAR_TASK_NAMES = ['jar', 'sourcesJar', 'javadocJar']
+
+    // The license and notice files that a shadowed dependency may contain; the first six are the defaults of
+    // MergeLicenseResourceTransformer.
+    private static final List<String> DEPENDENCY_LICENSE_PATHS = [
+            'META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/LICENSE.md', 'LICENSE', 'LICENSE.txt', 'LICENSE.md']
+    private static final List<String> DEPENDENCY_NOTICE_PATHS = [
+            'META-INF/NOTICE', 'META-INF/NOTICE.txt', 'META-INF/NOTICE.md', 'NOTICE', 'NOTICE.txt', 'NOTICE.md']
 
     private static final String APACHE_LICENSE_SHA256 = 'cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30'
     static final String APACHE_LICENSE_NAME = 'The Apache License, Version 2.0'
@@ -76,7 +92,9 @@ class License {
     /**
      * Registers {@code this} license with the {@code project}.
      *
-     * <p>Currently, registration consists creating a "license" source set and adding it into the jar.
+     * <p>Currently, registration consists creating a "license" source set and adding it into the jar, sources jar and
+     * javadoc jar. When the project is shadowed, the shadow jar instead gets a license and notice that start with
+     * {@code this} license and notice and append those of the shadowed dependencies.
      *
      * @param project the project
      */
@@ -104,14 +122,50 @@ class License {
         def processLicenseResourcesTask = project.tasks.findByName(licenseSourceSet.processResourcesTaskName)
         processLicenseResourcesTask.dependsOn(syncLicenseData)
 
-        // Add the "license" source set into the jar.
-        // Implicitly ensures that the jar task depends on the processLicenseResources task.
-        Jar jar = project.tasks.findByName('jar') as Jar
-        jar.from(processLicenseResourcesTask.outputs)
+        // Add the "license" source set into the published jars.
+        // Implicitly ensures that the jar tasks depend on the processLicenseResources task.
+        project.tasks.withType(Jar).configureEach { Jar jar ->
+            if (jar.name in PUBLISHED_JAR_TASK_NAMES) {
+                jar.from(processLicenseResourcesTask.outputs)
+            }
+        }
+
+        project.plugins.withId('com.gradleup.shadow') {
+            project.tasks.named(ShadowJar.SHADOW_JAR_TASK_NAME, ShadowJar).configure { ShadowJar shadowJar ->
+                configureShadowJar(shadowJar, syncLicenseData, "${licenseSourceSetDir}/META-INF")
+            }
+        }
+    }
+
+    private void configureShadowJar(ShadowJar shadowJar, TaskProvider<Sync> syncLicenseData, String licenseDir) {
+        shadowJar.dependsOn(syncLicenseData)
+
+        // The transformers must see every dependency's copy, not just the first one.
+        shadowJar.filesMatching(DEPENDENCY_LICENSE_PATHS + DEPENDENCY_NOTICE_PATHS) { details ->
+            details.duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        }
+
+        shadowJar.transform(MergeLicenseResourceTransformer) { MergeLicenseResourceTransformer transformer ->
+            transformer.setIncludes(DEPENDENCY_LICENSE_PATHS)
+            transformer.artifactLicense.set(project.file("${licenseDir}/${OUTPUT_LICENSE_NAME}"))
+            transformer.artifactLicenseSpdxId.set(name == APACHE_LICENSE_NAME ? 'Apache-2.0' : '')
+        }
+
+        shadowJar.transform(MergeLicenseResourceTransformer) { MergeLicenseResourceTransformer transformer ->
+            transformer.setIncludes(DEPENDENCY_NOTICE_PATHS)
+            transformer.outputPath.set("META-INF/${OUTPUT_NOTICE_NAME}".toString())
+            transformer.artifactLicense.set(project.file("${licenseDir}/${OUTPUT_NOTICE_NAME}"))
+            transformer.artifactLicenseSpdxId.set('')
+            transformer.firstSeparator.set("""
+${'-' * 120}
+
+This artifact includes dependencies with the following notices:
+---------------------------------------------------------------
+""".toString())
+        }
     }
 
     TaskProvider<Sync> syncSourceSetLicense(String licenseSourceSetDir) {
-        def copyrightYear = '2021'
         def archivesBaseName = (project.extensions.findByType(BasePluginExtension)).archivesName.get()
         syncLicensesProvider(
                 project,
@@ -119,12 +173,11 @@ class License {
                 "${licenseSourceSetDir}/META-INF",
                 license.name,
                 notice.name,
-                copyrightYear,
+                COPYRIGHT_YEARS,
                 archivesBaseName)
     }
 
     TaskProvider<Sync> syncDockerLicense() {
-        def copyrightYear = '2021'
         def archivesBaseName = project.extensions.findByType(BasePluginExtension).archivesName.get()
         syncLicensesProvider(
                 project,
@@ -132,7 +185,7 @@ class License {
                 "${project.buildDir}/syncDockerLicense",
                 license.name,
                 notice.name,
-                copyrightYear,
+                COPYRIGHT_YEARS,
                 archivesBaseName)
     }
 
