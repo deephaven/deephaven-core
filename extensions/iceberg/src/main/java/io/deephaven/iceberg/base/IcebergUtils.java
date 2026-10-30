@@ -155,9 +155,13 @@ public final class IcebergUtils {
      * describes. Values are ordered alike for booleans, integers, dates, times and timestamps. Values are ordered
      * differently for strings, which Deephaven compares by UTF-16 code unit and the specification by code point, and
      * for floating point values, where Deephaven treats {@code -0.0} and {@code 0.0} as equal and orders every NaN
-     * last, but the specification orders {@code -0.0} before {@code 0.0} and a negative NaN first.
+     * last, but the specification orders {@code -0.0} before {@code 0.0} and a negative NaN first. Every other type is
+     * reported as ordered differently: Deephaven does not read the type, or the two orderings have not been compared.
      * <p>
      * A sort field's transform is not considered: the caller decides which transforms a sort by column values honors.
+     *
+     * @throws IllegalStateException if {@code icebergType} has a type ID this method does not know, which an Iceberg
+     *         upgrade can add
      */
     public static boolean deephavenOrderMatchesIceberg(
             @NotNull final SortDirection direction,
@@ -167,6 +171,8 @@ public final class IcebergUtils {
         if (!deephavenNullOrderMatchesIceberg(direction, nullOrder)) {
             return false;
         }
+        // Every type ID is listed and there is no default, so that a type ID an Iceberg upgrade adds reaches the throw
+        // below and gets a decision on whether Deephaven orders the new type as the specification does
         switch (icebergType.typeId()) {
             case BOOLEAN:
                 return dataType == Boolean.class;
@@ -181,8 +187,25 @@ public final class IcebergUtils {
             case TIMESTAMP:
             case TIMESTAMP_NANO:
                 return dataType == Instant.class || dataType == LocalDateTime.class;
-            default:
+            case FLOAT:
+            case DOUBLE:
+            case STRING:
+                // Deephaven orders these differently than the specification does, as the Javadoc describes
+                return false;
+            case DECIMAL:
+            case UUID:
+            case FIXED:
+            case BINARY:
+            case GEOMETRY:
+            case GEOGRAPHY:
+            case VARIANT:
+            case UNKNOWN:
+            case STRUCT:
+            case LIST:
+            case MAP:
+                // Deephaven does not read these types, or the two orderings have not been compared
                 return false;
         }
+        throw new IllegalStateException("Unexpected Iceberg type ID " + icebergType.typeId());
     }
 }

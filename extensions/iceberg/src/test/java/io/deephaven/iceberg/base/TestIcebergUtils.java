@@ -13,15 +13,18 @@ import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.UUID;
 
 import static io.deephaven.iceberg.base.IcebergUtils.deephavenNullOrderMatchesIceberg;
 import static io.deephaven.iceberg.base.IcebergUtils.deephavenOrderMatchesIceberg;
 import static io.deephaven.iceberg.base.IcebergUtils.verifyPartitioningColumns;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -138,7 +141,7 @@ public class TestIcebergUtils {
 
     /**
      * Deephaven orders booleans, integers, dates, times and timestamps as the Iceberg specification does, but not
-     * strings or floating point values, nor a column whose type does not belong with the field's.
+     * strings or floating point values, nor any other type, nor a column whose type does not belong with the field's.
      */
     @Test
     void testDeephavenOrderMatchesIceberg() {
@@ -158,10 +161,39 @@ public class TestIcebergUtils {
         assertOrderMatches(float.class, Types.FloatType.get(), false);
         assertOrderMatches(double.class, Types.DoubleType.get(), false);
 
+        assertOrderMatches(BigDecimal.class, Types.DecimalType.of(10, 2), false);
+        assertOrderMatches(UUID.class, Types.UUIDType.get(), false);
+        assertOrderMatches(byte[].class, Types.FixedType.ofLength(16), false);
+        assertOrderMatches(byte[].class, Types.BinaryType.get(), false);
+        assertOrderMatches(Object.class, Types.GeometryType.crs84(), false);
+        assertOrderMatches(Object.class, Types.GeographyType.crs84(), false);
+        assertOrderMatches(Object.class, Types.VariantType.get(), false);
+        assertOrderMatches(Object.class, Types.UnknownType.get(), false);
+        assertOrderMatches(Object.class,
+                Types.StructType.of(Types.NestedField.required(1, "f", Types.IntegerType.get())), false);
+        assertOrderMatches(int[].class, Types.ListType.ofRequired(2, Types.IntegerType.get()), false);
+        assertOrderMatches(Object.class,
+                Types.MapType.ofRequired(3, 4, Types.StringType.get(), Types.IntegerType.get()), false);
+
         assertOrderMatches(String.class, Types.IntegerType.get(), false);
         assertOrderMatches(double.class, Types.LongType.get(), false);
         assertOrderMatches(int.class, Types.BooleanType.get(), false);
         assertOrderMatches(Instant.class, Types.DateType.get(), false);
+    }
+
+    /**
+     * Every Iceberg type ID gets an answer, so that a type ID an Iceberg upgrade adds fails here rather than at a
+     * write.
+     */
+    @Test
+    void testDeephavenOrderMatchesIcebergAnswersEveryTypeId() {
+        for (final Type.TypeID typeId : Type.TypeID.values()) {
+            final Type icebergType = () -> typeId;
+            assertThatCode(() -> deephavenOrderMatchesIceberg(
+                    SortDirection.ASC, NullOrder.NULLS_FIRST, Object.class, icebergType))
+                    .as("%s", typeId)
+                    .doesNotThrowAnyException();
+        }
     }
 
     /**
