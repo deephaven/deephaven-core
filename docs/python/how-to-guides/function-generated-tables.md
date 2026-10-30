@@ -64,7 +64,7 @@ result_from_refresh_interval = function_generated_table(
 
 ### Execution context
 
-[Function-generated tables](../reference/table-operations/create/function_generated_table.md) require an [execution context](../conceptual/execution-context.md) to run in. Pass a context with the `exec_ctx` parameter. If you omit it, [`function_generated_table`](../reference/table-operations/create/function_generated_table.md) captures the execution context that is current when you call it, and uses that context for every invocation of the `table_generator`. In a console script, that is the [systemic execution context](../conceptual/execution-context.md#systemic-vs-separate-executioncontext). The examples on this page do not pass `exec_ctx`, so they use the systemic execution context.
+[Function-generated tables](../reference/table-operations/create/function_generated_table.md) require an [execution context](../conceptual/execution-context.md) to run in. Pass a context with the `exec_ctx` parameter. If you omit it, [`function_generated_table`](../reference/table-operations/create/function_generated_table.md) captures the execution context that is current when you call it, and uses that context for every invocation of the `table_generator`. In a console script, that is the [systemic execution context](../conceptual/execution-context.md). The examples on this page do not pass `exec_ctx`, so they use the systemic execution context.
 
 ## Example: pull data from a web API
 

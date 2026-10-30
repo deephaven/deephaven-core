@@ -1,6 +1,6 @@
 services:
-  # Build the server image with NumPy pinned below 2.5 so the Numba examples
-  # can import and run (Numba does not support NumPy 2.5).
+  # Build the server image with Numba installed so the Numba examples can
+  # import and run on server images that don't include it.
   server:
     image: deephaven-server-numba
     build:
