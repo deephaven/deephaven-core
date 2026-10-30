@@ -60,7 +60,7 @@ This formula is eligible for [parallel evaluation](../../conceptual/query-engine
 
 ### Refreshing `select` and `update`
 
-Each time a source table updates, an [update graph](../../conceptual/dag.md#update-graph-ug-cycles) evaluates the downstream effects. The default [Periodic Update Graph](../../conceptual/periodic-update-graph-configuration.md) evaluates them on its own thread pool. The following query keeps the first two rows of a [time table](../time-table.md) that adds a row once per second:
+Each time a source table updates, an [update graph](../../conceptual/dag.md#update-graph-cycles) evaluates the downstream effects. The default [Periodic Update Graph](../../conceptual/periodic-update-graph-configuration.md) evaluates them on its own thread pool. The following query keeps the first two rows of a [time table](../time-table.md) that adds a row once per second:
 
 ```groovy ticking-table order=null
 threadName = timeTable("PT1s").head(2).update("Thr = java.lang.Thread.currentThread().getName()")
@@ -114,7 +114,7 @@ recordThread = { int x ->
 recordedThreads = timeTable("PT1s").head(2).update("Row = i").where("(boolean)recordThread(Row)")
 ```
 
-Let's wait a few seconds for the table to tick, then print `usedThreads` in a separate command. Don't call `sleep` in the same command to wait. Console code runs under the [update graph](../../conceptual/dag.md#update-graph-ug-cycles)'s [exclusive lock](../../conceptual/query-engine/engine-locking.md), so the table can't tick until the command finishes.
+Let's wait a few seconds for the table to tick, then print `usedThreads` in a separate command. Don't call `sleep` in the same command to wait. Console code runs under the [update graph](../../conceptual/dag.md#update-graph-cycles)'s [exclusive lock](../../conceptual/query-engine/engine-locking.md), so the table can't tick until the command finishes.
 
 <!-- skip-test: the snapshotter runs this block right after the setup block, before the time table ticks, so it would render an empty set. -->
 
@@ -149,7 +149,7 @@ Which context the nested operations get depends on whether a user context is ope
 - If no user [`ExecutionContext`](../../conceptual/execution-context.md) is open, [`select`](../../reference/table-operations/select/select.md) and [`update`](../../reference/table-operations/select/update.md) use a newly created context.
 - If a user [`ExecutionContext`](../../conceptual/execution-context.md) is open, the engine uses that context for evaluation, and table operations inside the formula work.
 
-The newly created context uses the source table's [update graph](../../conceptual/dag.md#update-graph-ug-cycles), so nested operations still run on the thread pools described above. It has no [query scope](../query-scope.md), no query library, and no query compiler, so:
+The newly created context uses the source table's [update graph](../../conceptual/dag.md#update-graph-cycles), so nested operations still run on the thread pools described above. It has no [query scope](../query-scope.md), no query library, and no query compiler, so:
 
 - Formulas cannot see your variables or use your imported classes and functions.
 - Any table operation that compiles a formula or other code fails. This includes [`where`](../../reference/table-operations/filter/where.md), [`select`](../../reference/table-operations/select/select.md), and [`update`](../../reference/table-operations/select/update.md) with a formula, and some [exact and relational joins](../joins-exact-relational.md), [time-series joins](../joins-timeseries-range.md), [aggregations](../../conceptual/aggregations.md), and [sorts](../sort.md).

@@ -31,12 +31,13 @@ def other():
 
 
 # BigInteger's hashCode() for 0 to 3 is the value, and its toString() is the value in decimal. java.lang.Integer won't
-# do, because jpy returns it as a Python int.
+# do, because jpy returns it as a Python int. Each wrapper builds a new BigInteger from a string. BigInteger.valueOf
+# returns cached objects for small values, so the equality tests would compare one Java object with itself.
 class MyObject(JObjectWrapper):
     j_object_type = jpy.get_type("java.math.BigInteger")
 
     def __init__(self, value: int):
-        self._j_my_object = MyObject.j_object_type.valueOf(value)
+        self._j_my_object = MyObject.j_object_type(str(value))
 
     @property
     def j_object(self) -> jpy.JType:
@@ -47,7 +48,7 @@ class Other(JObjectWrapper):
     j_object_type = jpy.get_type("java.math.BigInteger")
 
     def __init__(self, value: int):
-        self._j_my_object = Other.j_object_type.valueOf(value)
+        self._j_my_object = Other.j_object_type(str(value))
 
     @property
     def j_object(self) -> jpy.JType:

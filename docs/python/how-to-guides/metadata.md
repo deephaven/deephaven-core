@@ -156,7 +156,7 @@ print(miami.size)
 
 ### `update_graph`
 
-To get the [UpdateGraph](../conceptual/dag.md#update-graph-ug-cycles) that schedules a table's updates, for example to pass to the locking functions in [`deephaven.update_graph`](/core/pydoc/code/deephaven.update_graph.html), use [`update_graph`](../reference/table-operations/metadata/update_graph.md):
+To get the [UpdateGraph](../conceptual/dag.md#update-graph-cycles) that schedules a table's updates, for example to pass to the locking functions in [`deephaven.update_graph`](/core/pydoc/code/deephaven.update_graph.html), use [`update_graph`](../reference/table-operations/metadata/update_graph.md):
 
 ```python test-set=1 order=:log
 print(miami.update_graph)
