@@ -222,7 +222,8 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
-        stageRuns(requireStagedRemoves(), values, destinations, startPositions, length, stateModified);
+        requireStagedRemoves();
+        stageRuns(stagedRemoves, values, destinations, startPositions, length, stateModified);
     }
 
     @Override
@@ -230,7 +231,8 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
-        stageRuns(requireStagedRemoves(), preValues, destinations, startPositions, length, stateModified);
+        requireStagedRemoves();
+        stageRuns(stagedRemoves, preValues, destinations, startPositions, length, stateModified);
         stageRuns(stagedAdds, postValues, destinations, startPositions, length, stateModified);
     }
 
@@ -243,23 +245,24 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
-        return stage(requireStagedRemoves(), (int) destination, values, 0, values.size());
+        requireStagedRemoves();
+        return stage(stagedRemoves, (int) destination, values, 0, values.size());
     }
 
     @Override
     public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues,
             Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
-        final boolean removed = stage(requireStagedRemoves(), (int) destination, preValues, 0, preValues.size());
+        requireStagedRemoves();
+        final boolean removed = stage(stagedRemoves, (int) destination, preValues, 0, preValues.size());
         final boolean added = stage(stagedAdds, (int) destination, postValues, 0, postValues.size());
         return removed || added;
     }
 
-    private ObjectArraySource<WritableChunk<Values>> requireStagedRemoves() {
+    private void requireStagedRemoves() {
         if (stagedRemoves == null) {
             throw new UnsupportedOperationException(
                     "Add-only percentile operators do not support removals or modifications");
         }
-        return stagedRemoves;
     }
 
     private void stageRuns(final ObjectArraySource<WritableChunk<Values>> staged, final Chunk<? extends Values> values,
