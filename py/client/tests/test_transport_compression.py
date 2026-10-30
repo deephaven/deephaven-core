@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 import unittest
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 from tests.testbase import BaseTestCase
 
@@ -15,7 +15,7 @@ class TransportCompressionTestCase(BaseTestCase):
 
     ROWS = 50_000
 
-    def _fetch(self, name: str, compression_types: Union[str, Sequence[str]]) -> None:
+    def _fetch(self, name: str, compression_types: str | Sequence[str]) -> None:
         self.session.run_script(
             "from deephaven import empty_table\n"
             f'{name} = empty_table({self.ROWS}).update(["I = i", "S = `sym` + (i % 32)"])'

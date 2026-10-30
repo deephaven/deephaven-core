@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-from typing import TYPE_CHECKING, Any, Literal, Optional, cast, get_args
+from typing import Any, Literal, TypeAlias, cast, get_args
 
 import jpy
 from deephaven.plugin.object_type import (
@@ -16,19 +16,18 @@ from deephaven.plugin.object_type import (
 from deephaven._wrapper import javaify, pythonify
 from deephaven.liveness_scope import liveness_scope
 
-if TYPE_CHECKING:
-    from typing_extensions import TypeAlias  # novermin  # noqa
-
 AuthorizationExportBehavior = Literal["transform", "manual", "unset"]
 _valid_authorization_export_behaviors = get_args(AuthorizationExportBehavior)
 
-JReference = cast(type, jpy.get_type("io.deephaven.plugin.type.Exporter$Reference"))  # type: TypeAlias
-JExporterAdapter = cast(
+JReference: TypeAlias = cast(
+    type, jpy.get_type("io.deephaven.plugin.type.Exporter$Reference")
+)
+JExporterAdapter: TypeAlias = cast(
     type, jpy.get_type("io.deephaven.server.plugin.python.ExporterAdapter")
-)  # type: TypeAlias
-JMessageStream = cast(
+)
+JMessageStream: TypeAlias = cast(
     type, jpy.get_type("io.deephaven.plugin.type.ObjectType$MessageStream")
-)  # type: TypeAlias
+)
 JPyObjectRefCountedNode = jpy.get_type(
     "io.deephaven.server.plugin.python.LivePyObjectWrapper"
 )
@@ -46,7 +45,7 @@ class ExporterAdapter(Exporter):
 
     def reference(  # type: ignore
         self, obj: Any, allow_unknown_type: bool = True, force_new: bool = True
-    ) -> Optional[Reference]:
+    ) -> Reference | None:
         # No liveness scope required here, this must be called from the same thread as the call from gRPC
         obj = javaify(obj)
         ref = self._exporter.reference(obj, allow_unknown_type, force_new)
@@ -102,7 +101,9 @@ class ObjectTypeAdapter:
         # yet declare it on ObjectType) continue to work with the default "unset" behavior. Once deephaven-plugin
         # adds authorization_export_behavior() to ObjectType with a default of "unset", the getattr fallback becomes
         # a no-op for up-to-date installs while remaining safe for older ones.
-        behavior = getattr(self._user_object_type, "authorization_export_behavior", "unset")
+        behavior = getattr(
+            self._user_object_type, "authorization_export_behavior", "unset"
+        )
         if callable(behavior):
             behavior = behavior()
         result = str(behavior).lower() if behavior is not None else "unset"

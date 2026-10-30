@@ -9,8 +9,15 @@ the data between table operations.
 from __future__ import annotations
 
 import contextlib
+from collections.abc import Callable
 from functools import wraps
-from typing import TYPE_CHECKING, Callable, Optional, Union
+from typing import TYPE_CHECKING, ParamSpec, TypeVar
+
+# isort: split
+# Unused here. _udf evaluates a decorated UDF's hand-quoted type hints in the decorator's module, so
+# removing these names makes a UDF wrapped by shared_locked, exclusive_locked or auto_locking_op fail
+# with NameError when its hints use Optional or Union.
+from typing import Optional, Union  # noqa: F401
 
 import jpy
 
@@ -21,6 +28,9 @@ if TYPE_CHECKING:
     from deephaven.table import PartitionedTable, PartitionedTableProxy, Table
 
 _JUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.UpdateGraph")
+
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
 
 auto_locking = True
 """Whether to automatically acquire the Update Graph (UG) shared lock for an unsafe operation on a refreshing 
@@ -44,7 +54,7 @@ class UpdateGraph(JObjectWrapper):
 
 
 def has_exclusive_lock(
-    ug: Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy],
+    ug: UpdateGraph | Table | PartitionedTable | PartitionedTableProxy,
 ) -> bool:
     """Checks if the current thread is holding the provided Update Graph's (UG) exclusive lock.
 
@@ -62,7 +72,7 @@ def has_exclusive_lock(
 
 
 def has_shared_lock(
-    ug: Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy],
+    ug: UpdateGraph | Table | PartitionedTable | PartitionedTableProxy,
 ) -> bool:
     """Checks if the current thread is holding the provided Update Graph's (UG) shared lock.
 
@@ -81,7 +91,7 @@ def has_shared_lock(
 
 @contextlib.contextmanager
 def exclusive_lock(
-    ug: Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy],
+    ug: UpdateGraph | Table | PartitionedTable | PartitionedTableProxy,
 ):
     """Context manager for running a block of code under an Update Graph (UG) exclusive lock.
 
@@ -103,7 +113,7 @@ def exclusive_lock(
 
 
 @contextlib.contextmanager
-def shared_lock(ug: Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy]):
+def shared_lock(ug: UpdateGraph | Table | PartitionedTable | PartitionedTableProxy):
     """Context manager for running a block of code under an Update Graph (UG) shared lock.
 
     Args:
@@ -125,8 +135,8 @@ def shared_lock(ug: Union[UpdateGraph, Table, PartitionedTable, PartitionedTable
 
 
 def exclusive_locked(
-    ug: Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy],
-) -> Callable:
+    ug: UpdateGraph | Table | PartitionedTable | PartitionedTableProxy,
+) -> Callable[[Callable[_P, _R]], Callable[_P, _R]]:
     """A decorator that ensures the decorated function be called under the Update Graph (UG) exclusive
     lock. The lock is released after the function returns regardless of what happens inside the function.
 
@@ -137,9 +147,9 @@ def exclusive_locked(
     if not isinstance(ug, UpdateGraph):
         ug = ug.update_graph
 
-    def inner_wrapper(f: Callable) -> Callable:
+    def inner_wrapper(f: Callable[_P, _R]) -> Callable[_P, _R]:
         @wraps(f)
-        def do_locked(*arg, **kwargs):
+        def do_locked(*arg: _P.args, **kwargs: _P.kwargs) -> _R:
             with exclusive_lock(ug):
                 return f(*arg, **kwargs)
 
@@ -149,8 +159,8 @@ def exclusive_locked(
 
 
 def shared_locked(
-    ug: Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy],
-) -> Callable:
+    ug: UpdateGraph | Table | PartitionedTable | PartitionedTableProxy,
+) -> Callable[[Callable[_P, _R]], Callable[_P, _R]]:
     """A decorator that ensures the decorated function be called under the Update Graph (UG) shared lock.
     The lock is released after the function returns regardless of what happens inside the function.
 
@@ -161,9 +171,9 @@ def shared_locked(
     if not isinstance(ug, UpdateGraph):
         ug = ug.update_graph
 
-    def inner_wrapper(f: Callable) -> Callable:
+    def inner_wrapper(f: Callable[_P, _R]) -> Callable[_P, _R]:
         @wraps(f)
-        def do_locked(*arg, **kwargs):
+        def do_locked(*arg: _P.args, **kwargs: _P.kwargs) -> _R:
             with shared_lock(ug):
                 return f(*arg, **kwargs)
 
@@ -183,7 +193,7 @@ def _is_arg_refreshing(arg) -> bool:
     return False
 
 
-def _first_refreshing_table(*args, **kwargs) -> Optional[Table]:
+def _first_refreshing_table(*args, **kwargs) -> Table | None:
     for arg in args:
         if _is_arg_refreshing(arg):
             return arg
@@ -195,7 +205,7 @@ def _first_refreshing_table(*args, **kwargs) -> Optional[Table]:
 
 
 def _serial_table_operations_safe(
-    ug: Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy],
+    ug: UpdateGraph | Table | PartitionedTable | PartitionedTableProxy,
 ) -> bool:
     """Checks if the current thread is marked as being able to safely call serial operations according to the provided
     Update Graph (UG) without locking.
@@ -215,7 +225,7 @@ def _serial_table_operations_safe(
 
 
 def _current_thread_processes_updates(
-    ug: Union[UpdateGraph, Table, PartitionedTable, PartitionedTableProxy],
+    ug: UpdateGraph | Table | PartitionedTable | PartitionedTableProxy,
 ) -> bool:
     """Checks if the current thread processes updates for the provided Update Graph (UG).
 
@@ -232,13 +242,13 @@ def _current_thread_processes_updates(
     return ug.j_update_graph.currentThreadProcessesUpdates()
 
 
-def auto_locking_op(f: Callable) -> Callable:
+def auto_locking_op(f: Callable[_P, _R]) -> Callable[_P, _R]:
     """A decorator for annotating unsafe Table operations. It ensures that the decorated function runs under the UG
     shared lock if ugp.auto_locking is True, the target table-like object or any table-like arguments are refreshing,
     the current thread doesn't own any UG lock, and the current thread is not part of the update graph."""
 
     @wraps(f)
-    def do_locked(*args, **kwargs):
+    def do_locked(*args: _P.args, **kwargs: _P.kwargs) -> _R:
         arg = _first_refreshing_table(*args, **kwargs)
         if (
             not arg

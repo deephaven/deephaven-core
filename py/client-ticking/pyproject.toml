@@ -15,7 +15,8 @@ module = [
 ignore_missing_imports = true
 
 [tool.ruff]
-lint.select = ["F", "I"]
+target-version = "py310"
+lint.select = ["F", "I", "UP006", "UP007", "UP035", "UP036", "UP045"]
 exclude = []
 
 [tool.ruff.format]

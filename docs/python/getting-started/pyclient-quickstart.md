@@ -9,7 +9,7 @@ Deephaven's Python client [`pydeephaven`](https://pypi.org/project/pydeephaven/)
 
 ## 1. Install `pydeephaven` and connect to a running server
 
-[`pydeephaven`](https://pypi.org/project/pydeephaven/) requires Python 3.9 or later. Install it with [pip](https://en.wikipedia.org/wiki/Pip_(package_manager)), ideally inside a Python [virtual environment](https://docs.python.org/3/library/venv.html) to isolate it and its dependencies from other Python installs:
+[`pydeephaven`](https://pypi.org/project/pydeephaven/) requires Python 3.10 or later. Install it with [pip](https://en.wikipedia.org/wiki/Pip_(package_manager)), ideally inside a Python [virtual environment](https://docs.python.org/3/library/venv.html) to isolate it and its dependencies from other Python installs:
 
 ```sh
 pip3 install pydeephaven

@@ -8,7 +8,7 @@ be used to create Deephaven tables backed by the backend service."""
 
 import traceback
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import jpy
 import pyarrow as pa
@@ -67,7 +67,7 @@ class TableDataServiceBackend(ABC):
     def table_schema(
         self,
         table_key: TableKey,
-        schema_cb: Callable[[pa.Schema, Optional[pa.Schema]], None],
+        schema_cb: Callable[[pa.Schema, pa.Schema | None], None],
         failure_cb: Callable[[Exception], None],
     ) -> None:
         """Provides the table data schema and the partitioning column schema for the table with the given table key via
@@ -92,7 +92,7 @@ class TableDataServiceBackend(ABC):
     def table_locations(
         self,
         table_key: TableKey,
-        location_cb: Callable[[TableLocationKey, Optional[pa.Table]], None],
+        location_cb: Callable[[TableLocationKey, pa.Table | None], None],
         success_cb: Callable[[], None],
         failure_cb: Callable[[Exception], None],
     ) -> None:
@@ -126,7 +126,7 @@ class TableDataServiceBackend(ABC):
     def subscribe_to_table_locations(
         self,
         table_key: TableKey,
-        location_cb: Callable[[TableLocationKey, Optional[pa.Table]], None],
+        location_cb: Callable[[TableLocationKey, pa.Table | None], None],
         success_cb: Callable[[], None],
         failure_cb: Callable[[Exception], None],
     ) -> Callable[[], None]:
@@ -274,9 +274,9 @@ class TableDataService(JObjectWrapper):
         self,
         backend: TableDataServiceBackend,
         *,
-        chunk_reader_factory: Optional[jpy.JType] = None,
-        stream_reader_options: Optional[jpy.JType] = None,
-        page_size: Optional[int] = None,
+        chunk_reader_factory: jpy.JType | None = None,
+        stream_reader_options: jpy.JType | None = None,
+        page_size: int | None = None,
     ):
         """Creates a new TableDataService with the given user-implemented backend service.
 
@@ -361,9 +361,7 @@ class TableDataService(JObjectWrapper):
             failure_cb (jpy.JType): the failure Java callback function with one argument: an exception stringyy
         """
 
-        def schema_cb_proxy(
-            dt_schema: pa.Schema, pc_schema: Optional[pa.Schema] = None
-        ):
+        def schema_cb_proxy(dt_schema: pa.Schema, pc_schema: pa.Schema | None = None):
             j_dt_schema_bb = jpy.byte_buffer(dt_schema.serialize())
             pc_schema = pc_schema if pc_schema is not None else pa.schema([])
             j_pc_schema_bb = jpy.byte_buffer(pc_schema.serialize())
@@ -397,7 +395,7 @@ class TableDataService(JObjectWrapper):
         """
 
         def location_cb_proxy(
-            pt_location_key: TableLocationKey, pt_table: Optional[pa.Table] = None
+            pt_location_key: TableLocationKey, pt_table: pa.Table | None = None
         ):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None or pt_table.to_batches() is None:
@@ -453,7 +451,7 @@ class TableDataService(JObjectWrapper):
         """
 
         def location_cb_proxy(
-            pt_location_key: TableLocationKey, pt_table: Optional[pa.Table] = None
+            pt_location_key: TableLocationKey, pt_table: pa.Table | None = None
         ):
             j_tbl_location_key = _JTableLocationKeyImpl(pt_location_key)
             if pt_table is None:

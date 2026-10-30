@@ -8,7 +8,7 @@ import os
 import pathlib
 import re
 import types
-from typing import Dict, Iterator, List, Optional
+from collections.abc import Iterator
 
 from deephaven_internal import jvm
 
@@ -23,7 +23,7 @@ def _compiler_directives() -> pathlib.Path:
     return _jars_path() / "dh-compiler-directives.txt"
 
 
-def _default_vmoptions(java_major_version: Optional[int] = None) -> pathlib.Path:
+def _default_vmoptions(java_major_version: int | None = None) -> pathlib.Path:
     """The default VM options file for a Java major version, falling back to the generic file when there is no
     version-specific one or the version is unknown."""
     if java_major_version is not None:
@@ -33,9 +33,7 @@ def _default_vmoptions(java_major_version: Optional[int] = None) -> pathlib.Path
     return _jars_path() / "dh-default.vmoptions"
 
 
-def _find_jvm_dll(
-    java_home: Optional[str], config: Optional[types.ModuleType]
-) -> Optional[str]:
+def _find_jvm_dll(java_home: str | None, config: types.ModuleType | None) -> str | None:
     """The JVM shared library that jpyutil.init_jvm would load for these arguments, found with its precedence: the
     configuration's jvm_dll (the given config, else jpyconfig or JPY_PY_CONFIG), then a search from java_home or the
     configuration's java_home. Returns None when it cannot be determined, leaving the search to jpyutil.init_jvm."""
@@ -53,7 +51,7 @@ def _find_jvm_dll(
         return None
 
 
-def _java_major_version(jvm_dll: Optional[str]) -> Optional[int]:
+def _java_major_version(jvm_dll: str | None) -> int | None:
     """Best-effort major version of the JDK that holds a JVM shared library, read from that JDK's release file.
     Returns None when it cannot be determined."""
     try:
@@ -103,13 +101,13 @@ DEFAULT_JVM_ARGS = _BASE_JVM_ARGS + [f"-XX:VMOptionsFile={_default_vmoptions()}"
 
 # Provide a util func to start the JVM, will use its own defaults if none are offered
 def start_jvm(
-    jvm_args: Optional[List[str]] = None,
-    default_jvm_args: Optional[List[str]] = None,
-    jvm_properties: Optional[Dict[str, str]] = None,
-    java_home: Optional[str] = None,
-    extra_classpath: Optional[List[str]] = None,
-    prop_file: Optional[str] = None,
-    config: Optional[types.ModuleType] = None,
+    jvm_args: list[str] | None = None,
+    default_jvm_args: list[str] | None = None,
+    jvm_properties: dict[str, str] | None = None,
+    java_home: str | None = None,
+    extra_classpath: list[str] | None = None,
+    prop_file: str | None = None,
+    config: types.ModuleType | None = None,
 ) -> None:
     """This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
     Script session.

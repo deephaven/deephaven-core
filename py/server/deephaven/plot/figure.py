@@ -12,7 +12,8 @@ from __future__ import annotations
 
 import numbers
 from enum import Enum
-from typing import Any, Dict, Union, Sequence, List, Callable, _GenericAlias
+from collections.abc import Callable, Sequence
+from typing import Any, get_origin
 
 import numpy
 import jpy
@@ -28,26 +29,26 @@ from deephaven.jcompat import j_function
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
 
-def _assert_type(name: str, obj: Any, types: List) -> None:
+def _assert_type(name: str, obj: Any, types: list) -> None:
     """Assert that the input object is of the proper type.
 
     Args:
         name (str): name of the variable being converted to Java
         obj (Any): object being converted to Java
-        types (List): acceptable types for the object
+        types (list): acceptable types for the object
 
     Raises:
         DHError
     """
 
-    types_no_subscript = tuple(set(t.__origin__ if isinstance(t, _GenericAlias) else t for t in types))
+    types_no_subscript = tuple(set(get_origin(t) or t for t in types))
 
     if not isinstance(obj, types_no_subscript):
-        supported = [t._name if isinstance(t, _GenericAlias) else t.__name__ for t in types_no_subscript]
+        supported = [t.__name__ for t in types_no_subscript]
         raise DHError(message=f"Improper input type: name={name} type={type(obj)} supported={supported}")
 
 
-def _no_convert_j(name: str, obj: Any, types: List) -> Any:
+def _no_convert_j(name: str, obj: Any, types: list) -> Any:
     if obj is None:
         return None
 
@@ -56,13 +57,13 @@ def _no_convert_j(name: str, obj: Any, types: List) -> Any:
     return obj
 
 
-def _convert_j(name: str, obj: Any, types: List) -> Any:
+def _convert_j(name: str, obj: Any, types: list) -> Any:
     """Convert the input object into a Java object that can be used for plotting.
 
     Args:
         name (str): name of the variable being converted to Java
         obj (Any): object being converted to Java
-        types (List): acceptable types for the object
+        types (list): acceptable types for the object
 
     Raises:
         DHError
@@ -127,16 +128,16 @@ class Figure(JObjectWrapper):
         self,
         name: str = None,
         axes: int = None,
-        remove_series: List[str] = None,
-        plot_style: Union[str, PlotStyle] = None,
+        remove_series: list[str] = None,
+        plot_style: str | PlotStyle = None,
     ) -> Figure:
         """Gets specific axes from the chart and updates the chart's axes's configurations.
 
         Args:
             name (str): name
             axes (int): identifier
-            remove_series (List[str]): names of series to remove
-            plot_style (Union[str, PlotStyle]): plot style
+            remove_series (list[str]): names of series to remove
+            plot_style (str | PlotStyle): plot style
 
         Returns:
             a new Figure
@@ -154,7 +155,7 @@ class Figure(JObjectWrapper):
             axes = _convert_j("axes", axes, [int])
         if remove_series is not None:
             non_null_args.add("remove_series")
-            remove_series = _convert_j("remove_series", remove_series, [List[str]])
+            remove_series = _convert_j("remove_series", remove_series, [list[str]])
         if plot_style is not None:
             non_null_args.add("plot_style")
             plot_style = _convert_j("plot_style", plot_style, [str, PlotStyle])
@@ -190,36 +191,36 @@ class Figure(JObjectWrapper):
     def axis(
         self,
         dim: int = None,
-        t: Union[Table, SelectableDataSet] = None,
+        t: Table | SelectableDataSet = None,
         label: str = None,
-        color: Union[str, int, Color] = None,
+        color: str | int | Color = None,
         font: Font = None,
         format: AxisFormat = None,
         format_pattern: str = None,
-        min: Union[str, float] = None,
-        max: Union[str, float] = None,
+        min: str | float = None,
+        max: str | float = None,
         invert: bool = None,
         log: bool = None,
         business_time: bool = None,
-        calendar: Union[str, BusinessCalendar] = None,
+        calendar: str | BusinessCalendar = None,
         transform: AxisTransform = None,
     ) -> Figure:
         """Gets a specific axis from a chart's axes and updates the axis's configurations.
 
         Args:
             dim (int): dimension of the axis
-            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            t (Table | SelectableDataSet): table or selectable data set (e.g. OneClick filterable table)
             label (str): label
-            color (Union[str, int, Color]): color
+            color (str | int | Color): color
             font (Font): font
             format (AxisFormat): label format
             format_pattern (str): label format pattern
-            min (Union[str, float]): minimum value to display
-            max (Union[str, float]): maximum value to display
+            min (str | float): minimum value to display
+            max (str | float): maximum value to display
             invert (bool): invert the axis.
             log (bool): log axis
             business_time (bool): business time axis using the default calendar
-            calendar (Union[str, BusinessCalendar]): business time axis using the specified calendar
+            calendar (str | BusinessCalendar): business time axis using the specified calendar
             transform (AxisTransform): axis transform.
 
         Returns:
@@ -368,8 +369,8 @@ class Figure(JObjectWrapper):
 
     def chart(
         self,
-        multi_series_key: List[Any] = None,
-        remove_series: List[str] = None,
+        multi_series_key: list[Any] = None,
+        remove_series: list[str] = None,
         index: int = None,
         row: int = None,
         col: int = None,
@@ -384,8 +385,8 @@ class Figure(JObjectWrapper):
         """Gets a chart from the figure's grid and updates a chart's configuration.
 
         Args:
-            multi_series_key (List[Any]): multi-series keys or a column name containing keys.
-            remove_series (List[str]): names of series to remove
+            multi_series_key (list[Any]): multi-series keys or a column name containing keys.
+            remove_series (list[str]): names of series to remove
             index (int): index from the Figure's grid. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1] [2, 3].
             row (int): row index in the Figure's grid. The row index starts at 0.
             col (int): column index in this Figure's grid. The column index starts at 0.
@@ -407,10 +408,10 @@ class Figure(JObjectWrapper):
 
         if multi_series_key is not None:
             non_null_args.add("multi_series_key")
-            multi_series_key = _convert_j("multi_series_key", multi_series_key, [List[Any]])
+            multi_series_key = _convert_j("multi_series_key", multi_series_key, [list[Any]])
         if remove_series is not None:
             non_null_args.add("remove_series")
-            remove_series = _convert_j("remove_series", remove_series, [List[str]])
+            remove_series = _convert_j("remove_series", remove_series, [list[str]])
         if index is not None:
             non_null_args.add("index")
             index = _convert_j("index", index, [int])
@@ -518,14 +519,14 @@ class Figure(JObjectWrapper):
 
     def chart_legend(
         self,
-        color: Union[str, int, Color] = None,
+        color: str | int | Color = None,
         font: Font = None,
         visible: int = None,
     ) -> Figure:
         """Updates a chart's legend's configuration.
 
         Args:
-            color (Union[str, int, Color]): color
+            color (str | int | Color): color
             font (Font): font
             visible (int): true to draw the design element; false otherwise.
 
@@ -572,25 +573,25 @@ class Figure(JObjectWrapper):
 
     def chart_title(
         self,
-        t: Union[Table, SelectableDataSet] = None,
+        t: Table | SelectableDataSet = None,
         title: str = None,
-        columns: List[str] = None,
+        columns: list[str] = None,
         format: str = None,
         max_rows: int = None,
         column_names_in_title: bool = None,
-        color: Union[str, int, Color] = None,
+        color: str | int | Color = None,
         font: Font = None,
     ) -> Figure:
         """Sets the title of the chart.
 
         Args:
-            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            t (Table | SelectableDataSet): table or selectable data set (e.g. OneClick filterable table)
             title (str): title
-            columns (List[str]): columns to include in the title
+            columns (list[str]): columns to include in the title
             format (str): a java.text.MessageFormat format string for formatting column values in the title
             max_rows (int): maximum number of row values to show in title
             column_names_in_title (bool): whether to show column names in title. If this is true, the title format will include the column name before the comma separated values; otherwise only the comma separated values will be included.
-            color (Union[str, int, Color]): color
+            color (str | int | Color): color
             font (Font): font
 
         Returns:
@@ -609,7 +610,7 @@ class Figure(JObjectWrapper):
             title = _convert_j("title", title, [str])
         if columns is not None:
             non_null_args.add("columns")
-            columns = _convert_j("columns", columns, [List[str]])
+            columns = _convert_j("columns", columns, [list[str]])
         if format is not None:
             non_null_args.add("format")
             format = _convert_j("format", format, [str])
@@ -671,7 +672,7 @@ class Figure(JObjectWrapper):
 
     def figure(
         self,
-        remove_series: List[str] = None,
+        remove_series: list[str] = None,
         remove_chart_index: int = None,
         remove_chart_row: int = None,
         remove_chart_col: int = None,
@@ -680,7 +681,7 @@ class Figure(JObjectWrapper):
         """Updates the figure's configuration.
 
         Args:
-            remove_series (List[str]): names of series to remove
+            remove_series (list[str]): names of series to remove
             remove_chart_index (int): index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1][2, 3].
             remove_chart_row (int): row index in this Figure's grid. The row index starts at 0.
             remove_chart_col (int): column index in this Figure's grid. The row index starts at 0.
@@ -696,7 +697,7 @@ class Figure(JObjectWrapper):
 
         if remove_series is not None:
             non_null_args.add("remove_series")
-            remove_series = _convert_j("remove_series", remove_series, [List[str]])
+            remove_series = _convert_j("remove_series", remove_series, [list[str]])
         if remove_chart_index is not None:
             non_null_args.add("remove_chart_index")
             remove_chart_index = _convert_j("remove_chart_index", remove_chart_index, [int])
@@ -741,14 +742,14 @@ class Figure(JObjectWrapper):
     def figure_title(
         self,
         title: str = None,
-        color: Union[str, int, Color] = None,
+        color: str | int | Color = None,
         font: Font = None,
     ) -> Figure:
         """Sets the title of the figure.
 
         Args:
             title (str): title
-            color (Union[str, int, Color]): color
+            color (str | int | Color): color
             font (Font): font
 
         Returns:
@@ -848,17 +849,17 @@ class Figure(JObjectWrapper):
 
     def line(
         self,
-        multi_series_key: List[Any] = None,
-        color: Union[str, int, Color] = None,
-        style: Union[str, LineStyle] = None,
+        multi_series_key: list[Any] = None,
+        color: str | int | Color = None,
+        style: str | LineStyle = None,
         visible: int = None,
     ) -> Figure:
         """Sets the line color, style, visibility.
 
         Args:
-            multi_series_key (List[Any]): multi-series keys or a column name containing keys.
-            color (Union[str, int, Color]): color
-            style (Union[str, LineStyle]): line style
+            multi_series_key (list[Any]): multi-series keys or a column name containing keys.
+            color (str | int | Color): color
+            style (str | LineStyle): line style
             visible (int): true to draw the design element; false otherwise.
 
         Returns:
@@ -871,7 +872,7 @@ class Figure(JObjectWrapper):
 
         if multi_series_key is not None:
             non_null_args.add("multi_series_key")
-            multi_series_key = _convert_j("multi_series_key", multi_series_key, [List[Any]])
+            multi_series_key = _convert_j("multi_series_key", multi_series_key, [list[Any]])
         if color is not None:
             non_null_args.add("color")
             color = _convert_j("color", color, [str, int, Color])
@@ -1008,23 +1009,23 @@ class Figure(JObjectWrapper):
     def plot_cat(
         self,
         series_name: str,
-        t: Union[Table, SelectableDataSet] = None,
-        category: Union[str, List[str], List[int], List[float]] = None,
-        y: Union[str, List[int], List[float], List[Instant]] = None,
-        y_low: Union[str, List[int], List[float], List[Instant]] = None,
-        y_high: Union[str, List[int], List[float], List[Instant]] = None,
-        by: List[str] = None,
+        t: Table | SelectableDataSet = None,
+        category: str | list[str] | list[int] | list[float] = None,
+        y: str | list[int] | list[float] | list[Instant] = None,
+        y_low: str | list[int] | list[float] | list[Instant] = None,
+        y_high: str | list[int] | list[float] | list[Instant] = None,
+        by: list[str] = None,
     ) -> Figure:
         """Creates a plot with a discrete, categorical axis. Categorical data must not have duplicates.
 
         Args:
             series_name (str): name of the data series
-            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            category (Union[str, List[str], List[int], List[float]]): discrete data or column name
-            y (Union[str, List[int], List[float], List[Instant]]): y-values or column name
-            y_low (Union[str, List[int], List[float], List[Instant]]): lower y error bar
-            y_high (Union[str, List[int], List[float], List[Instant]]): upper y error bar
-            by (List[str]): columns that hold grouping data
+            t (Table | SelectableDataSet): table or selectable data set (e.g. OneClick filterable table)
+            category (str | list[str] | list[int] | list[float]): discrete data or column name
+            y (str | list[int] | list[float] | list[Instant]): y-values or column name
+            y_low (str | list[int] | list[float] | list[Instant]): lower y error bar
+            y_high (str | list[int] | list[float] | list[Instant]): upper y error bar
+            by (list[str]): columns that hold grouping data
 
         Returns:
             a new Figure
@@ -1044,19 +1045,19 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if category is not None:
             non_null_args.add("category")
-            category = _convert_j("category", category, [str, List[str], List[int], List[float]])
+            category = _convert_j("category", category, [str, list[str], list[int], list[float]])
         if y is not None:
             non_null_args.add("y")
-            y = _convert_j("y", y, [str, List[int], List[float], List[Instant]])
+            y = _convert_j("y", y, [str, list[int], list[float], list[Instant]])
         if y_low is not None:
             non_null_args.add("y_low")
-            y_low = _convert_j("y_low", y_low, [str, List[int], List[float], List[Instant]])
+            y_low = _convert_j("y_low", y_low, [str, list[int], list[float], list[Instant]])
         if y_high is not None:
             non_null_args.add("y_high")
-            y_high = _convert_j("y_high", y_high, [str, List[int], List[float], List[Instant]])
+            y_high = _convert_j("y_high", y_high, [str, list[int], list[float], list[Instant]])
         if by is not None:
             non_null_args.add("by")
-            by = _no_convert_j("by", by, [List[str]])
+            by = _no_convert_j("by", by, [list[str]])
 
         if non_null_args == {"series_name", "category", "y"}:
             return Figure(j_figure=self.j_figure.catPlot(series_name, category, y))
@@ -1076,15 +1077,15 @@ class Figure(JObjectWrapper):
     def plot_cat_hist(
         self,
         series_name: str,
-        t: Union[Table, SelectableDataSet] = None,
-        category: Union[str, List[str], List[int], List[float]] = None,
+        t: Table | SelectableDataSet = None,
+        category: str | list[str] | list[int] | list[float] = None,
     ) -> Figure:
         """Creates a histogram with a discrete axis. Charts the frequency of each unique element in the input data.
 
         Args:
             series_name (str): name of the data series
-            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            category (Union[str, List[str], List[int], List[float]]): discrete data or column name
+            t (Table | SelectableDataSet): table or selectable data set (e.g. OneClick filterable table)
+            category (str | list[str] | list[int] | list[float]): discrete data or column name
 
         Returns:
             a new Figure
@@ -1104,7 +1105,7 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if category is not None:
             non_null_args.add("category")
-            category = _convert_j("category", category, [str, List[str], List[int], List[float]])
+            category = _convert_j("category", category, [str, list[str], list[int], list[float]])
 
         if non_null_args == {"series_name", "category"}:
             return Figure(j_figure=self.j_figure.catHistPlot(series_name, category))
@@ -1116,25 +1117,25 @@ class Figure(JObjectWrapper):
     def plot_ohlc(
         self,
         series_name: str,
-        t: Union[Table, SelectableDataSet] = None,
-        x: Union[str, List[Instant]] = None,
-        open: Union[str, List[int], List[float], List[Instant]] = None,
-        high: Union[str, List[int], List[float], List[Instant]] = None,
-        low: Union[str, List[int], List[float], List[Instant]] = None,
-        close: Union[str, List[int], List[float], List[Instant]] = None,
-        by: List[str] = None,
+        t: Table | SelectableDataSet = None,
+        x: str | list[Instant] = None,
+        open: str | list[int] | list[float] | list[Instant] = None,
+        high: str | list[int] | list[float] | list[Instant] = None,
+        low: str | list[int] | list[float] | list[Instant] = None,
+        close: str | list[int] | list[float] | list[Instant] = None,
+        by: list[str] = None,
     ) -> Figure:
         """Creates an open-high-low-close plot.
 
         Args:
             series_name (str): name of the data series
-            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            x (Union[str, List[Instant]]): x-values or column name
-            open (Union[str, List[int], List[float], List[Instant]]): bar open y-values.
-            high (Union[str, List[int], List[float], List[Instant]]): bar high y-values.
-            low (Union[str, List[int], List[float], List[Instant]]): bar low y-values.
-            close (Union[str, List[int], List[float], List[Instant]]): bar close y-values.
-            by (List[str]): columns that hold grouping data
+            t (Table | SelectableDataSet): table or selectable data set (e.g. OneClick filterable table)
+            x (str | list[Instant]): x-values or column name
+            open (str | list[int] | list[float] | list[Instant]): bar open y-values.
+            high (str | list[int] | list[float] | list[Instant]): bar high y-values.
+            low (str | list[int] | list[float] | list[Instant]): bar low y-values.
+            close (str | list[int] | list[float] | list[Instant]): bar close y-values.
+            by (list[str]): columns that hold grouping data
 
         Returns:
             a new Figure
@@ -1154,22 +1155,22 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if x is not None:
             non_null_args.add("x")
-            x = _convert_j("x", x, [str, List[Instant]])
+            x = _convert_j("x", x, [str, list[Instant]])
         if open is not None:
             non_null_args.add("open")
-            open = _convert_j("open", open, [str, List[int], List[float], List[Instant]])
+            open = _convert_j("open", open, [str, list[int], list[float], list[Instant]])
         if high is not None:
             non_null_args.add("high")
-            high = _convert_j("high", high, [str, List[int], List[float], List[Instant]])
+            high = _convert_j("high", high, [str, list[int], list[float], list[Instant]])
         if low is not None:
             non_null_args.add("low")
-            low = _convert_j("low", low, [str, List[int], List[float], List[Instant]])
+            low = _convert_j("low", low, [str, list[int], list[float], list[Instant]])
         if close is not None:
             non_null_args.add("close")
-            close = _convert_j("close", close, [str, List[int], List[float], List[Instant]])
+            close = _convert_j("close", close, [str, list[int], list[float], list[Instant]])
         if by is not None:
             non_null_args.add("by")
-            by = _no_convert_j("by", by, [List[str]])
+            by = _no_convert_j("by", by, [list[str]])
 
         if non_null_args == {"series_name", "x", "open", "high", "low", "close"}:
             return Figure(j_figure=self.j_figure.ohlcPlot(series_name, x, open, high, low, close))
@@ -1183,17 +1184,17 @@ class Figure(JObjectWrapper):
     def plot_pie(
         self,
         series_name: str,
-        t: Union[Table, SelectableDataSet] = None,
-        category: Union[str, List[str], List[int], List[float]] = None,
-        y: Union[str, List[int], List[float], List[Instant]] = None,
+        t: Table | SelectableDataSet = None,
+        category: str | list[str] | list[int] | list[float] = None,
+        y: str | list[int] | list[float] | list[Instant] = None,
     ) -> Figure:
         """Creates a pie plot. Categorical data must not have duplicates.
 
         Args:
             series_name (str): name of the data series
-            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            category (Union[str, List[str], List[int], List[float]]): discrete data or column name
-            y (Union[str, List[int], List[float], List[Instant]]): y-values or column name
+            t (Table | SelectableDataSet): table or selectable data set (e.g. OneClick filterable table)
+            category (str | list[str] | list[int] | list[float]): discrete data or column name
+            y (str | list[int] | list[float] | list[Instant]): y-values or column name
 
         Returns:
             a new Figure
@@ -1213,10 +1214,10 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if category is not None:
             non_null_args.add("category")
-            category = _convert_j("category", category, [str, List[str], List[int], List[float]])
+            category = _convert_j("category", category, [str, list[str], list[int], list[float]])
         if y is not None:
             non_null_args.add("y")
-            y = _convert_j("y", y, [str, List[int], List[float], List[Instant]])
+            y = _convert_j("y", y, [str, list[int], list[float], list[Instant]])
 
         if non_null_args == {"series_name", "category", "y"}:
             return Figure(j_figure=self.j_figure.piePlot(series_name, category, y))
@@ -1228,7 +1229,7 @@ class Figure(JObjectWrapper):
     def plot_treemap(
         self,
         series_name: str,
-        t: Union[Table, SelectableDataSet],
+        t: Table | SelectableDataSet,
         id: str,
         parent: str,
         value: str = None,
@@ -1240,7 +1241,7 @@ class Figure(JObjectWrapper):
 
         Args:
             series_name (str): name of the data series
-            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            t (Table | SelectableDataSet): table or selectable data set (e.g. OneClick filterable table)
             id (str): column name containing IDs
             parent (str): column name containing parent IDs
             value (str): column name containing values
@@ -1297,15 +1298,15 @@ class Figure(JObjectWrapper):
     def plot_xy(
         self,
         series_name: str,
-        t: Union[Table, SelectableDataSet] = None,
-        x: Union[str, List[int], List[float], List[Instant]] = None,
-        x_low: Union[str, List[int], List[float], List[Instant]] = None,
-        x_high: Union[str, List[int], List[float], List[Instant]] = None,
-        y: Union[str, List[int], List[float], List[Instant]] = None,
-        y_low: Union[str, List[int], List[float], List[Instant]] = None,
-        y_high: Union[str, List[int], List[float], List[Instant]] = None,
+        t: Table | SelectableDataSet = None,
+        x: str | list[int] | list[float] | list[Instant] = None,
+        x_low: str | list[int] | list[float] | list[Instant] = None,
+        x_high: str | list[int] | list[float] | list[Instant] = None,
+        y: str | list[int] | list[float] | list[Instant] = None,
+        y_low: str | list[int] | list[float] | list[Instant] = None,
+        y_high: str | list[int] | list[float] | list[Instant] = None,
         function: Callable = None,
-        by: List[str] = None,
+        by: list[str] = None,
         x_time_axis: bool = None,
         y_time_axis: bool = None,
     ) -> Figure:
@@ -1313,15 +1314,15 @@ class Figure(JObjectWrapper):
 
         Args:
             series_name (str): name of the data series
-            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            x (Union[str, List[int], List[float], List[Instant]]): x-values or column name
-            x_low (Union[str, List[int], List[float], List[Instant]]): lower x error bar
-            x_high (Union[str, List[int], List[float], List[Instant]]): upper x error bar
-            y (Union[str, List[int], List[float], List[Instant]]): y-values or column name
-            y_low (Union[str, List[int], List[float], List[Instant]]): lower y error bar
-            y_high (Union[str, List[int], List[float], List[Instant]]): upper y error bar
+            t (Table | SelectableDataSet): table or selectable data set (e.g. OneClick filterable table)
+            x (str | list[int] | list[float] | list[Instant]): x-values or column name
+            x_low (str | list[int] | list[float] | list[Instant]): lower x error bar
+            x_high (str | list[int] | list[float] | list[Instant]): upper x error bar
+            y (str | list[int] | list[float] | list[Instant]): y-values or column name
+            y_low (str | list[int] | list[float] | list[Instant]): lower y error bar
+            y_high (str | list[int] | list[float] | list[Instant]): upper y error bar
             function (Callable): function
-            by (List[str]): columns that hold grouping data
+            by (list[str]): columns that hold grouping data
             x_time_axis (bool): whether to treat the x-values as times
             y_time_axis (bool): whether to treat the y-values as times
 
@@ -1343,28 +1344,28 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if x is not None:
             non_null_args.add("x")
-            x = _convert_j("x", x, [str, List[int], List[float], List[Instant]])
+            x = _convert_j("x", x, [str, list[int], list[float], list[Instant]])
         if x_low is not None:
             non_null_args.add("x_low")
-            x_low = _convert_j("x_low", x_low, [str, List[int], List[float], List[Instant]])
+            x_low = _convert_j("x_low", x_low, [str, list[int], list[float], list[Instant]])
         if x_high is not None:
             non_null_args.add("x_high")
-            x_high = _convert_j("x_high", x_high, [str, List[int], List[float], List[Instant]])
+            x_high = _convert_j("x_high", x_high, [str, list[int], list[float], list[Instant]])
         if y is not None:
             non_null_args.add("y")
-            y = _convert_j("y", y, [str, List[int], List[float], List[Instant]])
+            y = _convert_j("y", y, [str, list[int], list[float], list[Instant]])
         if y_low is not None:
             non_null_args.add("y_low")
-            y_low = _convert_j("y_low", y_low, [str, List[int], List[float], List[Instant]])
+            y_low = _convert_j("y_low", y_low, [str, list[int], list[float], list[Instant]])
         if y_high is not None:
             non_null_args.add("y_high")
-            y_high = _convert_j("y_high", y_high, [str, List[int], List[float], List[Instant]])
+            y_high = _convert_j("y_high", y_high, [str, list[int], list[float], list[Instant]])
         if function is not None:
             non_null_args.add("function")
             function = _convert_j("function", function, [Callable])
         if by is not None:
             non_null_args.add("by")
-            by = _no_convert_j("by", by, [List[str]])
+            by = _no_convert_j("by", by, [list[str]])
         if x_time_axis is not None:
             non_null_args.add("x_time_axis")
             x_time_axis = _convert_j("x_time_axis", x_time_axis, [bool])
@@ -1406,8 +1407,8 @@ class Figure(JObjectWrapper):
     def plot_xy_hist(
         self,
         series_name: str,
-        t: Union[Table, SelectableDataSet] = None,
-        x: Union[str, List[int], List[float], List[Instant]] = None,
+        t: Table | SelectableDataSet = None,
+        x: str | list[int] | list[float] | list[Instant] = None,
         xmin: float = None,
         xmax: float = None,
         nbins: int = None,
@@ -1416,8 +1417,8 @@ class Figure(JObjectWrapper):
 
         Args:
             series_name (str): name of the data series
-            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            x (Union[str, List[int], List[float], List[Instant]]): x-values or column name
+            t (Table | SelectableDataSet): table or selectable data set (e.g. OneClick filterable table)
+            x (str | list[int] | list[float] | list[Instant]): x-values or column name
             xmin (float): minimum x value to display
             xmax (float): maximum x value to display
             nbins (int): number of bins
@@ -1440,7 +1441,7 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if x is not None:
             non_null_args.add("x")
-            x = _convert_j("x", x, [str, List[int], List[float], List[Instant]])
+            x = _convert_j("x", x, [str, list[int], list[float], list[Instant]])
         if xmin is not None:
             non_null_args.add("xmin")
             xmin = _convert_j("xmin", xmin, [float])
@@ -1466,26 +1467,26 @@ class Figure(JObjectWrapper):
 
     def point(
         self,
-        t: Union[Table, SelectableDataSet] = None,
-        category: Union[str, List[str], List[int], List[float]] = None,
-        multi_series_key: List[Any] = None,
-        color: Union[str, int, Color, List[str], List[int], List[Color], Callable, Dict[Any,str], Dict[Any,int], Dict[Any,Color]] = None,
-        label: Union[str, List[str], Callable, Dict[Any,str]] = None,
-        shape: Union[str, Shape, List[str], List[Shape], Callable, Dict[Any,str], Dict[Any,Shape]] = None,
-        size: Union[int, float, List[int], List[float], Callable, Dict[Any,int], Dict[Any,float]] = None,
+        t: Table | SelectableDataSet = None,
+        category: str | list[str] | list[int] | list[float] = None,
+        multi_series_key: list[Any] = None,
+        color: str | int | Color | list[str] | list[int] | list[Color] | Callable | dict[Any,str] | dict[Any,int] | dict[Any,Color] = None,
+        label: str | list[str] | Callable | dict[Any,str] = None,
+        shape: str | Shape | list[str] | list[Shape] | Callable | dict[Any,str] | dict[Any,Shape] = None,
+        size: int | float | list[int] | list[float] | Callable | dict[Any,int] | dict[Any,float] = None,
         label_format: str = None,
         visible: int = None,
     ) -> Figure:
         """Sets the point color, label, size, visibility, etc.
 
         Args:
-            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            category (Union[str, List[str], List[int], List[float]]): discrete data or column name
-            multi_series_key (List[Any]): multi-series keys or a column name containing keys.
-            color (Union[str, int, Color, List[str], List[int], List[Color], Callable, Dict[Any,str], Dict[Any,int], Dict[Any,Color]]): colors or a column name containing colors
-            label (Union[str, List[str], Callable, Dict[Any,str]]): labels or a column name containing labels
-            shape (Union[str, Shape, List[str], List[Shape], Callable, Dict[Any,str], Dict[Any,Shape]]): shapes or a column name containing shapes
-            size (Union[int, float, List[int], List[float], Callable, Dict[Any,int], Dict[Any,float]]): sizes or a column name containing sizes
+            t (Table | SelectableDataSet): table or selectable data set (e.g. OneClick filterable table)
+            category (str | list[str] | list[int] | list[float]): discrete data or column name
+            multi_series_key (list[Any]): multi-series keys or a column name containing keys.
+            color (str | int | Color | list[str] | list[int] | list[Color] | Callable | dict[Any,str] | dict[Any,int] | dict[Any,Color]): colors or a column name containing colors
+            label (str | list[str] | Callable | dict[Any,str]): labels or a column name containing labels
+            shape (str | Shape | list[str] | list[Shape] | Callable | dict[Any,str] | dict[Any,Shape]): shapes or a column name containing shapes
+            size (int | float | list[int] | list[float] | Callable | dict[Any,int] | dict[Any,float]): sizes or a column name containing sizes
             label_format (str): point label format.
             visible (int): true to draw the design element; false otherwise.
 
@@ -1502,22 +1503,22 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if category is not None:
             non_null_args.add("category")
-            category = _convert_j("category", category, [str, List[str], List[int], List[float]])
+            category = _convert_j("category", category, [str, list[str], list[int], list[float]])
         if multi_series_key is not None:
             non_null_args.add("multi_series_key")
-            multi_series_key = _convert_j("multi_series_key", multi_series_key, [List[Any]])
+            multi_series_key = _convert_j("multi_series_key", multi_series_key, [list[Any]])
         if color is not None:
             non_null_args.add("color")
-            color = _convert_j("color", color, [str, int, Color, List[str], List[int], List[Color], Callable, Dict[Any,str], Dict[Any,int], Dict[Any,Color]])
+            color = _convert_j("color", color, [str, int, Color, list[str], list[int], list[Color], Callable, dict[Any,str], dict[Any,int], dict[Any,Color]])
         if label is not None:
             non_null_args.add("label")
-            label = _convert_j("label", label, [str, List[str], Callable, Dict[Any,str]])
+            label = _convert_j("label", label, [str, list[str], Callable, dict[Any,str]])
         if shape is not None:
             non_null_args.add("shape")
-            shape = _convert_j("shape", shape, [str, Shape, List[str], List[Shape], Callable, Dict[Any,str], Dict[Any,Shape]])
+            shape = _convert_j("shape", shape, [str, Shape, list[str], list[Shape], Callable, dict[Any,str], dict[Any,Shape]])
         if size is not None:
             non_null_args.add("size")
-            size = _convert_j("size", size, [int, float, List[int], List[float], Callable, Dict[Any,int], Dict[Any,float]])
+            size = _convert_j("size", size, [int, float, list[int], list[float], Callable, dict[Any,int], dict[Any,float]])
         if label_format is not None:
             non_null_args.add("label_format")
             label_format = _convert_j("label_format", label_format, [str])
@@ -1796,12 +1797,12 @@ class Figure(JObjectWrapper):
         name: str = None,
         axes: int = None,
         group: int = None,
-        multi_series_key: List[Any] = None,
-        color: Union[str, int, Color] = None,
+        multi_series_key: list[Any] = None,
+        color: str | int | Color = None,
         tool_tip_pattern: str = None,
         x_tool_tip_pattern: str = None,
         y_tool_tip_pattern: str = None,
-        error_bar_color: Union[str, int, Color] = None,
+        error_bar_color: str | int | Color = None,
         gradient_visible: bool = None,
         naming_function: Callable = None,
     ) -> Figure:
@@ -1811,12 +1812,12 @@ class Figure(JObjectWrapper):
             name (str): name
             axes (int): identifier
             group (int): group for the data series.
-            multi_series_key (List[Any]): multi-series keys or a column name containing keys.
-            color (Union[str, int, Color]): color
+            multi_series_key (list[Any]): multi-series keys or a column name containing keys.
+            color (str | int | Color): color
             tool_tip_pattern (str): x and y tool tip format pattern
             x_tool_tip_pattern (str): x tool tip format pattern
             y_tool_tip_pattern (str): y tool tip format pattern
-            error_bar_color (Union[str, int, Color]): error bar color.
+            error_bar_color (str | int | Color): error bar color.
             gradient_visible (bool): bar gradient visibility.
             naming_function (Callable): series naming function
 
@@ -1839,7 +1840,7 @@ class Figure(JObjectWrapper):
             group = _convert_j("group", group, [int])
         if multi_series_key is not None:
             non_null_args.add("multi_series_key")
-            multi_series_key = _convert_j("multi_series_key", multi_series_key, [List[Any]])
+            multi_series_key = _convert_j("multi_series_key", multi_series_key, [list[Any]])
         if color is not None:
             non_null_args.add("color")
             color = _convert_j("color", color, [str, int, Color])
@@ -1991,7 +1992,7 @@ class Figure(JObjectWrapper):
         self,
         font: Font = None,
         gap: float = None,
-        loc: List[float] = None,
+        loc: list[float] = None,
         angle: int = None,
         visible: int = None,
     ) -> Figure:
@@ -2000,7 +2001,7 @@ class Figure(JObjectWrapper):
         Args:
             font (Font): font
             gap (float): distance between ticks.
-            loc (List[float]): coordinates of the tick locations.
+            loc (list[float]): coordinates of the tick locations.
             angle (int): angle in degrees.
             visible (int): true to draw the design element; false otherwise.
 
@@ -2020,7 +2021,7 @@ class Figure(JObjectWrapper):
             gap = _convert_j("gap", gap, [float])
         if loc is not None:
             non_null_args.add("loc")
-            loc = _convert_j("loc", loc, [List[float]])
+            loc = _convert_j("loc", loc, [list[float]])
         if angle is not None:
             non_null_args.add("angle")
             angle = _convert_j("angle", angle, [int])
@@ -2144,35 +2145,35 @@ class Figure(JObjectWrapper):
 
     def x_axis(
         self,
-        t: Union[Table, SelectableDataSet] = None,
+        t: Table | SelectableDataSet = None,
         label: str = None,
-        color: Union[str, int, Color] = None,
+        color: str | int | Color = None,
         font: Font = None,
         format: AxisFormat = None,
         format_pattern: str = None,
-        min: Union[str, float] = None,
-        max: Union[str, float] = None,
+        min: str | float = None,
+        max: str | float = None,
         invert: bool = None,
         log: bool = None,
         business_time: bool = None,
-        calendar: Union[str, BusinessCalendar] = None,
+        calendar: str | BusinessCalendar = None,
         transform: AxisTransform = None,
     ) -> Figure:
         """Gets the x-Axis from a chart's axes and updates the x-Axis's configurations.
 
         Args:
-            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            t (Table | SelectableDataSet): table or selectable data set (e.g. OneClick filterable table)
             label (str): label
-            color (Union[str, int, Color]): color
+            color (str | int | Color): color
             font (Font): font
             format (AxisFormat): label format
             format_pattern (str): label format pattern
-            min (Union[str, float]): minimum value to display
-            max (Union[str, float]): maximum value to display
+            min (str | float): minimum value to display
+            max (str | float): maximum value to display
             invert (bool): invert the axis.
             log (bool): log axis
             business_time (bool): business time axis using the default calendar
-            calendar (Union[str, BusinessCalendar]): business time axis using the specified calendar
+            calendar (str | BusinessCalendar): business time axis using the specified calendar
             transform (AxisTransform): axis transform.
 
         Returns:
@@ -2320,7 +2321,7 @@ class Figure(JObjectWrapper):
         self,
         font: Font = None,
         gap: float = None,
-        loc: List[float] = None,
+        loc: list[float] = None,
         angle: int = None,
         visible: int = None,
     ) -> Figure:
@@ -2329,7 +2330,7 @@ class Figure(JObjectWrapper):
         Args:
             font (Font): font
             gap (float): distance between ticks.
-            loc (List[float]): coordinates of the tick locations.
+            loc (list[float]): coordinates of the tick locations.
             angle (int): angle in degrees.
             visible (int): true to draw the design element; false otherwise.
 
@@ -2349,7 +2350,7 @@ class Figure(JObjectWrapper):
             gap = _convert_j("gap", gap, [float])
         if loc is not None:
             non_null_args.add("loc")
-            loc = _convert_j("loc", loc, [List[float]])
+            loc = _convert_j("loc", loc, [list[float]])
         if angle is not None:
             non_null_args.add("angle")
             angle = _convert_j("angle", angle, [int])
@@ -2464,35 +2465,35 @@ class Figure(JObjectWrapper):
 
     def y_axis(
         self,
-        t: Union[Table, SelectableDataSet] = None,
+        t: Table | SelectableDataSet = None,
         label: str = None,
-        color: Union[str, int, Color] = None,
+        color: str | int | Color = None,
         font: Font = None,
         format: AxisFormat = None,
         format_pattern: str = None,
-        min: Union[str, float] = None,
-        max: Union[str, float] = None,
+        min: str | float = None,
+        max: str | float = None,
         invert: bool = None,
         log: bool = None,
         business_time: bool = None,
-        calendar: Union[str, BusinessCalendar] = None,
+        calendar: str | BusinessCalendar = None,
         transform: AxisTransform = None,
     ) -> Figure:
         """Gets the y-Axis from a chart's axes and updates the y-Axis's configurations.
 
         Args:
-            t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
+            t (Table | SelectableDataSet): table or selectable data set (e.g. OneClick filterable table)
             label (str): label
-            color (Union[str, int, Color]): color
+            color (str | int | Color): color
             font (Font): font
             format (AxisFormat): label format
             format_pattern (str): label format pattern
-            min (Union[str, float]): minimum value to display
-            max (Union[str, float]): maximum value to display
+            min (str | float): minimum value to display
+            max (str | float): maximum value to display
             invert (bool): invert the axis.
             log (bool): log axis
             business_time (bool): business time axis using the default calendar
-            calendar (Union[str, BusinessCalendar]): business time axis using the specified calendar
+            calendar (str | BusinessCalendar): business time axis using the specified calendar
             transform (AxisTransform): axis transform.
 
         Returns:
@@ -2640,7 +2641,7 @@ class Figure(JObjectWrapper):
         self,
         font: Font = None,
         gap: float = None,
-        loc: List[float] = None,
+        loc: list[float] = None,
         angle: int = None,
         visible: int = None,
     ) -> Figure:
@@ -2649,7 +2650,7 @@ class Figure(JObjectWrapper):
         Args:
             font (Font): font
             gap (float): distance between ticks.
-            loc (List[float]): coordinates of the tick locations.
+            loc (list[float]): coordinates of the tick locations.
             angle (int): angle in degrees.
             visible (int): true to draw the design element; false otherwise.
 
@@ -2669,7 +2670,7 @@ class Figure(JObjectWrapper):
             gap = _convert_j("gap", gap, [float])
         if loc is not None:
             non_null_args.add("loc")
-            loc = _convert_j("loc", loc, [List[float]])
+            loc = _convert_j("loc", loc, [list[float]])
         if angle is not None:
             non_null_args.add("angle")
             angle = _convert_j("angle", angle, [int])
