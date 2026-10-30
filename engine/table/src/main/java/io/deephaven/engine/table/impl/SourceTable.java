@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -357,7 +358,12 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 // Its attributes may already have been published and frozen.
                 final Collection<TableLocation> includedLocations = columnSourceManager.includedLocations();
                 if (includedLocations.size() == 1) {
-                    for (final SortColumn sc : includedLocations.iterator().next().getSortedColumns()) {
+                    // Only the first: getSortedColumns() describes a multi-column sort, which orders each later column
+                    // only within ties of the ones before it. Claiming the rest as independently sorted would make
+                    // AbstractRangeFilter binary-search unsorted data and return wrong rows.
+                    final List<SortColumn> sortedColumns = includedLocations.iterator().next().getSortedColumns();
+                    if (!sortedColumns.isEmpty()) {
+                        final SortColumn sc = sortedColumns.get(0);
                         final SortingOrder order = sc.order() == SortColumn.Order.ASCENDING
                                 ? SortingOrder.Ascending
                                 : SortingOrder.Descending;

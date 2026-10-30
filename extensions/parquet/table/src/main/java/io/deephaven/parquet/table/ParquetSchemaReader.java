@@ -184,7 +184,9 @@ public class ParquetSchemaReader {
                 }
             }
             currentColumnName.setValue(colName);
-            final Optional<ColumnTypeInfo> columnTypeInfo = Optional.ofNullable(nonDefaultTypeColumns.get(colName));
+            // The footer records type information by parquet column name, whatever name the column is read under
+            final Optional<ColumnTypeInfo> columnTypeInfo =
+                    Optional.ofNullable(nonDefaultTypeColumns.get(parquetColumnName));
 
             colDef.name = colName;
             colDef.dhSpecialType = columnTypeInfo.flatMap(ColumnTypeInfo::specialType).orElse(null);

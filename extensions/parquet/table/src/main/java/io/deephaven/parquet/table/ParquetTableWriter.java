@@ -63,7 +63,7 @@ public class ParquetTableWriter {
      */
     static class IndexWritingInfo {
         /**
-         * Names of the indexing key columns
+         * Deephaven names of the indexing key columns
          */
         final List<String> indexColumnNames;
         /**
@@ -88,6 +88,33 @@ public class ParquetTableWriter {
             this.parquetColumnNames = parquetColumnNames;
             this.dest = dest;
             this.destOutputStream = destOutputStream;
+        }
+    }
+
+    /**
+     * Returns the parquet column name to write a data index table's row set column, the Deephaven column
+     * {@code rowSetColumnName}, under. That is {@value #INDEX_ROW_SET_COLUMN_NAME}, unless a key column is written
+     * under that parquet name or the instructions map another Deephaven column to it; then it is the first of
+     * {@code dh_row_set_1}, {@code dh_row_set_2} and so on that is free. A reader finds a row set column written under
+     * another parquet name as the only column of the index file that is not a key column.
+     *
+     * @param writeInstructions The instructions the index table is written with
+     * @param rowSetColumnName The Deephaven name of the index table's row set column
+     * @param parquetKeyColumnNames The parquet names the index table's key columns are written under
+     */
+    private static String chooseRowSetParquetColumnName(
+            @NotNull final ParquetInstructions writeInstructions,
+            @NotNull final String rowSetColumnName,
+            @NotNull final String[] parquetKeyColumnNames) {
+        final Set<String> parquetKeyColumnNameSet = new HashSet<>(Arrays.asList(parquetKeyColumnNames));
+        for (int suffix = 0;; ++suffix) {
+            final String candidate =
+                    suffix == 0 ? INDEX_ROW_SET_COLUMN_NAME : INDEX_ROW_SET_COLUMN_NAME + "_" + suffix;
+            final String mappedFrom = writeInstructions.getColumnNameFromParquetColumnName(candidate);
+            if (!parquetKeyColumnNameSet.contains(candidate)
+                    && (mappedFrom == null || mappedFrom.equals(rowSetColumnName))) {
+                return candidate;
+            }
         }
     }
 
@@ -142,9 +169,13 @@ public class ParquetTableWriter {
                             .getOrCreateDataIndex(t, info.indexColumnNames)
                             .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
                     final Table indexTable = dataIndex.table().sort(info.indexColumnNames.toArray(new String[0]));
+                    // Like the rest of the footer metadata, sorting columns are recorded by parquet column name; the
+                    // index table is written with the same parquet column names as the file it indexes, since it is
+                    // written with the same instructions.
                     final TableInfo.Builder indexTableInfoBuilder = TableInfo.builder().addSortingColumns(
-                            info.indexColumnNames.stream()
-                                    .map(cn -> SortColumnInfo.of(cn, SortColumnInfo.SortDirection.Ascending))
+                            Arrays.stream(info.parquetColumnNames)
+                                    .map(parquetColumnName -> SortColumnInfo.of(parquetColumnName,
+                                            SortColumnInfo.SortDirection.Ascending))
                                     .toArray(SortColumnInfo[]::new));
 
                     tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
@@ -154,14 +185,16 @@ public class ParquetTableWriter {
                     final ParquetInstructions.Builder indexWIBuilder =
                             new ParquetInstructions.Builder(writeInstructions)
                                     .setRowGroupInfo(RowGroupInfo.singleGroup());
-                    final ParquetInstructions writeInstructionsForIndex;
-                    if (INDEX_ROW_SET_COLUMN_NAME.equals(dataIndex.rowSetColumnName())) {
-                        writeInstructionsForIndex = indexWIBuilder.build();
-                    } else {
-                        writeInstructionsForIndex = indexWIBuilder
-                                .addColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME, dataIndex.rowSetColumnName())
-                                .build();
+                    // The row set column is not a column of the indexed table, so no instruction for a column of the
+                    // indexed table with the same Deephaven name applies to the row set column.
+                    final String rowSetColumnName = dataIndex.rowSetColumnName();
+                    final String rowSetParquetColumnName =
+                            chooseRowSetParquetColumnName(writeInstructions, rowSetColumnName, info.parquetColumnNames);
+                    indexWIBuilder.removeColumnInstructions(rowSetColumnName);
+                    if (!rowSetParquetColumnName.equals(rowSetColumnName)) {
+                        indexWIBuilder.addColumnNameMapping(rowSetParquetColumnName, rowSetColumnName);
                     }
+                    final ParquetInstructions writeInstructionsForIndex = indexWIBuilder.build();
                     write(indexTable, indexTable.getDefinition(), writeInstructionsForIndex, info.dest,
                             info.destOutputStream, Collections.emptyMap(), indexTableInfoBuilder,
                             NullParquetMetadataFileWriter.INSTANCE, computedCache);
@@ -172,9 +205,17 @@ public class ParquetTableWriter {
         // SortedColumnsAttribute effectively only stores (zero or more) individual columns by which the table is
         // sorted, rather than ordered sets expressing multi-column sorts. Given that mismatch, we can only reflect
         // a single column sort in the metadata at this time.
+        // Like the rest of the footer metadata, it is recorded by parquet column name, which is what a reader sees in
+        // the file whatever renames it applies. Only a column that is written has a parquet column name; another column
+        // may be written under the parquet name an unwritten column maps to.
         final List<SortColumn> sortedColumns = SortedColumnsAttribute.getSortedColumns(t);
-        if (!sortedColumns.isEmpty()) {
-            tableInfoBuilder.addSortingColumns(SortColumnInfo.of(sortedColumns.get(0)));
+        if (!sortedColumns.isEmpty() && definition.getColumn(sortedColumns.get(0).column().name()) != null) {
+            final SortColumn sortedColumn = sortedColumns.get(0);
+            final String parquetColumnName =
+                    writeInstructions.getParquetColumnNameFromColumnNameOrDefault(sortedColumn.column().name());
+            tableInfoBuilder.addSortingColumns(SortColumnInfo.of(parquetColumnName, sortedColumn.isAscending()
+                    ? SortColumnInfo.SortDirection.Ascending
+                    : SortColumnInfo.SortDirection.Descending));
         }
         final long numBytes = write(t, definition, writeInstructions, dest, destOutputStream, incomingMeta,
                 tableInfoBuilder, metadataFileWriter, computedCache);

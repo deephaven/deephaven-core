@@ -171,6 +171,13 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         return columnChunkReader.usesDictionaryOnEveryPage();
     }
 
+    /**
+     * @see ColumnChunkReader#mayHaveDictionaryPage()
+     */
+    public boolean mayHaveDictionaryPage() {
+        return columnChunkReader.mayHaveDictionaryPage();
+    }
+
     @Override
     public void close() {}
 

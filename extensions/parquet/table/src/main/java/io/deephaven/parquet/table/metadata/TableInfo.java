@@ -48,11 +48,17 @@ public abstract class TableInfo {
         return OBJECT_MAPPER.readValue(tableInfoRaw, ImmutableTableInfo.class);
     }
 
+    /**
+     * @return The {@link #groupingColumns() grouping columns}, keyed by parquet column name
+     */
     public final Map<String, GroupingColumnInfo> groupingColumnMap() {
         return groupingColumns().stream()
                 .collect(Collectors.toMap(GroupingColumnInfo::columnName, Function.identity()));
     }
 
+    /**
+     * @return The {@link #columnTypes() column types}, keyed by parquet column name
+     */
     public final Map<String, ColumnTypeInfo> columnTypeMap() {
         return columnTypes().stream().collect(Collectors.toMap(ColumnTypeInfo::columnName, Function.identity()));
     }
