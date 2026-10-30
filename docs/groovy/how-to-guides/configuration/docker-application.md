@@ -60,7 +60,6 @@ To use the Z Garbage Collector, set `JAVA_OPTS` instead. Setting `JAVA_OPTS` rep
 - The G1 garbage collector
 - The pause-time target
 - String deduplication
-- `--enable-native-access=ALL-UNNAMED`
 - `-XX:GCLockerRetryAllocationCount=128`
 
 Include any of those settings you still want:
