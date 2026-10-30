@@ -240,6 +240,7 @@ source_meta = source.meta_table
 - [Null, NaN, and infinity values](./null-inf-nan.md)
 - [Arrays](./work-with-arrays.md)
 - [Casting](./casting.md)
+- [Use Numba in Deephaven queries](./use-numba.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`meta_table`](../reference/table-operations/metadata/meta_table.md)
 - [`update`](../reference/table-operations/select/update.md)

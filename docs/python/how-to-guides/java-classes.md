@@ -198,7 +198,7 @@ source_meta = source.meta_table
 - [Install and use Java packages](./install-and-use-java-packages.md)
 - [Built-in functions](./built-in-functions.md)
 - [Built-in constants](./built-in-constants.md)
-- [How to read Javadocs](./read-javadocs.md)
+- [Javadocs for Python users](./read-javadocs.md)
 - [Work with arrays](./work-with-arrays.md)
 - [Work with strings](./work-with-strings.md)
 - [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md)
