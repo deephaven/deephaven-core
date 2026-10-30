@@ -1,0 +1,1 @@
+{"file":"conceptual/liveness-scope-concept.md","objects":{"ticks":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"long"}],"rows":[[{"value":"2026-10-22 14:47:43.000"},{"value":"0"}]]}}}}

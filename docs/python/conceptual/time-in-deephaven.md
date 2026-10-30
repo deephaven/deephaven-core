@@ -13,7 +13,7 @@ This guide covers:
 - How to keep those conversions from slowing queries down.
 
 > [!NOTE]
-> This guide links to Javadocs throughout. If you're new to Javadocs, see [How to read Javadocs](../how-to-guides/read-javadocs.md).
+> This guide links to Javadocs throughout. If you're new to Javadocs, see [Javadocs for Python users](../how-to-guides/read-javadocs.md).
 
 ## Natively supported date-time types
 

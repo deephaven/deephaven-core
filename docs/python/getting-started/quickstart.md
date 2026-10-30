@@ -446,5 +446,5 @@ To go further with the topics in this guide, see:
 - [Connect to a Kafka stream](../how-to-guides/data-import-export/kafka-stream.md)
 - [Filter table data](../how-to-guides/use-filters.md)
 - [Plot real-time data](../how-to-guides/plotting/overview.md)
-- [Use pandas in Deephaven queries](../how-to-guides/use-pandas.md)
+- [Convert between Deephaven tables and pandas DataFrames](../how-to-guides/use-pandas.md)
 - [Navigate the Deephaven UI](../how-to-guides/user-interface/navigating-the-ui.md)

@@ -153,6 +153,7 @@ source_meta = source.meta_table
 - [Python classes and objects in query strings](./python-classes.md)
 - [PyObjects in tables](./pyobjects.md)
 - [The Python-Java boundary](../conceptual/python-java-boundary.md)
+- [Use Numba in Deephaven queries](./use-numba.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`meta_table`](../reference/table-operations/metadata/meta_table.md)
 - [`update`](../reference/table-operations/select/update.md)

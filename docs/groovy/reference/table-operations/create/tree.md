@@ -14,7 +14,7 @@ resultWithOrphans = TreeTable.promoteOrphans(source, idColumn, parentColumn).tre
 ## Parameters
 
 <ParamTable>
-<Param name="idColumn>" type="String">
+<Param name="idColumn" type="String">
 
 The name of the ID column.
 

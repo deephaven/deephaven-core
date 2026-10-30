@@ -8,6 +8,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.updategraph.OperationInitializer;
+import io.deephaven.engine.updategraph.UpdateGraphWaitGuard;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,10 +39,18 @@ public class OperationInitializerJobScheduler implements JobScheduler {
             final Consumer<Exception> onError) {
         outstandingJobs.incrementAndGet();
         final AtomicBoolean started = new AtomicBoolean();
+        // The submitting thread waits for its jobs. When it must not wait for other threads, a job that waited for an
+        // update graph, or for another thread that may itself be waiting for one, could deadlock with it.
+        final boolean waitsForbidden = UpdateGraphWaitGuard.currentThreadMustNotWaitForOtherThreads(
+                ExecutionContext.getContext().getUpdateGraph())
+                || (executionContext != null && UpdateGraphWaitGuard.currentThreadMustNotWaitForOtherThreads(
+                        executionContext.getUpdateGraph()));
         try {
             operationInitializer.submit(() -> {
                 started.set(true);
-                wrapRunnable(executionContext, runnable, description, onError);
+                try (final SafeCloseable ignored = waitsForbidden ? UpdateGraphWaitGuard.forbidWaits() : null) {
+                    wrapRunnable(executionContext, runnable, description, onError);
+                }
             });
         } catch (Throwable t) {
             // A job that never started must release its count here, or getAccumulatedPerformance would wait forever

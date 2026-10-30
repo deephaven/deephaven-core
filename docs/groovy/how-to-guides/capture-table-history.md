@@ -32,7 +32,7 @@ In the last form, the three booleans passed to [`SnapshotWhenOptions.of`](../ref
 
 ## Requirements and limitations
 
-With the [`HISTORY`](../reference/table-operations/snapshot/snapshot-when.md#snapshotwhenoptions) flag, the trigger table must be append-only. A time table meets this requirement unless you build it as a [blink table](../conceptual/table-types.md#specialization-3-blink) with [`timeTableBuilder`](../how-to-guides/time-table.md#timetable-as-a-blink-table) and `blinkTable(true)`. A blink table keeps only the rows added in the current [update graph cycle](../conceptual/periodic-update-graph-configuration.md). If the trigger table modifies or removes rows, or adds a row anywhere but after its last row, the snapshot raises an assertion error and the result table stops updating.
+With the [`HISTORY`](../reference/table-operations/snapshot/snapshot-when.md#snapshotwhenoptions) flag, the trigger table must be append-only. A time table meets this requirement unless you build it as a [blink table](../conceptual/table-types.md#specialization-3-blink) with [`timeTableBuilder`](../how-to-guides/time-table.md#create-a-blink-time-table) and `blinkTable(true)`. A blink table keeps only the rows added in the current [update graph cycle](../conceptual/periodic-update-graph-configuration.md). If the trigger table modifies or removes rows, or adds a row anywhere but after its last row, the snapshot raises an assertion error and the result table stops updating.
 
 You can't combine [`HISTORY`](../reference/table-operations/snapshot/snapshot-when.md#snapshotwhenoptions) with the [`INITIAL` or `INCREMENTAL`](../reference/table-operations/snapshot/snapshot-when.md#snapshotwhenoptions) flags.
 

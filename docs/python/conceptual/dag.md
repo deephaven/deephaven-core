@@ -58,9 +58,9 @@ t3 = None  # Remove reference to the join result
 # The natural_join result is removed once the JVM garbage collects it
 ```
 
-When you set `t3` to `None`, nothing references the result of the [`natural_join`](../reference/table-operations/join/natural-join.md), so that table becomes eligible for garbage collection. Once the JVM collects it, the table and its associated computations are removed from the DAG. However, `t1` and `t2` remain because they still have active references.
+When you set `t3` to `None`, nothing references the result of the [`natural_join`](../reference/table-operations/join/natural-join.md), so that table becomes eligible for garbage collection. Once the JVM collects it, the table and its associated computations are removed from the DAG. Until then, the table keeps updating. However, `t1` and `t2` remain because they still have active references.
 
-A [liveness scope](./liveness-scope-concept.md) lets you release tables as soon as you are done with them, without waiting for JVM garbage collection.
+To remove the table and its computations immediately, create them in a [liveness scope](./liveness-scope-concept.md) and release it.
 
 <Svg src='../assets/conceptual/dag-garbage-collection.svg' style={{height: 'auto', maxWidth: '900px'}} />
 
