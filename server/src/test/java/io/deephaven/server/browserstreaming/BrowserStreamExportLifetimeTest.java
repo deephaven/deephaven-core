@@ -254,6 +254,63 @@ public class BrowserStreamExportLifetimeTest {
     }
 
     /**
+     * On the emulated transport a client's last Next, the half-close in particular, is a separate call from its cancel
+     * of the open request, and nothing orders them. A Next that arrives after the cancel has released the stream's
+     * export is that client's message losing the race with its own cancel. A half-close carries nothing to deliver and
+     * completes quietly; a message is an undelivered body and the caller is told so. Neither is a failed dependency or
+     * an internal error.
+     */
+    @Test
+    public void testNextAfterCancelledOpenIsDroppedQuietly() {
+        final RecordingDelegate delegate = new RecordingDelegate();
+        final GrpcServiceOverrideBuilder.BrowserStreamMethod<String, String, Object> method =
+                new GrpcServiceOverrideBuilder.BrowserStreamMethod<>(log, BrowserStream.Mode.IN_ORDER, delegate,
+                        sessionService);
+        final int rpcTicketId = 13;
+        final Ticket rpcTicket = ExportTicketHelper.wrapExportIdInTicket(rpcTicketId);
+        final CapturingServerCallObserver<String> openCall = new CapturingServerCallObserver<>();
+
+        inStreamContext(new StreamData(rpcTicket, 0, false), () -> method.invokeOpen("first", openCall));
+        runPendingWork();
+        Assert.eq(delegate.received.size(), "delegate.received.size()", 1);
+        openCall.onCancelHandler.run();
+        Assert.eq(session.getExportIfExists(rpcTicketId).getState(), "stream export state",
+                ExportNotification.State.RELEASED);
+
+        // a message and then the half-close, both sent before the client cancelled but delivered after
+        final StatusRuntimeException undelivered = assertThrows(StatusRuntimeException.class,
+                () -> inStreamContext(new StreamData(rpcTicket, 1, false),
+                        () -> method.invokeNext("second", new NoopObserver<>())));
+        Assert.eq(undelivered.getStatus().getCode(), "undelivered.getStatus().getCode()", Status.Code.CANCELLED);
+        final RecordingObserver<Object> halfClose = new RecordingObserver<>();
+        inStreamContext(new StreamData(rpcTicket, 2, true), () -> method.invokeNext(null, halfClose));
+        runPendingWork();
+
+        Assert.eqNull(halfClose.error, "halfClose.error");
+        Assert.eqTrue(halfClose.completed, "halfClose.completed");
+        // nothing reached the ended stream
+        Assert.eq(delegate.received.size(), "delegate.received.size()", 1);
+    }
+
+    private static final class RecordingObserver<T> implements StreamObserver<T> {
+        Throwable error;
+        boolean completed;
+
+        @Override
+        public void onNext(final T value) {}
+
+        @Override
+        public void onError(final Throwable t) {
+            error = t;
+        }
+
+        @Override
+        public void onCompleted() {
+            completed = true;
+        }
+    }
+
+    /**
      * The export that retains a stream is published inside the stream's constructor, and a {@code Next} call that
      * arrived out of order may already be waiting on it: it runs as soon as the export's work does - in production on
      * another thread, before the constructor has returned, and before the open request itself is delivered. The export
