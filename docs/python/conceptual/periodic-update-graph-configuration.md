@@ -2,86 +2,60 @@
 title: Periodic Update Graph
 ---
 
-This guide discusses how to control the update frequency of your Deephaven tables, which allows you to fine-tune your application's latency.
+This guide discusses how to control the update frequency of your Deephaven tables, which allows you to fine-tune your application's latency. It also covers the thread pool that initializes new table operations.
 
-There are two underlying processes when updating streaming tables in Deephaven:
+> [!IMPORTANT]
+> Python builds that use the Global Interpreter Lock (GIL) cannot execute Python bytecode on multiple threads at once. In free-threaded builds, eligible Python functions in table operations can run in parallel. Built-in operations that run in Java can use these thread pools regardless of the Python threading model.
+>
+> The timing settings `targetCycleDurationMillis` and `minimumInterCycleSleep` control when refresh cycles start. They do not change how fast Python code runs.
 
-1. When new data is generated or acquired, the Periodic Update Graph (PUG) first manages the process of updating the source tables and the derived tables with the new data. At this point, data updates are available within the server process.
-2. Once a table has been updated during the PUG refresh cycle, the Viewport Update process sends the relevant data to the client, which then displays it in the user interface.
+There are two underlying processes when updating [streaming tables](./table-types.md) in Deephaven:
 
-![A diagram of the UGP Cycle](../assets/how-to/ugp-cycle.png)
+1. When new data is generated or acquired, the Periodic Update Graph (PUG) first manages the process of updating the source tables and the derived tables with the new data. Each pass of this process is a refresh cycle. A source table receives data from outside the server, or generates its rows inside the server. For example, `TimeTable` generates rows from the server clock. A derived table is computed from one or more other tables. At this point, data updates are available within the server process.
+2. Barrage batches table changes and sends them to subscribers on a separate [update interval](./what-is-barrage.md#update-intervals-and-batching), which can combine changes from multiple refresh cycles. A web UI client receives changes relevant to its viewport, the visible portion of the table. Other clients can subscribe to the full table without a viewport.
+
+This page covers the first process, which the PUG controls. [What is Barrage?](./what-is-barrage.md) explains how the server sends the results to clients.
+
+![Diagram: inside the Deephaven server, the Periodic Update Graph runs repeating refresh cycles. Barrage then sends the changed rows in each client viewport to the client, which shows them in the UI.](../assets/conceptual/ugp-cycle.svg)
 
 ## Periodic Update Graph
 
-The Periodic Update Graph is the update graph that ultimately controls how often data is refreshed on the server. At the beginning of a cycle, the PUG thread refreshes each source table. When a source table has new data, it enqueues a notification of the changes for all registered listeners. Most listeners in the Deephaven system generate derived tables and send further notifications to their children. Listeners also send table updates across the wire using Barrage, perform custom user logic, and perform other incremental processing tasks. Independent notifications are executed in parallel, beginning with the source tables. This allows Deephaven operations to be optimized for high-single-threaded performance but achieve concurrency by allowing multiple threads to execute distinct operations at once. By default, the property `PeriodicUpdateGraph.updateThreads` is set to `-1`, which uses all available processors for concurrent work. Users may set this property to cap the number of threads used for derived table updates. The refresh cycle is completed after all notifications are processed.
+The Periodic Update Graph is an [`UpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html), the component that controls how often data is refreshed on the server. At the beginning of a cycle, the PUG schedules a refresh of each source table. With more than one update thread, those refreshes can run on the update threads rather than only on the PUG thread. When a source table has new data, it enqueues a notification of the changes for all registered [listeners](../how-to-guides/table-listeners-python.md). Listeners then do the following:
+
+- Generate derived tables and send further notifications to their children.
+- Enqueue table updates for [Barrage](./what-is-barrage.md), which sends them to clients in a separate step.
+- Perform custom user logic and other incremental processing tasks.
+
+The PUG executes independent notifications in parallel, starting with the source tables:
+
+- Deephaven optimizes each operation for high single-threaded performance.
+- Distinct operations run on multiple threads at once.
+- The refresh cycle completes after all notifications are processed.
+
+Parallel execution of update notifications requires more than one update thread. Set the thread count with [`updateThreads`](#updatethreads).
 
 An illustration of the process is below:
 
-![A diagram of the UGP refresh cycle](../assets/conceptual/ugp-refresh-cycle.png)
+![Diagram of one refresh cycle. The cycle starts and refreshes the independent source tables A, B, and C. Table A feeds derived tables A2 and A3, B feeds B2, and C feeds C2 and C3. B2 and C2 feed BC. The cycle ends when all notifications are processed.](../assets/conceptual/ugp-refresh-cycle.svg)
 
-The Periodic Update Graph has five user-configurable properties:
+In the diagram above, the PUG refreshes the live source tables `A`, `B`, and `C` first. Their changes flow into the derived tables `A2`, `A3`, `B2`, `C2`, `C3`, and `BC`, which update after the sources.
 
-- `PeriodicUpdateGraph.updateThreads`
-- `PeriodicUpdateGraph.targetCycleDurationMillis`
-- `PeriodicUpdateGraph.minimumInterCycleSleep`
-- `PeriodicUpdateGraph.interCycleYield`
-- `PeriodicUpdateGraph.allowUnitTestMode`
+The Periodic Update Graph has four user-configurable properties, listed with their defaults in the [Configuration](#configuration) section.
 
-Each property is described below.
+In the normal case, the next refresh cycle starts at the later of two times. Scheduling and lock delays can shift these times:
 
-### `updateThreads`
+- `targetCycleDurationMillis` after the previous cycle started. The timer starts before the cycle acquires the exclusive lock, so lock waits can shift when the logical cycle starts.
+- `minimumInterCycleSleep` after the previous cycle completed.
 
-> [!IMPORTANT]
-> The content of this section applies to Deephaven operations that do not invoke Python code. Python's Global Interpreter Lock (GIL) severely limits concurrency during execution.
+The following timeline shows an example with a 900 ms cycle and a 200 ms minimum sleep:
 
-The `PeriodicUpdateGraph.updateThreads` property allows multithreading within the PUG refresh cycle. By default, this property is set to `-1`, which uses all available processors for concurrent work.
-
-For example, consider the workflow given in the [image above](#periodic-update-graph). In this example, data flows from the live source tables into derived tables -- tables `A`, `B`, and `C` first. Once all three tables have been updated, all derived tables are updated. This flow minimizes latency.
-
-To take advantage of multithreading, queries can be structured to use [`partition_by`](../how-to-guides/partitioned-tables.md), which partitions a table into constituent tables defined by key-value pairs similar to a map. This enables parallelism in the PUG cycle by allowing the map to be operated on as if it were a single table. Then, any table operation will be applied to each constituent across multiple threads. At the end, [`merge`](../reference/table-operations/partitioned-tables/partitioned-table-merge.md) can combine the constituent tables back into a single table.
-
-Care should be taken to ensure that parallelism is performed along natural boundaries in data and that data is structured to allow for efficient parallel processing. For a deeper dive into parallelism in Deephaven with partitioned tables, see [the how-to guide](../how-to-guides/partitioned-tables.md#parallelization).
-
-### `targetCycleDurationMillis`
-
-The `PeriodicUpdateGraph.targetCycleDurationMillis` sets the target time in milliseconds for one PUG refresh cycle to complete. The default value is 1000 milliseconds (one second), which aligns with the Deephaven UI's default refresh period.
-
-Changing this value changes the PUG's refresh cycle frequency. Setting this to 500 milliseconds means the PUG refresh cycle will run twice as often as the default.
-
-The value set for this property does not guarantee the actual time for the cycle to complete. If the actual refresh cycle completes faster than the value set, the next refresh cycle does _not_ start until the full cycle duration has elapsed. If the actual refresh cycle takes longer than the value set, the refresh cycle starts again immediately after the previous cycle completes, falling behind the target cycle duration.
-
-A variety of conditions can cause the actual refresh cycle to take longer than the target cycle duration, including:
-
-- The actual time needed for incremental update processing from refreshed tables may be longer than anticipated.
-- The PUG refresh thread may contend with the PUG lock, which prevents data refresh during the middle of an operation. Consider two threads changing the same data at the same time. Placing a lock on the data prevents another thread from touching that data until the lock is released.
-- If the server is busy, the refresh thread may not be scheduled.
-- Configuration settings such as [`minimumInterCycleSleep`](#minimumintercyclesleep) may cause the cycle to be longer than the target duration.
-
-### `minimumInterCycleSleep`
-
-The `PeriodicUpdateGraph.minimumInterCycleSleep` property sets the minimum amount of time in milliseconds to wait before starting another refresh cycle after the current cycle has completed. The default value is 0.
-
-If the actual cycle time plus the `minimumInterCycleSleep` time value is greater than the `targetCycleDurationMillis`, the next cycle will start as soon as the `minimumInterCycleSleep` has elapsed.
-
-If the actual cycle time plus the `minimumInterCycleSleep` time value is less than the `targetCycleDurationMillis`, the next cycle will begin after `targetCycleDurationMillis` has elapsed.
-
-Consider a situation where `targetCycleDurationMillis` is set to its default value of 1000 ms. The actual time to complete a particular refresh cycle is 900 ms. If `minimumInterCycleSleep` is set to 0 (the default), the next refresh cycle will start 100 ms later. If `minimumInterCycleSleep` is set to 200 ms, the next cycle will start 1100 ms (900 ms for the cycle time + 200 ms sleep time) after the current cycle starts.
-
-### `interCycleYield`
-
-The `PeriodicUpdateGraph.interCycleYield` property sets whether the thread should be allowed to yield the CPU in between refresh cycles. By default, it is `false`, which causes the PUG to immediately begin the next PUG cycle once the current cycle ends. If set to `true`, the PUG process yields to the CPU between cycles.
-
-Use of this property is designed to reduce latency while preventing the PUG from starving other threads.
-
-### `allowUnitTestMode`
-
-The `PeriodicUpdateGraph` supports executing within context of a unit test. When this property is set to `true`, added sources are ignored and refresh actions are manually taken by the test harness. The PUG may not be started. This should never be used outside the context of a unit test. As such, the default value is `false`.
+![Timeline example. With a target cycle duration of 1000 ms, a 900 ms cycle, and a 200 ms minimum sleep, the next cycle starts at 1100 ms. If interCycleYield is true, the refresh thread yields as the cycle ends.](../assets/conceptual/ugp-cycle-timing.svg)
 
 ## Manually triggering a refresh
 
-By default, the PUG runs on a periodic timer controlled by [`targetCycleDurationMillis`](#targetcycledurationmillis). In some cases, it can be appropriate to trigger the update cycle immediately rather than waiting for the next scheduled tick. A common example is when data is published within the server process — for example, via a [`TablePublisher`](../reference/table-operations/create/TablePublisher.md) or a `StreamToBlinkTableAdapter` — and you want the new data handled immediately rather than waiting up to one full cycle duration.
+By default, the PUG starts each cycle on a timer set by [`targetCycleDurationMillis`](#targetcycledurationmillis) and [`minimumInterCycleSleep`](#minimumintercyclesleep). Trigger a refresh immediately, instead of waiting for the next scheduled tick, when a table must reflect a change at once. A common case is an in-memory [input table](../how-to-guides/input-tables.md). It requests a refresh when you add or change rows. Another case is a custom in-process source that you update from your own code.
 
-You can request an immediate refresh by calling `requestRefresh()` on the update graph:
+You can request an immediate refresh by calling [`requestRefresh`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html#requestRefresh()) on the [`UpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html). In Python, get the Java class through [jpy](../how-to-guides/use-jpy.md), the bridge between Python and the Java engine:
 
 ```python
 import jpy
@@ -92,29 +66,79 @@ _JPeriodicUpdateGraph = jpy.get_type(
 _JPeriodicUpdateGraph.getInstance("DEFAULT").requestRefresh()
 ```
 
-This does not bypass the normal update cycle - it simply asks the PUG to begin the next cycle as soon as practicable. Updates are still processed in the usual order.
+The [`requestRefresh`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html#requestRefresh()) call asks the PUG to begin the next cycle as soon as practicable. For that cycle, the request skips the wait for `targetCycleDurationMillis` and `minimumInterCycleSleep`. Updates are still processed in the usual order.
 
-## Operation Initializer Thread Pool
+## Operation initialization thread pool
 
-The Operation Initializer Thread Pool has one user-configurable property:
+When you create some table operations, part of their initial computation can run on the operation initialization thread pool instead of the thread that created the operation. Operations that do this include:
 
-- `OperationInitializerThreadPool.threads`
+- [filter](../reference/table-operations/filter/where.md)
+- [sort](../reference/table-operations/sort/sort.md)
+- [`select`](../reference/table-operations/select/select.md)/[`update`](../reference/table-operations/select/update.md) when the query has columns that can be computed in parallel
 
-### `threads`
+The operation initialization thread pool has one user-configurable property, described in [its section](#operationinitializationthreadpoolthreads) below.
 
-> [!IMPORTANT]
-> The content of this section applies to Deephaven operations that do not invoke Python code. Python's Global Interpreter Lock (GIL) severely limits concurrency during execution.
+## Configuration
 
-The `OperationInitializerThreadPool.threads` property allows multithreading during new operation initiation. By default, this property is set to `-1`, which uses all available processors for concurrent initiation work.
+| Property                                        | Default | Description                                                                                  |
+| ----------------------------------------------- | ------- | -------------------------------------------------------------------------------------------- |
+| `PeriodicUpdateGraph.updateThreads`             | `-1`    | Threads the refresh cycle uses to process update notifications.                              |
+| `PeriodicUpdateGraph.targetCycleDurationMillis` | `1000`  | Target time in milliseconds between the starts of consecutive refresh cycles.                |
+| `PeriodicUpdateGraph.minimumInterCycleSleep`    | `0`     | Minimum time in milliseconds to wait between the end of one cycle and the start of the next. |
+| `PeriodicUpdateGraph.interCycleYield`           | `false` | Whether the refresh thread calls `Thread.yield` after each cycle.                            |
+| `OperationInitializationThreadPool.threads`     | `-1`    | Threads the operation initialization thread pool uses.                                       |
+
+### `updateThreads`
+
+The `PeriodicUpdateGraph.updateThreads` property sets how many threads the refresh cycle uses to process update notifications. The default value of `-1` uses all available processors for concurrent work. Set a positive value to use exactly that many threads.
+
+[Partitioned tables](../how-to-guides/partitioned-tables.md) give the engine more independent work to run in parallel. Create one with [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md).
+
+### `targetCycleDurationMillis`
+
+The `PeriodicUpdateGraph.targetCycleDurationMillis` property sets the target time in milliseconds between the start of one PUG refresh cycle and the start of the next. The default is 1000 milliseconds (one second).
+
+Setting this to 500 milliseconds asks the PUG to start a refresh cycle every 500 milliseconds instead of every 1000 milliseconds. That frequency holds only while each cycle finishes within 500 milliseconds.
+
+The value set for this property does not guarantee the actual time for the cycle to complete. In the normal scheduling case, a cycle that finishes early waits until the full target duration has elapsed before the next cycle starts. A `requestRefresh` call or an input-table edit can start the next cycle sooner. A cycle that takes longer than the target falls behind it. The next cycle starts as soon as this one completes, subject to the minimum sleep.
+
+A variety of conditions can cause the actual refresh cycle to take longer than the target cycle duration, including:
+
+- The actual time needed for incremental update processing from refreshed tables may be longer than anticipated.
+- The refresh thread must acquire the [`UpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html)'s exclusive lock to start a cycle, so it waits while other threads hold the shared lock (for example, while initializing a query, or when a snapshot falls back to the shared lock after failing to complete optimistically). See [Multithreading: Synchronization, locks, and snapshots](./query-engine/engine-locking.md).
+- If the server is busy, the refresh thread may not be scheduled.
+
+### `minimumInterCycleSleep`
+
+The `PeriodicUpdateGraph.minimumInterCycleSleep` property sets the minimum amount of time in milliseconds to wait before starting another refresh cycle after the current cycle has completed.
+
+Consider a situation where `targetCycleDurationMillis` keeps its default value of 1000 ms. The actual time to complete a particular refresh cycle is 900 ms. If you set `minimumInterCycleSleep` to 0, the next refresh cycle starts 100 ms later. If you set `minimumInterCycleSleep` to 200 ms, the next cycle starts 1100 ms after the current cycle starts. That total is the 900 ms cycle time plus the 200 ms sleep time.
+
+### `interCycleYield`
+
+The `PeriodicUpdateGraph.interCycleYield` property controls whether the refresh thread calls `Thread.yield` after each cycle, which hints to the scheduler that other threads may run. Yielding does not bypass the waits set by `targetCycleDurationMillis` and `minimumInterCycleSleep`, and it can delay the next cycle when a minimum sleep is set.
+
+### `OperationInitializationThreadPool.threads`
+
+The `OperationInitializationThreadPool.threads` property allows multithreading during new operation initiation. The default value of `-1` uses all available processors for concurrent initiation work.
+
+## Structuring data for parallelism
+
+Divide work along natural boundaries in your data, and structure the data for efficient parallel processing. For a deeper dive, see [parallelism with partitioned tables](../how-to-guides/partitioned-tables.md#parallelization).
 
 ## Related documentation
 
-- [Core API design](./deephaven-core-api.md)
-- [Deephaven's design](./deephaven-design.md)
-- [The Deephaven DAG](./dag.md)
-- [Incremental update model](./table-update-model.md)
-- [Multithreading in Deephaven](./query-engine/engine-locking.md)
+- [What is Barrage?](./what-is-barrage.md)
+- [Multithreading: Synchronization, locks, and snapshots](./query-engine/engine-locking.md)
 - [Parallelizing queries](./query-engine/parallelization.md)
+- [Table listeners](../how-to-guides/table-listeners-python.md)
+- [Input tables](../how-to-guides/input-tables.md)
 - [Partitioned tables](../how-to-guides/partitioned-tables.md)
-- [`PeriodicUpdateGraph` Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html)
-- [`TablePublisher`](../reference/table-operations/create/TablePublisher.md)
+- [`partition_by`](../reference/table-operations/group-and-aggregate/partitionBy.md)
+- [`where`](../reference/table-operations/filter/where.md)
+- [`sort`](../reference/table-operations/sort/sort.md)
+- [`select`](../reference/table-operations/select/select.md)
+- [`update`](../reference/table-operations/select/update.md)
+- [`snapshot`](../reference/table-operations/snapshot/snapshot.md)
+- [`PeriodicUpdateGraph` Javadoc](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html)
+- [`requestRefresh` Javadoc](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html#requestRefresh())
