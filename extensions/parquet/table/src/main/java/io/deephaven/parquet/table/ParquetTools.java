@@ -526,8 +526,9 @@ public class ParquetTools {
             }
         }
         if (destinations.isEmpty()) {
-            // The table has no rows, so there are no partitions and no data files to write. The key-value layout
-            // records the schema only in its data files, so only metadata files can carry the schema.
+            // The partitioned table has no constituents (as for a source table with no rows), so there are no
+            // partitions and no data files to write. The key-value layout records the schema only in the data files, so
+            // only metadata files can carry the schema.
             if (writeInstructions.generateMetadataFiles()) {
                 writeSchemaOnlyMetadataFiles(partitionedTable, keyTableDefinition, leafDefinition,
                         convertToURI(destinationRoot, true), writeInstructions);
