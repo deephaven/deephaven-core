@@ -50,6 +50,7 @@ The Groovy patterns can be adapted for Python use with `jpy`, but require attent
 ## Related documentation
 
 - [What is Barrage?](../../conceptual/what-is-barrage.md)
+- [Deephaven URIs](../use-uris.md)
 - [with_attributes](../../reference/table-operations/create/withAttributes.md)
 - [Groovy Barrage schema annotation guide](/core/groovy/docs/how-to-guides/data-import-export/barrage-schema)
 - [Arrow Flight integration](./arrow-flight.md)
