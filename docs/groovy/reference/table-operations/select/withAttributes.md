@@ -14,12 +14,12 @@ withAttributes(toAdd, toRemove)
 ## Parameters
 
 <ParamTable>
-<Param name="toAdd>" type="Map<String,Object>">
+<Param name="toAdd" type="Map<String,Object>">
 
 Attribute key-value pairs to add or replace (if the key already exists in the source table's `AttributeMap`). Neither keys nor values may be null.
 
 </Param>
-<Param name="toRemove>" type="Collection<String>">
+<Param name="toRemove" type="Collection<String>">
 
 Attribute keys to remove.
 

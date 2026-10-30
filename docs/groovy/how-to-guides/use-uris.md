@@ -10,7 +10,7 @@ A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uni
 > If you found this page while looking for `ui.resolve`, note that the [Deephaven UI URI component](https://deephaven.io/core/ui/docs/components/uri/) is a separate `deephaven.ui` feature that currently accepts only **Deephaven Enterprise** Persistent Query (`pq://`) URIs. It is not the same as [`io.deephaven.uri.ResolveTools.resolve`](../reference/data-import-export/uri.md) documented here.
 
 > [!NOTE]
-> URIs and shared tickets are two different ways to pull tables. Both work on static tables and on ticking tables, which update as new data arrives. A URI pulls a table that already exists on a server, using a URL-like string. Shared tickets let you pull tables you create or access via the Python client. Learn more in [Capture Python client tables with Barrage](./capture-tables.md).
+> URIs and shared tickets are two different ways to pull tables. Both work on static tables and on ticking tables, which update as new data arrives. A URI pulls a table that already exists on a server, using a URL-like string. Shared tickets let you pull tables you create or access through a client session. Learn more in [Capture remote tables with Barrage](./capture-tables.md).
 
 > [!IMPORTANT]
 > A server that resolves a URI connects to the remote server with [anonymous authentication](./authentication/auth-anon.md), so the remote server you resolve tables from must allow anonymous authentication. Deephaven doesn't currently support URI resolution with [pre-shared key (PSK) authentication](./authentication/auth-psk.md), which servers use by default. Resolving a URI that points to a server that requires PSK fails. This is a known limitation tracked in GitHub issues [#5383](https://github.com/deephaven/deephaven-core/issues/5383) and [#3421](https://github.com/deephaven/deephaven-core/issues/3421).
@@ -252,7 +252,7 @@ When you share tables across instances with URIs, particularly over networks, co
 - [`update`](../reference/table-operations/select/update.md)
 - [`resolve`](../reference/data-import-export/uri.md)
 - [Enterprise URIs](https://deephaven.io/enterprise/docs/deephaven-database/remote-tables-groovy/#uris)
-- [Capture Python client tables](./capture-tables.md)
+- [Capture remote tables with Barrage](./capture-tables.md)
 - [Application Mode](./application-mode.md)
 - [URI cheat sheet](../reference/cheat-sheets/uri-cheat-sheet.md)
 - [`io.deephaven.uri` Javadoc](https://deephaven.io/core/javadoc/io/deephaven/uri/package-summary.html)

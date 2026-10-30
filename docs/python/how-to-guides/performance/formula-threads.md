@@ -172,8 +172,8 @@ A formula can itself run table operations, as a [partitioned table](../partition
 
 - The [`ExecutionContext`](../../conceptual/execution-context.md) controls which variables and methods formulas can use, and it carries information about the user and query initialization.
 - Each thread has its own current context, so a worker thread does not automatically have the context your script was using.
-- A user context is any context that is not [systemic](../../conceptual/execution-context.md#systemic-vs-separate-executioncontext).
-- The console runs your script in a [systemic](../../conceptual/execution-context.md#systemic-vs-separate-executioncontext) context, so a console script has no user context open unless you open one.
+- A user context is any context that is not [systemic](../../conceptual/execution-context.md).
+- The console runs your script in a [systemic](../../conceptual/execution-context.md) context, so a console script has no user context open unless you open one.
 
 Which context the nested operations get depends on whether a user context is open when you call [`select`](../../reference/table-operations/select/select.md) or [`update`](../../reference/table-operations/select/update.md):
 

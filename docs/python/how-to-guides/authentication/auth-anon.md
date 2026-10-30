@@ -36,9 +36,8 @@ Anonymous authentication can be used with a Deephaven server run from Python by 
 ```python skip-test
 from deephaven_server import Server
 
-s = Server(
-    jvm_args=["-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler"]
-).start()
+s = Server(jvm_args=["-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler"])
+s.start()
 ```
 
 ## Related documentation

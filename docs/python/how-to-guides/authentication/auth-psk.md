@@ -87,7 +87,8 @@ pip-installed Deephaven also uses pre-shared key by default. The following Pytho
 ```python skip-test
 from deephaven_server import Server
 
-s = Server().start()
+s = Server()
+s.start()
 ```
 
 You do _not_ need to enter the key to run Deephaven commands from Python. However, if you attempt to connect to the IDE in your web browser, you will be prompted for the key, which you won't know since it's randomly generated.
@@ -97,7 +98,8 @@ To set the key, specify an additional JVM argument. The following code starts a 
 ```python skip-test
 from deephaven_server import Server
 
-s = Server(jvm_args=["-Dauthentication.psk=YOUR_PASSWORD_HERE"]).start()
+s = Server(jvm_args=["-Dauthentication.psk=YOUR_PASSWORD_HERE"])
+s.start()
 ```
 
 The key can be alternatively stored in an environment variable, typically called `DEEPHAVEN_PSK`:
@@ -108,7 +110,8 @@ import os
 
 my_dh_key = os.environ["DEEPHAVEN_PSK"]
 
-s = Server(jvm_args=[f"-Dauthentication.psk={my_dh_key}"]).start()
+s = Server(jvm_args=[f"-Dauthentication.psk={my_dh_key}"])
+s.start()
 ```
 
 Now, if you use your web browser to connect to Deephaven, you know the key.
