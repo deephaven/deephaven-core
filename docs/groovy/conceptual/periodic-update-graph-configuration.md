@@ -6,8 +6,8 @@ This guide discusses how to control the update frequency of your Deephaven table
 
 There are two underlying processes when updating [streaming tables](./table-types.md) in Deephaven:
 
-1. When new data is generated or acquired, the Periodic Update Graph (PUG) first manages the process of updating the source tables and the derived tables with the new data. Each pass of this process is a refresh cycle. A source table receives data from outside the server. A derived table is computed from one or more other tables. At this point, data updates are available within the server process.
-2. Once a table has been updated during the PUG refresh cycle, the server sends the changed rows in each client's viewport (the visible portion of the table) to that client, which then displays them in the user interface.
+1. When new data is generated or acquired, the Periodic Update Graph (PUG) first manages the process of updating the source tables and the derived tables with the new data. Each pass of this process is a refresh cycle. A source table receives data from outside the server, or generates its rows inside the server. For example, `TimeTable` generates rows from the server clock. A derived table is computed from one or more other tables. At this point, data updates are available within the server process.
+2. Once a table has been updated during the PUG refresh cycle, Barrage sends the changed rows to each subscribed client. A web UI client displays the changed rows in its viewport, the visible portion of the table. Other clients, such as those that subscribe to a full table, receive the same changes without a viewport.
 
 This page covers the first process, which the PUG controls. [What is Barrage?](./what-is-barrage.md) explains how the server sends the results to clients.
 
@@ -18,7 +18,7 @@ This page covers the first process, which the PUG controls. [What is Barrage?](.
 The Periodic Update Graph is an [`UpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html), the component that controls how often data is refreshed on the server. At the beginning of a cycle, the PUG schedules a refresh of each source table. With more than one update thread, those refreshes can run on the update threads rather than only on the PUG thread. When a source table has new data, it enqueues a notification of the changes for all registered [listeners](../how-to-guides/table-listeners-groovy.md). Listeners then do the following:
 
 - Generate derived tables and send further notifications to their children.
-- Send table updates across the wire using [Barrage](./what-is-barrage.md).
+- Enqueue table updates for [Barrage](./what-is-barrage.md), which sends them to clients in a separate step.
 - Perform custom user logic and other incremental processing tasks.
 
 The PUG executes independent notifications in parallel, starting with the source tables:
@@ -37,9 +37,9 @@ In the diagram above, the PUG refreshes the live source tables `A`, `B`, and `C`
 
 The Periodic Update Graph has four user-configurable properties, listed with their defaults in the [Configuration](#configuration) section.
 
-The next refresh cycle starts at the later of two times:
+In the normal case, the next refresh cycle starts at the later of two times. Scheduling and lock delays can shift these times:
 
-- `targetCycleDurationMillis` after the previous cycle started.
+- `targetCycleDurationMillis` after the previous cycle started. The timer starts before the cycle acquires the exclusive lock, so lock waits can shift when the logical cycle starts.
 - `minimumInterCycleSleep` after the previous cycle completed.
 
 The following timeline shows an example with a 900 ms cycle and a 200 ms minimum sleep:
@@ -91,7 +91,7 @@ The `PeriodicUpdateGraph.targetCycleDurationMillis` property sets the target tim
 
 Setting this to 500 milliseconds asks the PUG to start a refresh cycle every 500 milliseconds instead of every 1000 milliseconds. That frequency holds only while each cycle finishes within 500 milliseconds.
 
-The value set for this property does not guarantee the actual time for the cycle to complete. A cycle that finishes early waits until the full target duration has elapsed before the next cycle starts. A cycle that takes longer than the target falls behind it. The next cycle starts as soon as this one completes, subject to the minimum sleep.
+The value set for this property does not guarantee the actual time for the cycle to complete. In the normal scheduling case, a cycle that finishes early waits until the full target duration has elapsed before the next cycle starts. A `requestRefresh` call or an input-table edit can start the next cycle sooner. A cycle that takes longer than the target falls behind it. The next cycle starts as soon as this one completes, subject to the minimum sleep.
 
 A variety of conditions can cause the actual refresh cycle to take longer than the target cycle duration, including:
 
