@@ -7,7 +7,8 @@ title: liveness_scope
 ## Syntax
 
 ```python syntax
-scope = liveness_scope()
+with liveness_scope() as scope:
+    ...
 ```
 
 ## Parameters
@@ -16,7 +17,7 @@ None.
 
 ## Returns
 
-A `SimpleLivenessScope`, which shares the `preserve`, `manage`, and `unmanage` interface of [`LivenessScope`](./LivenessScope.md).
+A context manager. The `with` statement binds `scope` to a `SimpleLivenessScope`, which shares the `preserve`, `manage`, and `unmanage` interface of [`LivenessScope`](./LivenessScope.md). The scope is open for the duration of the `with` block and is released when the block exits.
 
 ## Examples
 

@@ -27,7 +27,7 @@ This guide first shows what happens when a table fails. It then explains how to 
 
 ## What happens when a table fails
 
-The difference between systemic and non-systemic objects is most visible when a [ticking table](./table-types.md) fails. In this example, the [formula](../how-to-guides/formulas.md) `Z = Y.toString()` throws a `NullPointerException` once `X` exceeds 10 and `Y` becomes null:
+The difference between systemic and non-systemic objects is most visible when a [ticking table](./table-types.md) fails. In this example, the [formula](../how-to-guides/formulas.md) `Z = Y.toString()` throws a [`NullPointerException`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/NullPointerException.html) once `X` exceeds 10 and `Y` becomes null:
 
 ```python should-fail
 from deephaven import time_table

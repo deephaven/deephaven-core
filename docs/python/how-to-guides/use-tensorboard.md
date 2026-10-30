@@ -39,7 +39,7 @@ This example uses the `server-tensorflow` image, which includes TensorFlow and T
 
 This example classifies the Iris dataset with Deephaven tables, using the same neural network that the [TensorFlow guide](./use-tensorflow.md#classify-the-iris-dataset-with-deephaven-tables) builds with [Keras](https://www.tensorflow.org/guide/keras), TensorFlow's high-level API for building models. You only need to add a few lines of code to enable TensorBoard!
 
-### Enable logging and start TensorBoard
+### Enable TensorFlow logging and start TensorBoard
 
 First, set a log directory. The training code writes its logs to this directory, and TensorBoard reads them to build its visualizations:
 
@@ -85,8 +85,8 @@ Each argument controls what the callback logs:
 - `write_graph=True` logs the model's layer structure, which the Graphs tab shows as a conceptual graph.
 - `histogram_freq=1` logs weight and bias histograms every epoch.
 - `write_images=True` logs the weights as images each time `histogram_freq` logs histograms, so it has no effect when `histogram_freq` is 0.
-- `profile_batch=2` profiles the second training batch. Viewing the profile needs an extra package; see [View the results](#view-the-results).
-- `embeddings_freq=1` logs data for any embedding layers. This model has none; see [View the results](#view-the-results).
+- `profile_batch=2` profiles the second training batch. Viewing the profile needs an extra package; see [View the TensorFlow results](#view-the-tensorflow-results).
+- `embeddings_freq=1` logs data for any embedding layers. This model has none; see [View the TensorFlow results](#view-the-tensorflow-results).
 
 See the [`TensorBoard` callback reference](https://www.tensorflow.org/api_docs/python/tf/keras/callbacks/TensorBoard) for every option.
 
@@ -102,7 +102,7 @@ def train_model(x_train, y_train):
     model.fit(x=x_train, y=y_train, epochs=20, callbacks=[tensorboard_callback])
 ```
 
-### Complete example
+### Complete TensorFlow example
 
 The complete script below does the following:
 
@@ -229,7 +229,7 @@ iris_predicted_static = learn.learn(
 )
 ```
 
-### View the results
+### View the TensorFlow results
 
 After training the model, you can open the TensorBoard dashboard at [http://localhost:6006](http://localhost:6006) and explore the data the callback logged.
 
@@ -256,7 +256,7 @@ This example uses the `server-pytorch` image, which includes PyTorch and TensorB
 
 This example classifies the Iris dataset with Deephaven tables, using the same PyTorch neural network (`IrisANN`) built in the [PyTorch guide](./use-pytorch.md#classify-the-iris-dataset-with-deephaven-tables). You only need to add a few lines of code to enable TensorBoard!
 
-### Enable logging and start TensorBoard
+### Enable PyTorch logging and start TensorBoard
 
 First, create a log directory and run TensorBoard with that directory and port number. The `--bind_all` flag makes TensorBoard listen on all network interfaces, so your browser can reach it through the published port from outside the container:
 
@@ -293,7 +293,7 @@ By default, `SummaryWriter` writes pending data to disk once 10 events are queue
 writer.flush()
 ```
 
-### Complete example
+### Complete PyTorch example
 
 The complete script below does the following:
 
@@ -449,7 +449,7 @@ iris_predicted_static = learn.learn(
 )
 ```
 
-### View the results
+### View the PyTorch results
 
 After training the model, you can open the TensorBoard dashboard at [http://localhost:6006](http://localhost:6006) and see the results of your neural network's training runs:
 
