@@ -322,7 +322,7 @@ table_w_attributes = table.withAttributes(java.util.Map.of(Table.BARRAGE_SCHEMA_
 
 [Run-End Encoding](https://arrow.apache.org/docs/format/Columnar.html#run-end-encoded-layout) is a wire-level optimization for columns with many repeated values. Instead of sending every value, the column is serialized as two child arrays:
 
-- `run_ends` — a non-nullable integer array of cumulative 1-based end indices, one per run. The last value always equals the number of rows in the record batch.
+- `run_ends` — a non-nullable integer array of cumulative 1-based end indices, one per run. The last value always equals the logical length of the encoded array, which is the column's row count. When a subscriber requests columns as lists, that length is the number of values inside the list, not the record batch's length of `1`.
 - `values` — the values that will be repeated in the run.
 
 A column of 1,000 rows where the same integer repeats 100 times in a row costs 10 `run_end` entries + 10 `value` entries instead of 1,000 integers. Deephaven stores the column flat (unchanged type); REE is a transport-only optimization. The `run_ends` integer width is determined by the Arrow field structure you supply via `BARRAGE_SCHEMA_ATTRIBUTE`. `Int16`, `Int32`, and `Int64` are supported; use `Int32` unless you have a specific reason to use another width. Note that `Int16` `run_ends` constrain the effective batch size to at most `Short.MAX_VALUE` / 32,767 rows per record batch.
