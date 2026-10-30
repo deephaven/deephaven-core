@@ -141,7 +141,7 @@ import click
 
 
 @click.command()
-@click.argument("input_file", type=click.Path(exists=True))
+@click.argument("input_file", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "--port", default=10001, show_default=True, help="Port for the embedded server"
 )
