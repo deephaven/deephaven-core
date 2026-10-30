@@ -188,7 +188,7 @@ Use `pydeephaven` when the program should connect to a Deephaven server that is 
 
 Because the client has no server to start, the embedded-server import rule does not apply. `pydeephaven` can be imported at module scope, including in `__init__.py`, and the package can be structured like any other Python project that talks to a network service.
 
-The trade-off is that the client API is not the same as the server-side `deephaven` API. Client code works with table handles that refer to tables on the server, and operations on those handles are sent to the server for execution. Most common table operations are available, but code written against `deephaven` does not run unchanged against `pydeephaven`. One difference comes up in the examples below: the server cannot read files from the client's machine, so local data is uploaded as a [pyarrow](https://arrow.apache.org/docs/python/) table. Others are smaller, such as reading column names from `table.schema.names` rather than `table.columns`.
+The trade-off is that the client API is not the same as the server-side `deephaven` API. Client code works with table handles that refer to tables on the server, and operations on those handles are sent to the server for execution. Most common table operations are available, but code written against `deephaven` does not run unchanged against `pydeephaven`. One difference comes up in the examples below: the server cannot read files from the client's machine, so local data is uploaded as a [pyarrow](https://arrow.apache.org/docs/python/) table. Others are smaller, such as reading column names from `table.schema.names` rather than `table.column_names`.
 
 The examples connect with anonymous authentication. A Deephaven server started with Docker or `pip` uses a [pre-shared key](../authentication/auth-psk.md) by default; either start it with [anonymous authentication](../authentication/auth-anon.md) enabled, or pass the server's key to `Session` as shown in the client command below. Where possible, keep `pydeephaven` on the same version as the server it connects to.
 
@@ -257,7 +257,7 @@ with Session(host="localhost", port=10000) as session:
     publish(session, "high_scores", high_scores)
 ```
 
-`high_scores` is now bound on the server, so it appears in the IDE and other clients can open it with `session.open_table("high_scores")`. The server's script scope holds the binding, so the table stays available after the session that created it closes, until the name is reassigned or deleted on the server. To bring rows back into the client process, call `high_scores.to_arrow()`.
+`high_scores` is now bound on the server, so it appears in the IDE and other clients can open it with `session.open_table("high_scores")`. The server's script scope holds the binding, so the table stays available after the session that created it closes, until the name is reassigned or deleted on the server. To bring rows back into the client process, call `table.to_arrow()` on a table handle while the session is still open.
 
 ### Client command
 
