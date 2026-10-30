@@ -2,48 +2,36 @@
 title: Configure the Deephaven Docker application
 ---
 
-This guide covers best practices for configuring the Deephaven Docker application. Deephaven can be run from [Docker](https://www.docker.com/) alone or with [Docker Compose](https://docs.docker.com/compose/). The latter is recommended for customized applications, as it provides a simpler mechanism for orchestrating complex applications with multiple services.
+This guide shows how to run the Deephaven Docker image with custom JVM options, configuration, and ports. It also covers the following tasks:
 
-If you are interested in lower-level details, which may be necessary if you are interested in building your own Docker images from scratch, see the [production application guide](./configure-production-application.md). Some knowledge about [Docker](https://docs.docker.com/) is assumed.
+- Setting JVM options.
+- Using a configuration file.
+- Changing the port.
+- Building a custom image.
+- Importing custom JARs.
+- Running the image with Docker Compose.
+- Debugging a running container.
 
-## Construction
+The sections on image contents, versioning, and available images come after the task sections.
 
-Deephaven's `server-slim` Docker image is based on the [production application](../../getting-started/production-application.md), which is unpacked into the `/opt/deephaven` directory. The images have two [volumes](https://docs.docker.com/storage/volumes/):
+Deephaven can be run from [Docker](https://www.docker.com/) alone or with [Docker Compose](https://docs.docker.com/compose/). Deephaven recommends Docker Compose for customized applications, because it provides a simpler way to orchestrate complex applications with multiple services.
 
-- `/data`
-- `/cache`
+This guide assumes some knowledge of [Docker](https://docs.docker.com/). For lower-level details, such as the `start` script, JVM options, and the directories the images use, see [Configure the production application](./configure-production-application.md).
 
-The images expose port `10000` to users by default. This value can be changed. Additionally, a configuration file exists at `/opt/deephaven/config/deephaven.prop`, which contains the default configuration values for the Deephaven server. Additional Java JARs can be included in `/apps/libs`.
+The image build logic is in the [deephaven-server-docker](https://github.com/deephaven/deephaven-server-docker) repository.
 
-Deephaven's Docker images, by default, set the following bootstrap environment configuration values:
+## Configuration mechanisms
 
-- `DEEPHAVEN_DATA_DIR=/data`
-- `DEEPHAVEN_CACHE_DIR=/cache`
-- `DEEPHAVEN_CONFIG_DIR=/opt/deephaven/config`
-- `EXTRA_CLASSPATH=/apps/libs/*`
+The image accepts configuration through these main mechanisms:
 
-Deephaven Docker images can set two environment variables to override or add additional JVM parameters. The semantics for these options remain the same as for the production application:
-
-- `JAVA_OPTS`: Custom JVM properties that override default values.
-- `START_OPTS`: Additional JVM properties that are appended to the default values.
-
-> [!CAUTION]
-> `START_OPTS` is recommended over `JAVA_OPTS` because it is safer. Take care when overriding default properties.
-
-For more information on the exact construction of the images, the image building logic is located in the [deephaven-server-docker](https://github.com/deephaven/deephaven-server-docker) GitHub repository.
-
-## Versioning
-
-Everything below will use the `latest` version for Docker images. Deephaven recommends staying on the `latest` version to get the latest features, bug fixes, and patches. Here is a list of available versions:
-
-- [`latest`](https://github.com/deephaven/deephaven-core/releases/latest): The latest release of Deephaven.
-- [`edge`](https://github.com/deephaven/deephaven-core/pkgs/container/server/240348207?tag=edge): Everything new in the server up until midnight of the previous day. This version may contain features not yet released in `latest` that include breaking changes. This version is only recommended if you wish to try an unreleased feature or develop against the latest code.
-- Specific version number: You can also uses a specific version, such as [`0.35.0`](https://github.com/deephaven/deephaven-core/releases/tag/v0.35.0), [`0.34.2`](https://github.com/deephaven/deephaven-core/releases/tag/v0.34.2), and more. Older versions of Deephaven are likely to be incompatible with code found in documentation.
+| Mechanism                                | Where you set it                                                                    | Use it for                                                                       |
+| ---------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `START_OPTS`                             | Environment variable                                                                | Adding JVM arguments and system properties to the defaults.                      |
+| `JAVA_OPTS`                              | Environment variable                                                                | Replacing the default JVM options file, such as to change the garbage collector. |
+| [Configuration file](./config-file.md)   | `/opt/deephaven/config/deephaven.prop`, mounted with `-v` or copied in a Dockerfile | Setting many Deephaven properties.                                               |
+| Docker Compose `environment` and `ports` | Compose file or shell                                                               | Setting values for one service in a Compose application.                         |
 
 ## Run with Docker
-
-> [!NOTE]
-> Deephaven recommends running with the `latest` image to stay up-to-date with the latest features, bug fixes, and patches.
 
 The quickest way to get up and running with the Deephaven Docker application is to run it with the default configuration:
 
@@ -51,13 +39,15 @@ The quickest way to get up and running with the Deephaven Docker application is 
 docker run --rm -p 10000:10000 ghcr.io/deephaven/server-slim:latest
 ```
 
-To [add additional JVM arguments](#construction) to the default configuration, set `START_OPTS`. The following `START_OPTS` tells the JVM to start with 4GB of heap memory, but to be able to use up to 6GB if necessary:
+## Set JVM options
+
+To [add additional JVM arguments](#configuration-mechanisms) to the default configuration, set `START_OPTS`. The following `START_OPTS` tells the JVM to start with 4GB of heap memory, but to be able to use up to 6GB if necessary:
 
 ```bash
-docker run --rm --env START_OPTS="-Xms4g -Xmx6g" ghcr.io/deephaven/server-slim:latest
+docker run --rm -p 10000:10000 --env START_OPTS="-Xms4g -Xmx6g" ghcr.io/deephaven/server-slim:latest
 ```
 
-It's possible that some options conflict with the Deephaven recommendations. The following `START_OPTS` tells the JVM to use the [Z Garbage Collector](https://docs.oracle.com/en/java/javase/21/gctuning/z-garbage-collector.html), but this conflicts with Deephaven's recommendations:
+The defaults already select the G1 garbage collector. The following `START_OPTS` tries to select the [Z Garbage Collector](https://docs.oracle.com/en/java/javase/21/gctuning/z-garbage-collector.html) as well, so the JVM fails to start:
 
 ```bash
 $ docker run --rm --env "START_OPTS=-XX:+UseZGC" ghcr.io/deephaven/server-slim:latest
@@ -65,19 +55,57 @@ Error occurred during initialization of VM
 Multiple garbage collectors selected
 ```
 
-In this case, use `JAVA_OPTS` to override the default value:
+To use the Z Garbage Collector, set `JAVA_OPTS` instead. Setting `JAVA_OPTS` replaces the image's VM options file, `/opt/deephaven/server-jetty/etc/dh-default-21.vmoptions`. That file sets these defaults:
+
+- The G1 garbage collector
+- The pause-time target
+- String deduplication
+- `--enable-native-access=ALL-UNNAMED`
+- `-XX:GCLockerRetryAllocationCount=128`
+
+Include any of those settings you still want:
 
 ```bash
-docker run --rm --env "JAVA_OPTS=-XX:+UseZGC" ghcr.io/deephaven/server-slim:latest
+docker run --rm -p 10000:10000 --env "JAVA_OPTS=-XX:+UseZGC" ghcr.io/deephaven/server-slim:latest
 ```
 
-`START_OPTS` is a convenient way to set system properties. If you find yourself (ab)using system properties to set a lot of Deephaven configuration file values, consider instead overriding the default properties with a custom [configuration file](./config-file.md):
+> [!CAUTION]
+> `JAVA_OPTS` replaces the image's VM options file, so any default option you leave out is lost. `START_OPTS` keeps the defaults, so use it unless you need to change them. Take care when overriding default VM options.
+
+`START_OPTS` takes JVM arguments, including system properties, which are JVM `-D` settings. If you set many Deephaven configuration values this way, use a [configuration file](./config-file.md) instead.
+
+## Use a configuration file
+
+Mount your file over the image's copy with `-v`. This bind mount maps a host file or folder into the container. Start the file with `includefiles=dh-defaults.prop` so it keeps the default properties. Then add your own properties:
 
 ```bash
-docker run --rm -v /path/to/deephaven.prop:/opt/deephaven/config/deephaven.prop ghcr.io/deephaven/server-slim:latest
+docker run --rm -p 10000:10000 -v /path/to/deephaven.prop:/opt/deephaven/config/deephaven.prop ghcr.io/deephaven/server-slim:latest
 ```
 
-You can also build your own image with all of the necessary configuration options baked in:
+Also set `deephaven.console.type=groovy` in the file. Without it, the server fails at startup with `Console type not found: python`, because this image does not include a Python console.
+
+## Change the port
+
+The images expose port `10000` by default. To change the host port, use a port mapping such as `-p 10001:10000`.
+
+To serve on a different port inside the container, set the `http.port` property in a [configuration file](./config-file.md). The image's health check probes port `10000`, so the container reports as unhealthy after you change `http.port`.
+
+With [Docker Compose](https://docs.docker.com/compose/), set the `DEEPHAVEN_PORT` shell variable to change the host port. Compose reads it when it substitutes values into the Compose file:
+
+```bash
+export DEEPHAVEN_PORT=10001
+```
+
+To change the default port in the Compose file instead, change the fallback value in the `ports` entry:
+
+```yaml
+ports:
+  - "${DEEPHAVEN_PORT:-10001}:10000"
+```
+
+## Customize the image
+
+You can build your own image that includes your configuration:
 
 ```docker title="Dockerfile"
 FROM ghcr.io/deephaven/server-slim:latest
@@ -86,62 +114,50 @@ ENV START_OPTS="-Xmx2g"
 ENV EXTRA_CLASSPATH="/apps/libs/*:/opt/more_java_libs/*"
 ```
 
-<></>
+The `COPY` instruction replaces the image's configuration file. Start your `deephaven.prop` with `includefiles=dh-defaults.prop`, as described in [Use a configuration file](#use-a-configuration-file), and then add your own properties. Keep `deephaven.console.type=groovy` in the file.
+
+The second classpath entry, `/opt/more_java_libs`, is an example. Replace it with the directory where your Dockerfile places your JARs.
 
 ```bash
+# Build the image from the Dockerfile
 docker build -t my-deephaven-image .
+# Run the image
 docker run --rm -p 10000:10000 my-deephaven-image
-```
-
-### Standard images
-
-- `ghcr.io/deephaven/server`: Deephaven's server-side Python API. Includes jpy, deephaven-plugin, numpy, pandas, and deephaven-ui, plus Numba in 43.0 and later.
-- `ghcr.io/deephaven/server-slim`: Deephaven's server-side Groovy API.
-
-### Debugging
-
-To debug a running Docker container, use the `docker exec` command. The following command creates an executable bash shell in a running Docker container called `deephaven-application`:
-
-```bash
-docker exec -it deephaven-application /bin/bash
 ```
 
 ## Import custom JARs
 
-You can make your own Java classes (and third-party libraries) available to queries by placing JARs under `/apps/libs`. The images add `/apps/libs/*` to the JVM classpath at startup.
+You can make your own Java classes (and third-party libraries) available to queries by placing JARs under `/apps/libs`. The images add that directory to the classpath (see [Image contents and startup settings](#image-contents-and-startup-settings)).
 
 <details>
-<summary>Option A - Bind mount</summary>
+<summary>Option A: bind mount</summary>
 
 ```bash
-$ mkdir -p jars
-$ cp /path/to/<custom>.jar jars/
-
-# Will use python console as default
-$ docker run --rm -p 10000:10000 -v "$(pwd)/jars:/apps/libs" ghcr.io/deephaven/server:latest
+mkdir -p jars
+cp /path/to/<custom>.jar jars/
+docker run --rm -p 10000:10000 -v "$(pwd)/jars:/apps/libs" ghcr.io/deephaven/server-slim:latest
 ```
 
 </details>
 
 <details>
-<summary>Option B - Docker Compose</summary>
+<summary>Option B: Docker Compose</summary>
+
+If you run with [Docker Compose](#run-with-docker-compose), mount the folder in the service definition:
 
 ```yaml title="docker-compose.yml"
 services:
   deephaven:
-    image: ghcr.io/deephaven/server:latest
+    image: ghcr.io/deephaven/server-slim:latest
     ports:
       - "10000:10000"
     volumes:
       - ./jars:/apps/libs
-    # Optional: choose Groovy console by default
-    environment:
-      - START_OPTS=-Ddeephaven.console.type=groovy
 ```
 
 </details>
 
-Now you can run queries that use your custom JARs. For example, if you have a class `org.example.MathFns` with a static method `square(long x)`, you can run the following query:
+You can run queries that use your custom JARs. For example, if you have a class `org.example.MathFns` with a static method `square(long x)`, you can run the following query:
 
 ```groovy skip-test
 // Example usage (requires custom JAR with org.example.MathFns class)
@@ -158,12 +174,12 @@ Deephaven recommends running with [Docker Compose](https://docs.docker.com/compo
 - Backend databases.
 - Frontend applications.
 
-Docker Compose files are written in YAML. The most basic Docker Compose file for Deephaven with Python is:
+Docker Compose files are written in YAML. The most basic Docker Compose file for Deephaven with Groovy is:
 
 ```yaml
 services:
   deephaven:
-    image: ghcr.io/deephaven/server:${VERSION:-latest}
+    image: ghcr.io/deephaven/server-slim:${VERSION:-latest}
     ports:
       - "${DEEPHAVEN_PORT:-10000}:10000"
     volumes:
@@ -172,50 +188,79 @@ services:
       - START_OPTS=-Xmx4g
 ```
 
-To make Deephaven accessible on a different port, set the `DEEPHAVEN_PORT` environment variable:
+`VERSION` sets the image tag. It defaults to `latest`. Set it in the shell, for example with `export VERSION=42.7`, to pin a version. See [Versioning](#versioning).
 
-```bash
-export DEEPHAVEN_PORT=10001
-```
+To change the port, see [Change the port](#change-the-port).
 
-Or set it in the Docker Compose file:
+To build the image from a Dockerfile in the same directory, replace the `image` line with `build: .` in the example above.
 
-```yaml
-services:
-  deephaven:
-    image: ghcr.io/deephaven/server:${VERSION:-latest}
-    ports:
-      - "${DEEPHAVEN_PORT:-10001}:10000"
-    volumes:
-      - ./data:/data
-    environment:
-      - START_OPTS=-Xmx4g
-```
-
-To make a Docker Compose application depend on an image built by a Dockerfile in the same directory, use the `build` key:
-
-```yaml
-services:
-  deephaven:
-    build: .
-    ports:
-      - "${DEEPHAVEN_PORT:-10000}:10000"
-    volumes:
-      - ./data:/data
-    environment:
-      - START_OPTS=-Xmx4g
-```
-
-Running any Docker compose application is as simple as:
+To run a Docker Compose application, use:
 
 ```bash
 docker compose up
 ```
 
-Deephaven offers a variety of pre-built [Docker Compose files](https://github.com/deephaven/deephaven-core/tree/main/containers) that can be used to quickly get up and running with Deephaven. They cover both the Python and Groovy API and add more services including example data, extended Python images, and [Redpanda](https://redpanda.com/).
+Deephaven offers a variety of pre-built [Docker Compose files](https://github.com/deephaven/deephaven-core/tree/main/containers) that can be used to quickly get up and running with Deephaven. They cover both the Python and Groovy APIs. They also add services, such as example data and [Redpanda](https://redpanda.com/), and extended Python images.
+
+## Debug a running container
+
+To debug a container started with `docker run`, use the `docker exec` command. The following command creates an executable bash shell in a running Docker container called `deephaven-application`. Start the container with `--name deephaven-application` to use this name, or replace the name with the container name or ID that `docker ps` shows:
+
+```bash
+docker exec -it deephaven-application /bin/bash
+```
+
+With [Docker Compose](https://docs.docker.com/compose/), run `docker compose exec deephaven /bin/bash`.
+
+## Image contents and startup settings
+
+Deephaven's `server-slim` Docker image is based on the [production application](../../getting-started/production-application.md), which is unpacked into the `/opt/deephaven` directory. The images have two [volumes](https://docs.docker.com/storage/volumes/):
+
+- `/data`
+- `/cache`
+
+The images expose port `10000` by default. For changing the port, see [Change the port](#change-the-port).
+
+A configuration file exists at `/opt/deephaven/config/deephaven.prop`. It includes the default configuration file `dh-defaults.prop` and sets `deephaven.console.type` to `groovy`.
+
+Add additional Java JARs to `/apps/libs`, as described in [Import custom JARs](#import-custom-jars).
+
+By default, Deephaven's Docker images set the following environment variables:
+
+- `DEEPHAVEN_DATA_DIR=/data`
+- `DEEPHAVEN_CACHE_DIR=/cache`
+- `DEEPHAVEN_CONFIG_DIR=/opt/deephaven/config`
+- `EXTRA_CLASSPATH=/apps/libs/*`
+
+The first three are [bootstrap configuration](./configure-production-application.md#deephaven-server-bootstrap-configuration) parameters, which the server reads at startup before it reads any configuration file. The `start` script reads `EXTRA_CLASSPATH`.
+
+The JVM arguments and how to change them are described in [Set JVM options](#set-jvm-options).
+
+## Versioning
+
+The examples on this page use the `latest` version for Docker images. Deephaven recommends staying on the `latest` version to get the latest features, bug fixes, and patches. Here is a list of available versions:
+
+- [`latest`](https://github.com/deephaven/deephaven-core/releases/latest): The latest release of Deephaven.
+- [`edge`](https://github.com/deephaven/deephaven-core/pkgs/container/server-slim): Server code merged to the `main` branch of deephaven-core at the time the image was built, which may include breaking changes.
+- [`42.7`](https://github.com/deephaven/deephaven-core/releases/tag/v42.7) or [`41.11`](https://github.com/deephaven/deephaven-core/releases/tag/v41.11): A specific version number.
+
+Older versions of Deephaven are likely to be incompatible with code found in documentation.
+
+The `edge` image is rebuilt nightly, and whenever the `main` branch of the [deephaven-server-docker](https://github.com/deephaven/deephaven-server-docker) repository changes. It is not rebuilt on every push to deephaven-core `main`. Use it only to try an unreleased feature or develop against the latest code.
+
+## Available images
+
+### Standard images
+
+- `ghcr.io/deephaven/server-slim`: Deephaven's server-side Groovy API.
+
+For the Python image, `ghcr.io/deephaven/server`, see the Python version of this guide.
 
 ## Related documentation
 
+- [Production application](../../getting-started/production-application.md)
 - [Configure the production application](./configure-production-application.md)
 - [Deephaven configuration files](./config-file.md)
 - [Build from source](../../getting-started/launch-build.md)
+- [`emptyTable`](../../reference/table-operations/create/emptyTable.md)
+- [`update`](../../reference/table-operations/select/update.md)
