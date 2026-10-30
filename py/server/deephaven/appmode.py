@@ -34,7 +34,7 @@ class ApplicationState(JObjectWrapper):
     def __getitem__(self, item):
         item = str(item)
         j_field = self.j_app_state.getField(item)
-        if not j_field:
+        if j_field is None:
             raise KeyError(item)
         return pythonify(j_field.value())
 
@@ -45,7 +45,7 @@ class ApplicationState(JObjectWrapper):
     def __delitem__(self, key):
         key = str(key)
         # removeField returns void and ignores unknown names, so check for the field first.
-        if not self.j_app_state.getField(key):
+        if self.j_app_state.getField(key) is None:
             raise KeyError(key)
         self.j_app_state.removeField(key)
 

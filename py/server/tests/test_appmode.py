@@ -3,9 +3,9 @@
 #
 
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-from deephaven import DHError
+from deephaven import DHError, appmode
 from deephaven.appmode import ApplicationState, get_app_state
 from tests.testbase import BaseTestCase
 
@@ -42,8 +42,11 @@ class AppModeTestCase(BaseTestCase):
             app["missing"]
 
     def test_get_app_state_outside_startup(self):
-        with self.assertRaises(DHError):
-            get_app_state()
+        # The Java side throws IllegalStateException when there is no application context.
+        with patch.object(appmode, "_JApplicationContext") as j_context:
+            j_context.get.side_effect = RuntimeError("no application context")
+            with self.assertRaises(DHError):
+                get_app_state()
 
 
 if __name__ == "__main__":
