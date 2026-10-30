@@ -22,6 +22,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.PartitionedTable.Proxy;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.testutil.*;
@@ -41,12 +42,14 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -1040,6 +1043,46 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             final Table matching = TableTools.merge(tables);
             assertTableEquals(matching, merged);
         }
+    }
+
+    @Test
+    public void testMergeConstituentListenersShareCallsite() {
+        final List<String> callerLines = new ArrayList<>();
+        final QueryTable underlying = testRefreshingTable(i(0).toTracking(),
+                col("Constituent", callerLineCapturingConstituent(callerLines, 1)));
+
+        final PartitionedTable partitioned = PartitionedTableFactory.of(underlying);
+        final Table merged;
+        try (final SafeCloseable ignored = QueryPerformanceRecorder.setCallsiteWithCloseable("MergeCallsite")) {
+            assertNotNull("callsite was already set", ignored);
+            merged = partitioned.merge();
+        }
+        assertEquals(List.of("MergeCallsite"), callerLines);
+
+        final Table added = callerLineCapturingConstituent(callerLines, 2);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(underlying, i(1), col("Constituent", added));
+            underlying.notifyListeners(i(1), i(), i());
+        });
+        assertEquals(List.of("MergeCallsite", "MergeCallsite"), callerLines);
+        assertTableEquals(TableTools.newTable(intCol("Value", 1, 2)), merged);
+    }
+
+    /**
+     * Make a refreshing single-row table that records the performance entry caller line of each listener added to it.
+     */
+    private static Table callerLineCapturingConstituent(final List<String> callerLines, final int value) {
+        final QueryTable source = testRefreshingTable(i(0).toTracking(), intCol("Value", value));
+        final QueryTable capturing = new QueryTable(source.getRowSet(), source.getColumnSourceMap()) {
+            @Override
+            public void addUpdateListener(@NotNull final TableUpdateListener listener) {
+                callerLines.add(((InstrumentedTableListenerBase) listener).getEntry().getCallerLine());
+                super.addUpdateListener(listener);
+            }
+        };
+        capturing.setRefreshing(true);
+        return capturing;
     }
 
     @Test

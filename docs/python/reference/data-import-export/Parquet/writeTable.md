@@ -48,7 +48,7 @@ One or more optional [`ColumnInstruction`](./ColumnInstruction.md) objects that 
 </Param>
 <Param name="compression_codec_name" type="str" optional>
 
-The [compression codec](https://www.javadoc.io/doc/org.apache.parquet/parquet-hadoop/1.8.1/org/apache/parquet/hadoop/metadata/CompressionCodecName.html) to use.
+The [compression codec](https://www.javadoc.io/doc/org.apache.parquet/parquet-common/1.18.1/org/apache/parquet/hadoop/metadata/CompressionCodecName.html) to use.
 
 Options are:
 

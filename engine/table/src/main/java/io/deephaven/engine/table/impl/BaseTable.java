@@ -218,6 +218,19 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         return updateGraph;
     }
 
+    /**
+     * Whether the current thread {@link UpdateGraphWaitGuard#currentThreadMustNotWaitForOtherThreads(UpdateGraph) must
+     * not wait for other threads} on account of this table's update graph or the update graph of the current
+     * {@link ExecutionContext}, which is the graph an operation that combines this table with others runs on.
+     *
+     * @return Whether the current thread must not wait for work in progress on another thread
+     */
+    protected final boolean currentThreadMustNotWaitForOtherThreads() {
+        return UpdateGraphWaitGuard.currentThreadMustNotWaitForOtherThreads(updateGraph)
+                || UpdateGraphWaitGuard.currentThreadMustNotWaitForOtherThreads(
+                        ExecutionContext.getContext().getUpdateGraph());
+    }
+
     @Override
     public String toString() {
         return getDescription();
@@ -417,6 +430,21 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.LastBy,
                 CopyAttributeOperation.PartitionBy,
+                CopyAttributeOperation.Reverse,
+                CopyAttributeOperation.Sort));
+
+        // kept when the result holds only the opted-in table's values; dropped when an operation computes new values or
+        // brings in another table's data
+        tempMap.put(TRANSPORT_COMPRESSION_ATTRIBUTE, EnumSet.of(
+                CopyAttributeOperation.Coalesce,
+                CopyAttributeOperation.DropColumns,
+                CopyAttributeOperation.Filter,
+                CopyAttributeOperation.FirstBy,
+                CopyAttributeOperation.Flatten,
+                CopyAttributeOperation.LastBy,
+                CopyAttributeOperation.PartitionBy,
+                CopyAttributeOperation.Preview,
+                CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.Reverse,
                 CopyAttributeOperation.Sort));
 

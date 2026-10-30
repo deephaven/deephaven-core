@@ -50,10 +50,10 @@ df_onecol = dhpd.to_pandas(source, cols=["Strings", "Doubles", "Chars"])
 result_onecol = dhpd.to_table(df, cols=["Booleans", "Doubles"])
 ```
 
-[`to_pandas`](../reference/pandas/to-pandas.md), by default, converts a table to a Pandas DataFrame that is backed by NumPy arrays with no nullable dtypes. Instead, NumPy nullable and PyArrow backends can be used.
+By default, [`to_pandas`](../reference/pandas/to-pandas.md) converts a table to a Pandas DataFrame that uses nullable dtypes (`dtype_backend="numpy_nullable"`). Set `dtype_backend="pyarrow"` to use PyArrow-backed dtypes (requires Pandas 2.0.0 or later), or `dtype_backend=None` to use NumPy arrays with no nullable dtypes.
 
 ```python test-set=1 order=null
-df_numpy_nullable = dhpd.to_pandas(source, dtype_backend="numpy_nullable")
+df_numpy = dhpd.to_pandas(source, dtype_backend=None)
 df_pyarrow = dhpd.to_pandas(source, dtype_backend="pyarrow")
 ```
 

@@ -165,7 +165,7 @@ for x, y in reordered.view(["X", "Y"]).iter_tuple():
 
 ## Iterate over refreshing tables
 
-The [update graph](../conceptual/dag.md#update-graph-ug-cycles) processes table updates in cycles. When you iterate over a [refreshing table](../conceptual/table-types.md), Deephaven can lock the update graph for the whole iteration. The lock stops the table from updating, so all of the values come from one consistent view of the table. Iteration runs under an update graph lock in the following cases:
+The [update graph](../conceptual/dag.md#update-graph-cycles) processes table updates in cycles. When you iterate over a [refreshing table](../conceptual/table-types.md), Deephaven can lock the update graph for the whole iteration. The lock stops the table from updating, so all of the values come from one consistent view of the table. Iteration runs under an update graph lock in the following cases:
 
 - Code you run in the console or in a script already holds the update graph's [exclusive lock](../conceptual/query-engine/engine-locking.md#exclusive-lock), so no table can update until the code finishes.
 - On a thread you start yourself, the iterator acquires the update graph's [shared lock](../conceptual/query-engine/engine-locking.md#shared-lock) and holds it until the generator is exhausted, closed, or destroyed. It does this only when [`auto_locking`](/core/pydoc/code/deephaven.update_graph.html#deephaven.update_graph.auto_locking) is enabled, which it is by default, and the thread isn't already marked as safe to run table operations without a lock.

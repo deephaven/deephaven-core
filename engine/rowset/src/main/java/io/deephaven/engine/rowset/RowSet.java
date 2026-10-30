@@ -4,6 +4,9 @@
 package io.deephaven.engine.rowset;
 
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -114,6 +117,16 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @return A new {@link WritableRowSet} containing the positions of the keys in this RowSet
      */
     WritableRowSet invert(RowSet keys, long maximumPosition);
+
+    /**
+     * Fill {@code positions} with the row position in this RowSet of each of {@code keys}. As with
+     * {@link #invert(RowSet)}, <b>all</b> keys <b>must</b> exist within this RowSet.
+     *
+     * @param keys The keys to find positions for
+     * @param positions The chunk to fill with the positions of {@code keys}; its capacity must be at least the size of
+     *        {@code keys}. It may be the same chunk as {@code keys}, which are then replaced by their positions.
+     */
+    void invert(LongChunk<OrderedRowKeys> keys, WritableLongChunk<? super OrderedRowKeys> positions);
 
     /**
      * Returns a new RowSet representing the intersection of the current RowSet with the input RowSet
