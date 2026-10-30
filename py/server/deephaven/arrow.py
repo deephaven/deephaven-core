@@ -5,7 +5,6 @@
 
 import io
 from collections.abc import Sequence
-from typing import Optional
 
 import jpy
 import pyarrow as pa
@@ -97,7 +96,7 @@ def _map_arrow_type(arrow_type: pa.DataType) -> dict[str, str]:
     return {"deephaven:type": dh_type}
 
 
-def to_table(pa_table: pa.Table, cols: Optional[Sequence[str]] = None) -> Table:
+def to_table(pa_table: pa.Table, cols: Sequence[str] | None = None) -> Table:
     """Creates a Deephaven table from a pyarrow table.
 
     Args:
@@ -166,7 +165,7 @@ class _ConverterStream(io.RawIOBase):
         return n
 
 
-def to_arrow(table: Table, cols: Optional[Sequence[str]] = None) -> pa.Table:
+def to_arrow(table: Table, cols: Sequence[str] | None = None) -> pa.Table:
     """Creates a pyarrow table from a Deephaven table.
 
     Args:

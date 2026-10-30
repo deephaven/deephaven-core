@@ -24,12 +24,16 @@ module = [
 ignore_missing_imports = true
 
 [tool.ruff]
-include = ["deephaven/**/*.py", "tests/**/*.py", "setup.py"]
+target-version = "py310"
+include = ["deephaven/**/*.py", "deephaven_internal/**/*.py", "tests/**/*.py", "setup.py"]
 extend-exclude = ["deephaven/__init__.py", "deephaven/plot/__init__.py", "deephaven/plot/figure.py", "tests/test_docstring_parser.py"]
 
 [tool.ruff.lint]
-select = ["F", "I"]
+select = ["F", "I", "UP006", "UP007", "UP035", "UP036", "UP045"]
 
 [tool.ruff.lint.per-file-ignores]
 "deephaven/plot/**" = ["E741", "F405", "F403"]
 "tests/**/*.py" = ["E741", "F405", "F403", "F811", "F841"]
+# These tests check that UDF parsing still handles the old typing forms, like Optional[int] and List[int].
+"tests/test_udf_*.py" = ["UP006", "UP007", "UP035", "UP045"]
+"tests/test_vectorization.py" = ["UP006", "UP007", "UP035", "UP045"]

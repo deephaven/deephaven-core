@@ -16,7 +16,7 @@ import sys
 import threading
 import warnings
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Union
+from typing import Any
 
 import jpy
 
@@ -163,7 +163,7 @@ def _lookup_wrapped_class(j_obj: jpy.JType) -> list[type[JObjectWrapper]]:
     ]
 
 
-def javaify(obj: Any) -> Optional[jpy.JType]:
+def javaify(obj: Any) -> jpy.JType | None:
     """
     Returns an object that is safe to pass to Java. Callers should take care to ensure that this happens
     in a liveness scope that reflects the lifetime of the reference to be passed to Java.
@@ -185,7 +185,7 @@ def javaify(obj: Any) -> Optional[jpy.JType]:
     return JLivePyObjectWrapper(obj)
 
 
-def pythonify(j_obj: Any) -> Optional[Any]:
+def pythonify(j_obj: Any) -> Any | None:
     """
     Reciprocal of javaify, returns an object that is safe to be used in Python after being passed
     from Java.
@@ -208,7 +208,7 @@ def pythonify(j_obj: Any) -> Optional[Any]:
 
 def _wrap_with_subclass(
     j_obj: jpy.JType, cls: type[JObjectWrapper]
-) -> Optional[JObjectWrapper]:
+) -> JObjectWrapper | None:
     """Returns a wrapper instance for the specified Java object by trying the entire subclasses' hierarchy. The
     function employs a Depth First Search strategy to try the most specific subclass first. If no matching wrapper class is found,
     returns None.
@@ -229,7 +229,7 @@ def _wrap_with_subclass(
     return None
 
 
-def wrap_j_object(j_obj: jpy.JType) -> Optional[Union[JObjectWrapper, jpy.JType]]:
+def wrap_j_object(j_obj: jpy.JType) -> JObjectWrapper | jpy.JType | None:
     """Wraps the specified Java object as an instance of the most specific custom wrapper class if one is available,
     otherwise returns the raw Java object."""
     if j_obj is None:
@@ -247,7 +247,7 @@ def wrap_j_object(j_obj: jpy.JType) -> Optional[Union[JObjectWrapper, jpy.JType]
     return j_obj
 
 
-def unwrap(obj: Any) -> Union[jpy.JType, Any]:
+def unwrap(obj: Any) -> jpy.JType | Any:
     """Returns the wrapped raw Java object if this is a wrapped Java object. Otherwise, returns the same object."""
     if isinstance(obj, JObjectWrapper):
         return obj.j_object

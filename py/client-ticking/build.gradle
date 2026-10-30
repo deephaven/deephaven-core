@@ -64,7 +64,7 @@ def pyClientTickingWheel = { String pythonTag -> Docker.registerDockerTask(proje
         copyFile('README.md', "${prefix}/src/py-client-ticking")
         copyFile('src/', "${prefix}/src/py-client-ticking/src/")
         copyFile('pyClientTickingWheel/entrypoint.sh', '/entrypoint.sh')
-        if (pythonTag.startsWith('cp39')) {
+        if (pythonTag.startsWith('cp310')) {
             runCommand("""cd "${prefix}/src/py-client-ticking"; \\
                        /opt/python/${pythonTag}/bin/pip install --root-user-action ignore --upgrade pip; \\
                        /opt/python/${pythonTag}/bin/pip install --root-user-action ignore --only-binary :all: -r requirements-dev.txt; \\
@@ -98,7 +98,7 @@ def getCPythonTag = { String pythonVersion ->
     return "cp${noPeriodVersion}-cp${noPeriodVersion}".toString()
 }
 
-def pythonVersions = [ '3.9', '3.10', '3.11', '3.12', '3.13' ]
+def pythonVersions = [ '3.10', '3.11', '3.12', '3.13' ]
 
 Map<String, TaskProvider<? extends Task>> cpythonBuilds = pythonVersions.collectEntries { pythonVersion ->
     def cpythonTag = getCPythonTag(pythonVersion)

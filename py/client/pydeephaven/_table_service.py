@@ -3,7 +3,7 @@
 #
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from deephaven_core.proto import table_pb2, table_pb2_grpc, ticket_pb2
 from pydeephaven._batch_assembler import BatchOpAssembler
@@ -51,8 +51,8 @@ class TableService:
             raise DHError("failed to finish the table batch operation.") from e
 
     def grpc_table_op(
-        self, table: Optional[Table], op: TableOp, table_class: type = Table
-    ) -> Union[Table, InputTable]:
+        self, table: Table | None, op: TableOp, table_class: type = Table
+    ) -> Table | InputTable:
         """Makes a single gRPC Table operation call and returns a new Table."""
         try:
             export_ticket = self.session.make_export_ticket()

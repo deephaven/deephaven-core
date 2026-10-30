@@ -4,7 +4,6 @@
 
 import time
 import unittest
-from typing import Optional, Union
 
 import jpy
 import numpy
@@ -33,9 +32,9 @@ _JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors"
 class TableUpdateRecorder:
     def __init__(
         self,
-        table: Optional[Table] = None,
-        chunk_size: Optional[int] = None,
-        cols: Optional[Union[str, list[str]]] = None,
+        table: Table | None = None,
+        chunk_size: int | None = None,
+        cols: str | list[str] | None = None,
     ):
         self.table = table
         self.chunk_size = chunk_size
@@ -106,7 +105,7 @@ class TableListenerTestCase(BaseTestCase):
     def check_update_recorder(
         self,
         table_update_recorder: TableUpdateRecorder,
-        cols: Optional[Union[str, list[str]]] = None,
+        cols: str | list[str] | None = None,
         *,
         has_replay: bool = False,
         has_added: bool = False,
@@ -130,7 +129,7 @@ class TableListenerTestCase(BaseTestCase):
             self.assertTrue(any(table_update_recorder.replays))
             self.assertTrue(not all(table_update_recorder.replays))
 
-    def verify_data_changes(self, changes, cols: Union[str, list[str]]):
+    def verify_data_changes(self, changes, cols: str | list[str]):
         changes = [c for c in changes if c]
         self.assertGreater(len(changes), 0)
         cols = to_sequence(cols)

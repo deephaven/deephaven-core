@@ -4,7 +4,7 @@
 """This module implement various aggregations that can be used in deephaven table's aggregation operations."""
 
 from collections.abc import Sequence
-from typing import Any, Optional, Union
+from typing import Any
 
 import jpy
 
@@ -27,9 +27,9 @@ class Aggregation:
 
     def __init__(
         self,
-        j_agg_spec: Optional[jpy.JType] = None,
-        j_aggregation: Optional[jpy.JType] = None,
-        cols: Optional[Union[str, Sequence[str]]] = None,
+        j_agg_spec: jpy.JType | None = None,
+        j_aggregation: jpy.JType | None = None,
+        cols: str | Sequence[str] | None = None,
     ):
         self._j_agg_spec = j_agg_spec
         self._j_aggregation = j_aggregation
@@ -72,7 +72,7 @@ class Aggregation:
             )
 
 
-def sum_(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
+def sum_(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a Sum aggregation.
 
     Args:
@@ -85,7 +85,7 @@ def sum_(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
     return Aggregation(j_agg_spec=_JAggSpec.sum(), cols=cols)
 
 
-def abs_sum(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
+def abs_sum(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates an Absolute-sum aggregation.
 
     Args:
@@ -98,7 +98,7 @@ def abs_sum(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
     return Aggregation(j_agg_spec=_JAggSpec.absSum(), cols=cols)
 
 
-def group(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
+def group(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a Group aggregation.
 
     Args:
@@ -111,7 +111,7 @@ def group(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
     return Aggregation(j_agg_spec=_JAggSpec.group(), cols=cols)
 
 
-def avg(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
+def avg(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates an Average aggregation.
 
     Args:
@@ -141,7 +141,7 @@ def count_(col: str) -> Aggregation:
 
 
 def count_where(
-    col: str, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]
+    col: str, filters: str | Filter | Sequence[str] | Sequence[Filter]
 ) -> Aggregation:
     """Creates a CountWhere aggregation with the supplied output column name, counting values that pass the supplied
     filters.
@@ -185,7 +185,7 @@ def partition(col: str, include_by_columns: bool = True) -> Aggregation:
 
 
 def count_distinct(
-    cols: Optional[Union[str, Sequence[str]]] = None, count_nulls: bool = False
+    cols: str | Sequence[str] | None = None, count_nulls: bool = False
 ) -> Aggregation:
     """Creates a Count Distinct aggregation which computes the count of distinct values within an aggregation group for
     each of the given columns.
@@ -201,7 +201,7 @@ def count_distinct(
     return Aggregation(j_agg_spec=_JAggSpec.countDistinct(count_nulls), cols=cols)
 
 
-def first(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
+def first(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a First aggregation.
 
     Args:
@@ -216,8 +216,8 @@ def first(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
 
 def formula(
     formula: str,
-    formula_param: Optional[str] = None,
-    cols: Optional[Union[str, Sequence[str]]] = None,
+    formula_param: str | None = None,
+    cols: str | Sequence[str] | None = None,
     reaggregating: bool = False,
 ) -> Aggregation:
     """Creates a user defined formula aggregation. This formula can contain a combination of any of the following:
@@ -265,7 +265,7 @@ def formula(
     return Aggregation(j_aggregation=j_agg)
 
 
-def last(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
+def last(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates Last aggregation.
 
     Args:
@@ -278,7 +278,7 @@ def last(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
     return Aggregation(j_agg_spec=_JAggSpec.last(), cols=cols)
 
 
-def min_(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
+def min_(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a Min aggregation.
 
     Args:
@@ -291,7 +291,7 @@ def min_(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
     return Aggregation(j_agg_spec=_JAggSpec.min(), cols=cols)
 
 
-def max_(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
+def max_(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a Max aggregation to the ComboAggregation object.
 
     Args:
@@ -305,7 +305,7 @@ def max_(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
 
 
 def median(
-    cols: Optional[Union[str, Sequence[str]]] = None,
+    cols: str | Sequence[str] | None = None,
     average_evenly_divided: bool = True,
 ) -> Aggregation:
     """Creates a Median aggregation which computes the median value within an aggregation group for each of the
@@ -326,7 +326,7 @@ def median(
 
 def pct(
     percentile: float,
-    cols: Optional[Union[str, Sequence[str]]] = None,
+    cols: str | Sequence[str] | None = None,
     average_evenly_divided: bool = False,
 ) -> Aggregation:
     """Creates a Percentile aggregation which computes the percentile value within an aggregation group for each of
@@ -348,9 +348,7 @@ def pct(
     )
 
 
-def sorted_first(
-    order_by: str, cols: Optional[Union[str, Sequence[str]]] = None
-) -> Aggregation:
+def sorted_first(order_by: str, cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a SortedFirst aggregation.
 
     Args:
@@ -364,9 +362,7 @@ def sorted_first(
     return Aggregation(j_agg_spec=_JAggSpec.sortedFirst(order_by), cols=cols)
 
 
-def sorted_last(
-    order_by: str, cols: Optional[Union[str, Sequence[str]]] = None
-) -> Aggregation:
+def sorted_last(order_by: str, cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a SortedLast aggregation.
 
     Args:
@@ -380,7 +376,7 @@ def sorted_last(
     return Aggregation(j_agg_spec=_JAggSpec.sortedLast(order_by), cols=cols)
 
 
-def std(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
+def std(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a Std (sample standard deviation) aggregation.
 
     Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
@@ -398,9 +394,9 @@ def std(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
 
 
 def unique(
-    cols: Optional[Union[str, Sequence[str]]] = None,
+    cols: str | Sequence[str] | None = None,
     include_nulls: bool = False,
-    non_unique_sentinel: Optional[Any] = None,
+    non_unique_sentinel: Any | None = None,
 ) -> Aggregation:
     """Creates a Unique aggregation which computes the single unique value within an aggregation group for each of
     the given columns. If all values in a column are null, or if there is more than one distinct value in a column, the
@@ -432,7 +428,7 @@ def unique(
         )
 
 
-def var(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
+def var(cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a sample Var aggregation.
 
     Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
@@ -449,9 +445,7 @@ def var(cols: Optional[Union[str, Sequence[str]]] = None) -> Aggregation:
     return Aggregation(j_agg_spec=_JAggSpec.var(), cols=cols)
 
 
-def weighted_avg(
-    wcol: str, cols: Optional[Union[str, Sequence[str]]] = None
-) -> Aggregation:
+def weighted_avg(wcol: str, cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a Weighted-avg aggregation.
 
     Args:
@@ -465,9 +459,7 @@ def weighted_avg(
     return Aggregation(j_agg_spec=_JAggSpec.wavg(wcol), cols=cols)
 
 
-def weighted_sum(
-    wcol: str, cols: Optional[Union[str, Sequence[str]]] = None
-) -> Aggregation:
+def weighted_sum(wcol: str, cols: str | Sequence[str] | None = None) -> Aggregation:
     """Creates a Weighted-sum aggregation.
 
     Args:
@@ -482,7 +474,7 @@ def weighted_sum(
 
 
 def distinct(
-    cols: Optional[Union[str, Sequence[str]]] = None, include_nulls: bool = False
+    cols: str | Sequence[str] | None = None, include_nulls: bool = False
 ) -> Aggregation:
     """Creates a Distinct aggregation which computes the distinct values within an aggregation group for each of the
     given columns and stores them as vectors.
