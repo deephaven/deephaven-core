@@ -55,7 +55,7 @@ Error occurred during initialization of VM
 Multiple garbage collectors selected
 ```
 
-To use the Z Garbage Collector, set `JAVA_OPTS` instead. Setting `JAVA_OPTS` replaces the image's VM options file, `/opt/deephaven/server-jetty/etc/dh-default-21.vmoptions`. That file sets these defaults:
+To use the Z Garbage Collector, set `JAVA_OPTS` instead. Setting `JAVA_OPTS` replaces the image's VM options file, `/opt/deephaven/server-jetty/etc/dh-default.vmoptions`. That file sets these defaults:
 
 - The G1 garbage collector
 - The pause-time target
@@ -82,7 +82,7 @@ Mount your file over the image's copy with `-v`. This bind mount maps a host fil
 docker run --rm -p 10000:10000 -v /path/to/deephaven.prop:/opt/deephaven/config/deephaven.prop ghcr.io/deephaven/server-slim:latest
 ```
 
-Also set `deephaven.console.type=groovy` in the file. Without it, the server fails at startup with `Console type not found: python`, because this image does not include a Python console.
+Also set `deephaven.console.type=groovy` in the file. Without it, the server attempts to start a Python console, which fails because this image does not include the Python runtime dependencies.
 
 ## Change the port
 

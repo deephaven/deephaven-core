@@ -55,7 +55,7 @@ Error occurred during initialization of VM
 Multiple garbage collectors selected
 ```
 
-To use the Z Garbage Collector, set `JAVA_OPTS` instead. Setting `JAVA_OPTS` replaces the image's VM options file, `/opt/deephaven/server-jetty/etc/dh-default-21.vmoptions`. That file sets these defaults:
+To use the Z Garbage Collector, set `JAVA_OPTS` instead. Setting `JAVA_OPTS` replaces the image's VM options file, `/opt/deephaven/server-jetty/etc/dh-default.vmoptions`. That file sets these defaults:
 
 - The G1 garbage collector
 - The pause-time target
