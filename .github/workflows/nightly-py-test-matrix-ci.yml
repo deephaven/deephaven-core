@@ -95,7 +95,7 @@ jobs:
 
       - name: Setup uv
         # py-test-matrix.sh uses uv to get the Python version and make the venv.
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           # setup-uv caches by default. Each job's cache is 0.4 to 1.4 GB, so the 16 jobs would fill most of the repo's
           # 10 GB Actions cache and evict the Gradle caches that PR builds use. Without it, uv compiles grpcio and numba
