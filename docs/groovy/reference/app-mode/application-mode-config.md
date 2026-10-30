@@ -2,11 +2,11 @@
 title: Application Mode configuration
 ---
 
-[Application Mode](../../how-to-guides/application-mode.md) starts applications when the Deephaven server starts. Each application has one `*.app` file that defines it.
+[Application Mode](../../how-to-guides/application-mode.md) starts applications when the Deephaven server starts. Each application loaded from a file has one `*.app` file that defines it. Some applications are discovered another way, such as through a `ServiceLoader` factory, and need no `.app` file.
 
-The `deephaven.application.dir` property sets the *application directory*. When that property is unset, the server uses the `app.d` directory inside the [Deephaven configuration directory](../../how-to-guides/configuration/configure-production-application.md#deephaven-server-bootstrap-configuration), if it exists.
+The `deephaven.application.dir` property sets the _application directory_. When that property is unset, the server uses the `app.d` directory inside the [Deephaven configuration directory](../../how-to-guides/configuration/configure-production-application.md#deephaven-server-bootstrap-configuration), if it exists.
 
-Each `*.app` file can have any name that ends in `.app`. The file must be a regular file. It must not be a symbolic link, and it must be in the *application directory*.
+Each `*.app` file can have any name that ends in `.app`. The file must be a regular file. It must not be a symbolic link, and it must be in the _application directory_.
 
 The server loads `.app` files in lexicographic order by file name. It skips any file that is not a readable `.app` regular file, without reporting an error. A readable `.app` file with an invalid definition, such as one with no `type`, stops the server from starting.
 
@@ -39,7 +39,7 @@ Required. The kind of application. Valid values:
 Optional. Whether the server loads this application.
 
 - `true` (default) loads the application. The value is not case-sensitive.
-- Any other value, such as `false` or `yes`, skips the application.
+- Any other value, such as `false` or `yes`, skips the application. The server still reads and validates a skipped application's definition, so a disabled file with an invalid definition still stops the server from starting.
 
 </Param>
 </ParamTable>
@@ -70,7 +70,7 @@ Required. The application's display name.
 </Param>
 <Param name="file_<n>" type="String">
 
-Required. The path to one script to run, where `<n>` is a non-negative integer no greater than 2147483647, such as `file_0` and `file_1`. Specify at least one. Relative paths resolve against the application directory.
+Required. The path to one script to run, where `<n>` is a string of ASCII digits, such as `file_0` and `file_1`. Keys whose suffix contains other characters, such as `file_+1` or `file_a`, are ignored. A number above 2147483647 stops the server from starting. Specify at least one. Relative paths resolve against the application directory.
 
 Scripts run in ascending order of `<n>`, not in the order they appear in the file. The server ignores keys whose suffix is not an integer, such as `file_a`.
 
