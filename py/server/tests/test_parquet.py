@@ -532,8 +532,16 @@ class ParquetTestCase(BaseTestCase):
 
             df_from_disk = to_pandas(from_disk)
             original_df = pa_table.to_pandas()
-            # Compare the dataframes as strings
-            self.assertTrue(df_from_disk.astype(str).equals(original_df.astype(str)))
+            # Compare the null positions, then the other rows as strings. The column repeats its values, so to_pandas
+            # gets it dictionary-encoded and returns a category column with NaN for nulls, while pyarrow returns None.
+            # pandas 2's astype(str) writes those as 'nan' and 'None', so comparing whole columns as strings fails there.
+            self.assertTrue(df_from_disk.isna().equals(original_df.isna()))
+            not_null = original_df.notna().all(axis=1)
+            self.assertTrue(
+                df_from_disk[not_null]
+                .astype(str)
+                .equals(original_df[not_null].astype(str))
+            )
 
         # Test for nanoseconds, microseconds, and milliseconds
         schema_nsec = table.schema.set(

@@ -8,19 +8,19 @@ Understanding how to think about Deephaven
 
 </div>
 
-Deephaven works differently from tools like SQL or traditional Java data structures — and some of Deephaven's behavior might surprise you. Code that looks straightforward can produce unexpected results. This guide explains _how to think_ about Deephaven so you can write effective queries and avoid common pitfalls.
+Deephaven works differently from SQL databases and from Java collections, and some of its behavior might surprise you. Code that looks straightforward can produce unexpected results. This guide explains _how to think_ about Deephaven so you can write effective queries and avoid common pitfalls.
 
-This isn't a deep technical dive — for that, see [Deephaven's design](./deephaven-design.md). Instead, this guide builds the mental model you need to work productively with Deephaven from day one.
+This guide isn't a deep technical dive. For that, see [Deephaven's design](./deephaven-design.md). Instead, this guide builds the mental model you need to work productively with Deephaven from day one. The second half of the page puts that model to work: common query patterns, what you can build on the engine, and a quick reference.
 
-![How Deephaven works: Tables are recipes, not data copies — updates flow automatically](../assets/conceptual/mental-model/mental-model-overview-static.png)
+<Svg src='../assets/conceptual/mental-model/mental-model-overview.svg' style={{height: 'auto', maxWidth: '1000px'}} />
 
-_For technical details, see [Deephaven's design](./deephaven-design.md). For hands-on learning, see the [Crash course](../getting-started/crash-course/overview.md)._
+_For hands-on learning, see the [Crash course](../getting-started/crash-course/overview.md)._
 
 ## Tables are recipes, not data
 
 In traditional programming, a data structure is a container holding your data. When you filter or transform it, you get a new container with different data inside.
 
-**Deephaven tables work differently.** When you call [`where`](../reference/table-operations/filter/where.md) or [`update`](../reference/table-operations/select/update.md), Deephaven doesn't copy the source data — it builds a new table that shares the parent's unchanged columns and computes only what's new (a filtered `RowSet`, or a computed column). That new table also keeps a live dependency on its parent, so it recomputes automatically when the source changes, without you rerunning any code.
+**Deephaven tables work differently.** When you call [`where`](../reference/table-operations/filter/where.md) or [`update`](../reference/table-operations/select/update.md), Deephaven doesn't copy the source data. Instead, it builds a new table that shares the parent's unchanged columns. The new table computes only what's new, such as the set of rows that pass a filter or a new computed column. It also keeps a live dependency on its parent, so it recomputes automatically when the source changes, without you rerunning any code.
 
 ```groovy ticking-table order=null
 source = timeTable("PT1S").update("X = ii")
@@ -28,15 +28,36 @@ filtered = source.where("X > 2")
 doubled = source.update("Y = X * 2")
 ```
 
-`source` is a live table — it adds one row for each one-second period that elapses, so it grows by roughly a row per second (a slow or delayed update cycle can add several rows at once). `filtered` immediately reflects whichever rows currently satisfy `X > 2`, and it maintains a _dependency_ on `source`: as new rows arrive, `filtered` and `doubled` automatically recompute and reflect the change, without you rerunning any code.
+`source` is a [live table](#static-vs-live-tables): its data changes while your program runs. It adds one row for each second that elapses. A slow or delayed [update cycle](./table-update-model.md) can add several of those rows at once.
+
+`ii` is a built-in [special variable](../reference/query-language/variables/special-variables.md) that holds each row's position as a `long`, so `X` numbers the rows. The special variable `i` holds the same position as an `int`.
+
+`filtered` holds the rows of `source` that currently satisfy `X > 2`, and `doubled` adds a `Y` column to every row of `source`. Both tables update automatically as new rows arrive in `source`.
 
 **Why this matters:**
 
-- You don't need to re-run your filter when data changes — it happens automatically.
+- You don't need to rerun your [filter](../reference/table-operations/filter/where.md) when data changes, because the filtered table updates itself.
 - Multiple transformations can share the same source without duplicating data.
 - Operations are typically much faster than copying entire datasets.
 
-When you call a table operation, Deephaven establishes the dependency and computes the initial result. That dependency remains active — if the source data changes, downstream tables update automatically without you re-running code. Operations like [`view`](../reference/table-operations/select/view.md) are an exception: they store the formula but defer evaluation until values are actually accessed, which saves memory for columns you rarely read.
+[`view`](../reference/table-operations/select/view.md) also keeps a dependency on its parent, but it doesn't compute values up front. It stores the formula and evaluates it when values are accessed, which saves memory for columns you rarely read. See [Use `view` for lightweight derived columns](#pattern-use-view-for-lightweight-derived-columns).
+
+## Static vs. live tables
+
+Deephaven tables come in two flavors:
+
+- **Static tables**: Data that doesn't change. Usually loaded from files, created with [`emptyTable`](../reference/table-operations/create/emptyTable.md) or [`newTable`](../reference/table-operations/create/newTable.md), or [snapshots](../reference/table-operations/snapshot/snapshot.md) of live data.
+- **Live tables**: Data that updates continuously. Deephaven also calls these refreshing tables. Created with [`timeTable`](../reference/table-operations/create/timeTable.md) or connected to [Kafka streams](../how-to-guides/data-import-export/kafka-stream.md) and other real-time sources.
+
+```groovy ticking-table order=null
+// Static: this table always has 10 rows with values 0-9
+staticTable = emptyTable(10).update("X = i")
+
+// Live: this table grows by about one row per second
+liveTable = timeTable("PT1S")  // See timeTable reference for duration syntax
+```
+
+**The key insight:** Most transformations on live tables produce live results. A table derived from a live table, like `filtered` in [Tables are recipes, not data](#tables-are-recipes-not-data), updates automatically. You don't need to poll for changes or rerun queries, because the engine handles propagation for you. [`snapshot`](../reference/table-operations/snapshot/snapshot.md) is a deliberate exception. It takes a live table and returns a static copy of it at a single point in time.
 
 ## Formulas run in the engine
 
@@ -46,32 +67,39 @@ When you write a formula string like `"Y = X * 2"`, that code runs inside Deepha
 result = emptyTable(1000).update("X = i", "Y = Math.sqrt(X * X + 1)")
 ```
 
-The engine parses and executes the string `"Y = Math.sqrt(X * X + 1)"`.
-
-> [!TIP]
-> Query strings use Java-style syntax: backticks (`` ` ``) for strings, single quotes for duration literals (`'PT1S'` for 1 second), and casts like `(int)` to specify return types. Note that API arguments like `timeTable("PT1S")` pass the duration as a string, while formulas require the query-literal syntax.
+The engine parses the string `"Y = Math.sqrt(X * X + 1)"` and compiles it to Java, so Groovy never evaluates the formula itself.
 
 This has important implications:
 
-- **Java methods available**: Use `Math.sqrt`, `String` methods like `toUpperCase`, and other Java standard library methods.
-- **Groovy variables accessible**: Variables from your Groovy script are available inside formulas via the query scope.
-- **Much faster**: The engine processes data in optimized batches, not one row at a time.
+- **Java methods are available**: Use `Math.sqrt`, `String` methods like `toUpperCase`, and other Java standard library methods.
+- **Groovy variables are available**: Script variables assigned without `def` are available inside formulas through the [query scope](../how-to-guides/query-scope.md).
+- **Groovy closures are callable**: Formulas can call [closures](../how-to-guides/groovy-closures.md), at a performance cost described in [Calling Groovy from formulas](#calling-groovy-from-formulas).
+- **Engine-native formulas run fast**: Formulas that use only operators, Java methods, and Deephaven's built-in functions are engine-native. The engine compiles them to Java and reads their input columns in bulk chunks, so each row costs a compiled Java call rather than a closure call.
+
+> [!TIP]
+> Query strings use Java-style syntax:
+>
+> - Backticks (`` ` ``) enclose strings.
+> - Single quotes enclose a single-character `char` literal, such as `'A'`, or a date-time literal, such as `'PT1S'` (a one-second duration) or `'2024-01-01T00:00:00Z'` (an instant).
+> - Casts like `(int)` specify return types.
+>
+> API arguments are different. When you pass [`timeTable`](../reference/table-operations/create/timeTable.md) its duration as a string, write a plain string, as in `timeTable("PT1S")`. Only a formula needs the single-quoted literal, as in `'PT1S'`.
 
 ### Calling Groovy from formulas
 
-You can call Groovy methods and closures from formulas:
+You can call [Groovy closures](../how-to-guides/groovy-closures.md) from formulas:
 
-```groovy syntax
+```groovy order=result
 myCalculation = { x -> x * x + 1 }
 
 result = emptyTable(10).update("Y = (int)myCalculation(i)")
 ```
 
-Closures assigned to top-level variables are available in query strings. The engine calls your closure once per row, which is slower than pure-engine formulas. For performance-critical code, prefer engine-native expressions.
+The engine calls a [closure](../how-to-guides/groovy-closures.md) once per row, which is slower than engine-native formulas. For performance-critical code, prefer engine-native formulas.
 
-## Your code doesn't run row-by-row
+## Write stateless formulas
 
-This is the most common surprise for new users. Consider this code:
+The engine doesn't promise to evaluate rows in order, or one at a time. This is the most common surprise for new users. Consider this code:
 
 ```groovy syntax
 counter = 0
@@ -85,48 +113,39 @@ nextValue = {
 result = emptyTable(5).update("Value = (int)nextValue()")
 ```
 
-You might expect `Value` to be `[1, 2, 3, 4, 5]`. But the engine can evaluate rows in _any order_, potentially in _parallel_ across multiple threads. You might get `[3, 1, 4, 2, 5]` or something else entirely — and results may differ between runs.
+You might expect `Value` to be `[1, 2, 3, 4, 5]`, but nothing guarantees it. Two things can break a counter like this one:
 
-**The rule:** Formulas should be _stateless_ — the result for row N should depend only on the input values for row N, not on what happened when processing other rows. Immutable variables (like configuration values) are fine; mutable state and order-dependent logic are not.
+- **Parallel evaluation**: When an operation processes many rows at once, the engine can evaluate a formula's rows on multiple threads, so values can come out of order and differ between runs.
+- **Live re-evaluation**: On a live table, the engine re-evaluates a formula only for the rows that change, so the counter's values no longer follow the row order.
+
+On a small static table like this one, the values usually come back in order.
+
+**The rule:** Formulas should be _stateless_. The result for row N should depend only on the input values for row N, not on what happened when processing other rows. Immutable variables, such as configuration values, are fine. Shared mutable state, such as a counter that every row updates, and logic that depends on the order rows are processed in are not.
 
 ### Replacing counters with row positions
 
-If you need deterministic row numbering on **static or append-only tables**, use `ii` (the row position) instead of a counter:
+If you need deterministic row numbering on a table whose rows never change, or only ever get added at the end, use [`ii`](../reference/query-language/variables/special-variables.md) (the row position) instead of a counter:
 
 ```groovy order=result
-// Use ii (the row number) instead of a counter
+// Use ii (the row position) instead of a counter.
+// Use ii rather than i for tables with more than 2 billion rows.
 result = emptyTable(5).update("Value = ii + 1")
 ```
 
 > [!NOTE]
-> These variables work on static and certain streaming tables, but general refreshing tables reject them because positions and keys can shift. If you need row identity on a ticking table, use a stable key column instead. See [special variables](../reference/query-language/variables/special-variables.md) for the full compatibility matrix.
+> Live tables other than [append-only](./table-types.md#specialization-1-append-only) and [blink](./table-types.md#specialization-3-blink) tables reject [`ii` and `i`](../reference/query-language/variables/special-variables.md) by default, because inserting, removing, or moving rows can shift a row's position. To identify rows in such a table, use a column whose value for each row never changes, such as an ID column. See [special variables](../reference/query-language/variables/special-variables.md#refreshing-table-restrictions) for the full compatibility matrix.
 
-For more complex cases involving state, see [parallelization](./query-engine/parallelization.md) and the serial execution options. For details on [`ii` and other special variables](../reference/query-language/variables/special-variables.md), see the reference documentation.
+### Replacing running totals with `updateBy`
 
-## Static vs. live: understanding mutability
+A running total is also stateful, because each row's value depends on the rows before it. Instead of accumulating it in a Groovy variable, use an [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) cumulative operation such as [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md). The engine computes it in table order and keeps it correct as the table changes:
 
-Deephaven tables come in two flavors:
+```groovy order=result
+import io.deephaven.api.updateby.UpdateByOperation
 
-- **Static tables**: Data that doesn't change. Loaded from files, created with [`emptyTable`](../reference/table-operations/create/emptyTable.md) or [`newTable`](../reference/table-operations/create/newTable.md), or snapshots of live data.
-- **Refreshing (live) tables**: Data that updates continuously. Created with [`timeTable`](../reference/table-operations/create/timeTable.md), connected to streams, or other real-time sources.
-
-```groovy ticking-table order=null
-// Static: this table will always have 10 rows with values 0-9
-staticTable = emptyTable(10).update("X = i")
-
-// Live: this table grows by one row every second
-liveTable = timeTable("PT1S")  // See timeTable reference for duration syntax
+result = emptyTable(5).update("X = i + 1").updateBy(UpdateByOperation.CumSum("RunningTotal = X"))
 ```
 
-**The key insight:** Most transformations on live tables produce live results — filter a live table, and the filtered result updates automatically. [`snapshot`](../reference/table-operations/snapshot/snapshot.md) is a deliberate exception: it's a transformation that takes a live table and returns a static copy at that single point in time.
-
-```groovy ticking-table order=null
-liveSource = timeTable("PT1S").update("Value = randomInt(0, 100)")
-highValue = liveSource.where("Value > 50")
-// highValue continuously updates as new rows arrive and are filtered
-```
-
-You don't need to poll for changes or re-run queries — the engine handles propagation automatically.
+For more complex cases involving state, see [Controlling execution order](./query-engine/parallelization.md#controlling-execution-order), which explains how to make the engine evaluate a formula serially.
 
 ## Moving data between Groovy and Deephaven
 
@@ -148,61 +167,28 @@ myTable = TableTools.newTable(
 
 ### From Deephaven to Groovy
 
-When you extract data back to Groovy, you can copy column values into an array. This is a snapshot, not a live view — changes to the table won't affect the array:
+When you extract data back to Groovy, you can copy column values into an array. The array is a copy, not a live view, so later changes to the table don't affect it. The following example copies the `X` column into an array:
 
-```groovy syntax
+```groovy order=myTable
 import io.deephaven.engine.table.vectors.ColumnVectors
 
 myTable = emptyTable(5).update("X = i * 10")
 
 // Copy column data into an array
-xValues = ColumnVectors.of(myTable, "X").copyToArray()
+xValues = ColumnVectors.ofInt(myTable, "X").copyToArray()
 ```
 
-For live tables, consider using [`snapshot`](../reference/table-operations/snapshot/snapshot.md) to get a static copy at a specific moment in time.
+For live tables, this copy holds the data from one moment in time. The table keeps updating, but your copy doesn't change.
 
 ### Performance tips
 
-Moving data between Groovy and Deephaven takes time. For large datasets:
-
-- Keep data in Deephaven tables and use engine operations (fast).
-- Avoid repeatedly extracting data in loops (slow).
-- Use snapshots strategically, not in tight loops.
-
-## What you can build
-
-Deephaven isn't just a table engine — it's a platform for building data applications.
-
-### Data sources and sinks
-
-| Source           | How to use                                                                             |
-| ---------------- | -------------------------------------------------------------------------------------- |
-| **Parquet**      | `ParquetTools.readTable("/path/to/file.parquet")`                                      |
-| **CSV**          | `CsvTools.readCsv("/path/to/file.csv")`                                                |
-| **Kafka**        | [`KafkaTools.consumeToTable`](../reference/data-import-export/Kafka/consumeToTable.md) |
-| **Manual entry** | [Input tables](../how-to-guides/input-tables.md) — edit cells in the UI                |
-| **Programmatic** | [Table Publisher](../how-to-guides/table-publisher.md) — push data from your code      |
-
-| Destination        | How to use                                                                                 |
-| ------------------ | ------------------------------------------------------------------------------------------ |
-| **Parquet**        | `ParquetTools.writeTable(table, "/path/to/output.parquet")`                                |
-| **Kafka**          | [`KafkaTools.produceFromTable`](../reference/data-import-export/Kafka/produceFromTable.md) |
-| **Remote clients** | Connect via Python, Java, JavaScript, or C++ clients                                       |
-
-### Client-server architecture
-
-Deephaven runs as a server. Multiple clients can connect simultaneously:
-
-- **Web UI**: Built-in interactive console and grids
-- **Python client**: `from pydeephaven import Session`
-- **JavaScript client**: For web applications
-- **Java/C++ clients**: For high-performance integrations
-
-Clients that subscribe to the same table see consistent, live updates. You can share tables between sessions with [shared tickets](./what-is-barrage.md#shared-tickets).
+Moving data between Groovy and Deephaven takes time. For large datasets, avoid extracting data in loops. Keep the work in the engine instead, as the [first pattern below](#pattern-prefer-engine-operations-over-loops) shows.
 
 ## Common patterns
 
 ### Pattern: Prefer engine operations over loops
+
+You don't need a Groovy loop to compute per-group values. An aggregation such as [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) runs inside the engine over whole batches of rows. On a live table, it updates as rows arrive:
 
 ```groovy order=prices,avgBySymbol
 import static io.deephaven.api.agg.Aggregation.AggAvg
@@ -218,14 +204,6 @@ avgBySymbol = prices.aggBy([AggAvg("AvgPrice = Price")], "Symbol")
 ```
 
 See [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md) for all aggregation options.
-
-### Pattern: Use `ii` and `i` instead of counters
-
-```groovy order=numbered
-// i = row position as int (0, 1, 2...)
-// ii = row position as long (use for tables with more than 2 billion rows)
-numbered = emptyTable(10).update("RowNumber = ii", "Value = i * 2")
-```
 
 ### Pattern: Use `view` for lightweight derived columns
 
@@ -267,11 +245,11 @@ summary = enriched.aggBy([AggAvg("AvgPrice = Price"), AggCount("Count")], "Symbo
 // All four tables update together when new data arrives
 ```
 
-Each intermediate table (`cleaned`, `enriched`) is a first-class object you can display, join, or use as input to further operations.
+Each intermediate table (`cleaned`, `enriched`) is a first-class object you can display, [join](../how-to-guides/joins-exact-relational.md), or use as input to further operations.
 
 ### Pattern: Same code for batch and streaming
 
-Write your logic once — it works identically on files and live streams:
+Write your logic once, and run the same table operations on files and on live streams:
 
 ```groovy syntax
 import io.deephaven.parquet.table.ParquetTools
@@ -289,18 +267,20 @@ historical = ParquetTools.readTable("/data/trades.parquet")
 historicalAnalysis = analyzeTrades(historical)
 
 // ...and on live streams
-// live = kafkaConsumer(...)
+// live = KafkaTools.consumeToTable(...)
 // liveAnalysis = analyzeTrades(live)
 ```
 
-No need for separate batch and streaming codebases.
+You don't need separate codebases for batch and streaming data.
 
 ### Pattern: Partition large datasets
 
-Split data by key and process each partition efficiently:
+A [partitioned table](../how-to-guides/partitioned-tables.md) splits a table into subtables, one per key value, so you can process each one independently. Partitioned tables let you process subtables in parallel and retrieve a subtable by key directly, instead of re-running a [filter](../reference/table-operations/filter/where.md) for each key. [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) creates one, and [`transform`](../reference/table-operations/partitioned-tables/transform.md) applies a closure to every subtable:
 
 ```groovy ticking-table order=null
 import io.deephaven.api.updateby.UpdateByOperation
+import io.deephaven.engine.context.ExecutionContext
+import io.deephaven.util.SafeCloseable
 
 trades = timeTable("PT0.1S").update(
     "Symbol = (ii % 3 == 0) ? `AAPL` : ((ii % 3 == 1) ? `GOOG` : `MSFT`)",
@@ -310,69 +290,81 @@ trades = timeTable("PT0.1S").update(
 // Partition by symbol
 bySymbol = trades.partitionBy("Symbol")
 
+defaultCtx = ExecutionContext.getContext()
+
 transformFunc = { t ->
-    return t.updateBy(UpdateByOperation.RollingAvg(10, "AvgPrice = Price"))
+    // Open the script's execution context so the closure's table operations
+    // can use the query scope and compile formulas (see Execution context)
+    try (SafeCloseable ignored = defaultCtx.open()) {
+        return t.updateBy(UpdateByOperation.RollingAvg(10, "AvgPrice = Price"))
+    }
 }
 
-// transform() captures the calling execution context and reopens it for every
-// constituent, including ones added later on update-graph threads
+// transform applies transformFunc to every subtable (constituent), including ones added later
 transformed = bySymbol.transform(transformFunc)
 ```
 
-Partitioned tables let you parallelize processing, quickly retrieve subtables by key, and improve filter performance in loops. See [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) and [Partitioned tables](../how-to-guides/partitioned-tables.md) for details.
+Here, `transformFunc` adds an `AvgPrice` column to each symbol's subtable: a rolling average of `Price` over that symbol's most recent 10 rows.
 
-## Pitfalls to avoid
+When you call [`transform`](../reference/table-operations/partitioned-tables/transform.md) from a script, the closure doesn't inherit the script's [execution context](./execution-context.md), which table operations need to use the query scope or compile formulas. So the closure opens the script's context before it calls [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md).
 
-### Pitfall: Stateful functions in formulas
+## What you can build
 
-```groovy syntax
-// DON'T: Rely on execution order
-// cache = [:]
-// def lookup(key) {
-//     if (!cache.containsKey(key)) {
-//         cache[key] = expensiveCalculation(key)
-//     }
-//     return cache[key]
-// }
-// result = source.update("Value = lookup(Key)")  // Race conditions!
+Deephaven is more than a table engine. It's a platform for building data applications.
 
-// DO: Use engine-native operations or proper caching patterns
-```
+### Data sources and sinks
 
-### Pitfall: Extracting data unnecessarily
+Deephaven reads data from files, streams, and your own code, and writes results back out:
 
-```groovy syntax
-// DON'T: Extract data for every operation
-// data = myTable.getColumn("X").getDirect()
-// filteredData = data.findAll { it > 10 }
-// // ... then convert back to table
+| Source           | How to use                                                                             |
+| ---------------- | -------------------------------------------------------------------------------------- |
+| **Parquet**      | [`ParquetTools.readTable`](../reference/data-import-export/Parquet/readTable.md)       |
+| **CSV**          | [`CsvTools.readCsv`](../reference/data-import-export/CSV/readCsv.md)                   |
+| **Kafka**        | [`KafkaTools.consumeToTable`](../reference/data-import-export/Kafka/consumeToTable.md) |
+| **Manual entry** | [Input tables](../how-to-guides/input-tables.md) — edit cells in the UI                |
+| **Programmatic** | [Table publisher](../how-to-guides/table-publisher.md) — push data from your code      |
 
-// DO: Use Deephaven operations directly
-// result = myTable.where("X > 10")
-```
+| Sink        | How to use                                                                                 |
+| ----------- | ------------------------------------------------------------------------------------------ |
+| **Parquet** | [`ParquetTools.writeTable`](../reference/data-import-export/Parquet/writeTable.md)         |
+| **CSV**     | [`CsvTools.writeCsv`](../reference/data-import-export/CSV/writeCsv.md)                     |
+| **Kafka**   | [`KafkaTools.produceFromTable`](../reference/data-import-export/Kafka/produceFromTable.md) |
+
+### Client-server architecture
+
+Deephaven runs as a server. Multiple [clients](./client-server-model.md#client-apis) can connect simultaneously:
+
+- **Web UI**: For interactive work in the built-in console and grids
+- **Python client** ([`pydeephaven`](./client-server-model.md#client-apis)): For Python applications outside the server
+- **JavaScript client**: For web applications
+- **Java/C++/R/Go clients**: For integrations in those languages
+
+Clients that subscribe to the same table see consistent, live updates. You can share tables between sessions with [shared tickets](./what-is-barrage.md#shared-tickets).
 
 ## Quick reference
 
-| I want to...               | Use this                                               |
-| -------------------------- | ------------------------------------------------------ |
-| Check if a table updates   | `table.isRefreshing()`                                 |
-| Take a static snapshot     | `table.snapshot()`                                     |
-| Edit data manually         | [Input tables](../how-to-guides/input-tables.md)       |
-| Push data programmatically | [Table Publisher](../how-to-guides/table-publisher.md) |
-| Process by groups          | `partitionBy`                                          |
-| Connect remotely           | Python/Java/JS client                                  |
+| I want to...                        | Use this                                                                                                                                                    |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Check if a table updates            | [`isRefreshing`](../reference/table-operations/metadata/isRefreshing.md)                                                                                    |
+| Take a static snapshot              | [`snapshot`](../reference/table-operations/snapshot/snapshot.md)                                                                                            |
+| Number rows without a counter       | [`ii`](../reference/query-language/variables/special-variables.md)                                                                                          |
+| Compute a running total             | [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md) with [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md) |
+| Add a column computed on demand     | [`view`](../reference/table-operations/select/view.md)                                                                                                      |
+| Aggregate by group                  | [`aggBy`](../reference/table-operations/group-and-aggregate/aggBy.md)                                                                                       |
+| Split a table into subtables by key | [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md)                                                                           |
+| Connect remotely                    | [A client API](./client-server-model.md#client-apis)                                                                                                        |
 
-| Engine capability          | What it means                                              |
-| -------------------------- | ---------------------------------------------------------- |
-| **Incremental updates**    | Typically recompute only what changed, not entire datasets |
-| **Automatic propagation**  | Downstream tables update when sources change               |
-| **Parallel execution**     | Multiple threads process data simultaneously               |
-| **Shared data structures** | Filtered views share memory with source tables             |
+| Engine capability          | What it means                                                   |
+| -------------------------- | --------------------------------------------------------------- |
+| **Incremental updates**    | Typically recompute only what changed, not entire datasets      |
+| **Automatic propagation**  | Downstream tables update when sources change                    |
+| **Parallel execution**     | Multiple threads process data simultaneously                    |
+| **Shared data structures** | Derived tables share unchanged columns with their source tables |
 
 ## Related documentation
 
-- [Quickstart](../getting-started/quickstart.md) — Get Deephaven running
-- [Crash course](../getting-started/crash-course/overview.md) — Hands-on tutorial
+- [Quickstart](../getting-started/quickstart.md)
+- [Crash course](../getting-started/crash-course/overview.md)
 - [Table types](./table-types.md)
 - [Deephaven's live DAG](./dag.md)
 - [Create tables](../how-to-guides/new-and-empty-table.md)

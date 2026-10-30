@@ -67,16 +67,13 @@ public class QueryTableSelectErrorTest {
     }
 
     private void doErrorSelectTest(final long minimumParallelSelectRows) {
-        final boolean oldForceParallel = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
-        final long oldMinimumRows = QueryTable.MINIMUM_PARALLEL_SELECT_ROWS;
         final OperationInitializationThreadPool threadPool =
                 new OperationInitializationThreadPool(ThreadInitializationFactory.NO_OP, THREAD_COUNT);
         final ExecutionContext executionContext =
                 ExecutionContext.getContext().withOperationInitializer(threadPool);
         try (final SafeCloseable ignored = executionContext.open();
-                final SafeCloseable ignored2 = threadPool::shutdown) {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
-            QueryTable.MINIMUM_PARALLEL_SELECT_ROWS = minimumParallelSelectRows;
+                final SafeCloseable ignored2 = threadPool::shutdown;
+                final SafeCloseable ignored3 = new ForcedParallelSelect(minimumParallelSelectRows)) {
             ExecutionContext.getContext().getQueryLibrary().importStatic(QueryTableSelectErrorTest.class);
 
             final Table source = TableTools.emptyTable(TEST_SIZE);
@@ -84,9 +81,6 @@ public class QueryTableSelectErrorTest {
             assertTrue("TableInitializationException, but was " + thrown,
                     thrown instanceof TableInitializationException);
             assertNotNull("SelectTestError in cause chain of " + thrown, findTestError(thrown));
-        } finally {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = oldForceParallel;
-            QueryTable.MINIMUM_PARALLEL_SELECT_ROWS = oldMinimumRows;
         }
     }
 
