@@ -108,10 +108,8 @@ public class VectorComponentFilterWrapper extends WhereFilterImpl {
         }
         if (componentFilter.hasCrossRowDependencies()) {
             // the component filter decides each element of a vector alone
-            final String cause = componentFilter.hasVirtualRowVariables() ? "virtual row variables"
-                    : !componentFilter.getColumnArrays().isEmpty() ? "column arrays"
-                            : "cross-row dependencies";
-            throw new UnsupportedOperationException("Vector component filter not supported with " + cause + "!");
+            throw new UnsupportedOperationException("Vector component filters cannot use cross-row dependencies "
+                    + "(virtual row variables or column arrays): " + componentFilter);
         }
     }
 

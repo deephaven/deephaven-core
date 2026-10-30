@@ -141,10 +141,6 @@ public abstract class WhereFilterDelegatingBase
         return filter.hasVirtualRowVariables();
     }
 
-    @Override
-    public boolean hasCrossRowDependencies() {
-        return filter.hasCrossRowDependencies();
-    }
 
     @Override
     public boolean equals(Object o) {

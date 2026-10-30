@@ -174,6 +174,30 @@ public class DeferredViewTableTest {
     }
 
     @Test
+    public void testSerialFilterAfterPostViewFilterStaysAfterTheView() {
+        // a serial filter sees exactly the rows that pass the filters before the serial filter, so a serial filter that
+        // reads only a column the view passes through still runs after an earlier filter on a view column
+        final TableDefinition resultDef = TableDefinition.of(ColumnDefinition.ofLong("X"));
+        final Table sourceTable = TableTools.emptyTable(100_000).update("X = ii");
+
+        final RowSetCapturingFilter postViewFilter =
+                new RowSetCapturingFilter(new RangeFilter("Y", Condition.LESS_THAN, "25000"));
+        final RowSetCapturingFilter serialFilter =
+                new RowSetCapturingFilter(new RangeFilter("X", Condition.LESS_THAN, "50000").withSerial());
+
+        final Table deferredTable =
+                DeferredViewTable.wrap(resultDef, "test", new DeferredViewTable.TableReference(sourceTable), null)
+                        .updateView("Y = X")
+                        .where(ConjunctiveFilter.of(postViewFilter, serialFilter))
+                        .coalesce();
+
+        Assert.eq(deferredTable.size(), "deferredTable.size()", 25000);
+        Assert.eq(numRowsFiltered(postViewFilter), "numRowsFiltered(postViewFilter)", 100_000);
+        Assert.eq(numRowsFiltered(serialFilter), "numRowsFiltered(serialFilter)", 25000);
+    }
+
+
+    @Test
     public void testBarrierWithNewlyDefinedColumn() {
         // assert that filters with barriers can jump over other filters
         final TableDefinition resultDef = TableDefinition.of(
@@ -896,44 +920,24 @@ public class DeferredViewTableTest {
         Assertions.assertThat(new ReportingFilter(false, List.of()).hasCrossRowDependencies()).isFalse();
         Assertions.assertThat(new ReportingFilter(true, List.of()).hasCrossRowDependencies()).isTrue();
         Assertions.assertThat(new ReportingFilter(false, List.of("A")).hasCrossRowDependencies()).isTrue();
-        Assertions.assertThat(new IncrementalReleaseFilter(1, 1).hasCrossRowDependencies()).isTrue();
-        Assertions.assertThat(new RollingReleaseFilter(1, 1).hasCrossRowDependencies()).isTrue();
-        Assertions.assertThat(new DownsampledWhereFilter("T", DateTimeUtils.MINUTE).hasCrossRowDependencies()).isTrue();
+        // a release filter selects rows by position, so the filter reports a virtual row variable; a downsampling
+        // filter is serial instead
+        for (final WhereFilter release : new WhereFilter[] {new IncrementalReleaseFilter(1, 1),
+                new RollingReleaseFilter(1, 1)}) {
+            Assertions.assertThat(release.hasVirtualRowVariables()).as(release.toString()).isTrue();
+            Assertions.assertThat(release.hasCrossRowDependencies()).as(release.toString()).isTrue();
+        }
+        final WhereFilter downsampled = new DownsampledWhereFilter("T", DateTimeUtils.MINUTE);
+        Assertions.assertThat(downsampled.hasCrossRowDependencies()).isFalse();
+        Assertions.assertThat(downsampled.isSerial()).isTrue();
     }
 
-    @Test
-    public void testWrappedSelectColumnReportsCrossRowDependencies() {
-        // a column that depends on other rows without a row variable or a column array, which the default cannot see;
-        // a copy keeps the override, since withRecomputeOnModifiedRow() wraps a copy
-        final class CrossRowColumn extends SourceColumn {
-            CrossRowColumn() {
-                super("A", "B");
-            }
-
-            @Override
-            public boolean hasCrossRowDependencies() {
-                return true;
-            }
-
-            @Override
-            public SourceColumn copy() {
-                return new CrossRowColumn();
-            }
-        }
-        final SelectColumn crossRow = new CrossRowColumn();
-        for (final SelectColumn wrapped : new SelectColumn[] {
-                crossRow.withSerial(),
-                crossRow.withDeclaredBarriers(new Object()),
-                crossRow.withRespectedBarriers(new Object()),
-                crossRow.withRecomputeOnModifiedRow()}) {
-            Assertions.assertThat(wrapped.hasCrossRowDependencies()).as(wrapped.getClass().getSimpleName()).isTrue();
-        }
-    }
 
     @Test
     public void testReleaseFilterSeesTheRowsOfItsWhere() {
-        // a release filter keeps rows by position among the rows that the filter's where receives, so the where must
-        // not merge with the filters of an earlier where; an IncrementalReleaseFilter does not support copy() either
+        // a release filter keeps rows by position among the rows that the filter's where receives, as a filter on ii
+        // would, so the where runs on the coalesced table rather than merging with the filters of an earlier where, and
+        // the filter is never copied, which an IncrementalReleaseFilter does not support
         final Table source = TableTools.newTable(TableTools.intCol("A", 1, 6, 7, 8));
         assertDeferredMatchesInMemory(source, t -> t.where("A > 5").where(new IncrementalReleaseFilter(2, 1)));
         assertDeferredMatchesInMemory(source, t -> t.where("A > 5").where(new RollingReleaseFilter(2, 1)));
@@ -943,8 +947,9 @@ public class DeferredViewTableTest {
 
     @Test
     public void testDownsampleSeesTheRowsOfItsWhere() {
-        // a downsample keeps the last row of each time bin among the rows that the filters before the downsample pass,
-        // so the filter of a later where must not move before the view, ahead of the downsample
+        // a downsample keeps the last row of each time bin among the rows that the filters before the downsample pass;
+        // the downsample is serial, so the filter of a later where must not move before the view, ahead of the
+        // downsample
         final Table source = TableTools.emptyTable(10).update(
                 "Timestamp = epochNanosToInstant(ii * MINUTE)",
                 "A = ii % 5 == 4 ? 1 : 9");

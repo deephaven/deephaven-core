@@ -494,16 +494,21 @@ public class TestRollupTable extends RefreshingTableTestCase {
         final Table snapshot4 = snapshotFilteredRollup(rollup4);
         assertTableEquals(snapshot2, snapshot4);
 
-        // a filter with cross-row dependencies reads the rows of the source, rather than the base level's buckets, even
-        // when the filter uses no aggregation column: source rows 2 and 3 are the rows of v2
-        final RollupTable rollup5 = rollup1.withFilter(WhereFilterFactory.getExpression("ii >= 2 && ii <= 3"));
-        final Table snapshot5 = snapshotFilteredRollup(rollup5);
-        assertTableEquals(snapshot2, snapshot5);
+        // a filter may apply to the base level, one row per bucket, so a filter with cross-row dependencies would read
+        // buckets rather than source rows; such a filter is refused, also after an earlier group-by filter
+        for (final RollupTable rollup : List.of(rollup1, rollup2)) {
+            for (final String formula : new String[] {"ii >= 2 && ii <= 3", "i + 0 < 2", "k + 0 < 2",
+                    "CONST_[0] == 11", "CONST_[i - 1] == 11"}) {
+                final IllegalArgumentException ex = Assert.assertThrows(formula, IllegalArgumentException.class,
+                        () -> rollup.withFilter(WhereFilterFactory.getExpression(formula)));
+                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains(
+                        "cannot use cross-row dependencies (virtual row variables or column arrays)"));
+            }
+        }
 
         freeSnapshotTableChunks(snapshot2);
         freeSnapshotTableChunks(snapshot3);
         freeSnapshotTableChunks(snapshot4);
-        freeSnapshotTableChunks(snapshot5);
     }
 
     private Table snapshotFilteredRollup(RollupTable rollup) {

@@ -128,10 +128,6 @@ public class RowSetCapturingFilter extends WhereFilterImpl implements WhereFilte
         return innerFilter != null && innerFilter.hasVirtualRowVariables();
     }
 
-    @Override
-    public boolean hasCrossRowDependencies() {
-        return innerFilter != null && innerFilter.hasCrossRowDependencies();
-    }
 
     @Override
     public void setRecomputeListener(WhereFilter.RecomputeListener result) {

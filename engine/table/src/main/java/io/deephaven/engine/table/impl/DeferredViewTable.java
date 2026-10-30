@@ -101,9 +101,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     /**
      * Create a DeferredViewTable that filters the referenced table.
      * <p>
-     * No filter may {@link WhereFilter#hasCrossRowDependencies() depend on other rows}: the new table merges the
-     * filters with the filters of later wheres and applies the filters in any order. A where that holds a filter that
-     * depends on other rows runs on the coalesced table instead.
+     * No filter may have {@link WhereFilter#hasCrossRowDependencies() cross-row dependencies}: the new table merges the
+     * filters with the filters of later wheres and applies the filters in any order. A where that holds such a filter
+     * runs on the coalesced table instead.
      *
      * @param definition The definition of the new table
      * @param description A description of the new table
@@ -332,7 +332,10 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
             final boolean hasPostViewBarrier =
                     ExtractRespectedBarriers.stream(filter).anyMatch(postViewBarriers::contains);
-            if (isPostView || serialFilterFound || hasPostViewBarrier) {
+            // a serial filter sees exactly the rows that pass the filters before the serial filter, so the serial
+            // filter stays after the view when any earlier filter does
+            final boolean serialAfterPostView = filter.isSerial() && !postViewFilters.isEmpty();
+            if (isPostView || serialFilterFound || hasPostViewBarrier || serialAfterPostView) {
                 // if this filter is serial, all subsequent filters must be postViewFilters
                 if (filter.isSerial()) {
                     serialFilterFound = true;

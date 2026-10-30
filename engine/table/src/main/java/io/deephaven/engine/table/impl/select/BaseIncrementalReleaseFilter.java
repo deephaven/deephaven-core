@@ -330,10 +330,11 @@ public abstract class BaseIncrementalReleaseFilter
     }
 
     @Override
-    public boolean hasCrossRowDependencies() {
-        // releases a prefix, by position, of the rows that the where receives
+    public boolean hasVirtualRowVariables() {
+        // releases a prefix, by position, of the rows that the where receives, as a filter on ii would
         return true;
     }
+
 
     @Override
     public void run() {

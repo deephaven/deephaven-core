@@ -147,8 +147,7 @@ public class FailedOverFilterConsumersTest {
         final Exception updateBy = assertThrows(Exception.class,
                 () -> t.updateBy(UpdateByOperation.CumCountWhere("C", "X == X_[0] + 0")));
         assertEquals(
-                "UpdateBy CountWhere operator does not support filters with cross-row dependencies, such as filters "
-                        + "that reference virtual row variables (i, ii, k) or column arrays",
+                "UpdateBy CountWhere filters cannot use cross-row dependencies (virtual row variables or column arrays)",
                 rootCause(updateBy).getMessage());
     }
 
@@ -167,8 +166,7 @@ public class FailedOverFilterConsumersTest {
             final Exception updateBy = assertThrows(filter.toString(), Exception.class,
                     () -> t.updateBy(UpdateByOperation.CumCountWhere("C", filter)));
             assertEquals(
-                    "UpdateBy CountWhere operator does not support filters with cross-row dependencies, such as filters "
-                            + "that reference virtual row variables (i, ii, k) or column arrays",
+                    "UpdateBy CountWhere filters cannot use cross-row dependencies (virtual row variables or column arrays)",
                     rootCause(updateBy).getMessage());
         }
     }

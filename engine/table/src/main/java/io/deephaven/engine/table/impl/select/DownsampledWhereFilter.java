@@ -164,8 +164,9 @@ public class DownsampledWhereFilter extends WhereFilterImpl {
     }
 
     @Override
-    public boolean hasCrossRowDependencies() {
-        // keeps one row per time bin of the rows that the filters before this filter pass
+    public boolean isSerial() {
+        // keeps one row per time bin of the rows that the filters before this filter pass, in order, so no filter
+        // written after this filter may run first
         return true;
     }
 }

@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -285,14 +286,14 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
      * the rows of one bucket, or the rows that a later filter keeps, must not evaluate a column that has cross-row
      * dependencies there.
      * <p>
-     * The default reports a column that {@link #hasVirtualRowVariables() uses a row variable} or
-     * {@link #getColumnArrays() reads a column array}. A column that depends on other rows in another way overrides
-     * this method, and an override must still report a column that uses a row variable or reads a column array.
+     * A column reports cross-row dependencies only through {@link #hasVirtualRowVariables()} and
+     * {@link #getColumnArrays()}, which a wrapper answers for the column inside.
      * <p>
      * This column must already be initialized.
      *
      * @return whether this column has cross-row dependencies
      */
+    @FinalDefault
     default boolean hasCrossRowDependencies() {
         return hasVirtualRowVariables() || !getColumnArrays().isEmpty();
     }

@@ -1189,13 +1189,13 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     /**
      * AggFormula SelectColumns read the rows of one bucket, so they are not permitted to have
-     * {@link SelectColumn#hasCrossRowDependencies() cross-row dependencies}, such as column arrays or virtual row
-     * variables; verify that.
+     * {@link SelectColumn#hasCrossRowDependencies() cross-row dependencies} (virtual row variables or column arrays);
+     * verify that.
      */
     private static void validateSelectColumnForFormula(SelectColumn selectColumn) {
         if (selectColumn.hasCrossRowDependencies()) {
-            throw new IllegalArgumentException("AggFormula does not support formulas with cross-row dependencies, "
-                    + "such as virtual row variables (i, ii, k) or column arrays: " + selectColumn);
+            throw new IllegalArgumentException("AggFormula cannot use cross-row dependencies (virtual row variables or "
+                    + "column arrays): " + selectColumn);
         }
     }
 

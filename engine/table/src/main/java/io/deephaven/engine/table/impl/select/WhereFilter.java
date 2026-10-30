@@ -387,37 +387,28 @@ public interface WhereFilter extends Filter {
     }
 
     /**
-     * Returns true if this filter uses row virtual offset columns of {@code i}, {@code ii} or {@code k}.
+     * Returns true if this filter uses row virtual offset columns of {@code i}, {@code ii} or {@code k}, or selects
+     * rows by position as those variables do, as a release filter does.
      */
     default boolean hasVirtualRowVariables() {
         return false;
     }
 
     /**
-     * Whether this filter has cross-row dependencies: whether the filter's result for a row depends on rows other than
-     * that row. A filter may depend on the rows that the where receives, as for the row positions {@code i} and
-     * {@code ii}, a column array such as {@code A_}, a shifted column such as {@code A_[i - 1]}, or a filter that
-     * releases rows by position; or on the rows that the filters before this filter pass, as for a filter that keeps
-     * one row per time bin. The row key {@code k} counts too: a partitioned table assigns row keys by the locations the
-     * table includes, so pruning partitions changes {@code k}.
+     * Whether this filter's result for a row depends on other rows, through a {@link #hasVirtualRowVariables() virtual
+     * row variable} ({@code i}, {@code ii} or {@code k}) or a {@link #getColumnArrays() column array} such as
+     * {@code A_}; a shift such as {@code A_[i - 1]} uses both. Such a filter must see every row its where receives, as
+     * on a {@link io.deephaven.engine.table.impl.QueryTable QueryTable}, so a table that defers, merges or reorders
+     * filters runs the whole where on the coalesced table.
      * <p>
-     * A {@link io.deephaven.engine.table.impl.QueryTable QueryTable} gives every filter of one where the rows that the
-     * where receives, whatever the order of the filters. {@code where("C == 3", "A_[i - 1] == 2")} builds the shifted
-     * column over every row, so {@code A_[i - 1]} reads the previous row of the where's input even when {@code C == 3}
-     * removes that row, while {@code where("C == 3").where("A_[i - 1] == 2")} reads the previous row among the rows
-     * that pass {@code C == 3}. A table that defers filters, merges the filters of separate wheres, or applies some
-     * filters ahead of the others, as a deferred view does to move a filter before the view and a partitioned table
-     * does to prune partitions, must give a filter that depends on other rows the same rows as a QueryTable would: the
-     * filters of earlier wheres, in any order, and then the whole where that holds the filter.
-     * <p>
-     * The default reports a filter that {@link #hasVirtualRowVariables() uses a row variable} or
-     * {@link #getColumnArrays() reads a column array}. A filter that depends on other rows in another way overrides
-     * this method, and an override must still report a filter that uses a row variable or reads a column array.
+     * A release filter, which selects rows by position, reports a virtual row variable. A downsampling filter, which
+     * depends on the rows that the filters before the downsampling filter pass, {@link #isSerial() is serial} instead.
      * <p>
      * This filter must already be initialized.
      *
      * @return whether this filter has cross-row dependencies
      */
+    @FinalDefault
     default boolean hasCrossRowDependencies() {
         return hasVirtualRowVariables() || !getColumnArrays().isEmpty();
     }

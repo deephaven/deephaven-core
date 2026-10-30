@@ -1709,17 +1709,18 @@ public class QueryTableSelectUpdateTest {
         final UncheckedTableException ue = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.update(List.of(Selectable.of(ColumnName.of("AWM"), composed))));
         assertTrue(ue.getMessage(), ue.getMessage().startsWith(
-                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView:"));
+                "Filters in select, view, update, or updateView cannot use cross-row dependencies (virtual row variables or column arrays):"));
 
         final UncheckedTableException ve = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.view(List.of(Selectable.of(ColumnName.of("AWM"), composed))));
         assertTrue(ve.getMessage(), ve.getMessage().startsWith(
-                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView:"));
+                "Filters in select, view, update, or updateView cannot use cross-row dependencies (virtual row variables or column arrays):"));
 
         final UncheckedTableException wme = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.wouldMatch(new WouldMatchPair("AWM", composed)));
         assertTrue(wme.getMessage(),
-                wme.getMessage().startsWith("wouldMatch filters cannot use virtual row variables (i, ii, and k):"));
+                wme.getMessage().startsWith(
+                        "wouldMatch filters cannot use cross-row dependencies (virtual row variables or column arrays):"));
     }
 
     @Test
@@ -1733,36 +1734,38 @@ public class QueryTableSelectUpdateTest {
 
         final UncheckedTableException wme = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.wouldMatch(new WouldMatchPair("AWM", filter)));
-        Assert.assertEquals("wouldMatch filters cannot use virtual row variables (i, ii, and k): [A=A_[i-1]]",
+        Assert.assertEquals(
+                "wouldMatch filters cannot use cross-row dependencies (virtual row variables or column arrays): [A=A_[i-1]]",
                 wme.getMessage());
 
         final UncheckedTableException wme2 = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.wouldMatch(new WouldMatchPair("AWM", filterArrayOnly)));
-        Assert.assertEquals("wouldMatch filters cannot use column Vectors (_ syntax): [A=A_.size() = 1]",
+        Assert.assertEquals(
+                "wouldMatch filters cannot use cross-row dependencies (virtual row variables or column arrays): [A=A_.size() = 1]",
                 wme2.getMessage());
 
         final UncheckedTableException upe = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.update(List.of(Selectable.of(ColumnName.of("AWM"), filter))));
         Assert.assertEquals(
-                "Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: A=A_[i-1]",
+                "Filters in select, view, update, or updateView cannot use cross-row dependencies (virtual row variables or column arrays): A=A_[i-1]",
                 upe.getMessage());
 
         final UncheckedTableException uve = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.updateView(List.of(Selectable.of(ColumnName.of("AWM"), filter))));
         Assert.assertEquals(
-                "Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: A=A_[i-1]",
+                "Filters in select, view, update, or updateView cannot use cross-row dependencies (virtual row variables or column arrays): A=A_[i-1]",
                 uve.getMessage());
 
         final UncheckedTableException se = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.select(List.of(Selectable.of(ColumnName.of("AWM"), filterKonly))));
         Assert.assertEquals(
-                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: A=k+1",
+                "Filters in select, view, update, or updateView cannot use cross-row dependencies (virtual row variables or column arrays): A=k+1",
                 se.getMessage());
 
         final UncheckedTableException ve = Assert.assertThrows(UncheckedTableException.class,
                 () -> table.view(List.of(Selectable.of(ColumnName.of("AWM"), filterKonly))));
         Assert.assertEquals(
-                "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: A=k+1",
+                "Filters in select, view, update, or updateView cannot use cross-row dependencies (virtual row variables or column arrays): A=k+1",
                 ve.getMessage());
 
         final UncheckedTableException dw = Assert.assertThrows(UncheckedTableException.class,

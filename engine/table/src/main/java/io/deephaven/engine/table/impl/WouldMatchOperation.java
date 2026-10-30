@@ -114,18 +114,13 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         Arrays.stream(whereFilters).forEach(filter -> filter.init(parent.getDefinition(), compilationProcessor));
 
-        final List<WhereFilter> disallowedRowVariables =
-                Arrays.stream(whereFilters).filter(WhereFilter::hasVirtualRowVariables).collect(Collectors.toList());
-        if (!disallowedRowVariables.isEmpty()) {
-            throw new UncheckedTableException(
-                    "wouldMatch filters cannot use virtual row variables (i, ii, and k): " + disallowedRowVariables);
-        }
-
-        final List<WhereFilter> disallowedColumnVectors =
-                Arrays.stream(whereFilters).filter(wf -> !wf.getColumnArrays().isEmpty()).collect(Collectors.toList());
-        if (!disallowedColumnVectors.isEmpty()) {
-            throw new UncheckedTableException(
-                    "wouldMatch filters cannot use column Vectors (_ syntax): " + disallowedColumnVectors);
+        // a filter's result for an unchanged row may change when other rows change, but only changed rows are
+        // refiltered
+        final List<WhereFilter> crossRowFilters =
+                Arrays.stream(whereFilters).filter(WhereFilter::hasCrossRowDependencies).collect(Collectors.toList());
+        if (!crossRowFilters.isEmpty()) {
+            throw new UncheckedTableException("wouldMatch filters cannot use cross-row dependencies (virtual row "
+                    + "variables or column arrays): " + crossRowFilters);
         }
 
         compilationProcessor.compile();

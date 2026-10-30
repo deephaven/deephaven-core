@@ -111,10 +111,11 @@ public class RollingReleaseFilter
     }
 
     @Override
-    public boolean hasCrossRowDependencies() {
-        // releases a window, by position, of the rows that the where receives
+    public boolean hasVirtualRowVariables() {
+        // releases a window, by position, of the rows that the where receives, as a filter on ii would
         return true;
     }
+
 
     @Override
     public void run() {

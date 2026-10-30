@@ -193,13 +193,6 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return filter.hasVirtualRowVariables();
     }
 
-    @Override
-    public boolean hasCrossRowDependencies() {
-        if (filter == null) {
-            throw new IllegalStateException("Filter must be initialized to invoke hasCrossRowDependencies");
-        }
-        return filter.hasCrossRowDependencies();
-    }
 
     @Override
     public boolean canPushdown() {

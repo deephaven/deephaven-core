@@ -243,14 +243,6 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, 
         return failover != null && failover.hasVirtualRowVariables();
     }
 
-    @Override
-    public boolean hasCrossRowDependencies() {
-        if (!initialized) {
-            throw new IllegalStateException("Filter must be initialized to invoke hasCrossRowDependencies");
-        }
-        final WhereFilter failover = getFailoverFilter();
-        return failover != null && failover.hasCrossRowDependencies();
-    }
 
     @Override
     public boolean canPushdown() {

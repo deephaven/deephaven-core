@@ -121,9 +121,8 @@ public class CountWhereOperator extends BaseLongUpdateByOperator {
                 // path below would evaluate a filter with cross-row dependencies, such as i, ii, k or a column array,
                 // against the rows of a chunk rather than the source.
                 if (filters[fi].hasCrossRowDependencies()) {
-                    throw new UnsupportedOperationException("UpdateBy CountWhere operator does not support filters "
-                            + "with cross-row dependencies, such as filters that reference virtual row variables "
-                            + "(i, ii, k) or column arrays");
+                    throw new UnsupportedOperationException("UpdateBy CountWhere filters cannot use cross-row "
+                            + "dependencies (virtual row variables or column arrays)");
                 }
                 final ConditionFilter conditionFilter =
                         ConditionFilter.extractConditionFilter(filters[fi]).orElse(null);

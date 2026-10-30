@@ -1628,8 +1628,8 @@ public class UpdateByOperatorFactory {
                     selectColumn.initDef(vectorColumnDefinitions, compilationProcessor).toArray(String[]::new);
             // the formula reads the rows of one window
             if (selectColumn.hasCrossRowDependencies()) {
-                throw new IllegalArgumentException("RollingFormula does not support formulas with cross-row "
-                        + "dependencies, such as virtual row variables (i, ii, k) or column arrays: " + selectColumn);
+                throw new IllegalArgumentException("RollingFormula cannot use cross-row dependencies (virtual row "
+                        + "variables or column arrays): " + selectColumn);
             }
 
             final Map<Boolean, List<String>> partitioned = Arrays.stream(allInputColumns)

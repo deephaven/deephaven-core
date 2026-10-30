@@ -160,10 +160,6 @@ public class SwitchColumn implements SelectColumn {
         return getRealColumn().hasVirtualRowVariables();
     }
 
-    @Override
-    public boolean hasCrossRowDependencies() {
-        return getRealColumn().hasCrossRowDependencies();
-    }
 
     @Override
     public boolean hasConstantArrayAccess() {
