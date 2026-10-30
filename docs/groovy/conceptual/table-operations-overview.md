@@ -10,7 +10,7 @@ A quick reference for table operations
 
 This page is a quick-reference index of common table operations in Deephaven. Find your task in the table, then follow the link to the operation's reference page for its syntax and examples.
 
-These operations work the same way on [static tables and on real-time tables that tick](./table-types.md). When the source data changes, their results update with it. The one exception in the quick-reference table below is [`rangeJoin`](../reference/table-operations/join/range-join.md), which supports only static tables.
+These operations work on [static tables and on real-time tables that tick](./table-types.md). When the source data changes, their results update with it. A few have restrictions. [`rangeJoin`](../reference/table-operations/join/range-join.md) supports only static tables. Some operations, such as [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md), raise an error on [blink tables](./table-types.md#unsupported-operations). Aggregations on blink tables cover every row since the aggregation started, not only the current cycle's rows. See [specialized semantics for blink tables](./table-types.md#specialized-semantics-for-blink-tables).
 
 To learn a group of operations by task, see the how-to guides:
 
