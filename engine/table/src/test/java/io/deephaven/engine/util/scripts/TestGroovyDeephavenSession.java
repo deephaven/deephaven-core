@@ -35,8 +35,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -143,12 +143,20 @@ public class TestGroovyDeephavenSession {
     @Test
     public void testUnloadedWildcardPackageImport() {
         // Pick three packages we won't have loaded directly - a JRE package, a third party package (from a jar), and a
-        // package in the current source set
-        for (String packageString : Set.of("java.util", "groovy.time", "io.deephaven.engine.util.scripts.wontbeused")) {
+        // package in the current source set - each with a class to use by its simple name after the import
+        final Map<String, String> packageToClass = Map.of(
+                "javax.sql.rowset", "RowSetMetaDataImpl",
+                "groovy.time", "TimeDuration",
+                "io.deephaven.engine.util.scripts.wontbeused", "WontBeUsed");
+        for (final Map.Entry<String, String> entry : packageToClass.entrySet()) {
+            final String packageString = entry.getKey();
             if (this.getClass().getClassLoader().getDefinedPackage(packageString) != null) {
                 Assert.fail("Package '" + packageString + "' is already loaded, test with a more obscure package.");
             }
             session.evaluateScript("import " + packageString + ".*").throwIfError();
+            session.evaluateScript("unloadedClass = " + entry.getValue()).throwIfError();
+            final Class<?> unloadedClass = session.getQueryScope().readParamValue("unloadedClass");
+            assertEquals(packageString + "." + entry.getValue(), unloadedClass.getName());
         }
     }
 
