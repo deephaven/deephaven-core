@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -13,6 +14,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -47,8 +49,16 @@ public class LogTableLivenessTest {
         AsyncErrorLogger.resetForUnitTests();
     }
 
-    private static void assertRefreshing(final Table table) {
-        assertTrue(table.isRefreshing());
+    /**
+     * Assert that {@code table} is live and has not failed. {@link Table#isRefreshing()} cannot show liveness, since a
+     * destroyed or failed table stays refreshing. Each getter returns an append-only view whose listener manages the
+     * blink table, so a live view also means a live blink table.
+     */
+    private static void assertLive(final Table table) {
+        final LivenessScope scope = new LivenessScope();
+        assertTrue(scope.tryManage(table));
+        scope.release();
+        assertFalse(table.isFailed());
     }
 
     @Test
@@ -56,9 +66,9 @@ public class LogTableLivenessTest {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             EngineMetrics.getInstance();
         }
-        assertRefreshing(TableLoggers.queryPerformanceLog());
-        assertRefreshing(TableLoggers.queryOperationPerformanceLog());
-        assertRefreshing(TableLoggers.processMetricsLog());
+        assertLive(TableLoggers.queryPerformanceLog());
+        assertLive(TableLoggers.queryOperationPerformanceLog());
+        assertLive(TableLoggers.processMetricsLog());
     }
 
     @Test
@@ -66,7 +76,7 @@ public class LogTableLivenessTest {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             ServerStateTracker.getInstance();
         }
-        assertRefreshing(TableLoggers.serverStateLog());
+        assertLive(TableLoggers.serverStateLog());
     }
 
     @Test
@@ -74,6 +84,6 @@ public class LogTableLivenessTest {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             AsyncErrorLogger.init();
         }
-        assertRefreshing(AsyncErrorLogger.getErrorLog());
+        assertLive(AsyncErrorLogger.getErrorLog());
     }
 }
