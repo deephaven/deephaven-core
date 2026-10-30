@@ -19,7 +19,7 @@ For a quick-reference index of available operations and where to find full guide
 
 ## Tables are immutable
 
-Table operations never modify their source, so the original is always safe to keep using. A [live table's](./deephaven-mental-model.md#static-vs-live-understanding-mutability) rows still change as new data arrives, but no operation changes the table you pass to it.
+Table operations never modify their source, so the original is always safe to keep using. A [live table's](./deephaven-mental-model.md#static-vs-live-tables) rows still change as new data arrives, but no operation changes the table you pass to it.
 
 Most operations return a distinct new table. As an optimization, a no-op transformation can return the same object. Either way, the operation doesn't change the source:
 
@@ -58,7 +58,7 @@ summary = enriched.aggBy([AggSum("Total = Doubled")], "Category")
 
 Each table depends on the one before it. If `source` were live, `filtered`, `enriched`, and `summary` would all update whenever it changed.
 
-As [Static vs. live](./deephaven-mental-model.md#static-vs-live-understanding-mutability) in the mental model guide shows, the same operations work on both static and [live tables](./deephaven-mental-model.md#static-vs-live-understanding-mutability). Here is what that means for the graph:
+As [Static vs. live](./deephaven-mental-model.md#static-vs-live-tables) in the mental model guide shows, the same operations work on both static and [live tables](./deephaven-mental-model.md#static-vs-live-tables). Here is what that means for the graph:
 
 ```groovy test-set=1 ticking-table order=null
 // Static table
@@ -70,7 +70,7 @@ liveTable = timeTable("PT1S").update("X = ii")
 liveResult = liveTable.where("X > 50").update("Y = X * 2")
 ```
 
-The code is identical for static and [live tables](./deephaven-mental-model.md#static-vs-live-understanding-mutability), but the graph behaves differently. The engine computes `staticResult` once, and it never changes. For a [static table](./deephaven-mental-model.md#static-vs-live-understanding-mutability), the graph is simply a convenient way to structure your code.
+The code is identical for static and [live tables](./deephaven-mental-model.md#static-vs-live-tables), but the graph behaves differently. The engine computes `staticResult` once, and it never changes. For a [static table](./deephaven-mental-model.md#static-vs-live-tables), the graph is simply a convenient way to structure your code.
 
 For `liveResult`, the graph stays active. When `liveTable` gets new rows:
 
@@ -123,7 +123,7 @@ Inside a [formula string](../how-to-guides/formulas.md), you have access to:
 - [`ii`](../reference/query-language/variables/special-variables.md) — Row position as `long` (for tables with more than 2 billion rows)
 - [`k`](../reference/query-language/variables/special-variables.md) — Internal row key, which isn't necessarily the same as row position
 
-[Live tables](./deephaven-mental-model.md#static-vs-live-understanding-mutability) restrict where you can use these variables. See [Special variables on live tables](#special-variables-on-live-tables).
+[Live tables](./deephaven-mental-model.md#static-vs-live-tables) restrict where you can use these variables. See [Special variables on live tables](#special-variables-on-live-tables).
 
 **[Built-in functions](../how-to-guides/built-in-functions.md)**, such as math, parsing, and time functions:
 
@@ -171,9 +171,9 @@ To use one of those in a formula, add it to the [query scope](../how-to-guides/q
 
 ### Special variables on live tables
 
-On a [static table](./deephaven-mental-model.md#static-vs-live-understanding-mutability), formulas in [`update`](../reference/table-operations/select/update.md), [`select`](../reference/table-operations/select/select.md), [`view`](../reference/table-operations/select/view.md), and [`where`](../reference/table-operations/filter/where.md) can use [`i`](../reference/query-language/variables/special-variables.md), [`ii`](../reference/query-language/variables/special-variables.md), and [`k`](../reference/query-language/variables/special-variables.md) without restriction.
+On a [static table](./deephaven-mental-model.md#static-vs-live-tables), formulas in [`update`](../reference/table-operations/select/update.md), [`select`](../reference/table-operations/select/select.md), [`view`](../reference/table-operations/select/view.md), and [`where`](../reference/table-operations/filter/where.md) can use [`i`](../reference/query-language/variables/special-variables.md), [`ii`](../reference/query-language/variables/special-variables.md), and [`k`](../reference/query-language/variables/special-variables.md) without restriction.
 
-On a [live table](./deephaven-mental-model.md#static-vs-live-understanding-mutability), row positions and keys can shift. By default, the engine rejects a formula that uses these variables unless the table is one of these types:
+On a [live table](./deephaven-mental-model.md#static-vs-live-tables), row positions and keys can shift. By default, the engine rejects a formula that uses these variables unless the table is one of these types:
 
 - [`i`](../reference/query-language/variables/special-variables.md) and [`ii`](../reference/query-language/variables/special-variables.md): [append-only](./table-types.md#specialization-1-append-only) and [blink](./table-types.md#specialization-3-blink) tables.
 - [`k`](../reference/query-language/variables/special-variables.md): [add-only](./table-types.md#specialization-2-add-only) tables (including [append-only](./table-types.md#specialization-1-append-only) tables) and [blink](./table-types.md#specialization-3-blink) tables.
@@ -222,7 +222,7 @@ resultView = source.view("Symbol", "Total = Price * Quantity")
 
 **[`lazyUpdate`](../reference/table-operations/select/lazy-update.md)** computes a value the first time it sees a given set of inputs and caches the result. A later row with the same inputs reuses the cached value, so [`lazyUpdate`](../reference/table-operations/select/lazy-update.md) pays off only when the inputs have few distinct values.
 
-For [live tables](./deephaven-mental-model.md#static-vs-live-understanding-mutability), choosing between stored and on-demand operations also decides when the work happens:
+For [live tables](./deephaven-mental-model.md#static-vs-live-tables), choosing between stored and on-demand operations also decides when the work happens:
 
 - [`update`](../reference/table-operations/select/update.md) and [`select`](../reference/table-operations/select/select.md) recompute and store values for changed rows on every [update cycle](./dag.md), even if nothing reads them.
 - [`view`](../reference/table-operations/select/view.md) and [`updateView`](../reference/table-operations/select/update-view.md) don't evaluate their formulas when the source changes. They compute values only when something reads them.

@@ -1,0 +1,161 @@
+name: Nightly Python Test Matrix CI
+
+# Runs the py/server and py/client tests on every supported Python version, without Docker. The Docker suites in check
+# cover only the images' Python.
+# The build job builds three wheels once: deephaven-server (the embedded server, with the server jars), deephaven-core
+# and pydeephaven. The last two are pure Python, so one build serves every version.
+# - server suite: runs the engine in the test process, on the deephaven-server jars.
+# - client suite: starts a server with the deephaven-server command and tests against it.
+#
+# The matrix lists every Python version that python_requires allows and jpy has a wheel for. A version on its way out of
+# python_requires can leave the matrix first. Free-threaded builds, the versions ending in t, run with the GIL off.
+
+on:
+  schedule:
+    # 2AM EST == 7AM UTC
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+  push:
+    branches: [ 'nightly/**', 'py-test-matrix/**' ]
+
+jobs:
+  build:
+    if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
+
+      - name: Setup JDKs
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: 'temurin'
+          java-version: |
+            21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Setup gradle properties
+        run: |
+          .github/scripts/gradle-properties.sh 21 >> gradle.properties
+          cat gradle.properties
+
+      - name: Build the wheels
+        run: ./gradlew --scan :py-embedded-server:assemble :py-server:assemble :py-client:assemble
+
+      - name: Upload the build outputs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: py-test-matrix-build
+          path: |
+            py/embedded-server/build/wheel/*.whl
+            py/server/build/wheel/*.whl
+            py/client/build/wheel/*.whl
+          retention-days: 1
+
+  test:
+    name: test (${{ matrix.suite }}, Python ${{ matrix.python-version }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        # A free-threaded build is listed only when every dependency installs on it, from a wheel or a source build.
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14', '3.14t', '3.15', '3.15t']
+        suite: ['server', 'client']
+    runs-on: ubuntu-24.04
+    # A normal run takes under 10 minutes. A free-threaded job's first run also compiles the dependencies that have no
+    # wheel for it, about 20 minutes more. Without a limit, a hung test runs for GitHub's default of 6 hours.
+    timeout-minutes: 45
+    env:
+      DEEPHAVEN_MAXMEM: 2G
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          lfs: true
+
+      - name: Download the wheels
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: py-test-matrix-build
+          # upload-artifact stores files relative to their deepest common folder, py/. Downloading into py/ puts each
+          # wheel back where py-test-matrix.sh looks for it.
+          path: py
+
+      - name: Setup JDKs
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: 'temurin'
+          java-version: |
+            21
+
+      - name: Setup uv
+        # py-test-matrix.sh uses uv to get the Python version and make the venv.
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          # setup-uv caches by default. Each job's cache is 0.4 to 1.4 GB, so the 16 jobs would fill most of the repo's
+          # 10 GB Actions cache and evict the Gradle caches that PR builds use. Without it, uv compiles grpcio and numba
+          # on the free-threaded jobs every run, which adds about 17 minutes to each of them.
+          enable-cache: false
+
+      - name: Install Graphviz
+        if: ${{ matrix.suite == 'server' }}
+        # tests/test_perfmon.py renders an SVG through graphviz-java. Without the dot binary it needs the GraalJS jars,
+        # which are on the Integrations test classpath but not in the deephaven-server wheel.
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends graphviz
+
+      - name: Start Kafka and Postgres
+        if: ${{ matrix.suite == 'server' }}
+        # The Kafka and database tests reach these services by the host names "redpanda" and "postgres".
+        run: |
+          echo "127.0.0.1 redpanda postgres" | sudo tee -a /etc/hosts
+          docker compose -f Integrations/docker-compose.yml up -d --wait
+
+      - name: Run tests
+        # Developers run .github/py-test-matrix/run-tests-venv.sh, which this calls, in their own venv. See
+        # .github/py-test-matrix/README.md. On older Pythons, uv installs older numpy, pandas, pyarrow and numba,
+        # since the newest releases dropped them.
+        run: .github/scripts/py-test-matrix.sh ${{ matrix.suite }} ${{ matrix.python-version }}
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: nightly-py-test-matrix-${{ matrix.suite }}-py${{ matrix.python-version }}-ci-results
+          path: py/${{ matrix.suite }}/build/test-results/test-venv/**
+
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: nightly-py-test-matrix-${{ matrix.suite }}-py${{ matrix.python-version }}-ci-jvm-err
+          path: |
+            **/*_pid*.log
+            **/core.*
+          if-no-files-found: ignore
+
+  slack-failure:
+    # One alert per run. A per-test-job alert would miss a failed build, which skips every test job. Same Slack workflow
+    # as Nightly Check CI.
+    needs: [build, test]
+    if: ${{ failure() && github.repository_owner == 'deephaven' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Slack Nightly Failure
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          webhook-type: webhook-trigger
+          # Fail the step if the alert cannot be delivered; the default hides it.
+          errors: true
+          payload: |
+            {
+              "slack_message": "Nightly Python test matrix failure @ ${{ github.ref_name }} ${{ github.sha }} ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_FAILURE }}
