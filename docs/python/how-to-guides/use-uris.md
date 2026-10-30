@@ -20,12 +20,13 @@ A URI, short for [Uniform Resource Identifier](https://en.wikipedia.org/wiki/Uni
 Deephaven URIs provide several key benefits:
 
 - **Canonicalized resource identification**: Access [query-scope](./query-scope.md) tables and [application fields](./application-mode.md) through a standardized string format that works across server instances.
+- **Simplified data sharing**: Share tables between Deephaven instances without duplicating the queries that create them.
 - **Distributed computing**: Build systems that spread processing across multiple Deephaven servers.
 - **Real-time access**: Access live, updating tables from remote sources that reflect the latest data.
 - **Cross-language compatibility**: A Python server can resolve tables from a Groovy server, and the reverse. See the [Groovy version of this guide](/core/groovy/docs/how-to-guides/use-uris).
 - **Environmental isolation**: Access data across different containers, servers, or networks.
 
-The people who resolve your tables don't need to understand your query logic or keep their own copy of the data up to date. This is particularly valuable in collaborative environments and distributed systems.
+By using URIs, you let others work with your live tables without rebuilding your data pipeline, understanding your query logic, or keeping a copy of the data up to date themselves. This is particularly valuable in collaborative environments and distributed systems.
 
 ## Syntax
 

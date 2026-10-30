@@ -5,7 +5,7 @@ title: IcebergReadInstructions
 The `IcebergReadInstructions` class specifies the instructions for reading Iceberg tables into Deephaven. These include special instructions for loading files from cloud storage, the update mode, and the snapshot to read.
 
 > [!NOTE]
-> The `table_definition` and `column_renames` parameters are deprecated and have no effect. Passing either one only raises a `DeprecationWarning`. To choose columns, set their types, or map Deephaven column names to Iceberg fields, pass an [`UnboundResolver`](./unbound-resolver.md) to [`IcebergTableAdapter.load_table`](./iceberg-table-adapter.md) instead.
+> The `table_definition` and `column_renames` parameters are deprecated and have no effect. Passing either one only raises a `DeprecationWarning`. To choose columns, set their types, or map Deephaven column names to Iceberg fields, pass an [`UnboundResolver`](./unbound-resolver.md) to [`IcebergCatalogAdapter.load_table`](./iceberg-catalog-adapter.md) instead.
 
 ## Syntax
 
