@@ -16,7 +16,7 @@ There are two underlying processes when updating [streaming tables](./table-type
 
 This page covers the first process, which the PUG controls. [What is Barrage?](./what-is-barrage.md) explains how the server sends the results to clients.
 
-![A diagram of the PUG cycle](../assets/how-to/ugp-cycle.png)
+![A diagram of the PUG cycle, from refresh cycle to Barrage to client](../assets/conceptual/ugp-cycle.svg)
 
 ## Periodic Update Graph
 
@@ -36,7 +36,7 @@ Parallel execution of update notifications requires more than one update thread.
 
 An illustration of the process is below:
 
-![A diagram of the PUG refresh cycle](../assets/conceptual/ugp-refresh-cycle.png)
+![A diagram of the PUG refresh cycle](../assets/conceptual/ugp-refresh-cycle.svg)
 
 In the diagram above, the PUG refreshes the live source tables `A`, `B`, and `C` first. Their changes flow into the derived tables `A2`, `A3`, `B2`, `C2`, `C3`, and `BC`, which update after the sources.
 
@@ -46,6 +46,8 @@ The next refresh cycle starts at the later of two times:
 
 - `targetCycleDurationMillis` after the previous cycle started.
 - `minimumInterCycleSleep` after the previous cycle completed.
+
+![A timeline showing the next refresh cycle starting at the later of the target duration and the minimum sleep](../assets/conceptual/ugp-cycle-timing.svg)
 
 ## Manually triggering a refresh
 
