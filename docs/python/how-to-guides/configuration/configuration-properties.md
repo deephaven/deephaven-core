@@ -250,6 +250,15 @@ These properties are less commonly needed but available for specific use cases.
 | `http.maxHeaderRequestSize`  | Maximum HTTP header size in bytes          | `8192` (Jetty default) |
 | `http.allowedMethods`        | Allowed HTTP methods (comma-separated)     | `GET,POST,OPTIONS`     |
 
+### Parquet reads
+
+When a query reads only a few scattered rows of a Parquet page, Deephaven decodes just those rows and caches their values, rather than decoding and caching the whole page. Array, vector, and nested columns, and single-row reads, always use whole pages, and a contiguous range of rows counts as dense. These properties tune this behavior.
+
+| Property                                             | Description                                                                                                                                                                                                                                      | Default |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| `ColumnChunkPageStore.sparseReadMaxDensity`          | Largest fraction of the rows in a read's range on a page that the read decodes sparsely; a page is decoded whole once its cached values would cover more than this fraction of its rows. `0` disables sparse reads and restores whole-page reads | `0.125` |
+| `ColumnChunkPageStore.sparseMissesBeforeFullCaching` | Number of times a page can be read sparsely for rows it has not cached; the next such read decodes and caches the whole page. Evicting the page from memory restarts the count                                                                   | `2`     |
+
 ### Formula validation
 
 These properties configure query formula validation for security. See [Formula validation configuration](/core/groovy/docs/conceptual/formula-validation-configuration) for details.

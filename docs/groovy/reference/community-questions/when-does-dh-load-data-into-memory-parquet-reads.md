@@ -13,7 +13,7 @@ In the process of reading Parquet files, Deephaven undergoes several distinct ph
 1. _Discovery and Schema Inference_: Deephaven initially identifies Parquet files based on the data's layout and infers a `TableDefinition` from a single file's schema if the user does not explicitly supply one.
 2. _Partitioning Column Filtering_: If applicable to the layout, Deephaven optimizes file selection by pruning files based on filters applied to partitioning columns, e.g. via `where` table operations.
 3. _Metadata Consumption_: Deephaven consumes metadata (i.e. `metadata` and `common_metadata` files, or the footers of all Parquet files in the filtered set) to determine the distribution of rows across files and row groups to apply table operations that consume data or row count.
-4. _Column Data Retrieval_: Accessing specific columns triggers Deephaven to read the corresponding data pages containing the required rows. These data pages are cached in memory within a heap-usage-sensitive cache.
+4. _Column Data Retrieval_: Accessing specific columns triggers Deephaven to read the corresponding data pages containing the required rows. When a read needs only a few scattered rows of a page, Deephaven may decode and cache just those rows' values; otherwise it decodes and caches the whole page. The cached data is held in memory within a heap-usage-sensitive cache. See [Parquet reads](../../how-to-guides/configuration/configuration-properties.md#parquet-reads) for when this applies and the properties that tune it.
 
 To illustrate these phases in action, consider a scenario involving filtering on partitioning columns, merging with another table, and performing an aggregation:
 

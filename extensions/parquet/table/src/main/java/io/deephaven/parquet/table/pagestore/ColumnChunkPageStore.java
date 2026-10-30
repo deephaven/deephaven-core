@@ -68,8 +68,9 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             .getDoubleForClassWithDefault(ColumnChunkPageStore.class, "sparseReadMaxDensity", 0.125);
 
     /**
-     * Sparse misses of a page (fills that reopen it for rows its cached sparse values lack) after which it is
-     * materialized and cached whole. Evicting its sparse values restarts the count.
+     * Sparse misses of a page (fills that open it for rows its cached sparse values lack) after which it is
+     * materialized and cached whole. Dropping its sparse values, on eviction or when it is cached whole, restarts the
+     * count.
      */
     private static volatile int sparseMissesBeforeFullCaching = Configuration.getInstance()
             .getIntegerForClassWithDefault(ColumnChunkPageStore.class, "sparseMissesBeforeFullCaching", 2);
@@ -340,8 +341,10 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             try (final ContextHolder holder = ensureContext(fillContext)) {
                 page = getPage(holder.get(), pageNum);
             }
-            if (sparseState(pageNum).pageRef != null) {
-                // The whole page supersedes any sparse values; drop them as readPage does, once the page is cached.
+            final SparseState<ATTR> state = sparseState(pageNum);
+            if (state.pageRef != null || state.misses.get() != 0) {
+                // The whole page supersedes any sparse values; drop them and restart the count as readPage does, once
+                // the page is cached.
                 dropSparse(pageNum);
             }
             return page;
@@ -435,7 +438,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     }
 
     /**
-     * Drop the cached sparse values of page {@code pageNum}.
+     * Drop the cached sparse values of page {@code pageNum}, and restart its miss count, so that once the whole page is
+     * evicted it may be read sparsely again.
      */
     private void dropSparse(final int pageNum) {
         final SparseState<ATTR> state = sparseState(pageNum);
@@ -444,6 +448,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             final WeakReference<SparsePage<ATTR>> localRef = state.pageRef;
             final SparsePage<ATTR> current = localRef == null ? null : localRef.get();
             state.pageRef = null;
+            state.misses.set(0);
             if (current != null) {
                 evict(current);
             }

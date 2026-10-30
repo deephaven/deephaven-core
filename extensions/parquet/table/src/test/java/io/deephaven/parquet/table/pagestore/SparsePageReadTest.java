@@ -551,6 +551,23 @@ public class SparsePageReadTest {
     }
 
     /**
+     * Caching a page whole restarts its count too, so once memory pressure evicts the page, it is read sparsely again.
+     */
+    @Test
+    public void testPromotionResetsMisses() {
+        final String path = writeTestTable();
+        ColumnChunkPageStore.setSparseMissesBeforeFullCaching(1);
+        final Table source = ParquetTools.readTable(path);
+        try (final SafeCloseable ignored = PageCache.pinCreatedPages()) {
+            assertPasses(path, source, new String[] {"ii % 39 == 0", "ii % 39 == 13"},
+                    new Reads[] {Reads.DECODE, Reads.DENSE});
+            PageCache.evictPinnedPages();
+            System.gc();
+            assertPasses(path, source, new String[] {"ii % 39 == 26"}, new Reads[] {Reads.DECODE});
+        }
+    }
+
+    /**
      * A viewport scrolling in file order without a hint, with a fresh context per step, reopens the page the previous
      * step ended on, decompressing it again. Those reopens are misses, so a page many steps land on is cached whole.
      */
@@ -811,7 +828,7 @@ public class SparsePageReadTest {
         final List<RowSet> chunks = new ArrayList<>();
         try (final RowSequence.Iterator it = rows.getRowSequenceIterator()) {
             while (it.hasMore()) {
-                chunks.add(it.getNextRowSequenceWithLength(chunkSize).asRowSet().copy());
+                chunks.add(it.getNextRowSequenceWithLength(chunkSize).asRowSet());
             }
         }
         if (reverse) {
@@ -843,8 +860,9 @@ public class SparsePageReadTest {
             // A fresh read, so that no page is already cached.
             final Table actual = ParquetTools.readTable(path).where(filter);
             assertTableEquals(expected, actual);
-            // A contiguous request may read whole pages: getChunk serves it from the page directly.
-            if (expectSparse && expected.size() > 0 && !expected.getRowSet().isContiguous()) {
+            // A contiguous request may read whole pages: getChunk serves it from the page directly. Check actual's
+            // rows: expected is a static select(), which flattens them.
+            if (expectSparse && actual.size() > 0 && !actual.getRowSet().isContiguous()) {
                 assertTrue(path + " where " + filter + " should read sparsely",
                         ColumnChunkPageStore.sparseFillCount() > before);
             }
