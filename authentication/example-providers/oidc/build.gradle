@@ -1,4 +1,27 @@
 dependencies {
     implementation libs.pac4j.oidc
     implementation libs.pac4j.http
+
+    // This provider only runs inside a Deephaven server; the server is a runtime dependency, not bundled
+    shadow project(':server')
+}
+
+// Every module the server ships, from the resolved shadow dependencies above
+def serverModules = {
+    configurations.shadow.incoming.resolutionResult.allComponents
+            .findResults { it.moduleVersion }
+            .collect { "${it.group}:${it.name}".toString() } as Set
+}.memoize()
+
+shadowJar {
+    // The shadow configuration keeps :server out of the jar, but pac4j's own copies of libraries the server also has
+    // (Guava, Jackson, protobuf, ...) still arrive through runtimeClasspath. The server puts provider jars ahead of its
+    // own on the classpath, so a bundled copy would replace the server's version for the whole server.
+    dependencies {
+        exclude { serverModules().contains("${it.moduleGroup}:${it.moduleName}".toString()) }
+    }
+    // The server distributions only get these through optional extensions, so they stay bundled; relocate them so
+    // they cannot replace the server's copies either
+    relocate 'net.minidev', 'io.deephaven.authentication.oidc.shaded.net.minidev'
+    relocate 'org.objectweb.asm', 'io.deephaven.authentication.oidc.shaded.org.objectweb.asm'
 }

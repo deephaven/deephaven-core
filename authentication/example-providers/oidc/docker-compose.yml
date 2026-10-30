@@ -13,7 +13,7 @@ services:
     # Specify a custom command, turning off safety features for faster LOCAL-ONLY development. Do not use this in production.
     command: postgres -c fsync=off -c synchronous_commit=off
   keycloak:
-    image: quay.io/keycloak/keycloak:19.0.1
+    image: quay.io/keycloak/keycloak:19.0.3
     environment:
       - KEYCLOAK_LOGLEVEL=ALL
       - KEYCLOAK_ADMIN=admin
