@@ -19,6 +19,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
@@ -363,8 +364,11 @@ public class QueryTableRangeJoinTest {
             return false;
         }
         for (final StackTraceElement frame : operationThread.getStackTrace()) {
-            if (!frame.getClassName().startsWith("java.") && !frame.getClassName().startsWith("jdk.")) {
-                return frame.getClassName().endsWith("RangeJoinOperation$StaticRangeJoinPhase1")
+            final String className = frame.getClassName();
+            // the scheduler's wait is entered from the frame that waits for the job
+            if (!className.startsWith("java.") && !className.startsWith("jdk.")
+                    && !className.equals(OperationInitializerJobScheduler.class.getName())) {
+                return className.endsWith("RangeJoinOperation$StaticRangeJoinPhase1")
                         && frame.getMethodName().equals("start");
             }
         }

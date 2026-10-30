@@ -101,7 +101,7 @@ public class OperationInitializerJobScheduler implements JobScheduler {
             }
             final Job job = claimNextPendingJob();
             if (job != null) {
-                job.run(false);
+                runOnWaitingThread(job);
                 continue;
             }
             synchronized (outstandingJobs) {
@@ -122,6 +122,19 @@ public class OperationInitializerJobScheduler implements JobScheduler {
             throw new InterruptedException();
         }
         return future.get();
+    }
+
+    /**
+     * Run a job this waiting thread has claimed. It ends as it would on a pool thread: a failure reaches the job's own
+     * error handler, and an Error is also reported as fatal, so the future being waited for reports the outcome and
+     * nothing the job throws escapes the wait.
+     */
+    private static void runOnWaitingThread(@NotNull final Job job) {
+        try {
+            job.run(false);
+        } catch (Throwable t) {
+            // delivered and reported by JobScheduler.runJob, as on a pool thread
+        }
     }
 
     /**
