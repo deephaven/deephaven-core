@@ -186,7 +186,7 @@ public class ParallelTimsort {
         }
 
         try {
-            waitForSort.get();
+            jobScheduler.awaitCompletion(waitForSort);
         } catch (final InterruptedException e) {
             throw new CancellationException("Interrupted during parallel sort");
         } catch (final ExecutionException e) {
@@ -318,7 +318,7 @@ public class ParallelTimsort {
                 },
                 waitForPhase::completeExceptionally);
         try {
-            waitForPhase.get();
+            jobScheduler.awaitCompletion(waitForPhase);
         } catch (final InterruptedException e) {
             throw new CancellationException("Interrupted during " + description);
         } catch (final ExecutionException e) {

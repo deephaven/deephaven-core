@@ -304,7 +304,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         try {
             new StaticRangeJoinPhase1(jobScheduler, executionContext, resultFuture).start();
             try {
-                return resultFuture.get();
+                return jobScheduler.awaitCompletion(resultFuture);
             } catch (InterruptedException e) {
                 final CancellationException cancellation =
                         new CancellationException(String.format("%s interrupted", description), e);
@@ -368,7 +368,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             }
             final Table leftTableGrouped;
             try {
-                leftTableGrouped = groupLeftTableFuture.get();
+                leftTableGrouped = jobScheduler.awaitCompletion(groupLeftTableFuture);
             } catch (InterruptedException e) {
                 // staticRangeJoin observes the restored interrupt in its wait for the result and reports cancellation
                 Thread.currentThread().interrupt();

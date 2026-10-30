@@ -264,9 +264,9 @@ public class TestExecutorJobScheduler {
     }
 
     /**
-     * The wait covers every job submitted, as {@link OperationInitializerJobScheduler}'s does, including one the
-     * executor has yet to run: after an invocation over a queueing executor, whose caller ran every task itself,
-     * reading the performance waits until the queued jobs, which then do nothing, have run.
+     * The wait covers every job submitted, including one the executor has yet to run: after an invocation over a
+     * queueing executor, whose caller ran every task itself, reading the performance waits until the queued jobs, which
+     * then do nothing, have run.
      */
     @Test
     public void testPerformanceWaitsForJobsNotYetRun() throws InterruptedException {

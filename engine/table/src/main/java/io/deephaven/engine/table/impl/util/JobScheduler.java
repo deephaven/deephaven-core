@@ -21,7 +21,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -165,11 +168,33 @@ public interface JobScheduler {
      * initializing an operation; as it could miss data from some of the tasks. Furthermore, even though the completion
      * callback identifies the result as ready does not mean that the completion callback has actually completed. To
      * guard against this the {@link OperationInitializerJobScheduler} waits for all jobs to be complete before
-     * returning the {@link BasePerformanceEntry}. Therefore, if you call this from a completion callback, then the
-     * operation will hang. {@link ExecutorJobScheduler} waits the same way, so the same applies to it.
+     * returning the {@link BasePerformanceEntry}, running on the calling thread any that no other thread has started.
+     * Therefore, if you call this from a completion callback, then the operation will hang.
+     * {@link ExecutorJobScheduler} waits the same way, so the same applies to it.
      * </p>
      */
     BasePerformanceEntry getAccumulatedPerformance();
+
+    /**
+     * Wait for {@code future}, which this scheduler's jobs complete, and return its result as {@link Future#get()}
+     * does.
+     *
+     * <p>
+     * The {@link OperationInitializerJobScheduler} runs on the calling thread any of its jobs that no other thread has
+     * started, and blocks only while every job it has not finished is running on another thread. The wait therefore
+     * never depends on a job queued behind threads that are themselves waiting, perhaps for a lock the calling thread
+     * holds. Other schedulers wait as {@link Future#get()} does.
+     * </p>
+     *
+     * @param future the future to wait for
+     * @return the result of {@code future}
+     * @throws InterruptedException if the calling thread is interrupted while waiting
+     * @throws ExecutionException if {@code future} completed exceptionally
+     */
+    default <T> T awaitCompletion(@NotNull final CompletableFuture<T> future)
+            throws InterruptedException, ExecutionException {
+        return future.get();
+    }
 
     /**
      * How many threads exist in the job scheduler? The job submitters can use this value to determine how many sub-jobs
