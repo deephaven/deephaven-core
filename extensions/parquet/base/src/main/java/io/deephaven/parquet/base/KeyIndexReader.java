@@ -23,6 +23,11 @@ class KeyIndexReader extends ValuesReader {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public void skip(final int n) {
+        dictionaryValuesReader.skip(n);
+    }
+
 
     public int readInteger() {
         return dictionaryValuesReader.readValueDictionaryId();
