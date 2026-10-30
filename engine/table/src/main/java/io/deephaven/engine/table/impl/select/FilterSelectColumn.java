@@ -97,21 +97,20 @@ class FilterSelectColumn implements SelectColumn {
     }
 
     /**
-     * Validates the filter to ensure it does not contain invalid filters such as column vectors or virtual row
-     * variables. Throws an {@link UncheckedTableException} if any invalid filters are found.
+     * Validates the filter to ensure it does not contain invalid filters such as column vectors, virtual row variables,
+     * or other {@link WhereFilter#hasCrossRowDependencies() cross-row dependencies}. Throws an
+     * {@link UncheckedTableException} if any invalid filters are found.
      *
      * @return the list of columns required by the filter.
      */
     private List<String> checkForInvalidFilters() {
-        if (!filter.getColumnArrays().isEmpty()) {
+        if (filter.hasCrossRowDependencies()) {
+            // the column evaluates the filter on the rows being computed, not on every row of the table
+            final String cause = !filter.getColumnArrays().isEmpty() ? "column Vectors (_ syntax)"
+                    : filter.hasVirtualRowVariables() ? "virtual row variables (i, ii, or k)"
+                            : "cross-row dependencies";
             throw new UncheckedTableException(
-                    "Cannot use a filter with column Vectors (_ syntax) in select, view, update, or updateView: "
-                            + filter);
-        }
-        if (filter.hasVirtualRowVariables()) {
-            throw new UncheckedTableException(
-                    "Cannot use a filter with virtual row variables (i, ii, or k) in select, view, update, or updateView: "
-                            + filter);
+                    "Cannot use a filter with " + cause + " in select, view, update, or updateView: " + filter);
         }
         if (filter.isRefreshing()) {
             /*

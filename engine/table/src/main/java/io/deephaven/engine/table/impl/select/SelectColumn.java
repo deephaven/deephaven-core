@@ -279,6 +279,25 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
     }
 
     /**
+     * Whether this column has cross-row dependencies: whether the column's value for a row depends on rows other than
+     * that row, as for the row variables {@code i}, {@code ii} and {@code k}, or a column array such as {@code A_}. An
+     * operation that evaluates the column against other rows, such as the rows of a partitioned table's location table,
+     * the rows of one bucket, or the rows that a later filter keeps, must not evaluate a column that has cross-row
+     * dependencies there.
+     * <p>
+     * The default reports a column that {@link #hasVirtualRowVariables() uses a row variable} or
+     * {@link #getColumnArrays() reads a column array}. A column that depends on other rows in another way overrides
+     * this method, and an override must still report a column that uses a row variable or reads a column array.
+     * <p>
+     * This column must already be initialized.
+     *
+     * @return whether this column has cross-row dependencies
+     */
+    default boolean hasCrossRowDependencies() {
+        return hasVirtualRowVariables() || !getColumnArrays().isEmpty();
+    }
+
+    /**
      * Create a copy of this SelectColumn.
      *
      * @return an independent copy of this SelectColumn.

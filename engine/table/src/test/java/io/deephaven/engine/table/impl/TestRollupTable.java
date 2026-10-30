@@ -494,9 +494,16 @@ public class TestRollupTable extends RefreshingTableTestCase {
         final Table snapshot4 = snapshotFilteredRollup(rollup4);
         assertTableEquals(snapshot2, snapshot4);
 
+        // a filter with cross-row dependencies reads the rows of the source, rather than the base level's buckets, even
+        // when the filter uses no aggregation column: source rows 2 and 3 are the rows of v2
+        final RollupTable rollup5 = rollup1.withFilter(WhereFilterFactory.getExpression("ii >= 2 && ii <= 3"));
+        final Table snapshot5 = snapshotFilteredRollup(rollup5);
+        assertTableEquals(snapshot2, snapshot5);
+
         freeSnapshotTableChunks(snapshot2);
         freeSnapshotTableChunks(snapshot3);
         freeSnapshotTableChunks(snapshot4);
+        freeSnapshotTableChunks(snapshot5);
     }
 
     private Table snapshotFilteredRollup(RollupTable rollup) {

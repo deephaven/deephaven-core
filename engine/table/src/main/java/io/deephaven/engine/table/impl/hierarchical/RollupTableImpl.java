@@ -254,8 +254,9 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 IllegalArgumentException::new);
 
         List<String> groupByColNames = groupByColumns.stream().map(ColumnName::name).collect(Collectors.toList());
+        // a filter with cross-row dependencies filters the source, since the base level holds one row per bucket
         final boolean onlyGroupBy = Arrays.stream(whereFilters)
-                .allMatch(w -> groupByColNames.containsAll(w.getColumns()));
+                .allMatch(w -> groupByColNames.containsAll(w.getColumns()) && !w.hasCrossRowDependencies());
         if (!onlyGroupBy) {
             final Table filteredTable = source.where(Filter.and(whereFilters));
             return rebase(filteredTable);

@@ -208,8 +208,11 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
             final Set<String> partitioningDerivedColumnNames = new HashSet<>();
             for (final SelectColumn selectColumn : selectColumns) {
-                if (!((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
-                        selectColumn.getColumns(), selectColumn.getColumnArrays(), partitioningDerivedColumnNames)) {
+                // the location table has one row per location, so a column with cross-row dependencies would read
+                // locations rather than rows
+                if (selectColumn.hasCrossRowDependencies()
+                        || !((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
+                                selectColumn.getColumns(), partitioningDerivedColumnNames)) {
                     return null;
                 }
                 partitioningDerivedColumnNames.add(selectColumn.getName());
@@ -420,8 +423,10 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
         final Set<String> partitioningDerivedColumnNames = new HashSet<>();
         for (final SelectColumn selectColumn : selectColumns) {
-            if (!isValidAgainstColumnPartitionTable(
-                    selectColumn.getColumns(), selectColumn.getColumnArrays(), partitioningDerivedColumnNames)) {
+            // the location table has one row per location, so a column with cross-row dependencies would read
+            // locations rather than rows
+            if (selectColumn.hasCrossRowDependencies()
+                    || !isValidAgainstColumnPartitionTable(selectColumn.getColumns(), partitioningDerivedColumnNames)) {
                 // Be sure to invoke the super-class version of this method, rather than the array-based one that
                 // delegates to this method.
                 return super.selectDistinct(selectColumns);
@@ -450,22 +455,22 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         return ExtractAllFilters.stream(whereFilter)
                 .noneMatch(f -> f instanceof ReindexingFilter || f.hasCrossRowDependencies())
                 && !whereFilter.isRefreshing()
-                && isValidAgainstColumnPartitionTable(whereFilter.getColumns(), whereFilter.getColumnArrays());
+                && isValidAgainstColumnPartitionTable(whereFilter.getColumns(), Collections.emptySet());
     }
 
+    /**
+     * Whether every column in {@code columnNames} is a partitioning column or a column derived from the partitioning
+     * columns, so that the location table can answer for the columns. Each caller first rules out cross-row
+     * dependencies, such as column arrays, which the location table cannot answer for.
+     *
+     * @param columnNames the columns read
+     * @param partitioningDerivedColumnNames the columns that earlier select columns derive from the partitioning
+     *        columns
+     * @return whether the location table can answer for {@code columnNames}
+     */
     private boolean isValidAgainstColumnPartitionTable(
             @NotNull final Collection<String> columnNames,
-            @NotNull final Collection<String> columnArrayNames) {
-        return isValidAgainstColumnPartitionTable(columnNames, columnArrayNames, Collections.emptySet());
-    }
-
-    private boolean isValidAgainstColumnPartitionTable(
-            @NotNull final Collection<String> columnNames,
-            @NotNull final Collection<String> columnArrayNames,
             @NotNull final Collection<String> partitioningDerivedColumnNames) {
-        if (!columnArrayNames.isEmpty()) {
-            return false;
-        }
         return columnNames.stream().allMatch(
                 columnName -> partitioningColumnDefinitions.containsKey(columnName)
                         || partitioningDerivedColumnNames.contains(columnName));

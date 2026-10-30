@@ -158,9 +158,10 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         final Map<Boolean, List<WhereFilter>> nodeSuitabilityToFilters = Stream.of(whereFilters)
                 .peek(wf -> wf.init(source.getDefinition(), compilationProcessor))
                 .collect(Collectors.partitioningBy(wf -> {
-                    // Node-level filters have only node-filter columns and use no column arrays
+                    // Node-level filters have only node-filter columns and no cross-row dependencies: a node-level
+                    // filter reads the rows of one node, rather than the rows of the source
                     return wf.getColumns().stream().map(ColumnName::of).allMatch(nodeFilterColumns::contains)
-                            && wf.getColumnArrays().isEmpty();
+                            && !wf.hasCrossRowDependencies();
                 }));
         compilationProcessor.compile();
 

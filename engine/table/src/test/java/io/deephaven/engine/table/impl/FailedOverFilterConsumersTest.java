@@ -131,6 +131,27 @@ public class FailedOverFilterConsumersTest {
         assertEquals(rootCause(plain).getMessage(), rootCause(failedOver).getMessage());
     }
 
+    /**
+     * A column array reads every row of the column, a cross-row dependency like {@code i}, so count-where refuses a
+     * filter that reads one, rather than evaluating the column array against its own chunks.
+     */
+    @Test
+    public void countWhereRefusesColumnArrays() {
+        final Table t = newTable(intCol("X", 0, 1, 5));
+
+        final Exception plain =
+                assertThrows(Exception.class, () -> t.aggBy(Aggregation.AggCountWhere("C", "X == i + 0")));
+        final Exception agg =
+                assertThrows(Exception.class, () -> t.aggBy(Aggregation.AggCountWhere("C", "X == X_[0] + 0")));
+        assertEquals(rootCause(plain).getMessage(), rootCause(agg).getMessage());
+        final Exception updateBy = assertThrows(Exception.class,
+                () -> t.updateBy(UpdateByOperation.CumCountWhere("C", "X == X_[0] + 0")));
+        assertEquals(
+                "UpdateBy CountWhere operator does not support filters with cross-row dependencies, such as filters "
+                        + "that reference virtual row variables (i, ii, k) or column arrays",
+                rootCause(updateBy).getMessage());
+    }
+
     /** A wrapper or a composed filter answers for the filters inside it, and so must be refused too. */
     @Test
     public void countWhereRefusesWrappedAndComposedVirtualRowVariables() {
@@ -146,7 +167,8 @@ public class FailedOverFilterConsumersTest {
             final Exception updateBy = assertThrows(filter.toString(), Exception.class,
                     () -> t.updateBy(UpdateByOperation.CumCountWhere("C", filter)));
             assertEquals(
-                    "UpdateBy CountWhere operator does not support filters that reference virtual row variables (i, ii, k)",
+                    "UpdateBy CountWhere operator does not support filters with cross-row dependencies, such as filters "
+                            + "that reference virtual row variables (i, ii, k) or column arrays",
                     rootCause(updateBy).getMessage());
         }
     }

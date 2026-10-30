@@ -704,6 +704,25 @@ public final class ParquetTableFilterTest {
     }
 
     @Test
+    public void partitionedSelectDistinctWithCrossRowDependenciesTest() {
+        final String destPath = Path.of(rootFile.getPath(),
+                "ParquetTest_partitionedSelectDistinctWithCrossRowDependenciesTest").toString();
+        final Table source = TableTools.emptyTable(12).update("Part = `p` + (int) (ii / 4)", "Value = ii");
+        ParquetTools.writeKeyValuePartitionedTable(source.partitionBy("Part"), destPath, EMPTY);
+
+        // A partitioned table answers a selectDistinct that reads only partitioning columns from the location table,
+        // which has one row per location, so a column with cross-row dependencies must read the rows of the table
+        // instead: i is a row position, not a location position.
+        final Table memTable = ParquetTools.readTable(destPath).select();
+        for (final String column : new String[] {"Z = i", "Z = ii % 5", "Z = Part + `-` + i"}) {
+            assertTableEquals(memTable.selectDistinct(column), ParquetTools.readTable(destPath).selectDistinct(column));
+            // a deferred view asks the partitioned table to select distinct values
+            assertTableEquals(memTable.renameColumns("V = Value").selectDistinct(column),
+                    ParquetTools.readTable(destPath).renameColumns("V = Value").selectDistinct(column));
+        }
+    }
+
+    @Test
     public void flatPartitionsColumnRenameTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_flatPartitionsTest").toString();
         final int tableSize = 1_000_000;

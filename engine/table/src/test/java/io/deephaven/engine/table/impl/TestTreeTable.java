@@ -88,6 +88,19 @@ public class TestTreeTable extends RefreshingTableTestCase {
     }
 
     @Test
+    public void testFilterWithCrossRowDependenciesFiltersSource() {
+        // A filter with cross-row dependencies reads the rows of the source, so the tree applies the filter to the
+        // source, keeping the matching rows and their ancestors, rather than to the rows of each node, even when the
+        // filter uses no column outside the node filter columns.
+        final Table source = TableTools.newTable(intCol("ID", 1, 2, 3, 4),
+                intCol("Parent", NULL_INT, 1, 1, 2));
+        final TreeTable filtered = source.tree("ID", "Parent")
+                .withFilter(WhereFilterFactory.getExpression("ii == 3"));
+        // source row 3 is ID 4, whose ancestors are ID 2 and ID 1
+        assertTableEquals(source.where("ID in 1, 2, 4"), filtered.getSource());
+    }
+
+    @Test
     public void testRebaseBadDef() {
         final Table source1 = TableTools.newTable(intCol("ID", 1, 2, 3, 4, 5),
                 intCol("Parent", NULL_INT, 7, NULL_INT, 1, 1),

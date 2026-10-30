@@ -543,9 +543,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 .map(SelectColumn::getName)
                 .collect(Collectors.toSet());
         // Coalesce for a select column that reads a column the deferred view computes rather than retains, since the
-        // referenced table has no computed values, or that reads a column array, which the referenced table would
-        // evaluate against the referenced table's own rows.
-        if (selectColumns.stream().anyMatch(sc -> !sc.getColumnArrays().isEmpty()
+        // referenced table has no computed values, or that has cross-row dependencies, since partitioned tables would
+        // answer from location tables.
+        if (selectColumns.stream().anyMatch(sc -> sc.hasCrossRowDependencies()
                 || sc.getColumns().stream().anyMatch(outputColumnNames::contains))) {
             return null;
         }
@@ -564,10 +564,11 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 return null;
             }
             for (int ii = 0; ii < referencedSelectColumns.length; ++ii) {
-                // this table's select columns read no column arrays, or this table would have coalesced above
+                // this table's select columns have no cross-row dependencies, or this table would have coalesced
+                // above
                 final Set<String> usedColumns = new HashSet<>(selectColumns.get(ii).getColumns());
                 final Set<String> referencedUsedColumns = new HashSet<>(referencedSelectColumns[ii].getColumns());
-                if (!referencedSelectColumns[ii].getColumnArrays().isEmpty()
+                if (referencedSelectColumns[ii].hasCrossRowDependencies()
                         || !usedColumns.equals(referencedUsedColumns)) {
                     return null;
                 }
