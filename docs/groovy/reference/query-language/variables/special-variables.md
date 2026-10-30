@@ -38,7 +38,7 @@ The following table summarizes when each variable is safe to use:
 A flat add-only table is an [add-only table](../../../conceptual/table-types.md#specialization-2-add-only) whose row keys match its row positions (0, 1, 2, and so on). The engine treats it as [append-only](../../../conceptual/table-types.md#specialization-1-append-only).
 
 > [!NOTE]
-> The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and will throw an error on refreshing tables.
+> The engine detects simple constant offset array access patterns like `Column_[i-1]` and handles them correctly on all table types. However, semantically equivalent but syntactically different expressions like `Column_[(i)-1]` are not recognized and throw an error on refreshing tables other than blink tables.
 
 For refreshing tables where you need more complex positional access, see [Alternatives for refreshing tables](../../../how-to-guides/built-in-variables.md#alternatives-for-refreshing-tables).
 

@@ -221,7 +221,7 @@ Use it to simulate ticking data during development, or to limit the number of ro
 The [`incremental_release`](/core/pydoc/code/deephaven.filters.html#deephaven.filters.incremental_release) filter takes two parameters:
 
 - The initial number of rows to present in the resulting table.
-- The number of rows to release at the beginning of each [update graph](../conceptual/dag.md#update-graph-ug-cycles) cycle, which is one round in which Deephaven processes table updates.
+- The number of rows to release at the beginning of each [update graph](../conceptual/dag.md#update-graph-cycles) cycle, which is one round in which Deephaven processes table updates.
 
 ```python test-set=1 ticking-table order=null
 from deephaven.filters import incremental_release

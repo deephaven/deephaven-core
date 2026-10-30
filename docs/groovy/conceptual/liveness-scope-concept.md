@@ -11,7 +11,7 @@ Deephaven's engine runs in Java, where the JVM handles [garbage collection](./da
 A liveness scope lets your code choose when to release the query engine objects it no longer needs, instead of waiting for the JVM. Releasing a scope cleans up:
 
 - Tables and plots.
-- Other query engine objects, such as the listeners that connect tables in the [update graph](./dag.md#update-graph-ug-cycles).
+- Other query engine objects, such as the listeners that connect tables in the [update graph](./dag.md#update-graph-cycles).
 
 Without a scope of their own, queries rely on JVM [garbage collection](./dag.md#garbage-collection-and-the-dag), which is fine in most cases. A scope helps when a query repeatedly creates [ticking](./table-update-model.md) tables that it needs only for a while, such as a script that rebuilds its tables each time its parameters change. Releasing the scope cleans up the old tables right away. Otherwise they keep processing updates until [garbage collection](./dag.md#garbage-collection-and-the-dag) runs.
 

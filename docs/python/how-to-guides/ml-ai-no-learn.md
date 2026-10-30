@@ -220,7 +220,7 @@ The example registers the [listener](./table-listeners-python.md) with `do_repla
 
 #### Use a thread pool
 
-Deephaven calls a [listener](./table-listeners-python.md) function inside the [update cycle](../conceptual/table-update-model.md), while the [update graph](../conceptual/dag.md#update-graph-ug-cycles) holds its [exclusive lock](../conceptual/query-engine/engine-locking.md#exclusive-lock). That lock gives the [listener](./table-listeners-python.md) a consistent view of the data, but the cycle can't finish until the [listener](./table-listeners-python.md) returns. A slow [listener](./table-listeners-python.md) therefore makes every table in the [update graph](../conceptual/dag.md#update-graph-ug-cycles) fall behind. To avoid this, run slow calculations on other threads.
+Deephaven calls a [listener](./table-listeners-python.md) function inside the [update cycle](../conceptual/table-update-model.md), while the [update graph](../conceptual/dag.md#update-graph-cycles) holds its [exclusive lock](../conceptual/query-engine/engine-locking.md#exclusive-lock). That lock gives the [listener](./table-listeners-python.md) a consistent view of the data, but the cycle can't finish until the [listener](./table-listeners-python.md) returns. A slow [listener](./table-listeners-python.md) therefore makes every table in the [update graph](../conceptual/dag.md#update-graph-cycles) fall behind. To avoid this, run slow calculations on other threads.
 
 Worker threads keep the model out of the [update cycle](../conceptual/table-update-model.md). On a Python build with the GIL (global interpreter lock), they run Python code one at a time. They speed up a model only when its heavy work runs in native code, such as [NumPy](./use-numpy.md), [PyTorch](./use-pytorch.md), or [TensorFlow](./use-tensorflow.md).
 
@@ -336,12 +336,12 @@ To stop the example, call [`handle.stop()`](/core/pydoc/code/deephaven.table_lis
 So, you have a trained AI/ML model and aren't sure which workflow to use. Here are some things to consider:
 
 - **[Table operations](#table-operations)**: [Table operations](../conceptual/table-operations-overview.md) are the simplest way to make predictions with a model, and they take a single line of code.
-  - With [`update`](../reference/table-operations/select/update.md) or [`select`](../reference/table-operations/select/select.md), the model runs inside the [update cycle](../conceptual/table-update-model.md), so a slow model delays every table in the [update graph](../conceptual/dag.md#update-graph-ug-cycles).
+  - With [`update`](../reference/table-operations/select/update.md) or [`select`](../reference/table-operations/select/select.md), the model runs inside the [update cycle](../conceptual/table-update-model.md), so a slow model delays every table in the [update graph](../conceptual/dag.md#update-graph-cycles).
   - With [`view`](../reference/table-operations/select/view.md), [`update_view`](../reference/table-operations/select/update-view.md), or [`lazy_update`](../reference/table-operations/select/lazy-update.md), the model runs when the column is read instead, which can also be inside the [update cycle](../conceptual/table-update-model.md).
 - **[Table listener and publisher](#table-listener-and-publisher)**: This workflow is more complex but more flexible.
   - It passes each update's rows to the model as [NumPy](./use-numpy.md) arrays, so the model can process them in one vectorized call.
   - The [publisher's](./table-publisher.md) outputs appear in the [update cycle](../conceptual/table-update-model.md) after the rows that produced them, so new rows in the joined result have a null `YFitted` until then. With a [thread pool](#use-a-thread-pool), they can arrive later still.
-  - The [listener](./table-listeners-python.md) itself runs inside the [update cycle](../conceptual/table-update-model.md). A slow model holds back the [update graph](../conceptual/dag.md#update-graph-ug-cycles) unless the [listener](./table-listeners-python.md) hands the work to a [thread pool](#use-a-thread-pool).
+  - The [listener](./table-listeners-python.md) itself runs inside the [update cycle](../conceptual/table-update-model.md). A slow model holds back the [update graph](../conceptual/dag.md#update-graph-cycles) unless the [listener](./table-listeners-python.md) hands the work to a [thread pool](#use-a-thread-pool).
 
 ## Related documentation
 

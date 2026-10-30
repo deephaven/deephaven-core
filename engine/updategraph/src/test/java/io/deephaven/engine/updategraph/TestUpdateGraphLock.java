@@ -6,10 +6,13 @@ package io.deephaven.engine.updategraph;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.function.Consumer;
@@ -115,6 +118,69 @@ public class TestUpdateGraphLock {
         assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
         lock.sharedLock().unlock();
         assertFalse(lock.sharedLock().isHeldByCurrentThread());
+    }
+
+    @Test
+    public void testForbiddenWaits() throws Exception {
+        final UpdateGraphLock lock =
+                UpdateGraphLock.create(ExecutionContext.getContext().getUpdateGraph(), false);
+
+        try (final SafeCloseable ignored = UpdateGraphWaitGuard.forbidWaits()) {
+            // available locks are acquired without waiting
+            final MutableBoolean success = new MutableBoolean(false);
+            lock.sharedLock().doLocked(() -> lock.sharedLock().doLockedInterruptibly(success::setTrue));
+            assertTrue(success.getValue());
+            success.setFalse();
+            lock.exclusiveLock().doLocked(() -> lock.exclusiveLock().doLockedInterruptibly(success::setTrue));
+            assertTrue(success.getValue());
+
+            // a pending interrupt is honored, though the lock is available
+            Thread.currentThread().interrupt();
+            assertThrows(InterruptedException.class, () -> lock.sharedLock().lockInterruptibly());
+            assertFalse(Thread.currentThread().isInterrupted());
+            assertFalse(lock.sharedLock().isHeldByCurrentThread());
+            Thread.currentThread().interrupt();
+            assertThrows(InterruptedException.class, () -> lock.exclusiveLock().lockInterruptibly());
+            assertFalse(Thread.currentThread().isInterrupted());
+            assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
+            Thread.currentThread().interrupt();
+            assertThrows(InterruptedException.class, () -> lock.sharedLock().tryLock(1, TimeUnit.MINUTES));
+            assertFalse(Thread.currentThread().isInterrupted());
+            assertFalse(lock.sharedLock().isHeldByCurrentThread());
+            Thread.currentThread().interrupt();
+            assertThrows(InterruptedException.class, () -> lock.exclusiveLock().tryLock(1, TimeUnit.MINUTES));
+            assertFalse(Thread.currentThread().isInterrupted());
+            assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
+        }
+        assertFalse(UpdateGraphWaitGuard.waitsForbidden());
+
+        final ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            executor.submit(() -> lock.exclusiveLock().lock()).get();
+            try (final SafeCloseable ignored = UpdateGraphWaitGuard.forbidWaits()) {
+                assertThrows(UpdateGraphWaitForbiddenException.class, () -> lock.sharedLock().lock());
+                assertThrows(UpdateGraphWaitForbiddenException.class, () -> lock.sharedLock().lockInterruptibly());
+                assertThrows(UpdateGraphWaitForbiddenException.class, () -> lock.exclusiveLock().lock());
+                assertThrows(UpdateGraphWaitForbiddenException.class, () -> lock.exclusiveLock().lockInterruptibly());
+                assertFalse(lock.sharedLock().tryLock());
+                assertFalse(lock.exclusiveLock().tryLock());
+                final long beforeTimedAttempts = System.nanoTime();
+                assertFalse(lock.sharedLock().tryLock(1, TimeUnit.MINUTES));
+                assertFalse(lock.exclusiveLock().tryLock(1, TimeUnit.MINUTES));
+                assertTrue(System.nanoTime() - beforeTimedAttempts < TimeUnit.SECONDS.toNanos(30));
+                // forbidding waits again, as a nested caller may, leaves waits forbidden when it is done
+                try (final SafeCloseable ignored2 = UpdateGraphWaitGuard.forbidWaits()) {
+                    assertTrue(UpdateGraphWaitGuard.waitsForbidden());
+                }
+                assertTrue(UpdateGraphWaitGuard.waitsForbidden());
+            }
+            assertFalse(UpdateGraphWaitGuard.waitsForbidden());
+            assertFalse(lock.sharedLock().isHeldByCurrentThread());
+            assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
+            executor.submit(() -> lock.exclusiveLock().unlock()).get();
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     @Test

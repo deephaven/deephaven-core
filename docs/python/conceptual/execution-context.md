@@ -7,13 +7,13 @@ An [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deepha
 - The query library: the imports that query strings can use.
 - The query compiler: it turns query strings into code.
 - The [query scope](../how-to-guides/query-scope.md): the variables that query strings can use.
-- The [update graph](./dag.md#update-graph-ug-cycles): it schedules when [ticking tables](./table-types.md) refresh.
+- The [update graph](./dag.md#update-graph-cycles): it schedules when [ticking tables](./table-types.md) refresh.
 
 Most of the time you never see it. When a Deephaven script session starts, it creates a default context and runs every query you enter in the console inside it. That default context is _systemic_: the system supplies it, not your code. A systemic context is unrelated to [systemic object marking](./systemic-object-marking.md).
 
 You need a context of your own in two situations: when a table operation runs on a thread you start, and when an operation does deferred work that the engine runs later. This page covers both, then shows when and how to create additional contexts.
 
-Contexts are also a tool in their own right. Because each context can carry its own [query scope](../how-to-guides/query-scope.md) and [update graph](./dag.md#update-graph-ug-cycles), you can use contexts to keep independent real-time workloads from stepping on each other's variables or update cycles.
+Contexts are also a tool in their own right. Because each context can carry its own [query scope](../how-to-guides/query-scope.md) and [update graph](./dag.md#update-graph-cycles), you can use contexts to keep independent real-time workloads from stepping on each other's variables or update cycles.
 
 ## When an `ExecutionContext` is needed
 
@@ -174,17 +174,17 @@ with user_ctx:
 
 ## When and how to create additional execution contexts
 
-For most applications where a single user runs Deephaven, the systemic execution context is enough. Each [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.ExecutionContext) can have its own [update graph](./dag.md#update-graph-ug-cycles), query library, and [query scope](../how-to-guides/query-scope.md), which lets you compartmentalize units of code so they work independently of one another. That matters in these more complex use cases:
+For most applications where a single user runs Deephaven, the systemic execution context is enough. Each [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.ExecutionContext) can have its own [update graph](./dag.md#update-graph-cycles), query library, and [query scope](../how-to-guides/query-scope.md), which lets you compartmentalize units of code so they work independently of one another. That matters in these more complex use cases:
 
 - **Freezing query-scope variables**: Some work must keep the values its variables had when it was set up. For example, [transforms](../reference/table-operations/partitioned-tables/transform.md) set up in a loop each need their own iteration's value, and a thread might need to be shielded from changes that other threads make to the [query scope](../how-to-guides/query-scope.md). Pass `freeze_vars` to [`make_user_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.make_user_exec_ctx), described in [Create a context from the current one](#create-a-context-from-the-current-one).
-- **Isolating update processing**: A secondary [update graph](./dag.md#update-graph-ug-cycles) runs its own update cycles, so an expensive operation on it doesn't delay the update cycles of the main graph. Separate [update graphs](./dag.md#update-graph-ug-cycles) refresh independently, so their update cycles can run in parallel on different cores. Build a context with its own [update graph](./dag.md#update-graph-ug-cycles), described in [Create an execution context from scratch](#create-an-execution-context-from-scratch).
-- **Separating workloads**: When multiple users share a Deephaven server, or a single user wants to keep each workload's variables, imports, and update processing separate from the others, each workload can run in a context with its own [query scope](../how-to-guides/query-scope.md), query library, and [update graph](./dag.md#update-graph-ug-cycles). Build each context from scratch, described in [Create an execution context from scratch](#create-an-execution-context-from-scratch).
+- **Isolating update processing**: A secondary [update graph](./dag.md#update-graph-cycles) runs its own update cycles, so an expensive operation on it doesn't delay the update cycles of the main graph. Separate [update graphs](./dag.md#update-graph-cycles) refresh independently, so their update cycles can run in parallel on different cores. Build a context with its own [update graph](./dag.md#update-graph-cycles), described in [Create an execution context from scratch](#create-an-execution-context-from-scratch).
+- **Separating workloads**: When multiple users share a Deephaven server, or a single user wants to keep each workload's variables, imports, and update processing separate from the others, each workload can run in a context with its own [query scope](../how-to-guides/query-scope.md), query library, and [update graph](./dag.md#update-graph-cycles). Build each context from scratch, described in [Create an execution context from scratch](#create-an-execution-context-from-scratch).
 
 ### Create a context from the current one
 
 The [thread](#table-operations-in-a-separate-thread) example and the first [partitioned table transform](#table-operations-that-do-deferred-work) example above reuse the script session's own context, which [`get_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.get_exec_ctx) returns. [`make_user_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.make_user_exec_ctx) creates a user execution context, which isn't systemic.
 
-- Called with no arguments, it shares the current [query scope](../how-to-guides/query-scope.md), query library, query compiler, and [update graph](./dag.md#update-graph-ug-cycles), as in the [deferred-work example](#table-operations-that-do-deferred-work).
+- Called with no arguments, it shares the current [query scope](../how-to-guides/query-scope.md), query library, query compiler, and [update graph](./dag.md#update-graph-cycles), as in the [deferred-work example](#table-operations-that-do-deferred-work).
 - Called with `freeze_vars`, it gets its own [query scope](../how-to-guides/query-scope.md) (shown below).
 
 `freeze_vars` is a name or sequence of names from the current [query scope](../how-to-guides/query-scope.md). The new context's [query scope](../how-to-guides/query-scope.md) contains only those names, with their current values, and later changes to those variables aren't visible in it.
@@ -209,11 +209,11 @@ outside = empty_table(1).update("X = value1")
 
 `inside` shows 1, the value `value1` had when the context was created, and `outside` shows 100.
 
-Neither form gives the context its own [update graph](./dag.md#update-graph-ug-cycles). For that, [create an execution context from scratch](#create-an-execution-context-from-scratch).
+Neither form gives the context its own [update graph](./dag.md#update-graph-cycles). For that, [create an execution context from scratch](#create-an-execution-context-from-scratch).
 
 ### Create an execution context from scratch
 
-Create an [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.ExecutionContext) from scratch, instead of using the systemic context or [`make_user_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.make_user_exec_ctx), when you need a context with its own query library or its own [update graph](./dag.md#update-graph-ug-cycles), such as a separate [`PeriodicUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html) or an [`EventDrivenUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html) that refreshes only on request.
+Create an [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.ExecutionContext) from scratch, instead of using the systemic context or [`make_user_exec_ctx`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.make_user_exec_ctx), when you need a context with its own query library or its own [update graph](./dag.md#update-graph-cycles), such as a separate [`PeriodicUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html) or an [`EventDrivenUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html) that refreshes only on request.
 
 The following example builds an [`ExecutionContext`](/core/pydoc/code/deephaven.execution_context.html#deephaven.execution_context.ExecutionContext) from scratch by calling the Java builder through [`jpy`](../how-to-guides/use-jpy.md):
 
@@ -254,10 +254,10 @@ The builder lets you specify each component:
 - **Query library**: A new query library with only the default imports, via [`newQueryLibrary`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#newQueryLibrary()).
 - **[Query scope](../how-to-guides/query-scope.md)**: A new, empty [query scope](../how-to-guides/query-scope.md), via [`newQueryScope`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#newQueryScope()).
 - **Operation initializer**: Whether and how the engine parallelizes the initial work of table operations in this context, via [`setOperationInitializer`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#setOperationInitializer(io.deephaven.engine.updategraph.OperationInitializer)). The example passes [`OperationInitializer.NON_PARALLELIZABLE`](/core/javadoc/io/deephaven/engine/updategraph/OperationInitializer.html#NON_PARALLELIZABLE), which runs that work on the calling thread.
-- **[Update graph](./dag.md#update-graph-ug-cycles)**: A custom [update graph](./dag.md#update-graph-ug-cycles), such as a [`PeriodicUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html) or an [`EventDrivenUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html), via [`setUpdateGraph`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#setUpdateGraph(io.deephaven.engine.updategraph.UpdateGraph)).
+- **[Update graph](./dag.md#update-graph-cycles)**: A custom [update graph](./dag.md#update-graph-cycles), such as a [`PeriodicUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html) or an [`EventDrivenUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html), via [`setUpdateGraph`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#setUpdateGraph(io.deephaven.engine.updategraph.UpdateGraph)).
 - **Query compiler**: The compiler that turns query strings into code, via [`setQueryCompiler`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#setQueryCompiler(io.deephaven.engine.context.QueryCompiler)). [`QueryCompilerImpl.create`](/core/javadoc/io/deephaven/engine/context/QueryCompilerImpl.html) also accepts an optional directory to add to the compiler's classpath and an optional parent class loader.
 
-[`newBuilder`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.html#newBuilder()) starts from the current thread's [update graph](./dag.md#update-graph-ug-cycles), operation initializer, and [`AuthContext`](/core/javadoc/io/deephaven/auth/AuthContext.html). The example replaces the [update graph](./dag.md#update-graph-ug-cycles) and operation initializer and keeps the [`AuthContext`](/core/javadoc/io/deephaven/auth/AuthContext.html).
+[`newBuilder`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.html#newBuilder()) starts from the current thread's [update graph](./dag.md#update-graph-cycles), operation initializer, and [`AuthContext`](/core/javadoc/io/deephaven/auth/AuthContext.html). The example replaces the [update graph](./dag.md#update-graph-cycles) and operation initializer and keeps the [`AuthContext`](/core/javadoc/io/deephaven/auth/AuthContext.html).
 
 A new [`PeriodicUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html) doesn't refresh until you call its [`start`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html#start()) method, as the example does.
 
@@ -274,7 +274,7 @@ with ctx:
 
 Because the [query scope](../how-to-guides/query-scope.md) is new and empty, query strings in this context can't see the script's Python variables or functions. Query strings that use them fail with a `Cannot find variable or class` or `Cannot find method` error. Put any values they need in the context's [query scope](../how-to-guides/query-scope.md) first, for example with `execution_context.getQueryScope().putParam("my_value", my_value)`.
 
-Refreshing tables that belong to different [update graphs](./dag.md#update-graph-ug-cycles) can't be used together in one table operation. For example, a [join](../how-to-guides/joins-exact-relational.md) between a table that ticks on `MyCustomGraph` and a table that ticks on the server's main [update graph](./dag.md#update-graph-ug-cycles) fails.
+Refreshing tables that belong to different [update graphs](./dag.md#update-graph-cycles) can't be used together in one table operation. For example, a [join](../how-to-guides/joins-exact-relational.md) between a table that ticks on `MyCustomGraph` and a table that ticks on the server's main [update graph](./dag.md#update-graph-cycles) fails.
 
 To refresh only on demand, build an [`EventDrivenUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html) instead of the [`PeriodicUpdateGraph`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html) and pass it to [`setUpdateGraph`](/core/javadoc/io/deephaven/engine/context/ExecutionContext.Builder.html#setUpdateGraph(io.deephaven.engine.updategraph.UpdateGraph)) in the builder chain above. An event-driven graph has no `start` method, so leave out the [`start`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html#start()) call. Instead, it runs one update cycle each time you call its [`requestRefresh`](/core/javadoc/io/deephaven/engine/updategraph/impl/EventDrivenUpdateGraph.html#requestRefresh()) method:
 

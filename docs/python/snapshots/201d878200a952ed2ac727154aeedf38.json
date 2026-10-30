@@ -1,0 +1,1 @@
+{"file":"how-to-guides/initialization-and-updates.md","objects":{"result":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"long"},{"name":"Y","type":"long"},{"name":"Z","type":"long"}],"rows":[[{"value":"2026-10-15 18:39:55.000"},{"value":"0"},{"value":"0"},{"value":"0"}]]}}}}
