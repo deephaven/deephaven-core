@@ -44,9 +44,10 @@ class ApplicationState(JObjectWrapper):
 
     def __delitem__(self, key):
         key = str(key)
-        value = self.j_app_state.removeField(key)
-        if not value:
+        # removeField returns void and ignores unknown names, so check for the field first.
+        if not self.j_app_state.getField(key):
             raise KeyError(key)
+        self.j_app_state.removeField(key)
 
     @property
     def fields(self) -> dict[str, object]:
