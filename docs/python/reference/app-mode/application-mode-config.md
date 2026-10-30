@@ -2,7 +2,7 @@
 title: Application Mode configuration
 ---
 
-[Application Mode](../../how-to-guides/application-mode.md) starts applications when the Deephaven server starts. Each application has one `*.app` file that defines it.
+[Application Mode](../../how-to-guides/application-mode.md) starts applications when the Deephaven server starts. Each `*.app` file in the application directory defines one application.
 
 The `deephaven.application.dir` property sets the *application directory*. When that property is unset, the server uses the `app.d` directory inside the [Deephaven configuration directory](../../how-to-guides/configuration/configure-production-application.md#deephaven-server-bootstrap-configuration), if it exists.
 
