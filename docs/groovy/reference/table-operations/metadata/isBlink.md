@@ -4,7 +4,7 @@ title: isBlink
 
 The `isBlink` method returns `true` if the table is a blink table, and `false` otherwise.
 
-Blink tables keep only the set of rows received during the current update cycle. The table only consists of rows added in the previous update cycle, and no rows persist for more than one update cycle.
+Blink tables keep only the set of rows received during the current update cycle. The table only consists of rows added in the current update cycle, and no rows persist for more than one update cycle.
 
 ## Syntax
 

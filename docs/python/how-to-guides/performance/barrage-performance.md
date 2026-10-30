@@ -37,8 +37,8 @@ Subscription statistics are presented in percentiles bucketed over a time period
 | PropagateNanos       | Sender            | The elapsed time of one propagation phase: writing one message to the subscribers it goes to                                                                       |
 | SnapshotNanos        | Sender            | The time it took to snapshot data for a new or changed subscription                                                                                                |
 | UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic                                                                                         |
-| WriteNanos           | Sender            | The time it took to write the update to a single subscriber                                                                                                        |
-| WriteBytes           | Sender            | The payload size of the update in bytes                                                                                                                            |
+| WriteNanos           | Sender            | The elapsed time of one write of the update, to one subscriber or to every subscriber that shares an update                                                        |
+| WriteBytes           | Sender            | The payload size of the update in bytes, recorded once for each subscriber                                                                                         |
 | PendingDeltaCount    | Sender            | How many pending updates the server was holding, un-propagated, at the end of an update graph cycle; a compacted update stands for every cycle it coalesced        |
 | PendingDeltaBytes    | Sender            | Approximate heap footprint, in bytes, of the chunk storage those pending updates own                                                                               |
 | DeserializationNanos | Receiver          | The time it took to read and deserialize the update from the wire                                                                                                  |
@@ -60,7 +60,7 @@ Snapshot statistics are presented once per request.
 > `PendingDeltaCount` and `PendingDeltaBytes` are gauges rather than durations: each is sampled once per update graph cycle, so the useful value over a reporting window is the maximum rather than the average. They measure what the server is holding on behalf of subscribers it has not yet served, which rises with the number of update graph cycles that elapse per subscriber update interval. The byte figure is approximate: it counts the capacity of the chunks a pending update owns, which is what the server allocated, not the rows actually stored in them. It also counts those chunks alone. A `String` or other object column is charged eight bytes per row — the widest a reference can be, which overstates it wherever the JVM uses compressed references — and never the object that reference points at. For a subscription carrying object columns, `PendingDeltaBytes` therefore measures the chunk storage rather than the memory those rows retain, and can fall on either side of it.
 
 > [!NOTE]
-> All durations are nanoseconds and all payload sizes are bytes, stored as `long`. This matches Deephaven's other performance tables. Convert in a query when you want different units — for example `WriteMillis = WriteNanos / 1e6`, or `WriteMegabits = WriteBytes * 8 / 1e6` to compare against link bandwidth.
+> All durations are nanoseconds and all payload sizes are bytes, stored as `long`. This matches Deephaven's other performance tables. Convert in a query when you want different units — for example `WriteMillis = WriteNanos / 1e6`, or `WriteMegabits = WriteBytes * 8 / 1e6`. `WriteBytes` is a size, not a rate. To compare against link bandwidth, take a `WriteBytes` row's `Count` multiplied by a typical size, such as its `Pct50`, as an estimate of the bytes sent during the interval, and divide by the interval's length (`BarragePerformanceLog.cycleDurationMillis`, one minute by default).
 
 ## Identify a table
 
@@ -124,7 +124,7 @@ This configuration limits each snapshot chunk to exactly 1 million cells — wel
 
 ## Compact pending deltas
 
-The server records one delta — the set of changes from a single update graph cycle — for each subscriber, then sends the accumulated deltas when that subscriber's [update interval](#update-interval) elapses. A subscriber served less often than its table ticks therefore holds every intervening cycle's data at once, even though the message it eventually receives is the size of the combined change rather than the sum of the individual ones. Memory grows with the number of cycles per update interval, not with the size of the update.
+The server records one delta — the set of changes from a single update graph cycle — for each table and update interval that has subscribers. Subscribers that use the same update interval share those deltas, and the server sends the accumulated deltas when the [update interval](#update-interval) elapses. When the table ticks more than once per update interval, the server therefore holds every intervening cycle's data at once, even though the message each subscriber eventually receives is the size of the combined change rather than the sum of the individual ones. Memory grows with both the size of each cycle's changes and the number of cycles per update interval.
 
 To limit that growth, the server combines the pending deltas in the background, before the interval elapses. Compacting costs processor time and saves memory, so the server pays for it only where there is memory to reclaim. It compares the storage the pending deltas occupy against the storage they would occupy compacted, and compacts when the saving clears both of two thresholds:
 
@@ -136,7 +136,7 @@ held - compacted >= max(compactionFloorBytes, compactionMinFreedFraction * held)
 
 The two thresholds answer different questions. The fraction asks whether compacting is worthwhile at all; the floor asks whether the saving is large enough to be worth the work.
 
-- `-DBarrageMessageProducer.compactionEnabled`: When `true` (the default), the server compacts a subscriber's pending deltas between update intervals. When `false`, deltas accumulate untouched until the interval elapses.
+- `-DBarrageMessageProducer.compactionEnabled`: When `true` (the default), the server compacts the pending deltas between update intervals. When `false`, deltas accumulate untouched until the interval elapses.
 - `-DBarrageMessageProducer.compactionMinFreedFraction`: The fraction of the pending deltas' storage that compacting must release for the server to do it. Default: `0.5`. A higher value copies less data but lets the pending deltas grow larger — at `0.9` the server copies about a ninth as much and holds about ten times the compacted footprint.
 - `-DBarrageMessageProducer.compactionFloorBytes`: The number of bytes compacting must release, whatever fraction of the total that represents. Default: `4194304` (4 MiB). This keeps a stream of very small updates from compacting on every cycle, where the work costs the same as a compaction that reclaims far more.
 - `-DBarrageMessageProducer.deltaChunkSize`: The number of rows in each chunk a delta records. Default: `65536`. A value that is not a power of two rounds up to the next one.
@@ -148,10 +148,88 @@ The two thresholds answer different questions. The fraction asks whether compact
 
 Each time the server propagates an update to a table's subscribers, it writes each subscriber its own view of the update, which holds only the columns, rows, and encoding that subscriber asked for. Writing a message serializes it into the gRPC stream's buffers. Serializing is processor work that does not wait for the client, so the server can write to several subscribers at once. Parallel writes need a message that goes to more than one subscriber and `BarrageMessageProducer.propagationThreads` greater than `1`. Even then, the other threads come from a pool that every table shares, and when that pool is busy, the propagation thread writes to the remaining subscribers itself.
 
-- `-DBarrageMessageProducer.propagationThreads`: The most threads that write one update to a table's subscribers at once, counting the thread that runs the propagation. Default: the number of available processors. Above `1`, the other threads come from a pool that every table shares, which never holds more than this number less one. A value of `1` or less writes to subscribers one after another on the propagation thread, and the server makes no pool.
+- `-DBarrageMessageProducer.propagationThreads`: The most threads that write one update to a table's subscribers at once, counting the thread that runs the propagation. Default: the number of available processors. Above `1`, the other threads come from a pool that every table shares, which never holds more than this number less one. A value of `1` or less writes to subscribers one after another on the propagation thread, and the server makes no pool. The same threads also copy a shared write to its subscribers (see [Share one write among identical subscribers](#share-one-write-among-identical-subscribers)), so this setting limits that too: with `1` or less, the server copies to one subscriber after another.
 
 > [!NOTE]
-> `PropagateNanos` measures the elapsed time of one propagation phase: writing one message to the subscribers it goes to. An update can take several phases, such as a snapshot for new subscribers and a delta for the others, and each records its own sample. With parallel writes a phase can take much less than the sum of its writes' `WriteNanos`. A single subscriber's write still runs on one thread.
+> `PropagateNanos` measures the elapsed time of one propagation phase: writing one message to the subscribers it goes to. An update can take several phases, such as a snapshot for new subscribers and a delta for the others, and each records its own sample. With parallel writes a phase can take much less than the sum of its writes' `WriteNanos`. A single subscriber's write still runs on one thread, while a shared write can copy to its subscribers on several.
+
+## Share one write among identical subscribers
+
+A subscriber to a whole table, rather than to a viewport of it, is a full-table subscriber. Full-table subscribers that would receive identical bytes share one write of each update. The server writes the update once and copies the bytes to each of them, which saves the processor time of writing it again for every subscriber.
+
+Full-table subscribers share a write when they:
+
+- Have received the whole table, rather than still receiving it in parts (see [Control subscription snapshot size](#control-subscription-snapshot-size)).
+- Use the same subscription options, such as the batch size, the maximum message size, and how nulls are sent.
+- Subscribe to the same columns.
+
+Viewport subscribers always get a write of their own.
+
+The server copies a shared write to its subscribers one message at a time:
+
+- Each message holds exactly one batch, either a record batch or a dictionary batch. A message never holds both.
+- For a table with dictionary-encoded columns, each dictionary batch is its own message, sent ahead of the record batch that uses its values.
+- The server copies each message to every subscriber before it writes the next, so sharing holds at most one extra batch in memory for each write in progress.
+- The server copies a large message to the subscribers in parallel: when the message's size, multiplied by one less than the number of subscribers that share the write, reaches `BarrageMessageProducer.parallelCopyMinBytes`. The copies use the same threads as [parallel writes](#write-to-subscribers-in-parallel), so they also depend on `BarrageMessageProducer.propagationThreads`.
+- A record batch or dictionary batch is no larger than the subscriber's maximum message size, which is `BarrageMessageWriterImpl.maxOutboundMessageSize` unless the subscriber sets its own (see [Message batching](#message-batching)). The exception is a single row, or a single dictionary value, too large to fit, which the server sends anyway.
+
+When a table has dictionary-encoded columns, subscribers that share a write may have been sent different amounts of each dictionary, for example when one of them subscribed more recently. Before the shared write, the server sends each subscriber that is behind the values it lacks: one message per dictionary, or several when the values would exceed the maximum message size. After that, subscribers that share a write stay level, so they need no more of these messages until another subscriber joins them.
+
+- `-DBarrageMessageProducer.dedupIdenticalSubscribers`: When `true` (the default), identical full-table subscribers share one write of each update. When `false`, every subscriber gets a write of its own.
+- `-DBarrageMessageProducer.parallelCopyMinBytes`: The amount of copying, in bytes, at which the server copies a message to the subscribers that share a write in parallel: the message's size multiplied by one less than the number of those subscribers. Default: `4194304` (4 MiB). The server copies smaller messages to one subscriber after another. With `BarrageMessageProducer.propagationThreads` of `1` or less, it copies every message to one subscriber after another.
+
+> [!NOTE]
+> A shared write records one `WriteNanos` sample, and one `WriteBytes` sample for each subscriber that was sent all of it. `WriteNanos` includes copying the write to every subscriber, whether or not the copies run in parallel. Each `WriteBytes` sample is the size of one copy, so `WriteBytes` reads as it would if every subscriber had a write of its own, while the `WriteNanos` count falls to the number of writes. The dictionary values sent before a shared write to subscribers that were behind are a write of their own, recorded the same way.
+
+## Compress Barrage data
+
+By default, the server sends Barrage snapshots and subscriptions uncompressed. To let it compress a table's data, call the table's [`with_transport_compression`](https://deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Table.with_transport_compression) method with the names of the compression types the server may use, in order of preference, such as the built-in `"zstd"`, `"gzip"`, `"snappy"`, and `"deflate"`. A gRPC client may list the compression types it can decode in its `grpc-accept-encoding` request header. When a client fetches the table, the server uses the first type in the table's list that the client also lists, and sends uncompressed data when none match or the client lists none.
+
+```python order=null
+from deephaven import empty_table
+
+t = empty_table(1_000_000).update(["X = ii", "Sym = `S` + (ii % 32)"])
+t_compressed = t.with_transport_compression(["zstd", "gzip"])
+```
+
+`with_transport_compression` stores the list in the table's `TransportCompression` attribute. Operations whose result holds only the table's values keep the attribute: filtering, sorting, reversing, flattening, dropping or renaming columns, `partition_by` constituents, `first_by` and `last_by`. Operations that compute new values or bring in another table's data drop it, including `view`, `update_view`, joins, rollups and trees; so do operations such as `head`, `select` and `update`. Their results have no attribute set, so they are sent uncompressed unless the server has a server-wide list, described next. For a rollup or tree table, call `with_transport_compression` on the rollup or tree table rather than on its source.
+
+To compress tables without changing the queries that create them, set a server-wide list of compression types, most preferred first, with the `TransportCompression.defaultTypes` property, for example `-DTransportCompression.defaultTypes=zstd,snappy`. The server uses the server-wide list for every table that has no `TransportCompression` attribute set. Without the property, only tables with their own `TransportCompression` attribute are compressed.
+
+With a server-wide list, compression is opt-out rather than opt-in. A table with its own `TransportCompression` attribute uses its own list instead of the server-wide list. To exclude a table, call `with_transport_compression([])`. This sets the attribute to an empty list, which means "never compress". To undo `with_transport_compression` so that the server-wide list applies again, call `reset_transport_compression`, which removes the attribute. Passing `None` to `with_transport_compression` does the same. Operations keep or drop an empty list just as they do any other list. A table made by an operation that drops the attribute, such as a join or `view`, has no attribute set, so the server-wide list applies to it, even when its source was excluded.
+
+These are the compression types each client lists by default. A client that lists none always receives uncompressed data.
+
+| Client                                     | Compression types listed                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------- |
+| Java client                                | `gzip`, `zstd`, `snappy`, `deflate`, and any added types on its classpath |
+| Python (`pydeephaven`), C++, and R clients | `gzip` and `deflate`                                                      |
+| Web UI and JavaScript API, Go client       | None, so data is always sent uncompressed                                 |
+
+Remote tables between servers are a separate case. A Deephaven server that fetches a table from another server, with [`barrage_session`](https://deephaven.io/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session) or by resolving a [`dh://` URI](../use-uris.md), connects through the Java client that runs inside the server, even though the query that fetches the table is written in Python. So it lists the same compression types as the Java client, not the ones `pydeephaven` lists.
+
+Choose the list based on what the server's CPU can afford. The following figures come from [`TransportCompressionBenchmark`](https://github.com/deephaven/deephaven-core/blob/main/extensions/barrage/benchmark/src/main/java/io/deephaven/benchmark/barrage/TransportCompressionBenchmark.java), a JMH benchmark in the Deephaven Core repository, run on a one-million-row table of mixed trade data. They were measured with JDK 21 on one thread of an Apple M1 Max and of an Intel Core i9-14900KS, and the speeds are megabytes of uncompressed data per second. Absolute speeds depend on the hardware and the data, so use them to compare the compression types rather than to predict throughput:
+
+| Compression type | Size after compression | Compression speed (M1 Max / i9-14900KS) | Decompression speed (M1 Max / i9-14900KS) |
+| ---------------- | ---------------------- | --------------------------------------- | ----------------------------------------- |
+| `zstd`           | 31% of the original    | 380 / 550 MB/s                          | 1010 / 1270 MB/s                          |
+| `gzip`           | 28% of the original    | 18 / 30 MB/s                            | 400 / 600 MB/s                            |
+| `snappy`         | 59% of the original    | 800 / 880 MB/s                          | 1460 / 1080 MB/s                          |
+| `deflate`        | 28% of the original    | 18 / 30 MB/s                            | 360 / 550 MB/s                            |
+
+`zstd` suits most tables. `gzip` compresses slightly smaller but is about 20 times slower to compress, so list it last, and only when clients that cannot decode `zstd`, such as `pydeephaven`, should also receive compressed data. `deflate` is the algorithm of `gzip` in the zlib format: it compresses to the same size at the same speed, and decompresses slightly slower. Every client that decodes `deflate` also decodes `gzip`, so there is little reason to list `deflate` ahead of `gzip`. `snappy` compresses fastest but saves the least, and it saves nothing on data that is already close to random.
+
+To narrow the compression types a client lists, use the setting for that client. An empty list asks for uncompressed data.
+
+- A Java client: `ClientConfig.builder().acceptCompression(...)`.
+- A remote table fetched with [`barrage_session`](https://deephaven.io/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session): its `accept_compression` argument.
+- A remote table fetched by resolving a `dh://` URI: the `-DBarrageTableResolver.acceptCompression` property on the fetching server, for example `-DBarrageTableResolver.acceptCompression=zstd`.
+
+The Java client can also compress the data it uploads with `DoPut`, including the rows it adds to input tables: set `ClientConfig.builder().requestCompression(...)`, for example to `"zstd"`. Uploads are uncompressed by default. A server that cannot decode the type fails the upload, so choose `gzip`, which every Deephaven server decodes unless `gzip` is turned off as described below, when the server might not support the others.
+
+To add a compression type beyond `zstd`, `gzip`, `snappy`, and `deflate`, such as `lz4`, write a Java class that implements `io.deephaven.grpc.compression.CompressionCodecProvider` and returns an `io.grpc.Codec` for the type, named by the codec's `getMessageEncoding()`. Register the class as a Java `ServiceLoader` service, for example with `@AutoService(CompressionCodecProvider.class)`, and put its jar on the server's classpath. Tables can then list the type by its name, and the server uses it for clients that list it. A Java client lists it by default when the same jar is on its classpath; other clients list only the types in the table above. A class whose codec has the name of a built-in type, such as `zstd`, replaces the built-in codec wherever the jar is on the classpath, for example to compress at a different level.
+
+To turn off a compression type on a server, set the type's `TransportCompression.<type>.enabled` property to `false`, for example `-DTransportCompression.gzip.enabled=false`, or put the same setting in the server's configuration file. Every type is enabled unless the type's property disables it. The server never compresses data with a disabled codec and never accepts data compressed with the codec: a table that lists the type is sent with the next type on the table's list, and a client request compressed with the type fails. The property applies to added types too.
 
 ## Additional Barrage configuration
 
@@ -163,9 +241,9 @@ The following properties control other aspects of Barrage behavior:
 
 ### Message batching
 
-- `-DBarrageMessageWriterImpl.batchSize`: Maximum rows per Arrow record batch. Default: `Integer.MAX_VALUE`. Reduce this if clients have trouble processing very large batches.
+- `-DBarrageMessageWriterImpl.batchSize`: Maximum rows per Arrow record batch, and values per dictionary batch. Default: `Integer.MAX_VALUE`. Reduce this if clients have trouble processing very large batches.
 - `-DBarrageMessageWriterImpl.initialBatchSize`: Initial batch size for the first message. Default: `4096`. A smaller initial batch ensures clients receive data quickly while the server calibrates optimal batch sizes.
-- `-DBarrageMessageWriterImpl.maxOutboundMessageSize`: Maximum size (in bytes) for outbound messages. Default: `104857600` (100 MB). This matches the default incoming message limit for Java clients.
+- `-DBarrageMessageWriterImpl.maxOutboundMessageSize`: Maximum size (in bytes) for outbound messages. Default: `104857600` (100 MB). This matches the default incoming message limit for Java clients. The server splits record batches, and the dictionary batches of dictionary-encoded columns, to stay under it.
 
 ## Troubleshooting
 
@@ -192,6 +270,7 @@ If `WriteNanos` is high or `WriteBytes` is large:
 If `PropagateNanos` is consistently high:
 
 - Many subscribers may be connected to the same table. Their writes overlap only as far as `BarrageMessageProducer.propagationThreads` and idle processors allow: check that the property is above `1` and not well below the number of subscribers (see [Write to subscribers in parallel](#write-to-subscribers-in-parallel)), and whether the server's processors are already busy. Consider load balancing across multiple server instances.
+- Subscribers whose options or viewports differ each need a write of their own. Full-table subscribers with matching options share one (see [Share one write among identical subscribers](#share-one-write-among-identical-subscribers)).
 - The server may be under memory pressure. Check JVM heap usage and garbage collection metrics.
 
 ### Subscription errors

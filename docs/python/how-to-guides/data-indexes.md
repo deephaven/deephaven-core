@@ -380,7 +380,7 @@ This first script sets up the tests:
 from deephaven.experimental.data_index import data_index, has_data_index
 from deephaven import empty_table
 from deephaven.table import Table
-from typing import List, Any
+from typing import Any, Callable, List
 from time import time
 import jpy
 
@@ -414,11 +414,10 @@ def add_index(t: Table, by: List[str]):
     """
     print(f"Adding data index: {by}")
 
-    def compute_index():
-        idx = data_index(t, by)
-        # call .table to force index computation here -- to benchmark the index creation separately -- not for production
-        idx.table
-        return idx
+    idx = data_index(t, by)
+    # call .table to force index computation here -- to benchmark the index creation separately -- not for production
+    idx.table
+    return idx
 
 
 def run_test(n_i_keys: int, n_j_keys: int, create_idxs: list[bool]) -> Any:
@@ -496,25 +495,25 @@ fig = (
         series_name="Low cardinality (700 keys), no indexes.",
         t=results,
         category="Operation",
-        y="Times_LowCardinality_NoIndex",
+        y="TimesLowCardinalityNoIndex",
     )
     .plot_cat(
         series_name="Low cardinality (700 keys), with indexes.",
         t=results,
         category="Operation",
-        y="Times_LowCardinality_WithIndex",
+        y="TimesLowCardinalityWithIndex",
     )
     .plot_cat(
         series_name="High cardinality (99,700 keys), no indexes.",
         t=results,
         category="Operation",
-        y="Times_HighCardinality_NoIndex",
+        y="TimesHighCardinalityNoIndex",
     )
     .plot_cat(
         series_name="High cardinality (99,700 keys), with indexes.",
         t=results,
         category="Operation",
-        y="Times_HighCardinality_WithIndex",
+        y="TimesHighCardinalityWithIndex",
     )
     .show()
 )

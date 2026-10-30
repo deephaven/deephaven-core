@@ -258,7 +258,11 @@ public class ChunkedOperatorAggregationHelper {
                 ? RowSetFactory.flat(outputPosition.get())
                 : initialRowsBuilder.build()).toTracking();
         if (input.isRefreshing()) {
-            copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
+            // Copy the keys of every state, including initial groups that start empty and stay out of the result row
+            // set until they are filled; later cycles copy keys only for newly created states.
+            try (final RowSet allStates = RowSetFactory.flat(outputPosition.get())) {
+                copyKeyColumns(keyColumnsRaw, keyColumnsCopied, allStates);
+            }
         }
 
         // Construct the result table
