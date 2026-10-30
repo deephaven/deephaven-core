@@ -671,6 +671,10 @@
                   {
                     "label": "Stream data with Input Tables",
                     "path": "how-to-guides/java-client-input-tables.md"
+                  },
+                  {
+                    "label": "Capture remote tables with Barrage",
+                    "path": "how-to-guides/capture-tables.md"
                   }
                 ]
               },
@@ -732,10 +736,6 @@
                   {
                     "label": "Error handling",
                     "href": "https://deephaven.io/core/client-api/python/examples.html#error-handling"
-                  },
-                  {
-                    "label": "Capture Python client tables",
-                    "path": "how-to-guides/capture-tables.md"
                   }
                 ]
               },
