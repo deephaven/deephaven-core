@@ -237,9 +237,9 @@ The `@guvectorize` decorator in this example takes two arguments:
 
 You call a Numba function in a [query string](./query-string-overview.md) by name, like any other [Python function](./python-functions.md). Deephaven checks whether Numba is installed when the server starts, and the result decides how Deephaven calls the function.
 
-Deephaven treats a `@jit` function like a plain [Python function](./python-functions.md), whether or not Numba was installed at startup. Each call receives one row's values.
+Deephaven treats a [`@jit`](https://numba.readthedocs.io/en/stable/user/jit.html) function like a plain [Python function](./python-functions.md), whether or not Numba was installed at startup. Each call receives one row's values.
 
-When Numba is installed at startup, these rules apply to `@vectorize` and `@guvectorize` functions in [query strings](./query-string-overview.md):
+When Numba is installed at startup, these rules apply to [`@vectorize`](https://numba.readthedocs.io/en/stable/user/vectorize.html) and [`@guvectorize`](https://numba.readthedocs.io/en/stable/user/vectorize.html#the-guvectorize-decorator) functions in [query strings](./query-string-overview.md):
 
 - For both decorators, Deephaven reads argument and return types from the function's Numba signature, so the function must have exactly one explicit signature. A function with no signature or with several signatures, such as the two-signature `func` in [Eager compilation](#eager-compilation), raises an error.
 - Deephaven passes a `@vectorize` function whole [chunks](../conceptual/vectorization-and-recipes.md#the-chunk-architecture) of column data as arrays, so one call computes many rows. A `@guvectorize` function still receives one row's values per call.
