@@ -26,11 +26,11 @@ import java.util.function.Consumer;
  *
  * <p>
  * Each job runs once, on whichever thread claims it first: a pool thread, or a thread waiting in
- * {@link #awaitCompletion} or {@link #getAccumulatedPerformance}, which runs the jobs no pool thread has started rather
- * than waiting for one to. A waiting thread therefore blocks only while every job it has not finished is running on
- * another thread, and never on a job queued behind pool threads that may themselves be waiting, perhaps for a lock the
- * waiting thread holds. A job that a waiting thread runs is part of that thread's own work, and its performance is not
- * accumulated here.
+ * {@link #awaitCompletion}, which runs the jobs no pool thread has started rather than waiting for one to. A waiting
+ * thread therefore blocks only while every job it has not finished is running on another thread, and never on a job
+ * queued behind pool threads that may themselves be waiting, perhaps for a lock the waiting thread holds. A job that a
+ * waiting thread runs is part of that thread's own work, and its performance is not accumulated here. A job withdrawn
+ * before any thread claims it never runs.
  * </p>
  */
 public class OperationInitializerJobScheduler implements JobScheduler {
@@ -39,13 +39,14 @@ public class OperationInitializerJobScheduler implements JobScheduler {
     private final OperationInitializer operationInitializer;
     private final ThreadLocal<BasePerformanceEntry> currentBaseEntry = new ThreadLocal<>();
     /**
-     * The jobs submitted that have not finished, whichever thread runs them. Its monitor guards the waits for jobs, and
-     * is notified when a job is submitted, when the count reaches zero, and when a future being waited for completes.
+     * The jobs submitted that have not finished or been withdrawn, whichever thread runs them. Its monitor guards the
+     * waits for jobs, and is notified when a job is submitted, when the count reaches zero, and when a future being
+     * waited for completes.
      */
     private final AtomicInteger outstandingJobs = new AtomicInteger(0);
     /**
-     * The jobs submitted, in order, for a waiting thread to claim. A job a pool thread claims removes itself; any other
-     * claimed job is discarded when a waiting thread polls it.
+     * The jobs submitted, in order, for a waiting thread to claim. A job a pool thread claims or the submitter
+     * withdraws is removed; any other claimed job is discarded when a waiting thread polls it.
      */
     private final Queue<Job> pendingJobs = new ConcurrentLinkedQueue<>();
 
@@ -58,7 +59,7 @@ public class OperationInitializerJobScheduler implements JobScheduler {
     }
 
     @Override
-    public void submit(
+    public Submission submit(
             final ExecutionContext executionContext,
             final Runnable runnable,
             final LogOutputAppendable description,
@@ -76,24 +77,27 @@ public class OperationInitializerJobScheduler implements JobScheduler {
         try {
             operationInitializer.submit(job::runFromInitializer);
         } catch (Throwable t) {
-            // A job that never started must release its count here, or getAccumulatedPerformance would wait forever
-            // for it; an Error counts too, OutOfMemoryError when the pool cannot make a thread in practice. A job that
-            // an inline initializer or a waiting thread claimed releases its count itself, whatever it threw.
-            if (job.tryClaim()) {
-                pendingJobs.remove(job);
-                decrementOutstandingJobs();
-            }
+            // A job that never started is withdrawn here, releasing its count, or getAccumulatedPerformance would wait
+            // forever for it; an Error counts too, OutOfMemoryError when the pool cannot make a thread in practice. A
+            // job that an inline initializer or a waiting thread claimed releases its count itself, whatever it threw.
+            job.withdraw();
             throw t;
         }
+        return job;
     }
 
     @Override
     public <T> T awaitCompletion(@NotNull final CompletableFuture<T> future)
             throws InterruptedException, ExecutionException {
         future.whenComplete((result, failure) -> signalWaiters());
-        while (!future.isDone()) {
-            if (Thread.interrupted()) {
-                throw new InterruptedException();
+        boolean interrupted = false;
+        while (true) {
+            // always clear the interrupt, so that the wait below blocks
+            if (Thread.interrupted() && !interrupted) {
+                interrupted = true;
+                // jobs that check the future stop early; the rest still run, since what they use is about to be
+                // released
+                future.cancel(false);
             }
             final Job job = claimNextPendingJob();
             if (job != null) {
@@ -101,10 +105,21 @@ public class OperationInitializerJobScheduler implements JobScheduler {
                 continue;
             }
             synchronized (outstandingJobs) {
-                if (!future.isDone() && pendingJobs.isEmpty()) {
-                    outstandingJobs.wait();
+                if (future.isDone() && outstandingJobs.get() == 0) {
+                    break;
+                }
+                if (pendingJobs.isEmpty()) {
+                    try {
+                        outstandingJobs.wait();
+                    } catch (InterruptedException e) {
+                        // handled at the top of the loop
+                        Thread.currentThread().interrupt();
+                    }
                 }
             }
+        }
+        if (interrupted) {
+            throw new InterruptedException();
         }
         return future.get();
     }
@@ -176,25 +191,14 @@ public class OperationInitializerJobScheduler implements JobScheduler {
 
     @Override
     public BasePerformanceEntry getAccumulatedPerformance() {
-        // The jobs this thread runs see no interrupt, as on a pool thread; it is restored for the caller at the end.
-        boolean interrupted = Thread.interrupted();
-        while (true) {
-            final Job job = claimNextPendingJob();
-            if (job != null) {
-                job.run(false);
-                continue;
-            }
-            synchronized (outstandingJobs) {
-                if (outstandingJobs.get() == 0) {
-                    break;
-                }
-                if (pendingJobs.isEmpty()) {
-                    try {
-                        outstandingJobs.wait();
-                    } catch (InterruptedException e) {
-                        // keep waiting, and restore the interrupt for the caller, which may be about to check it
-                        interrupted = true;
-                    }
+        boolean interrupted = false;
+        synchronized (outstandingJobs) {
+            while (outstandingJobs.get() > 0) {
+                try {
+                    outstandingJobs.wait();
+                } catch (InterruptedException e) {
+                    // keep waiting, and restore the interrupt for the caller, which may be about to check it
+                    interrupted = true;
                 }
             }
         }
@@ -212,7 +216,7 @@ public class OperationInitializerJobScheduler implements JobScheduler {
     /**
      * A submitted job, which runs once, on the first thread to claim it.
      */
-    private final class Job {
+    private final class Job implements Submission {
 
         private final ExecutionContext executionContext;
         private final Runnable runnable;
@@ -239,7 +243,17 @@ public class OperationInitializerJobScheduler implements JobScheduler {
             return claimed.compareAndSet(false, true);
         }
 
-        /** What the operation initializer runs: this job, unless a waiting thread has already claimed it. */
+        @Override
+        public boolean withdraw() {
+            if (!tryClaim()) {
+                return false;
+            }
+            pendingJobs.remove(this);
+            decrementOutstandingJobs();
+            return true;
+        }
+
+        /** What the operation initializer runs: this job, unless another thread has claimed or withdrawn it. */
         private void runFromInitializer() {
             if (!tryClaim()) {
                 return;

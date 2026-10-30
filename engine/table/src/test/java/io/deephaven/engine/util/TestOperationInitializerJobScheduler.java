@@ -97,8 +97,7 @@ public class TestOperationInitializerJobScheduler {
 
     /**
      * With every pool thread blocked, a callback-form iteration and the jobs it submits from its callbacks run on the
-     * thread waiting for its completion, and reading the performance afterwards does not wait for the queued pool
-     * entries.
+     * thread waiting for its completion, and reading the performance afterwards has nothing left to wait for.
      */
     @Test
     public void testAwaitCompletionRunsQueuedJobsWhilePoolIsBlocked() throws InterruptedException {
@@ -127,8 +126,8 @@ public class TestOperationInitializerJobScheduler {
     }
 
     /**
-     * After an invocation whose caller ran every task, reading the performance does not wait for the pool to dequeue
-     * the jobs whose invokers the caller took over.
+     * After an invocation whose caller ran every task, the jobs of the invokers the caller took over are withdrawn, so
+     * reading the performance does not wait for the pool to dequeue them.
      */
     @Test
     public void testPerformanceAfterInvokeParallelDoesNotWaitForQueuedJobs() throws InterruptedException {
@@ -200,23 +199,65 @@ public class TestOperationInitializerJobScheduler {
         });
     }
 
-    /** An interrupt ends the wait for the future, which leaves the queued job for the performance read to run. */
+    /**
+     * An interrupt cancels the future, so that a job checking it does no work, but the wait still runs every queued job
+     * before throwing, leaving the performance read nothing to wait for.
+     */
     @Test
-    public void testAwaitCompletionIsInterruptible() throws InterruptedException {
+    public void testInterruptCancelsTheFutureAndFinishesTheJobs() throws InterruptedException {
         blockPool();
         withTimeout(() -> {
             final OperationInitializerJobScheduler scheduler = new OperationInitializerJobScheduler(pool);
             final CompletableFuture<Void> never = new CompletableFuture<>();
             final AtomicInteger runs = new AtomicInteger();
-            scheduler.submit(ExecutionContext.getContext(), runs::incrementAndGet, null, never::completeExceptionally);
+            final AtomicInteger worked = new AtomicInteger();
+            scheduler.submit(ExecutionContext.getContext(), () -> {
+                runs.incrementAndGet();
+                if (!never.isDone()) {
+                    worked.incrementAndGet();
+                }
+            }, null, never::completeExceptionally);
             Thread.currentThread().interrupt();
             assertThatThrownBy(() -> scheduler.awaitCompletion(never)).isInstanceOf(InterruptedException.class);
-            assertThat(runs.get()).isZero();
-
-            Thread.currentThread().interrupt();
-            assertThat(scheduler.getAccumulatedPerformance()).isNotNull();
-            assertThat(Thread.interrupted()).as("interrupt restored").isTrue();
+            assertThat(never.isCancelled()).isTrue();
             assertThat(runs.get()).isEqualTo(1);
+            assertThat(worked.get()).isZero();
+            assertThat(scheduler.getAccumulatedPerformance()).isNotNull();
+        });
+    }
+
+    /**
+     * A job that completes the future and goes on running keeps the wait going until it finishes, so the performance
+     * read that follows has nothing to wait for.
+     */
+    @Test
+    public void testAwaitCompletionWaitsForJobsStillRunningAfterTheFuture() throws InterruptedException {
+        withTimeout(() -> {
+            final OperationInitializerJobScheduler scheduler = new OperationInitializerJobScheduler(pool);
+            final CompletableFuture<Void> done = new CompletableFuture<>();
+            final CountDownLatch release = new CountDownLatch(1);
+            final AtomicInteger finished = new AtomicInteger();
+            scheduler.submit(ExecutionContext.getContext(), () -> {
+                done.complete(null);
+                try {
+                    release.await();
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                finished.incrementAndGet();
+            }, null, done::completeExceptionally);
+            assertThat(done.get(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isNull();
+            final Thread releaser = new Thread(() -> {
+                try {
+                    Thread.sleep(100);
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                release.countDown();
+            });
+            releaser.start();
+            scheduler.awaitCompletion(done);
+            assertThat(finished.get()).isEqualTo(1);
         });
     }
 

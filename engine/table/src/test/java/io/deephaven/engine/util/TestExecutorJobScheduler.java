@@ -264,12 +264,11 @@ public class TestExecutorJobScheduler {
     }
 
     /**
-     * The wait covers every job submitted, including one the executor has yet to run: after an invocation over a
-     * queueing executor, whose caller ran every task itself, reading the performance waits until the queued jobs, which
-     * then do nothing, have run.
+     * After an invocation over a queueing executor, whose caller ran every task itself, the jobs still queued have been
+     * withdrawn: reading the performance does not wait for them, and they do nothing once they run.
      */
     @Test
-    public void testPerformanceWaitsForJobsNotYetRun() throws InterruptedException {
+    public void testInvocationWithdrawsJobsNotYetRun() throws InterruptedException {
         final List<Runnable> queued = Collections.synchronizedList(new ArrayList<>());
         final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(queued::add, 4);
         final AtomicInteger runs = new AtomicInteger();
@@ -281,13 +280,10 @@ public class TestExecutorJobScheduler {
         final Thread reader = new Thread(scheduler::getAccumulatedPerformance, "performance-reader");
         reader.setDaemon(true);
         reader.start();
-        reader.join(200);
-        assertThat(reader.isAlive()).as("still waiting for the queued jobs").isTrue();
-        // the late jobs find their invokers taken, and do nothing
-        queued.forEach(Runnable::run);
         reader.join(10_000);
-
         assertThat(reader.isAlive()).isFalse();
+
+        queued.forEach(Runnable::run);
         assertThat(runs.get()).isEqualTo(8);
     }
 

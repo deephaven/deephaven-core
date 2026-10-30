@@ -27,7 +27,7 @@ public class UpdateGraphJobScheduler implements JobScheduler {
     }
 
     @Override
-    public void submit(
+    public Submission submit(
             final ExecutionContext executionContext,
             final Runnable runnable,
             final LogOutputAppendable description,
@@ -56,6 +56,8 @@ public class UpdateGraphJobScheduler implements JobScheduler {
                         .append(description).append("}");
             }
         });
+        // nothing waits for a notification's performance, so there is no need to withdraw one
+        return Submission.NOT_WITHDRAWABLE;
     }
 
     @Override

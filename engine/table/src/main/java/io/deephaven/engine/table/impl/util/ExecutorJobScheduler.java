@@ -80,17 +80,21 @@ public class ExecutorJobScheduler implements JobScheduler {
     }
 
     @Override
-    public void submit(
+    public Submission submit(
             final ExecutionContext executionContext,
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
         outstandingJobs.incrementAndGet();
         final Thread submitter = Thread.currentThread();
-        final AtomicBoolean started = new AtomicBoolean();
+        // claimed by whichever runs the job, or by the submitter withdrawing it
+        final AtomicBoolean claimed = new AtomicBoolean();
         try {
             executor.execute(() -> {
-                started.set(true);
+                if (!claimed.compareAndSet(false, true)) {
+                    // withdrawn, and its count released, before the executor started it
+                    return;
+                }
                 try {
                     if (Thread.currentThread() == submitter) {
                         // A synchronous executor ran it here: the submitting thread's own work, as a refused job is
@@ -110,7 +114,7 @@ public class ExecutorJobScheduler implements JobScheduler {
                 }
             });
         } catch (final RejectedExecutionException e) {
-            if (started.get()) {
+            if (!claimed.compareAndSet(false, true)) {
                 // A synchronous executor ran the job, which then threw this itself: the job has run, and released its
                 // count, and must not run again.
                 throw e;
@@ -118,14 +122,22 @@ public class ExecutorJobScheduler implements JobScheduler {
             // Every thread is busy: the job is the submitting thread's own work, and is accounted as such
             decrementOutstandingJobs();
             JobScheduler.runJob(executionContext, runnable, description, onError);
+            return Submission.NOT_WITHDRAWABLE;
         } catch (final Throwable t) {
             // A job that never started must release its count here, or getAccumulatedPerformance would wait forever
             // for it, as in OperationInitializerJobScheduler.
-            if (!started.get()) {
+            if (claimed.compareAndSet(false, true)) {
                 decrementOutstandingJobs();
             }
             throw t;
         }
+        return () -> {
+            if (!claimed.compareAndSet(false, true)) {
+                return false;
+            }
+            decrementOutstandingJobs();
+            return true;
+        };
     }
 
     /**

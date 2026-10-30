@@ -171,18 +171,23 @@ public class ParallelTimsort {
         // up to the next level unmerged
         final List<MergeNode> leaves = buildMergeTree(size, segments, segmentSize);
 
-        for (final MergeNode leaf : leaves) {
-            jobScheduler.submit(
-                    executionContext,
-                    () -> {
-                        if (waitForSort.isDone()) {
-                            return; // a sibling task already failed
-                        }
-                        segmentSorter.sortSegment(leaf.start, leaf.totalLength);
-                        completeNode(leaf, runMerger, jobScheduler, executionContext, waitForSort);
-                    },
-                    logOutput -> logOutput.append("ParallelTimsort.segmentSort"),
-                    waitForSort::completeExceptionally);
+        try {
+            for (final MergeNode leaf : leaves) {
+                jobScheduler.submit(
+                        executionContext,
+                        () -> {
+                            if (waitForSort.isDone()) {
+                                return; // a sibling task already failed
+                            }
+                            segmentSorter.sortSegment(leaf.start, leaf.totalLength);
+                            completeNode(leaf, runMerger, jobScheduler, executionContext, waitForSort);
+                        },
+                        logOutput -> logOutput.append("ParallelTimsort.segmentSort"),
+                        waitForSort::completeExceptionally);
+            }
+        } catch (final RuntimeException e) {
+            // the leaves already submitted see the failure and do nothing; the wait below finishes them
+            waitForSort.completeExceptionally(e);
         }
 
         try {
