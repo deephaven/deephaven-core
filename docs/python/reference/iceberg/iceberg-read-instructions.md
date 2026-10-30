@@ -54,7 +54,7 @@ The snapshot ID to read. If not given, the most recent snapshot ID is used.
 </Param>
 <Param name="ignore_resolving_errors" type="bool" Optional>
 
-Whether to ignore unexpected errors when resolving columns. If `True`, a column that can't be resolved in a data file where it should be present is read as null values. These errors can be a sign of an incorrect resolver or name mapping, or of an Iceberg metadata or data problem. The default is `False`.
+Whether to ignore unexpected errors when resolving columns. If `True`, Deephaven reads null values for a column in any data file where the column should be present but can't be resolved. These errors can be a sign of an incorrect resolver or name mapping, or of an Iceberg metadata or data problem. The default is `False`.
 
 </Param>
 </ParamTable>
