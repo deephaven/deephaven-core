@@ -53,14 +53,14 @@ description = "Reusable Deephaven query functions"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-  "deephaven-core>=0.35.0",
+  "deephaven-core>=42.7",
 ]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 ```
 
-Set the Python version and dependency constraints to versions you test and support. A lower bound such as `deephaven-core>=0.35.0` declares compatibility; it does not lock the environment to a repeatable set of versions. If you need that, use a lock file or a pinned requirements file alongside the package. The syntax for these constraints is defined by the [dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/) and [version specifiers](https://packaging.python.org/en/latest/specifications/version-specifiers/) specifications.
+Set the Python version and dependency constraints to versions you test and support. A lower bound such as `deephaven-core>=42.7` declares compatibility; it does not lock the environment to a repeatable set of versions. If you need that, use a lock file or a pinned requirements file alongside the package. The syntax for these constraints is defined by the [dependency specifiers](https://packaging.python.org/en/latest/specifications/dependency-specifiers/) and [version specifiers](https://packaging.python.org/en/latest/specifications/version-specifiers/) specifications.
 
 Because a library is only imported inside a running server or after the calling program has created a `Server`, its modules can import `deephaven` at the top level. For example, `src/my_dh_library/queries.py` might contain:
 
@@ -128,7 +128,7 @@ name = "my-dh-cli"
 version = "0.1.0"
 description = "A command-line Deephaven CSV query"
 requires-python = ">=3.9"
-dependencies = ["deephaven-server>=0.35.0", "click"]
+dependencies = ["deephaven-server>=42.7", "click"]
 
 [project.scripts]
 my-dh-cli-query = "my_dh_cli.cli:main"
@@ -204,7 +204,7 @@ name = "my-dh-client-library"
 version = "0.1.0"
 description = "Reusable functions for a remote Deephaven server"
 requires-python = ">=3.9"
-dependencies = ["pydeephaven>=0.35.0", "pyarrow"]
+dependencies = ["pydeephaven>=42.7", "pyarrow"]
 ```
 
 The library's functions take and return client-side [`Table`](/core/client-api/python/code/pydeephaven.table.html#pydeephaven.table.Table) handles. `src/my_dh_client_library/utils.py` holds `upload_csv`, which gets local data onto the server:
@@ -281,7 +281,7 @@ name = "my-dh-client"
 version = "0.1.0"
 description = "A command-line Deephaven client"
 requires-python = ">=3.9"
-dependencies = ["pydeephaven>=0.35.0", "pyarrow", "click"]
+dependencies = ["pydeephaven>=42.7", "pyarrow", "click"]
 
 [project.scripts]
 my-dh-client-query = "my_dh_client.cli:main"
