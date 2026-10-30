@@ -21,8 +21,8 @@ _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext"
 
 
 class ExecutionContext(JObjectWrapper, ContextDecorator):
-    """An ExecutionContext represents a specific combination of query library, query compiler, and query scope under
-    which a query is evaluated.
+    """An ExecutionContext represents a specific combination of query library, query compiler, query scope, and update
+    graph under which a query is evaluated.
 
     A default, systemic ExecutionContext is created when a Deephaven script session is initialized, and it is used to
     evaluate queries submitted through this script session. However, to be able to evaluate a query in a deferred

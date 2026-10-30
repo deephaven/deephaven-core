@@ -134,7 +134,7 @@ Building and running Deephaven requires a few software packages.
 | Package        | Version                       | OS           | Required/Recommended |
 | -------------- | ----------------------------- | ------------ | -------------------- |
 | git            | ^2.25.0                       | All          | Required             |
-| java           | >=17, <=25                    | All          | Required             |
+| java           | 21                            | All          | Required             |
 | docker         | ^20.10.8                      | All          | Required             |
 | docker compose | ^2                            | All          | Recommended          |
 | Windows        | 10 (OS build 20262 or higher) | Only Windows | Required             |
@@ -150,8 +150,9 @@ docker compose version
 docker run hello-world
 ```
 
-> **_NOTE:_** Internally, the Java build process will use [Gradle Auto Provisioning](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning)
-> to download and use the appropriate Java version for building and testing.
+> **_NOTE:_** Gradle itself runs on a locally installed JDK 21. The build does not download that JDK for you.
+> For other Java versions used for building and testing, the build uses [Gradle Auto Provisioning](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning)
+> to download them as needed.
 
 > **_NOTE:_** On Windows, all commands must be run inside a WSL 2 terminal.
 

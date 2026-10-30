@@ -46,7 +46,8 @@ class Output:
             col_name (str) : name of the new column that will store results.
             scatter_func (Callable): function that determines how data is taken from an object and placed into a
                 Deephaven table column.
-            col_type (type) : desired data type of the new output column, default is None (no explicit type cast).
+            col_type (type) : the type name of the new output column, as a string such as "double". Each value is
+                cast to this type. Pass None for no explicit type cast. This argument has no default.
         """
         self.output = _JLearnOutput(col_name, scatter_func, col_type)
 

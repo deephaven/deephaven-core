@@ -137,7 +137,7 @@ public class DateTimeUtils {
     public static final long HOUR = 60 * MINUTE;
 
     /**
-     * One day in nanoseconds. This is one hour of wall time and does not take into account calendar adjustments.
+     * One day in nanoseconds. This is 24 hours of wall time and does not take into account calendar adjustments.
      */
     public static final long DAY = 24 * HOUR;
 
@@ -659,7 +659,7 @@ public class DateTimeUtils {
      *
      * @param nanos the nanoseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         nanoseconds converted to microseconds, rounded down
+     *         nanoseconds converted to microseconds, truncated toward zero
      */
     @ScriptApi
     public static long nanosToMicros(final long nanos) {
@@ -704,7 +704,7 @@ public class DateTimeUtils {
      *
      * @param nanos the nanoseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         nanoseconds converted to milliseconds, rounded down
+     *         nanoseconds converted to milliseconds, truncated toward zero
      */
     @ScriptApi
     public static long nanosToMillis(final long nanos) {
@@ -720,7 +720,7 @@ public class DateTimeUtils {
      *
      * @param micros the microseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         microseconds converted to milliseconds, rounded down
+     *         microseconds converted to milliseconds, truncated toward zero
      */
     @ScriptApi
     public static long microsToMillis(final long micros) {
@@ -752,7 +752,7 @@ public class DateTimeUtils {
      *
      * @param nanos the nanoseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         nanoseconds converted to seconds, rounded down
+     *         nanoseconds converted to seconds, truncated toward zero
      */
     @ScriptApi
     public static long nanosToSeconds(final long nanos) {
@@ -767,7 +767,7 @@ public class DateTimeUtils {
      *
      * @param micros the microseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         microseconds converted to seconds, rounded down
+     *         microseconds converted to seconds, truncated toward zero
      */
     @ScriptApi
     public static long microsToSeconds(final long micros) {
@@ -782,7 +782,7 @@ public class DateTimeUtils {
      *
      * @param millis the milliseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         milliseconds converted to seconds, rounded down
+     *         milliseconds converted to seconds, truncated toward zero
      */
     @ScriptApi
     public static long millisToSeconds(final long millis) {
@@ -4034,7 +4034,7 @@ public class DateTimeUtils {
      * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the instant value for the end of
      * the five-minute window that contains the input instant.
      *
-     * @param instant instant for which to evaluate the start of the containing window
+     * @param instant instant for which to evaluate the end of the containing window
      * @param intervalNanos size of the window in nanoseconds
      * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the end of the
      *         window
@@ -4054,7 +4054,7 @@ public class DateTimeUtils {
      * nanoseconds. For example, a five-minute {@code interval} value would return the instant value for the end of the
      * five-minute window that contains the input instant.
      *
-     * @param instant instant for which to evaluate the start of the containing window
+     * @param instant instant for which to evaluate the end of the containing window
      * @param interval size of the window
      * @return {@code null} if either input is {@code null}; otherwise, an {@link Instant} representing the end of the
      *         window
@@ -4074,7 +4074,7 @@ public class DateTimeUtils {
      * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the zoned date time value for
      * the end of the five-minute window that contains the input zoned date time.
      *
-     * @param dateTime zoned date time for which to evaluate the start of the containing window
+     * @param dateTime zoned date time for which to evaluate the end of the containing window
      * @param intervalNanos size of the window in nanoseconds
      * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of
      *         the window
@@ -4094,7 +4094,7 @@ public class DateTimeUtils {
      * nanoseconds. For example, a five-minute {@code interval} value would return the zoned date time value for the end
      * of the five-minute window that contains the input zoned date time.
      *
-     * @param dateTime zoned date time for which to evaluate the start of the containing window
+     * @param dateTime zoned date time for which to evaluate the end of the containing window
      * @param interval size of the window
      * @return {@code null} if either input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of
      *         the window
@@ -4114,7 +4114,7 @@ public class DateTimeUtils {
      * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the instant value for the end of
      * the five-minute window that contains the input instant.
      *
-     * @param instant instant for which to evaluate the start of the containing window
+     * @param instant instant for which to evaluate the end of the containing window
      * @param intervalNanos size of the window in nanoseconds
      * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
      *        one minute.
@@ -4137,7 +4137,7 @@ public class DateTimeUtils {
      * nanoseconds. For example, a five-minute {@code interval} value would return the instant value for the end of the
      * five-minute window that contains the input instant.
      *
-     * @param instant instant for which to evaluate the start of the containing window
+     * @param instant instant for which to evaluate the end of the containing window
      * @param interval size of the window
      * @param offset The window start offset. For example, a value of 'PT1m' would offset all windows by one minute.
      * @return {@code null} if any input is {@code null}; otherwise, an {@link Instant} representing the end of the
@@ -4158,7 +4158,7 @@ public class DateTimeUtils {
      * nanoseconds. For example, a five-minute {@code intervalNanos} value would return the zoned date time value for
      * the end of the five-minute window that contains the input zoned date time.
      *
-     * @param dateTime zoned date time for which to evaluate the start of the containing window
+     * @param dateTime zoned date time for which to evaluate the end of the containing window
      * @param intervalNanos size of the window in nanoseconds
      * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
      *        one minute.
@@ -4182,7 +4182,7 @@ public class DateTimeUtils {
      * nanoseconds. For example, a five-minute {@code interval} value would return the zoned date time value for the end
      * of the five-minute window that contains the input zoned date time.
      *
-     * @param dateTime zoned date time for which to evaluate the start of the containing window
+     * @param dateTime zoned date time for which to evaluate the end of the containing window
      * @param interval size of the window
      * @param offset The window start offset. For example, a value of 'PT1m' would offset all windows by one minute.
      * @return {@code null} if any input is {@code null}; otherwise, a {@link ZonedDateTime} representing the end of the
@@ -5090,7 +5090,7 @@ public class DateTimeUtils {
      * Parses the string argument as a local time, which is the time that would be read from a clock and does not have a
      * date or timezone.
      * <p>
-     * Local time strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]}.
+     * Local time strings can be formatted as {@code h[h]:m[m][:s[s][.nnnnnnnnn]]}.
      *
      * @param s string to be converted
      * @return a {@link LocalTime} represented by the input string.
@@ -5116,7 +5116,7 @@ public class DateTimeUtils {
      * Parses the string argument as a local time, which is the time that would be read from a clock and does not have a
      * date or timezone.
      * <p>
-     * Local time strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]}.
+     * Local time strings can be formatted as {@code h[h]:m[m][:s[s][.nnnnnnnnn]]}.
      *
      * @param s string to be converted
      * @return a {@link LocalTime} represented by the input string, or {@code null} if the string can not be parsed

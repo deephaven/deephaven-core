@@ -638,7 +638,8 @@ public class ConstructSnapshot {
          * @param beforeClockValue The clock value that we captured before the function began; the function can use this
          *        value to bail out early if it notices something has gone wrong; {@value LogicalClock#NULL_CLOCK_VALUE}
          *        for static snapshots
-         * @return true if the function was successful, false if it should be retried
+         * @return true if the function was successful, false if it failed; false abandons the attempt, which is retried
+         *         only if the attempt proves inconsistent, and otherwise fails the snapshot
          */
         boolean call(boolean usePrev, long beforeClockValue);
     }

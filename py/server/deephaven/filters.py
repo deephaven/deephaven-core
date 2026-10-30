@@ -257,7 +257,7 @@ def incremental_release(initial_rows: int, increment: int) -> Filter:
     """Creates an incremental release filter that progressively releases rows from a table.
 
     This filter gradually releases data, starting with an initial number of rows and then
-    incrementally adding more rows over time.  The input table must be an add-only table.
+    incrementally adding more rows over time.  The input table must be static or add-only.
 
     Args:
         initial_rows (int): the initial number of rows to release

@@ -129,8 +129,8 @@ class Server:
 
         Args:
             host (Optional[str]): The host to bind the server to, defaults to None. When None, if a user defined
-                configuration file is present and 'http.host' is specified in it, use its value, otherwise, use the
-                default 'localhost'. Refer to the Deephaven documentation for more information on the configuration file.
+                configuration file is present and 'http.host' is specified in it, use its value, otherwise, the server
+                listens on all network interfaces. Refer to the Deephaven documentation for more information on the configuration file.
             port (Optional[int]): The port to bind the server to, defaults to None. When None, if a user defined
                 configuration file is present and 'http.port' is specified in it, use that port, otherwise, use the
                 default 10000. Refer to the Deephaven documentation for more information on the configuration file.

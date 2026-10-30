@@ -13,7 +13,7 @@ and pydeephaven-ticking) are present in the Deephaven Core GitHub repository. We
 have checked out this repository at the location specified by `${DHROOT}`.
 
 The Deephaven C++ client (and ticking Python client) are tested regularly on Ubuntu 22.04 x86_64.
-Additionally, successful tests have been run on RHEL 8 and Fedora 38 (both on x86_64).
+Additionally, successful tests have been run on RHEL 8 and Fedora 39 (both on x86_64).
 
 To build on Windows, please see the file cpp-client/README-windows.md in
 this repository.

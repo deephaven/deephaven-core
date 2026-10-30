@@ -478,8 +478,9 @@ def write_partitioned(
         index_columns (Optional[Sequence[Sequence[str]]]): sequence of sequence containing the column names for indexes
             to persist. The write operation will store the index info for the provided columns as sidecar tables. For
             example, if the input is [["Col1"], ["Col1", "Col2"]], the write operation will store the index info for
-            ["Col1"] and for ["Col1", "Col2"]. By default, data indexes to write are determined by those present on the
-            source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
+            ["Col1"] and for ["Col1", "Col2"]. By default, when the source is a Table, data indexes to write are
+            determined by those present on the source table; when the source is a PartitionedTable, no indexes are
+            written. This argument can be used to narrow the set of indexes to write, or to be explicit about the
             expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
             demand.
         row_group_info (Optional[RowGroupInfo]): requested RowGroup instructions, as returned by a call against RowGroupInfo

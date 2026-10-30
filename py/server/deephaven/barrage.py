@@ -136,19 +136,18 @@ def barrage_session(
     extra_headers: Optional[dict[str, str]] = None,
     accept_compression: Optional[Union[str, Sequence[str]]] = None,
 ) -> BarrageSession:
-    """Returns a Deephaven gRPC session to a remote server if a cached session is available; otherwise, creates a new
-    session.
+    """Creates a new Deephaven gRPC session to a remote server. Each call returns a new session.
 
-    Note: client authentication is not supported yet.
+    Note: TLS client-certificate (mutual TLS) authentication is not supported.
 
     Args:
         host (str): the host name or IP address of the Deephaven server.
         port (int): the port number that the remote Deephaven server is listening on, default is 10000.
-        auth_type (str): the authentication type string, can be "Anonymous', 'Basic", or any custom-built
+        auth_type (str): the authentication type string, can be 'Anonymous', 'Basic', or any custom-built
             authenticator in the server, such as "io.deephaven.authentication.psk.PskAuthenticationHandler",
             default is 'Anonymous'.
         auth_token (str): the authentication token string. When auth_type is 'Basic', it must be
-            "user:password"; when auth_type is "Anonymous', it will be ignored; when auth_type is a custom-built
+            "user:password"; when auth_type is 'Anonymous', it will be ignored; when auth_type is a custom-built
             authenticator, it must conform to the specific requirement of the authenticator
         use_tls (bool): if True, use a TLS connection.  Defaults to False
         tls_root_certs (Optional[bytes]): PEM encoded root certificates to use for TLS connection, or None to use system defaults.

@@ -830,7 +830,7 @@ public interface UpdateByOperation {
      * the current row (inclusive)</li>
      * <li>{@code revTicks = 11, fwdTicks = -1} - contains 10 rows, beginning at 10 rows before, ending at 1 row before
      * the current row (inclusive)</li>
-     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 5 rows following, ending at 10 rows
+     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 6 rows following, ending at 10 rows
      * following the current row (inclusive)</li>
      * </ul>
      *
@@ -1038,7 +1038,7 @@ public interface UpdateByOperation {
      * the current row (inclusive)</li>
      * <li>{@code revTicks = 11, fwdTicks = -1} - contains 10 rows, beginning at 10 rows before, ending at 1 row before
      * the current row (inclusive)</li>
-     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 5 rows following, ending at 10 rows
+     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 6 rows following, ending at 10 rows
      * following the current row (inclusive)</li>
      * </ul>
      *
@@ -1170,7 +1170,7 @@ public interface UpdateByOperation {
      * the current row (inclusive)</li>
      * <li>{@code revTicks = 11, fwdTicks = -1} - contains 10 rows, beginning at 10 rows before, ending at 1 row before
      * the current row (inclusive)</li>
-     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 5 rows following, ending at 10 rows
+     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 6 rows following, ending at 10 rows
      * following the current row (inclusive)</li>
      * </ul>
      *
@@ -1300,7 +1300,7 @@ public interface UpdateByOperation {
      * the current row (inclusive)</li>
      * <li>{@code revTicks = 11, fwdTicks = -1} - contains 10 rows, beginning at 10 rows before, ending at 1 row before
      * the current row (inclusive)</li>
-     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 5 rows following, ending at 10 rows
+     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 6 rows following, ending at 10 rows
      * following the current row (inclusive)</li>
      * </ul>
      *
@@ -1416,7 +1416,7 @@ public interface UpdateByOperation {
      * the current row (inclusive)</li>
      * <li>{@code revTicks = 11, fwdTicks = -1} - contains 10 rows, beginning at 10 rows before, ending at 1 row before
      * the current row (inclusive)</li>
-     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 5 rows following, ending at 10 rows
+     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 6 rows following, ending at 10 rows
      * following the current row (inclusive)</li>
      * </ul>
      *
@@ -1547,7 +1547,7 @@ public interface UpdateByOperation {
      * the current row (inclusive)</li>
      * <li>{@code revTicks = 11, fwdTicks = -1} - contains 10 rows, beginning at 10 rows before, ending at 1 row before
      * the current row (inclusive)</li>
-     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 5 rows following, ending at 10 rows
+     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 6 rows following, ending at 10 rows
      * following the current row (inclusive)</li>
      * </ul>
      *
@@ -1934,7 +1934,7 @@ public interface UpdateByOperation {
      * the current row (inclusive)</li>
      * <li>{@code revTicks = 11, fwdTicks = -1} - contains 10 rows, beginning at 10 rows before, ending at 1 row before
      * the current row (inclusive)</li>
-     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 5 rows following, ending at 10 rows
+     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 6 rows following, ending at 10 rows
      * following the current row (inclusive)</li>
      * </ul>
      *
@@ -2086,7 +2086,7 @@ public interface UpdateByOperation {
      * the current row (inclusive)</li>
      * <li>{@code revTicks = 11, fwdTicks = -1} - contains 10 rows, beginning at 10 rows before, ending at 1 row before
      * the current row (inclusive)</li>
-     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 5 rows following, ending at 10 rows
+     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 6 rows following, ending at 10 rows
      * following the current row (inclusive)</li>
      * </ul>
      *
@@ -2228,7 +2228,7 @@ public interface UpdateByOperation {
      * the current row (inclusive)</li>
      * <li>{@code revTicks = 11, fwdTicks = -1} - contains 10 rows, beginning at 10 rows before, ending at 1 row before
      * the current row (inclusive)</li>
-     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 5 rows following, ending at 10 rows
+     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 6 rows following, ending at 10 rows
      * following the current row (inclusive)</li>
      * </ul>
      *
@@ -2425,7 +2425,7 @@ public interface UpdateByOperation {
      * the current row (inclusive)</li>
      * <li>{@code revTicks = 11, fwdTicks = -1} - contains 10 rows, beginning at 10 rows before, ending at 1 row before
      * the current row (inclusive)</li>
-     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 5 rows following, ending at 10 rows
+     * <li>{@code revTicks = -5, fwdTicks = 10} - contains 5 rows, beginning 6 rows following, ending at 10 rows
      * following the current row (inclusive)</li>
      * </ul>
      *

@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 
-"""This module defines the SelectableDateSet which is used to provides a view of a selectable subset of a table.
+"""This module defines the SelectableDataSet which is used to provides a view of a selectable subset of a table.
 For example, in some selectable data sets, a GUI click can be used to select a portion of a table."""
 
 from typing import Optional
@@ -61,7 +61,7 @@ def one_click(
 def one_click_partitioned_table(
     pt: PartitionedTable, require_all_filters: bool = False
 ) -> SelectableDataSet:
-    """Creates a SelectableDataSet with the specified columns from the table map.
+    """Creates a SelectableDataSet from a partitioned table, using its key columns.
 
     Args:
         pt (PartitionedTable): the source partitioned table
