@@ -1277,10 +1277,13 @@ public class SessionState {
                 errorId = UuidCreator.toString(UuidCreator.getRandomBased());
 
                 // A cancel or release, of this export or of one it depends on, is the client's doing and not an
-                // internal error; it still gets an error id so the client can correlate what it is told.
-                final boolean clientDriven = state == ExportNotification.State.CANCELLED
-                        || state == ExportNotification.State.DEPENDENCY_CANCELLED
-                        || state == ExportNotification.State.DEPENDENCY_RELEASED;
+                // internal error; the status the client gets names the cause and the related export. A cancel that
+                // lands while doExport() is recording a failure is reported here first, with that exception; it is
+                // still a server failure and keeps ERROR.
+                final boolean clientDriven = caughtException == null
+                        && (state == ExportNotification.State.CANCELLED
+                                || state == ExportNotification.State.DEPENDENCY_CANCELLED
+                                || state == ExportNotification.State.DEPENDENCY_RELEASED);
                 final String prefix = clientDriven ? "Export ended by client '" : "Internal Error '";
 
                 if (caughtException == null && errorDetails == null) {
