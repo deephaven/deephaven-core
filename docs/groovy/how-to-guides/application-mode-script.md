@@ -75,7 +75,7 @@ Because you're extending Deephaven's Docker image, you need to build this locall
 
 The `docker-compose.yml` file sets the [`deephaven.application.dir`](../reference/app-mode/application-mode-config.md) property to `/app.d`, the directory where the `Dockerfile` copies `app.d`. Pass the property through `START_OPTS`, as described in the [Docker application configuration guide](./configuration/docker-application.md).
 
-The `ports` and `volumes` lines are optional. They publish the server port and mount a `data` folder. In the `environment` line, `-Ddeephaven.application.dir=/app.d` is specific to Application Mode. The `server-slim` image sets `-Ddeephaven.console.type=groovy` in its own `START_OPTS`, and setting `START_OPTS` here replaces that value, so repeat the flag. `-Xmx4g` sets the JVM heap size and is optional.
+The `ports` and `volumes` lines are optional. They publish the server port and mount a `data` folder. In the `environment` line, only `-Ddeephaven.application.dir=/app.d` is specific to Application Mode. `-Xmx4g` sets the JVM heap size and is optional.
 
 Our `docker-compose.yml` file should look like this.
 
@@ -88,7 +88,7 @@ services:
     volumes:
       - ./data:/data
     environment:
-      - START_OPTS=-Xmx4g -Ddeephaven.application.dir=/app.d -Ddeephaven.console.type=groovy
+      - START_OPTS=-Xmx4g -Ddeephaven.application.dir=/app.d
 ```
 
 ## Putting it all together
