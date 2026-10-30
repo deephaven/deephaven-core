@@ -11,7 +11,7 @@ There are two underlying processes when updating [streaming tables](./table-type
 
 This page covers the first process, which the PUG controls. [What is Barrage?](./what-is-barrage.md) explains how the server sends the results to clients.
 
-![A diagram of the PUG cycle, from refresh cycle to Barrage to client](../assets/conceptual/ugp-cycle.svg)
+![Diagram: inside the Deephaven server, the Periodic Update Graph runs repeating refresh cycles. Barrage then sends the changed rows in each client viewport to the client, which shows them in the UI.](../assets/conceptual/ugp-cycle.svg)
 
 ## Periodic Update Graph
 
@@ -31,7 +31,7 @@ Parallel execution of update notifications requires more than one update thread.
 
 An illustration of the process is below:
 
-![A diagram of the PUG refresh cycle](../assets/conceptual/ugp-refresh-cycle.svg)
+![Diagram of one refresh cycle. The cycle starts and refreshes the independent source tables A, B, and C. Table A feeds derived tables A2 and A3, B feeds B2, and C feeds C2 and C3. B2 and C2 feed BC. The cycle ends when all notifications are processed.](../assets/conceptual/ugp-refresh-cycle.svg)
 
 In the diagram above, the PUG refreshes the live source tables `A`, `B`, and `C` first. Their changes flow into the derived tables `A2`, `A3`, `B2`, `C2`, `C3`, and `BC`, which update after the sources.
 
@@ -42,7 +42,9 @@ The next refresh cycle starts at the later of two times:
 - `targetCycleDurationMillis` after the previous cycle started.
 - `minimumInterCycleSleep` after the previous cycle completed.
 
-![A timeline showing the next refresh cycle starting at the later of the target duration and the minimum sleep](../assets/conceptual/ugp-cycle-timing.svg)
+The following timeline shows an example with a 900 ms cycle and a 200 ms minimum sleep:
+
+![Timeline example. With a target cycle duration of 1000 ms, a 900 ms cycle, and a 200 ms minimum sleep, the next cycle starts at 1100 ms. If interCycleYield is true, the refresh thread yields as the cycle ends.](../assets/conceptual/ugp-cycle-timing.svg)
 
 ## Manually triggering a refresh
 
