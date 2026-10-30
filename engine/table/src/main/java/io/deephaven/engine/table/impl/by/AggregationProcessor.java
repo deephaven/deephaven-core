@@ -70,20 +70,28 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ObjectChunked
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ObjectRollupDistinctOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ShortChunkedDistinctOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct.ShortRollupDistinctOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ByteChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ByteChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ByteRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.CharChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.CharChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.CharRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.DoubleChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.DoubleChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.DoubleRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.FloatChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.FloatChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.FloatRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.IntChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.IntChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.IntRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.LongChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.LongChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.LongRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ObjectChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ObjectChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ObjectRollupUniqueOperator;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedAddOnlyUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
@@ -533,13 +541,13 @@ public class AggregationProcessor implements AggregationContextFactory {
                     inputName);
         }
 
-        final void addFreezeOperators() {
+        final void addFreezeOperators(final boolean onlyAdds) {
             final FreezeByCountOperator countOperator;
             if (freezeByCountIndex >= 0) {
                 countOperator = (FreezeByCountOperator) operators.get(freezeByCountIndex);
             } else {
                 freezeByCountIndex = operators.size();
-                addNoInputOperator(countOperator = new FreezeByCountOperator());
+                addNoInputOperator(countOperator = new FreezeByCountOperator(onlyAdds));
             }
             addBasicOperators((t, n) -> new FreezeByOperator(t, n, countOperator));
         }
@@ -580,13 +588,13 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         final IterativeChunkedAggregationOperator makePercentileOperator(final Class<?> type, final String name,
-                final double percentile, final boolean averageEvenlyDivided) {
+                final double percentile, final boolean averageEvenlyDivided, final boolean onlyAdds) {
             if (!table.isRefreshing()) {
                 return StaticPercentileOperator.make(type, compareConsistentWithEquality(type), percentile,
                         averageEvenlyDivided, name);
             }
             return new SsmChunkedPercentileOperator(type, compareConsistentWithEquality(type), percentile,
-                    averageEvenlyDivided, name);
+                    averageEvenlyDivided, onlyAdds, name);
         }
 
         final void addFirstOrLastOperators(final boolean isFirst, final String exposeRedirectionAs) {
@@ -660,7 +668,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         final void addWeightedAvgOrSumOperator(
                 @NotNull final String weightName,
                 final boolean isSum,
-                final boolean exposeInternal) {
+                final boolean exposeInternal,
+                final boolean onlyAdds) {
             final ColumnSource<?> weightSource = table.getColumnSource(weightName);
             final boolean weightSourceIsFloatingPoint;
             if (isInteger(weightSource.getChunkType())) {
@@ -722,14 +731,14 @@ public class AggregationProcessor implements AggregationContextFactory {
                 if (isSum) {
                     if (r.type == WeightedOpResultType.INTEGER) {
                         resultOperator = new LongChunkedWeightedSumOperator(
-                                r.source.getChunkType(), longWeightOperator, r.pair.output().name());
+                                r.source.getChunkType(), longWeightOperator, onlyAdds, r.pair.output().name());
                     } else {
                         resultOperator = new DoubleChunkedWeightedSumOperator(
-                                r.source.getChunkType(), doubleWeightOperator, r.pair.output().name());
+                                r.source.getChunkType(), doubleWeightOperator, onlyAdds, r.pair.output().name());
                     }
                 } else {
-                    resultOperator = new ChunkedWeightedAverageOperator(
-                            r.source.getChunkType(), doubleWeightOperator, r.pair.output().name(), exposeInternal);
+                    resultOperator = new ChunkedWeightedAverageOperator(r.source.getChunkType(),
+                            doubleWeightOperator, r.pair.output().name(), exposeInternal, onlyAdds);
                 }
                 addOperator(resultOperator, r.source, r.pair.input().name(), weightName);
             });
@@ -973,11 +982,18 @@ public class AggregationProcessor implements AggregationContextFactory {
      * {@link AggregationContext} for standard aggregations. Accumulates state by visiting each aggregation.
      */
     private final class NormalConverter extends Converter {
+        /**
+         * Whether the operators only ever receive additions: static and add-only inputs never remove or modify rows,
+         * and aggregations of blink inputs ignore removals. Operators may then omit the state those changes need.
+         */
+        private final boolean onlyAdds;
+
         private NormalConverter(
                 @NotNull final Table table,
                 final boolean requireStateChangeRecorder,
                 @NotNull final String... groupByColumnNames) {
             super(table, requireStateChangeRecorder, groupByColumnNames);
+            onlyAdds = isAddOnly || isBlink;
         }
 
         // -------------------------------------------------------------------------------------------------------------
@@ -1048,7 +1064,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAbsSum absSum) {
-            addBasicOperators((t, n) -> makeSumOperator(t, n, true));
+            addBasicOperators((t, n) -> makeSumOperator(t, n, true, onlyAdds));
         }
 
         @Override
@@ -1059,7 +1075,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAvg avg) {
-            addBasicOperators((t, n) -> makeAvgOperator(t, n, false));
+            addBasicOperators((t, n) -> makeAvgOperator(t, n, false, onlyAdds));
         }
 
         @Override
@@ -1094,7 +1110,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(AggSpecFreeze freeze) {
-            addFreezeOperators();
+            addFreezeOperators(onlyAdds);
         }
 
         @Override
@@ -1126,7 +1142,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecMedian median) {
-            addBasicOperators((t, n) -> makePercentileOperator(t, n, 0.50d, median.averageEvenlyDivided()));
+            addBasicOperators(
+                    (t, n) -> makePercentileOperator(t, n, 0.50d, median.averageEvenlyDivided(), onlyAdds));
         }
 
         @Override
@@ -1136,7 +1153,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecPercentile pct) {
-            addBasicOperators((t, n) -> makePercentileOperator(t, n, pct.percentile(), pct.averageEvenlyDivided()));
+            addBasicOperators(
+                    (t, n) -> makePercentileOperator(t, n, pct.percentile(), pct.averageEvenlyDivided(), onlyAdds));
         }
 
         @Override
@@ -1151,12 +1169,12 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecStd std) {
-            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, true, false));
+            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, true, false, onlyAdds));
         }
 
         @Override
         public void visit(@NotNull final AggSpecSum sum) {
-            addBasicOperators((t, n) -> makeSumOperator(t, n, false));
+            addBasicOperators((t, n) -> makeSumOperator(t, n, false, onlyAdds));
         }
 
         public void visit(@NotNull final AggSpecTDigest tDigest) {
@@ -1168,22 +1186,23 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
             addBasicOperators((t, n) -> makeUniqueOperator(t, compareConsistentWithEquality(t), n,
-                    unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), false, false, null));
+                    unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), false, onlyAdds, false,
+                    null));
         }
 
         @Override
         public void visit(@NotNull final AggSpecWAvg wAvg) {
-            addWeightedAvgOrSumOperator(wAvg.weight().name(), false, false);
+            addWeightedAvgOrSumOperator(wAvg.weight().name(), false, false, onlyAdds);
         }
 
         @Override
         public void visit(@NotNull final AggSpecWSum wSum) {
-            addWeightedAvgOrSumOperator(wSum.weight().name(), true, false);
+            addWeightedAvgOrSumOperator(wSum.weight().name(), true, false, onlyAdds);
         }
 
         @Override
         public void visit(@NotNull final AggSpecVar var) {
-            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, false, false));
+            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, false, false, onlyAdds));
         }
     }
 
@@ -1476,12 +1495,12 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecAbsSum absSum) {
-            addBasicOperators((t, n) -> makeSumOperator(t, n, true));
+            addBasicOperators((t, n) -> makeSumOperator(t, n, true, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecAvg avg) {
-            addBasicOperators((t, n) -> makeAvgOperator(t, n, true));
+            addBasicOperators((t, n) -> makeAvgOperator(t, n, true, false));
         }
 
         @Override
@@ -1528,35 +1547,35 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecStd std) {
-            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, true, true));
+            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, true, true, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecSum sum) {
-            addBasicOperators((t, n) -> makeSumOperator(t, n, false));
+            addBasicOperators((t, n) -> makeSumOperator(t, n, false, false));
         }
 
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
             addBasicOperators((t, n) -> makeUniqueOperator(t, compareConsistentWithEquality(t), n,
-                    unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), true, false, null));
+                    unique.includeNulls(), null, unique.nonUniqueSentinel().orElse(null), true, false, false, null));
         }
 
         @Override
         public void visit(@NotNull final AggSpecWSum wSum) {
             // Weighted sum does not need to expose internal columns to re-aggregate.
-            addWeightedAvgOrSumOperator(wSum.weight().name(), true, false);
+            addWeightedAvgOrSumOperator(wSum.weight().name(), true, false, false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecWAvg wAvg) {
             // Weighted average needs access internal columns to re-aggregate.
-            addWeightedAvgOrSumOperator(wAvg.weight().name(), false, true);
+            addWeightedAvgOrSumOperator(wAvg.weight().name(), false, true, false);
         }
 
         @Override
         public void visit(@NotNull final AggSpecVar var) {
-            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, false, true));
+            addBasicOperators((t, n) -> makeVarOrStdOperator(t, n, false, true, false));
         }
     }
 
@@ -1596,14 +1615,14 @@ public class AggregationProcessor implements AggregationContextFactory {
         public void visit(@NotNull final Count count) {
             final String resultName = count.column().name();
             final ColumnSource<?> resultSource = table.getColumnSource(resultName);
-            addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
+            addOperator(makeSumOperator(resultSource.getType(), resultName, false, false), resultSource, resultName);
         }
 
         @Override
         public void visit(@NotNull final CountWhere countWhere) {
             final String resultName = countWhere.column().name();
             final ColumnSource<?> resultSource = table.getColumnSource(resultName);
-            addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
+            addOperator(makeSumOperator(resultSource.getType(), resultName, false, false), resultSource, resultName);
         }
 
         @Override
@@ -1830,7 +1849,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final Class<?> rawValueType = rawValueSource.getType();
                 final IterativeChunkedAggregationOperator operator = makeUniqueOperator(rawValueType,
                         compareConsistentWithEquality(rawValueType), resultName, unique.includeNulls(), null,
-                        unique.nonUniqueSentinel().orElse(null), true, true, singletonCountSource);
+                        unique.nonUniqueSentinel().orElse(null), true, false, true, singletonCountSource);
                 addOperator(operator, valueSource, resultName, singletonCountName);
             }
         }
@@ -1856,7 +1875,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final String resultName = pair.output().name();
                 final ColumnSource<?> resultSource = table.getColumnSource(resultName);
 
-                addOperator(makeSumOperator(resultSource.getType(), resultName, false), resultSource, resultName);
+                addOperator(makeSumOperator(resultSource.getType(), resultName, false, false), resultSource,
+                        resultName);
             }
         }
 
@@ -1973,7 +1993,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
                 // The sum of weights column is directly usable as the weights for the WAvg re-aggregation.
                 final IterativeChunkedAggregationOperator resultOperator = new ChunkedWeightedAverageOperator(
-                        weightedAveragesSource.getChunkType(), doubleWeightOperator, resultName, true);
+                        weightedAveragesSource.getChunkType(), doubleWeightOperator, resultName, true, false);
 
                 addOperator(resultOperator, weightedAveragesSource, resultName, sumOfWeightsName);
             }
@@ -2031,19 +2051,19 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         private BigDecimalChunkedSumOperator addAndGetBigDecimalSumOperator(@NotNull final String inputColumnName) {
-            return getAndAddBasicOperator(n -> new BigDecimalChunkedSumOperator(false, n), inputColumnName);
+            return getAndAddBasicOperator(n -> new BigDecimalChunkedSumOperator(false, false, n), inputColumnName);
         }
 
         private BigIntegerChunkedSumOperator addAndGetBigIntegerSumOperator(@NotNull final String inputColumnName) {
-            return getAndAddBasicOperator(n -> new BigIntegerChunkedSumOperator(false, n), inputColumnName);
+            return getAndAddBasicOperator(n -> new BigIntegerChunkedSumOperator(false, false, n), inputColumnName);
         }
 
         private DoubleChunkedSumOperator addAndGetDoubleSumOperator(@NotNull final String inputColumnName) {
-            return getAndAddBasicOperator(n -> new DoubleChunkedSumOperator(false, n), inputColumnName);
+            return getAndAddBasicOperator(n -> new DoubleChunkedSumOperator(false, false, n), inputColumnName);
         }
 
         private LongChunkedSumOperator addAndGetLongSumOperator(@NotNull final String inputColumnName) {
-            return getAndAddBasicOperator(n -> new LongChunkedSumOperator(false, n), inputColumnName);
+            return getAndAddBasicOperator(n -> new LongChunkedSumOperator(false, false, n), inputColumnName);
         }
 
         private <OP_TYPE extends IterativeChunkedAggregationOperator> OP_TYPE getAndAddBasicOperator(
@@ -2153,30 +2173,35 @@ public class AggregationProcessor implements AggregationContextFactory {
     // Operator Construction Helpers (e.g. to multiplex on input/output data type)
     // -----------------------------------------------------------------------------------------------------------------
 
+    /**
+     * @param onlyAdds whether the operator only ever receives additions, so it may omit the state that removals and
+     *        modifications need
+     */
     private static IterativeChunkedAggregationOperator makeSumOperator(
             @NotNull final Class<?> type,
             @NotNull final String name,
-            final boolean isAbsolute) {
+            final boolean isAbsolute,
+            final boolean onlyAdds) {
         if (type == Boolean.class || type == boolean.class) {
-            return new BooleanChunkedSumOperator(name);
+            return new BooleanChunkedSumOperator(onlyAdds, name);
         } else if (type == Byte.class || type == byte.class) {
-            return new ByteChunkedSumOperator(isAbsolute, name);
+            return new ByteChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Character.class || type == char.class) {
-            return new CharChunkedSumOperator(isAbsolute, name);
+            return new CharChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Double.class || type == double.class) {
-            return new DoubleChunkedSumOperator(isAbsolute, name);
+            return new DoubleChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Float.class || type == float.class) {
-            return new FloatChunkedSumOperator(isAbsolute, name);
+            return new FloatChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Integer.class || type == int.class) {
-            return new IntChunkedSumOperator(isAbsolute, name);
+            return new IntChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Long.class || type == long.class) {
-            return new LongChunkedSumOperator(isAbsolute, name);
+            return new LongChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == Short.class || type == short.class) {
-            return new ShortChunkedSumOperator(isAbsolute, name);
+            return new ShortChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == BigInteger.class) {
-            return new BigIntegerChunkedSumOperator(isAbsolute, name);
+            return new BigIntegerChunkedSumOperator(isAbsolute, onlyAdds, name);
         } else if (type == BigDecimal.class) {
-            return new BigDecimalChunkedSumOperator(isAbsolute, name);
+            return new BigDecimalChunkedSumOperator(isAbsolute, onlyAdds, name);
         }
         throw new UnsupportedOperationException("Unsupported type " + type);
     }
@@ -2316,6 +2341,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             @SuppressWarnings("SameParameterValue") final UnionObject onlyNullsSentinel,
             final UnionObject nonUniqueSentinel,
             final boolean exposeInternal,
+            final boolean onlyAdds,
             final boolean reaggregated,
             final ColumnSource<?> constituentSingletonCount) {
         checkType(resultName, "Only Nulls Sentinel", type, onlyNullsSentinel);
@@ -2325,31 +2351,46 @@ public class AggregationProcessor implements AggregationContextFactory {
             final byte nusAsType = UnionObjectUtils.byteValue(nonUniqueSentinel);
             return reaggregated
                     ? new ByteRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new ByteChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+                    : onlyAdds
+                            ? new ByteChunkedAddOnlyUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                            : new ByteChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         } else if (type == Character.class || type == char.class) {
             final char onsAsType = UnionObjectUtils.charValue(onlyNullsSentinel);
             final char nusAsType = UnionObjectUtils.charValue(nonUniqueSentinel);
             return reaggregated
                     ? new CharRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new CharChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+                    : onlyAdds
+                            ? new CharChunkedAddOnlyUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                            : new CharChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         } else if (type == Double.class || type == double.class) {
             final double onsAsType = UnionObjectUtils.doubleValue(onlyNullsSentinel);
             final double nusAsType = UnionObjectUtils.doubleValue(nonUniqueSentinel);
             return reaggregated
                     ? new DoubleRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new DoubleChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+                    : onlyAdds
+                            ? new DoubleChunkedAddOnlyUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                            : new DoubleChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         } else if (type == Float.class || type == float.class) {
             final float onsAsType = UnionObjectUtils.floatValue(onlyNullsSentinel);
             final float nusAsType = UnionObjectUtils.floatValue(nonUniqueSentinel);
             return reaggregated
                     ? new FloatRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new FloatChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+                    : onlyAdds
+                            ? new FloatChunkedAddOnlyUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                            : new FloatChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         } else if (type == Integer.class || type == int.class) {
             final int onsAsType = UnionObjectUtils.intValue(onlyNullsSentinel);
             final int nusAsType = UnionObjectUtils.intValue(nonUniqueSentinel);
             return reaggregated
                     ? new IntRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new IntChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+                    : onlyAdds
+                            ? new IntChunkedAddOnlyUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                            : new IntChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         } else if (type == Long.class || type == long.class || type == Instant.class) {
             final long onsAsType;
             final long nusAsType;
@@ -2362,22 +2403,30 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
             return reaggregated
                     ? new LongRollupUniqueOperator(type, resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new LongChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onsAsType,
-                            nusAsType);
+                    : onlyAdds
+                            ? new LongChunkedAddOnlyUniqueOperator(type, resultName, includeNulls, onsAsType, nusAsType)
+                            : new LongChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         } else if (type == Short.class || type == short.class) {
             final short onsAsType = UnionObjectUtils.shortValue(onlyNullsSentinel);
             final short nusAsType = UnionObjectUtils.shortValue(nonUniqueSentinel);
             return reaggregated
                     ? new ShortRollupUniqueOperator(resultName, onsAsType, nusAsType, constituentSingletonCount)
-                    : new ShortChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
+                    : onlyAdds
+                            ? new ShortChunkedAddOnlyUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
+                            : new ShortChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType,
+                                    nusAsType);
         }
         final Object onsAsType = maybeConvertType(type, onlyNullsSentinel);
         final Object nusAsType = maybeConvertType(type, nonUniqueSentinel);
         return reaggregated
                 ? new ObjectRollupUniqueOperator(type, equalsConsistent, resultName, onsAsType, nusAsType,
                         constituentSingletonCount)
-                : new ObjectChunkedUniqueOperator(type, equalsConsistent, resultName, includeNulls, exposeInternal,
-                        onsAsType, nusAsType);
+                : onlyAdds
+                        ? new ObjectChunkedAddOnlyUniqueOperator(type, equalsConsistent, resultName, includeNulls,
+                                onsAsType, nusAsType)
+                        : new ObjectChunkedUniqueOperator(type, equalsConsistent, resultName, includeNulls,
+                                exposeInternal, onsAsType, nusAsType);
     }
 
     private static long instantNanosValue(UnionObject obj) {
@@ -2567,18 +2616,22 @@ public class AggregationProcessor implements AggregationContextFactory {
         return !Double.isFinite(value.doubleValue());
     }
 
+    /**
+     * @param onlyAdds whether the operator only ever receives additions, so it may omit the state that removals need
+     */
     private static IterativeChunkedAggregationOperator makeAvgOperator(
             @NotNull final Class<?> type,
             @NotNull final String name,
-            final boolean exposeInternal) {
+            final boolean exposeInternal,
+            final boolean onlyAdds) {
         if (type == Byte.class || type == byte.class) {
             return new ByteChunkedAvgOperator(name, exposeInternal);
         } else if (type == Character.class || type == char.class) {
             return new CharChunkedAvgOperator(name, exposeInternal);
         } else if (type == Double.class || type == double.class) {
-            return new DoubleChunkedAvgOperator(name, exposeInternal);
+            return new DoubleChunkedAvgOperator(name, exposeInternal, onlyAdds);
         } else if (type == Float.class || type == float.class) {
-            return new FloatChunkedAvgOperator(name, exposeInternal);
+            return new FloatChunkedAvgOperator(name, exposeInternal, onlyAdds);
         } else if (type == Integer.class || type == int.class) {
             return new IntChunkedAvgOperator(name, exposeInternal);
         } else if (type == Long.class || type == long.class) {
@@ -2593,19 +2646,23 @@ public class AggregationProcessor implements AggregationContextFactory {
         throw new UnsupportedOperationException("Unsupported type " + type);
     }
 
+    /**
+     * @param onlyAdds whether the operator only ever receives additions, so it may omit the state that removals need
+     */
     private static IterativeChunkedAggregationOperator makeVarOrStdOperator(
             @NotNull final Class<?> type,
             @NotNull final String name,
             final boolean isStd,
-            final boolean exposeInternal) {
+            final boolean exposeInternal,
+            final boolean onlyAdds) {
         if (type == Byte.class || type == byte.class) {
             return new ByteChunkedVarOperator(isStd, name, exposeInternal);
         } else if (type == Character.class || type == char.class) {
             return new CharChunkedVarOperator(isStd, name, exposeInternal);
         } else if (type == Double.class || type == double.class) {
-            return new DoubleChunkedVarOperator(isStd, name, exposeInternal);
+            return new DoubleChunkedVarOperator(isStd, name, exposeInternal, onlyAdds);
         } else if (type == Float.class || type == float.class) {
-            return new FloatChunkedVarOperator(isStd, name, exposeInternal);
+            return new FloatChunkedVarOperator(isStd, name, exposeInternal, onlyAdds);
         } else if (type == Integer.class || type == int.class) {
             return new IntChunkedVarOperator(isStd, name, exposeInternal);
         } else if (type == Long.class || type == long.class) {
