@@ -2,72 +2,70 @@
 title: Use Deephaven in a GCP Linux instance
 ---
 
-This guide will show you how to use the [Google Cloud Platform (GCP)](https://cloud.google.com/) to run [deephaven-core](https://github.com/deephaven/deephaven-core/) from [Docker](https://docker.com/). It will show you how to launch a single VM instance, deploy the Deephaven server container to it, and then connect via your local machine.
+This guide shows you how to use the [Google Cloud Platform (GCP)](https://cloud.google.com/) to run [deephaven-core](https://github.com/deephaven/deephaven-core/) from [Docker](https://docker.com/). You launch a single VM instance, deploy the Deephaven server container to it, and connect to it from your local machine.
 
-GCP is one of the most popular cloud computing services currently available. Its popularity isn't just for external users - it powers Google's own services such as [Gmail](https://mail.google.com/), [Google Drive](https://drive.google.com/), and even [YouTube](https://youtube.com/). So why not take advantage of it yourself?
+GCP is one of the most popular cloud computing services currently available. Its popularity isn't just for external users: it powers Google's own services such as [Gmail](https://mail.google.com/), [Google Drive](https://drive.google.com/), and even [YouTube](https://youtube.com/). So why not take advantage of it yourself?
 
 ## Get started
 
-GCP has its own [command line interface](https://cloud.google.com/cli) that is recommended for interacting with instances. For this guide, it is necessary to install and configure the CLI. Follow the instructions for your OS in Google's [installation guide](https://cloud.google.com/sdk/docs/install) to get started.
+You need a Google Cloud account with billing enabled and a project to create the VM in. Note the project ID, because you use it in the SSH command later.
 
-Once you've installed the gcloud CLI, run the following command to give it authorized access to manage cloud services:
+GCP has its own command line interface, the [gcloud CLI](https://cloud.google.com/cli). This guide uses it to SSH into the VM and open the tunnel, so install and configure it. Follow the instructions for your OS in Google's [installation guide](https://cloud.google.com/sdk/docs/install).
+
+After you install the gcloud CLI, run the following command to give it authorized access to manage cloud services:
 
 ```bash
 gcloud auth login
 ```
 
-This will bring up your browser and have you log in to your Google account.
+This opens your browser and prompts you to log in to your Google account.
 
 ## Create a VM instance
 
-There are two ways you can create a GCP VM instance. The first is via your web browser. The second is via the gcloud CLI. Both are described [in Google's documentation](https://cloud.google.com/compute/docs/instances/create-start-instance). We will use the web interface.
+This guide creates the VM in the Google Cloud console. You can also create it with the gcloud CLI, as [Google's documentation](https://cloud.google.com/compute/docs/instances/create-start-instance) describes.
+
+In the Google Cloud console, go to **Compute Engine** > **VM instances** and click **Create instance**.
 
 ### Name, region, and zone
 
-We're going to name our VM `dhc-how-to`, set the `region` to `us-central1 (Iowa)`, and the `zone` to `us-central1-a`. More information on regions and zones can be found [here](https://cloud.google.com/compute/docs/regions-zones).
+Name the VM `dhc-how-to`, set the **Region** to `us-central1 (Iowa)`, and set the **Zone** to `us-central1-a`. See Google's [regions and zones documentation](https://cloud.google.com/compute/docs/regions-zones).
 
 ### Machine configuration
 
-The `Machine configuration` options specify the hardware your cloud instance will use. Choices include processor cores, amount of memory, GPU, etc. It's important to consider your needs, as the hardware configurations are critical to the success of your endeavors in the cloud.
+The **Machine configuration** options specify the hardware your cloud instance uses. Choices include the number of processor cores, the amount of memory, and an optional GPU. It's important to consider your needs, as the hardware configurations are critical to the success of your endeavors in the cloud.
 
-For this demo, we will be using:
+This guide uses:
 
-- [`e2-standard-2`](https://cloud.google.com/blog/products/compute/google-compute-engine-gets-new-e2-vm-machine-types) machine type
-  - 2 vCPUs
-  - 8 GB memory
-  - The default CPU type
-  - No GPU
-  - No display device
+- Machine type: [`e2-standard-2`](https://cloud.google.com/blog/products/compute/google-compute-engine-gets-new-e2-vm-machine-types) (2 vCPUs, 8 GB memory)
+- CPU platform: default
+- GPU: none
+- Display device: none
 
-![The **Machine configuration** window](../assets/how-to/machine-config.png)
+![The Machine configuration window](../assets/how-to/machine-config.png)
 
-Another option is [confidential computing](https://cloud.google.com/confidential-computing), which encrypts your data while it's being processed. If you are working with sensitive data, this option is likely important to enable. For this guide, we will _not_ be enabling confidential computing.
+Another option is [confidential computing](https://cloud.google.com/confidential-computing), which encrypts your data while it's being processed. If you work with sensitive data, consider enabling it. This guide does _not_ enable confidential computing.
 
 ### OS and storage
 
 Next, navigate to **OS and storage** on the left of the page, then click **Change**.
 
-![The **OS and storage** window](../assets/how-to/os-and-storage.png)
+![The OS and storage window](../assets/how-to/os-and-storage.png)
 
-For the operating system, select **Container-Optimized OS**, which is a Linux distribution created by Google that comes with Docker pre-installed and is optimized for running containers:
+Ignore the **Container** section on this screen. It is deprecated, and this guide runs the container from the startup script instead.
 
-- Look for the **Boot disk** section and click **CHANGE**.
-- Select **Container-Optimized OS** from the operating system list.
-- Select the latest stable version.
-- Click **SELECT** to confirm.
+Container-Optimized OS is a Linux distribution Google built for running containers, and it comes with [Docker](https://docker.com/) pre-installed. To select it:
 
-Alternatively, you can use other Linux distributions like Ubuntu or Debian. The startup script will automatically install Docker if it's not already present.
+1. Choose **Container-Optimized OS** from the operating system list.
+2. Select the newest stable version listed.
+3. Click **Select** to confirm.
 
-### Startup script for Docker container
+If you keep the default Debian image or choose Ubuntu, the startup script in the next section installs Docker on first boot.
 
-A Google Cloud VM can be configured to run Docker containers on startup using a script. Since Deephaven can be [launched from pre-built Docker images](../getting-started/quickstart.md), we'll create a startup script that automatically pulls and runs the Deephaven container when the VM starts.
+### Choose a Docker image
 
-Deephaven has several pre-built Docker images to choose from. Your choice should depend on your needs.
+Deephaven can be [launched from pre-built Docker images](../getting-started/quickstart.md). Images include:
 
-> [!NOTE]
-> `{VERSION}` in the list below is the Deephaven Core version number. Version numbers can be found [here](https://github.com/deephaven/deephaven-core/releases). Additionally, `{VERSION}` can be `latest`, which will always pull the latest version number.
-
-- Basic Python: `ghcr.io/deephaven/server:{VERSION}`
+- Python: `ghcr.io/deephaven/server:{VERSION}` (also published as `ghcr.io/deephaven/server-ui:{VERSION}`, an alias for the same image)
 - Python with [NLTK](https://www.nltk.org): `ghcr.io/deephaven/server-nltk:{VERSION}`
 - Python with [PyTorch](https://pytorch.org): `ghcr.io/deephaven/server-pytorch:{VERSION}`
 - Python with [scikit-learn](https://scikit-learn.org): `ghcr.io/deephaven/server-sklearn:{VERSION}`
@@ -75,14 +73,21 @@ Deephaven has several pre-built Docker images to choose from. Your choice should
 - Python with all of the above: `ghcr.io/deephaven/server-all-ai:{VERSION}`
 - Basic Groovy: `ghcr.io/deephaven/server-slim:{VERSION}`
 
-For this guide, we'll use the basic Groovy image `ghcr.io/deephaven/server-slim:latest`.
+> [!NOTE]
+> `{VERSION}` in the list above is the Deephaven Core version number. See the [deephaven-core releases page](https://github.com/deephaven/deephaven-core/releases) for version numbers. Use the number without a leading `v`, for example `42.7`. `{VERSION}` can also be `latest`, which pulls the most recent release. Because the script pulls on every boot, `latest` can upgrade Deephaven when the VM restarts. Pin a specific version for reproducible deployments.
+
+This guide uses the basic Groovy image `ghcr.io/deephaven/server-slim:latest`. If you choose a different image, set it as `CONTAINER_IMAGE` in the startup script in the next section.
+
+### Startup script for Docker container
+
+You can configure a Google Cloud VM to run Docker containers on startup with a script. This guide creates a startup script that pulls and runs the Deephaven container when the VM starts.
 
 To configure the startup script:
 
 1. Expand the **Advanced options** section at the bottom of the VM creation page.
 2. Expand the **Management** section.
 3. In the **Automation** section, find the **Startup script** text box.
-4. Paste the following script:
+4. Paste the following script, replacing `YOUR_PASSWORD_HERE` with your own password. You use this password to log in to the IDE. The password must contain only letters and digits, because the startup script's launcher parses `START_OPTS` with `xargs`, which strips quotes and backslashes and splits on spaces. Use a long, random password.
 
 ```bash
 #!/bin/bash
@@ -98,7 +103,7 @@ fi
 # Container configuration
 CONTAINER_NAME="deephaven-server"
 CONTAINER_IMAGE="ghcr.io/deephaven/server-slim:latest"
-START_OPTS="-Xmx4g"
+START_OPTS="-Xmx4g -Dauthentication.psk=YOUR_PASSWORD_HERE"
 
 # Stop and remove the container if it exists
 docker stop $CONTAINER_NAME || true
@@ -117,46 +122,55 @@ docker run \
   $CONTAINER_IMAGE
 ```
 
-This startup script will:
+This startup script does the following:
 
-- Install Docker if it's not already present (using Docker's official installation script).
-- Stop and remove any existing Deephaven container (useful for VM restarts).
-- Pull the latest Deephaven image.
-- Run the container with:
-  - `--restart=always`: Automatically restart if the container crashes.
-  - `--publish 10000:10000`: Expose Deephaven's web UI port.
-  - `--env START_OPTS="-Xmx4g"`: Configure Deephaven to use 4GB of memory (adjust based on your VM's memory).
+- Installs Docker if it isn't already present, using Docker's official installation script.
+- Stops and removes an existing container named `deephaven-server`, which matters when the VM restarts.
+- Pulls the latest Deephaven image.
+- Runs the container with these options:
+  - `--restart=always` restarts the container if it exits or when the Docker daemon starts.
+  - `--publish 10000:10000` exposes the port the Deephaven IDE listens on.
+  - `--env START_OPTS=...` passes JVM options to the server.
+    - `-Xmx4g` sets the maximum JVM heap to 4 GB.
+    - `-Dauthentication.psk` sets the password you use to log in. See [pre-shared key authentication](../how-to-guides/authentication/auth-psk.md).
+
+> [!IMPORTANT]
+> If you omit `-Dauthentication.psk`, the server generates a random key and prints it to the container log (`sudo docker logs deephaven-server`).
+>
+> GCP stores the startup script in the VM's metadata, so anyone who can view the instance in your project can read the password in it.
 
 > [!NOTE]
-> If you choose a VM with more memory, increase the `-Xmx4g` value in the `START_OPTS` variable to whatever amount suits your needs. For example, use `-Xmx8g` for 8GB of memory.
+> If you choose a VM with more memory, increase the `-Xmx4g` value in the `START_OPTS` variable, leaving headroom for the operating system and non-heap memory. For example, use `-Xmx12g` on a 16 GB VM.
+
+> [!NOTE]
+> This guide does not cover persistent storage in the cloud. There are several options, including [Docker data volumes](../conceptual/docker-data-volumes.md) and [gcloud storage](https://cloud.google.com/sdk/gcloud/reference/storage), for workflows that require storage of large datasets.
 
 ### Remaining options
 
-For the remaining options, we will use the defaults. These include `Allow default access` and `Firewall`. Take some time to review each option and ensure the default options (or otherwise) are right for your needs.
-
-> [!NOTE]
-> This guide will not cover persistent storage in the cloud. There are several options, including [Docker data volumes](../conceptual/docker-data-volumes.md) and [gcloud storage](https://cloud.google.com/sdk/gcloud/reference/storage), for workflows that require storage of large datasets.
+For the remaining options, this guide uses the defaults, including the access scopes and the firewall. You do not open port 10000 in the firewall, because you reach Deephaven through the SSH tunnel.
 
 ### Create the VM
 
-Once that's done, there are two ways to create the VM:
+After you've set the name, machine configuration, OS, and startup script, you can create the VM in either of two ways:
 
-1. Click the **CREATE** button at the bottom of the page.
-2. Click the **EQUIVALENT CODE** button at the bottom of the page, then either click **COPY** and run it in your local terminal, or click **RUN IN CLOUD SHELL**.
+1. Click the **Create** button at the bottom of the page.
+2. Click **Equivalent code** at the bottom of the page, then do one of the following:
+   - Click **Copy** and run the command in your local terminal.
+   - Click **Run in Cloud Shell** to run it in [Cloud Shell](https://cloud.google.com/shell/docs), a browser-based terminal with the gcloud CLI installed.
 
-With all that done, you've got a Google VM running Deephaven!
+Google Cloud creates the VM and then runs the startup script, which pulls the Deephaven image. The container is not available until the startup script finishes pulling the image, which can take a few minutes after the VM shows as running. The next section shows how to check.
 
-## SSH into your VM
+## Check that Deephaven is running
 
-Google Cloud takes a bit of time to create the VM. Once that's done, you can SSH into it via [`gcloud compute ssh`](https://cloud.google.com/sdk/gcloud/reference/compute/ssh). It uses very similar syntax to [`ssh`](https://linuxcommand.org/lc3_man_pages/ssh1.html). One of the nice things about the gcloud CLI is that you can find relevant commands in the Google Cloud web interface.
+Connect to the VM over SSH to confirm the Deephaven container started. When the VM is ready, SSH into it with [`gcloud compute ssh`](https://cloud.google.com/sdk/gcloud/reference/compute/ssh), which uses the same syntax as [`ssh`](https://linuxcommand.org/lc3_man_pages/ssh1.html). The Google Cloud console shows the exact command for your VM.
 
 First, head to your list of VMs.
 
-![**VM Instances** highlighted in the Google Cloud Compute Engine menu](../assets/how-to/gcloud-vm-instances.jpg)
+![VM Instances highlighted in the Google Cloud Compute Engine menu](../assets/how-to/gcloud-vm-instances.jpg)
 
 Then, find the VM you created in the list of VMs. Click the downward-facing arrow on the right-hand side.
 
-![The newly created VM in the list of VMs, with the downward-facing arrow highlighted](../assets/how-to/gcloud-dhc-howto.jpg)
+![The VM `dhc-how-to` in the list of VMs, with the downward-facing arrow highlighted](../assets/how-to/gcloud-dhc-howto.jpg)
 
 From the drop-down menu, click **View gcloud command**.
 
@@ -164,45 +178,57 @@ From the drop-down menu, click **View gcloud command**.
 
 This brings up a pop-up window where you can copy the command to SSH into your VM.
 
-Copy that into your terminal, and you'll be there!
+Copy that into your terminal to connect.
 
-It's always a good idea to ensure your container is up and running via `docker container ls`.
+Run `sudo docker container ls` to confirm the container is running. If the list is empty, wait a minute and run it again.
 
 ![terminal displaying docker container ls output showing running Deephaven container](../assets/how-to/gcloud-docker-ls-gr.png)
 
 ## Connect to Deephaven
 
-In the previous section, you connected to your VM to ensure that Deephaven is running, but didn't actually do anything with it. Deephaven uses a GUI, and you'll need access to the GUI in the cloud on your local machine. Thus, we need to take the previous section one step further and enable that GUI. The [gcloud CLI](https://cloud.google.com/sdk/gcloud) has you covered.
+Deephaven's IDE runs in a browser, so reach it from your local machine through an SSH tunnel. The tunnel forwards a port on the VM to a port on your machine. The **View gcloud command** pop-up shows the zone, instance name, and project ID the command needs. Type `exit` to leave the VM session, then run the tunnel command in a terminal on your local machine.
 
-This time around, we will create an SSH tunnel with port forwarding. Deephaven runs on a specific port, so if we forward that port on the VM to the local machine, we'll have access to the GUI. The command looks like this:
+The command looks like this:
 
 ```bash
 gcloud compute ssh --zone <ZONE> <INSTANCE> --project <PROJECT> -- -NL <LOCAL_PORT>:localhost:<HOST_PORT> &
 ```
 
-- `<ZONE>` is the zone you created your VM in. For this guide, we created it in `us-central1-a`.
-- `<INSTANCE>` is the name of the VM. For this guide, we called it `dhc-how-to`.
-- `<PROJECT>` is the name of your gcloud project. This can be found in the URL when you go to the web interface at the end. It looks like `?project=<PROJECT_NAME>`.
+- `<ZONE>` is the zone you created your VM in. This guide creates it in `us-central1-a`.
+- `<INSTANCE>` is the name of the VM. This guide names it `dhc-how-to`.
+- `<PROJECT>` is your Google Cloud project ID. It appears in the console URL as `?project=<PROJECT_ID>` and in the project selector.
 - `-NL` does two things.
-  - The first, `-N`, enables port forwarding. It's consistent with `ssh`.
+  - The first, `-N`, tells SSH not to run a remote command, so the session only forwards ports.
   - The second, `-L`, specifies the port forwarding between the local and remote hosts.
-- `<LOCAL_PORT>` is whatever port you'd like to connect to Deephaven on locally. Deephaven is typically run on `10000`, although it may be useful to specify a different port here if you're running a local Deephaven server on that port. For this case, we use `10000`, since we're not running any local Deephaven servers on that port.
-- `<HOST_PORT>` is the port on the VM which you can connect to Deephaven from. In this case, it's `10000`.
-- `&` prevents the terminal from blocking. It allows you to continue using your terminal. It's not necessary unless you don't want to create any new terminal windows or tabs for your work. You should manually kill this process when you're done with it.
+- `<LOCAL_PORT>` is the port on your local machine that you use to reach Deephaven.
+  - Use a different port if a local Deephaven server already uses `10000`.
+  - This guide uses `10000`.
+- `<HOST_PORT>` is the port that Deephaven listens on in the VM. This guide uses `10000`.
+- `&` runs the tunnel in the background so you can keep using the same terminal.
 
-With all of the configuration options we chose, the command looks like this:
+With the zone and instance name from this guide and `my-project` standing in for your own project ID, the command looks like this:
 
 ```bash
-gcloud compute ssh --zone us-central1-a dhc-how-to --project deephaven-oss -- -NL 10000:localhost:10000 &
+gcloud compute ssh --zone us-central1-a dhc-how-to --project my-project -- -NL 10000:localhost:10000 &
 ```
 
-With that run, head to your web browser of choice and go to `localhost:10000/ide/`. The Deephaven running isn't running locally, but on a Google Cloud VM! Pretty cool.
+To keep the tunnel in its own terminal window or tab instead, omit the `&`.
+
+With the tunnel running, open `localhost:10000/ide/` in your browser and enter the password you set in the startup script. The tunnel connects your browser to the Deephaven server on the Google Cloud VM, not to a local server.
 
 ![Deephaven IDE loaded in browser via Google Cloud VM tunnel](../assets/how-to/dhc-on-gcloud-gr.png)
 
+## Clean up
+
+1. Stop the background tunnel. Run `jobs` to find it, then run `kill %<JOB_NUMBER>`, replacing `<JOB_NUMBER>` with the number `jobs` shows. If you ran it in its own terminal window, press Ctrl+C.
+2. Delete the VM so you are not billed for it. In the Google Cloud console, go to **Compute Engine** > **VM instances** and delete `dhc-how-to`. Or run:
+
+   ```bash
+   gcloud compute instances delete dhc-how-to --zone us-central1-a --project my-project
+   ```
+
 ## Related documentation
 
-- [Docker install guide](../getting-started/docker-install.md)
+- [Docker data volumes](../conceptual/docker-data-volumes.md)
 - [Learn Deephaven](../getting-started/quickstart.md)
 - [How to use Deephaven with AWS EC2](../how-to-guides/aws-ec2.md)
-- [Docker data volumes](../conceptual/docker-data-volumes.md)
