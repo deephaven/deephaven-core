@@ -163,6 +163,15 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
                             && wf.getColumnArrays().isEmpty();
                 }));
         compilationProcessor.compile();
+        for (final WhereFilter whereFilter : whereFilters) {
+            // a node-level filter reads the rows of one node, and the source-level filter refilters only the rows that
+            // the source adds or modifies, so neither may depend on other rows
+            if (whereFilter.hasCrossRowDependencies()) {
+                throw new IllegalArgumentException("Invalid filter found: " + whereFilter + " cannot use cross-row "
+                        + "dependencies (virtual row variables or column arrays); filter the source table before the "
+                        + "tree instead");
+            }
+        }
 
         final List<WhereFilter> nodeFilters = nodeSuitabilityToFilters.get(true);
         final List<WhereFilter> sourceFilters = nodeSuitabilityToFilters.get(false);

@@ -138,18 +138,18 @@ public interface PushdownFilterMatcher {
     }
 
     /**
-     * Check if the given filter can be pushed down: it must have at least one column and no column arrays, and it (and
-     * any filter it wraps or is composed of) must also support pushdown.
+     * Check if the given filter can be pushed down: it must have at least one column, and it (and any filter it wraps
+     * or is composed of) must have no {@link WhereFilter#hasCrossRowDependencies() cross-row dependencies} and must
+     * also support pushdown.
      *
      * @param filter The {@link WhereFilter filter} to check.
      * @return {@code true} if the filter can be pushed down, {@code false} otherwise.
      */
     static boolean canPushdownFilter(final WhereFilter filter) {
         return !filter.getColumns().isEmpty()
-                && filter.getColumnArrays().isEmpty()
                 && ExtractAllFilters.stream(filter).noneMatch(
                         f -> f instanceof ReindexingFilter
-                                || f.hasVirtualRowVariables()
+                                || f.hasCrossRowDependencies()
                                 || !f.canPushdown());
     }
 }

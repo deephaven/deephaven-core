@@ -330,6 +330,13 @@ public abstract class BaseIncrementalReleaseFilter
     }
 
     @Override
+    public boolean hasVirtualRowVariables() {
+        // releases a prefix, by position, of the rows that the where receives, as a filter on ii would
+        return true;
+    }
+
+
+    @Override
     public void run() {
         if (!started) {
             throw new IllegalStateException();

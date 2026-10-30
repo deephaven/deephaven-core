@@ -128,6 +128,7 @@ abstract class WrappedSelectColumn implements SelectColumn {
         return inner.hasVirtualRowVariables();
     }
 
+
     @Override
     public boolean recomputeOnModifiedRow() {
         return inner.recomputeOnModifiedRow();

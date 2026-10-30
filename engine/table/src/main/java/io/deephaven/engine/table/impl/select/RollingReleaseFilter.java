@@ -111,6 +111,13 @@ public class RollingReleaseFilter
     }
 
     @Override
+    public boolean hasVirtualRowVariables() {
+        // releases a window, by position, of the rows that the where receives, as a filter on ii would
+        return true;
+    }
+
+
+    @Override
     public void run() {
         releaseMoreEntries = true;
         listener.requestRecompute();
