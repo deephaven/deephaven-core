@@ -42,27 +42,27 @@ source = emptyTable(1).update('InstantLiteral = \'2025-05-01T00:00:00Z\'')
 
 Deephaven supports many of the data types found in [`java.time`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/package-summary.html) for date-time literals in [query strings](./query-string-overview.md). In the formats below, square brackets mark optional parts, and each type's subsection explains its placeholder letters:
 
-| Java type                                                           | Format                                                                                                                               | Example literal                                                      |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| [`Instant`](../reference/query-language/types/date-time.md#instant) | `YYYY-MM-DDThh:mm[:ss[.nnnnnnnnn]]` and a time zone; `YYYY-MM-DD` and a time zone name or alias; or a whole-number Unix epoch offset | `'2023-10-01T09:30:00Z'`, `'2025-01-23T15:21:48 ET'`, `'1700000000'` |
-| `LocalDate`                                                         | `YYYY-MM-DD`                                                                                                                         | `'2025-04-01'`                                                       |
-| `LocalTime`                                                         | `hh:mm[:ss[.nnnnnnnnn]]`                                                                                                             | `'14:30:00.12345'`                                                   |
-| `Duration`                                                          | `[-]PnDTnHnMn.nS` or `[-]PThh:mm[:ss[.nnnnnnnnn]]`                                                                                   | `'PT5H2M1.2S'`, `'PT12:00'`                                          |
-| `Period`                                                            | `[-]PnYnMnWnD`                                                                                                                       | `'P1Y4M5D'`                                                          |
-| `ZoneId`                                                            | Time zone name, alias, or offset                                                                                                     | `'America/New_York'`, `'ET'`, `'-05:00'`                             |
+| Java type                 | Format                                                                                                                               | Example literal                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| [`Instant`](#instant)     | `YYYY-MM-DDThh:mm[:ss[.nnnnnnnnn]]` and a time zone; `YYYY-MM-DD` and a time zone name or alias; or a whole-number Unix epoch offset | `'2023-10-01T09:30:00Z'`, `'2025-01-23T15:21:48 ET'`, `'1700000000'` |
+| [`LocalDate`](#localdate) | `YYYY-MM-DD`                                                                                                                         | `'2025-04-01'`                                                       |
+| [`LocalTime`](#localtime) | `hh:mm[:ss[.nnnnnnnnn]]`                                                                                                             | `'14:30:00.12345'`                                                   |
+| [`Duration`](#duration)   | `[-]PnDTnHnMn.nS` or `[-]PThh:mm[:ss[.nnnnnnnnn]]`                                                                                   | `'PT5H2M1.2S'`, `'PT12:00'`                                          |
+| [`Period`](#period)       | `[-]PnYnMnWnD`                                                                                                                       | `'P1Y4M5D'`                                                          |
+| [`ZoneId`](#zoneid)       | Time zone name, alias, or offset                                                                                                     | `'America/New_York'`, `'ET'`, `'-05:00'`                             |
 
 A single character in single quotes, such as `'a'`, is a [character literal](./string-char-literals.md). Deephaven tries to parse any longer string as each of the following types, in this order. The first type that parses the string determines the literal's type:
 
-1. [`Instant`](../reference/query-language/types/date-time.md#instant)
-2. `Period`
-3. `Duration`
-4. `LocalDate`
-5. `LocalTime`
-6. `ZoneId`
+1. [`Instant`](#instant)
+2. [`Period`](#period)
+3. [`Duration`](#duration)
+4. [`LocalDate`](#localdate)
+5. [`LocalTime`](#localtime)
+6. [`ZoneId`](#zoneid)
 
 For example, `'P2D'` is a valid `Period` and a valid `Duration`, so it becomes a `Period`.
 
-[`ZonedDateTime`](../reference/query-language/types/date-time.md#zoneddatetime) and `LocalDateTime` have no literal form. A date-time string with a time zone becomes an [`Instant`](../reference/query-language/types/date-time.md#instant). A date and time with no time zone, such as `'2025-01-23T15:21:48'`, isn't a valid literal, and the query fails.
+[`ZonedDateTime`](../reference/query-language/types/date-time.md#zoneddatetime) and [`LocalDateTime`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/LocalDateTime.html) have no literal form. A date-time string with a time zone becomes an [`Instant`](../reference/query-language/types/date-time.md#instant). A date and time with no time zone, such as `'2025-01-23T15:21:48'`, isn't a valid literal, and the query fails.
 
 The following subsections cover each type.
 
