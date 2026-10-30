@@ -622,19 +622,31 @@ public class ParquetTools {
     }
 
     /**
-     * Whether the directory does not exist or has no entries. Object stores have no directories, so a prefix with no
-     * objects under the prefix lists as empty.
+     * Whether the directory does not exist or holds no entries at any depth. Object stores have no directories, so a
+     * prefix with no objects under the prefix counts as empty.
      */
     private static boolean isMissingOrEmptyDirectory(
             @NotNull final SeekableChannelsProvider channelsProvider,
             @NotNull final URI directory) {
-        try (final Stream<URI> entries = channelsProvider.list(directory)) {
-            return entries.findAny().isEmpty();
+        // Walk rather than list: an object store lists only the objects directly under a prefix, while the data files
+        // of a key-value partitioned table sit under nested partition prefixes
+        final String directoryPath = withoutTrailingSeparators(directory.getPath());
+        try (final Stream<URI> entries = channelsProvider.walk(directory)) {
+            // A file system walk starts with the directory itself
+            return entries.allMatch(entry -> withoutTrailingSeparators(entry.getPath()).equals(directoryPath));
         } catch (final NoSuchFileException e) {
             return true;
         } catch (final IOException e) {
-            throw new UncheckedDeephavenException("Error listing directory " + directory, e);
+            throw new UncheckedDeephavenException("Error walking directory " + directory, e);
         }
+    }
+
+    private static String withoutTrailingSeparators(@NotNull final String path) {
+        int end = path.length();
+        while (end > 0 && path.charAt(end - 1) == URI_SEPARATOR_CHAR) {
+            end--;
+        }
+        return path.substring(0, end);
     }
 
     private static String concatenatePartitions(final List<String> partitions) {
