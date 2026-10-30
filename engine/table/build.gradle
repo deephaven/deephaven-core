@@ -42,7 +42,6 @@ dependencies {
     // TODO(deephaven-core#3204): t-digest 3.3 appears to have higher errors than 3.2
     implementation libs.tdunning.t.digest
     implementation libs.javapoet
-    implementation libs.classgraph
     api libs.dsi.fastutil
 
     implementation project(':plugin')

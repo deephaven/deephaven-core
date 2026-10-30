@@ -281,6 +281,9 @@ public class TestGroovyDeephavenSession {
                 "import io.deephaven.engine. util.TableTools; // has a space",
                 // nonexistent package
                 "import io.deephaven.engine.xxx.util.TableTools",
+                // nonexistent wildcard packages
+                "import io.deephaven.engine.xxx.util.*",
+                "import java.util.xxx.*",
                 // nonexistent classname
                 "import io.deephaven.engine.util.TablexxxTools",
                 // includes "static" but is (correctly) not stripped out
@@ -392,13 +395,13 @@ public class TestGroovyDeephavenSession {
 
         // special package import cases
         // this package is unknown
-        // DHC change in behavior: as a fix for #1129, we now use classgraph to find packages with no loaded classes
+        // DHC change in behavior: as a fix for #1129, we find packages with no loaded classes
         assertNotNull("expect failure for unknown package: com.google.common.html",
                 session.createImport(GroovyDeephavenSession.removeComments("import com.google.common.html.*;")));
         // Now load the class
         assertNotNull("expect to find class: com.google.common.html.HtmlEscapers", session.createImport(
                 GroovyDeephavenSession.removeComments("import com.google.common.html.HtmlEscapers;")));
-        // confirm non-classgraph package finding works
+        // confirm package finding works once a class is loaded
         assertNotNull("expect to find package: com.google.common.html",
                 session.createImport(GroovyDeephavenSession.removeComments("import com.google.common.html.*;")));
 
