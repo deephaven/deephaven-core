@@ -842,8 +842,10 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     private boolean isValidAgainstKeyColumns(WhereFilter filter) {
-        if (filter.hasCrossRowDependencies()) {
-            // the filter would read the rows of the partitioned table rather than the rows of each constituent
+        if (!filter.getColumnArrays().isEmpty()) {
+            return false;
+        }
+        if (filter.hasVirtualRowVariables()) {
             return false;
         }
         if (!(target instanceof PartitionedTableImpl)) {

@@ -902,6 +902,35 @@ public class DeferredViewTableTest {
     }
 
     @Test
+    public void testWrappedSelectColumnReportsCrossRowDependencies() {
+        // a column that depends on other rows without a row variable or a column array, which the default cannot see;
+        // a copy keeps the override, since withRecomputeOnModifiedRow() wraps a copy
+        final class CrossRowColumn extends SourceColumn {
+            CrossRowColumn() {
+                super("A", "B");
+            }
+
+            @Override
+            public boolean hasCrossRowDependencies() {
+                return true;
+            }
+
+            @Override
+            public SourceColumn copy() {
+                return new CrossRowColumn();
+            }
+        }
+        final SelectColumn crossRow = new CrossRowColumn();
+        for (final SelectColumn wrapped : new SelectColumn[] {
+                crossRow.withSerial(),
+                crossRow.withDeclaredBarriers(new Object()),
+                crossRow.withRespectedBarriers(new Object()),
+                crossRow.withRecomputeOnModifiedRow()}) {
+            Assertions.assertThat(wrapped.hasCrossRowDependencies()).as(wrapped.getClass().getSimpleName()).isTrue();
+        }
+    }
+
+    @Test
     public void testReleaseFilterSeesTheRowsOfItsWhere() {
         // a release filter keeps rows by position among the rows that the filter's where receives, so the where must
         // not merge with the filters of an earlier where; an IncrementalReleaseFilter does not support copy() either

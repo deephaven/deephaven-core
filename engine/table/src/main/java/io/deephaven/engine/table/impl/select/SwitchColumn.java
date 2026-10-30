@@ -161,6 +161,11 @@ public class SwitchColumn implements SelectColumn {
     }
 
     @Override
+    public boolean hasCrossRowDependencies() {
+        return getRealColumn().hasCrossRowDependencies();
+    }
+
+    @Override
     public boolean hasConstantArrayAccess() {
         return getRealColumn().hasConstantArrayAccess();
     }
