@@ -496,6 +496,40 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
     }
 
     @Test
+    public void writeEmptyKeyValuePartitionedDataWithMetadataFiles() {
+        // An empty write under a prefix with no objects records the schema in metadata files, while an empty write
+        // over a populated prefix writes nothing, so the existing data stays readable
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("someIntColumn"),
+                ColumnDefinition.ofString("someStringColumn"));
+        final Table table = ((QueryTable) TableTools.emptyTable(10)
+                .updateView("PC1 = (int)(ii%2)",
+                        "someIntColumn = (int) i",
+                        "someStringColumn = String.valueOf(i)"))
+                .withDefinitionUnsafe(definition);
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setSpecialInstructions(s3Instructions(
+                        S3Instructions.builder()
+                                .readTimeout(Duration.ofSeconds(TIMEOUT_SECONDS)))
+                        .build())
+                .setGenerateMetadataFiles(true)
+                .build();
+
+        final URI emptyUri = uri("emptyKeyValuePartitionedDataDir");
+        writeKeyValuePartitionedTable(table.head(0), emptyUri.toString(), instructions);
+        final Table fromS3Empty = ParquetTools.readTable(emptyUri.toString(), instructions);
+        assertEquals(definition, fromS3Empty.getDefinition());
+        assertEquals(0, fromS3Empty.size());
+
+        final URI populatedUri = uri("populatedKeyValuePartitionedDataDir");
+        writeKeyValuePartitionedTable(table, populatedUri.toString(), instructions);
+        writeKeyValuePartitionedTable(table.head(0), populatedUri.toString(), instructions);
+        final Table fromS3Populated = ParquetTools.readTable(populatedUri.toString(), instructions);
+        assertTableEquals(table.sort("PC1"), fromS3Populated.sort("PC1"));
+    }
+
+    @Test
     public void indexByLongKey() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("someInt"),
