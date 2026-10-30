@@ -259,7 +259,7 @@ The `edge` image is rebuilt nightly, and whenever the `main` branch of the [deep
 
 ### Standard images
 
-- `ghcr.io/deephaven/server`: Deephaven's server-side Python API. Includes jpy, `deephaven-plugin`, numpy, pandas, pyarrow, Numba, and the `deephaven.ui`, Deephaven Express (`deephaven-plugin-plotly-express`), and Matplotlib plugins.
+- `ghcr.io/deephaven/server`: Deephaven's server-side Python API. Includes jpy, `deephaven-plugin`, numpy, pandas, pyarrow, and the `deephaven.ui`, Deephaven Express (`deephaven-plugin-plotly-express`), and Matplotlib plugins. Numba is bundled in `edge`; release `42.7` requires a separate installation.
 - `ghcr.io/deephaven/server-ui`: The same image as `ghcr.io/deephaven/server`, under a separate name.
 
 For the Groovy image, `ghcr.io/deephaven/server-slim`, see the Groovy version of this guide.
