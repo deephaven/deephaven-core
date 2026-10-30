@@ -12,7 +12,7 @@ This guide discusses how to control the update frequency of your Deephaven table
 There are two underlying processes when updating [streaming tables](./table-types.md) in Deephaven:
 
 1. When new data is generated or acquired, the Periodic Update Graph (PUG) first manages the process of updating the source tables and the derived tables with the new data. Each pass of this process is a refresh cycle. A source table receives data from outside the server, or generates its rows inside the server. For example, `TimeTable` generates rows from the server clock. A derived table is computed from one or more other tables. At this point, data updates are available within the server process.
-2. Once a table has been updated during the PUG refresh cycle, Barrage sends the changed rows to each subscribed client. A web UI client displays the changed rows in its viewport, the visible portion of the table. Other clients, such as those that subscribe to a full table, receive the same changes without a viewport.
+2. Barrage batches table changes and sends them to subscribers on a separate [update interval](./what-is-barrage.md#update-intervals-and-batching), which can combine changes from multiple refresh cycles. A web UI client receives changes relevant to its viewport, the visible portion of the table. Other clients can subscribe to the full table without a viewport.
 
 This page covers the first process, which the PUG controls. [What is Barrage?](./what-is-barrage.md) explains how the server sends the results to clients.
 
