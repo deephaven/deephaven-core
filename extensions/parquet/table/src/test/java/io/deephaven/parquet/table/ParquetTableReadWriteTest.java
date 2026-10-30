@@ -1640,7 +1640,7 @@ public final class ParquetTableReadWriteTest {
                 ColumnDefinition.ofInt("I"));
         final Table fromDisk = readTable(parentDir.getPath(),
                 ParquetInstructions.builder().setTableDefinition(definition).build());
-        assertEquals(definition.getColumnNames(), fromDisk.getDefinition().getColumnNames());
+        assertEquals(definition, fromDisk.getDefinition());
         assertEquals(0, fromDisk.size());
     }
 

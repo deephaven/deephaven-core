@@ -513,8 +513,9 @@ public class ParquetTools {
             }
         }
         if (destinations.isEmpty()) {
-            // The table has no rows, so there are no partitions to write. Nothing is written, not even metadata files:
-            // the key-value layout records the schema only in its data files, so there is nothing for them to describe.
+            // The partitioned table has no constituents (as for a source table with no rows), so there are no
+            // partitions to write. Nothing is written, not even metadata files: the key-value layout records the
+            // schema only in the data files, so the metadata files would have nothing to describe.
             return;
         }
         final MessageType partitioningColumnsSchema;
