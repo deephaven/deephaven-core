@@ -46,7 +46,7 @@ counts = result.count_by("Count")
 
 The `Count` value in `counts` keeps growing even though `result` holds only the latest rows. That's [blink-table aggregation semantics](../conceptual/table-types.md#specialized-semantics-for-blink-tables): [`count_by`](../reference/table-operations/group-and-aggregate/countBy.md) counts every row `result` has held since you created `counts`. The count starts with the rows `result` held when you created `counts`.
 
-If all you need is a blink time table, you don't need [`add_only_to_blink`](../reference/table-operations/create/add-only-to-blink.md). Create one directly with [`time_table`](../reference/table-operations/create/timeTable.md) and `blink_table=True`, as shown in [`time_table` as a blink table](../how-to-guides/time-table.md#time_table-as-a-blink-table).
+If all you need is a blink time table, you don't need [`add_only_to_blink`](../reference/table-operations/create/add-only-to-blink.md). Create one directly with [`time_table`](../reference/table-operations/create/timeTable.md) and `blink_table=True`, as shown in [Create a blink time table](../how-to-guides/time-table.md#create-a-blink-time-table).
 
 ## Related documentation
 
