@@ -596,12 +596,14 @@ public class ParquetTools {
             try {
                 final ParquetMetadata footer =
                         ParquetTableWriter.getFooterForEmptyTable(leafDefinition, writeInstructions);
-                final CompletableOutputStream metadataOutputStream = channelsProvider.getOutputStream(
-                        writeContext, destinationDir.resolve(METADATA_FILE_NAME), PARQUET_OUTPUT_BUFFER_SIZE);
-                outputStreams.add(metadataOutputStream);
+                // Complete the common metadata file first: a failure between the two completions then leaves no
+                // metadata file, rather than a metadata file whose schema lacks the partitioning columns
                 final CompletableOutputStream commonMetadataOutputStream = channelsProvider.getOutputStream(
                         writeContext, destinationDir.resolve(COMMON_METADATA_FILE_NAME), PARQUET_OUTPUT_BUFFER_SIZE);
                 outputStreams.add(commonMetadataOutputStream);
+                final CompletableOutputStream metadataOutputStream = channelsProvider.getOutputStream(
+                        writeContext, destinationDir.resolve(METADATA_FILE_NAME), PARQUET_OUTPUT_BUFFER_SIZE);
+                outputStreams.add(metadataOutputStream);
                 ParquetMetadataFileWriterImpl.writeSchemaOnlyMetadataFiles(footer, partitioningColumnsSchema,
                         metadataOutputStream, commonMetadataOutputStream);
                 for (final CompletableOutputStream outputStream : outputStreams) {
@@ -628,16 +630,24 @@ public class ParquetTools {
     private static boolean isMissingOrEmptyDirectory(
             @NotNull final SeekableChannelsProvider channelsProvider,
             @NotNull final URI directory) {
-        // Walk rather than list: an object store lists only the objects directly under a prefix, while the data files
-        // of a key-value partitioned table sit under nested partition prefixes
-        final String directoryPath = withoutTrailingSeparators(directory.getPath());
-        try (final Stream<URI> entries = channelsProvider.walk(directory)) {
-            // A file system walk starts with the directory itself
-            return entries.allMatch(entry -> withoutTrailingSeparators(entry.getPath()).equals(directoryPath));
+        // A listing follows a local directory that is a symbolic link, which a walk does not. A listing of an object
+        // store prefix holds only the objects directly under the prefix, while the data files of a key-value
+        // partitioned table sit under nested partition prefixes, so an empty listing is confirmed with a walk.
+        try {
+            try (final Stream<URI> entries = channelsProvider.list(directory)) {
+                if (entries.findAny().isPresent()) {
+                    return false;
+                }
+            }
+            final String directoryPath = withoutTrailingSeparators(directory.getPath());
+            try (final Stream<URI> entries = channelsProvider.walk(directory)) {
+                // A file system walk starts with the directory itself
+                return entries.allMatch(entry -> withoutTrailingSeparators(entry.getPath()).equals(directoryPath));
+            }
         } catch (final NoSuchFileException e) {
             return true;
         } catch (final IOException e) {
-            throw new UncheckedDeephavenException("Error walking directory " + directory, e);
+            throw new UncheckedDeephavenException("Error reading directory " + directory, e);
         }
     }
 

@@ -1747,6 +1747,28 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void writeKeyValuePartitionedDataWithNoRowsAndMetadataFilesThroughSymbolicLink() throws IOException {
+        // A destination that is a symbolic link to a populated directory must count as populated, or the metadata
+        // files written through the link would hide the data files in the target directory
+        final Table inputData = newTable(stringCol("PC1", "aa", "bb"), intCol("I", 1, 2));
+        final File targetDir =
+                new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsAndMetadataFilesThroughSymbolicLinkTarget");
+        writeKeyValuePartitionedTable(inputData.partitionBy("PC1"), targetDir.getAbsolutePath(), EMPTY);
+        final File linkDir =
+                new File(rootFile, "writeKeyValuePartitionedDataWithNoRowsAndMetadataFilesThroughSymbolicLink");
+        Files.createSymbolicLink(linkDir.toPath(), targetDir.toPath().toAbsolutePath());
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeKeyValuePartitionedTable(inputData.head(0).partitionBy("PC1"), linkDir.getAbsolutePath(),
+                writeInstructions);
+        assertFalse(new File(targetDir, "_metadata").exists());
+        assertFalse(new File(targetDir, "_common_metadata").exists());
+        final Table fromDisk = readTable(targetDir.getPath()).select();
+        assertTableEquals(inputData.sort("PC1"), fromDisk.sort("PC1"));
+    }
+
+    @Test
     public void writeKeyValuePartitionedDataWithMixedPartitionsTest() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("PC1").withPartitioning(),
