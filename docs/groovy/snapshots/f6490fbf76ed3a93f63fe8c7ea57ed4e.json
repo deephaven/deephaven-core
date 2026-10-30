@@ -1,0 +1,1 @@
+{"file":"how-to-guides/use-uris.md","objects":{"myTable":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"X","type":"double"},{"name":"Y","type":"double"}],"rows":[[{"value":"2026-10-19 12:23:00.000"},{"value":"0.0000"},{"value":"0.0000"}]]}}}}

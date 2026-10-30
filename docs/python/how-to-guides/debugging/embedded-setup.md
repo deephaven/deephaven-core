@@ -164,13 +164,13 @@ The console and your launch script share the same debugged process, so PyCharm's
 
 PyCharm pauses each time `udf` runs, once for each of the table's 10 rows. Click **Resume Program** to move to the next row.
 
-While execution is paused in a command you ran from the console, that command holds the [update graph](../../conceptual/dag.md#update-graph-ug-cycles)'s lock. Ticking tables stop updating, and other console commands wait, until you resume. The tables then catch up.
+While execution is paused in a command you ran from the console, that command holds the [update graph](../../conceptual/dag.md#update-graph-cycles)'s lock. Ticking tables stop updating, and other console commands wait, until you resume. The tables then catch up.
 
 Deephaven has some debugging behaviors of its own, such as [lazily evaluated table operations](./common-problems.md#lazy-evaluation-of-some-table-operations) and [ticking-table](../../conceptual/table-types.md) updates on other threads. Check out [Common problems](./common-problems.md) before you dig into a breakpoint that won't hit.
 
 ## Debug Deephaven's Java engine
 
-PyCharm's debugger reaches only Python code. Deephaven's query engine is Java, so PyCharm can't step into [table operations](../../conceptual/table-operations-overview.md) or the [update graph](../../conceptual/dag.md#update-graph-ug-cycles). To debug the Java engine in the same process, add a [JDWP](https://docs.oracle.com/en/java/javase/21/docs/specs/jpda/conninv.html) agent to `jvm_args` in your [launch script](#3-write-a-launch-script):
+PyCharm's debugger reaches only Python code. Deephaven's query engine is Java, so PyCharm can't step into [table operations](../../conceptual/table-operations-overview.md) or the [update graph](../../conceptual/dag.md#update-graph-cycles). To debug the Java engine in the same process, add a [JDWP](https://docs.oracle.com/en/java/javase/21/docs/specs/jpda/conninv.html) agent to `jvm_args` in your [launch script](#3-write-a-launch-script):
 
 ```python skip-test
 s = Server(

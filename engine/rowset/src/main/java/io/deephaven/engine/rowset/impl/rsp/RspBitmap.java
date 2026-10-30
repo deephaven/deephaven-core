@@ -5,6 +5,9 @@ package io.deephaven.engine.rowset.impl.rsp;
 
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.engine.rowset.impl.RowKeysChunkBuilderSequential;
+import io.deephaven.engine.rowset.impl.RowKeysChunkRangeIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.configuration.Configuration;
@@ -1887,6 +1890,20 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             final BuilderSequential builder = new OrderedLongSetBuilderSequential();
             invert(builder, rit, maximumPosition);
             return builder.getOrderedLongSet();
+        }
+    }
+
+    @Override
+    public void ixInvert(
+            final LongChunk<OrderedRowKeys> keys,
+            final WritableLongChunk<? super OrderedRowKeys> positions) {
+        final RowKeysChunkBuilderSequential builder = new RowKeysChunkBuilderSequential(positions);
+        if (keys.size() == 0) {
+            return;
+        }
+        invert(builder, new RowKeysChunkRangeIterator(keys), Long.MAX_VALUE);
+        if (positions.size() != keys.size()) {
+            throw new IllegalArgumentException("keys argument has elements not in the rowSet");
         }
     }
 

@@ -94,7 +94,7 @@ For example, open `engine/table/src/main/java/io/deephaven/engine/table/impl/Que
 t = emptyTable(10).update("X = ii").where("X > 5")
 ```
 
-While execution is paused in a command you ran from the console, that command holds the [update graph](../../conceptual/dag.md#update-graph-ug-cycles)'s lock. [Ticking tables](../../conceptual/table-types.md) stop updating, and other console commands wait, until you resume. The tables then catch up.
+While execution is paused in a command you ran from the console, that command holds the [update graph](../../conceptual/dag.md#update-graph-cycles)'s lock. [Ticking tables](../../conceptual/table-types.md) stop updating, and other console commands wait, until you resume. The tables then catch up.
 
 **Debugging your own Groovy scripts**: Breakpoints in your own Groovy scripts don't bind. That's true for scripts typed into the console and for `.groovy` files loaded with [Application Mode](../application-mode.md). Deephaven compiles each script at runtime into a class with a generated name in the `io.deephaven.dynamic` package, and IntelliJ can't match that class to your file. Instead:
 

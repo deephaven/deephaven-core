@@ -13,7 +13,7 @@ A query can achieve the same results by using either [`transform`](./transform.m
 ```python syntax
 PartitionedTable.proxy(
   require_matching_keys: bool = True,
-  sanity_check_joins: bool = False
+  sanity_check_joins: bool = True
 ) -> PartitionedTableProxy
 ```
 
@@ -35,7 +35,7 @@ Whether to check that for proxied join operations, a given join key only occurs 
 > [!CAUTION]
 > `PartitionedTable` transforms and proxies produce different results than on a single-table join (e.g., `natural_join`), `where_in`, or `where_not_in` when the filter or join keys span partitions. You must ensure that your data's keys map to appropriate partitions to enable correct answers.
 >
-> When the argument `sanityCheckJoins` to the `proxy` method is true, the engine validates that join keys exist only in a single partition, but it does not validate that a key exists in the same partition in both the left and right table.
+> When the `sanity_check_joins` argument to the `proxy` method is `True` (the default), the engine validates that join keys exist only in a single partition. This check also applies to `where_in` and `where_not_in`. The engine does not validate that a key exists in the same partition in both the left and right table.
 
 ## Returns
 

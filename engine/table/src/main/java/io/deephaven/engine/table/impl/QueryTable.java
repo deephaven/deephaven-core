@@ -62,7 +62,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -1541,8 +1540,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
 
                     return memoizeResult(MemoizedOperationKey.filter(extractedFilters), () -> {
-                        try (final SafeCloseable ignored = Arrays.stream(extractedFilters)
-                                .map(filter -> filter.beginOperation(this)).collect(SafeCloseableList.COLLECTOR)) {
+                        try (final SafeCloseable ignored = WhereFilter.beginOperations(this, extractedFilters)) {
                             // Identify which data indexes we might use during this operation and create a map
                             // from filter to data index.
                             final Map<WhereFilter, DataIndex> filterDataIndexMap = USE_DATA_INDEX_FOR_WHERE
@@ -1804,7 +1802,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                     checkInitiateOperation();
                     final SelectAndViewAnalyzer.Mode mode;
                     if (isRefreshing()) {
-                        if (!isFlat() && ((flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE)
+                        if (!isFlat() && isAppendOnly()) {
+                            // rows of an append-only table never change position, so the result is stored densely
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_POSITIONAL;
+                        } else if (!isFlat() && ((flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE)
                                 || (flavor == Flavor.Select && USE_REDIRECTED_COLUMNS_FOR_SELECT))) {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_REFRESHING;
                         } else {
@@ -1812,7 +1813,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                     } else {
                         if (flavor == Flavor.Update && exceedsMaximumStaticSelectOverhead()) {
-                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_STATIC;
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_POSITIONAL;
                         } else {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_STATIC;
                         }
@@ -1845,7 +1846,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     try (final SafeCloseable ignored1 = liveResultCapture != null ? liveResultCapture::release : null) {
                         try (final RowSet emptyRowSet = RowSetFactory.empty();
                                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
-                                        new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
+                                        new SelectAndViewAnalyzer.UpdateHelper(rowSet, fakeUpdate)) {
 
                             try {
                                 try {
@@ -1874,13 +1875,18 @@ public class QueryTable extends BaseTable<QueryTable> {
                             }
                         }
 
-                        final TrackingRowSet resultRowSet = analyzer.flatResult() && !rowSet.isFlat()
-                                ? RowSetFactory.flat(rowSet.size()).toTracking()
-                                : rowSet;
+                        // a refreshing flat result grows its own row set, as the parent's may not stay contiguous
+                        final TrackingRowSet resultRowSet =
+                                analyzer.flatResult() && (isRefreshing() || !rowSet.isFlat())
+                                        ? analyzerContext.getFlatResultRowSet()
+                                        : rowSet;
                         final Map<String, ColumnSource<?>> newMap = analyzerContext.getPublishedColumnSources();
                         final TableDefinition resultDef = TableDefinition.inferFrom(this, newMap);
                         resultTable = new QueryTable(resultDef, resultRowSet, newMap);
                         if (liveResultCapture != null) {
+                            if (analyzer.flatResult()) {
+                                resultTable.setFlat();
+                            }
                             analyzer.startTrackingPrev();
                             final Map<String, String[]> effects = analyzerContext.calcEffects();
                             final SelectOrUpdateListener soul = new SelectOrUpdateListener(
@@ -2669,24 +2675,15 @@ public class QueryTable extends BaseTable<QueryTable> {
             ws.ensureCapacity(newCapacity);
         }
 
-        final int baseSize = baseRowSet.intSize();
-        long[] destOffsetHolder = new long[] {destOffset};
-        // For each key on the snapshotting side
-        triggerRowSet.forAllRowKeys(snapshotKey -> {
-            final long doff = destOffsetHolder[0];
-            destOffsetHolder[0] += baseSize;
-            try (final RowSet destRowSet = RowSetFactory.fromRange(doff, doff + baseSize - 1)) {
-                SnapshotUtils.copyStampColumns(triggerColumns, snapshotKey, dest, destRowSet);
-                SnapshotUtils.copyDataColumns(baseColumns, baseRowSet, dest, destRowSet, false);
-            }
-        });
+        SnapshotUtils.copyStampColumnsRepeated(triggerColumns, triggerRowSet, dest, destOffset, baseRowSet.size());
+        SnapshotUtils.copyDataColumnsRepeated(baseColumns, baseRowSet, dest, destOffset, triggerRowSet.size());
         return newCapacity;
     }
 
     private Table snapshotHistory(final String nuggetName, final Table baseTable,
             Collection<? extends JoinAddition> stampColumns) {
         return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(),
-                () -> ((QueryTable) withAttributes(Map.of(APPEND_ONLY_TABLE_ATTRIBUTE, TRUE)))
+                () -> ((QueryTable) assertAppendOnly())
                         .maybeViewForSnapshot(stampColumns)
                         .snapshotHistoryInternal(baseTable));
     }
@@ -2694,12 +2691,16 @@ public class QueryTable extends BaseTable<QueryTable> {
     private Table snapshotHistoryInternal(final Table baseTable) {
         checkInitiateBinaryOperation(this, baseTable);
 
-        // resultColumns initially contains the trigger columns, then we insert the base columns into it
-        final Map<String, WritableColumnSource<?>> resultColumns = SnapshotUtils
+        // the result holds the trigger columns, followed by the base columns
+        final Map<String, WritableColumnSource<?>> triggerColumns = SnapshotUtils
                 .createColumnSourceMap(this.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
         final Map<String, WritableColumnSource<?>> baseColumns = SnapshotUtils.createColumnSourceMap(
                 baseTable.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
+        final Map<String, WritableColumnSource<?>> resultColumns = new LinkedHashMap<>(triggerColumns);
         resultColumns.putAll(baseColumns);
+        if (resultColumns.size() != triggerColumns.size() + baseColumns.size()) {
+            throwColumnConflictMessage(triggerColumns.keySet(), baseColumns.keySet());
+        }
 
         // BTW, we don't track prev because these items are never modified or removed.
         final Table triggerTable = this; // For readability.
@@ -2712,33 +2713,39 @@ public class QueryTable extends BaseTable<QueryTable> {
         final TrackingWritableRowSet resultRowSet = RowSetFactory.flat(initialSize).toTracking();
         final QueryTable result = new QueryTable(resultRowSet, resultColumns);
         if (isRefreshing()) {
-            addUpdateListener(
-                    new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet(), this, result) {
-                        private long lastKey = rowSet.lastRowKey();
-
-                        @Override
-                        public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
-                            Assert.assertion(removed.size() == 0, "removed.size() == 0", removed, "removed");
-                            Assert.assertion(modified.size() == 0, "modified.size() == 0", modified, "modified");
-                            if (added.size() == 0 || baseTable.size() == 0) {
-                                return;
-                            }
-                            Assert.assertion(added.firstRowKey() > lastKey, "added.firstRowKey() > lastRowKey", lastKey,
-                                    "lastRowKey", added, "added");
-                            final long oldSize = resultRowSet.size();
-                            final long newSize = snapshotHistoryInternal(triggerStampColumns, added,
-                                    snapshotDataColumns, baseTable.getRowSet(), resultColumns, oldSize);
-                            final RowSet addedSnapshots = RowSetFactory.fromRange(oldSize, newSize - 1);
-                            resultRowSet.insert(addedSnapshots);
-                            lastKey = rowSet.lastRowKey();
-                            result.notifyListeners(addedSnapshots, RowSetFactory.empty(), RowSetFactory.empty());
-                        }
-
-                        @Override
-                        public boolean canExecute(final long step) {
-                            return baseTable.satisfied(step) && super.canExecute(step);
-                        }
-                    });
+            final ListenerRecorder triggerRecorder =
+                    new ListenerRecorder("snapshotHistory (triggerTable)", this, result);
+            final ListenerRecorder baseRecorder = baseTable.isRefreshing()
+                    ? new ListenerRecorder("snapshotHistory (baseTable)", baseTable, result)
+                    : null;
+            final MergedListener listener = new MergedListener(
+                    baseRecorder == null ? List.of(triggerRecorder) : List.of(triggerRecorder, baseRecorder),
+                    Collections.emptyList(), "snapshotHistory" + resultColumns.keySet(), result) {
+                @Override
+                protected void process() {
+                    if (!triggerRecorder.recordedVariablesAreValid()) {
+                        return;
+                    }
+                    // the trigger is asserted append-only, so its updates hold only rows added after its last row
+                    final RowSet added = triggerRecorder.getAdded();
+                    if (added.isEmpty() || baseTable.isEmpty()) {
+                        return;
+                    }
+                    final long oldSize = resultRowSet.size();
+                    final long newSize = snapshotHistoryInternal(triggerStampColumns, added,
+                            snapshotDataColumns, baseTable.getRowSet(), resultColumns, oldSize);
+                    final RowSet addedSnapshots = RowSetFactory.fromRange(oldSize, newSize - 1);
+                    resultRowSet.insert(addedSnapshots);
+                    result.notifyListeners(addedSnapshots, RowSetFactory.empty(), RowSetFactory.empty());
+                }
+            };
+            triggerRecorder.setMergedListener(listener);
+            if (baseRecorder != null) {
+                baseRecorder.setMergedListener(listener);
+            }
+            listener.addRecordersToParents();
+            result.addParentReference(listener);
+            result.setAttribute(APPEND_ONLY_TABLE_ATTRIBUTE, TRUE);
         }
         result.setFlat();
         return result;
@@ -2793,8 +2800,9 @@ public class QueryTable extends BaseTable<QueryTable> {
         // use a SingleValueColumnSource for these columns.
         final Map<String, SingleValueColumnSource<?>> triggerColumns = new LinkedHashMap<>();
         for (String stampColumn : stampColumns) {
-            final Class<?> stampColumnType = getColumnSource(stampColumn).getType();
-            triggerColumns.put(stampColumn, SingleValueColumnSource.getSingleValueColumnSource(stampColumnType));
+            final ColumnSource<?> stampSource = getColumnSource(stampColumn);
+            triggerColumns.put(stampColumn, SingleValueColumnSource.getSingleValueColumnSource(
+                    stampSource.getType(), stampSource.getComponentType()));
         }
 
         // make our result table
@@ -2806,8 +2814,19 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         final QueryTable result =
                 new QueryTable(RowSetFactory.empty().toTracking(), allColumns);
+        final ListenerRecorder triggerRecorder;
+        final ListenerRecorder baseRecorder;
+        if (isRefreshing()) {
+            triggerRecorder = new ListenerRecorder("snapshot (triggerTable)", this, result);
+            baseRecorder = !lazySnapshot && baseTable.isRefreshing()
+                    ? new ListenerRecorder("snapshot (baseTable)", baseTable, result)
+                    : null;
+        } else {
+            triggerRecorder = null;
+            baseRecorder = null;
+        }
         final SnapshotInternalListener listener = new SnapshotInternalListener(this, lazySnapshot, baseTable,
-                result, triggerColumns, baseColumns, result.getRowSet().writableCast());
+                result, triggerColumns, baseColumns, result.getRowSet().writableCast(), triggerRecorder, baseRecorder);
 
         if (doInitialSnapshot) {
             if (!isRefreshing() && baseTable.isRefreshing() && !lazySnapshot) {
@@ -2828,7 +2847,12 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         if (isRefreshing()) {
             startTrackingPrev(allColumns.values());
-            addUpdateListener(listener);
+            triggerRecorder.setMergedListener(listener);
+            if (baseRecorder != null) {
+                baseRecorder.setMergedListener(listener);
+            }
+            listener.addRecordersToParents();
+            result.addParentReference(listener);
         }
 
         result.setFlat();
@@ -2920,25 +2944,28 @@ public class QueryTable extends BaseTable<QueryTable> {
             resultTable.getRowSet().writableCast().initializePreviousValue();
         } else if (doInitialSnapshot) {
             SnapshotIncrementalListener.copyRowsToResult(baseTable.getRowSet(), this,
-                    SnapshotUtils.generateSnapshotDataColumns(baseTable),
+                    SnapshotUtils.dataColumnCopy(SnapshotUtils.generateSnapshotDataColumns(baseTable), resultColumns),
                     triggerColumns, resultColumns);
             resultTable.getRowSet().writableCast().insert(baseTable.getRowSet());
             resultTable.getRowSet().writableCast().initializePreviousValue();
         } else if (isRefreshing()) {
             // we are not doing an initial snapshot, but are refreshing so need to take a snapshot of our (static)
             // base table on the very first tick of the triggerTable
+            final SnapshotUtils.DataColumnCopy dataCopy =
+                    SnapshotUtils.dataColumnCopy(SnapshotUtils.generateSnapshotDataColumns(baseTable), resultColumns);
             addUpdateListener(
                     new ListenerImpl("snapshotIncremental (triggerTable)", this, resultTable) {
                         @Override
                         public void onUpdate(TableUpdate upstream) {
                             SnapshotIncrementalListener.copyRowsToResult(baseTable.getRowSet(),
-                                    QueryTable.this, SnapshotUtils.generateSnapshotDataColumns(baseTable),
-                                    triggerColumns, resultColumns);
+                                    QueryTable.this, dataCopy, triggerColumns, resultColumns);
                             resultTable.getRowSet().writableCast().insert(baseTable.getRowSet());
                             resultTable.notifyListeners(resultTable.getRowSet().copy(),
                                     RowSetFactory.empty(),
                                     RowSetFactory.empty());
+                            // the result can never change again, so it no longer depends on the trigger
                             removeUpdateListener(this);
+                            resultTable.unmanage(this);
                         }
                     });
         }
@@ -3376,7 +3403,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         final MemoizedResult<R> cachedResult = getMemoizedResult(memoKey, ensureCachedOperations());
-        return cachedResult.getOrCompute(operation);
+        return cachedResult.getOrCompute(operation, !currentThreadMustNotWaitForOtherThreads());
     }
 
     private Map<MemoizedOperationKey, MemoizedResult<?>> ensureCachedOperations() {

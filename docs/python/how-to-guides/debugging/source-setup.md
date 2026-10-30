@@ -12,7 +12,7 @@ When building Deephaven from source code for development tasks, you can debug bo
 
 This guide walks through setting up the remote debugging server in [PyCharm](https://www.jetbrains.com/pycharm/) for source-built Deephaven. The debug server is a paid PyCharm feature. [Prerequisites](#prerequisites) lists which editions include it.
 
-PyCharm's debugger reaches only Python code. Deephaven's query engine is Java, so PyCharm can't step into it. The engine includes [table operations](../../conceptual/table-operations-overview.md), the [update graph](../../conceptual/dag.md#update-graph-ug-cycles), and the compiled [formula](../formulas.md) code. PyCharm can still step into Python functions that a [formula](../formulas.md) calls. To debug the engine, see [Debug Deephaven's Java engine](#debug-deephavens-java-engine).
+PyCharm's debugger reaches only Python code. Deephaven's query engine is Java, so PyCharm can't step into it. The engine includes [table operations](../../conceptual/table-operations-overview.md), the [update graph](../../conceptual/dag.md#update-graph-cycles), and the compiled [formula](../formulas.md) code. PyCharm can still step into Python functions that a [formula](../formulas.md) calls. To debug the engine, see [Debug Deephaven's Java engine](#debug-deephavens-java-engine).
 
 ## Prerequisites
 
@@ -142,7 +142,7 @@ t_new = t.update("Y = udf(X)")
 
 Each time the [`update`](../../reference/table-operations/select/update.md) call evaluates `udf`, execution pauses inside `udf`, and PyCharm shows its local variables, such as `x`. The table has 10 rows, so execution pauses 10 times. Click **Resume Program** to continue to the next row.
 
-While execution is paused in a command you ran from the console, that command holds the [update graph](../../conceptual/dag.md#update-graph-ug-cycles)'s lock. [Ticking tables](../../conceptual/table-types.md) stop updating, and other console commands wait, until you resume. The tables then catch up.
+While execution is paused in a command you ran from the console, that command holds the [update graph](../../conceptual/dag.md#update-graph-cycles)'s lock. [Ticking tables](../../conceptual/table-types.md) stop updating, and other console commands wait, until you resume. The tables then catch up.
 
 In PyCharm, you can now use the full debugger. Step through Deephaven's Python source code, set breakpoints, and inspect variables and intermediate values inside function calls. Many resources are available online for using PyCharm's debugger, and [JetBrains' guide to the debug console](https://www.jetbrains.com/help/pycharm/using-debug-console.html) is a good starting point.
 

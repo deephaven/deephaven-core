@@ -164,12 +164,12 @@ You can write many filters as either a [formula filter](../how-to-guides/filters
 
 Filter performance also depends on how a table is structured. Some columns let a filter skip data without reading every row. Two common kinds are:
 
-- A [partitioning column](../how-to-guides/data-import-export/parquet-formats.md#parquet-file-directories) is a column whose values split the table's data into separate files or directories on disk. Each partition holds one value, so the engine checks that value once and skips partitions that don't match.
+- A [partitioning column](../how-to-guides/data-import-export/parquet-formats.md#key-value-partitioned-directories) is a column whose values split the table's data into separate files or directories on disk. Each partition holds one value, so the engine checks that value once and skips partitions that don't match.
 - An indexed column is a column with a [data index](../how-to-guides/data-indexes.md), which maps each key value to the rows that hold it. The engine looks up matching rows in the index instead of checking every row.
 
 Within one [`where`](../reference/table-operations/filter/where.md), the engine can change the order of the filters when the data supports it:
 
-- It applies filters on [partitioning columns](../how-to-guides/data-import-export/parquet-formats.md#parquet-file-directories) first.
+- It applies filters on [partitioning columns](../how-to-guides/data-import-export/parquet-formats.md#key-value-partitioned-directories) first.
 - It can move filters that support [predicate pushdown](../how-to-guides/predicate-pushdown.md) ahead of others by estimated cost, and the estimate takes [data indexes](../how-to-guides/data-indexes.md) into account.
 
 When the engine can't reorder filters, it applies them in the order you give them, so put the filter that removes the most rows first. [Predicate pushdown](../how-to-guides/predicate-pushdown.md) lists the order in which the engine prioritizes the filters it can reorder.

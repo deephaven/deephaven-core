@@ -64,7 +64,7 @@
                 "path": "getting-started/crash-course/export-data.md"
               },
               {
-                "label": "Configure your Instance",
+                "label": "Configure your instance",
                 "path": "getting-started/crash-course/configure.md"
               },
               {
@@ -257,10 +257,6 @@
               {
                 "label": "SQL queries in Deephaven",
                 "path": "how-to-guides/data-import-export/execute-sql-queries.md"
-              },
-              {
-                "label": "Table data service",
-                "path": "how-to-guides/data-import-export/table-data-service.md"
               },
               {
                 "label": "URI",

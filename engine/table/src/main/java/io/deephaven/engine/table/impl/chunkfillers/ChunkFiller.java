@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.chunkfillers;
 
 import io.deephaven.engine.table.ElementSource;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.LongChunk;
@@ -52,11 +51,4 @@ public interface ChunkFiller {
 
     void fillPrevByIndices(ElementSource src, LongChunk<? extends RowKeys> chunk,
             WritableChunk<? super Values> dest);
-
-    /**
-     * This doesn't really belong here but we are putting it here for now for implementation convenience. In the long
-     * run we may want to generalize this functionality, or, at the very least, move it to some "ColumnSourceFiller"
-     * class.
-     */
-    void fillFromSingleValue(ElementSource src, long srcKey, WritableColumnSource dest, RowSequence destKeys);
 }
