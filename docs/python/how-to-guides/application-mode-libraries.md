@@ -71,7 +71,7 @@ for name, value in app.fields.items():
 
 ## Known issues
 
-- Removing a field with `del` removes it, but the statement always raises a `KeyError`, even though the field is gone. To remove a field without that error, call `removeField(name)` from a Groovy Application Mode script; see [remove a field in Groovy](/core/groovy/docs/how-to-guides/application-mode-libraries#remove-a-field).
+- Removing a field with `del` removes it, but the statement always raises a `KeyError`, even though the field is gone. To remove a field without that error, call `app.j_object.removeField(name)`. A Groovy script can't change this Python application's fields, so the [Groovy remove-a-field example](/core/groovy/docs/how-to-guides/application-mode-libraries#remove-a-field) needs its own Groovy server.
 - The Python API doesn't accept a description for a field. To set one, use Groovy; see [add or replace a field in Groovy](/core/groovy/docs/how-to-guides/application-mode-libraries#add-or-replace-a-field).
 
 ## Related documentation
