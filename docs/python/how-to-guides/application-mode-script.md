@@ -2,104 +2,95 @@
 title: Use Application Mode scripts
 ---
 
-Deephaven's Application Mode allows you to [initialize server state](./application-mode.md). This guide covers how to use Application Mode scripts, allowing users to run Python or Groovy code when Deephaven is launched.
-
-Application Mode scripts are defined by having `type=script` set in the Application Mode `*.app` [configuration file](../reference/app-mode/application-mode-config.md). Once defined, any Python or Groovy scripts in the `file_N` settings of the config file will run when Deephaven is launched.
-
-Deephaven's [deephaven-examples Github organization](https://github.com/deephaven-examples) contains many examples of applications that use Application Mode. Specific tutorial examples can also be found for [Groovy](https://github.com/deephaven-examples/app-mode-init-groovy) and [Python](https://github.com/deephaven-examples/app-mode-init-python).
+Deephaven's Application Mode allows you to [initialize server state](./application-mode.md). This guide covers how to use Application Mode scripts, which run Python or Groovy code when Deephaven launches. The examples package the script in a Docker image. You can use the same `app.d` directory (the folder that holds your scripts and a `*.app` [config file](../reference/app-mode/application-mode-config.md)) with any launch that sets the [`deephaven.application.dir`](../reference/app-mode/application-mode-config.md) property. This guide shows the Docker setup.
 
 ## Application Mode config file
 
-Deephaven expects your Application Mode configuration to be defined in a [config file](../reference/app-mode/application-mode-config.md) that ends with `.app` (this is the `*.app` file). For using Application Mode with scripts, you need to set:
+Deephaven reads settings for [Application Mode](./application-mode.md) from a [config file](../reference/app-mode/application-mode-config.md) whose name ends in `.app`. Call this file the `*.app` file. For using Application Mode with scripts, you need to set:
 
-- `type=script`.
-- The `scriptType` to `python` or `groovy`.
-- `enabled=True`.
-- Set `id` to an identifier of your choice.
-- Set `name` to an application name of your choice.
-- Your `file_N` files to run. Your `file_N` files can be any number of files defined relative to where the `*.app` file is located when packaged into Docker.
+- `type` set to `script`
+- `scriptType` set to `python` or `groovy`, matching the server's console language
+- `id` set to an identifier of your choice
+- `name` set to an application name of your choice
+- `file_N` set to the path of one script, where `N` is an integer such as `0` or `1`. Scripts run in ascending numeric order.
 
-The following shows an example of a typical `.app` file:
+`enabled` is optional and defaults to `true`. Set `enabled=false` to skip an application without deleting its file.
 
-```
-type=script
-scriptType=python
-enabled=true
-id=hello.world
-name=Hello World!
-file_0=./helloWorld.py
-```
-
-## Application Mode config files directory
-
-When running Deephaven via Docker, you can set an additional [configuration property](./configuration/docker-application.md), `-Ddeephaven.application.dir`, to the directory containing your code listed in your [application mode configuration file](#application-mode-config-file).
-
-The following Dockerfile builds on Deephaven's Python base Dockerfile by setting the application mode directory to `/app.d` within the Docker container.
-
-```yml
-services:
-  deephaven:
-    image: ghcr.io/deephaven/server:${VERSION:-latest}
-    ports:
-      - "${DEEPHAVEN_PORT:-10000}:10000"
-    volumes:
-      - ./data:/data
-    environment:
-      - START_OPTS=-Xmx4g -Ddeephaven.application.dir=/app.d
-```
+A complete example is in [Packaging your files](#packaging-your-files) below.
 
 ## Packaging your files
 
-Although Deephaven doesn't have strict rules on where your `*.app` [config files](../reference/app-mode/application-mode-config.md) and your script files are located, it may be easier to put them in the same directory. This will simplify packaging your files with Docker, and will simplify your `file_N` paths in your `*.app` [config file](../reference/app-mode/application-mode-config.md).
+Deephaven doesn't require your script files to be in any particular place, as long as each `file_N` path points to them. Relative `file_N` paths resolve against the application directory (`app.d`), the directory that holds the `*.app` files. Absolute paths are used as they are.
 
-In this example, we will show what a directory `app.d` will look like, and how to package it with a Deephaven Dockerfile.
+Each `*.app` [config file](../reference/app-mode/application-mode-config.md) must sit directly in the `app.d` directory, not in a subdirectory. Putting the `*.app` and script files in the same directory simplifies packaging your files with Docker and simplifies your `file_N` paths.
 
-### app.d directory
+In this example, we show what a directory `app.d` looks like and how to package it with a `Dockerfile` for Deephaven.
 
-Let's say we have two Python scripts (`init_tables.py` and `functions.py`) we want to run when Deephaven is launched. We can make a directory called `app.d`, and put these scripts in there.
+### Scripts and config file
+
+Let's say we have a Python script (`init_tables.py`) we want to run when Deephaven launches. We can make a directory called `app.d`, and put the script in there.
 
 ```
 app.d
   init_tables.py
-  functions.py
 ```
 
-Now we need to define our `*.app` [config file](../reference/app-mode/application-mode-config.md) to run these Python scripts on launch. Let's name it `config.app` and use the following to define it.
+The script creates `my_table`, a five-row table. Each row's `Hello` value is the string that `hello` returns.
 
+```python order=my_table
+from deephaven import empty_table
+
+
+def hello() -> str:
+    return "Hello world"
+
+
+my_table = empty_table(5).update(["Value = i", "Hello = hello()"])
 ```
+
+Next, define our `*.app` [config file](../reference/app-mode/application-mode-config.md) to run this Python script on launch. Let's name it `config.app` and use the following to define it. Put it in the `app.d` directory next to the script.
+
+```properties
 type=script
 scriptType=python
 enabled=true
 id=app-mode-init
 name=App Mode Init
 file_0=./init_tables.py
-file_1=./functions.py
-```
-
-Once we put our `config.app` file in our `app.d` directory, it will look like this.
-
-```
-app.d
-  init_tables.py
-  functions.py
-  config.app
 ```
 
 ### Dockerfile
 
-Since we have bundled our scripts and [config files](../reference/app-mode/application-mode-config.md) in the same directory (`app.d`), our Dockerfile simply needs to copy over this directory when we build it. All we need to do is make our own Dockerfile that extends the Deephaven server image, and copies over our `app.d` directory.
+Since we have bundled our scripts and [config files](../reference/app-mode/application-mode-config.md) in the same directory (`app.d`), our `Dockerfile` needs to copy over this directory when we build it. The `Dockerfile` extends the Deephaven server image and copies over our `app.d` directory.
 
-This Dockerfile assumes that it is in the same directory as `app.d`.
+This `Dockerfile` assumes that it is in the same directory as `app.d`.
 
-```
-FROM ghcr.io/deephaven/server:${VERSION:-latest}
+```dockerfile
+ARG VERSION=latest
+FROM ghcr.io/deephaven/server:${VERSION}
 COPY app.d /app.d
 ```
 
-Because you're now extending Deephaven's Docker image, you will need to build this locally and tag it with an appropriate tag. You will also need to reference this tag in your `docker-compose.yml` file.
+Because you're extending Deephaven's Docker image, you need to build this locally and tag it, for example `my-app/deephaven-app`. You also need to reference this tag in your `docker-compose.yml` file. The build command is in [Putting it all together](#putting-it-all-together).
 
-```
-docker build --tag my-app/deephaven-grpc .
+### docker-compose.yml
+
+The `docker-compose.yml` file sets the [`deephaven.application.dir`](../reference/app-mode/application-mode-config.md) property to `/app.d`, the directory where the `Dockerfile` copies `app.d`. Pass the property through `START_OPTS`, as described in the [Docker application configuration guide](./configuration/docker-application.md).
+
+The `ports` and `volumes` lines are optional. They publish the server port and mount a `data` folder. In the `environment` line, only `-Ddeephaven.application.dir=/app.d` is specific to Application Mode. `-Xmx4g` sets the JVM heap size and is optional.
+
+Our `docker-compose.yml` file should look like this.
+
+```yml
+services:
+  deephaven:
+    image: my-app/deephaven-app
+    ports:
+      - "${DEEPHAVEN_PORT:-10000}:10000"
+    volumes:
+      - ./data:/data
+    environment:
+      - START_OPTS=-Xmx4g -Ddeephaven.application.dir=/app.d
 ```
 
 ## Putting it all together
@@ -112,55 +103,20 @@ my-project
   docker-compose.yml
   app.d
     init_tables.py
-    functions.py
     config.app
 ```
 
-Our Dockerfile should contain the following.
-
-```
-FROM ghcr.io/deephaven/server
-COPY app.d /app.d
-```
-
-Assuming we build and tag our Docker image with `docker build --tag my-app/deephaven-grpc .`, our `docker-compose.yml` file should look like this.
-
-```yml
-services:
-  deephaven:
-    image: ghcr.io/deephaven/deephaven-grpc:${VERSION:-latest}
-    ports:
-      - "${DEEPHAVEN_PORT:-10000}:10000"
-    volumes:
-      - ./data:/data
-    environment:
-      - START_OPTS=-Xmx4g -Ddeephaven.application.dir=/app.d
-```
-
-After building the Docker image, we can now launch the application by running `docker compose up`.
-
-## Example scripts
-
-This section contains examples of code that can be included in a Python script. When configured, this code will run when Deephaven is launched.
-
-```python order=my_table
-from deephaven import empty_table
-
-
-def hello() -> str:
-    print("Hello world")
-
-
-my_table = empty_table(5).update(["Value = i", "Hello = hello()"])
-```
-
-## A real world example
-
-For a real world example of application mode being used in a Deephaven deployment, check out the [Deephaven Parquet viewer](https://github.com/devinrsmith/deephaven-parquet-viewer/tree/main), which uses Deephaven's application mode to view Parquet files from the command line.
+Build and tag the image with `docker build --tag my-app/deephaven-app .`, then run `docker compose up` to launch the application. When the server is up, open the Deephaven web IDE at `localhost:10000` in a browser. `my_table` is available in the query scope with five rows.
 
 ## Related documentation
 
-- [Application mode config file](../reference/app-mode/application-mode-config.md)
-- [How to use Application Mode video](https://youtu.be/GNm1k0WiRMQ)
+- [Docker application configuration](./configuration/docker-application.md)
 - [How to use Application Mode libraries](./application-mode-libraries.md)
 - [Initialize server state with Application Mode](./application-mode.md)
+- [Application Mode config file](../reference/app-mode/application-mode-config.md)
+- [`update`](../reference/table-operations/select/update.md)
+- [`empty_table`](../reference/table-operations/create/emptyTable.md)
+- [Pydoc](/core/pydoc/code/deephaven.table_factory.html#deephaven.table_factory.empty_table)
+- [deephaven-examples GitHub organization](https://github.com/deephaven-examples)
+- [Application Mode Python tutorial repository](https://github.com/deephaven-examples/app-mode-init-python)
+- [How to use Application Mode video](https://youtu.be/GNm1k0WiRMQ)
