@@ -204,9 +204,9 @@ public interface JobScheduler {
      * does.
      *
      * <p>
-     * The {@link OperationInitializerJobScheduler} returns or throws only once {@code future} is done and every job
-     * submitted to it has finished, except those the calling thread is itself running, so that a job may wait for the
-     * others, and so that, called outside its jobs, {@link #getAccumulatedPerformance} has nothing left to wait for.
+     * The {@link OperationInitializerJobScheduler} returns or throws only once {@code future} is done and, when called
+     * outside its jobs, every job submitted to it has finished, so that {@link #getAccumulatedPerformance} has nothing
+     * left to wait for; one of its jobs that waits needs only {@code future}, since the others may be waiting too.
      * While it waits, it runs on the calling thread any of its jobs that no other thread has started, and blocks only
      * while every job it has not finished is running on another thread. The wait therefore never depends on a job
      * queued behind threads that are themselves waiting, perhaps for a lock the calling thread holds. An interrupt

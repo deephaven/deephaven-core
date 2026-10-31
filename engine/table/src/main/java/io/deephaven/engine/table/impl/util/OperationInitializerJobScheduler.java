@@ -52,7 +52,8 @@ public class OperationInitializerJobScheduler implements JobScheduler {
     private final Queue<Job> pendingJobs = new ConcurrentLinkedQueue<>();
     /**
      * The jobs of this scheduler that the current thread is running. A job that waits in {@link #awaitCompletion} waits
-     * for every job but these, which cannot finish before it does.
+     * only for its future, since the jobs running on other threads may be waiting too, perhaps for it; a thread waiting
+     * outside the scheduler's jobs waits for them all.
      */
     private final ThreadLocal<MutableInt> jobsRunningOnThisThread = ThreadLocal.withInitial(MutableInt::new);
 
@@ -116,7 +117,7 @@ public class OperationInitializerJobScheduler implements JobScheduler {
                 continue;
             }
             synchronized (outstandingJobs) {
-                if (future.isDone() && outstandingJobs.get() == jobsRunningHere.intValue()) {
+                if (future.isDone() && (jobsRunningHere.intValue() > 0 || outstandingJobs.get() == 0)) {
                     break;
                 }
                 if (pendingJobs.isEmpty()) {
@@ -205,12 +206,12 @@ public class OperationInitializerJobScheduler implements JobScheduler {
 
     /**
      * Decrement the number of outstanding jobs, either because we could not submit the job or because the job
-     * completed. Waiters are signalled at every count, since a waiter running jobs of its own waits for the count to
-     * reach their number rather than zero.
+     * completed.
      */
     private void decrementOutstandingJobs() {
-        outstandingJobs.decrementAndGet();
-        signalWaiters();
+        if (outstandingJobs.decrementAndGet() == 0) {
+            signalWaiters();
+        }
     }
 
     @Override

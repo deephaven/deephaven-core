@@ -262,38 +262,75 @@ public class TestOperationInitializerJobScheduler {
     }
 
     /**
-     * A job that waits for its own scheduler waits for every job but itself, whether the pool or the waiting thread
-     * runs it.
+     * A job that waits for a future its own scheduler's jobs complete runs those jobs no other thread has started, and
+     * returns once the future is done, whether the pool or the waiting thread runs it.
      */
     @Test
-    public void testJobAwaitingItsOwnSchedulerWaitsForTheOthers() throws InterruptedException {
+    public void testJobAwaitingItsOwnSchedulerRunsTheOthers() throws InterruptedException {
         for (final boolean poolBlocked : new boolean[] {false, true}) {
             if (poolBlocked) {
                 blockPool();
             }
             withTimeout(() -> {
                 final OperationInitializerJobScheduler scheduler = new OperationInitializerJobScheduler(pool);
+                final int siblings = 4;
                 final AtomicInteger siblingsRun = new AtomicInteger();
                 final CompletableFuture<Integer> done = new CompletableFuture<>();
                 scheduler.submit(ExecutionContext.getContext(), () -> {
-                    final CompletableFuture<Void> siblingsSubmitted = new CompletableFuture<>();
-                    for (int ii = 0; ii < 4; ++ii) {
-                        scheduler.submit(ExecutionContext.getContext(), siblingsRun::incrementAndGet, null,
-                                done::completeExceptionally);
+                    final CompletableFuture<Integer> siblingsDone = new CompletableFuture<>();
+                    for (int ii = 0; ii < siblings; ++ii) {
+                        scheduler.submit(ExecutionContext.getContext(), () -> {
+                            if (siblingsRun.incrementAndGet() == siblings) {
+                                siblingsDone.complete(siblings);
+                            }
+                        }, null, siblingsDone::completeExceptionally);
                     }
-                    siblingsSubmitted.complete(null);
                     try {
-                        scheduler.awaitCompletion(siblingsSubmitted);
+                        done.complete(scheduler.awaitCompletion(siblingsDone));
+                    } catch (final InterruptedException | ExecutionException e) {
+                        done.completeExceptionally(e);
+                    }
+                }, null, done::completeExceptionally);
+                assertThat(scheduler.awaitCompletion(done)).isEqualTo(siblings);
+                assertThat(siblingsRun.get()).isEqualTo(siblings);
+                assertThat(scheduler.getAccumulatedPerformance()).isNotNull();
+            });
+        }
+    }
+
+    /**
+     * Two jobs running at once on different threads, each waiting for a future of its own, both return: neither waits
+     * for the other to finish.
+     */
+    @Test
+    public void testConcurrentJobsAwaitingTheirOwnSchedulerBothReturn() throws InterruptedException {
+        withTimeout(() -> {
+            final OperationInitializerJobScheduler scheduler = new OperationInitializerJobScheduler(pool);
+            final CountDownLatch bothRunning = new CountDownLatch(2);
+            final AtomicInteger returned = new AtomicInteger();
+            final Set<Thread> waitingThreads = ConcurrentHashMap.newKeySet();
+            final CompletableFuture<Void> done = new CompletableFuture<>();
+            for (int ii = 0; ii < 2; ++ii) {
+                scheduler.submit(ExecutionContext.getContext(), () -> {
+                    waitingThreads.add(Thread.currentThread());
+                    bothRunning.countDown();
+                    try {
+                        // each waits only once the other is running, so each is outstanding while the other waits
+                        assertThat(bothRunning.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
+                        scheduler.awaitCompletion(CompletableFuture.completedFuture(null));
                     } catch (final InterruptedException | ExecutionException e) {
                         done.completeExceptionally(e);
                         return;
                     }
-                    done.complete(siblingsRun.get());
+                    if (returned.incrementAndGet() == 2) {
+                        done.complete(null);
+                    }
                 }, null, done::completeExceptionally);
-                assertThat(scheduler.awaitCompletion(done)).isEqualTo(4);
-                assertThat(scheduler.getAccumulatedPerformance()).isNotNull();
-            });
-        }
+            }
+            scheduler.awaitCompletion(done);
+            assertThat(waitingThreads).hasSize(2);
+            assertThat(returned.get()).isEqualTo(2);
+        });
     }
 
     /** An inline initializer runs each job inside submit, so there is nothing left for the waiting thread to run. */
