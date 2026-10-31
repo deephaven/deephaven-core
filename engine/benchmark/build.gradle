@@ -92,6 +92,7 @@ createJmhTask('jmhRunPercentileBy', 'PercentileByBenchmark', [], '12g')
 createJmhTask('jmhRunPositionalSelect', 'PositionalSelectBenchmark', [], '32g')
 createJmhTask('jmhRunPositionalSelectRead', 'PositionalSelectReadBenchmark', [], '16g')
 createJmhTask('jmhRunSparseStorage', 'SparseStorageBenchmark', [], '16g')
+createJmhTask('jmhRunSparseUpdate', ['SparseUpdateBenchmark', '-prof=gc'], [], '16g')
 
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
