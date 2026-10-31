@@ -33,6 +33,7 @@ public class ReplicateSourcesAndChunks {
     public static void main(String... args) throws IOException {
         replicateArraySources();
         replicateSparseArraySources();
+        replicateAdaptiveSparseArraySources();
         replicateSingleValues();
 
         charToAllButBoolean(TASK,
@@ -560,6 +561,17 @@ public class ReplicateSourcesAndChunks {
         replicateLongSparseArraySource();
         replicateBooleanSparseArraySource();
         replicateObjectSparseArraySource();
+    }
+
+    private static void replicateAdaptiveSparseArraySources() throws IOException {
+        charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharCompactLeaf.java");
+        charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharSortedLeaf.java");
+        charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharBitmapLeaf.java");
+        charToAllButBoolean(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterAdaptiveSparseArraySource.java");
     }
 
     private static void replicateChunks() throws IOException {
