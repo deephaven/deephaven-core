@@ -261,6 +261,41 @@ public class TestOperationInitializerJobScheduler {
         });
     }
 
+    /**
+     * A job that waits for its own scheduler waits for every job but itself, whether the pool or the waiting thread
+     * runs it.
+     */
+    @Test
+    public void testJobAwaitingItsOwnSchedulerWaitsForTheOthers() throws InterruptedException {
+        for (final boolean poolBlocked : new boolean[] {false, true}) {
+            if (poolBlocked) {
+                blockPool();
+            }
+            withTimeout(() -> {
+                final OperationInitializerJobScheduler scheduler = new OperationInitializerJobScheduler(pool);
+                final AtomicInteger siblingsRun = new AtomicInteger();
+                final CompletableFuture<Integer> done = new CompletableFuture<>();
+                scheduler.submit(ExecutionContext.getContext(), () -> {
+                    final CompletableFuture<Void> siblingsSubmitted = new CompletableFuture<>();
+                    for (int ii = 0; ii < 4; ++ii) {
+                        scheduler.submit(ExecutionContext.getContext(), siblingsRun::incrementAndGet, null,
+                                done::completeExceptionally);
+                    }
+                    siblingsSubmitted.complete(null);
+                    try {
+                        scheduler.awaitCompletion(siblingsSubmitted);
+                    } catch (final InterruptedException | ExecutionException e) {
+                        done.completeExceptionally(e);
+                        return;
+                    }
+                    done.complete(siblingsRun.get());
+                }, null, done::completeExceptionally);
+                assertThat(scheduler.awaitCompletion(done)).isEqualTo(4);
+                assertThat(scheduler.getAccumulatedPerformance()).isNotNull();
+            });
+        }
+    }
+
     /** An inline initializer runs each job inside submit, so there is nothing left for the waiting thread to run. */
     @Test
     public void testInlineInitializerLeavesNothingToRun() throws InterruptedException, ExecutionException {

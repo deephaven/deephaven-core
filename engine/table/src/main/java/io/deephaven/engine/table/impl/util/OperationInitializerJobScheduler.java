@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraphWaitGuard;
 import io.deephaven.util.SafeCloseable;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,6 +50,11 @@ public class OperationInitializerJobScheduler implements JobScheduler {
      * submitter withdraws is removed; any other claimed job is discarded when a waiting thread polls it.
      */
     private final Queue<Job> pendingJobs = new ConcurrentLinkedQueue<>();
+    /**
+     * The jobs of this scheduler that the current thread is running. A job that waits in {@link #awaitCompletion} waits
+     * for every job but these, which cannot finish before it does.
+     */
+    private final ThreadLocal<MutableInt> jobsRunningOnThisThread = ThreadLocal.withInitial(MutableInt::new);
 
     public OperationInitializerJobScheduler(@NotNull final OperationInitializer operationInitializer) {
         this.operationInitializer = operationInitializer;
@@ -94,6 +100,7 @@ public class OperationInitializerJobScheduler implements JobScheduler {
     public <T> T awaitCompletion(@NotNull final CompletableFuture<T> future)
             throws InterruptedException, ExecutionException {
         future.whenComplete((result, failure) -> signalWaiters());
+        final MutableInt jobsRunningHere = jobsRunningOnThisThread.get();
         boolean interrupted = false;
         while (true) {
             // always clear the interrupt, so that the wait below blocks
@@ -109,7 +116,7 @@ public class OperationInitializerJobScheduler implements JobScheduler {
                 continue;
             }
             synchronized (outstandingJobs) {
-                if (future.isDone() && outstandingJobs.get() == 0) {
+                if (future.isDone() && outstandingJobs.get() == jobsRunningHere.intValue()) {
                     break;
                 }
                 if (pendingJobs.isEmpty()) {
@@ -198,12 +205,12 @@ public class OperationInitializerJobScheduler implements JobScheduler {
 
     /**
      * Decrement the number of outstanding jobs, either because we could not submit the job or because the job
-     * completed.
+     * completed. Waiters are signalled at every count, since a waiter running jobs of its own waits for the count to
+     * reach their number rather than zero.
      */
     private void decrementOutstandingJobs() {
-        if (outstandingJobs.decrementAndGet() == 0) {
-            signalWaiters();
-        }
+        outstandingJobs.decrementAndGet();
+        signalWaiters();
     }
 
     @Override
@@ -302,6 +309,8 @@ public class OperationInitializerJobScheduler implements JobScheduler {
          *        thread waiting for this scheduler's jobs
          */
         private void run(final boolean accumulatePerformance) {
+            final MutableInt jobsRunningHere = jobsRunningOnThisThread.get();
+            jobsRunningHere.increment();
             try (final SafeCloseable ignored = waitsForbidden ? UpdateGraphWaitGuard.forbidWaits() : null) {
                 if (accumulatePerformance) {
                     wrapRunnable(executionContext, runnable, description, onError);
@@ -309,6 +318,7 @@ public class OperationInitializerJobScheduler implements JobScheduler {
                     JobScheduler.runJob(executionContext, runnable, description, onError);
                 }
             } finally {
+                jobsRunningHere.decrement();
                 release();
                 // even if the performance accounting failed, or getAccumulatedPerformance would wait for this job
                 // forever
