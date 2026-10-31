@@ -464,6 +464,21 @@ public class FloatAdaptiveSparseArraySource extends AbstractColumnSource<Float>
     }
 
     /**
+     * Store the offsets within their leaf of {@code leafKeys}, which are all within one leaf, in {@code offsets}.
+     */
+    private static void leafOffsets(final RowSequence leafKeys, final int[] offsets, final MutableInt offsetCount) {
+        offsetCount.set(0);
+        leafKeys.forAllRowKeyRanges((final long rangeFirst, final long rangeLast) -> {
+            int next = offsetCount.get();
+            final int lastOffset = (int) (rangeLast & INDEX_MASK);
+            for (int offset = (int) (rangeFirst & INDEX_MASK); offset <= lastOffset; ++offset) {
+                offsets[next++] = offset;
+            }
+            offsetCount.set(next);
+        });
+    }
+
+    /**
      * @return {@code compact}, or a bitmap leaf with its values that replaces it in {@code level2} if it is a sorted
      *         leaf and {@code newSize} is more than a sorted leaf holds
      */
@@ -534,9 +549,7 @@ public class FloatAdaptiveSparseArraySource extends AbstractColumnSource<Float>
                 if (alignedDivisions) {
                     continue;
                 }
-                offsetCount.set(0);
-                leafKeys.forAllRowKeys(
-                        (final long key) -> offsets[offsetCount.getAndIncrement()] = (int) (key & INDEX_MASK));
+                leafOffsets(leafKeys, offsets, offsetCount);
                 if (trackPrevious) {
                     recordPrevious(firstKey, level2, block2, offsets, count);
                 }
@@ -1212,17 +1225,16 @@ public class FloatAdaptiveSparseArraySource extends AbstractColumnSource<Float>
                 final int count = leafKeys.intSize();
                 final Level2 level2 = ensureLevel2(firstKey);
                 final int block2 = block2(firstKey);
-                if (trackPrevious || level2.getBlock(block2) == null) {
-                    offsetCount.set(0);
-                    leafKeys.forAllRowKeys(
-                            (final long key) -> offsets[offsetCount.getAndIncrement()] = (int) (key & INDEX_MASK));
+                float[] block = level2.getBlock(block2);
+                final FloatCompactLeaf existing = block == null ? level2.getCompact(block2) : null;
+                // a new leaf of more values than a compact leaf holds becomes a full block, which needs no offsets
+                if (trackPrevious || (block == null && (existing != null || count <= compactThreshold))) {
+                    leafOffsets(leafKeys, offsets, offsetCount);
                 }
                 if (trackPrevious) {
                     recordPrevious(firstKey, level2, block2, offsets, count);
                 }
-                float[] block = level2.getBlock(block2);
                 if (block == null) {
-                    final FloatCompactLeaf existing = level2.getCompact(block2);
                     final int absent = existing == null ? count : existing.countAbsent(offsets, count);
                     final FloatCompactLeaf compact = prepareCompactLeaf(level2, block2, existing, absent);
                     if (compact != null) {
