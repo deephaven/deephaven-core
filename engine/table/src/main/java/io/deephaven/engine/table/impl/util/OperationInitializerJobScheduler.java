@@ -40,13 +40,13 @@ public class OperationInitializerJobScheduler implements JobScheduler {
     private final ThreadLocal<BasePerformanceEntry> currentBaseEntry = new ThreadLocal<>();
     /**
      * The jobs submitted that have not finished or been withdrawn, whichever thread runs them. Its monitor guards the
-     * waits for jobs, and is notified when a job is submitted, when the count reaches zero, and when a future being
-     * waited for completes.
+     * waits for jobs, and is notified when a job is queued for waiting threads, when the count reaches zero, and when a
+     * future being waited for completes.
      */
     private final AtomicInteger outstandingJobs = new AtomicInteger(0);
     /**
-     * The jobs submitted, in order, for a waiting thread to claim. A job a pool thread claims or the submitter
-     * withdraws is removed; any other claimed job is discarded when a waiting thread polls it.
+     * The jobs the pool has accepted, in order, for a waiting thread to claim. A job a pool thread claims or the
+     * submitter withdraws is removed; any other claimed job is discarded when a waiting thread polls it.
      */
     private final Queue<Job> pendingJobs = new ConcurrentLinkedQueue<>();
 
@@ -72,16 +72,20 @@ public class OperationInitializerJobScheduler implements JobScheduler {
                         executionContext.getUpdateGraph()));
         final Job job = new Job(executionContext, runnable, description, onError, waitsForbidden);
         outstandingJobs.incrementAndGet();
-        pendingJobs.add(job);
-        signalWaiters();
         try {
             operationInitializer.submit(job::runFromInitializer);
         } catch (Throwable t) {
             // A job that never started is withdrawn here, releasing its count, or getAccumulatedPerformance would wait
             // forever for it; an Error counts too, OutOfMemoryError when the pool cannot make a thread in practice. A
-            // job that an inline initializer or a waiting thread claimed releases its count itself, whatever it threw.
+            // job that an inline initializer claimed releases its count itself, whatever it threw.
             job.withdraw();
             throw t;
+        }
+        // Waiting threads see only accepted jobs. One the pool or an inline initializer has already claimed is skipped
+        // here, or discarded when a waiting thread polls it.
+        if (!job.isClaimed()) {
+            pendingJobs.add(job);
+            signalWaiters();
         }
         return job;
     }
@@ -231,10 +235,12 @@ public class OperationInitializerJobScheduler implements JobScheduler {
      */
     private final class Job implements Submission {
 
-        private final ExecutionContext executionContext;
-        private final Runnable runnable;
-        private final LogOutputAppendable description;
-        private final Consumer<Exception> onError;
+        // Read only by the thread that claims this job, and cleared once it has run or been withdrawn, so that the
+        // no-op entry the pool may still queue for it retains none of the work.
+        private ExecutionContext executionContext;
+        private Runnable runnable;
+        private LogOutputAppendable description;
+        private Consumer<Exception> onError;
         private final boolean waitsForbidden;
         private final AtomicBoolean claimed = new AtomicBoolean();
 
@@ -256,14 +262,28 @@ public class OperationInitializerJobScheduler implements JobScheduler {
             return claimed.compareAndSet(false, true);
         }
 
+        /** @return whether a thread has claimed this job to run it, or withdrawn it */
+        private boolean isClaimed() {
+            return claimed.get();
+        }
+
         @Override
         public boolean withdraw() {
             if (!tryClaim()) {
                 return false;
             }
+            release();
             pendingJobs.remove(this);
             decrementOutstandingJobs();
             return true;
+        }
+
+        /** Drop the work, which this job will not run again. */
+        private void release() {
+            executionContext = null;
+            runnable = null;
+            description = null;
+            onError = null;
         }
 
         /** What the operation initializer runs: this job, unless another thread has claimed or withdrawn it. */
@@ -289,6 +309,7 @@ public class OperationInitializerJobScheduler implements JobScheduler {
                     JobScheduler.runJob(executionContext, runnable, description, onError);
                 }
             } finally {
+                release();
                 // even if the performance accounting failed, or getAccumulatedPerformance would wait for this job
                 // forever
                 decrementOutstandingJobs();
