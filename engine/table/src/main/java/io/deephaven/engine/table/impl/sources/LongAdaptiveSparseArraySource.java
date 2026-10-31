@@ -176,11 +176,10 @@ public class LongAdaptiveSparseArraySource extends AbstractColumnSource<Long>
         }
 
         private long estimateSize() {
-            long size = 32;
             if (children == null) {
-                return oneChild == null ? size : size + oneChild.estimateSize();
+                return oneChild == null ? 0 : oneChild.estimateSize();
             }
-            size += 16 + (long) children.length * Long.BYTES;
+            long size = (long) children.length * Long.BYTES;
             for (final Level1 child : children) {
                 if (child != null) {
                     size += child.estimateSize();
@@ -219,11 +218,10 @@ public class LongAdaptiveSparseArraySource extends AbstractColumnSource<Long>
         }
 
         private long estimateSize() {
-            long size = 32;
             if (children == null) {
-                return oneChild == null ? size : size + oneChild.estimateSize();
+                return oneChild == null ? 0 : oneChild.estimateSize();
             }
-            size += 16 + (long) children.length * Long.BYTES;
+            long size = (long) children.length * Long.BYTES;
             for (final Level2 child : children) {
                 if (child != null) {
                     size += child.estimateSize();
@@ -350,25 +348,23 @@ public class LongAdaptiveSparseArraySource extends AbstractColumnSource<Long>
         }
 
         private long estimateSize() {
-            long size = 40;
             if (oneIndex != MANY_CHILDREN) {
                 if (oneBlock != null) {
-                    size += 16 + (long) BLOCK_SIZE * Long.BYTES;
-                } else if (oneCompact != null) {
-                    size += oneCompact.estimateSize();
+                    return (long) BLOCK_SIZE * Long.BYTES;
                 }
-                return size;
+                return oneCompact == null ? 0 : oneCompact.estimateSize();
             }
+            long size = 0;
             if (blocks != null) {
-                size += 16 + (long) blocks.length * Long.BYTES;
+                size += (long) blocks.length * Long.BYTES;
                 for (final long[] block : blocks) {
                     if (block != null) {
-                        size += 16 + (long) BLOCK_SIZE * Long.BYTES;
+                        size += (long) BLOCK_SIZE * Long.BYTES;
                     }
                 }
             }
             if (compacts != null) {
-                size += 16 + (long) compacts.length * Long.BYTES;
+                size += (long) compacts.length * Long.BYTES;
                 for (final LongCompactLeaf compact : compacts) {
                     if (compact != null) {
                         size += compact.estimateSize();
@@ -1287,6 +1283,7 @@ public class LongAdaptiveSparseArraySource extends AbstractColumnSource<Long>
     }
 
     @TestUseOnly
+    @Override
     public long estimateSize() {
         return root.estimateSize();
     }
