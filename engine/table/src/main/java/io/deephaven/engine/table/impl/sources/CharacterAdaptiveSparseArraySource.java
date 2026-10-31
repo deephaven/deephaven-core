@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
@@ -21,7 +22,9 @@ import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.sparse.CharBitmapLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.CharCompactLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.CharSortedLeaf;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -45,6 +48,12 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * </ul>
  * A leaf takes the next representation when a write would take it past its threshold, and never returns to a smaller
  * one.
+ * <p>
+ * When tracking previous values, the first write to a row in a cycle records the row's value in a second page table of
+ * previous values. Each leaf of that table holds the recorded offsets of its leaf as a sorted or bitmap leaf, following
+ * the same thresholds, or, once more offsets are recorded than a compact leaf holds, a full block that snapshots the
+ * whole leaf. A row without a recorded value has not changed this cycle, so its previous value is its current value.
+ * The previous values are discarded when the cycle completes.
  */
 public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Character>
         implements MutableColumnSourceGetDefaults.ForChar /* MIXIN_IMPLS */, WritableColumnSource<Character>,
@@ -59,6 +68,25 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
     private final int sortedThreshold;
     private final int compactThreshold;
     private final Level0 root = new Level0();
+
+    /**
+     * Commits the previous values at the end of each cycle in which a value changed; null when not tracking previous
+     * values.
+     */
+    private transient UpdateCommitter<CharacterAdaptiveSparseArraySource> prevFlusher;
+    /**
+     * The previous values recorded this cycle, or null if none have been recorded.
+     */
+    private transient Level0 prevRoot;
+
+    /**
+     * The blocks, block2 structures and block1 structures to release at the end of this cycle, as passed to
+     * {@link #clearBlocks(RowSet, RowSet, RowSet, boolean)}.
+     */
+    private transient RowSet blocksToClear;
+    private transient RowSet blocks2ToClear;
+    private transient RowSet blocks1ToClear;
+    private transient boolean emptyResult;
 
     /**
      * Whether the values are known never to change, as for the result of a static select.
@@ -120,6 +148,12 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
                 oneIndex = MANY_CHILDREN;
             }
             children[index] = child;
+        }
+
+        private void clear() {
+            oneIndex = NO_CHILD;
+            oneChild = null;
+            children = null;
         }
 
         private long estimateSize() {
@@ -258,6 +292,24 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
             compacts[index] = compact;
         }
 
+        /** Release the leaf at {@code index}, if any. */
+        private void clear(final int index) {
+            if (oneIndex == index) {
+                oneBlock = null;
+                oneCompact = null;
+                return;
+            }
+            if (oneIndex != MANY_CHILDREN) {
+                return;
+            }
+            if (blocks != null) {
+                blocks[index] = null;
+            }
+            if (compacts != null) {
+                compacts[index] = null;
+            }
+        }
+
         private long estimateSize() {
             long size = 40;
             if (oneIndex != MANY_CHILDREN) {
@@ -304,6 +356,13 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
      * @return the bottom page table level covering {@code key}, or null if none has been allocated
      */
     private Level2 getLevel2(final long key) {
+        return getLevel2(root, key);
+    }
+
+    /**
+     * @return the bottom page table level of {@code root} covering {@code key}, or null if none has been allocated
+     */
+    private static Level2 getLevel2(final Level0 root, final long key) {
         final Level1 level1 = root.get(block0(key));
         return level1 == null ? null : level1.get(block1(key));
     }
@@ -312,6 +371,13 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
      * @return the bottom page table level covering {@code key}, allocating the levels as needed
      */
     private Level2 ensureLevel2(final long key) {
+        return ensureLevel2(root, key);
+    }
+
+    /**
+     * @return the bottom page table level of {@code root} covering {@code key}, allocating the levels as needed
+     */
+    private static Level2 ensureLevel2(final Level0 root, final long key) {
         final int block0 = block0(key);
         Level1 level1 = root.get(block0);
         if (level1 == null) {
@@ -359,13 +425,175 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
             level2.setBlock(block2, toBlock(compact));
             return null;
         }
-        if (newSize > sortedThreshold && compact instanceof CharSortedLeaf) {
-            final CharBitmapLeaf bitmap = new CharBitmapLeaf(newSize);
-            ((CharSortedLeaf) compact).copyTo(bitmap);
-            level2.setCompact(block2, bitmap);
-            return bitmap;
+        return maybeLeaveSortedTier(level2, block2, compact, newSize);
+    }
+
+    /**
+     * @return {@code compact}, or a bitmap leaf with its values that replaces it in {@code level2} if it is a sorted
+     *         leaf and {@code newSize} is more than a sorted leaf holds
+     */
+    private CharCompactLeaf maybeLeaveSortedTier(
+            final Level2 level2,
+            final int block2,
+            final CharCompactLeaf compact,
+            final int newSize) {
+        if (newSize <= sortedThreshold || !(compact instanceof CharSortedLeaf)) {
+            return compact;
         }
-        return compact;
+        final CharBitmapLeaf bitmap = new CharBitmapLeaf(newSize);
+        ((CharSortedLeaf) compact).copyTo(bitmap);
+        level2.setCompact(block2, bitmap);
+        return bitmap;
+    }
+
+    /**
+     * @return whether writes must record previous values
+     */
+    private boolean shouldTrackPrevious() {
+        return prevFlusher != null;
+    }
+
+    /**
+     * @return the bottom level of the previous value page table covering {@code key}, allocating as needed
+     */
+    private Level2 ensurePrevLevel2(final long key) {
+        if (prevRoot == null) {
+            prevRoot = new Level0();
+            prevFlusher.maybeActivate();
+        }
+        return ensureLevel2(prevRoot, key);
+    }
+
+    /**
+     * Record the current value at {@code offset} of the leaf at {@code block2} of {@code level2} (null if not
+     * allocated), which covers {@code key}, as its previous value, unless this cycle has already recorded it.
+     */
+    private void recordPrevious(final long key, final Level2 level2, final int block2, final int offset) {
+        final Level2 prevLevel2 = ensurePrevLevel2(key);
+        if (prevLevel2.getBlock(block2) != null) {
+            return;
+        }
+        CharCompactLeaf recorded = prevLevel2.getCompact(block2);
+        if (recorded != null && recorded.contains(offset)) {
+            return;
+        }
+        final char value = getValue(level2, block2, offset);
+        recorded = preparePrevLeaf(prevLevel2, block2, recorded, 1, level2);
+        if (recorded != null) {
+            recorded.put(offset, value);
+        }
+    }
+
+    /**
+     * Record the current values at {@code offsets[0, count)}, ascending and distinct, of the leaf at {@code block2} of
+     * {@code level2} (null if not allocated), which covers {@code key}, as their previous values, except those this
+     * cycle has already recorded.
+     */
+    private void recordPrevious(
+            final long key,
+            final Level2 level2,
+            final int block2,
+            final int[] offsets,
+            final int count) {
+        final Level2 prevLevel2 = ensurePrevLevel2(key);
+        if (prevLevel2.getBlock(block2) != null) {
+            return;
+        }
+        CharCompactLeaf recorded = prevLevel2.getCompact(block2);
+        final int absent = recorded == null ? count : recorded.countAbsent(offsets, count);
+        if (absent == 0) {
+            return;
+        }
+        recorded = preparePrevLeaf(prevLevel2, block2, recorded, absent, level2);
+        if (recorded == null) {
+            return;
+        }
+        for (int ii = 0; ii < count; ++ii) {
+            final int offset = offsets[ii];
+            if (!recorded.contains(offset)) {
+                recorded.put(offset, getValue(level2, block2, offset));
+            }
+        }
+    }
+
+    /**
+     * Make the previous value leaf at {@code block2} of {@code prevLevel2}, whose recorded offsets are {@code recorded}
+     * (or null if none), ready to record {@code count} more offsets of the leaf at {@code block2} of {@code level2}
+     * (null if not allocated).
+     *
+     * @return the leaf to record into, or null if the previous value leaf is now a snapshot of the whole leaf
+     */
+    private CharCompactLeaf preparePrevLeaf(
+            final Level2 prevLevel2,
+            final int block2,
+            final CharCompactLeaf recorded,
+            final int count,
+            final Level2 level2) {
+        final int newSize = (recorded == null ? 0 : recorded.size()) + count;
+        if (newSize > compactThreshold) {
+            // the offsets not yet recorded have not changed this cycle, so their current values are previous values
+            final char[] snapshot = newBlock();
+            if (level2 != null) {
+                final char[] block = level2.getBlock(block2);
+                if (block != null) {
+                    System.arraycopy(block, 0, snapshot, 0, BLOCK_SIZE);
+                } else {
+                    final CharCompactLeaf compact = level2.getCompact(block2);
+                    if (compact != null) {
+                        compact.copyTo(snapshot);
+                    }
+                }
+            }
+            if (recorded != null) {
+                recorded.copyTo(snapshot);
+            }
+            prevLevel2.setBlock(block2, snapshot);
+            return null;
+        }
+        if (recorded == null) {
+            final CharCompactLeaf newRecorded = newCompactLeaf(count);
+            prevLevel2.setCompact(block2, newRecorded);
+            return newRecorded;
+        }
+        return maybeLeaveSortedTier(prevLevel2, block2, recorded, newSize);
+    }
+
+    /**
+     * @return the current value at {@code offset} of the leaf at {@code block2} of {@code level2}, which may be null
+     */
+    private static char getValue(final Level2 level2, final int block2, final int offset) {
+        if (level2 == null) {
+            return NULL_CHAR;
+        }
+        final char[] block = level2.getBlock(block2);
+        if (block != null) {
+            return block[offset];
+        }
+        final CharCompactLeaf compact = level2.getCompact(block2);
+        return compact == null ? NULL_CHAR : compact.get(offset);
+    }
+
+    /**
+     * @return the value of {@code rowKey} at the start of this cycle
+     */
+    private char getPrevValue(final long rowKey) {
+        final Level0 localPrevRoot = prevRoot;
+        if (localPrevRoot != null && rowKey >= 0) {
+            final Level2 prevLevel2 = getLevel2(localPrevRoot, rowKey);
+            if (prevLevel2 != null) {
+                final int block2 = block2(rowKey);
+                final int offset = (int) (rowKey & INDEX_MASK);
+                final char[] snapshot = prevLevel2.getBlock(block2);
+                if (snapshot != null) {
+                    return snapshot[offset];
+                }
+                final CharCompactLeaf recorded = prevLevel2.getCompact(block2);
+                if (recorded != null && recorded.contains(offset)) {
+                    return recorded.get(offset);
+                }
+            }
+        }
+        return getChar(rowKey);
     }
 
     // region allocateNullFilledBlock
@@ -404,13 +632,52 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
 
     @Override
     public final char getPrevChar(final long rowKey) {
-        return getChar(rowKey);
+        return getPrevValue(rowKey);
     }
     // endregion primitive get
 
     @Override
     public void startTrackingPrevValues() {
-        throw new UnsupportedOperationException(getClass().getSimpleName() + " does not track previous values");
+        if (prevFlusher != null) {
+            throw new IllegalStateException(
+                    "Can't call startTrackingPrevValues() twice: " + getClass().getCanonicalName());
+        }
+        prevFlusher = new UpdateCommitter<>(this, updateGraph, CharacterAdaptiveSparseArraySource::commitUpdates);
+    }
+
+    private void commitUpdates() {
+        prevRoot = null;
+        if (blocksToClear == null) {
+            return;
+        }
+        try (final RowSet ignored1 = blocksToClear;
+                final RowSet ignored2 = blocks2ToClear;
+                final RowSet ignored3 = blocks1ToClear) {
+            if (emptyResult) {
+                root.clear();
+                return;
+            }
+            blocksToClear.forAllRowKeys((final long block) -> {
+                final Level2 level2 = getLevel2(block << LOG_BLOCK_SIZE);
+                if (level2 != null) {
+                    level2.clear(block2(block << LOG_BLOCK_SIZE));
+                }
+            });
+            blocks2ToClear.forAllRowKeys((final long blockIndex2) -> {
+                final long key = blockIndex2 << BLOCK1_SHIFT;
+                final Level1 level1 = root.get(block0(key));
+                if (level1 != null) {
+                    level1.set(block1(key), null);
+                }
+            });
+            blocks1ToClear
+                    .forAllRowKeys((final long blockIndex1) -> root.set(block0(blockIndex1 << BLOCK0_SHIFT), null));
+        } finally {
+            blocksToClear = null;
+            blocks2ToClear = null;
+            blocks1ToClear = null;
+            emptyResult = false;
+        }
     }
 
     @Override
@@ -440,6 +707,9 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
         final Level2 level2 = ensureLevel2(key);
         final int block2 = block2(key);
         final int offset = (int) (key & INDEX_MASK);
+        if (shouldTrackPrevious()) {
+            recordPrevious(key, level2, block2, offset);
+        }
         final char[] block = level2.getBlock(block2);
         if (block != null) {
             block[offset] = value;
@@ -473,17 +743,27 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
         final int offset = (int) (key & INDEX_MASK);
         final char[] block = level2.getBlock(block2);
         if (block != null) {
-            block[offset] = NULL_CHAR;
+            if (block[offset] != NULL_CHAR) {
+                if (shouldTrackPrevious()) {
+                    recordPrevious(key, level2, block2, offset);
+                }
+                block[offset] = NULL_CHAR;
+            }
             return;
         }
         final CharCompactLeaf compact = level2.getCompact(block2);
-        if (compact != null) {
+        if (compact != null && compact.contains(offset)) {
+            if (shouldTrackPrevious()) {
+                recordPrevious(key, level2, block2, offset);
+            }
             compact.remove(offset);
         }
     }
 
     @Override
     public void setNull(@NotNull final RowSequence rowSequence) {
+        final boolean trackPrevious = shouldTrackPrevious();
+        final int[] offsets = trackPrevious ? new int[BLOCK_SIZE] : null;
         rowSequence.forAllRowKeyRanges((final long firstKey, final long lastKey) -> {
             long key = firstKey;
             while (true) {
@@ -495,10 +775,28 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
                     final int lastOffset = (int) (lastKeyInLeaf & INDEX_MASK);
                     final char[] block = level2.getBlock(block2);
                     if (block != null) {
+                        if (trackPrevious) {
+                            // the offsets that already hold null are unchanged, so need no previous value
+                            int count = 0;
+                            for (int offset = firstOffset; offset <= lastOffset; ++offset) {
+                                if (block[offset] != NULL_CHAR) {
+                                    offsets[count++] = offset;
+                                }
+                            }
+                            if (count > 0) {
+                                recordPrevious(key, level2, block2, offsets, count);
+                            }
+                        }
                         Arrays.fill(block, firstOffset, lastOffset + 1, NULL_CHAR);
                     } else {
                         final CharCompactLeaf compact = level2.getCompact(block2);
                         if (compact != null) {
+                            if (trackPrevious) {
+                                final int count = compact.copyOffsets(firstOffset, lastOffset, offsets);
+                                if (count > 0) {
+                                    recordPrevious(key, level2, block2, offsets, count);
+                                }
+                            }
                             compact.removeRange(firstOffset, lastOffset);
                         }
                     }
@@ -528,28 +826,62 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
     @Override
     public void clearBlocks(final RowSet blocksToClear, final RowSet removeBlocks2, final RowSet removeBlocks1,
             final boolean empty) {
-        // without previous values, nothing is released at the end of a cycle
+        if (prevFlusher == null) {
+            // without previous values, the rows of a static result are never removed
+            return;
+        }
+        if (this.blocksToClear != null) {
+            throw new IllegalStateException("Cannot call clearBlocks multiple times on the same cycle!");
+        }
+        Assert.eqNull(blocks2ToClear, "blocks2ToClear");
+        Assert.eqNull(blocks1ToClear, "blocks1ToClear");
+        this.blocksToClear = blocksToClear.copy();
+        this.blocks2ToClear = removeBlocks2.copy();
+        this.blocks1ToClear = removeBlocks1.copy();
+        this.emptyResult = empty;
+        prevFlusher.maybeActivate();
     }
 
     /**
-     * The leaf being read by a chunked fill, and the position in the destination chunk.
+     * The leaf being read by a chunked fill, and the position in the destination chunk. A fill of previous values also
+     * reads the leaf's previous values: a snapshot of the whole leaf, or the recorded offsets.
      */
     private static final class FillState {
+        private final Level0 prevRoot;
         private long maxKeyInCurrentLeaf = -1;
         private char[] block;
         private CharCompactLeaf compact;
+        private char[] prevSnapshot;
+        private CharCompactLeaf prevRecorded;
         private int destOffset;
+
+        /**
+         * @param prevRoot the previous values to read, or null to read current values
+         */
+        private FillState(final Level0 prevRoot) {
+            this.prevRoot = prevRoot;
+        }
 
         private void readLeaf(final CharacterAdaptiveSparseArraySource source, final long key) {
             maxKeyInCurrentLeaf = key | INDEX_MASK;
+            final int block2 = block2(key);
             final Level2 level2 = source.getLevel2(key);
             if (level2 == null) {
                 block = null;
                 compact = null;
             } else {
-                final int block2 = block2(key);
                 block = level2.getBlock(block2);
                 compact = block == null ? level2.getCompact(block2) : null;
+            }
+            if (prevRoot != null) {
+                final Level2 prevLevel2 = getLevel2(prevRoot, key);
+                if (prevLevel2 == null) {
+                    prevSnapshot = null;
+                    prevRecorded = null;
+                } else {
+                    prevSnapshot = prevLevel2.getBlock(block2);
+                    prevRecorded = prevSnapshot == null ? prevLevel2.getCompact(block2) : null;
+                }
             }
         }
 
@@ -559,6 +891,37 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
             }
             return compact == null ? NULL_CHAR : compact.get(offset);
         }
+
+        private char getPrev(final int offset) {
+            if (prevSnapshot != null) {
+                return prevSnapshot[offset];
+            }
+            if (prevRecorded != null && prevRecorded.contains(offset)) {
+                return prevRecorded.get(offset);
+            }
+            return get(offset);
+        }
+
+        /**
+         * Fill {@code chunk} at {@link #destOffset} with the values of offsets {@code firstOffset} through
+         * {@code firstOffset + length - 1}.
+         */
+        private void fillRange(final WritableCharChunk<? super Values> chunk, final int firstOffset, final int length) {
+            if (prevSnapshot != null) {
+                chunk.copyFromTypedArray(prevSnapshot, firstOffset, destOffset, length);
+                return;
+            }
+            if (block != null) {
+                chunk.copyFromTypedArray(block, firstOffset, destOffset, length);
+            } else if (compact != null) {
+                compact.fillRange(firstOffset, firstOffset + length - 1, chunk, destOffset);
+            } else {
+                chunk.fillWithNullValue(destOffset, length);
+            }
+            if (prevRecorded != null) {
+                prevRecorded.overlayRange(firstOffset, firstOffset + length - 1, chunk, destOffset);
+            }
+        }
     }
 
     @Override
@@ -566,11 +929,7 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final RowSequence rowSequence) {
-        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            fillByKeys(dest.asWritableCharChunk(), rowSequence);
-        } else {
-            fillByRanges(dest.asWritableCharChunk(), rowSequence);
-        }
+        fill(dest.asWritableCharChunk(), rowSequence, null);
     }
 
     @Override
@@ -578,11 +937,28 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final RowSequence rowSequence) {
-        fillChunk(context, dest, rowSequence);
+        fill(dest.asWritableCharChunk(), rowSequence, prevRoot);
     }
 
-    private void fillByRanges(final WritableCharChunk<? super Values> chunk, final RowSequence rowSequence) {
-        final FillState state = new FillState();
+    /**
+     * Fill {@code chunk} with the values of {@code rowSequence}, previous values if {@code prevRoot} is not null.
+     */
+    private void fill(
+            final WritableCharChunk<? super Values> chunk,
+            final RowSequence rowSequence,
+            final Level0 prevRoot) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            fillByKeys(chunk, rowSequence, prevRoot);
+        } else {
+            fillByRanges(chunk, rowSequence, prevRoot);
+        }
+    }
+
+    private void fillByRanges(
+            final WritableCharChunk<? super Values> chunk,
+            final RowSequence rowSequence,
+            final Level0 prevRoot) {
+        final FillState state = new FillState(prevRoot);
         rowSequence.forAllRowKeyRanges((final long firstKey, final long lastKey) -> {
             long key = firstKey;
             while (true) {
@@ -591,14 +967,7 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
                 }
                 final long lastKeyInLeaf = Math.min(lastKey, state.maxKeyInCurrentLeaf);
                 final int length = (int) (lastKeyInLeaf - key + 1);
-                final int firstOffset = (int) (key & INDEX_MASK);
-                if (state.block != null) {
-                    chunk.copyFromTypedArray(state.block, firstOffset, state.destOffset, length);
-                } else if (state.compact != null) {
-                    state.compact.fillRange(firstOffset, firstOffset + length - 1, chunk, state.destOffset);
-                } else {
-                    chunk.fillWithNullValue(state.destOffset, length);
-                }
+                state.fillRange(chunk, (int) (key & INDEX_MASK), length);
                 state.destOffset += length;
                 if (lastKeyInLeaf == lastKey) {
                     break;
@@ -609,14 +978,26 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
         chunk.setSize(state.destOffset);
     }
 
-    private void fillByKeys(final WritableCharChunk<? super Values> chunk, final RowSequence rowSequence) {
-        final FillState state = new FillState();
-        rowSequence.forAllRowKeys((final long key) -> {
-            if (key > state.maxKeyInCurrentLeaf) {
-                state.readLeaf(this, key);
-            }
-            chunk.set(state.destOffset++, state.get((int) (key & INDEX_MASK)));
-        });
+    private void fillByKeys(
+            final WritableCharChunk<? super Values> chunk,
+            final RowSequence rowSequence,
+            final Level0 prevRoot) {
+        final FillState state = new FillState(prevRoot);
+        if (prevRoot == null) {
+            rowSequence.forAllRowKeys((final long key) -> {
+                if (key > state.maxKeyInCurrentLeaf) {
+                    state.readLeaf(this, key);
+                }
+                chunk.set(state.destOffset++, state.get((int) (key & INDEX_MASK)));
+            });
+        } else {
+            rowSequence.forAllRowKeys((final long key) -> {
+                if (key > state.maxKeyInCurrentLeaf) {
+                    state.readLeaf(this, key);
+                }
+                chunk.set(state.destOffset++, state.getPrev((int) (key & INDEX_MASK)));
+            });
+        }
         chunk.setSize(state.destOffset);
     }
 
@@ -645,7 +1026,10 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
 
     @Override
     public CharChunk<Values> getPrevChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
-        return getChunk(context, rowSequence);
+        if (prevRoot == null) {
+            return getChunk(context, rowSequence);
+        }
+        return getPrevChunkByFilling(context, rowSequence).asCharChunk();
     }
     // endregion getChunk
 
@@ -654,8 +1038,25 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
             @NotNull final LongChunk<? extends RowKeys> keys) {
-        final WritableCharChunk<? super Values> chunk = dest.asWritableCharChunk();
-        final FillState state = new FillState();
+        fillUnordered(dest.asWritableCharChunk(), keys, null);
+    }
+
+    @Override
+    public void fillPrevChunkUnordered(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final LongChunk<? extends RowKeys> keys) {
+        fillUnordered(dest.asWritableCharChunk(), keys, prevRoot);
+    }
+
+    /**
+     * Fill {@code chunk} with the values of {@code keys}, previous values if {@code prevRoot} is not null.
+     */
+    private void fillUnordered(
+            final WritableCharChunk<? super Values> chunk,
+            final LongChunk<? extends RowKeys> keys,
+            final Level0 prevRoot) {
+        final FillState state = new FillState(prevRoot);
         long currentLeafKey = -1;
         final int size = keys.size();
         for (int ki = 0; ki < size; ++ki) {
@@ -669,17 +1070,10 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
                 state.readLeaf(this, key);
                 currentLeafKey = leafKey;
             }
-            chunk.set(ki, state.get((int) (key & INDEX_MASK)));
+            final int offset = (int) (key & INDEX_MASK);
+            chunk.set(ki, prevRoot == null ? state.get(offset) : state.getPrev(offset));
         }
         chunk.setSize(size);
-    }
-
-    @Override
-    public void fillPrevChunkUnordered(
-            @NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Values> dest,
-            @NotNull final LongChunk<? extends RowKeys> keys) {
-        fillChunkUnordered(context, dest, keys);
     }
 
     @Override
@@ -709,6 +1103,9 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
         }
         final int[] offsets = ((AdaptiveFillFromContext) context).offsets;
         final CharChunk<? extends Values> values = src.asCharChunk();
+        final boolean trackPrevious = shouldTrackPrevious();
+        final MutableInt offsetCount = new MutableInt();
+        final MutableInt position = new MutableInt();
         int srcOffset = 0;
         try (final RowSequence.Iterator it = rowSequence.getRowSequenceIterator()) {
             while (it.hasMore()) {
@@ -717,13 +1114,19 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
                 final int count = leafKeys.intSize();
                 final Level2 level2 = ensureLevel2(firstKey);
                 final int block2 = block2(firstKey);
+                if (trackPrevious || level2.getBlock(block2) == null) {
+                    offsetCount.set(0);
+                    leafKeys.forAllRowKeys(
+                            (final long key) -> offsets[offsetCount.getAndIncrement()] = (int) (key & INDEX_MASK));
+                }
+                if (trackPrevious) {
+                    recordPrevious(firstKey, level2, block2, offsets, count);
+                }
                 char[] block = level2.getBlock(block2);
                 if (block == null) {
                     final CharCompactLeaf compact =
                             prepareCompactLeaf(level2, block2, level2.getCompact(block2), count);
                     if (compact != null) {
-                        final int[] count1 = {0};
-                        leafKeys.forAllRowKeys((final long key) -> offsets[count1[0]++] = (int) (key & INDEX_MASK));
                         compact.putSorted(offsets, values, srcOffset, count);
                         srcOffset += count;
                         continue;
@@ -734,11 +1137,11 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
                     throw new UnsupportedOperationException("Source chunk is an alias for target data");
                 }
                 final char[] destBlock = block;
-                final int[] position = {srcOffset};
+                position.set(srcOffset);
                 leafKeys.forAllRowKeyRanges((final long rangeFirst, final long rangeLast) -> {
                     final int length = (int) (rangeLast - rangeFirst + 1);
-                    values.copyToTypedArray(position[0], destBlock, (int) (rangeFirst & INDEX_MASK), length);
-                    position[0] += length;
+                    values.copyToTypedArray(position.getAndAdd(length), destBlock, (int) (rangeFirst & INDEX_MASK),
+                            length);
                 });
                 srcOffset += count;
             }
@@ -751,6 +1154,7 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
             @NotNull final Chunk<? extends Values> src,
             @NotNull final LongChunk<RowKeys> keys) {
         final CharChunk<? extends Values> values = src.asCharChunk();
+        final boolean trackPrevious = shouldTrackPrevious();
         final int size = keys.size();
         long currentLeafKey = -1;
         Level2 level2 = null;
@@ -768,6 +1172,9 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
                 }
             }
             final int offset = (int) (key & INDEX_MASK);
+            if (trackPrevious) {
+                recordPrevious(key, level2, block2, offset);
+            }
             final char[] block = level2.getBlock(block2);
             if (block != null) {
                 block[offset] = values.get(ki);

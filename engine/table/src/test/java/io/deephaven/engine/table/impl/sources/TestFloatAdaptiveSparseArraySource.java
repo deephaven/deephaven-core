@@ -7,10 +7,12 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
@@ -18,6 +20,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.mutable.MutableInt;
 import it.unimi.dsi.fastutil.longs.Long2FloatOpenHashMap;
 import org.jetbrains.annotations.NotNull;
@@ -121,110 +124,194 @@ public class TestFloatAdaptiveSparseArraySource extends AbstractFloatColumnSourc
         expected.defaultReturnValue(NULL_FLOAT);
 
         for (int step = 0; step < 400; ++step) {
-            switch (random.nextInt(6)) {
-                case 0: {
-                    final long key = randomKey(random);
-                    final float value = randomValue(random);
-                    source.set(key, value);
-                    expected.put(key, value);
-                    break;
-                }
-                case 1: {
-                    final long key = randomKey(random);
-                    source.setNull(key);
-                    expected.remove(key);
-                    break;
-                }
-                case 2: {
-                    try (final RowSet keys = randomRowSet(random, 200)) {
-                        source.setNull(keys);
-                        keys.forAllRowKeys(expected::remove);
-                    }
-                    break;
-                }
-                case 3: {
-                    final long first = randomKey(random);
-                    final long delta =
-                            random.nextBoolean() ? 1 + random.nextInt(BLOCK_SIZE) : -1 - random.nextInt(BLOCK_SIZE);
-                    try (final RowSet keys = RowSetFactory.fromRange(Math.max(0, first), first + random.nextInt(300))) {
-                        if (keys.firstRowKey() + delta < 0) {
-                            break;
-                        }
-                        source.shift(keys, delta);
-                        final Long2FloatOpenHashMap shifted = new Long2FloatOpenHashMap();
-                        shifted.defaultReturnValue(NULL_FLOAT);
-                        keys.forAllRowKeys(key -> {
-                            if (expected.containsKey(key)) {
-                                shifted.put(key + delta, expected.remove(key));
-                            } else {
-                                shifted.put(key + delta, NULL_FLOAT);
-                            }
-                        });
-                        shifted.forEach((key, value) -> {
-                            if (value == NULL_FLOAT) {
-                                expected.remove((long) key);
-                            } else {
-                                expected.put((long) key, value);
-                            }
-                        });
-                    }
-                    break;
-                }
-                case 4: {
-                    try (final RowSet keys = randomRowSet(random, 3000);
-                            final WritableFloatChunk<Values> values =
-                                    WritableFloatChunk.makeWritableChunk(keys.intSize());
-                            final ChunkSink.FillFromContext context = source.makeFillFromContext(keys.intSize())) {
-                        final MutableInt position = new MutableInt(0);
-                        keys.forAllRowKeys(key -> {
-                            final float value = randomValue(random);
-                            values.set(position.getAndIncrement(), value);
-                            expected.put(key, value);
-                        });
-                        source.fillFromChunk(context, values, keys);
-                    }
-                    break;
-                }
-                default: {
-                    final int count = 1 + random.nextInt(200);
-                    try (final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(count);
-                            final WritableFloatChunk<Values> values = WritableFloatChunk.makeWritableChunk(count);
-                            final ChunkSink.FillFromContext context = source.makeFillFromContext(count)) {
-                        for (int ii = 0; ii < count; ++ii) {
-                            final long key = randomKey(random);
-                            final float value = randomValue(random);
-                            keys.set(ii, key);
-                            values.set(ii, value);
-                            expected.put(key, value);
-                        }
-                        source.fillFromChunkUnordered(context, values, keys);
-                    }
-                }
-            }
+            applyRandomOperation(source, expected, random);
             if (step % 20 == 0) {
-                assertMatches(source, expected, random);
+                assertMatches(source, expected, random, false);
             }
         }
-        assertMatches(source, expected, random);
+        assertMatches(source, expected, random, false);
     }
 
-    private static void assertMatches(
+    @Test
+    public void testPreviousValues() {
+        for (final int compactThreshold : new int[] {4, 64,
+                FloatAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+            for (final int sortedThreshold : new int[] {1, 16}) {
+                checkPreviousValues(new FloatAdaptiveSparseArraySource(sortedThreshold, compactThreshold),
+                        compactThreshold * 37 + sortedThreshold);
+            }
+        }
+    }
+
+    /**
+     * Apply random operations in update cycles, checking that previous values are the values at the start of each
+     * cycle.
+     */
+    private static void checkPreviousValues(final FloatAdaptiveSparseArraySource source, final int seed) {
+        final Random random = new Random(seed);
+        final Long2FloatOpenHashMap expected = new Long2FloatOpenHashMap();
+        expected.defaultReturnValue(NULL_FLOAT);
+        source.startTrackingPrevValues();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (int cycle = 0; cycle < 30; ++cycle) {
+            final Long2FloatOpenHashMap expectedPrev = new Long2FloatOpenHashMap(expected);
+            expectedPrev.defaultReturnValue(NULL_FLOAT);
+            updateGraph.startCycleForUnitTests();
+            final int operations = random.nextInt(15);
+            for (int step = 0; step < operations; ++step) {
+                applyRandomOperation(source, expected, random);
+                if (step % 5 == 0) {
+                    assertMatches(source, expected, random, false);
+                    assertMatches(source, expectedPrev, random, true);
+                }
+            }
+            assertMatches(source, expected, random, false);
+            assertMatches(source, expectedPrev, random, true);
+            updateGraph.completeCycleForUnitTests();
+            assertMatches(source, expected, random, true);
+        }
+    }
+
+    @Test
+    public void testClearBlocks() {
+        final FloatAdaptiveSparseArraySource source = makeTestSource();
+        source.startTrackingPrevValues();
+        final Random random = new Random(0);
+        // a full leaf, a bitmap leaf and a sorted leaf, in that order
+        final long[] leafSizes = {BLOCK_SIZE, 100, 3};
+        for (int li = 0; li < leafSizes.length; ++li) {
+            for (int ii = 0; ii < leafSizes[li]; ++ii) {
+                source.set(li * (long) BLOCK_SIZE + ii, randomValue(random));
+            }
+        }
+        final float liveValue = source.getFloat(2L * BLOCK_SIZE);
+        final long sizeBefore = source.estimateSize();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            try (final RowSet removed = RowSetFactory.fromRange(0, 2L * BLOCK_SIZE - 1);
+                    final RowSet live = RowSetFactory.fromKeys(2L * BLOCK_SIZE)) {
+                source.setNull(removed);
+                SparseBlockColumnSource.clearBlocksWithoutLiveRows(removed, live, source);
+            }
+        });
+        assertTrue(source.estimateSize() < sizeBefore);
+        checkValue("live", liveValue, source.getFloat(2L * BLOCK_SIZE));
+        checkValue("cleared", NULL_FLOAT, source.getFloat(0));
+        checkValue("cleared", NULL_FLOAT, source.getFloat(BLOCK_SIZE));
+    }
+
+    private static void applyRandomOperation(
             final FloatAdaptiveSparseArraySource source,
             final Long2FloatOpenHashMap expected,
             final Random random) {
+        switch (random.nextInt(6)) {
+            case 0: {
+                final long key = randomKey(random);
+                final float value = randomValue(random);
+                source.set(key, value);
+                expected.put(key, value);
+                break;
+            }
+            case 1: {
+                final long key = randomKey(random);
+                source.setNull(key);
+                expected.remove(key);
+                break;
+            }
+            case 2: {
+                try (final RowSet keys = randomRowSet(random, 200)) {
+                    source.setNull(keys);
+                    keys.forAllRowKeys(expected::remove);
+                }
+                break;
+            }
+            case 3: {
+                final long first = randomKey(random);
+                final long delta =
+                        random.nextBoolean() ? 1 + random.nextInt(BLOCK_SIZE) : -1 - random.nextInt(BLOCK_SIZE);
+                try (final RowSet keys = RowSetFactory.fromRange(Math.max(0, first), first + random.nextInt(300))) {
+                    if (keys.firstRowKey() + delta < 0) {
+                        break;
+                    }
+                    source.shift(keys, delta);
+                    final Long2FloatOpenHashMap shifted = new Long2FloatOpenHashMap();
+                    shifted.defaultReturnValue(NULL_FLOAT);
+                    keys.forAllRowKeys(key -> {
+                        if (expected.containsKey(key)) {
+                            shifted.put(key + delta, expected.remove(key));
+                        } else {
+                            shifted.put(key + delta, NULL_FLOAT);
+                        }
+                    });
+                    shifted.forEach((key, value) -> {
+                        if (value == NULL_FLOAT) {
+                            expected.remove((long) key);
+                        } else {
+                            expected.put((long) key, value);
+                        }
+                    });
+                }
+                break;
+            }
+            case 4: {
+                try (final RowSet keys = randomRowSet(random, 3000);
+                        final WritableFloatChunk<Values> values =
+                                WritableFloatChunk.makeWritableChunk(keys.intSize());
+                        final ChunkSink.FillFromContext context = source.makeFillFromContext(keys.intSize())) {
+                    final MutableInt position = new MutableInt(0);
+                    keys.forAllRowKeys(key -> {
+                        final float value = randomValue(random);
+                        values.set(position.getAndIncrement(), value);
+                        expected.put(key, value);
+                    });
+                    source.fillFromChunk(context, values, keys);
+                }
+                break;
+            }
+            default: {
+                final int count = 1 + random.nextInt(200);
+                try (final WritableLongChunk<RowKeys> keys = WritableLongChunk.makeWritableChunk(count);
+                        final WritableFloatChunk<Values> values = WritableFloatChunk.makeWritableChunk(count);
+                        final ChunkSink.FillFromContext context = source.makeFillFromContext(count)) {
+                    for (int ii = 0; ii < count; ++ii) {
+                        final long key = randomKey(random);
+                        final float value = randomValue(random);
+                        keys.set(ii, key);
+                        values.set(ii, value);
+                        expected.put(key, value);
+                    }
+                    source.fillFromChunkUnordered(context, values, keys);
+                }
+            }
+        }
+    }
+
+    /**
+     * Check the current values, or the previous values if {@code usePrev}, of {@code source} against {@code expected}
+     * through each way of reading them.
+     */
+    private static void assertMatches(
+            final FloatAdaptiveSparseArraySource source,
+            final Long2FloatOpenHashMap expected,
+            final Random random,
+            final boolean usePrev) {
         for (int ii = 0; ii < 500; ++ii) {
             final long key = randomKey(random);
-            checkValue("key " + key, expected.get(key), source.getFloat(key));
+            checkValue("key " + key, expected.get(key), usePrev ? source.getPrevFloat(key) : source.getFloat(key));
         }
         for (final long key : expected.keySet()) {
-            checkValue("key " + key, expected.get(key), source.getFloat(key));
+            checkValue("key " + key, expected.get(key), usePrev ? source.getPrevFloat(key) : source.getFloat(key));
         }
 
         // a row set with runs takes the by-ranges path, and one of single keys the by-keys path
         try (final RowSet keys = randomRowSet(random, 5000);
                 final WritableFloatChunk<Values> values = WritableFloatChunk.makeWritableChunk(keys.intSize());
                 final ChunkSource.FillContext context = source.makeFillContext(keys.intSize())) {
-            source.fillChunk(context, values, keys);
+            if (usePrev) {
+                source.fillPrevChunk(context, values, keys);
+            } else {
+                source.fillChunk(context, values, keys);
+            }
             assertEquals(keys.intSize(), values.size());
             final MutableInt position = new MutableInt(0);
             keys.forAllRowKeys(
@@ -233,7 +320,21 @@ public class TestFloatAdaptiveSparseArraySource extends AbstractFloatColumnSourc
         try (final RowSet keys = RowSetFactory.fromKeys(expected.keySet().toLongArray());
                 final WritableFloatChunk<Values> values = WritableFloatChunk.makeWritableChunk(keys.intSize());
                 final ChunkSource.FillContext context = source.makeFillContext(keys.intSize())) {
-            source.fillChunk(context, values, keys);
+            if (usePrev) {
+                source.fillPrevChunk(context, values, keys);
+            } else {
+                source.fillChunk(context, values, keys);
+            }
+            final MutableInt position = new MutableInt(0);
+            keys.forAllRowKeys(
+                    key -> checkValue("key " + key, expected.get(key), values.get(position.getAndIncrement())));
+        }
+
+        final long leafStart = randomKey(random) & ~(BLOCK_SIZE - 1L);
+        try (final RowSet keys = RowSetFactory.fromRange(leafStart + 10, leafStart + 500);
+                final ChunkSource.GetContext context = source.makeGetContext(keys.intSize())) {
+            final FloatChunk<? extends Values> values =
+                    (usePrev ? source.getPrevChunk(context, keys) : source.getChunk(context, keys)).asFloatChunk();
             final MutableInt position = new MutableInt(0);
             keys.forAllRowKeys(
                     key -> checkValue("key " + key, expected.get(key), values.get(position.getAndIncrement())));
@@ -247,7 +348,11 @@ public class TestFloatAdaptiveSparseArraySource extends AbstractFloatColumnSourc
                 keys.set(ii, random.nextInt(10) == 0 ? RowSequence.NULL_ROW_KEY : randomKey(random));
             }
             keys.setSize(count);
-            source.fillChunkUnordered(context, values, keys);
+            if (usePrev) {
+                source.fillPrevChunkUnordered(context, values, keys);
+            } else {
+                source.fillChunkUnordered(context, values, keys);
+            }
             for (int ii = 0; ii < count; ++ii) {
                 final long key = keys.get(ii);
                 final float value = key == RowSequence.NULL_ROW_KEY ? NULL_FLOAT : expected.get(key);

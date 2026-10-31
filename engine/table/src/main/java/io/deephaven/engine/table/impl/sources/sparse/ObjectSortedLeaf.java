@@ -225,6 +225,34 @@ public final class ObjectSortedLeaf extends ObjectCompactLeaf {
         }
     }
 
+    @Override
+    public int copyOffsets(final int firstOffset, final int lastOffset, final int[] dest) {
+        int count = 0;
+        for (int index = lowerBound(firstOffset); index < size; ++index) {
+            final int offset = offsetAt(index);
+            if (offset > lastOffset) {
+                break;
+            }
+            dest[count++] = offset;
+        }
+        return count;
+    }
+
+    @Override
+    public void overlayRange(
+            final int firstOffset,
+            final int lastOffset,
+            final WritableObjectChunk<Object, ?> dest,
+            final int destOffset) {
+        for (int index = lowerBound(firstOffset); index < size; ++index) {
+            final int offset = offsetAt(index);
+            if (offset > lastOffset) {
+                break;
+            }
+            dest.set(destOffset + offset - firstOffset, values[index]);
+        }
+    }
+
     /**
      * Pass every offset and value to {@code destination}, in offset order.
      */

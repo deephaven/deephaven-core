@@ -80,6 +80,21 @@ public abstract class FloatCompactLeaf {
     public abstract void copyTo(float[] block);
 
     /**
+     * Write the offsets from {@code firstOffset} through {@code lastOffset} inclusive that hold a value into
+     * {@code dest}, in ascending order.
+     *
+     * @return the number of offsets written
+     */
+    public abstract int copyOffsets(int firstOffset, int lastOffset, int[] dest);
+
+    /**
+     * Write the value of each offset from {@code firstOffset} through {@code lastOffset} inclusive that holds a value
+     * into {@code dest} at {@code destOffset + offset - firstOffset}, leaving the other entries of {@code dest}
+     * unchanged.
+     */
+    public abstract void overlayRange(int firstOffset, int lastOffset, WritableFloatChunk<?> dest, int destOffset);
+
+    /**
      * Fill {@code dest}, starting at {@code destOffset}, with the values for offsets {@code firstOffset} through
      * {@code lastOffset} inclusive.
      */

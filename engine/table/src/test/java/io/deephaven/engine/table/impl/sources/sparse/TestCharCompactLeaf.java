@@ -138,5 +138,28 @@ public class TestCharCompactLeaf {
                 }
             }
         }
+
+        final int[] offsets = new int[BLOCK_SIZE];
+        try (final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(BLOCK_SIZE + 1)) {
+            for (int fill = 0; fill < 10; ++fill) {
+                final int first = random.nextInt(BLOCK_SIZE);
+                final int last = first + random.nextInt(BLOCK_SIZE - first);
+                final int count = leaf.copyOffsets(first, last, offsets);
+                int expectedCount = 0;
+                for (int offset = first; offset <= last; ++offset) {
+                    if (present[offset]) {
+                        assertEquals("copied offset", offset, offsets[expectedCount++]);
+                    }
+                }
+                assertEquals(expectedCount, count);
+
+                chunk.fillWithNullValue(0, BLOCK_SIZE + 1);
+                leaf.overlayRange(first, last, chunk, 1);
+                for (int offset = first; offset <= last; ++offset) {
+                    checkValue("overlaid offset " + offset, present[offset] ? expected[offset] : NULL_CHAR,
+                            chunk.get(1 + offset - first));
+                }
+            }
+        }
     }
 }
