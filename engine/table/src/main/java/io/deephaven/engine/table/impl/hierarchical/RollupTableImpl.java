@@ -349,10 +349,12 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                         "Invalid filter found: " + whereFilter + " may only use non-aggregation columns, which are "
                                 + validColumns + ", but has used " + invalidColumnsUsed);
             }
-            final boolean usesArrays = !whereFilter.getColumnArrays().isEmpty();
-            if (usesArrays) {
-                throw exceptionFactory.apply("Invalid filter found: " + whereFilter
-                        + " may not use column arrays, but uses column arrays from " + whereFilter.getColumnArrays());
+            // a filter may apply to the base level, one row per bucket, rather than to the source rows, so the filter
+            // must decide each row from that row alone
+            if (whereFilter.hasCrossRowDependencies()) {
+                throw exceptionFactory.apply("Invalid filter found: " + whereFilter + " cannot use cross-row "
+                        + "dependencies (virtual row variables or column arrays); filter the source table before the "
+                        + "rollup instead");
             }
         }
         compilationProcessor.compile();

@@ -482,6 +482,20 @@ public class TestParquetTools {
     }
 
     @Test
+    public void testRenameSwapping() {
+        final Table source = emptyTable(10).update("A = (int) ii", "B = `s` + ii", "C = ii * 1.5");
+        testWriteRead(source, t -> t.renameColumns("A = B", "B = A"));
+        testWriteRead(source, t -> t.renameColumns("B = A", "C = B"));
+        testWriteRead(source, t -> t.renameColumns("A = B", "B = C", "C = A"));
+        testWriteRead(source, t -> t.renameColumns("A = B", "B = A").where("A == `s3`"));
+        testWriteRead(source, t -> t.renameColumns("A = B", "B = A").where("B > 5"));
+        testWriteRead(source, t -> {
+            final Table swapped = t.renameColumns("A = B", "B = A");
+            return merge(swapped, swapped);
+        });
+    }
+
+    @Test
     public void testColumnRedefineArrayDep() {
         testWriteRead(emptyTable(10).update("X = ii * 2", "Y = ii * 2 + 1"),
                 t -> t.view("T = X_[i-1]"));

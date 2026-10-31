@@ -1,18 +1,21 @@
 #
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
+import os
 import random
+import tempfile
 import unittest
 from typing import Optional
 
 import numpy as np
 
 import deephaven._udf as _udf
-from deephaven import DHError, dtypes, empty_table, new_table
+from deephaven import DHError, dtypes, empty_table, new_table, parquet
 from deephaven.agg import count_where
 from deephaven.column import int_col, long_col
 from deephaven.execution_context import make_user_exec_ctx
 from deephaven.filters import Filter, and_
+from deephaven.table import Table
 from tests.test_udf_scalar_args import (
     _J_TYPE_J_ARRAY_TYPE_MAP,
     _J_TYPE_NP_DTYPE_MAP,
@@ -197,6 +200,31 @@ class VectorizationTestCase(BaseTestCase):
         self.assertEqual(4, _udf.vectorized_count)
         self.assertEqual(t1.size, t.size)
         self.assertEqual(9, t.size)
+
+    def test_filter_before_deferred_rename(self):
+        # A Parquet table defers a rename, and a filter on a renamed column moves before the rename, reading the
+        # source column under the source column's name. The table coalesces in assert_table_equals, after filtered()
+        # returns, so the renamed filter must also keep is_small, a local variable of filtered().
+        def filtered(t: Table, column: str) -> Table:
+            def is_small(x) -> bool:
+                return x < 4
+
+            return t.where(f"is_small({column})")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = os.path.join(temp_dir, "source.parquet")
+            parquet.write(
+                empty_table(10).update(["A = (int) ii", "B = (int) (10 - ii)"]), path
+            )
+            mem_table = parquet.read(path).select()
+            for renames, column in ((["X = A"], "X"), (["A = B", "B = A"], "A")):
+                with self.subTest(renames=renames):
+                    expected = filtered(mem_table.rename_columns(renames), column)
+                    actual = filtered(
+                        parquet.read(path).rename_columns(renames), column
+                    )
+                    self.assert_table_equals(actual, expected)
+        self.assertGreater(_udf.vectorized_count, 0)
 
     def test_count_where_vectorized_later_filter(self):
         def pyfunc_bool(p1) -> bool:

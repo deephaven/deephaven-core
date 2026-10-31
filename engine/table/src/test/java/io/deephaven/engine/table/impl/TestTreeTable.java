@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -85,6 +86,27 @@ public class TestTreeTable extends RefreshingTableTestCase {
         freeSnapshotTableChunks(snapshot2);
 
         assertEquals(rebased.getAttribute("Dog"), "BestFriend");
+    }
+
+    @Test
+    public void testFilterRejectsCrossRowDependencies() {
+        // a node-level filter reads the rows of one node, and the source-level filter refilters only the rows that the
+        // source adds or modifies, so a tree filter may not depend on other rows
+        final Table source = TableTools.newTable(intCol("ID", 1, 2, 3, 4),
+                intCol("Parent", NULL_INT, 1, 1, 2));
+        final TreeTable tree = source.tree("ID", "Parent");
+        for (final TreeTable filterable : List.of(tree, tree.withNodeFilterColumns(List.of(ColumnName.of("ID"))))) {
+            for (final String formula : new String[] {
+                    "ii == 3", "i + 0 > 1", "k + 0 > 1", "ID_[0] == 1", "ID_[i - 1] == 1"}) {
+                final IllegalArgumentException ex = Assert.assertThrows(formula, IllegalArgumentException.class,
+                        () -> filterable.withFilter(WhereFilterFactory.getExpression(formula)));
+                Assert.assertTrue(ex.getMessage(), ex.getMessage().contains(
+                        "cannot use cross-row dependencies (virtual row variables or column arrays)"));
+            }
+        }
+        // a filter that decides each row alone keeps the matching rows and their ancestors
+        assertTableEquals(source.where("ID in 1, 2, 4"),
+                tree.withFilter(WhereFilterFactory.getExpression("ID == 4")).getSource());
     }
 
     @Test

@@ -36,9 +36,13 @@ import org.jpy.PyObject;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -71,8 +75,9 @@ public class ConditionFilter extends AbstractConditionFilter {
         super(formula, false);
     }
 
-    private ConditionFilter(@NotNull String formula, Map<String, String> renames) {
-        super(formula, renames, false);
+    private ConditionFilter(@NotNull String formula, Map<String, String> renames,
+            @Nullable Set<String> formulaColumns, @Nullable Map<String, Object> formulaVariables) {
+        super(formula, renames, formulaColumns, formulaVariables, false);
     }
 
     public static WhereFilter createConditionFilter(@NotNull String formula, FormulaParserConfiguration parser) {
@@ -803,7 +808,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     public ConditionFilter copy() {
-        final ConditionFilter copy = new ConditionFilter(formula, outerToInnerNames);
+        final ConditionFilter copy = new ConditionFilter(formula, outerToInnerNames, formulaColumns, formulaVariables);
         onCopy(copy);
         if (initialized) {
             copy.filterKernelClassFuture = filterKernelClassFuture;
@@ -820,8 +825,35 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
-    public ConditionFilter renameFilter(Map<String, String> renames) {
-        return new ConditionFilter(formula, renames);
+    public Optional<WhereFilter> renamedFilter(Map<String, String> renames) {
+        if (!initialized) {
+            throw new IllegalStateException("Filter must be initialized to invoke renamedFilter: " + formula);
+        }
+        if (hasConstantArrayAccess()) {
+            // shifted columns read other rows of the table being filtered, so the filter stays after the view
+            return Optional.empty();
+        }
+        // renames maps the columns this filter reads to the table being filtered, and outerToInnerNames maps formula
+        // names to the columns this filter reads; compose the two into a map from formula names to the table being
+        // filtered. A formula name absent from outerToInnerNames reads the column of the same name, so renames
+        // applies to that formula name directly.
+        final Map<String, String> composed = new HashMap<>(renames);
+        // A formula name in outerToInnerNames follows outerToInnerNames first, then renames, and replaces any entry of
+        // renames under the same name: after a swap of A and B, formula name A reads column B, so the entry of renames
+        // for column A must not apply to formula name A.
+        outerToInnerNames.forEach((outerName, innerName) -> composed.put(outerName,
+                renames.getOrDefault(innerName, innerName)));
+        // the renamed filter may resolve as columns only the names this filter resolved as columns
+        final Set<String> resolvedColumns = new HashSet<>(usedColumns);
+        resolvedColumns.addAll(usedColumnArrays);
+        // the renamed filter reads the query-scope variables this filter read, with the values this filter read, even
+        // when initialized under another query scope
+        final Map<String, Object> readVariables = new HashMap<>();
+        for (final QueryScopeParam<?> param : params) {
+            readVariables.put(param.getName(), param.getValue());
+        }
+        return Optional.of(new ConditionFilter(formula, composed, Collections.unmodifiableSet(resolvedColumns),
+                Collections.unmodifiableMap(readVariables)));
     }
 
     @Override

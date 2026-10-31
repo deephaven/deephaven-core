@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.Pair;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
@@ -12,7 +14,6 @@ import io.deephaven.engine.table.impl.filter.ExtractBarriers;
 import io.deephaven.engine.table.impl.filter.ExtractInnerConjunctiveFilters;
 import io.deephaven.engine.table.impl.filter.ExtractRespectedBarriers;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
-import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.impl.select.*;
@@ -27,6 +28,10 @@ import java.util.stream.Stream;
 
 /**
  * An uncoalesced table with view and where operations to be applied after {@link #coalesce()} is forced.
+ * <p>
+ * Each DeferredViewTable defers at most one kind of operation: dropped columns, view columns, a rename or filters. A
+ * further operation wraps the table in another DeferredViewTable. The static factories, one per kind of operation, are
+ * the only way to create a DeferredViewTable.
  */
 public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
@@ -34,37 +39,145 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     protected final String[] deferredDropColumns;
     protected final SelectColumn[] deferredViewColumns;
     protected final WhereFilter[] deferredFilters;
+    /**
+     * Whether this table holds nothing but the columns of one {@link Table#renameColumns(Collection) renameColumns}
+     * call. When true, {@link #deferredViewColumns} hold one {@link SourceColumn} per column of the result, and the
+     * columns apply simultaneously rather than in order; {@link #deferredDropColumns} and {@link #deferredFilters} are
+     * empty. A later operation never adds to a renaming table, but wraps the renaming table in another
+     * DeferredViewTable. The rename columns share {@link #deferredViewColumns} with view columns, so that every reader
+     * of the view columns, such as {@link #selectDistinct(Collection)}, also sees the rename columns.
+     */
+    private final boolean isRenameOnly;
 
-    public DeferredViewTable(@NotNull final TableDefinition definition,
+    /**
+     * Create a DeferredViewTable that defers no operation, and so coalesces to the referenced table.
+     *
+     * @param definition The definition of the new table
+     * @param description A description of the new table
+     * @param tableReference The reference to the table to wrap
+     * @param attributes The attributes map to use, or else {@code null} to allocate a new attributes map
+     * @return the new table
+     */
+    static DeferredViewTable wrap(@NotNull final TableDefinition definition,
             @NotNull final String description,
             @NotNull final TableReference tableReference,
-            @Nullable final String[] deferredDropColumns,
-            @Nullable final SelectColumn[] deferredViewColumns,
-            @Nullable final WhereFilter[] deferredFilters) {
-        this(definition, description, tableReference, deferredDropColumns, deferredViewColumns, deferredFilters, null);
+            @Nullable final Map<String, Object> attributes) {
+        return new DeferredViewTable(definition, description, tableReference, null, null, null, null, attributes);
     }
 
     /**
-     * @param attributes The attributes map to use, or else {@code null} to allocate a new one
+     * Create a DeferredViewTable that drops columns of the referenced table.
+     *
+     * @param definition The definition of the new table
+     * @param description A description of the new table
+     * @param tableReference The reference to the table to drop columns from
+     * @param dropColumns The names of the columns to drop
+     * @return the new table
      */
-    public DeferredViewTable(@NotNull final TableDefinition definition,
+    static DeferredViewTable withDropColumns(@NotNull final TableDefinition definition,
+            @NotNull final String description,
+            @NotNull final TableReference tableReference,
+            @NotNull final String[] dropColumns) {
+        return new DeferredViewTable(definition, description, tableReference, dropColumns, null, null, null, null);
+    }
+
+    /**
+     * Create a DeferredViewTable that applies view columns to the referenced table. The view columns apply in order, as
+     * in {@link Table#view(Collection)}: each view column may read the result of an earlier view column.
+     *
+     * @param definition The definition of the new table
+     * @param description A description of the new table
+     * @param tableReference The reference to the table to view
+     * @param viewColumns The view columns to apply
+     * @return the new table
+     */
+    static DeferredViewTable withView(@NotNull final TableDefinition definition,
+            @NotNull final String description,
+            @NotNull final TableReference tableReference,
+            @NotNull final SelectColumn[] viewColumns) {
+        return new DeferredViewTable(definition, description, tableReference, null, viewColumns, null, null, null);
+    }
+
+    /**
+     * Create a DeferredViewTable that filters the referenced table.
+     * <p>
+     * No filter may have {@link WhereFilter#hasCrossRowDependencies() cross-row dependencies}: the new table merges the
+     * filters with the filters of later wheres and applies the filters in any order. A where that holds such a filter
+     * runs on the coalesced table instead.
+     *
+     * @param definition The definition of the new table
+     * @param description A description of the new table
+     * @param tableReference The reference to the table to filter
+     * @param filters The filters to apply
+     * @return the new table
+     */
+    static DeferredViewTable withFilters(@NotNull final TableDefinition definition,
+            @NotNull final String description,
+            @NotNull final TableReference tableReference,
+            @NotNull final WhereFilter[] filters) {
+        return new DeferredViewTable(definition, description, tableReference, null, null, null, filters, null);
+    }
+
+    /**
+     * Create a DeferredViewTable that renames the columns of the referenced table. Unlike the view columns of
+     * {@link #withView}, which apply in order, the rename columns apply simultaneously, as
+     * {@link Table#renameColumns(Collection)} requires.
+     *
+     * @param definition The definition of the renamed table
+     * @param description A description of the renamed table
+     * @param tableReference The reference to the table to rename
+     * @param renameColumns One SourceColumn per column of {@code definition}, in the same order
+     * @return the renamed table
+     */
+    static DeferredViewTable withRename(@NotNull final TableDefinition definition,
+            @NotNull final String description,
+            @NotNull final TableReference tableReference,
+            @NotNull final SourceColumn[] renameColumns) {
+        return new DeferredViewTable(definition, description, tableReference, null, null, renameColumns, null, null);
+    }
+
+    private DeferredViewTable(@NotNull final TableDefinition definition,
             @NotNull final String description,
             @NotNull final TableReference tableReference,
             @Nullable final String[] deferredDropColumns,
             @Nullable final SelectColumn[] deferredViewColumns,
+            @Nullable final SourceColumn[] deferredRenameColumns,
             @Nullable final WhereFilter[] deferredFilters,
             @Nullable final Map<String, Object> attributes) {
         super(definition, description, attributes);
         this.tableReference = tableReference;
+
+        // each factory supplies at most one kind of operation; check before compiling or managing anything
+        final boolean haveDrop = deferredDropColumns != null && deferredDropColumns.length > 0;
+        final boolean haveView = deferredViewColumns != null && deferredViewColumns.length > 0;
+        final boolean haveRename = deferredRenameColumns != null && deferredRenameColumns.length > 0;
+        final boolean haveFilter = deferredFilters != null && deferredFilters.length > 0;
+        Assert.assertion((haveDrop ? 1 : 0) + (haveView ? 1 : 0) + (haveRename ? 1 : 0) + (haveFilter ? 1 : 0) <= 1,
+                "at most one of haveDrop, haveView, haveRename and haveFilter",
+                haveDrop, "haveDrop", haveView, "haveView", haveRename, "haveRename", haveFilter, "haveFilter");
+
         this.deferredDropColumns =
                 deferredDropColumns == null ? ArrayTypeUtils.EMPTY_STRING_ARRAY : deferredDropColumns;
-        this.deferredViewColumns =
-                deferredViewColumns == null ? SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY : deferredViewColumns;
+        this.isRenameOnly = haveRename;
+        if (haveRename) {
+            this.deferredViewColumns = deferredRenameColumns;
+        } else {
+            this.deferredViewColumns =
+                    deferredViewColumns == null ? SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY : deferredViewColumns;
+        }
+        this.deferredFilters = deferredFilters == null ? WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY : deferredFilters;
+
         final TableDefinition parentDefinition = tableReference.getDefinition();
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
-        SelectAndViewAnalyzer.initializeSelectColumns(
-                parentDefinition.getColumnNameMap(), this.deferredViewColumns, compilationProcessor);
-        this.deferredFilters = deferredFilters == null ? WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY : deferredFilters;
+        if (isRenameOnly) {
+            // every rename column reads the parent's column, never the result of another rename column
+            for (final SelectColumn renameColumn : this.deferredViewColumns) {
+                renameColumn.initDef(parentDefinition.getColumnNameMap(), compilationProcessor);
+            }
+        } else {
+            SelectAndViewAnalyzer.initializeSelectColumns(
+                    parentDefinition.getColumnNameMap(), this.deferredViewColumns, compilationProcessor);
+        }
         for (final WhereFilter sf : this.deferredFilters) {
             sf.init(parentDefinition, compilationProcessor);
             if (sf instanceof LivenessReferent && sf.isRefreshing()) {
@@ -74,21 +187,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         }
         compilationProcessor.compile();
 
-        // we really only expect one of these things to be set!
-        final boolean haveDrop = this.deferredDropColumns.length > 0;
-        final boolean haveView = this.deferredViewColumns.length > 0;
-        final boolean haveFilter = this.deferredFilters.length > 0;
-
         if (tableReference.isRefreshing()) {
             manage(tableReference);
             setRefreshing(true);
-        }
-
-        if (haveDrop && haveFilter) {
-            throw new IllegalStateException("Why do we have a drop and a filter all at the same time?");
-        }
-        if (haveView && haveFilter) {
-            throw new IllegalStateException("Why do we have a view and a filter all at the same time?");
         }
     }
 
@@ -104,6 +205,18 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             return coalesce();
         }
 
+        // In order to match the equivalent memory table, run the full where on the coalesced table when any filter
+        // has cross-row dependencies (see WhereFilter#hasCrossRowDependencies). Ask before copying the filters: a
+        // filter with cross-row dependencies, such as a release filter, may not support copy().
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        for (final WhereFilter whereFilter : innerFilters) {
+            whereFilter.init(definition, compilationProcessor);
+        }
+        compilationProcessor.compile();
+        if (Arrays.stream(innerFilters).anyMatch(WhereFilter::hasCrossRowDependencies)) {
+            return coalesce().where(filter);
+        }
+
         // only the pre-view filters are passed down to the coalesce check and enable automatic coalescing
         final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(innerFilters));
         if (tableReference.shouldCoalesce(preAndPostFilters.preViewFilters)) {
@@ -115,8 +228,8 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             }
             return result;
         }
-        return new DeferredViewTable(getDefinition(), getDescription() + "-filtered",
-                new CopiedTableReference(this, tableReference), null, null, innerFilters);
+        return withFilters(getDefinition(), getDescription() + "-filtered",
+                new CopiedTableReference(this, tableReference), innerFilters);
     }
 
     @NotNull
@@ -137,7 +250,17 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             result = result.dropColumns(deferredDropColumns);
         }
         if (deferredViewColumns.length > 0) {
-            result = result.view(List.of(SelectColumn.copyFrom(deferredViewColumns)));
+            if (isRenameOnly) {
+                // rename the coalesced table
+                result = result.renameColumns(Arrays.stream(deferredViewColumns)
+                        .filter(renameColumn -> !renameColumn.isRetain())
+                        .map(renameColumn -> Pair.of(
+                                ColumnName.of(((SourceColumn) renameColumn).getSourceName()),
+                                ColumnName.of(renameColumn.getName())))
+                        .collect(Collectors.toList()));
+            } else {
+                result = result.view(List.of(SelectColumn.copyFrom(deferredViewColumns)));
+            }
         }
         return result;
     }
@@ -164,6 +287,11 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         for (SelectColumn selectColumn : deferredViewColumns) {
             final String outerName = selectColumn.getName();
             if (selectColumn.isRetain()) {
+                continue;
+            }
+            if (isRenameOnly) {
+                // a rename column reads the parent's column, never the result of an earlier rename column
+                renames.put(outerName, ((SourceColumn) selectColumn).getSourceName());
                 continue;
             }
             if (selectColumn instanceof SwitchColumn) {
@@ -204,7 +332,10 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
             final boolean hasPostViewBarrier =
                     ExtractRespectedBarriers.stream(filter).anyMatch(postViewBarriers::contains);
-            if (isPostView || serialFilterFound || hasPostViewBarrier) {
+            // a serial filter sees exactly the rows that pass the filters before the serial filter, so the serial
+            // filter stays after the view when any earlier filter does
+            final boolean serialAfterPostView = filter.isSerial() && !postViewFilters.isEmpty();
+            if (isPostView || serialFilterFound || hasPostViewBarrier || serialAfterPostView) {
                 // if this filter is serial, all subsequent filters must be postViewFilters
                 if (filter.isSerial()) {
                     serialFilterFound = true;
@@ -214,9 +345,12 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 continue;
             }
 
+            // a filter that uses a column both as a value and as an array, e.g. "X == X_[0]", reports the column in
+            // both lists
             final Map<String, String> myRenames = Stream.of(filter.getColumns(), filter.getColumnArrays())
                     .flatMap(Collection::stream)
                     .filter(renames::containsKey)
+                    .distinct()
                     .collect(Collectors.toMap(Function.identity(), renames::get));
 
             if (myRenames.isEmpty()) {
@@ -224,14 +358,13 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
                 continue;
             }
 
+            // Single filters rename through RenameableFilter; this visitor handles wrappers and AND/OR itself, see
+            // RenameableFilter.
             final WhereFilter preFilter = filter.walk(new WhereFilter.Visitor<>() {
                 @Override
                 public WhereFilter visitOther(WhereFilter filter) {
-                    if (filter instanceof MatchFilter) {
-                        return ((MatchFilter) filter).renameFilter(myRenames);
-                    }
-                    if (filter instanceof ConditionFilter) {
-                        return ((ConditionFilter) filter).renameFilter(myRenames);
+                    if (filter instanceof RenameableFilter renameable) {
+                        return renameable.renamedFilter(myRenames).orElse(null);
                     }
                     return null;
                 }
@@ -360,8 +493,8 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         if (deferredFilters.length > 0) {
             SplitAndApply splitAndApply = splitAndApplyFilters(deferredFilters, tableReference);
             result = splitAndApply.result;
-            // we cannot have a deferred filter that uses a view on this level, because we prohibit
-            // the view and filter from being present on the same DVT in the constructor
+            // we cannot have a deferred filter that uses a view on this level, because no factory creates a
+            // DVT with both a view and a filter
             Assert.eqZero(splitAndApply.postViewFilters.length, "splitAndApply.postViewFilters.length");
         } else {
             result = tableReference.get();
@@ -381,9 +514,22 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             }
         }
 
+        final Table selectDistinct = selectDistinctWithoutCoalescing(columns);
+        return selectDistinct == null ? coalesce().selectDistinct(columns) : selectDistinct;
+    }
+
+    /**
+     * Ask the referenced table for the distinct values, without coalescing this table, when the referenced table can
+     * answer as the coalesced table would: a partitioned table answers from the location table, one row per location.
+     *
+     * @param columns the columns to select distinct values of
+     * @return the distinct values, or null if this table must coalesce to answer
+     */
+    @Nullable
+    private Table selectDistinctWithoutCoalescing(@NotNull final Collection<? extends Selectable> columns) {
         /* If we have any manual filters, then we must coalesce the table. */
-        if ((Arrays.stream(deferredFilters).anyMatch(sf -> !sf.isAutomatedFilter()))) {
-            return coalesce().selectDistinct(columns);
+        if (Arrays.stream(deferredFilters).anyMatch(sf -> !sf.isAutomatedFilter())) {
+            return null;
         }
 
         /* Determine if we are using any of the deferred views in this selectDistinct. */
@@ -392,27 +538,52 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             SelectAndViewAnalyzer.initializeSelectColumns(getDefinition().getColumnNameMap(),
                     selectColumns.toArray(SelectColumn[]::new));
         } catch (Exception e) {
-            return coalesce().selectDistinct(columns);
+            return null;
         }
 
         final Set<String> outputColumnNames = Arrays.stream(deferredViewColumns)
                 .filter(sc -> !sc.isRetain())
                 .map(SelectColumn::getName)
                 .collect(Collectors.toSet());
-        if (selectColumns.stream().anyMatch(sc -> !sc.getColumnArrays().isEmpty()
+        // Coalesce for a select column that reads a column the deferred view computes rather than retains, since the
+        // referenced table has no computed values, or that has cross-row dependencies, since partitioned tables would
+        // answer from location tables.
+        if (selectColumns.stream().anyMatch(sc -> sc.hasCrossRowDependencies()
                 || sc.getColumns().stream().anyMatch(outputColumnNames::contains))) {
-            return coalesce().selectDistinct(columns);
+            return null;
         }
 
-        /* If the cachedResult is not yet created, we first ask for a selectDistinct cachedResult. */
-        Table selectDistinct = tableReference.selectDistinctInternal(columns);
-        return selectDistinct == null ? coalesce().selectDistinct(columns) : selectDistinct;
+        // Handle hidden columns, which a drop or a rename removes from this table but the referenced table still has:
+        // the referenced table parses the columns again, and would read a hidden column where this table reads a
+        // query-scope variable of the same name.
+        final Set<String> hiddenColumnNames = new HashSet<>(tableReference.getDefinition().getColumnNameSet());
+        hiddenColumnNames.removeAll(definition.getColumnNameSet());
+        if (!hiddenColumnNames.isEmpty()) {
+            final SelectColumn[] referencedSelectColumns = SelectColumn.from(columns);
+            try {
+                SelectAndViewAnalyzer.initializeSelectColumns(tableReference.getDefinition().getColumnNameMap(),
+                        referencedSelectColumns);
+            } catch (Exception e) {
+                return null;
+            }
+            for (int ii = 0; ii < referencedSelectColumns.length; ++ii) {
+                // this table's select columns have no cross-row dependencies, or this table would have coalesced
+                // above
+                final Set<String> usedColumns = new HashSet<>(selectColumns.get(ii).getColumns());
+                final Set<String> referencedUsedColumns = new HashSet<>(referencedSelectColumns[ii].getColumns());
+                if (referencedSelectColumns[ii].hasCrossRowDependencies()
+                        || !usedColumns.equals(referencedUsedColumns)) {
+                    return null;
+                }
+            }
+        }
+
+        return tableReference.selectDistinctInternal(columns);
     }
 
     @Override
     protected DeferredViewTable copy(@NotNull final Map<String, Object> attributes) {
-        return new DeferredViewTable(definition, getDescription(), new CopiedTableReference(this, tableReference),
-                null, null, null, attributes);
+        return wrap(definition, getDescription(), new CopiedTableReference(this, tableReference), attributes);
     }
 
     @Override
@@ -422,15 +593,21 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         for (int cdi = 0; cdi < newView.length; ++cdi) {
             newView[cdi] = new SourceColumn(cDefs.get(cdi).getName());
         }
-        return new DeferredViewTable(newDefinition, getDescription() + "-redefined",
-                new CopiedTableReference(this, tableReference), null, newView, null);
+        return withView(newDefinition, getDescription() + "-redefined",
+                new CopiedTableReference(this, tableReference), newView);
     }
 
     @Override
     protected Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
-        return new DeferredViewTable(newDefinitionExternal, getDescription() + "-redefined",
-                new CopiedTableReference(this, tableReference), null, viewColumns, null);
+        return withView(newDefinitionExternal, getDescription() + "-redefined",
+                new CopiedTableReference(this, tableReference), viewColumns);
+    }
+
+    @Override
+    protected Table redefineWithRename(TableDefinition newDefinitionExternal, SourceColumn[] renameColumns) {
+        return withRename(newDefinitionExternal, getDescription() + "-redefined",
+                new CopiedTableReference(this, tableReference), renameColumns);
     }
 
     /**

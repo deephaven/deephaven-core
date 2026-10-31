@@ -626,6 +626,104 @@ public final class ParquetTableFilterTest {
     }
 
     @Test
+    public void partitionedColumnSwapTest() {
+        final String destPath = Path.of(rootFile.getPath(), "ParquetTest_partitionedColumnSwapTest").toString();
+        final Table source = TableTools.emptyTable(10_000).update(
+                "Part = `p` + (ii % 5)",
+                "Data = `d` + (ii % 7)",
+                "Value = ii");
+        ParquetTools.writeKeyValuePartitionedTable(source.partitionBy("Part"), destPath, EMPTY);
+
+        // swap the partitioning column with a data column of the same type; rename the materialized table for the
+        // expected result, since select() on the renamed disk table would coalesce the rename under test
+        final Table diskTable = ParquetTools.readTable(destPath).renameColumns("Part = Data", "Data = Part");
+        final Table memTable = ParquetTools.readTable(destPath).select().renameColumns("Part = Data", "Data = Part");
+
+        assertTableEquals(memTable, diskTable);
+
+        filterAndVerifyResults(diskTable, memTable, "Part = `d3`");
+        filterAndVerifyResults(diskTable, memTable, "Data = `p2`");
+        filterAndVerifyResults(diskTable, memTable, "Data = `p2`", "Part = `d3`");
+        filterAndVerifyResults(diskTable, memTable, "Data.startsWith(`p`) && Part == `d1`");
+        filterAndVerifyResults(diskTable, memTable, Filter.or(Filter.from("Data = `p2`", "Part = `d3`")));
+    }
+
+    @Test
+    public void partitionedSelectDistinctKeepsQueryScopeVariableTest() {
+        final String destPath =
+                Path.of(rootFile.getPath(), "ParquetTest_partitionedSelectDistinctKeepsQueryScopeVariableTest")
+                        .toString();
+        final Table source = TableTools.emptyTable(10_000).update(
+                "Part = `p` + (ii % 3)",
+                "Other = `o` + (ii % 2)",
+                "Value = ii");
+        ParquetTools.writeKeyValuePartitionedTable(source.partitionBy("Part", "Other"), destPath, EMPTY);
+
+        // after each operation, Part names the query-scope variable; before the operation, Part names the partitioning
+        // column that the operation hides
+        ExecutionContext.getContext().getQueryScope().putParam("Part", "x");
+        final List<Function<Table, Table>> hidingPart = List.of(
+                t -> t.renameColumns("Renamed = Part"),
+                t -> t.dropColumns("Part"));
+        for (final Function<Table, Table> hidePart : hidingPart) {
+            // select() materializes the table before the operation, so the expected result coalesces no operation
+            final Table memTable = hidePart.apply(ParquetTools.readTable(destPath).select());
+            for (final String column : new String[] {"Z = Part", "Z = Other + Part"}) {
+                // a new disk table for each column, since a coalesced table answers every later selectDistinct
+                final Table diskTable = hidePart.apply(ParquetTools.readTable(destPath));
+                assertTableEquals(memTable.selectDistinct(column), diskTable.selectDistinct(column));
+            }
+        }
+    }
+
+    @Test
+    public void partitionedFilterWithCrossRowDependenciesTest() {
+        final String destPath =
+                Path.of(rootFile.getPath(), "ParquetTest_partitionedFilterWithCrossRowDependenciesTest").toString();
+        // the partitions hold consecutive rows: p0 holds Value 0 to 3, p1 holds 4 to 7, and p2 holds 8 to 11
+        final Table source = TableTools.emptyTable(12).update("Part = `p` + (int) (ii / 4)", "Value = ii");
+        ParquetTools.writeKeyValuePartitionedTable(source.partitionBy("Part"), destPath, EMPTY);
+
+        // A filter that depends on other rows sees every row that the filter's where receives, as on a memory table, so
+        // a partition filter in the same where, or in a later where, must not prune ahead of the filter: Value 4, the
+        // first row of p1, has the previous row Value 3, from p0. A partition filter in an earlier where still prunes.
+        final List<Function<Table, Table>> operations = List.of(
+                t -> t.where("Value_[i - 1] == 3").where("Part == `p1`"),
+                t -> t.where("Part == `p1`", "Value_[i - 1] == 3"),
+                t -> t.where("Value_[i - 1] == 3", "Part == `p1`"),
+                t -> t.where("i == 4").where("Part == `p1`"),
+                t -> t.where("Value_[0] == Value - 4").where("Part == `p1`"),
+                t -> t.renameColumns("V = Value").where("V_[i - 1] == 3").where("Part == `p1`"),
+                t -> t.where(new IncrementalReleaseFilter(6, 1)).where("Part == `p1`"),
+                t -> t.where(new RollingReleaseFilter(6, 1)).where("Part == `p1`"),
+                t -> t.where("Part == `p1`").where("Value_[i - 1] == 4"));
+        final Table memTable = ParquetTools.readTable(destPath).select();
+        for (final Function<Table, Table> operation : operations) {
+            assertTableEquals(operation.apply(memTable), operation.apply(ParquetTools.readTable(destPath)));
+        }
+    }
+
+
+    @Test
+    public void partitionedSelectDistinctWithCrossRowDependenciesTest() {
+        final String destPath = Path.of(rootFile.getPath(),
+                "ParquetTest_partitionedSelectDistinctWithCrossRowDependenciesTest").toString();
+        final Table source = TableTools.emptyTable(12).update("Part = `p` + (int) (ii / 4)", "Value = ii");
+        ParquetTools.writeKeyValuePartitionedTable(source.partitionBy("Part"), destPath, EMPTY);
+
+        // A partitioned table answers a selectDistinct that reads only partitioning columns from the location table,
+        // which has one row per location, so a column with cross-row dependencies must read the rows of the table
+        // instead: i is a row position, not a location position.
+        final Table memTable = ParquetTools.readTable(destPath).select();
+        for (final String column : new String[] {"Z = i", "Z = ii % 5", "Z = Part + `-` + i"}) {
+            assertTableEquals(memTable.selectDistinct(column), ParquetTools.readTable(destPath).selectDistinct(column));
+            // a deferred view asks the partitioned table to select distinct values
+            assertTableEquals(memTable.renameColumns("V = Value").selectDistinct(column),
+                    ParquetTools.readTable(destPath).renameColumns("V = Value").selectDistinct(column));
+        }
+    }
+
+    @Test
     public void flatPartitionsColumnRenameTest() {
         final String destPath = Path.of(rootFile.getPath(), "ParquetTest_flatPartitionsTest").toString();
         final int tableSize = 1_000_000;

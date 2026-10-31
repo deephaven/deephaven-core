@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
@@ -36,7 +35,7 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
-public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
+public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter, RenameableFilter {
 
     private static final long serialVersionUID = 1L;
 
@@ -119,25 +118,35 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return failedOver ? failoverFilter.get() : null;
     }
 
-    public WhereFilter renameFilter(Map<String, String> renames) {
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The renamed filter keeps the values this filter converted, rather than converting the values again against the
+     * table being filtered, where a name that this filter read as a query-scope variable may name a column.
+     */
+    @Override
+    public Optional<WhereFilter> renamedFilter(Map<String, String> renames) {
+        if (!initialized) {
+            throw new IllegalStateException("Filter must be initialized to invoke renamedFilter");
+        }
         final ConditionFilter failover = getFailoverFilter();
         if (failover != null) {
             // The failover defines this filter, and uses columns that the renames may cover without covering ours. A
             // renamed MatchFilter would re-convert its values against the renamed table, where a column this filter
             // compares with may instead resolve as a query-scope variable.
-            return failover.renameFilter(renames);
+            return failover.renamedFilter(renames);
         }
-        final String newName = renames.get(columnName);
-        Assert.neqNull(newName, "newName");
-        if (strValues == null) {
-            // when we're constructed with values then there is no failover filter
-            return new MatchFilter(matchOptions, newName, values);
-        } else {
-            return new MatchFilter(
-                    failoverFilter != null ? new CachingSupplier<>(
-                            () -> failoverFilter.get().renameFilter(renames)) : null,
-                    matchOptions, newName, strValues, null);
-        }
+        // A rename keeps the column's type, so the converted values suit the renamed column. The renamed filter starts
+        // out initialized, so the renamed filter never converts again and never fails over.
+        final String newName = renames.getOrDefault(columnName, columnName);
+        final MatchFilter renamed = strValues == null
+                ? new MatchFilter(matchOptions, newName, values)
+                : new MatchFilter(null, matchOptions, newName, strValues, null);
+        renamed.initialized = true;
+        renamed.chunkFilter = chunkFilter;
+        renamed.values = values;
+        renamed.columnType = columnType;
+        return Optional.of(renamed);
     }
 
     /**
@@ -233,6 +242,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         final WhereFilter failover = getFailoverFilter();
         return failover != null && failover.hasVirtualRowVariables();
     }
+
 
     @Override
     public boolean canPushdown() {
@@ -1202,7 +1212,7 @@ public class MatchFilter extends WhereFilterImpl implements ExposesChunkFilter {
         final MatchFilter copy;
         if (strValues != null) {
             // The supplier copies our failover lazily: a copy that fails over (below) gets a copy of our initialized
-            // failover, and one that does not still needs it so that a renameFilter() of the copy can fail over.
+            // failover, and one that does not still needs it so that a renamedFilter() of the copy can fail over.
             copy = new MatchFilter(
                     failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy()),
                     matchOptions, columnName, strValues, null);
