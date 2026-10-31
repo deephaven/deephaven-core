@@ -301,7 +301,7 @@ Recall that the logical clock is always in one of two phases, _updating_ or _idl
 With that information, a concurrent consumer decides two things:
 
 - Which data to read. If the cycle is idle, or the source table has already finished updating on the current step, the consumer reads the current row set and column source data. Otherwise, it reads the previous row set and previous column values, both described in [Removed or modified values](#removed-or-modified-values).
-- Whether the read succeeded. If a new cycle started while the consumer was reading, or the cycle finished while it was reading previous values, the result can't be proven consistent. The consumer then retries the read, and it falls back to acquiring the [shared lock](https://deephaven.io/core/javadoc/io/deephaven/engine/updategraph/UpdateGraph.html#sharedLock()) if retries keep failing.
+- Whether the read succeeded. If a new cycle started while the consumer was reading, or the cycle finished while it was reading previous values, the result can't be proven consistent. The consumer then retries the read, and it falls back to acquiring the shared lock if retries keep failing.
 
 Deephaven provides utilities that encapsulate all of this complexity, for internal use as well as user code. These utilities let many table operations initialize concurrently with the update cycle. Client-driven snapshots and table subscriptions through Deephaven's implementation of [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html), such as the viewports the web UI uses to display ticking tables, use them too.
 
