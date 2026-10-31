@@ -1594,8 +1594,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                                                     .awaitCompletion(currentMappingFuture);
                                         } catch (ExecutionException | InterruptedException e) {
                                             if (e instanceof InterruptedException
+                                                    && !currentMappingFuture.cancel(false)
                                                     && !currentMappingFuture.isCompletedExceptionally()) {
-                                                // the filter finished before the interrupt, which abandons its mapping
+                                                // the filter finished before the interrupt, which abandons its mapping;
+                                                // a filter still running finds the future cancelled, and closes its own
                                                 currentMappingFuture.join().close();
                                             }
                                             final Throwable cause = (e instanceof InterruptedException)
