@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK0_SHIFT;
@@ -33,6 +34,19 @@ public interface SparseBlockColumnSource {
      * @param empty whether the result holds no rows after this cycle
      */
     void clearBlocks(RowSet blocksToClear, RowSet removeBlocks2, RowSet removeBlocks1, boolean empty);
+
+    /**
+     * Return an estimate of the heap size taken by the current values within this source.
+     *
+     * <p>
+     * Only leaf nodes and the size arrays of references are included in this estimate. Intermediate objects are
+     * ignored, and an array of references is assumed to take 8 bytes per element with no overhead.
+     * </p>
+     *
+     * @return an estimate of the size of this column source's current data
+     */
+    @TestUseOnly
+    long estimateSize();
 
     /**
      * At the end of this cycle, release each block, block2 and block1 structure of {@code sources} that holds a row key

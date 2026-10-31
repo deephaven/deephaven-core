@@ -173,11 +173,10 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
         }
 
         private long estimateSize() {
-            long size = 32;
             if (children == null) {
-                return oneChild == null ? size : size + oneChild.estimateSize();
+                return oneChild == null ? 0 : oneChild.estimateSize();
             }
-            size += 16 + (long) children.length * Long.BYTES;
+            long size = (long) children.length * Long.BYTES;
             for (final Level1 child : children) {
                 if (child != null) {
                     size += child.estimateSize();
@@ -216,11 +215,10 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
         }
 
         private long estimateSize() {
-            long size = 32;
             if (children == null) {
-                return oneChild == null ? size : size + oneChild.estimateSize();
+                return oneChild == null ? 0 : oneChild.estimateSize();
             }
-            size += 16 + (long) children.length * Long.BYTES;
+            long size = (long) children.length * Long.BYTES;
             for (final Level2 child : children) {
                 if (child != null) {
                     size += child.estimateSize();
@@ -347,25 +345,23 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
         }
 
         private long estimateSize() {
-            long size = 40;
             if (oneIndex != MANY_CHILDREN) {
                 if (oneBlock != null) {
-                    size += 16 + (long) BLOCK_SIZE * Character.BYTES;
-                } else if (oneCompact != null) {
-                    size += oneCompact.estimateSize();
+                    return (long) BLOCK_SIZE * Character.BYTES;
                 }
-                return size;
+                return oneCompact == null ? 0 : oneCompact.estimateSize();
             }
+            long size = 0;
             if (blocks != null) {
-                size += 16 + (long) blocks.length * Long.BYTES;
+                size += (long) blocks.length * Long.BYTES;
                 for (final char[] block : blocks) {
                     if (block != null) {
-                        size += 16 + (long) BLOCK_SIZE * Character.BYTES;
+                        size += (long) BLOCK_SIZE * Character.BYTES;
                     }
                 }
             }
             if (compacts != null) {
-                size += 16 + (long) compacts.length * Long.BYTES;
+                size += (long) compacts.length * Long.BYTES;
                 for (final CharCompactLeaf compact : compacts) {
                     if (compact != null) {
                         size += compact.estimateSize();
@@ -1284,6 +1280,7 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
     }
 
     @TestUseOnly
+    @Override
     public long estimateSize() {
         return root.estimateSize();
     }
