@@ -167,6 +167,45 @@ public final class ByteBitmapLeaf extends ByteCompactLeaf {
     }
 
     @Override
+    public int copyOffsets(final int firstOffset, final int lastOffset, final int[] dest) {
+        int count = 0;
+        for (int wi = firstOffset >>> 6; wi <= lastOffset >>> 6; ++wi) {
+            long wordBits = bits[wi] & rangeMask(wi, firstOffset, lastOffset);
+            while (wordBits != 0) {
+                dest[count++] = (wi << 6) + Long.numberOfTrailingZeros(wordBits);
+                wordBits &= wordBits - 1;
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public void overlayRange(
+            final int firstOffset,
+            final int lastOffset,
+            final WritableByteChunk<?> dest,
+            final int destOffset) {
+        int index = rank(firstOffset);
+        for (int wi = firstOffset >>> 6; wi <= lastOffset >>> 6; ++wi) {
+            long wordBits = bits[wi] & rangeMask(wi, firstOffset, lastOffset);
+            while (wordBits != 0) {
+                final int offset = (wi << 6) + Long.numberOfTrailingZeros(wordBits);
+                dest.set(destOffset + offset - firstOffset, values[index++]);
+                wordBits &= wordBits - 1;
+            }
+        }
+    }
+
+    /**
+     * @return the bits of word {@code wi} for offsets from {@code firstOffset} through {@code lastOffset} inclusive
+     */
+    private static long rangeMask(final int wi, final int firstOffset, final int lastOffset) {
+        final long fromFirst = wi == firstOffset >>> 6 ? -1L << firstOffset : -1L;
+        final long throughLast = wi == lastOffset >>> 6 ? -1L >>> (63 - (lastOffset & 63)) : -1L;
+        return fromFirst & throughLast;
+    }
+
+    @Override
     public void fillRange(
             final int firstOffset,
             final int lastOffset,

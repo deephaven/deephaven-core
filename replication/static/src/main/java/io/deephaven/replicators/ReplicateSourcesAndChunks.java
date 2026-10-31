@@ -664,7 +664,8 @@ public class ReplicateSourcesAndChunks {
                 "",
                 "    @Override",
                 "    public final T getPrev(final long rowKey) {",
-                "        return get(rowKey);",
+                "        // noinspection unchecked",
+                "        return (T) getPrevValue(rowKey);",
                 "    }"));
         lines = addReferenceSize(lines);
         FileUtils.writeLines(sourceFile, lines);

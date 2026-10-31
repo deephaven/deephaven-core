@@ -128,7 +128,11 @@ public class ReplicateSourceAndChunkTests {
                 "final ObjectAdaptiveSparseArraySource source", "final ObjectAdaptiveSparseArraySource<Object> source",
                 "Long2ObjectOpenHashMap expected", "Long2ObjectOpenHashMap<Object> expected",
                 "Long2ObjectOpenHashMap shifted", "Long2ObjectOpenHashMap<Object> shifted",
+                "Long2ObjectOpenHashMap expectedPrev", "Long2ObjectOpenHashMap<Object> expectedPrev",
                 "new Long2ObjectOpenHashMap\\(\\)", "new Long2ObjectOpenHashMap<>()",
+                "new Long2ObjectOpenHashMap\\(expected\\)", "new Long2ObjectOpenHashMap<>(expected)",
+                "ObjectChunk<\\? extends Values>", "ObjectChunk<Object, ? extends Values>",
+                "source.getPrevObject", "source.getPrev",
                 "WritableObjectChunk<Values>", "WritableObjectChunk<Object, Values>",
                 "source.getObject", "source.get");
         FileUtils.writeLines(objectFile, lines);
