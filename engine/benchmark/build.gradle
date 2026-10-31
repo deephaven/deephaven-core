@@ -91,6 +91,7 @@ createJmhTask('jmhRunNullableLongLongMap', 'NullableLongLongMapBench')
 createJmhTask('jmhRunPercentileBy', 'PercentileByBenchmark', [], '12g')
 createJmhTask('jmhRunPositionalSelect', 'PositionalSelectBenchmark', [], '32g')
 createJmhTask('jmhRunPositionalSelectRead', 'PositionalSelectReadBenchmark', [], '16g')
+createJmhTask('jmhRunSparseStorage', 'SparseStorageBenchmark', [], '16g')
 
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
@@ -122,3 +123,7 @@ createDeephavenTestExecTask('byBenchmark', 'io.deephaven.benchmark.engine.GroupB
 createDeephavenTestExecTask('sumByBenchmark', 'io.deephaven.benchmark.engine.SumByBenchmark')
 createDeephavenTestExecTask('percentileByBenchmark', 'io.deephaven.benchmark.engine.PercentileByBenchmark')
 createDeephavenTestExecTask('lastByBenchmark', 'io.deephaven.benchmark.engine.LastByBenchmark')
+createDeephavenTestExecTask('sparseStorageMemory', 'io.deephaven.benchmark.engine.sparse.SparseStorageMemory')
+tasks.named('sparseStorageMemory') {
+    maxHeapSize = '16g'
+}
