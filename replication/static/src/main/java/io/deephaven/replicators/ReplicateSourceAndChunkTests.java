@@ -49,6 +49,10 @@ public class ReplicateSourceAndChunkTests {
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterAdaptiveSparseArraySource.java");
         charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/sparse/TestCharCompactLeaf.java");
+        fixupObjectAdaptiveSparseArraySourceTest(charToObject(TASK,
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterAdaptiveSparseArraySource.java"));
+        fixupObjectCompactLeafTest(charToObject(TASK,
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/sparse/TestCharCompactLeaf.java"));
         charToAllButBoolean(TASK,
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterImmutableArraySource.java");
         charToAllButBoolean(TASK,
@@ -107,6 +111,36 @@ public class ReplicateSourceAndChunkTests {
                 "new ObjectArraySource\\(\\)", "new ObjectArraySource<>\\(String.class\\)",
                 "new ObjectSparseArraySource\\(\\)", "new ObjectSparseArraySource<>\\(String.class\\)");
         lines = removeRegion(lines, "boxing imports");
+        FileUtils.writeLines(objectFile, lines);
+    }
+
+    private static void fixupObjectAdaptiveSparseArraySourceTest(final String objectPath) throws IOException {
+        final File objectFile = new File(objectPath);
+        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+        lines = removeImport(lines, "import static io.deephaven.util.QueryConstants.NULL_OBJECT;");
+        lines = globalReplacements(lines,
+                "NULL_OBJECT", "null",
+                "ObjectAdaptiveSparseArraySource makeTestSource",
+                "ObjectAdaptiveSparseArraySource<Object> makeTestSource",
+                "new ObjectAdaptiveSparseArraySource\\(\\)", "new ObjectAdaptiveSparseArraySource<>(Object.class)",
+                "new ObjectAdaptiveSparseArraySource\\(sortedThreshold, compactThreshold\\)",
+                "new ObjectAdaptiveSparseArraySource<>(Object.class, null, sortedThreshold, compactThreshold)",
+                "final ObjectAdaptiveSparseArraySource source", "final ObjectAdaptiveSparseArraySource<Object> source",
+                "Long2ObjectOpenHashMap expected", "Long2ObjectOpenHashMap<Object> expected",
+                "Long2ObjectOpenHashMap shifted", "Long2ObjectOpenHashMap<Object> shifted",
+                "new Long2ObjectOpenHashMap\\(\\)", "new Long2ObjectOpenHashMap<>()",
+                "WritableObjectChunk<Values>", "WritableObjectChunk<Object, Values>",
+                "source.getObject", "source.get");
+        FileUtils.writeLines(objectFile, lines);
+    }
+
+    private static void fixupObjectCompactLeafTest(final String objectPath) throws IOException {
+        final File objectFile = new File(objectPath);
+        List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+        lines = removeImport(lines, "import static io.deephaven.util.QueryConstants.NULL_OBJECT;");
+        lines = globalReplacements(lines,
+                "NULL_OBJECT", "null",
+                "WritableObjectChunk<Values>", "WritableObjectChunk<Object, Values>");
         FileUtils.writeLines(objectFile, lines);
     }
 
