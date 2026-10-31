@@ -1,36 +1,44 @@
 ---
-title: Query Scope
+title: Query scope
 ---
 
-Deephaven [query strings](./query-string-overview.md) allow complex queries to be expressed with a concise syntax. These query strings can implement [formulas](./formulas.md) or [filters](./filters.md) that use Groovy variables. For example, the [query string](./query-string-overview.md) in this [`update`](../reference/table-operations/select/update.md) uses the variable `a` from Groovy.
+Deephaven [query strings](./query-string-overview.md) let you express complex queries in a concise syntax. These [query strings](./query-string-overview.md) can implement [formulas](./formulas.md) or [filters](./filters.md) that use [Groovy variables](./groovy-variables.md). For example, the [query string](./query-string-overview.md) in this [`update`](../reference/table-operations/select/update.md) uses the variable `a` from Groovy. Variables make queries easier to understand and reuse.
 
 ```groovy skip-test
 a = 2
 t2 = t.update("Y = a * X")
 ```
 
-This guide will walk you through Groovy's scoping rules and the process for adding variables and using functions in Groovy query strings. There are many reasons to use variables: more understandable code, better reusability, and in some cases, improved efficiency.
-
-If you'd like to learn more about query strings and the basic rationale of the query scope, see our [conceptual guide](../how-to-guides/query-scope.md).
+The query scope is the set of user-defined variables and functions that [query strings](./query-string-overview.md) can refer to. When Deephaven evaluates `Y = a * X`, it looks up `a` in the query scope. This guide walks you through how Deephaven resolves [Groovy variables](./groovy-variables.md) and functions in [query strings](./query-string-overview.md). To learn how to use each kind of variable and function, see [Groovy variables in query strings](./groovy-variables.md) and [Groovy closures in queries](./groovy-closures.md).
 
 > [!NOTE]
 > Variable names and function names are case-sensitive.
 
 ## Query scope in Groovy
 
-In Groovy, the Deephaven Query Language resolves variables using the [`QueryScope`](/core/javadoc/io/deephaven/engine/context/QueryScope.html). Unlike some other languages, Groovy requires explicit management of the query scope for most use cases. Groovy's query scope resolution follows these rules in order:
+In Groovy, [query strings](./query-string-overview.md) resolve variables through the [`QueryScope`](/core/javadoc/io/deephaven/engine/context/QueryScope.html). In a Groovy session, the query scope is the script session's variable binding: the set of named variables the session holds. The following rules decide which variables the binding contains:
 
-1. **Local (function) scope**: Variables explicitly added to the query scope using `QueryScope.addParam()` are checked first
-2. **Script-level scope**: Variables defined at the top level of a Groovy script are automatically added to the query scope and checked second
-3. **Global scope**: Built-in functions and globally available variables are checked last
+- Variables assigned at the top level of a Groovy script without `def` or a type (for example, `a = 2`) are in the query scope without a call to [`addParam`](/core/javadoc/io/deephaven/engine/context/QueryScope.html#addParam(java.lang.String,T)).
+- Variables declared with `def` or a type, even at the top level (for example, `def a = 2` or `int a = 2`), and variables local to a method or [closure](./groovy-closures.md) are not in the query scope. Add them with [`QueryScope.addParam(name, value)`](/core/javadoc/io/deephaven/engine/context/QueryScope.html#addParam(java.lang.String,T)).
+- [`addParam`](/core/javadoc/io/deephaven/engine/context/QueryScope.html#addParam(java.lang.String,T)) writes into the same binding as top-level variables. It overwrites any existing variable with that name, and the variable stays available after the method or [closure](./groovy-closures.md) returns.
 
-This means that local variables (when explicitly added) take precedence over script-level variables, which in turn take precedence over global variables. Unlike Python's LEGB (Local, Enclosing, Global, Built-in) scoping rule where variables are automatically resolved, Groovy requires explicit management of the query scope for variables that are not at the script level.
+When a [query string](./query-string-overview.md) uses a name, the engine resolves it in this order:
+
+1. A column, a [column array](./work-with-arrays.md#using-the-underscore-operator) such as `A_`, or a [built-in variable](./built-in-variables.md) ([`i`](./built-in-variables.md), [`ii`](./built-in-variables.md), [`k`](./built-in-variables.md)).
+2. A variable in the binding.
+3. A [built-in constant](./built-in-constants.md). A variable named `MINUTE` therefore hides the built-in [`MINUTE`](./built-in-constants.md).
+
+A variable name that isn't found in any of these places fails with a `Cannot find variable or class` error.
+
+Function calls resolve the other way around: a [built-in function](./built-in-functions.md) wins over a [closure](./groovy-closures.md) with the same name when one of its overloads accepts the arguments.
+
+Deephaven's own [built-in functions, constants, and variables](#built-in-functions-constants-and-variables) are always available and don't come from the query scope.
 
 ## Examples
 
 ### Script-level scope
 
-Variables defined at the top level of a Groovy script are automatically available in query strings without any additional setup.
+In the following example, `globalVar` is assigned at the top level without `def`, so the [query string](./query-string-overview.md) can use it directly.
 
 ```groovy order=source,result
 globalVar = 42
@@ -40,138 +48,27 @@ source = newTable(intCol("A", 1, 2, 3))
 result = source.update("X = A * globalVar")
 ```
 
-### Local (function) scope
+A top-level variable declared with `def` is not in the binding, so a [query string](./query-string-overview.md) can't use it. The following query fails with a `Cannot find variable or class factor` error:
 
-Variables defined within functions, closures, or any local scope must be explicitly added to the query scope to be used in query strings.
+```groovy should-fail
+def factor = 3
 
-```groovy order=source,result
-def processWithLocalVar(Table table, int multiplier) {
-    // Local variable must be explicitly added to query scope
-    QueryScope.addParam("multiplier", multiplier)
-    return table.update("X = A * multiplier")
-}
-
-source = newTable(intCol("A", 1, 2, 3))
-
-result = processWithLocalVar(source, 5)
+result = emptyTable(3).update("X = i * factor")
 ```
 
-### Enclosing (nonlocal) scope
-
-Variables from enclosing scopes (such as variables in outer functions) are not automatically available in query strings and must be explicitly added to the query scope.
+Assign the variable without `def` instead:
 
 ```groovy order=result
-def outerFunction() {
-    def enclosingVar = 10
-    
-    def innerFunction = { Table table ->
-        // Enclosing variable must be explicitly added to query scope
-        QueryScope.addParam("enclosingVar", enclosingVar)
-        return table.update("X = A * enclosingVar")
-    }
-    
-    def source = newTable(intCol("A", 1, 2, 3))
-    return innerFunction(source)
-}
+factor = 3
 
-result = outerFunction()
+result = emptyTable(3).update("X = i * factor")
 ```
 
-### Encapsulated query logic in functions
+### Script-level functions
 
-It is very common to encapsulate query logic within functions to create cleaner, more readable code. Such functions may use variables in query strings. In Groovy, function parameters and local variables are **not** automatically available to query strings - they must be manually added to the query scope using `QueryScope.addParam()`.
+A [closure](./groovy-closures.md) assigned to a top-level variable is in the binding, so a [query string](./query-string-overview.md) can call it. A script method, such as `def myFunction(int a) { ... }`, is not in the binding, and a [query string](./query-string-overview.md) can't call it. Assign a [closure](./groovy-closures.md) to a variable instead.
 
-In this example, the `compute` function performs a query using the `source` table and the input parameter `a`. Since `a` is a function parameter (not a top-level script variable), it must be explicitly added to the query scope to be used in the query string.
-
-```groovy order=source,result1,result2
-f = { int a, int b -> a * b }
-
-compute = { Table source, int a ->
-
-    // Values must be added to the query scope to be used in query strings.
-    QueryScope.addParam("a", a)
-
-    return source.update("X = (int)f(a, A)")
-}
-
-source = newTable(intCol("A", 1, 2, 3))
-
-result1 = compute(source, 10)
-result2 = compute(source, 3)
-```
-
-### Global scope
-
-Deephaven provides built-in functions, constants, and variables that are globally available in all query strings without any additional setup. These include mathematical functions, type conversion utilities, and other commonly used operations. The following query demonstrates using built-in global functions and constants in query strings.
-
-```groovy order=result1,result2,result3
-a = 1
-b = 2
-
-myFunc = { -> 5 }
-
-result1 = newTable(intCol("A", a, b))
-result2 = newTable(stringCol("X", "A", "B", "C")).update("Y = (int)Math.sin(ii)")
-result3 = newTable(intCol("A", 1, 2, 3)).update("X = (int)myFunc()")
-```
-
-## Use variables in a query string
-
-In Groovy, variables can be made available to query strings in two ways: [manually](#manually) using `QueryScope.addParam()` and [automatically](#automatically) for top-level script variables.
-
-### Manually
-
-To add the variable by hand, use this basic syntax:
-
-```groovy skip-test
-QueryScope.addParam(name, value)
-```
-
-In the following example, the value 7 is assigned to the variable `a`.
-
-```groovy
-QueryScope.addParam("a", 7)
-
-result = emptyTable(5).update("Y = a")
-```
-
-This variable can be used inside a query string.
-
-```groovy order=source,result
-QueryScope.addParam("a", 7)
-
-source = newTable(intCol("A", 1, 2, 3))
-
-result = source.update("X = 2 + 3 * sqrt(A) + a")
-```
-
-### Automatically
-
-Variables defined at the top level of a Groovy script are automatically added to the query scope. This only applies to variables declared directly in the script, not within functions or closures.
-
-In the next example, `b = 3` is defined at the top level, so it's automatically available in query strings.
-
-```groovy
-b = 3
-
-result = emptyTable(5).update("Y = b")
-```
-
-This variable can be used inside a query string.
-
-```groovy order=source,result
-b = 3
-
-source = newTable(intCol("A", 1, 2, 3))
-
-result = source.update("X = 2 + 3 * sqrt(A) + b")
-```
-
-## Use functions in a query string
-
-We can also define a function and use it inside a query string.
-
-In the next example, `myFunction` is defined and is called from the query string.
+In the following example, the [query string](./query-string-overview.md) calls the top-level [closure](./groovy-closures.md) `myFunction`.
 
 ```groovy order=source,result
 myFunction = { int a -> a * (a + 1) }
@@ -181,37 +78,95 @@ source = newTable(intCol("A", 1, 2, 3))
 result = source.update("X = 2 + 3 * (int)myFunction(A)")
 ```
 
-## Example
+The `(int)` cast is needed because a [closure](./groovy-closures.md) called from a [query string](./query-string-overview.md) returns [`Object`](../reference/query-language/types/objects.md). For details, see [Groovy closures in queries](./groovy-closures.md).
 
-In this example, we want to know how much sales tax we will pay in various states given how much money is spent. The query scope is helpful because we can easily change the value of money spent as we call the function more than once.
+### Local (function) scope
 
-Note that `sales_price` must be explicitly added to the query scope since it's a function parameter, not a top-level variable.
+To use a variable defined in a method, [closure](./groovy-closures.md), or any other local scope in a [query string](./query-string-overview.md), you must add it to the query scope with [`QueryScope.addParam`](/core/javadoc/io/deephaven/engine/context/QueryScope.html#addParam(java.lang.String,T)):
+
+<a id="manually"></a>
+
+```groovy syntax
+QueryScope.addParam(name, value)
+```
+
+In the following example, `processWithLocalVar` defines a local variable, `multiplier`, and adds it to the query scope with [`QueryScope.addParam`](/core/javadoc/io/deephaven/engine/context/QueryScope.html#addParam(java.lang.String,T)) before the [query string](./query-string-overview.md) uses it.
+
+```groovy order=source,result
+def processWithLocalVar(Table table) {
+    def multiplier = 5
+    // Local variable must be explicitly added to query scope
+    QueryScope.addParam("multiplier", multiplier)
+    return table.update("X = A * multiplier")
+}
+
+source = newTable(intCol("A", 1, 2, 3))
+
+result = processWithLocalVar(source)
+```
+
+A variable from an enclosing method or [closure](./groovy-closures.md) needs the same call. A [closure](./groovy-closures.md) can capture it, but the [query string](./query-string-overview.md) can't see it until you add it with [`QueryScope.addParam`](/core/javadoc/io/deephaven/engine/context/QueryScope.html#addParam(java.lang.String,T)).
+
+### Columns take precedence over variables
+
+A column with the same name as a variable wins. In the following example, `a` in the [formula](./formulas.md) `B = a + 1` refers to the column `a`, not the variable `a`, so `B` is 1, 3, and 5 rather than 101.
+
+```groovy order=result
+a = 100
+
+result = emptyTable(3).update("a = i * 2", "B = a + 1")
+```
+
+### Encapsulated query logic in closures
+
+Wrapping query logic in a [closure](./groovy-closures.md) is a common way to keep code clean and readable. Building on [Local (function) scope](#local-function-scope), you can wrap a whole query in a [closure](./groovy-closures.md) and pass the values that change as parameters. Add each parameter to the query scope before the [query string](./query-string-overview.md) uses it.
+
+In the following example, we want to know how much sales tax we'll pay in several states for a given purchase amount. The `computeTax` [closure](./groovy-closures.md) adds its `salesPrice` parameter to the query scope, because a [closure](./groovy-closures.md) parameter is not a top-level variable. Calling `computeTax` with a different amount changes the result without changing the query.
 
 ```groovy order=source,result1,result2
-computeTax = { Table source, int a ->
-    // Function parameters must be explicitly added to query scope
-    QueryScope.addParam("sales_price", a)
-    return source.update("Taxed = SalesTaxRate * sales_price * 0.01")
+computeTax = { Table source, int salesPrice ->
+    // Closure parameters must be explicitly added to the query scope
+    QueryScope.addParam("salesPrice", salesPrice)
+    return source.update("SalesTax = SalesTaxRate * salesPrice * 0.01")
 }
 
 source = newTable(
-            stringCol("State", "CO", "WY", "UT", "AZ", "NV"),
-            doubleCol("SalesTaxRate", 2.9, 4, 5.95, 5.6, 6.85)
-        )
+    stringCol("State", "CO", "WY", "UT", "AZ", "NV"),
+    doubleCol("SalesTaxRate", 2.9, 4, 5.95, 5.6, 6.85)
+)
 
 result1 = computeTax(source, 500)
 result2 = computeTax(source, 300)
 ```
 
+## Built-in functions, constants, and variables
+
+Deephaven provides [built-in functions](./built-in-functions.md), [constants](./built-in-constants.md), and [variables](./built-in-variables.md) that [query strings](./query-string-overview.md) can use without adding them to the query scope. The engine imports the functions and constants into the query language and recognizes the variables [`i`](./built-in-variables.md), [`ii`](./built-in-variables.md), and [`k`](./built-in-variables.md) by name.
+
+The following query uses the built-in function [`sin`](/core/javadoc/io/deephaven/function/Numeric.html#sin(long)), the built-in constant [`MINUTE`](./built-in-constants.md), and the built-in variables [`i`](./built-in-variables.md) and [`ii`](./built-in-variables.md). Some [refreshing tables](../conceptual/table-types.md) restrict the built-in variables. For details, see [Built-in query language variables](./built-in-variables.md#refreshing-table-restrictions).
+
+```groovy order=result
+result = emptyTable(5).update("X = sin(ii)", "Y = MINUTE * i")
+```
+
 ## Related documentation
 
-- [Built-in query language constants](./built-in-constants.md)
+- [Deephaven's table types](../conceptual/table-types.md)
+- [Arrays](./work-with-arrays.md)
+- [Query language built-in constants](./built-in-constants.md)
 - [Built-in query language variables](./built-in-variables.md)
 - [Built-in query language functions](./built-in-functions.md)
-- [Create a new table](./new-and-empty-table.md#newtable)
-- [Use variables in query strings](./groovy-variables.md)
-- [Use functions in query strings](./groovy-closures.md)
-- [Query language formulas](./formulas.md)
-- [`empty_table`](../reference/table-operations/create/emptyTable.md)
-- [`new_table`](../reference/table-operations/create/newTable.md)
-- [Javadoc](/core/javadoc/io/deephaven/engine/context/QueryScope.html)
+- [Create static tables](./new-and-empty-table.md#newtable)
+- [An overview of query strings](./query-string-overview.md)
+- [Groovy variables in query strings](./groovy-variables.md)
+- [Groovy closures in queries](./groovy-closures.md)
+- [Formulas](./formulas.md)
+- [Filters](./filters.md)
+- [Query scope reference](../reference/query-language/variables/scope.md)
+- [`emptyTable`](../reference/table-operations/create/emptyTable.md)
+- [`doubleCol`](../reference/table-operations/create/doubleCol.md)
+- [`intCol`](../reference/table-operations/create/intCol.md)
+- [`newTable`](../reference/table-operations/create/newTable.md)
+- [`stringCol`](../reference/table-operations/create/stringCol.md)
+- [`update`](../reference/table-operations/select/update.md)
+- [`QueryScope` Javadoc](/core/javadoc/io/deephaven/engine/context/QueryScope.html)
