@@ -27,7 +27,9 @@ import java.util.function.Consumer;
  * It is meant for a pool shaped like {@link #newHelperPool}, which may be small and shared by many callers, and on
  * which a job may itself invoke a nested iteration; the pool's size bounds the threads a caller adds to its own, never
  * the work it can finish. That pool queues a job while all of its threads are busy, so a thread that finishes another
- * caller's job then helps with this one, and a callback-form iteration returns once its jobs are submitted.
+ * caller's job then helps with this one, and a callback-form iteration returns once its jobs are submitted. A job on
+ * the pool must therefore not block waiting for a callback-form iteration or another submitted job, which may be queued
+ * behind it; it calls {@link #invokeParallel} instead, which runs the work itself when no thread is free.
  * </p>
  *
  * <p>
