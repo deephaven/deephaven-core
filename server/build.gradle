@@ -79,10 +79,7 @@ dependencies {
         because 'we want to provide MainHelper.installLogbackStopAsPostShutdownManagerHook by default'
     }
 
-    if ('true' == project.findProperty('extensions.classgraph.enabled')) {
-        runtimeOnly project(':extensions-classgraph')
-    }
-    testImplementation project(':extensions-classgraph')
+    testImplementation libs.classgraph
 
     if ('true' == project.findProperty('extensions.suanshu.enabled')) {
         runtimeOnly project(':extensions-suanshu')
