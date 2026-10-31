@@ -22,7 +22,7 @@ import io.deephaven.engine.table.impl.MergedListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseBlockColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.util.*;
@@ -44,7 +44,7 @@ public class SnapshotIncrementalListener extends MergedListener {
     private final QueryTable baseTable;
     private final Map<String, ? extends ColumnSource<?>> triggerColumns;
     private final SnapshotUtils.DataColumnCopy dataCopy;
-    private final SparseArrayColumnSource<?>[] sparseResultColumns;
+    private final SparseBlockColumnSource[] sparseResultColumns;
     private final WritableColumnSource<?>[] objectResultColumns;
     private final WritableColumnSource<?>[] movableResultColumns;
     private final ModifiedColumnSet[] dataColumnSets;
@@ -76,16 +76,16 @@ public class SnapshotIncrementalListener extends MergedListener {
         this.dataCopy = SnapshotUtils.dataColumnCopy(snapshotDataColumns, resultColumns);
 
         // a reinterpretable result column, such as an Instant column, may hold its values in a sparse primitive source
-        final List<SparseArrayColumnSource<?>> sparseColumns = new ArrayList<>(resultColumns.size());
+        final List<SparseBlockColumnSource> sparseColumns = new ArrayList<>(resultColumns.size());
         for (final ColumnSource<?> resultColumn : resultColumns.values()) {
-            final ColumnSource<?> storage = resultColumn instanceof SparseArrayColumnSource
+            final ColumnSource<?> storage = resultColumn instanceof SparseBlockColumnSource
                     ? resultColumn
                     : ReinterpretUtils.maybeConvertToPrimitive(resultColumn);
-            if (storage instanceof SparseArrayColumnSource) {
-                sparseColumns.add((SparseArrayColumnSource<?>) storage);
+            if (storage instanceof SparseBlockColumnSource) {
+                sparseColumns.add((SparseBlockColumnSource) storage);
             }
         }
-        this.sparseResultColumns = sparseColumns.toArray(SparseArrayColumnSource<?>[]::new);
+        this.sparseResultColumns = sparseColumns.toArray(SparseBlockColumnSource[]::new);
         this.objectResultColumns = SnapshotUtils.objectColumns(resultColumns);
         // shifted rows move through the primitive storage of reinterpretable columns, such as Instant columns
         this.movableResultColumns = resultColumns.values().stream()
@@ -222,7 +222,7 @@ public class SnapshotIncrementalListener extends MergedListener {
 
                 vacated.remove(resultRowSet);
                 SnapshotUtils.nullObjectColumns(objectResultColumns, vacated);
-                SparseArrayColumnSource.clearBlocksWithoutLiveRows(vacated, resultRowSet, sparseResultColumns);
+                SparseBlockColumnSource.clearBlocksWithoutLiveRows(vacated, resultRowSet, sparseResultColumns);
             }
 
             final ModifiedColumnSet modifiedColumns = resultTable.getModifiedColumnSetForUpdates();
