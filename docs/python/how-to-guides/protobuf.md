@@ -1,33 +1,35 @@
 ---
-title: Protocol Buffers and Remote Procedure Calls
+title: Protocol Buffers and remote procedure calls
 ---
 
-[Protobuf](https://protobuf.dev/), short for Protocol Buffers, is a language-neutral, platform-neutral mechanism for serializing structured data. By defining how data is structured a single time, you can use Protobuf to generate source code in multiple languages, which can then be used to serialize and deserialize data consistently across different systems.
+[Protobuf](https://protobuf.dev/), short for Protocol Buffers, is a language-neutral, platform-neutral mechanism for serializing structured data. You define how data is structured once, and Protobuf generates source code from that definition in multiple languages. Programs in each language use that code to serialize and deserialize the data consistently across different systems.
 
-Protobuf is one of several options for users who wish to build their own Deephaven client API. It is particularly powerful when considering performance, as binary serialization is much faster than string-based serialization. This is important for Deephaven, which is specifically designed to handle large amounts of data in real time. In short, Protobuf offers a closer-to-the-hardware binary representation of data, supporting higher throughput and lower latency than text-based serialization formats like JSON or XML.
+Protobuf serializes data to a compact binary format, which is faster to encode and decode than text-based formats like JSON or XML. That efficiency matters for Deephaven, which is designed to handle large amounts of data in real time. The requests and responses that drive a client's session stay small and fast. The table data itself travels in Arrow's columnar format, as described [below](#protobuf-and-grpc-in-deephaven).
 
-Protobuf allows you to define structured data types and services in language-neutral ways so that your code can interact with other languages and platforms. This is critical for client APIs because they need to be able to communicate with a Deephaven server regardless of the client language used. For example, the Python client API communicates with the Deephaven server despite being written largely in Java. Protobuf is the mechanism that standardizes the structures and messages sent between the two.
+Deephaven's client APIs talk to the server through [gRPC](https://grpc.io/), Google's open-source remote procedure call (RPC) framework. gRPC services are defined in Protobuf, so this guide covers both. Protobuf is one of several options for users who wish to build their own Deephaven client API. If you build your own client, these service definitions are what you program against.
 
-Deephaven defines several of its APIs using [gRPC](https://grpc.io/), Google's open-source Remote Procedure Call (RPC) framework. gRPC uses Protobuf as its interface description language, enabling it to let programs and/or objects written in one language communicate with those written in another language. Deephaven leverages this to facilitate communication between servers and clients in different languages. In particular, gRPC's support of bidirectional streaming is a key feature of Deephaven's architecture and design. For example, you can use the Java client API to connect to a Deephaven server and run queries while simultaneously using the Python client API to check the results of those queries. Protobuf can be used on its own, but since Deephaven uses it in conjunction with gRPC, this guide focuses on both.
+This guide explains what Protobuf and RPC are and what they do. It walks through two Deephaven `.proto` (Protobuf) files and shows how to generate Python code from them. Then it uses that code to authenticate with a Deephaven server and run code there.
 
-This guide provides a brief overview of what Protobuf and RPC are, what they do, and gives two examples of Deephaven `.proto` (Protobuf) files. For more detailed and specific guidance on Protobuf and gRPC, see:
+Most Python users don't need to generate code. The [`pydeephaven`](/core/client-api/python/code/pydeephaven.html) package already includes it for every Deephaven service. Generate code yourself when you write your own `.proto` definitions or build a client without `pydeephaven`. For more detailed and specific guidance on Protobuf and gRPC, see:
 
 - [Protobuf programming guides](https://protobuf.dev/programming-guides/)
 - [gRPC documentation](https://grpc.io/docs/)
 
-## Protobuf in Deephaven
+## Protobuf and gRPC in Deephaven
 
-Deephaven uses [gRPC](https://grpc.io/) (Remote Procedure Call) to define several of its APIs. gRPC uses Protobuf as its interface description language, enabling it to let programs and/or objects written in one language communicate with those written in another language. This is particularly useful for Deephaven, which is designed to work with multiple languages and platforms. In particular, gRPC's support of bidirectional streaming is a key feature of Deephaven's architecture and design.
+gRPC uses Protobuf to describe its services and the messages they exchange, so programs written in different languages can call each other. This matters for Deephaven, which is designed to work with multiple languages and platforms. For example, the [Python client API](../getting-started/pyclient-quickstart.md), written in Python, communicates with the Deephaven server, written in Java.
 
-It's because of gRPC and Protobuf that you can use multiple client APIs to interact with a Deephaven server. For example, you can use the Java client API to connect to a Deephaven server and run queries while simultaneously using the Python client API to check the results of those queries.
+gRPC and Protobuf let you use multiple client APIs with the same Deephaven server. For example, you can use the [Java client API](./java-client.md) to connect to a Deephaven server and run queries while you use the [Python client API](../getting-started/pyclient-quickstart.md) to check the results of those queries.
+
+Table data itself moves between servers and clients over [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) and Deephaven's [Barrage](../conceptual/what-is-barrage.md) protocol, both of which are built on gRPC. gRPC's support for bidirectional streaming is a key feature of Deephaven's architecture and design. Barrage uses it for subscriptions. A client sends its subscription request, and the server streams the ticking table's updates back on the same call.
 
 ## Protobuf concepts
 
-Protobuf can be used on its own for things like [serializing and deserializing Kafka payloads](./data-import-export/kafka-stream.md#read-kafka-topic-in-protobuf-format). The concepts defined in this section are specific to Protobuf; gRPC is the mechanism that enables clients to call server functions and methods, while Protobuf describes the data passed between them.
+The concepts in this section belong to Protobuf itself. You can also use Protobuf without gRPC. For example, Deephaven can [read Kafka topics whose payloads are Protobuf-encoded](./data-import-export/kafka-stream.md#read-kafka-topic-in-protobuf-format).
 
 ### Messages
 
-[Messages](https://protobuf.dev/reference/protobuf/edition-2023-spec/#message_definition) are structured data types that define schemas for serialized data. Similar to classes and structs, these contain fields with names, types, and unique numbers used for encoding and decoding.
+[Messages](https://protobuf.dev/reference/protobuf/proto3-spec/#message_definition) are structured data types that define schemas for serialized data. Similar to classes and structs, these contain fields with names, types, and unique numbers used for encoding and decoding.
 
 The following example defines a message called `Person` with four fields: `name`, `id`, `email`, and `phones`.
 
@@ -44,29 +46,35 @@ message Person {
 
 ### Enums
 
-[Enums](https://protobuf.dev/reference/protobuf/edition-2023-spec/#enum_definition) are a way to define a set of named values. They are useful for defining a fixed set of options for a field in a message. Enums are defined using the `enum` keyword, followed by the name of the enum and its values.
+[Enums](https://protobuf.dev/reference/protobuf/proto3-spec/#enum_definition) are a way to define a set of named values. They are useful for defining a fixed set of options for a field in a message. To define an enum, write the `enum` keyword followed by the enum's name and its values.
 
-The following example defines an Enum called `PhoneType` with three values: `MOBILE`, `HOME`, and `WORK`.
+The following example defines an enum called `PhoneType` with four values: `PHONE_TYPE_UNSPECIFIED`, `MOBILE`, `HOME`, and `WORK`. In proto3, an enum's first value must be `0`. It's also the value a field has when it isn't set, so the example reserves `0` for "unspecified". The `PhoneNumber` message then declares a field of type `PhoneType`, so each phone number records which kind of number it is.
 
 ```protobuf
 syntax = "proto3";
 
 enum PhoneType {
-    MOBILE = 0; // Value 0: Mobile phone
-    HOME = 1;   // Value 1: Home phone
-    WORK = 2;   // Value 2: Work phone
+    PHONE_TYPE_UNSPECIFIED = 0; // Value 0: No type set
+    MOBILE = 1;                 // Value 1: Mobile phone
+    HOME = 2;                   // Value 2: Home phone
+    WORK = 3;                   // Value 3: Work phone
+}
+
+message PhoneNumber {
+    string number = 1;  // Field 1: The phone number
+    PhoneType type = 2; // Field 2: Which kind of number it is
 }
 ```
 
 ## RPC concepts
 
-Remote Procedure Calls (RPC) allow programs to execute procedures on remote systems as if they were local. RPC allows data to be sent and received between a client and server, while Protobuf defines the structure, serializes, and deserializes it.
+RPC lets a program call a procedure on a remote system as if it were local. In gRPC, Protobuf defines the structure of each call's request and response and serializes them.
 
 ### Services
 
-[Services](https://protobuf.dev/reference/protobuf/edition-2023-spec/#service_definition) are a way to define a set of RPC methods that can be called remotely. Services are defined using the `service` keyword, followed by the name of the service and its methods.
+[Services](https://protobuf.dev/reference/protobuf/proto3-spec/#service_definition) define a set of RPC methods that a client can call remotely. To define a service, write the `service` keyword followed by the service's name and its methods.
 
-The following example defines a Service called `Greeter`, which implements two messages: `HelloRequest` and `HelloResponse` to send a hello message with a name and receive a greeting in response.
+The following example defines a service called `Greeter` with one RPC method, `SayHello`, which takes a `HelloRequest` message containing a name and returns a `HelloResponse` message containing a greeting.
 
 ```protobuf
 syntax = "proto3";
@@ -88,11 +96,13 @@ message HelloResponse {
 ```
 
 > [!NOTE]
-> It's best practice to define separate messages for requests and responses, hence the `HelloRequest` and `HelloResponse` messages in the example above. The use of separate single-argument requests and responses allows for API evolution without breaking backward compatibility. For example, extending an API by including additional data in the request or response messages won't break existing servers or clients running old code.
+> It's best practice to define separate messages for requests and responses, as the `HelloRequest` and `HelloResponse` messages in the example above do. Separate single-argument request and response messages let an API evolve without breaking backward compatibility. For example, extending an API by including additional data in the request or response messages won't break existing servers or clients running old code.
 
-## A simple Deephaven example
+## Read a Deephaven `.proto` file: input tables
 
-To illustrate how Deephaven uses Protobuf, consider the Protobuf definition for an [Input table](./input-tables.md). Input tables are tables with the special ability to add data manually via either the UI or programmatically. In the case of a client API, data can only be added programmatically. The source code shown below can be found [here](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/inputtable.proto).
+To illustrate how Deephaven uses Protobuf, consider the Protobuf definition for an [input table](./input-tables.md). [Input tables](./input-tables.md) are tables that users can add data to, either through the UI or programmatically. A client API adds data programmatically, as shown in [Send data to Deephaven from a Python client](./client-input-tables.md).
+
+The following excerpt from [`inputtable.proto`](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/inputtable.proto) on GitHub shows the service and its request and response messages. The full file also defines validation-error, column-metadata, and column-restriction messages, which the excerpt omits.
 
 ```protobuf
 /*
@@ -107,6 +117,7 @@ option optimize_for = SPEED;
 option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/inputtable";
 
 import "deephaven_core/proto/ticket.proto";
+import "google/protobuf/any.proto";
 
 /*
  * This service offers methods to manipulate the contents of input tables.
@@ -115,12 +126,18 @@ service InputTableService {
     /*
      * Adds the provided table to the specified input table. The new data to add must only have
      * columns (name, types, and order) which match the given input table's columns.
+     *
+     * If the data is invalid, an error response will be returned with details containing an
+     * InputTableValidationErrorList.
      */
     rpc AddTableToInputTable(AddTableRequest) returns (AddTableResponse) {}
 
     /*
     * Removes the provided table from the specified input tables. The tables indicating which rows
     * to remove are expected to only have columns that match the key columns of the input table.
+    *
+    * If the data is invalid, an error response will be returned with details containing an
+    * InputTableValidationErrorList.
     */
     rpc DeleteTableFromInputTable(DeleteTableRequest) returns (DeleteTableResponse) {}
 
@@ -132,7 +149,6 @@ message AddTableRequest {
 }
 
 message AddTableResponse {
-
 }
 
 message DeleteTableRequest {
@@ -145,70 +161,54 @@ message DeleteTableResponse {
 }
 ```
 
-The best way to understand this example is to break it down into its components:
+The following sections break this example into its components.
 
 ### Syntax, packages, options, and imports
 
-The first line of the file specifies the Protobuf version being used. In this case, it specifies `proto3`, the latest version of Protobuf.
+The `syntax` statement at the top of `inputtable.proto` specifies the version of the Protobuf language the file uses. In this case, it specifies `proto3`.
 
-Just below, the `package` statement prevents name clashes between protocol message types. In this case, this prevents name clashes with other protocol message types in the `io.deephaven.proto.backplane.grpc` package.
+Just below, the `package` statement prevents name clashes between protocol message types. In this case, the file's types belong to the `io.deephaven.proto.backplane.grpc` package, so they don't clash with types of the same name in other packages.
 
-The `option` statements dictate custom behavior to provide additional metadata. In this case, the options specify:
+The `option` statements control how the Protobuf compiler, [`protoc`](https://protobuf.dev/installation/), generates code from the file. In this case, the options specify:
 
-- `java_multiple_files`: Generates separate Java files for each message type.
+- `java_multiple_files`: Generates a separate Java file for each top-level message, enum, and service instead of nesting them in one outer class.
 - `optimize_for`: Optimizes the generated code for speed.
-- `go_package`: Specifies the Go package name for the generated code.
+- `go_package`: Specifies the Go import path for the generated code.
 
-The `import` statement enables the use of definitions found in another `proto` file. In this case, it imports the `Ticket` message type from the `deephaven_core/proto/ticket.proto` file. This allows you to use anything defined in `ticket.proto` in this file. In particular, the `Ticket` message type is used in requests to add and delete tables from input tables.
+An `import` statement lets this file use the definitions in another `.proto` file. The file has two imports:
+
+- `deephaven_core/proto/ticket.proto` defines the [`Ticket`](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/ticket.proto) message type. A [`Ticket`](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/ticket.proto) is an opaque identifier that the server uses to find an object it holds, such as a table. The input table requests use [`Ticket`](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/ticket.proto) fields to name the tables involved.
+- `google/protobuf/any.proto` is one of Protobuf's standard definitions. The omitted metadata messages use it.
 
 ### `InputTableService`
 
-The `InputTableService` service defines the methods that can be called remotely. In this case, it defines two methods:
+The [`InputTableService`](/core/client-api/protobuf/) service defines the methods a client can call remotely. In this case, it defines two methods:
 
-- `AddTableToInputTable`: Adds a table to an input table.
+- `AddTableToInputTable`: Adds the rows of a table to an [input table](./input-tables.md). In a keyed input table, an added row whose key matches an existing row replaces that row. It accepts an `AddTableRequest` and returns an `AddTableResponse`.
+- `DeleteTableFromInputTable`: Removes rows from a keyed [input table](./input-tables.md). [Input tables](./input-tables.md) without key columns, such as [append-only](../conceptual/table-types.md#specialization-1-append-only) and [blink](../conceptual/table-types.md#specialization-3-blink) input tables, reject it. It accepts a `DeleteTableRequest` and returns a `DeleteTableResponse`.
 
-This accepts a request of type `AddTableRequest` and returns a response of type `AddTableResponse`.
-
-- `DeleteTableFromInputTable`: Deletes a table from an input table.
-
-This accepts a request of type `DeleteTableRequest` and returns a response of type `DeleteTableResponse`.
-
-### Messages
+### Request and response messages
 
 The `InputTableService` service uses four different messages:
 
-- `AddTableRequest`: The request message for the `AddTableToInputTable` method. It contains two fields: `input_table` and `table_to_add`, both of type `Ticket`. These contain information about the input table and the table that a user wishes to add to it.
-- `AddTableResponse`: The response message for the `AddTableToInputTable` method. It does not contain any fields, as the response is empty. Empty messages are useful for indicating a request was successful.
-- `DeleteTableRequest`: The request message for the `DeleteTableFromInputTable` method. It contains two fields: `input_table` and `table_to_remove`, both of type `Ticket`. These contain information about the input table and the table that a user wishes to remove from it.
-- `DeleteTableResponse`: The response message for the `DeleteTableFromInputTable` method. It does not contain any fields, as the response is empty. Empty messages are useful for indicating a request was successful.
+- `AddTableRequest`: The request message for the `AddTableToInputTable` method. Its two [`Ticket`](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/ticket.proto) fields name the tables involved. `input_table` is the [input table](./input-tables.md), and `table_to_add` holds the rows to add. The client first uploads those rows under an export ticket it chooses, for example with an [Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) `DoPut`. It then passes that ticket as `table_to_add`.
+- `AddTableResponse`: The response message for the `AddTableToInputTable` method. It has no fields. Receiving it tells the client that the request succeeded.
+- `DeleteTableRequest`: The request message for the `DeleteTableFromInputTable` method. It contains two fields of type [`Ticket`](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/ticket.proto). `input_table` identifies the [input table](./input-tables.md), and `table_to_remove` identifies a table of keys for the rows to remove, uploaded the same way. The key table must contain every key column of the [input table](./input-tables.md) and no other columns. The server deletes the rows whose keys match.
+- `DeleteTableResponse`: The response message for the `DeleteTableFromInputTable` method. It has no fields. Receiving it tells the client that the request succeeded.
 
-### Result
+If a request fails, the server returns a gRPC error instead of a response message. When an `AddTableToInputTable` request fails validation on specific values, the error's details contain an `InputTableValidationErrorList`, one of the messages the excerpt omits. It describes each error, including its row and column when known. A failed `DeleteTableFromInputTable` request returns an error message without these details, even though the file's comment on that method says otherwise.
 
-This `proto` file defines a service that allows a client API to add and remove tables of data from input tables. It can generate standardized code in many different languages, all of which could be used to communicate with a Deephaven server to make these requests.
+### What the file defines
 
-## A more complex Deephaven example
+The `inputtable.proto` file defines a service that lets a client API add rows to [input tables](./input-tables.md) and remove rows from keyed [input tables](./input-tables.md). The [`protoc`](https://protobuf.dev/installation/) compiler can [generate code from it](#generate-python-code-from-protobuf) in many languages, and a client written in any of them can use that code to send these requests to a Deephaven server.
 
-Another illustration of Deephaven's use of Protobuf is the Console API. It defines how users running a client API can run commands remotely. The Console API is far more complex than the Input Table API - the latter is a simple request/response API for a table type meant to mimic tables in spreadsheets. The former enables interaction with the Deephaven console, which is a complex system that allows users to run commands, check server health, use autocomplete, get logs, and more. The full source code for `console.proto` can be found [here](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/console.proto). It is collapsed by default due to its length.
+## Streaming RPCs: the console service
 
-<details>
+Deephaven's [`ConsoleService`](/core/client-api/protobuf/) is the gRPC service behind the web IDE's code console. The [console service guide](./configuration/console-service.md) shows how to configure it. `ConsoleService` is more complex than the input table service, which only adds and removes rows with simple request/response calls. `ConsoleService` lets a client run commands on the server, check heap usage, use autocomplete, subscribe to logs, and more.
 
-<summary>console.proto</summary>
+The following excerpt shows the `ConsoleService` service definition. See the full [`console.proto`](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/console.proto) on GitHub for the messages it uses.
 
 ```protobuf
-/*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-syntax = "proto3";
-
-package io.deephaven.proto.backplane.script.grpc;
-
-option java_multiple_files = true;
-option optimize_for = SPEED;
-option go_package = "github.com/deephaven/deephaven-core/go/internal/proto/console";
-
-import "deephaven_core/proto/ticket.proto";
-import "deephaven_core/proto/application.proto";
-
 /*
  * Console interaction service
 */
@@ -243,15 +243,106 @@ service ConsoleService {
      */
     rpc NextAutoCompleteStream(AutoCompleteRequest) returns (BrowserNextResponse) {}
 }
+```
 
+The service definition includes `CancelCommand`, but the server doesn't implement it yet. A call to it returns an `UNIMPLEMENTED` error.
 
-message GetConsoleTypesRequest {
-    // left empty for future compatibility
-}
-message GetConsoleTypesResponse {
-    repeated string console_types = 1;
-}
+The `stream` keyword marks a request or response as a stream of messages instead of a single message. Where `stream` appears in a method sets the method's kind. `ConsoleService` uses three kinds of RPC method:
 
+- **Unary** (no `stream`): The client sends one request and receives one response. Most of the service's methods are unary. For example, a client calls `ExecuteCommand` with code to run. Once the code finishes, the server responds with any error message and the variables the code changed.
+- **Server streaming** (`returns (stream …)`): The client sends one request, and the server sends back a stream of responses. `SubscribeToLogs` returns a stream of `LogSubscriptionData` messages, one for each log entry.
+- **Bidirectional streaming** (`stream` on both the request and the response): The client and server each send a stream of messages over one call. With `AutoCompleteStream`, the client sends an `AutoCompleteRequest` message each time the user opens, edits, or closes a document. It also sends one to ask for completions, signature help, hover text, or diagnostics. The server sends `AutoCompleteResponse` messages back on the same call.
+
+gRPC also supports client streaming (`stream` on the request only), which `ConsoleService` doesn't use.
+
+Browsers can't open bidirectional gRPC streams without WebSockets, so the service also offers a two-part alternative to `AutoCompleteStream`. `OpenAutoCompleteStream` opens a server stream of responses, and `NextAutoCompleteStream` sends each later request as a separate unary call.
+
+## Generate Python code from Protobuf
+
+[`protoc`](https://protobuf.dev/installation/) can generate code from a `.proto` file for any language it supports. A gRPC client needs two kinds of generated code: classes for the messages, and a stub for each service that calls its RPC methods.
+
+You don't need to generate code to use Deephaven's own services from Python. The [`pydeephaven`](/core/client-api/python/code/pydeephaven.html) package already includes generated code for every Deephaven `.proto` file. The code is in the `deephaven_core.proto` package. For example, the input table service stub is `deephaven_core.proto.inputtable_pb2_grpc.InputTableServiceStub`.
+
+To generate the code yourself, install the [`grpcio-tools`](https://pypi.org/project/grpcio-tools/) package, which includes the [`protoc`](https://protobuf.dev/installation/) compiler and the gRPC Python plugin:
+
+```bash
+pip install grpcio-tools
+```
+
+Then run [`protoc`](https://protobuf.dev/installation/) through the package's `grpc_tools.protoc` module. The following command generates the message classes (`--python_out`) and the service stubs (`--grpc_python_out`) for the input table example above and the `ticket.proto` file it imports:
+
+```bash
+python -m grpc_tools.protoc -I=<PROTO_ROOT> --python_out=<OUTPUT_DIR> --grpc_python_out=<OUTPUT_DIR> <PROTO_ROOT>/deephaven_core/proto/ticket.proto <PROTO_ROOT>/deephaven_core/proto/inputtable.proto
+```
+
+Where:
+
+- `<PROTO_ROOT>`: The directory that contains the `deephaven_core` directory. In a clone of the [deephaven-core repository](https://github.com/deephaven/deephaven-core), this is `proto/proto-backplane-grpc/src/main/proto`.
+- `<OUTPUT_DIR>`: An existing directory where you want to save the generated Python code.
+
+Deephaven's `.proto` files import each other by paths that start at `<PROTO_ROOT>`, such as `deephaven_core/proto/ticket.proto`. If `-I` points at the `deephaven_core/proto` directory instead, `protoc` can't resolve those imports.
+
+The generated modules import each other as `deephaven_core.proto.<name>_pb2`, so add `<OUTPUT_DIR>` to your Python path (for example, with `PYTHONPATH`). Don't install the result alongside [`pydeephaven`](/core/client-api/python/code/pydeephaven.html), which provides its own `deephaven_core` package.
+
+To generate code for other Deephaven services, add their `.proto` files, and the files they import, to the end of the command.
+
+## Call a Deephaven service from Python
+
+This section puts the pieces together. It generates code for `ConsoleService`, authenticates with a Deephaven server, and runs code there. The code it runs creates a ticking table, which keeps updating on the server like any Deephaven table. Every call uses only the generated code and the `grpcio` package, with no [`pydeephaven`](/core/client-api/python/code/pydeephaven.html).
+
+The example needs a Deephaven server that uses [pre-shared key (PSK) authentication](./authentication/auth-psk.md). The examples use the key `my-secret-psk`. To run a server with that key in Docker:
+
+```bash
+docker run --rm -p 10000:10000 -e START_OPTS="-Dauthentication.psk=my-secret-psk" ghcr.io/deephaven/server:latest
+```
+
+The server must also allow console code execution, which it does by default. See [Configure the console service](./configuration/console-service.md).
+
+### Generate the console service code
+
+`console.proto` imports `ticket.proto` and `application.proto`, so generate all three. Run these commands from the directory where you want the `generated` folder:
+
+```bash
+pip install grpcio grpcio-tools
+mkdir generated
+python -m grpc_tools.protoc -I=<PROTO_ROOT> --python_out=generated --grpc_python_out=generated <PROTO_ROOT>/deephaven_core/proto/ticket.proto <PROTO_ROOT>/deephaven_core/proto/application.proto <PROTO_ROOT>/deephaven_core/proto/console.proto
+```
+
+Run the Python code in the following steps as one script, with `generated` on the Python path. For example, run `PYTHONPATH=generated python client.py`.
+
+### Authenticate with a pre-shared key
+
+A client authenticates by sending an `authorization` header with its first call. For PSK authentication, the header's value is the authentication handler's class name, a space, and the key. The server checks the key and creates a session. It then returns a bearer token in the response's own `authorization` header. Every later call sends that token instead of the key.
+
+The following code opens a channel, creates a `ConsoleService` stub, and makes a first call with the key. `GetConsoleTypes` is a simple unary call that returns the server's script language. The code then reads the bearer token from the response headers.
+
+<!-- This test is skipped because it needs Python code generated from the Deephaven .proto files and a running Deephaven server with PSK authentication. -->
+
+```python skip-test
+import grpc
+from deephaven_core.proto import console_pb2, console_pb2_grpc, ticket_pb2
+
+channel = grpc.insecure_channel("localhost:10000")
+console = console_pb2_grpc.ConsoleServiceStub(channel)
+
+psk = "io.deephaven.authentication.psk.PskAuthenticationHandler my-secret-psk"
+response, call = console.GetConsoleTypes.with_call(
+    console_pb2.GetConsoleTypesRequest(),
+    metadata=[("authorization", psk)],
+)
+print(response.console_types)
+
+bearer = dict(call.initial_metadata())["authorization"]
+auth = [("authorization", bearer)]
+```
+
+The server can rotate the token. Each response carries the current token in its `authorization` header. A client that runs longer than the session timeout must keep sending the newest one, as [`pydeephaven`](/core/client-api/python/code/pydeephaven.html) does. Older clients called `SessionService.NewSession` instead. `session.proto` marks that method deprecated in favor of these headers or Flight's handshake.
+
+### Start a console
+
+A console is a script session on the server. `StartConsole` takes a ticket for the new console and the console's language. These are its messages in [`console.proto`](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/console.proto):
+
+```protobuf
 message StartConsoleRequest {
     io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
     string session_type = 2;
@@ -259,592 +350,109 @@ message StartConsoleRequest {
 message StartConsoleResponse {
     io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
 }
+```
 
-message GetHeapInfoRequest {
-    // left empty for future compatibility
-}
-message GetHeapInfoResponse {
-    // Returns the maximum amount of memory that the Java virtual machine will attempt to use.
-    // If there is no inherent limit then the value Long.MAX_VALUE will be returned.
-    // the maximum amount of memory that the virtual machine will attempt to use, measured in bytes
-    int64 max_memory = 1 [jstype=JS_STRING];
+The client chooses the ticket. An export ticket is the byte `e` followed by a positive export number, written as a 4-byte little-endian integer. Each new export in a session needs a new number. This example creates only one export, so it uses `1`.
 
-    // Returns the total amount of memory in the Java virtual machine. The value returned by this method may vary over time, depending on the host environment.
-    // Note that the amount of memory required to hold an object of any given type may be implementation-dependent.
-    // the total amount of memory currently available for current and future objects, measured in bytes.
-    int64 total_memory = 2 [jstype=JS_STRING];
+<!-- This test is skipped because it needs Python code generated from the Deephaven .proto files and a running Deephaven server with PSK authentication. -->
 
-    // Returns the amount of free memory in the Java Virtual Machine. Calling the gc method may result in increasing the value returned by freeMemory.
-    // an approximation to the total amount of memory currently available for future allocated objects, measured in bytes.
-    int64 free_memory = 3 [jstype=JS_STRING];
-}
+```python skip-test
+export_id = 1
+console_ticket = ticket_pb2.Ticket(
+    ticket=b"e" + export_id.to_bytes(4, "little", signed=True)
+)
 
-// Presently you get _all_ logs, not just your console. A future version might take a specific console_id to
-// restrict this to a single console.
-message LogSubscriptionRequest {
-//    Ticket console_id = 1;
-    // If a non-zero value is specified, represents the timestamp in microseconds since the unix epoch when
-    // the client last saw a message. Technically this might skip messages if more than one message was
-    // logged at the same microsecond that connection was lost - to avoid this, subtract one from the last
-    // seen message's micros, and expect to receive some messages that have already been seen.
-    int64 last_seen_log_timestamp = 1 [jstype=JS_STRING];
-    repeated string levels = 2;
-}
-message LogSubscriptionData {
-    int64 micros = 1 [jstype=JS_STRING];
-    string log_level = 2;
-    string message = 3;
-    reserved 4;//if we can scope logs to a script session
-    //    Ticket console_id = 4;
-}
+started = console.StartConsole(
+    console_pb2.StartConsoleRequest(result_id=console_ticket, session_type="python"),
+    metadata=auth,
+)
+```
 
-message ExecuteCommandRequest {
-    enum SystemicType {
-        NOT_SET_SYSTEMIC = 0;
-        EXECUTE_NOT_SYSTEMIC = 1;
-        EXECUTE_SYSTEMIC = 2;
-    }
+### Run code on the server
 
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-    reserved 2;//if script sessions get a ticket, we will use this reserved tag
-    string code = 3;
+`ExecuteCommand` runs code in the console and responds once the code finishes. Its response reports any error and the variables the code changed:
 
-    // If set to `EXECUTE_SYSTEMIC` the command will be executed systemically.  Failures in systemic code
-    // are treated as important failures and cause errors to be reported to the io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier.
-    // If this is unset it is treated as `EXECUTE_NOT_SYSTEMIC`
-    optional SystemicType systemic = 4;
-}
-
+```protobuf
 message ExecuteCommandResponse {
     string error_message = 1;
     io.deephaven.proto.backplane.grpc.FieldsChangeUpdate changes = 2;
-}
-message BindTableToVariableRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-    reserved 2;//if script sessions get a ticket, we will use this reserved tag
-    string variable_name = 3;
-    io.deephaven.proto.backplane.grpc.Ticket table_id = 4;
-}
-message BindTableToVariableResponse {
-}
 
-message CancelCommandRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-    io.deephaven.proto.backplane.grpc.Ticket command_id = 2;
-}
-message CancelCommandResponse {
-
-}
-
-message CancelAutoCompleteRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-    int32 request_id = 2;
-}
-
-message CancelAutoCompleteResponse {
-
-}
-
-message AutoCompleteRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 5;
-    int32 request_id = 6;
-    oneof request {
-        // Starts a document in a given console - to end, just close the stream, the server will hang up right away
-        OpenDocumentRequest open_document = 1;
-
-        // Modifies the document that autocomplete can be requested on
-        ChangeDocumentRequest change_document = 2;
-
-        // Requests that a response be sent back with completion items
-        GetCompletionItemsRequest get_completion_items = 3;
-
-        // Request for help about the method signature at the cursor
-        GetSignatureHelpRequest get_signature_help = 7;
-
-        // Request for help about what the user is hovering over
-        GetHoverRequest get_hover = 8;
-
-        // Request to perform file diagnostics
-        GetDiagnosticRequest get_diagnostic = 9;
-
-        // Closes the document, indicating that it will not be referenced again
-        CloseDocumentRequest close_document = 4;
-    }
-}
-message AutoCompleteResponse {
-    int32 request_id = 2;
-    bool success = 3;
-    oneof response {
-        GetCompletionItemsResponse completion_items = 1;
-        GetSignatureHelpResponse signatures = 4;
-        GetHoverResponse hover = 5;
-        GetPullDiagnosticResponse diagnostic = 6;
-        GetPublishDiagnosticResponse diagnostic_publish = 7;
-    }
-}
-
-message BrowserNextResponse {
-}
-
-message OpenDocumentRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated=true];
-    TextDocumentItem text_document = 2;
-}
-message TextDocumentItem {
-    string uri = 1;
-    string language_id = 2;
-    int32 version = 3;
-    string text = 4;
-}
-
-message CloseDocumentRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated=true];
-    VersionedTextDocumentIdentifier text_document = 2;
-}
-
-message ChangeDocumentRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated=true];
-    VersionedTextDocumentIdentifier text_document = 2;
-    repeated TextDocumentContentChangeEvent content_changes = 3;
-
-    message TextDocumentContentChangeEvent {
-        DocumentRange range = 1;
-        int32 range_length = 2;
-        string text = 3;
-    }
-}
-message DocumentRange {
-    Position start = 1;
-    Position end = 2;
-}
-message VersionedTextDocumentIdentifier {
-    string uri = 1;
-    int32 version = 2;
-}
-message Position {
-    int32 line = 1;
-    int32 character = 2;
-}
-
-message MarkupContent {
-    string kind = 1;
-    string value = 2;
-}
-
-message GetCompletionItemsRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated=true];
-
-    CompletionContext context = 2;
-    VersionedTextDocumentIdentifier text_document = 3;
-    Position position = 4;
-
-    int32 request_id = 5 [deprecated=true];
-}
-message CompletionContext {
-    int32 trigger_kind = 1;
-    string trigger_character = 2;
-}
-message GetCompletionItemsResponse {
-    repeated CompletionItem items = 1;
-
-    // Maintained for backwards compatibility. Use the same field on AutoCompleteResponse instead
-    int32 request_id = 2 [deprecated=true];
-    // Maintained for backwards compatibility. Use the same field on AutoCompleteResponse instead
-    bool success = 3 [deprecated=true];
-}
-message CompletionItem {
-    int32 start = 1;
-    int32 length = 2;
-    string label = 3;
-    int32 kind = 4;
-    string detail = 5;
-    reserved 6; // Old documentation as a string. Was never used by us
-    bool deprecated = 7;
-    bool preselect = 8;
-    TextEdit text_edit = 9;
-    string sort_text = 10;
-    string filter_text = 11;
-    int32 insert_text_format = 12;
-    repeated TextEdit additional_text_edits = 13;
-    repeated string commit_characters = 14;
-    MarkupContent documentation = 15;
-}
-message TextEdit {
-    DocumentRange range = 1;
-    string text = 2;
-}
-
-message GetSignatureHelpRequest {
-    SignatureHelpContext context = 1;
-    VersionedTextDocumentIdentifier text_document = 2;
-    Position position = 3;
-}
-message SignatureHelpContext {
-    int32 trigger_kind = 1;
-    optional string trigger_character = 2;
-    bool is_retrigger = 3;
-    GetSignatureHelpResponse active_signature_help = 4;
-}
-
-message GetSignatureHelpResponse {
-    repeated SignatureInformation signatures = 1;
-    optional int32 active_signature = 2;
-    optional int32 active_parameter = 3;
-}
-
-message SignatureInformation {
-    string label = 1;
-    MarkupContent documentation = 2;
-    repeated ParameterInformation parameters = 3;
-    optional int32 active_parameter = 4;
-}
-
-message ParameterInformation {
-    string label = 1;
-    MarkupContent documentation = 2;
-}
-
-message GetHoverRequest {
-    VersionedTextDocumentIdentifier text_document = 1;
-    Position position = 2;
-}
-
-message GetHoverResponse {
-    MarkupContent contents = 1;
-    DocumentRange range = 2;
-}
-
-message GetDiagnosticRequest {
-    VersionedTextDocumentIdentifier text_document = 1;
-    optional string identifier = 2;
-    optional string previous_result_id = 3;
-}
-
-message GetPullDiagnosticResponse {
-    string kind = 1;
-    optional string result_id = 2;
-    repeated Diagnostic items = 3;
-}
-
-message GetPublishDiagnosticResponse {
-    string uri = 1;
-    optional int32 version = 2;
-    repeated Diagnostic diagnostics = 3;
-}
-
-message Diagnostic {
-    enum DiagnosticSeverity {
-        NOT_SET_SEVERITY = 0;
-        ERROR = 1;
-        WARNING = 2;
-        INFORMATION = 3;
-        HINT = 4;
-    }
-
-    enum DiagnosticTag {
-        NOT_SET_TAG = 0;
-        UNNECESSARY = 1;
-        DEPRECATED = 2;
-    }
-
-    message CodeDescription {
-        string href = 1;
-    }
-
-    DocumentRange range = 1;
-    DiagnosticSeverity severity = 2;
-    optional string code = 3;
-    optional CodeDescription code_description = 4;
-    optional string source = 5;
-    string message = 6;
-    repeated DiagnosticTag tags = 7;
-    optional bytes data = 9;
-}
-
-message FigureDescriptor {
-    optional string title = 1;
-    string title_font = 2;
-    string title_color = 3;
-
-    int64 update_interval = 7 [jstype=JS_STRING];
-
-    int32 cols = 8;
-    int32 rows = 9;
-
-    repeated ChartDescriptor charts = 10;
-
-    // Deprecated: not set by the server anymore, this is replaced by the object fetch mechanism
-    reserved 11;
-
-    // Deprecated: not set by the server anymore, this is replaced by the object fetch mechanism
-    reserved 12;
-
-    repeated string errors = 13;
-
-    message ChartDescriptor {
-        enum ChartType {
-            XY = 0;
-            PIE = 1;
-            OHLC = 2 [deprecated=true];
-            CATEGORY = 3;
-            XYZ = 4;
-            CATEGORY_3D = 5;
-            TREEMAP = 6;
-        }
-        int32 colspan = 1;
-        int32 rowspan = 2;
-
-        repeated SeriesDescriptor series = 3;
-        repeated MultiSeriesDescriptor multi_series = 4;
-        repeated AxisDescriptor axes = 5;
-
-        ChartType chart_type = 6;
-
-        optional string title = 7;
-        string title_font = 8;
-        string title_color = 9;
-
-        bool show_legend = 10;
-        string legend_font = 11;
-        string legend_color = 12;
-
-        bool is3d = 13;
-
-        int32 column = 14;
-        int32 row = 15;
-    }
-
-    enum SeriesPlotStyle {
-        BAR = 0;
-        STACKED_BAR = 1;
-        LINE = 2;
-        AREA = 3;
-        STACKED_AREA = 4;
-        PIE = 5;
-        HISTOGRAM = 6;
-        OHLC = 7;
-        SCATTER = 8;
-        STEP = 9;
-        ERROR_BAR = 10;
-        TREEMAP = 11;
-    }
-
-    message SeriesDescriptor {
-        SeriesPlotStyle plot_style = 1;
-
-        string name = 2;
-
-        optional bool lines_visible = 3;
-        optional bool shapes_visible = 4;
-
-        bool gradient_visible = 5;
-        string line_color = 6;
-        //TODO (deephaven-core#774) finish this field or remove it from the DSL
-        //    string line_style = 7;
-        reserved 7;
-        optional string point_label_format = 8;
-        optional string x_tool_tip_pattern = 9;
-        optional string y_tool_tip_pattern = 10;
-
-        string shape_label = 11;
-        optional double shape_size = 12;
-        string shape_color = 13;
-        string shape = 14;
-
-        repeated SourceDescriptor data_sources = 15;
-    }
-    message MultiSeriesDescriptor {
-        SeriesPlotStyle plot_style = 1;
-
-        string name = 2;
-
-        StringMapWithDefault line_color = 3;
-
-        StringMapWithDefault point_color = 4;
-
-        BoolMapWithDefault lines_visible = 5;
-
-        BoolMapWithDefault points_visible = 6;
-
-        BoolMapWithDefault gradient_visible = 7;
-
-        StringMapWithDefault point_label_format = 8;
-
-        StringMapWithDefault x_tool_tip_pattern = 9;
-
-        StringMapWithDefault y_tool_tip_pattern = 10;
-
-        StringMapWithDefault point_label = 11;
-
-        DoubleMapWithDefault point_size = 12;
-
-        StringMapWithDefault point_shape = 13;
-
-        repeated MultiSeriesSourceDescriptor data_sources = 14;
-
-    }
-    message StringMapWithDefault {
-        optional string default_string = 1;
-        repeated string keys = 2;
-        repeated string values = 3;
-    }
-    message DoubleMapWithDefault {
-        optional double default_double = 1;
-        repeated string keys = 2;
-        repeated double values = 3;
-    }
-    message BoolMapWithDefault {
-        optional bool default_bool = 1;
-        repeated string keys = 2;
-        repeated bool values = 3;
-    }
-    message AxisDescriptor {
-        enum AxisFormatType {
-            CATEGORY = 0;
-            NUMBER = 1;
-        }
-        enum AxisType {
-            X = 0;
-            Y = 1;
-            SHAPE = 2;
-            SIZE = 3;
-            LABEL = 4;
-            COLOR = 5;
-        }
-        enum AxisPosition {
-            TOP = 0;
-            BOTTOM = 1;
-            LEFT = 2;
-            RIGHT = 3;
-            NONE = 4;
-        }
-
-        string id = 1;
-
-        AxisFormatType format_type = 2;
-
-        AxisType type = 3;
-
-        AxisPosition position = 4;
-
-        bool log = 5;
-        string label = 6;
-        string label_font = 7;
-        string ticks_font = 8;
-        optional string format_pattern = 9;
-        string color = 10;
-        double min_range = 11;
-        double max_range = 12;
-        bool minor_ticks_visible = 13;
-        bool major_ticks_visible = 14;
-        int32 minor_tick_count = 15;
-        optional double gap_between_major_ticks = 16;
-        repeated double major_tick_locations = 17;
-        double tick_label_angle = 18;
-        bool invert = 19;
-        bool is_time_axis = 20;
-        BusinessCalendarDescriptor business_calendar_descriptor = 21;
-    }
-    message BusinessCalendarDescriptor {
-        enum DayOfWeek {
-            SUNDAY = 0;
-            MONDAY = 1;
-            TUESDAY = 2;
-            WEDNESDAY = 3;
-            THURSDAY = 4;
-            FRIDAY = 5;
-            SATURDAY = 6;
-        }
-        message BusinessPeriod {
-            string open = 1;
-            string close = 2;
-        }
-        message Holiday {
-            LocalDate date = 1;
-            repeated BusinessPeriod business_periods = 2;
-        }
-        message LocalDate {
-            int32 year = 1;
-            int32 month = 2;
-            int32 day = 3;
-        }
-        string name = 1;
-        string time_zone = 2;
-        repeated DayOfWeek business_days = 3;
-        repeated BusinessPeriod business_periods = 4;
-        repeated Holiday holidays = 5;
-    }
-    message MultiSeriesSourceDescriptor {
-        string axis_id = 1;
-
-        SourceType type = 2;
-
-        int32 partitioned_table_id = 3;
-        string column_name = 4;
-    }
-
-    enum SourceType {
-        X = 0;
-        Y = 1;
-        Z = 2;
-        X_LOW = 3;
-        X_HIGH = 4;
-        Y_LOW = 5;
-        Y_HIGH = 6;
-        TIME = 7;
-        OPEN = 8;
-        HIGH = 9;
-        LOW = 10;
-        CLOSE = 11;
-        SHAPE = 12;
-        SIZE = 13;
-        LABEL = 14;
-        COLOR = 15;
-        PARENT = 16;
-        HOVER_TEXT = 17;
-        TEXT = 18;
-    }
-    message SourceDescriptor {
-        string axis_id = 1;
-
-        SourceType type = 2;
-
-        int32 table_id = 3;
-        int32 partitioned_table_id = 4;
-        string column_name = 5;
-
-        string column_type = 6;
-
-        OneClickDescriptor one_click = 7;
-    }
-    message OneClickDescriptor {
-        repeated string columns = 1;
-        repeated string column_types = 2;
-        bool require_all_filters_to_display = 3;
-    }
+    // Start timestamp for command execution, in nanoseconds since the unix epoch.
+    int64 start_timestamp = 3 [jstype=JS_STRING];
+    // End timestamp for command execution, in nanoseconds since the unix epoch.
+    int64 end_timestamp = 4 [jstype=JS_STRING];
 }
 ```
 
-</details>
+The following code creates a ticking table with [`time_table`](../reference/table-operations/create/timeTable.md) and prints a message on the server. It then prints the name and type of each variable the code created.
 
-## Generate Python code from Protobuf
+<!-- This test is skipped because it needs Python code generated from the Deephaven .proto files and a running Deephaven server with PSK authentication. -->
 
-Once you have defined your Protobuf files, you can generate code for any of its supported languages. Doing so requires the [`protoc`](https://protobuf.dev/installation/) compiler, which compiles `proto` files into source code. Once you have `protoc` installed, you can generate Python code from Protobuf files via the following command:
+```python skip-test
+code = """
+from deephaven import time_table
+ticking = time_table("PT1s").update("X = ii * 2")
+print("Created a ticking table")
+"""
 
-```bash
-protoc --proto_path=<PROTO_PATH> --python_out=<OUTPUT_DIR> <PROTO_FILE_1> <PROTO_FILE_2> ...
+result = console.ExecuteCommand(
+    console_pb2.ExecuteCommandRequest(console_id=started.result_id, code=code),
+    metadata=auth,
+)
+print(result.error_message or "No error")
+for field in result.changes.created:
+    print(field.field_name, field.typed_ticket.type)
 ```
 
-Where:
+### Stream the server's output
 
-- `<PROTO_PATH>`: The path to the directory containing your `proto` files.
-- `<OUTPUT_DIR>`: The directory where you want to save the generated Python code.
-- `<PROTO_FILE_1>`, `<PROTO_FILE_2>`, ...: The `proto` files you want to compile.
+`SubscribeToLogs` is a server-streaming call. The server first replays the log entries it has buffered, then sends new entries as they arrive. The following code asks for `STDOUT` entries only, prints the first one, and then cancels the stream and closes the channel.
+
+<!-- This test is skipped because it needs Python code generated from the Deephaven .proto files and a running Deephaven server with PSK authentication. -->
+
+```python skip-test
+logs = console.SubscribeToLogs(
+    console_pb2.LogSubscriptionRequest(levels=["STDOUT"]),
+    metadata=auth,
+)
+for entry in logs:
+    print(entry.log_level, entry.message.strip())
+    break
+
+logs.cancel()
+channel.close()
+```
+
+### Output
+
+The script prints the server's console type, the result of the command, the table it created, and the line the command printed:
+
+```text
+['python']
+No error
+ticking Table
+STDOUT Created a ticking table
+```
+
+The `ticking` table now updates once a second on the server. To read its rows, a client uses [Arrow Flight and Barrage](../conceptual/what-is-barrage.md) instead of `ConsoleService`.
+
+The session lasts until its token expires. When a session ends, the server releases everything the session exported. Variables that your code created, such as `ticking`, aren't exports. They stay in the server's script session after your session ends. To end your session right away, call `CloseSession` on the `SessionService` defined in [`session.proto`](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/session.proto).
+
+For a complete client, read how [`pydeephaven`](/core/client-api/python/code/pydeephaven.html) calls these services. For example, its input table support calls `InputTableServiceStub.AddTableToInputTable` ([source](https://github.com/deephaven/deephaven-core/blob/main/py/client/pydeephaven/_input_table_service.py)).
 
 ## Related documentation
 
-- [Connect to a Kafka stream](./data-import-export/kafka-stream.md)
 - [Deephaven's design](../conceptual/deephaven-design.md)
 - [The Deephaven Core API](../conceptual/deephaven-core-api.md)
+- [What is Barrage?](../conceptual/what-is-barrage.md)
+- [Create and use input tables](./input-tables.md)
+- [Configure the console service](./configuration/console-service.md)
+- [Configure and use pre-shared key authentication](./authentication/auth-psk.md)
+- [Python client quickstart](../getting-started/pyclient-quickstart.md)
+- [Send data to Deephaven from a Python client](./client-input-tables.md)
+- [Extract data with a Java client](./java-client.md)
+- [Connect to a Kafka stream](./data-import-export/kafka-stream.md)
+- [`pydeephaven` API reference](/core/client-api/python/code/pydeephaven.html)
+- [Deephaven Protobuf API reference](/core/client-api/protobuf/)
 - [Protobuf](https://protobuf.dev/)
 - [gRPC](https://grpc.io/)

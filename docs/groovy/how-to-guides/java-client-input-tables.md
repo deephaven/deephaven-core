@@ -334,4 +334,5 @@ The Deephaven repository includes complete working examples:
 - [Create and use input tables](./input-tables.md)
 - [Extract data with a Java client](./java-client.md)
 - [Write data to an in-memory, real-time table](./table-publisher.md)
+- [Protocol Buffers and remote procedure calls](./protobuf.md)
 - [Pre-shared key authentication](./authentication/auth-psk.md)
