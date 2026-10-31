@@ -32,15 +32,6 @@ The Deephaven engine can seamlessly work with these column types.
 
 ### Vector columns
 
-```groovy order=source,sourceMeta
-source = emptyTable(5).update("X = ii % 2", "Y = ii").groupBy("X")
-sourceMeta = source.meta()
-```
-
-The Deephaven engine can seamlessly work with these column types.
-
-### Vector columns
-
 Vector columns arise from common table operations including [grouping](./grouping-data.md). These vector columns are used in [dedicated aggregations](./dedicated-aggregations.md), [combined aggregations](./combined-aggregations.md), [`updateBy`](../reference/table-operations/update-by-operations/updateBy.md), and more. The following example creates a vector column by calling [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md):
 
 ```groovy order=source,sourceMeta
@@ -93,7 +84,7 @@ resultMeta = result.meta()
 
 ### Using the underscore operator
 
-Every column in a table has an associated [array](../reference/query-language/types/arrays.md) variable, which can be accessed using the underscore (`_`) operator. This operator is specific to Deephaven. For example, a column called `X` can be accessed as an [array](../reference/query-language/types/arrays.md) by using the column name `X_`:
+Every column in a table has an associated column array: a [vector](../conceptual/arrays-vs-vectors.md#access-a-column-as-a-vector) of all the column's values. You access it with the underscore (`_`) operator, which is specific to Deephaven. For example, a column called `X` is available as `X_`:
 
 ```groovy order=source,result
 source = emptyTable(10).update("X = ii")

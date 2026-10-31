@@ -10,58 +10,70 @@ Bringing incremental table updates to your data backplane
 
 The Deephaven team has long been fascinated with two related software problems:
 
-1. How to best serve use cases driven by real-time data, within a general purpose, table-oriented data system.
+1. How to best serve use cases driven by real-time data, within a general-purpose, table-oriented data system.
 
-2. How to provide the efficient transport of real-time table-oriented data over the wire, both (a) between nodes of the system contemplated above and (b) between disparate systems, without the cost of serialization.
+2. How to transport real-time table-oriented data over the wire efficiently, without paying to translate it between formats. This applies between nodes of such a system and between disparate systems.
 
-The first challenge catalyzed the development of Deephaven’s [incremental table update model](./table-update-model.md).
+The first challenge catalyzed the development of Deephaven's [incremental table update model](./table-update-model.md). Users have applied this design in a variety of contexts, from driving complex multimillion-dollar options market-making strategies to simulating the behavior of cryptographic networks. Deephaven's model, developed to address real-world use cases in production deployments, is a unique and empowering approach to building modern data-driven systems. Read [our introduction to Deephaven](./deephaven-overview.md) for a discussion of what users of Deephaven have accomplished under the incremental update model.
 
-The second remained an open challenge until mid-2020. At that time, philosophies and solutions provided by [gRPC](https://grpc.io/) and [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) illuminated a compelling path forward.
+For the second, the philosophies and solutions provided by [gRPC](https://grpc.io/) and [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) illuminated a compelling path forward.
 
-## gRPC: A High Performance Universal RPC framework
+The result is the Deephaven Core API: a set of gRPC services that clients in any gRPC-supported language can use to create, query, and subscribe to tables on a Deephaven server. This page walks through its building blocks, and how clients use them, in order:
 
-[gRPC](https://grpc.io/) is a modern Remote Procedure Call (RPC) framework that is platform and environment agnostic. Open source communities have adopted gRPC with much success. Developers can define complex APIs using simple service definitions that are immediately transpilable to more than a dozen target languages supported officially and by community. Client and server implementations have the freedom to select the programming language that suits their use-case best.
+- gRPC, Apache Arrow, and Arrow Flight.
+- [Barrage](./what-is-barrage.md), Deephaven's extension that carries incremental updates over Flight.
+- The services that make up the Core API.
+- How an existing Flight client can use them.
+- How the browser-based [JavaScript client](/core/client-api/javascript/) carries bidirectional streams, such as [Barrage](./what-is-barrage.md) subscriptions.
+
+## gRPC: a high-performance universal RPC framework
+
+[gRPC](https://grpc.io/) is a modern Remote Procedure Call (RPC) framework that is platform- and environment-agnostic. Open source communities have widely adopted gRPC. Developers define complex APIs using simple service definitions, from which gRPC generates client and server code in more than a dozen target languages, some supported officially and others by the community. Client and server implementations have the freedom to select the programming language that suits their use case best.
 
 Services can choose from a variety of request-response communication patterns:
 
-| RPC Type                    | Number of Client Messages | Number of Server Messages |
-| --------------------------- | ------------------------- | ------------------------- |
-| Unary                       | 1                         | 1                         |
-| Server-Streaming            | 1                         | None or Many              |
-| Client-Streaming            | None or Many              | 1                         |
-| Bidirectionally-Streaming\* | None or Many              | None or Many              |
+| RPC type                  | Client messages | Server messages |
+| ------------------------- | --------------- | --------------- |
+| Unary                     | 1               | 1               |
+| Server streaming          | 1               | None or many    |
+| Client streaming          | None or many    | 1               |
+| Bidirectional streaming\* | None or many    | None or many    |
 
 _\* There is no framework restriction on whether the client or server controls the conversation._
 
-## Apache Arrow: A Cross-Language Platform For Analytics
+## Apache Arrow: a cross-language platform for analytics
 
-[Apache Arrow](https://arrow.apache.org/) (Arrow) defines a language-independent columnar memory format for flat and hierarchical data. The in-memory format is optimized for performing analytics on modern hardware (including GPUs). Arrow is widely adopted, yielding bountiful access to examples and support.
+[Apache Arrow](https://arrow.apache.org/) (Arrow) defines a language-independent columnar memory format for flat and hierarchical data. The in-memory format is optimized for analytics on modern hardware, including GPUs. Arrow is widely adopted, so examples and community support are easy to find.
 
-## Apache Arrow Flight: An Arrow IPC Framework
+## Apache Arrow Flight: an Arrow IPC framework
 
-[Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) (Flight) provides an interprocess communication (IPC) model that is built around Arrow’s in-memory model and communicates over gRPC. Flight organizes communication around streams of Arrow record batches. Most Flight implementations intrinsically support zero-copy writes and zero-copy reads, removing unnecessary translation costs when shipping data from one server to another.
+[Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) (Flight) provides an interprocess communication (IPC) model that is built around Arrow's in-memory model and communicates over gRPC. Flight organizes communication around streams of `FlightData` messages, each of which can carry an Arrow record batch (`RecordBatch`). Most Flight implementations intrinsically support zero-copy writes and zero-copy reads, removing unnecessary translation costs when shipping data from one server to another.
 
-Flight’s simple service is defined as follows:
+Flight defines the following RPCs:
 
-- `Handshake(stream Handshake): stream HandshakeResponse`
+- `Handshake(stream HandshakeRequest): stream HandshakeResponse`
 
-  An optional lightweight stream to support implementation specific authentication.
+  Authenticate with an optional, lightweight, implementation-specific stream.
 
 - `ListFlights(Criteria): stream FlightInfo`
 
-  Request a list of available Flight Streams given the provided criteria.
+  Request a list of available Flight streams that match the given criteria.
 
 - `GetFlightInfo(FlightDescriptor): FlightInfo`
 
   Request information about how the Flight can be consumed.
 
+- `PollFlightInfo(FlightDescriptor): PollInfo`
+
+  Start a query and poll for its progress, for long-running requests. Deephaven does not implement this RPC.
+
 - `GetSchema(FlightDescriptor): SchemaResult`
 
-  Get the Schema describing the columnar format, indicating the wire format of FlightData’s body.
+  Get the schema of the columnar format, which describes the wire format of the `FlightData` body.
 
 - `DoGet(Ticket): stream FlightData`
 
-  Retrieve a single stream of `FlightData` associated with the referenced ticket.
+  Retrieve a single stream of `FlightData` for the referenced ticket. A ticket is an opaque identifier that names a dataset on the server.
 
 - `DoPut(stream FlightData): stream PutResult`
 
@@ -69,48 +81,41 @@ Flight’s simple service is defined as follows:
 
 - `DoExchange(stream FlightData): stream FlightData`
 
-  Open a bidirectional data channel with the server. This enables client and server to send and receive arbitrary Arrow data in a single logical stream. Typically the purpose of the conversation is identified by attaching application specific metadata to the client’s initial request.
+  Open a bidirectional data channel with the server. This enables client and server to send and receive arbitrary Arrow data in a single logical stream. Typically, the client identifies the purpose of the conversation by attaching application-specific metadata to its initial request.
 
 - `DoAction(Action): stream Result`
 
-  Provides a mechanism for opaque request and result that can be offered by the server without deeper integration with gRPC.
+  Run an opaque request on the server and return its results, without defining a new gRPC method.
 
 - `ListActions(): stream ActionType`
 
-  This enables application specific flight clients to understand the capabilities of one instance of a Flight server versus another.
+  List the actions this Flight server supports, so that application-specific clients can tell one server's capabilities from another's.
 
-### Incremental updates in Arrow Flight
+## Barrage: incremental updates over Flight
 
-Flight has been designed to maximize throughput for structured data sent via IPC. Deephaven brings a rich toolset for processing real-time table operations, driven by incremental updates, and therefore requires a means to describe table changes. Flight does not natively have a mechanism to describe incrementally changing datasets. It does, however, allow API implementers to provide their own metadata to augment the built-in data transfer capabilities.
+Flight is built to maximize throughput for structured data sent over IPC. Deephaven brings a rich toolset for processing real-time table operations, driven by incremental updates, and therefore requires a means to describe table changes. Flight does not natively have a mechanism to describe incrementally changing datasets. It does, however, allow API implementers to provide their own metadata to augment the built-in data transfer capabilities.
 
-Deephaven utilizes application metadata to incorporate an update model alongside the native Arrow payloads. This extension is called [Barrage](https://github.com/deephaven/barrage), as an homage to all that we’ve inherited from the Arrow team’s work.
+Deephaven uses application metadata to incorporate an update model alongside the native Arrow payloads. This extension is called [Barrage](./what-is-barrage.md), as an homage to all that we've inherited from the Arrow team's work.
 
-## Enter the Deephaven Core API
+[Barrage](./what-is-barrage.md) is designed to support two primary use cases:
 
-The Deephaven Core API is composed of several complementary modules:
+1. The first use case targets server-to-server processing, where the client wants to subscribe to, and maintain, the entire state of the source table.
+2. The second use case targets user-facing interactive applications, where the user only needs the data that fits on the screen. After all, there are physical limits that make scroll bars convenient.
 
-- Arrow Flight Service - high-performance data transport based on Arrow data.
-- Table Service - a table manipulation API that mirrors Deephaven’s internal compute API.
-- Session Service - management of a client’s session and resources.
-- Console Service - support to drive a REPL from a client.
-- Application Service - inspired by ListFlights, but exposes a wider variety of types.
-
-The [Flight](#apache-arrow-flight-an-arrow-ipc-framework) and [Table](#doaction-via-the-table-service) services are the foundational elements of the Deephaven Core API.
-
-## Introducing `BarrageUpdateMetadata`
+### Introducing `BarrageUpdateMetadata`
 
 > [!NOTE]
-> This article does not provide comprehensive documentation or usage instructions. For more details, please see the [Barrage documentation](/barrage/docs).
+> This page does not provide comprehensive documentation or usage instructions. For more details, see the [Barrage documentation](/barrage/docs).
 
-The primary metadata object that Barrage uses to describe an incremental update is called `BarrageUpdateMetadata`. There are three sub-problems that need to be solved to orchestrate a sufficient solution to the larger problem at hand.
+The primary metadata object that [Barrage](./what-is-barrage.md) uses to describe an incremental update is called `BarrageUpdateMetadata`. To carry incremental updates over Flight, it solves three sub-problems. The sections below name the fields for each and explain the last two in detail:
 
-- First, there must be a model, agnostic of transport, that solves the more general concepts around incremental updates.
-- Second, there must be a way to partition large payloads into smaller ones to support the very real limits imposed by the details of any gRPC targeted programming language.
-- Last, there must be a mechanism to efficiently support client applications that are driven by human interaction.
+- **Incremental updates**: a transport-agnostic model of what changed in a table.
+- **Transport framing**: a way to split large payloads into smaller messages that fit within gRPC message-size limits.
+- **Data view framing**: a way to send interactive clients only the data a user can see.
 
-### Incremental updates
+#### Incremental updates
 
-The subset of `BarrageUpdateMetadata`’s fields aimed at solving this sub-problem are:
+`BarrageUpdateMetadata` needs a transport-agnostic model of what changed in a table. These fields describe the added, removed, shifted, and modified rows:
 
 ```flatbuffer
 added_rows: [byte];
@@ -120,107 +125,184 @@ added_rows_included: [byte];
 mod_column_nodes: [BarrageModColumnMetadata];
 ```
 
-The details of this sub-problem, including [Deephaven’s approach to incremental updates](./table-update-model.md), are out of scope for this article. Deephaven’s model, developed to address real-world use cases in production deployments, is unquestionably a unique and empowering approach to building modern data-driven systems. This design has been applied in a variety of contexts, from driving complex multi-million dollar options market-making strategies to simulating the behavior of cryptographic networks. Read [our introduction to Deephaven](./deephaven-overview.md) for a discussion of what users of Deephaven have accomplished under the incremental update model.
+The details of this sub-problem, including [Deephaven's approach to incremental updates](./table-update-model.md), are out of scope for this page.
 
-### Transport framing
+#### Transport framing
 
-The subset of `BarrageUpdateMetadata`’s fields aimed at solving this sub-problem are:
+[Barrage](./what-is-barrage.md) splits large updates into smaller messages to stay within the message-size limits of gRPC implementations. Two of the fields listed under [Incremental updates](#incremental-updates), `added_rows_included` and `mod_column_nodes`, also tell the client how an update is split across messages.
+
+Flight's [`DoGet`](#apache-arrow-flight-an-arrow-ipc-framework) and [`DoExchange`](#apache-arrow-flight-an-arrow-ipc-framework) RPCs return a stream of [`FlightData`](#apache-arrow-flight-an-arrow-ipc-framework) messages, so a server can split a large dataset into smaller pieces. Each `FlightData` message carries at most one Arrow message, usually a `RecordBatch`.
+
+Flight's service definition gives the order of `RecordBatch`es no meaning, but an integration can define its own. A [Barrage](./what-is-barrage.md) subscription stream has this order:
+
+- An Arrow schema message.
+- One or more snapshots of the subscribed data.
+- Incremental updates. While a large snapshot is still arriving in pieces, updates for rows the client already has can arrive between the pieces.
+- A new snapshot whenever the client changes its subscription.
+
+A single snapshot or update can span several `RecordBatch`es.
+
+![A Barrage subscription stream: the client's DoExchange request, then the schema, snapshot pieces, and incremental updates from the server, and a new snapshot after the client changes its viewport](../assets/conceptual/barrage-subscription-stream.svg)
+
+The server sends incremental updates no more often than the subscription's update interval, as described in [Barrage update batching](#barrage-update-batching).
+
+[Barrage](./what-is-barrage.md) breaks each update payload into a sequence of `RecordBatch`es:
+
+- The first `FlightData` message that carries a `RecordBatch` also carries the `BarrageUpdateMetadata`, wrapped in a `BarrageMessageWrapper`, in its `app_metadata` field.
+- The server sends this message even when the update has no rows.
+- A dictionary-encoded column sends each distinct value once, in a separate `DictionaryBatch` message, and its rows refer to those values. `DictionaryBatch` messages carry no [Barrage](./what-is-barrage.md) metadata, and they can come before any `RecordBatch`.
+- The client learns how many added rows to expect from `added_rows_included` and how many modified rows to expect from `mod_column_nodes`. If `added_rows_included` is absent, every row in `added_rows` is included.
+- The server sends every added-row `RecordBatch` before any modified-row `RecordBatch`.
+- The client keeps reading `RecordBatch`es until it has received all of those rows.
+- Either row count may be zero depending on what the server is trying to communicate.
+
+#### Data view framing
+
+For the user-level view of viewports, see [Viewports](./what-is-barrage.md#viewports). This section covers the wire-level fields.
+
+Interactive clients only need the rows and columns a user can see, and need to know when the server has applied a change to that view. These `BarrageUpdateMetadata` fields support that:
 
 ```flatbuffer
-num_add_batches: ushort;
-num_mod_batches: ushort;
+is_snapshot: bool;
+effective_viewport: [byte];
+effective_reverse_viewport: bool;
+effective_column_set: [byte];
+table_size: long;
 ```
 
-Flight’s `DoGet` and `DoExchange` RPCs are structured as a stream of `FlightData`. `FlightData` that contains an Arrow payload will be referred to as a `RecordBatch`. The ordering of `RecordBatch`es is not necessarily meaningful at Flight’s service definition layer, but it isn’t unreasonable for integrations to define and declare an explicit ordering. `DoGet` and `DoExchange` return a stream of `FlightData` to enable partitioning large data sets into smaller working sets. Barrage uses this feature in order to support sending multiple record batches, initially for snapshots, and subsequently for updated data.
+[Barrage](./what-is-barrage.md) treats the viewport as a first-class concept. A viewport is a window over the source table: a set of row-position ranges and a set of columns. It matches the data the user can see and interact with. When `effective_reverse_viewport` is `true`, the row positions count back from the end of the table.
 
-Barrage breaks each periodic incremental update payload into a sequence of `RecordBatch`es. The first `RecordBatch` contains the `BarrageUpdateMetadata` payload. This metadata contains `num_add_batches` and `num_mod_batches`, which are needed to reconstruct and apply the incremental update. This count includes the payload attached to the provided metadata. All added row `RecordBatch`es are sent prior to modified row `RecordBatch`es. Both of these counts may be zero depending on what the server is trying to communicate.
+Because a viewport client receives only part of the table, each update also carries `table_size`, the current number of rows in the source table.
 
-### Data view framing
+Viewport changes are asynchronous, which has two consequences:
 
-The subset of `BarrageUpdateMetadata`’s fields aimed at solving this sub-problem are:
+- The client keeps the state it subscribed to, so the server sends only changes. The client therefore needs to know when the server starts honoring a new viewport.
+- A client can change its viewport again before the server responds, for example while the user is still scrolling. The server honors only the most recently requested viewport and may skip earlier requests it has not yet acknowledged. It has switched to that viewport once a snapshot's `effective_viewport` matches the requested one.
 
-```flatbuffer
-  first_seq: long;
-  last_seq: long;
+When a client starts or changes a subscription, the server responds with one or more snapshots:
 
-  is_snapshot: bool;
-  effective_viewport: [byte];
-  effective_column_set: [byte];
-```
+- Each snapshot payload has `is_snapshot` set to `true`.
+- By default the server sends a large snapshot in pieces over several [update cycles](./periodic-update-graph-configuration.md). For a viewport subscription, each piece widens `effective_viewport` until it matches the requested viewport. To tune this, see [Control subscription snapshot size](../how-to-guides/performance/barrage-performance.md#control-subscription-snapshot-size).
+- Only snapshot payloads include `effective_viewport` and `effective_column_set`, which tell the client which data the server now tracks.
+- The server sends a snapshot even when it has no new Arrow data to send, for example when the viewport shrinks.
+- Unless the change reverses the viewport's direction or adds columns, the server does not resend data that the old and new viewports share.
 
-Barrage is designed to support two primary use cases:
+### Barrage update batching
 
-1. The first use case targets server-to-server processing, where the client will want to subscribe to, and maintain, the entire state of the source table.
-2. The second use case targets user-facing interactive applications, where the user only needs the data that can be shown on the screen (afterall, there are physical limits that make scroll-bars convenient).
+[Barrage](./what-is-barrage.md) also controls how often a subscription receives updates. For the user-level view, see [Update intervals and batching](./what-is-barrage.md#update-intervals-and-batching).
 
-Barrage describes a first-class concept called a Viewport. A viewport is a window over the source table described by ranges of row positions and a set of columns. This maps one-to-one to the data that the user can interact with (directly or indirectly).
+Every subscription, whether it covers a full table or a viewport, receives updates no more often than its update interval. Changes that arrive sooner are held and sent together in one message, much as the [update graph](./periodic-update-graph-configuration.md) batches table changes into cycles.
 
-A common problem with IPC transports is the asynchronous nature of client-request vs server-response (or vice versa). To minimize the total payload sent from the server to the client, the server expects the client to maintain the state that they have subscribed to. When a client requests a viewport change, the client needs to know when the server has begun to respect that request. Additionally, if a client quickly changes its mind (e.g., the user wasn’t done scrolling), the server assumes the client doesn’t want to be notified of data changes that are no longer in the most recently requested viewport.
+Batching trades latency for throughput. Within one process, many small updates are cheap. Over a network, every message costs far more, because machine-to-machine communication is slower than CPU-to-RAM communication. Fewer, combined messages perform better there.
 
-When a client initiates or changes its subscription, the server sends a payload with the metadata parameter `is_snapshot` set to `true`. Only when this parameter is true are `effective_viewport` and `effective_column_set` included on the payload. This enables the client to keep track of all data that is within the server-respected viewport. A snapshot will be sent whether or not it includes additional Arrow content (e.g., reducing the size of the requested viewport). The server will not resend Arrow content that overlaps between the previous viewport and the new viewport.
+When one message combines several [update cycles](./periodic-update-graph-configuration.md), two fields identify them:
 
-Often there is a different granularity of incremental updates that are desired when sending payloads over the network compared to within the same process. We typically prefer many small updates over any alternative; however, busily-updated data sets may be a source of performance issues. When transporting updates over a network, the frequency and size of updates become an even more immediate concern: machine-to-machine communication is more limited than CPU to RAM communication. Barrage subscriptions aggregate incremental updates to help reduce this noise. This update interval can be tuned by default (via JVM property `barrage.updateInterval`), just as the Deephaven internal engine’s tick frequency can be tuned (via JVM property [`PeriodicUpdateGraph.targetCycleDurationMillis`](/core/javadoc/io/deephaven/engine/updategraph/impl/PeriodicUpdateGraph.html)), as well as explicitly configured on the initial subscription request (via flatbuffer field `BarrageSubscriptionRequest.update_interval_ms`).
+- `first_seq`: the first upstream [update cycle](./periodic-update-graph-configuration.md) in the message.
+- `last_seq`: the last upstream [update cycle](./periodic-update-graph-configuration.md) in the message.
 
-The payload parameters `first_seq` and `last_seq` can be a useful aid to those who attempt to reconcile differences between server and client state (an uncommon task, but useful for client implementation debugging).
+These fields are informational. Few applications need them, but they are useful when debugging a client implementation.
 
-## Javascript support
+The server sets a default interval, and each subscription can request its own. To tune it, see [Update interval](../how-to-guides/performance/barrage-performance.md#update-interval).
 
-You may have noticed that even Deephaven’s web user-interface processes incremental updates. The Deephaven Javascript Client is a true gRPC client and receives `FlightData` payloads. However, browsers do not support client-streaming over HTTP/2 at this time. To enable client-streaming-like capabilities, Deephaven simulates the transport level concepts by splitting bidirectional streams (e.g., `DoExchange`) into a server-streaming request followed by a series of unary-requests. The client attaches HTTP2 headers to identify the simulated stream, the sequence, and whether or not it is done sending data. The server then provides ordered delivery to, and reuses, the server-streaming implementation.
+## Enter the Deephaven Core API
 
-## `DoAction` via the Table Service
+The Deephaven Core API includes the following gRPC services:
 
-Whereas we could have used Flight’s `DoAction` to send a command to the server telling it to sort Table `X` by column `Y` and filter column `A` by value `B`, the Deephaven team felt that it didn’t give enough structure to the queries that Deephaven supports.
+- [Arrow Flight](#apache-arrow-flight-an-arrow-ipc-framework) Service — high-performance data transport based on Arrow data.
+- [Table](#the-table-service) Service — manipulation of tables through an API that mirrors Deephaven's internal compute API.
+- Session Service — management of a client's session and resources.
+- Console Service — control of a read-eval-print loop (REPL), such as a Python or Groovy console, from a client.
+- Application Service — discovery of the objects of all types that the server makes available, such as REPL variables and [Application Mode](../how-to-guides/application-mode.md) fields. It is similar to [`ListFlights`](#apache-arrow-flight-an-arrow-ipc-framework) but not limited to tables.
+- Object Service — communication with server-side objects defined by [plugins](../how-to-guides/install-use-plugins.md), such as widgets.
+- Hierarchical Table Service — creation and viewing of [rollup tables](../how-to-guides/rollup-table.md) and [tree tables](../how-to-guides/tree-table.md).
+- Partitioned Table Service — creation and querying of [partitioned tables](../how-to-guides/partitioned-tables.md).
+- Input Table Service — addition and deletion of rows in [input tables](../how-to-guides/input-tables.md).
+- Config Service — retrieval of authentication and configuration constants from the server.
+- Storage Service — management of files in the server's shared storage, such as notebooks.
+- Browser Flight Service — Flight's streaming RPCs adapted for browsers that cannot send client streams. See [Bidirectional streams from the browser](#bidirectional-streams-from-the-browser).
 
-The Deephaven Core API Table service enables a user to build an entire directed-acyclic-graph (DAG) of requests in a single batch gRPC call to the server. Being able to define and ship your application’s logic to the server is extremely powerful. Client or server implementations may refactor the DAG payload for optimization or canonicalization purposes.
+The [Flight](#apache-arrow-flight-an-arrow-ipc-framework) and [Table](#the-table-service) services are the foundational elements of the Deephaven Core API.
 
-All of the manipulations that you see Deephaven’s browser-based client perform are delegated to the server. This offloads heavy workload from the user’s machine, while maintaining the illusion that their data is right there, at their fingertips.
+## The Table Service
 
-The Table Service was written to truly complement the Flight Service. Every Deephaven query engine operation may depend on one or more upstream tables. Any dependent tables, and the resulting table, are identified with Flight tickets. The user is able to refer to these tickets in subsequent requests, including requests to the Flight Service. If a required upstream operation has not yet completed, the server waits for pending work to be performed before attempting to execute the subsequent operation. When the user is done with a result, they simply release the ticket. When all operations (including queued operations!) that depend on that ticket no longer require access to its resources, then those resources are freed up.
+The Deephaven Core API Table Service lets you build an entire directed acyclic graph (DAG) of requests in a single batch gRPC call to the server. Being able to define your application's logic once and ship it to the server is extremely powerful.
 
-Adding yet more value, a user who has full access to the deployment may implement their own `TicketResolver` to integrate any other existing source of data with the Deephaven Core API. For example, one could create a `TicketResolver` that parameterizes a SQL template, fetches that data from a SQL server, and exports a static Deephaven Table backed by this result.
+Client or server implementations may refactor the DAG payload for optimization or canonicalization purposes.
 
-## Get started
+Flight's [`DoAction`](#apache-arrow-flight-an-arrow-ipc-framework) could carry a command that tells the server to [sort](../reference/table-operations/sort/sort.md) table `X` by column `Y` and [filter](../reference/table-operations/filter/where.md) column `A` by value `B`. However, the Deephaven team decided that [`DoAction`](#apache-arrow-flight-an-arrow-ipc-framework) doesn't give enough structure to the queries that Deephaven supports.
 
-If you are brand new to Deephaven:
+Deephaven's web user interface relies on the Table Service. When you [sort](../reference/table-operations/sort/sort.md), [filter](../reference/table-operations/filter/where.md), or [add columns](../reference/table-operations/select/update-view.md) in the UI, it sends those operations to the server in a Table Service batch request. This offloads heavy work from your machine, while maintaining the illusion that your data is right there, at your fingertips.
 
-- Try out the REPL experience on our [hosted demo site](https://controller.try-dh.demo.community.deephaven.io/).
-- Run a dockerized version locally by following the [Docker install guide](../getting-started/docker-install.md).
+The Table Service complements the Flight Service through Flight tickets. As described under [`DoGet`](#apache-arrow-flight-an-arrow-ipc-framework), a ticket names an object on the server, such as a table, rather than carrying its data.
 
-If you want to try out any of our work-in-progress client libraries:
+- Flight tickets identify an operation's upstream tables and its result table.
+- Within a batch request, an operation can instead refer to an earlier operation in the same batch by its position, so intermediate results need no ticket.
+- Later requests, including requests to the Flight Service, can refer to those tickets.
+- If an upstream operation has not completed, the server waits for it before running the operation that depends on it.
+- When the user is done with a result, they release its ticket.
+- Releasing a ticket before its operation finishes cancels that operation and fails any queued operation that depends on it. If other operations still need a ticket, wait until its operation finishes before releasing it.
+- The server releases intermediate tables created within a single batch request once nothing depends on them.
 
-- Try out the [Python client](/core/client-api/python/) library.
-- Try out the [Java client](/core/javadoc/) library.
-- Try out the [C++ client](/core/client-api/cpp/) library.
-- Try out the [Javascript client](/core/client-api/javascript/) library.
-- Check out the [gRPC service definitions](https://github.com/deephaven/deephaven-core/tree/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto) for even more self-help fun.
+[`TicketResolver`](/core/javadoc/io/deephaven/server/session/TicketResolver.html) adds yet more value. It is the server-side Java interface that turns a ticket into the object it names. To serve data from another system through the Core API, you can write your own resolver and add it to the server's classpath. For example, a resolver could fill in a SQL template, fetch the results from a SQL server, and export them as a static Deephaven table.
 
-If you have an existing Flight Client:
+## Use the Core API from a Flight client
 
-- `ListFlights` will describe Tables bound to variables in the REPL and bound via [Application Mode](../how-to-guides/application-mode.md).
-- `DoGet` will fetch a snapshot of the entire Table (unsupported columns will be stringified).
-- `DoPut` can be used to upload your own static content.
-- `DoExchange` can be used to subscribe to incremental updates.
+An existing Flight client can work with a Deephaven server directly. Flight clients authenticate with Flight's standard [`Handshake`](#apache-arrow-flight-an-arrow-ipc-framework) or with authentication headers. To manage their Deephaven session, they can use the Session Service ([`session.proto`](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/session.proto)). Once connected:
 
-We intend to [integrate with Flight’s Auth](https://github.com/deephaven/deephaven-core/issues/997), but at this time you will need to integrate with the session management as described by the [gRPC definition](https://github.com/deephaven/deephaven-core/blob/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto/session.proto).
+- [`ListFlights`](#apache-arrow-flight-an-arrow-ipc-framework) describes tables bound to REPL variables and tables exported through [Application Mode](../how-to-guides/application-mode.md). Deephaven does not support criteria expressions, so send empty `Criteria`.
+- [`DoGet`](#apache-arrow-flight-an-arrow-ipc-framework) fetches a snapshot of the entire table, converting any column with no Arrow mapping to strings.
+- [`DoPut`](#apache-arrow-flight-an-arrow-ipc-framework) uploads your own static content.
+- [`DoExchange`](#apache-arrow-flight-an-arrow-ipc-framework) subscribes to incremental updates, or takes a one-time snapshot of selected rows and columns.
 
-`DoPut`, as of this writing, requires providing an Arrow Schema metadata tag with the key `deephaven:type` for each uploaded column. Nested columns are not yet supported. Note that we do not yet support the entire suite of Arrow data types. At this time, we refer you to the [source](https://github.com/deephaven/deephaven-core/blob/1c5012626a1a6064382a97dddbc65c547de49715/grpc-api/src/main/java/io/deephaven/grpc_api/barrage/util/BarrageSchemaUtil.java#L182) to describe what the server expects and supports. These details will change as we improve our overall support for Apache Arrow, so please search for this metadata key in the source to find the most up-to-date details.
+[Flight SQL](../how-to-guides/flight-sql.md) clients can also query the server's tables with SQL.
 
-`DoExchange` requires that you understand our [update model](./table-update-model.md) as well as the wire formats of the metadata required to materialize the resulting state after applying incremental updates. If this interests you, the [Barrage](/barrage/docs) documentation is the most appropriate place to dip your feet.
+[`DoPut`](#apache-arrow-flight-an-arrow-ipc-framework) maps each uploaded Arrow column to a Deephaven column type based on its Arrow type. To request a specific Java type, set the optional Arrow field metadata key `deephaven:type`.
 
-## Contribute back to Arrow Flight
+Deephaven does not support every Arrow type. For the supported types and their Deephaven equivalents, see [Arrow Flight and Deephaven](../how-to-guides/data-import-export/arrow-flight.md). For the full mapping in source, see [`BarrageUtil`](https://github.com/deephaven/deephaven-core/blob/main/extensions/barrage/src/main/java/io/deephaven/extensions/barrage/util/BarrageUtil.java).
 
-The Deephaven Community Core team has engaged with the Arrow team to improve incremental-update support and efficiency. The team looks forward to working together on the following project ideas:
+[`DoExchange`](#apache-arrow-flight-an-arrow-ipc-framework) requires that you understand our [update model](./table-update-model.md) and the [`BarrageUpdateMetadata`](#introducing-barrageupdatemetadata) that [Barrage](./what-is-barrage.md) attaches to each update. If this interests you, the [Barrage documentation](/barrage/docs) is the best place to dip your feet in.
 
-- An asynchronous callback pattern for Flight users in Java/C++.
-- A way to describe a `RecordBatch` that supports skipping empty columns.
-- A way to express that columns in a `RecordBatch` may differ in length.
-- Our solution to client-streaming requests for browser clients, which might be generally applicable.
+To suggest improvements to Deephaven's Flight and [Barrage](./what-is-barrage.md) integration, [start a discussion](https://github.com/deephaven/deephaven-core/discussions) on GitHub.
 
-[Let us know](https://github.com/deephaven/deephaven-core/discussions) what else you think the team can contribute!
+## Bidirectional streams from the browser
+
+You may have noticed that even Deephaven's web user interface processes incremental updates. It is built on the [Deephaven JavaScript client](/core/client-api/javascript/), a gRPC client. Like other [Barrage](./what-is-barrage.md) clients, it subscribes to incremental updates through [`DoExchange`](#apache-arrow-flight-an-arrow-ipc-framework) and receives [`FlightData`](#apache-arrow-flight-an-arrow-ipc-framework) payloads.
+
+How it carries bidirectional streams such as [`DoExchange`](#apache-arrow-flight-an-arrow-ipc-framework) depends on the transport:
+
+- Over HTTPS, the client uses the browser's `fetch` API over HTTP/2. This transport receives server-streamed responses but cannot send a client stream, so Deephaven simulates one:
+  - It splits each bidirectional stream into one server-streaming request followed by a series of unary requests.
+  - The client attaches HTTP/2 headers that identify the simulated stream, each message's sequence number, and whether the client has finished sending.
+  - The server puts the unary requests in order and passes them to its existing bidirectional-streaming implementation, such as the one behind [`DoExchange`](#apache-arrow-flight-an-arrow-ipc-framework).
+- Over plain HTTP, the client uses websockets, which carry bidirectional streams directly.
+
+To use websockets over HTTPS as well, set the `useWebsockets` connection option to `true`. A custom `transportFactory` connection option overrides both defaults.
 
 ## Related documentation
 
 - [Deephaven Overview](./deephaven-overview.md)
 - [Table update model](./table-update-model.md)
-- [Deephaven Barrage](/barrage/docs)
+- [What is Barrage?](./what-is-barrage.md)
+- [Servers and clients](./client-server-model.md)
+- [Periodic update graph configuration](./periodic-update-graph-configuration.md)
 - [How to run scripts before launch with Application Mode](../how-to-guides/application-mode.md)
+- [Install and use plugins](../how-to-guides/install-use-plugins.md)
+- [Rollup tables](../how-to-guides/rollup-table.md)
+- [Tree tables](../how-to-guides/tree-table.md)
+- [Partitioned tables](../how-to-guides/partitioned-tables.md)
+- [Input tables](../how-to-guides/input-tables.md)
+- [Barrage performance](../how-to-guides/performance/barrage-performance.md)
+- [Arrow Flight and Deephaven](../how-to-guides/data-import-export/arrow-flight.md)
+- [Connecting to a Deephaven Flight SQL server](../how-to-guides/flight-sql.md)
+- [Use the JS API](../how-to-guides/use-jsapi.md)
+- [`sort`](../reference/table-operations/sort/sort.md)
+- [`where`](../reference/table-operations/filter/where.md)
+- [`update_view`](../reference/table-operations/select/update-view.md)
+- [`TicketResolver` Javadoc](/core/javadoc/io/deephaven/server/session/TicketResolver.html)
+- [Deephaven Barrage](/barrage/docs)
+- [Python client](/core/client-api/python/)
+- [Java client](/core/javadoc/)
+- [C++ client](/core/client-api/cpp/)
+- [JavaScript client](/core/client-api/javascript/)
+- [R client](/core/client-api/r/)
+- [gRPC service definitions](https://github.com/deephaven/deephaven-core/tree/main/proto/proto-backplane-grpc/src/main/proto/deephaven_core/proto)

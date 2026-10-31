@@ -63,4 +63,4 @@ plotSub = figure(1, 2)
 Far more plots are available in the built-in [plot package](/core/javadoc/io/deephaven/plot/package-summary.html), including [histograms](../../how-to-guides/plotting/api-plotting.md#histogram), [pie charts](../../how-to-guides/plotting/api-plotting.md#pie), and [scatter plots](../../how-to-guides/plotting/api-plotting.md#xy-series-as-a-scatter-plot).
 
 > [!TIP]
-> Prefer a no-code approach? Use the [Chart Builder](../../how-to-guides/user-interface/chart-builder.md) to create line, bar, scatter, and pie charts from any table directly in the UI.
+> Prefer a no-code approach? Use the [Chart Builder](../../how-to-guides/user-interface/chart-builder.md) to create line, bar, scatter, and pie charts from a table directly in the UI.

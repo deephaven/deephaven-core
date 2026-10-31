@@ -1,62 +1,87 @@
 ---
-title: File Explorer
+title: Create and organize notebooks
 ---
 
-Deephaven notebooks can be used to develop query components, stage draft queries, or simply store notes. Think of the Notebook as a "sandbox" in which queries can be developed and refined, and then easily executed in Deephaven.
+You can use Deephaven notebooks to develop query components, stage draft queries, or store notes. Think of a notebook as a sandbox where you develop and refine queries, then run them in the [Console](./navigating-the-ui.md#console-pane) with one click. A query on ticking data keeps updating after you run it, so you can watch its results change as new data arrives.
 
-The File Explorer stores these notebooks, with options to create new notebooks or folders.
+The File Explorer is a tab in the [right-hand pane](./navigating-the-ui.md#right-hand-pane) of the Deephaven GUI. It lists the notebooks and folders saved on the server and lets you create, open, copy, rename, move, and delete them.
 
-- Double-click any notebook name to open its content in the IDE.
-- Right-click any item to delete or rename that file.
-- Drag any item into or out of a folder to organize your files.
+## Create notebooks and folders
 
-Notebooks are stored within your Deephaven Docker container, in `/data/storage/notebooks`.
+Use the two buttons at the top of the File Explorer to create new notebooks and folders.
 
-> [!WARNING]
-> Notebooks stored inside the container are lost when the container is removed, unless you mount a persistent Docker volume at `/data`. See [Access your file system with Docker data volumes](../../conceptual/docker-data-volumes.md) for instructions on persisting your notebooks across container restarts and removals.
+![The New notebook and New folder buttons highlighted at the top of the File Explorer](../../assets/how-to/notebooks/notebook1.png)
 
-## Create and organize notebooks
-
-The two buttons at the top of the File Explorer are used to create new notebooks and folder.
-
-![The 'new notebook' and 'new folder' icons highlighted at the top of the File Explorer](../../assets/how-to/notebooks/notebook1.png)
-
-Click the **New notebook** button on the left and a blank notebook will open below the Console window.
+Click the **New notebook** button on the left, and a blank notebook opens below the [Console](./navigating-the-ui.md#console-pane) panel.
 
 ![A new, empty notebook](../../assets/how-to/notebooks/notebook3.png)
 
-As you can see above, the file name extension will reflect the programming language of your current session (in this case, Python).
+The filename extension matches the programming language of your current session, so a new notebook in a Groovy session gets a name like `Untitled-1.groovy`. The screenshot above comes from a Python session and shows a `.py` name.
 
-Click the **New folder** button on the right to create new folders.
+Click the **New folder** button on the right to create a folder. A **Create New Folder** dialog opens, where you name the folder and choose the directory to create it in.
 
 ![A new folder panel appears in which you can name the new folder and choose what directory to create it in](../../assets/how-to/notebooks/notebooks5.png)
 
-## Notebook toolbar
+## Run and save a notebook
 
-There are three options in the Notebook toolbar.
+The notebook toolbar has three buttons and a **More Actions** menu.
 
-![The **Run**, **Run selected**, and **Save** buttons at the top of the Notebook](../../assets/how-to/notebooks/notebook6.png)
+![The Run, Run Selected, and Save buttons at the top of a notebook](../../assets/how-to/notebooks/notebook6.png)
 
-- **Run** - Automatically copies all of the content in the Notebook window, and then executes the content in the Console.
-- **Run selected** - Copies the content you have highlighted in the Notebook window and then executes those selected lines in the Console. This option runs the entire selected line (or lines), even if you have highlighted only a portion of the line.
-- **Save** - Saves all of the content of the Notebook into a web directory. When Save is clicked for the first time, you will be prompted to enter a filename and file directory location. Clicking **Save** again overwrites the existing file with the current Notebook content. After the file is saved, the name shown on the Notebook tab changes to match the filename used during the Save process. A blue circle in the Notebook's tab indicates that there are unsaved changes.
+- **Run**: Runs the notebook's entire content in the [Console](./navigating-the-ui.md#console-pane).
+- **Run Selected**: Runs the selected lines in the [Console](./navigating-the-ui.md#console-pane). A line you highlight only part of runs in full. If nothing is highlighted, it runs the line the cursor is on.
+- **Save**: Saves the notebook as a file on the server, where it appears in the File Explorer. The first time, Deephaven asks for a filename and directory and renames the tab to match. After that, **Save** overwrites the file. See [Where notebooks are stored](#where-notebooks-are-stored).
+- **More Actions**: Opens a menu of other notebook actions, including **Find**, **Copy File**, **Rename File**, **Delete File**, **Show Minimap**, and **Word Wrap**.
 
-## Notebook context menu
+**Run** and **Run Selected** are available only when the notebook's language matches your session's, so a `.py` notebook can't run in a Groovy session.
 
-Right-clicking within the body of the Notebook panel opens a context menu with following options.
+A blue circle on a notebook's tab means the notebook has unsaved changes.
 
-![The Notebook's right-click options panel](../../assets/how-to/notebooks/notebook7.png)
+A notebook whose name ends in `.md` opens as rendered Markdown instead of in the code editor, and it doesn't have the notebook toolbar. Instead, each code block in it has its own **Run code** button. The **Run Selected Code** button at the top runs the highlighted code block and then highlights the next one, so you can step through the notebook one block at a time.
 
-- **Find** - Opens a search bar for that notebook.
+## Use the notebook context menu
+
+Right-clicking within the body of a notebook opens a context menu with the following options.
+
+![The notebook's right-click options panel](../../assets/how-to/notebooks/notebook7.png)
+
+- **Find**: Opens a search bar for that notebook.
   ![A search bar appears at the top of the notebook](../../assets/how-to/notebooks/notebook8.png)
-- **Run** - Automatically copies all of the content in the Notebook window, and then executes the content in the Console.
-- **Run Selected** - Copies the content you have highlighted in the Notebook window and then executes those selected lines in the Console. This option runs the entire selected line (or lines), even if you have highlighted only a portion of the line.
-- **Change All Occurrences** - Highlights all other occurrences of the selected text within the Notebook window, and when the selected text is edited, all occurrences change simultaneously.
-- **Cut** - Deletes the content you have highlighted in the Notebook window.
-- **Copy** - Copies the content you have highlighted in the Notebook window and saves it to the clipboard.
-- **Command Palette** - Opens the Command Palette, which provides an exhaustive list of commands for editing, including keyboard shortcuts for the most common operations.
-  ![The **Command Palette** menu](../../assets/how-to/notebooks/notebook9.png)
+- **Run** and **Run Selected**: Run the whole notebook or the selected lines, like the [toolbar buttons](#run-and-save-a-notebook) of the same names.
+- **Change All Occurrences**: Selects every occurrence of the selected text in the notebook. When you type, all of them change at once.
+- **Cut**: Removes the highlighted content and copies it to the clipboard.
+- **Copy**: Copies the highlighted content to the clipboard.
+- **Paste**: Inserts the clipboard's content at the cursor.
+- **Command Palette**: Opens the Command Palette, which lists the editor's commands and the keyboard shortcuts for common ones.
+  ![The Command Palette menu](../../assets/how-to/notebooks/notebook9.png)
+
+## Organize notebooks
+
+The File Explorer lists your saved notebooks and folders. Use it to open, copy, rename, delete, and arrange them:
+
+- Click a notebook to preview it. A preview tab shows one notebook at a time, and the next notebook you click replaces it.
+- Double-click a notebook to open it in its own tab. If it's already open, Deephaven switches to its tab.
+- Click a folder to expand or collapse it.
+- Right-click a notebook to copy, rename, or delete it, or right-click a folder to rename or delete it.
+- The same right-click menu has **New File** and **New Folder**, which create a notebook or folder.
+- To delete several items at once, Shift-click or Ctrl-click (Cmd-click on macOS) to select them, then right-click and choose **Delete**.
+- Drag any item into or out of a folder to organize your files.
+
+## Where notebooks are stored
+
+The server stores notebooks as files in the `storage/notebooks` directory under its data directory:
+
+- **Docker:** The [Deephaven Docker images](../../getting-started/docker-install.md) set the data directory to `/data`, so notebooks are in `/data/storage/notebooks`.
+- **Other installations:** The data directory is [OS-dependent](../configuration/configuration-properties.md#os-dependent-directories). The server prints it at startup as `deephaven.dataDir` unless bootstrap logging is turned off.
+
+To change the data directory, see [Bootstrap configuration](../configuration/configuration-properties.md#bootstrap-configuration). To move only the storage root, set the [`storage.path`](../configuration/configuration-properties.md#server-configuration) property.
+
+> [!WARNING]
+> If you run Deephaven in Docker without mounting your own volume at `/data`, the server stores notebooks in an anonymous Docker volume. A container you start later with `docker run` gets a new, empty volume and doesn't see them. Mount a persistent Docker volume or a host directory at `/data` to keep your notebooks. See [Access your file system with Docker data volumes](../../conceptual/docker-data-volumes.md) for instructions on persisting your notebooks across container restarts and removals.
 
 ## Related documentation
 
-- [Quickstart](../../getting-started/quickstart.md)
+- [Access your file system with Docker data volumes](../../conceptual/docker-data-volumes.md)
+- [Install and run Deephaven with Docker](../../getting-started/docker-install.md)
+- [Navigate the GUI](./navigating-the-ui.md)
+- [Configuration properties reference](../configuration/configuration-properties.md)

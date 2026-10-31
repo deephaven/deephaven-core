@@ -2,20 +2,23 @@
 title: Arrays vs vectors
 ---
 
-Deephaven tables can store multi-element data in two forms: **Java primitive arrays** and **Deephaven vectors**. While both represent ordered collections of elements, they have important differences that affect how you work with them.
+Deephaven tables can store multi-element data in two forms: **Java arrays** and **Deephaven vectors**. Both hold ordered collections of elements, but they differ in ways that affect how you work with them.
+
+You create Java arrays yourself in [formulas](../how-to-guides/formulas.md). Deephaven produces vectors when it [groups rows](../how-to-guides/grouping-data.md) or when a formula reads a whole column through a [column array](../how-to-guides/work-with-arrays.md#using-the-underscore-operator). This page compares the two, shows how to convert between them, and explains when to convert a vector to an array.
 
 ## Quick comparison
 
-| Feature                  | Java Arrays                       | Deephaven Vectors                           |
-| ------------------------ | --------------------------------- | ------------------------------------------- |
-| **Type examples**        | `int[]`, `double[]`, `String[]`   | `IntVector`, `DoubleVector`, `ObjectVector` |
-| **Index type**           | `int` (max ~2.1 billion elements) | `long` (supports larger datasets)           |
-| **Out-of-bounds access** | Throws exception                  | Returns null constant (e.g., `NULL_INT`)    |
-| **Created by**           | Explicit construction             | Table operations (`groupBy`, rolling ops)   |
-| **Memory model**         | Owns contiguous memory            | May be a view into table data               |
-| **Slicing**              | `Arrays.copyOfRange`              | `subVector` (no copy)                       |
+| Feature                  | Java arrays                                                                                                                                                                           | Deephaven vectors                                                                                                                                                                                                                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Type examples**        | `int[]`, `double[]`, `String[]`                                                                                                                                                       | [`IntVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/IntVector.html), [`DoubleVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/DoubleVector.html), [`ObjectVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/ObjectVector.html)                                            |
+| **Index type**           | `int` (max ~2.1 billion elements)                                                                                                                                                     | `long` (supports larger datasets)                                                                                                                                                                                                                                                                                    |
+| **Out-of-bounds access** | Throws an `ArrayIndexOutOfBoundsException`                                                                                                                                            | Returns the [null value](../reference/query-language/types/nulls.md) for its type (e.g., [`NULL_INT`](../reference/query-language/types/nulls.md))                                                                                                                                                                   |
+| **Created by**           | Explicit construction, [`array`](../reference/query-language/query-library/auto-imported/basic.md), or [`arrayObj`](../reference/query-language/query-library/auto-imported/basic.md) | [Table operations that group rows](#deephaven-vectors), [column arrays](../how-to-guides/work-with-arrays.md#using-the-underscore-operator) such as `X_`, [`vec`](../reference/query-language/query-library/auto-imported/basic.md), or [`vecObj`](../reference/query-language/query-library/auto-imported/basic.md) |
+| **Memory model**         | Owns contiguous memory                                                                                                                                                                | May be a view into table data                                                                                                                                                                                                                                                                                        |
+| **Mutability**           | Java code can reassign elements (`a[i] = v`)                                                                                                                                          | Read-only; no methods to set elements                                                                                                                                                                                                                                                                                |
+| **Slicing**              | `Arrays.copyOfRange`                                                                                                                                                                  | [`subVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/Vector.html#subVector(long,long)) (no copy)                                                                                                                                                                                                      |
 
-## Java primitive arrays
+## Java arrays
 
 Java arrays are standard fixed-size collections. Create them explicitly using Java syntax:
 
@@ -32,11 +35,15 @@ result = empty_table(1).update(
 result_meta = result.meta_table
 ```
 
-Java arrays use `int`-based indexing. Accessing an index outside the array bounds throws an `ArrayIndexOutOfBoundsException`.
+The metadata shows the columns as `int[]`, `double[]`, and `java.lang.String[]`. A Java array stores its elements itself, and it differs from a vector in three ways:
+
+- Java code that receives the array can change an element (`a[i] = v`). A query [formula](../how-to-guides/formulas.md) can't, because formulas can't contain assignments.
+- Its index is an `int`, so it holds at most about 2.1 billion elements.
+- An out-of-bounds index throws an `ArrayIndexOutOfBoundsException` instead of returning null.
 
 ## Deephaven vectors
 
-Deephaven vectors are Deephaven's specialized collection type, implemented by the [`Vector`](https://deephaven.io/core/javadoc/io/deephaven/vector/Vector.html) interface and its subclasses (`IntVector`, `DoubleVector`, etc.). Table operations that group data produce vector columns:
+A Deephaven vector is a collection defined by the [`Vector`](https://deephaven.io/core/javadoc/io/deephaven/vector/Vector.html) interface. Each primitive type except `boolean` has its own subinterface, such as [`IntVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/IntVector.html) and [`DoubleVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/DoubleVector.html). Other types, including `Boolean` and `String`, use [`ObjectVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/ObjectVector.html). Table operations that [group data](../how-to-guides/grouping-data.md) produce vector columns:
 
 ```python order=result,result_meta
 from deephaven import empty_table
@@ -45,43 +52,24 @@ result = empty_table(5).update(["X = ii % 2", "Y = (int) ii"]).group_by("X")
 result_meta = result.meta_table
 ```
 
-The `Y` column is an `IntVector`, not an `int[]`.
+The `Y` column is an [`IntVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/IntVector.html), not an `int[]`.
 
-### Key advantages of vectors
+The following operations produce vector columns:
 
-**Long-based indexing**: Vectors use `long` indices, supporting datasets larger than 2.1 billion elements.
+- [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md)
+- [`agg.group`](../reference/table-operations/group-and-aggregate/AggGroup.md)
+- [`agg.distinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md)
+- [`rolling_group_tick`](../reference/table-operations/update-by-operations/rolling-group-tick.md)
+- [`rolling_group_time`](../reference/table-operations/update-by-operations/rolling-group-time.md)
+- [`range_join`](../reference/table-operations/join/range-join.md)
 
-**Safe out-of-bounds access**: Accessing an invalid index returns the appropriate null constant rather than throwing an exception:
+A vector that a table operation produces can be a view into the source table's columns. It reads its values from those columns instead of copying them.
 
-```python order=source,result
-from deephaven import empty_table
+This matters for live data. When the source table ticks, each vector that [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md) produces reflects its group's rows as of the current update cycle.
 
-source = empty_table(3).update("X = ii")
+### Access a column as a vector
 
-result = source.update(
-    [
-        "ValidAccess = X_[1]",
-        "OutOfBounds = X_[100]",
-    ]
-)
-```
-
-**Efficient slicing**: The `subVector` method creates a view without copying data:
-
-```python order=source,result
-from deephaven import empty_table
-
-source = empty_table(10).update("X = ii").group_by()
-
-result = source.update(
-    [
-        "Slice = X.subVector(2, 5)",
-        "FirstOfSlice = Slice[0]",
-    ]
-)
-```
-
-**Column access with underscore**: Access any column as a vector using the `_` suffix:
+Append `_` to a column name to read the whole column as a vector. Deephaven calls `X_` a [column array](../how-to-guides/work-with-arrays.md#using-the-underscore-operator), but it is a vector that holds every value in column `X`. Index into it to read another row. For example, `X_[ii - 1]` is the value of `X` one row before the current row, where [`ii`](../reference/query-language/variables/special-variables.md) is the current row index:
 
 ```python order=source,result
 from deephaven import empty_table
@@ -96,9 +84,42 @@ result = source.update(
 )
 ```
 
-## Converting between arrays and vectors
+The first row's `PrevValue` and the last row's `NextValue` are null because those indices fall outside the column.
 
-Use the built-in `array` and `vec` functions to convert between types:
+Whether a [formula](../how-to-guides/formulas.md) can use a [column array](../how-to-guides/work-with-arrays.md#using-the-underscore-operator) depends on the table:
+
+- On [static tables](./table-types.md#static-tables) and [blink tables](./table-types.md#specialization-3-blink), any column-array expression works.
+- On other [refreshing tables](./table-types.md#standard-streaming-tables), a constant offset from the row index, such as `X_[ii - 1]` or `X_[ii + 2]`, works. By default, the engine rejects any other use of a column array.
+
+See [Refreshing table restrictions](../reference/query-language/variables/special-variables.md#refreshing-table-restrictions) for details.
+
+### Key advantages of vectors
+
+**Long-based indexing**: A Java array can't hold more than about 2.1 billion elements, because its index is an `int`. A vector uses a `long` index, so a [group](../how-to-guides/grouping-data.md) or [column array](../how-to-guides/work-with-arrays.md#using-the-underscore-operator) with more rows than that is still a single vector.
+
+**Safe out-of-bounds access**: Reading an index outside a vector returns the [null value](../reference/query-language/types/nulls.md) for the vector's type, such as [`NULL_INT`](../reference/query-language/types/nulls.md) for an [`IntVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/IntVector.html), instead of throwing an exception. The [column-array example](#access-a-column-as-a-vector) shows this: the first row's `PrevValue` is null. The same index on a Java array throws an `ArrayIndexOutOfBoundsException`.
+
+**Efficient slicing**: The [`subVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/Vector.html#subVector(long,long)) method returns another view over the same data, without copying it. The following example uses [`update_view`](../reference/table-operations/select/update-view.md) to keep the slice a view. [`update`](../reference/table-operations/select/update.md) would store a materialized copy of any vector view that a [formula](../how-to-guides/formulas.md) returns:
+
+```python order=source,result
+from deephaven import empty_table
+
+source = empty_table(10).update("X = ii").group_by()
+
+result = source.update_view(
+    [
+        "Slice = X.subVector(2, 5)",
+        "FirstOfSlice = Slice[0]",
+        "PastEnd = Slice[3]",
+    ]
+)
+```
+
+`Slice` holds the elements at positions 2, 3, and 4 of `X`, so `FirstOfSlice` is 2. `Slice[3]` is past the end of `Slice`, so `PastEnd` is null.
+
+## Convert between arrays and vectors
+
+Use the built-in [`array`](../reference/query-language/query-library/auto-imported/basic.md) function to convert a vector to an array, and [`vec`](../reference/query-language/query-library/auto-imported/basic.md) to convert an array to a vector:
 
 ```python order=source,converted,converted_meta
 from deephaven import empty_table
@@ -114,48 +135,77 @@ converted = source.update(
 converted_meta = converted.meta_table
 ```
 
+The metadata shows that `AsArray` is a `long[]` and `BackToVector` is a [`LongVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/LongVector.html), the same type as the original `X` column.
+
 ### Supported conversions
 
-| `vec()` input | `array()` input |
-| ------------- | --------------- |
-| `byte[]`      | `ByteVector`    |
-| `char[]`      | `CharVector`    |
-| `double[]`    | `DoubleVector`  |
-| `float[]`     | `FloatVector`   |
-| `int[]`       | `IntVector`     |
-| `long[]`      | `LongVector`    |
-| `short[]`     | `ShortVector`   |
+Each row pairs a primitive array type with its vector type. [`vec`](../reference/query-language/query-library/auto-imported/basic.md) converts the array type to the vector type, and [`array`](../reference/query-language/query-library/auto-imported/basic.md) converts the vector type back.
 
-## Choosing between arrays and vectors
+| Array type | Vector type                                                                               |
+| ---------- | ----------------------------------------------------------------------------------------- |
+| `byte[]`   | [`ByteVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/ByteVector.html)     |
+| `char[]`   | [`CharVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/CharVector.html)     |
+| `double[]` | [`DoubleVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/DoubleVector.html) |
+| `float[]`  | [`FloatVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/FloatVector.html)   |
+| `int[]`    | [`IntVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/IntVector.html)       |
+| `long[]`   | [`LongVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/LongVector.html)     |
+| `short[]`  | [`ShortVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/ShortVector.html)   |
 
-**Use Java arrays when:**
+For object types, use [`arrayObj`](../reference/query-language/query-library/auto-imported/basic.md) to convert an [`ObjectVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/ObjectVector.html) to an array, and [`vecObj`](../reference/query-language/query-library/auto-imported/basic.md) to convert an object array, such as a `String[]`, to an [`ObjectVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/ObjectVector.html).
 
-- Passing data to external Java libraries that expect arrays
-- Working with fixed, known-size data
-- You need to mutate elements in place.
+## When to convert to an array
 
-**Use Deephaven vectors when:**
+Deephaven produces vectors for [grouped](../how-to-guides/grouping-data.md) data and [column arrays](../how-to-guides/work-with-arrays.md#using-the-underscore-operator) such as `X_`, so the decision is whether to convert them. In a [formula](../how-to-guides/formulas.md), you usually don't need to. When a formula passes a vector to a Java method that takes an array, or to a Python function, the engine converts the vector for you.
 
-- Working with grouped table data.
-- Accessing previous or future row values via `Column_[ii ± n]`.
+In the following example, `total` takes a NumPy array, and the formula passes it the [`LongVector`](https://deephaven.io/core/javadoc/io/deephaven/vector/LongVector.html) column `X` directly:
+
+```python order=source,result
+from deephaven import empty_table
+import numpy as np
+import numpy.typing as npt
+
+
+def total(values: npt.NDArray[np.int64]) -> np.int64:
+    return np.sum(values)
+
+
+source = empty_table(5).update("X = ii").group_by()
+result = source.update("Total = total(X)")
+```
+
+`Total` is 10, the sum of the values 0 through 4 in `X`, with no call to [`array`](../reference/query-language/query-library/auto-imported/basic.md).
+
+The array that the engine passes can share the vector's data, so the called code must not change it.
+
+**Convert to a Java array yourself when:**
+
+- Code changes elements in place. [`array`](../reference/query-language/query-library/auto-imported/basic.md) and [`arrayObj`](../reference/query-language/query-library/auto-imported/basic.md) return a new copy, so changing it doesn't touch the vector's data. See [Convert between arrays and vectors](#convert-between-arrays-and-vectors).
+
+**Keep Deephaven vectors when:**
+
+- Holding more than about 2.1 billion elements in one collection.
+- Reading indices that can fall outside the collection, such as `X_[ii - 1]` on the first row, where you want a null instead of an exception.
 - Slicing data without copying.
-- Handling potentially large datasets.
-
-## Operations that create vectors
-
-The following table operations produce vector columns:
-
-- [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md)
-- [`rolling_group_tick`](../reference/table-operations/update-by-operations/rolling-group-tick.md)
-- [`rolling_group_time`](../reference/table-operations/update-by-operations/rolling-group-time.md)
-- [`range_join`](../reference/table-operations/join/range-join.md)
 
 ## Related documentation
 
+- [Deephaven's table types](./table-types.md)
 - [Work with arrays](../how-to-guides/work-with-arrays.md)
+- [Group and ungroup data](../how-to-guides/grouping-data.md)
+- [Formulas](../how-to-guides/formulas.md)
 - [Arrays reference](../reference/query-language/types/arrays.md)
 - [Convert array types](../reference/community-questions/convert-array-types.md)
+- [Nulls](../reference/query-language/types/nulls.md)
+- [Special variables and constants](../reference/query-language/variables/special-variables.md)
+- [Basic functions](../reference/query-language/query-library/auto-imported/basic.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)
 - [`update`](../reference/table-operations/select/update.md)
+- [`update_view`](../reference/table-operations/select/update-view.md)
+- [`meta_table`](../reference/table-operations/metadata/meta_table.md)
 - [`group_by`](../reference/table-operations/group-and-aggregate/groupBy.md)
-- [Vector Javadoc](https://deephaven.io/core/javadoc/io/deephaven/vector/Vector.html)
+- [`agg.group`](../reference/table-operations/group-and-aggregate/AggGroup.md)
+- [`agg.distinct`](../reference/table-operations/group-and-aggregate/AggDistinct.md)
+- [`rolling_group_tick`](../reference/table-operations/update-by-operations/rolling-group-tick.md)
+- [`rolling_group_time`](../reference/table-operations/update-by-operations/rolling-group-time.md)
+- [`range_join`](../reference/table-operations/join/range-join.md)
+- [`Vector` Javadoc](/core/javadoc/io/deephaven/vector/Vector.html)
