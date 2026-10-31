@@ -165,10 +165,10 @@ Most user interactions with Deephaven happen via a programming language such as 
 
 ```groovy order=t1,t2
 t1 = newTable(intCol("X", 1, 2, 3), stringCol("Y", "A/B", "C/D", "E/F"))
-t2 = t1.update("A=java.lang.Math.sin(X)", "B=Y.split(`/`)[1]")
+t2 = t1.update("A=java.lang.Integer.toBinaryString(X)", "B=Y.split(`/`)[1]")
 ```
 
-In this query, Java is used twice in the query strings. First, the `sin(...)` method from the `java.lang.Math` class is used to compute column `A`. If you find a Java library that implements functionality you need, just place it on the classpath, and it is available in the query language. (See [Install and use Java packages](../how-to-guides/install-and-use-java-packages.md) for more details.) Second, Deephaven Query Language strings are `java.lang.String` objects. Here the `split(...)` method plus an array access have been used to retrieve the second token in the string. This inline use of Java String methods eliminates the need to write a custom string processing function.
+In this query, Java is used twice in the query strings. First, the `toBinaryString(...)` method from the `java.lang.Integer` class computes column `A`, the binary form of `X`. If you find a Java library that implements functionality you need, just place it on the classpath, and it is available in the query language. (See [Install and use Java packages](../how-to-guides/install-and-use-java-packages.md) for more details.) Second, Deephaven Query Language strings are `java.lang.String` objects. Here the `split(...)` method plus an array access have been used to retrieve the second token in the string. This inline use of Java String methods eliminates the need to write a custom string processing function.
 
 Because of the deep integration of Java within the Deephaven environment, it is possible to create Java objects within a Groovy query. This technique isn’t often used, but it is occasionally helpful when using a Java package.
 

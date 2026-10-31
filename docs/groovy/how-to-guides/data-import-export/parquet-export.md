@@ -245,6 +245,19 @@ ParquetTools.writeTables(
 )
 ```
 
+## Write data indexes
+
+Deephaven can write [data indexes](../data-indexes.md) along with your data. It writes each index to its own Parquet file in a `.dh_metadata/indexes` subdirectory of the data file's directory. To choose which indexes to write, call `addIndexColumns` or `addAllIndexColumns` on the [`ParquetInstructions.Builder`](/core/javadoc/io/deephaven/parquet/table/ParquetInstructions.Builder.html). If the source table lacks a listed index, Deephaven computes it.
+
+If you call neither method, the default depends on the write method:
+
+- [`writeTable`](../../reference/data-import-export/Parquet/writeTable.md): Writes the indexes on the source table.
+- [`writeKeyValuePartitionedTable`](../../reference/data-import-export/Parquet/writeKeyValuePartitionedTable.md) with a regular table: Writes the indexes on the source table, except single-column indexes on a partitioning column.
+- [`writeTables`](/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#writeTables(io.deephaven.engine.table.Table%5B%5D,java.lang.String%5B%5D,io.deephaven.parquet.table.ParquetInstructions)): Writes the indexes on the first table.
+- `writeKeyValuePartitionedTable` with a [partitioned table](../partitioned-tables.md): Writes no indexes.
+
+See [Writing options](./parquet-instructions.md#writing-options) for the full rules.
+
 ## Related documentation
 
 - [Import Parquet files](./parquet-import.md)
