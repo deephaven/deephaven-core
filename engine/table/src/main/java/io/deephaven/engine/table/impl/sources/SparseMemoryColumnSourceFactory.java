@@ -13,7 +13,7 @@ import java.time.Instant;
  * Creates the in-memory column sources that select and update write at the row keys of their results.
  * <p>
  * The sources are the adaptive sparse sources, such as {@link DoubleAdaptiveSparseArraySource}, when
- * {@link #USE_ADAPTIVE} is set, for the types that have one, and the sources of
+ * {@link #USE_ADAPTIVE} is set, and the sources of
  * {@link SparseArrayColumnSource#getSparseMemoryColumnSource(long, Class, Class)} otherwise.
  */
 public final class SparseMemoryColumnSourceFactory {
@@ -55,9 +55,10 @@ public final class SparseMemoryColumnSourceFactory {
             result = new LongAdaptiveSparseArraySource();
         } else if (type == short.class || type == Short.class) {
             result = new ShortAdaptiveSparseArraySource();
-        } else if (type == boolean.class || type == Boolean.class || type == Instant.class) {
-            // these types are stored as bytes or longs, which the adaptive sources do not yet reinterpret
-            return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type, componentType);
+        } else if (type == boolean.class || type == Boolean.class) {
+            result = new BooleanAdaptiveSparseArraySource();
+        } else if (type == Instant.class) {
+            result = new InstantAdaptiveSparseArraySource();
         } else {
             result = new ObjectAdaptiveSparseArraySource<>(type, componentType);
         }
