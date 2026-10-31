@@ -18,7 +18,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraphWaitForbiddenException;
 import io.deephaven.engine.updategraph.UpdateGraphWaitGuard;
@@ -164,11 +163,8 @@ public class TableBackedDataIndex extends AbstractDataIndex {
         final Table resultIndexTable = QueryPerformanceRecorder.withNugget(String.format(
                 "Build table-backed DataIndex for %s on [%s]",
                 sourceTable.getDescription(), String.join(", ", keyColumnNames)), () -> {
-                    // Initialization threads may be waiting for this index's lock, so the computation does not wait
-                    // for work on those threads.
-                    try (final SafeCloseable ignored1 = ExecutionContext.getContext()
-                            .withUpdateGraph(sourceTable.getUpdateGraph())
-                            .withOperationInitializer(OperationInitializer.NON_PARALLELIZABLE).open();
+                    try (final SafeCloseable ignored1 =
+                            ExecutionContext.getContext().withUpdateGraph(sourceTable.getUpdateGraph()).open();
                             final SafeCloseable ignored2 = isRefreshing() ? LivenessScopeStack.open() : null) {
                         final QueryTable groupedTable = ChunkedOperatorAggregationHelper.aggregation(
                                 AggregationControl.IGNORE_INDEXING, AggregationProcessor.forExposeGroupRowSets(),

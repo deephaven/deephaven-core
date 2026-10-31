@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -434,6 +435,14 @@ public abstract class UpdateBy {
                                             }))));
 
             return waitForResult;
+        }
+
+        /**
+         * Wait for the processing that {@link #processUpdate()} began to complete, running on this thread any of the
+         * scheduler's jobs that no other thread has started.
+         */
+        void awaitResult() throws InterruptedException, ExecutionException {
+            jobScheduler.awaitCompletion(waitForResult);
         }
 
         /**

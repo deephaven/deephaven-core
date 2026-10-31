@@ -35,7 +35,7 @@ public class ImmediateJobScheduler implements JobScheduler {
     private final Deque<Runnable> pendingJobs = new ArrayDeque<>();
 
     @Override
-    public void submit(
+    public Submission submit(
             final ExecutionContext executionContext,
             final Runnable runnable,
             final LogOutputAppendable description,
@@ -58,7 +58,7 @@ public class ImmediateJobScheduler implements JobScheduler {
 
         if (thisThreadIsProcessing) {
             // We're already draining the queue in an ancestor stack frame
-            return;
+            return Submission.NOT_WITHDRAWABLE;
         }
 
         try {
@@ -69,6 +69,7 @@ public class ImmediateJobScheduler implements JobScheduler {
         } finally {
             PROCESSING_THREAD_UPDATER.set(this, null);
         }
+        return Submission.NOT_WITHDRAWABLE;
     }
 
     @Override

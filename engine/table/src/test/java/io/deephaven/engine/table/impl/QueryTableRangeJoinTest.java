@@ -19,6 +19,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
@@ -291,6 +292,22 @@ public class QueryTableRangeJoinTest {
     }
 
     /**
+     * Formula that returns {@code rowKey} once a job is held by {@link #holdJob(long)}, so that an operation computing
+     * it before it waits for the held job finds that job already running on another thread, rather than running it
+     * itself.
+     */
+    @SuppressWarnings("unused")
+    public static int afterHeldJobEntered(final long rowKey) {
+        try {
+            // noinspection ResultOfMethodCallIgnored
+            heldJobEntered.await(JOB_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return (int) rowKey;
+    }
+
+    /**
      * Formula that fails once a job is held by {@link #holdJob(long)}.
      */
     @SuppressWarnings("unused")
@@ -329,8 +346,9 @@ public class QueryTableRangeJoinTest {
         final int heldJobsRunning = runWithHeldJobs(() -> {
             final Table left = TableTools.emptyTable(10).view(
                     "K = holdJob(ii)", "LSV = (int) ii", "LEV = (int) ii + 2");
+            // the right table work, done before the wait, finishes only once a pool thread holds the left grouping job
             final Table right = TableTools.emptyTable(1).view(
-                    "K = (int) 0", "RRV = (int) ii", "Sentinel = (int) ii");
+                    "K = (int) 0", "RRV = afterHeldJobEntered(ii)", "Sentinel = (int) ii");
             left.rangeJoin(right, List.of("K", "LSV < RRV < LEV"), List.of(AggGroup("Sentinel")));
         }, QueryTableRangeJoinTest::isWaitingForLeftGroupingJob, CancellationException.class);
         assertThat(heldJobsRunning).as("held jobs running when rangeJoin was cancelled").isZero();
@@ -363,8 +381,11 @@ public class QueryTableRangeJoinTest {
             return false;
         }
         for (final StackTraceElement frame : operationThread.getStackTrace()) {
-            if (!frame.getClassName().startsWith("java.") && !frame.getClassName().startsWith("jdk.")) {
-                return frame.getClassName().endsWith("RangeJoinOperation$StaticRangeJoinPhase1")
+            final String className = frame.getClassName();
+            // the scheduler's wait is entered from the frame that waits for the job
+            if (!className.startsWith("java.") && !className.startsWith("jdk.")
+                    && !className.equals(OperationInitializerJobScheduler.class.getName())) {
+                return className.endsWith("RangeJoinOperation$StaticRangeJoinPhase1")
                         && frame.getMethodName().equals("start");
             }
         }

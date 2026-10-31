@@ -21,7 +21,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -148,12 +151,31 @@ public interface JobScheduler {
      * @param runnable the runnable to execute
      * @param description a description for logging
      * @param onError a routine to call if an exception occurs while running runnable
+     * @return the accepted job, which the submitter may withdraw while no thread has started it
      */
-    void submit(
+    Submission submit(
             ExecutionContext executionContext,
             Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError);
+
+    /**
+     * A job that {@link #submit} accepted.
+     */
+    @FunctionalInterface
+    interface Submission {
+        /**
+         * A submission that cannot be withdrawn, because the job has already run or its scheduler does not track it.
+         */
+        Submission NOT_WITHDRAWABLE = () -> false;
+
+        /**
+         * Withdraw the job if no thread has started it, so that it never runs and the scheduler no longer waits for it.
+         *
+         * @return whether the job was withdrawn
+         */
+        boolean withdraw();
+    }
 
     /**
      * The performance statistics of all runnables that have been completed off-thread, or null if all were executed in
@@ -168,8 +190,40 @@ public interface JobScheduler {
      * returning the {@link BasePerformanceEntry}. Therefore, if you call this from a completion callback, then the
      * operation will hang. {@link ExecutorJobScheduler} waits the same way, so the same applies to it.
      * </p>
+     *
+     * <p>
+     * It never runs a job itself, so call it only once every job has started: after {@link #awaitCompletion} or
+     * {@link #invokeParallel}, which leave no job waiting for a thread. Otherwise it may wait for a job queued behind
+     * threads that are themselves waiting, perhaps for a lock the calling thread holds.
+     * </p>
      */
     BasePerformanceEntry getAccumulatedPerformance();
+
+    /**
+     * Wait for {@code future}, which this scheduler's jobs complete, and return its result as {@link Future#get()}
+     * does.
+     *
+     * <p>
+     * The {@link OperationInitializerJobScheduler} returns or throws only once {@code future} is done and, when called
+     * outside its jobs, every job submitted to it has finished, so that {@link #getAccumulatedPerformance} has nothing
+     * left to wait for; one of its jobs that waits needs only {@code future}, since the others may be waiting too.
+     * While it waits, it runs on the calling thread any of its jobs that no other thread has started, and blocks only
+     * while every job it has not finished is running on another thread. The wait therefore never depends on a job
+     * queued behind threads that are themselves waiting, perhaps for a lock the calling thread holds. An interrupt
+     * cancels {@code future}, so that jobs that check it can stop early, but the wait goes on until every job has
+     * finished, because the caller is about to release what they are using; then {@link InterruptedException} is
+     * thrown. Other schedulers wait as {@link Future#get()} does.
+     * </p>
+     *
+     * @param future the future to wait for
+     * @return the result of {@code future}
+     * @throws InterruptedException if the calling thread is interrupted while waiting
+     * @throws ExecutionException if {@code future} completed exceptionally
+     */
+    default <T> T awaitCompletion(@NotNull final CompletableFuture<T> future)
+            throws InterruptedException, ExecutionException {
+        return future.get();
+    }
 
     /**
      * How many threads exist in the job scheduler? The job submitters can use this value to determine how many sub-jobs
@@ -329,8 +383,8 @@ public interface JobScheduler {
                     }
                     invokers.add(taskInvoker);
                     submitting = taskInvoker;
-                    scheduler.submit(executionContext, taskInvoker::startAndExecute, description,
-                            IterationManager::onUnexpectedJobError);
+                    taskInvoker.submission = scheduler.submit(executionContext, taskInvoker::startAndExecute,
+                            description, IterationManager::onUnexpectedJobError);
                     submitting = null;
                 }
                 if (callerParticipates) {
@@ -338,7 +392,7 @@ public interface JobScheduler {
                     // then look for a submitted one that has not started yet.
                     try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
                         for (final TaskInvoker taskInvoker : invokers) {
-                            if (taskInvoker.tryStart()) {
+                            if (taskInvoker.tryTakeOver()) {
                                 taskInvoker.execute();
                             }
                         }
@@ -378,8 +432,9 @@ public interface JobScheduler {
          * After the iteration failed to start, or a submission threw after running its job on this thread: close
          * {@code refused}, which nothing else will run. When the caller takes part, also close every other invoker that
          * has not started, so that the caller does not wait for jobs a queueing scheduler may start late, or never, if
-         * they are queued behind this thread; one the scheduler starts later finds itself taken and does nothing.
-         * Otherwise the scheduler starts the invokers it accepted, which close at once if the iteration has failed.
+         * they are queued behind this thread. Their jobs are withdrawn; one the scheduler could not withdraw finds its
+         * invoker taken when it starts, and does nothing. Otherwise the scheduler starts the invokers it accepted,
+         * which close at once if the iteration has failed.
          *
          * @param refused the invoker whose submission the scheduler refused, already taken by this thread, or null
          */
@@ -392,7 +447,7 @@ public interface JobScheduler {
             }
             if (callerParticipates) {
                 for (final TaskInvoker taskInvoker : invokers) {
-                    if (taskInvoker.tryStart()) {
+                    if (taskInvoker.tryTakeOver()) {
                         closeAbandoned(taskInvoker);
                     }
                 }
@@ -694,6 +749,8 @@ public interface JobScheduler {
             private boolean running;
             /** Set by whichever thread runs this invoker first: the scheduler's, or a blocked caller taking it over. */
             private final AtomicBoolean started = new AtomicBoolean();
+            /** The job that runs this invoker on the scheduler, once submitted; read only by the submitting thread. */
+            private Submission submission = Submission.NOT_WITHDRAWABLE;
 
             /**
              * Construct a TaskInvoker which will iteratively reschedule itself to perform parallel tasks as needed.
@@ -717,6 +774,20 @@ public interface JobScheduler {
             /** @return whether this thread is the one to run this invoker */
             private boolean tryStart() {
                 return started.compareAndSet(false, true);
+            }
+
+            /**
+             * Take this invoker over on the calling thread, if no thread has started it, and withdraw its submitted
+             * job, which would otherwise do nothing once it ran and keep the scheduler waiting for it until then.
+             *
+             * @return whether this thread is the one to run this invoker
+             */
+            private boolean tryTakeOver() {
+                if (!tryStart()) {
+                    return false;
+                }
+                submission.withdraw();
+                return true;
             }
 
             /** The job a scheduler runs: this invoker, unless a blocked caller has already taken it over. */
@@ -967,8 +1038,9 @@ public interface JobScheduler {
      * and one more runs on the calling thread, each with a task context of its own from
      * {@code taskThreadContextFactory}, which is called on the calling thread. The caller therefore works even when the
      * scheduler accepts every submission. When the caller runs out of tasks it runs any submitted invoker that the
-     * scheduler has not started yet, which then does nothing when the scheduler does start it; so the caller never
-     * waits on an invoker that has not started, whatever the scheduler does with a job it cannot start at once.
+     * scheduler has not started yet, and withdraws its job; a job the scheduler cannot withdraw does nothing when it
+     * starts. So the caller never waits on an invoker that has not started, whatever the scheduler does with a job it
+     * cannot start at once, and the scheduler does not wait for the jobs of the invokers the caller ran.
      * </p>
      *
      * <p>

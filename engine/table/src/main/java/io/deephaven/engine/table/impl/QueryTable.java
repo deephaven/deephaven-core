@@ -1582,12 +1582,24 @@ public class QueryTable extends BaseTable<QueryTable> {
                                                         usePrev);
                                         final TrackingWritableRowSet currentMapping;
                                         initialFilterExecution.scheduleCompletion((adds, mods) -> {
-                                            currentMappingFuture.complete(adds.writableCast().toTracking());
+                                            final TrackingWritableRowSet mapping = adds.writableCast().toTracking();
+                                            if (!currentMappingFuture.complete(mapping)) {
+                                                // an interrupt cancelled the filter, and nothing will use the mapping
+                                                mapping.close();
+                                            }
                                         }, currentMappingFuture::completeExceptionally);
 
                                         try {
-                                            currentMapping = currentMappingFuture.get();
+                                            currentMapping = initialFilterExecution.jobScheduler()
+                                                    .awaitCompletion(currentMappingFuture);
                                         } catch (ExecutionException | InterruptedException e) {
+                                            if (e instanceof InterruptedException
+                                                    && !currentMappingFuture.cancel(false)
+                                                    && !currentMappingFuture.isCompletedExceptionally()) {
+                                                // the filter finished before the interrupt, which abandons its mapping;
+                                                // a filter still running finds the future cancelled, and closes its own
+                                                currentMappingFuture.join().close();
+                                            }
                                             final Throwable cause = (e instanceof InterruptedException)
                                                     ? new CancellationException("interrupted while filtering")
                                                     : e.getCause();
@@ -1858,7 +1870,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     waitForResult.completeExceptionally(e);
                                 }
 
-                                waitForResult.get();
+                                jobScheduler.awaitCompletion(waitForResult);
                             } catch (InterruptedException e) {
                                 throw new CancellationException("interrupted while computing select or update");
                             } catch (ExecutionException e) {

@@ -1212,7 +1212,7 @@ public class SortHelpers {
                     },
                     waitForFill::completeExceptionally);
             try {
-                waitForFill.get();
+                jobScheduler.awaitCompletion(waitForFill);
             } catch (final InterruptedException e) {
                 throw new CancellationException("Interrupted while filling sort values in parallel");
             } catch (final ExecutionException e) {

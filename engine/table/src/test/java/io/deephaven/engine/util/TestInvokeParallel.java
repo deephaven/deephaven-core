@@ -1600,10 +1600,21 @@ public class TestInvokeParallel {
         final AtomicReference<Thread> jobThread = new AtomicReference<>();
         final AtomicReference<T> result = new AtomicReference<>();
         final AtomicReference<Exception> error = new AtomicReference<>();
+        final CountDownLatch ran = new CountDownLatch(1);
         scheduler.submit(ExecutionContext.getContext(), () -> {
             jobThread.set(Thread.currentThread());
-            result.set(job.get());
+            try {
+                result.set(job.get());
+            } finally {
+                ran.countDown();
+            }
         }, null, error::set);
+        // reading the performance would run the job here if no pool thread had started it yet
+        try {
+            ran.await();
+        } catch (final InterruptedException e) {
+            throw new AssertionError(e);
+        }
         assertThat(scheduler.getAccumulatedPerformance()).isNotNull();
         assertThat(error.get()).isNull();
         assertThat(jobThread.get()).isNotNull().isNotSameAs(Thread.currentThread());

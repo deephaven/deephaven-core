@@ -10,8 +10,8 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -21,22 +21,23 @@ import java.util.function.Consumer;
 
 /**
  * A {@link JobScheduler} over a plain {@link Executor}. A job the executor refuses with a
- * {@link RejectedExecutionException}, as a bounded pool with no queue does when all of its threads are busy, runs on
- * the submitting thread instead, so no job is ever dropped; over a pool with no queue, such as {@link #newHelperPool}
- * makes, no job ever waits in a queue behind another either.
+ * {@link RejectedExecutionException} runs on the submitting thread instead, so no job is ever dropped.
  *
  * <p>
  * It is meant for a pool shaped like {@link #newHelperPool}, which may be small and shared by many callers, and on
  * which a job may itself invoke a nested iteration; the pool's size bounds the threads a caller adds to its own, never
- * the work it can finish.
+ * the work it can finish. That pool queues a job while all of its threads are busy, so a thread that finishes another
+ * caller's job then helps with this one, and a callback-form iteration returns once its jobs are submitted. A job on
+ * the pool must therefore not block waiting for a callback-form iteration or another submitted job, which may be queued
+ * behind it; it calls {@link #invokeParallel} instead, which runs the work itself when no thread is free.
  * </p>
  *
  * <p>
  * A caller of {@link #invokeParallel} idles only once no task is left for it to claim: it then waits for the tasks that
- * helpers already started. It never waits on a helper that has not started, since it runs any such helper itself, so
- * this holds for any executor. A task that itself calls {@code invokeParallel} is such a caller too, and works through
- * its nested iteration the same way; when the pool has no free thread, its nested helpers run on its own thread and it
- * does not wait at all.
+ * helpers already started. It never waits on a helper that has not started, since it runs any such helper itself,
+ * withdrawing its queued job, so this holds for any executor, and a queue never makes it wait behind other callers'
+ * jobs. A task that itself calls {@code invokeParallel} is such a caller too, and works through its nested iteration
+ * the same way; when the pool has no free thread, it runs its nested helpers itself and does not wait at all.
  * </p>
  *
  * <p>
@@ -67,65 +68,48 @@ public class ExecutorJobScheduler implements JobScheduler {
 
     /**
      * Make the pool this scheduler is designed for: up to {@code maxThreads} threads, made when needed and retired
-     * after a minute without work, and no queue, so that a job either gets a thread at once or is refused. The pool is
-     * never shut down by this class; give it daemon threads.
+     * after a minute without work, and an unbounded queue, so that a job submitted while every thread is busy waits for
+     * the first to finish rather than being refused. The pool is never shut down by this class; give it daemon threads.
      *
      * @param maxThreads the most threads the pool holds
      * @param threadFactory makes the pool's threads
      * @return the pool
      */
     public static ThreadPoolExecutor newHelperPool(final int maxThreads, @NotNull final ThreadFactory threadFactory) {
-        return new ThreadPoolExecutor(0, Require.geq(maxThreads, "maxThreads", 1),
-                HELPER_POOL_KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, new SynchronousQueue<>(), threadFactory);
+        final int threads = Require.geq(maxThreads, "maxThreads", 1);
+        final ThreadPoolExecutor pool = new ThreadPoolExecutor(threads, threads,
+                HELPER_POOL_KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), threadFactory);
+        pool.allowCoreThreadTimeOut(true);
+        return pool;
     }
 
     @Override
-    public void submit(
+    public Submission submit(
             final ExecutionContext executionContext,
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
         outstandingJobs.incrementAndGet();
-        final Thread submitter = Thread.currentThread();
-        final AtomicBoolean started = new AtomicBoolean();
+        final Job job = new Job(executionContext, runnable, description, onError);
         try {
-            executor.execute(() -> {
-                started.set(true);
-                try {
-                    if (Thread.currentThread() == submitter) {
-                        // A synchronous executor ran it here: the submitting thread's own work, as a refused job is
-                        JobScheduler.runJob(executionContext, runnable, description, onError);
-                        return;
-                    }
-                    final BasePerformanceEntry baseEntry = new BasePerformanceEntry();
-                    baseEntry.onBaseEntryStart();
-                    try {
-                        JobScheduler.runJob(executionContext, runnable, description, onError);
-                    } finally {
-                        baseEntry.onBaseEntryEnd();
-                        accumulatedBaseEntry.accumulate(baseEntry);
-                    }
-                } finally {
-                    decrementOutstandingJobs();
-                }
-            });
+            executor.execute(job);
         } catch (final RejectedExecutionException e) {
-            if (started.get()) {
+            if (!job.tryClaim()) {
                 // A synchronous executor ran the job, which then threw this itself: the job has run, and released its
                 // count, and must not run again.
                 throw e;
             }
             // Every thread is busy: the job is the submitting thread's own work, and is accounted as such
             decrementOutstandingJobs();
-            JobScheduler.runJob(executionContext, runnable, description, onError);
+            job.runOnSubmittingThread();
+            return Submission.NOT_WITHDRAWABLE;
         } catch (final Throwable t) {
             // A job that never started must release its count here, or getAccumulatedPerformance would wait forever
             // for it, as in OperationInitializerJobScheduler.
-            if (!started.get()) {
-                decrementOutstandingJobs();
-            }
+            job.withdraw();
             throw t;
         }
+        return job;
     }
 
     /**
@@ -162,5 +146,90 @@ public class ExecutorJobScheduler implements JobScheduler {
     @Override
     public int threadCount() {
         return threadCount;
+    }
+
+    /**
+     * A submitted job, which runs once: on the executor's thread that first starts it, or on the submitting thread if
+     * the executor refuses it. A job the submitter withdraws first does nothing when the executor starts it.
+     */
+    private final class Job implements Runnable, Submission {
+
+        private final Thread submitter = Thread.currentThread();
+        private final AtomicBoolean claimed = new AtomicBoolean();
+        // Read only by the thread that claims this job, and cleared once it has run or been withdrawn, so that an
+        // entry the executor still queues for it retains none of the work.
+        private ExecutionContext executionContext;
+        private Runnable runnable;
+        private LogOutputAppendable description;
+        private Consumer<Exception> onError;
+
+        private Job(
+                final ExecutionContext executionContext,
+                final Runnable runnable,
+                final LogOutputAppendable description,
+                final Consumer<Exception> onError) {
+            this.executionContext = executionContext;
+            this.runnable = runnable;
+            this.description = description;
+            this.onError = onError;
+        }
+
+        /** @return whether this thread is the one to run this job */
+        private boolean tryClaim() {
+            return claimed.compareAndSet(false, true);
+        }
+
+        @Override
+        public boolean withdraw() {
+            if (!tryClaim()) {
+                return false;
+            }
+            release();
+            decrementOutstandingJobs();
+            return true;
+        }
+
+        /** Drop the work, which this job will not run again. */
+        private void release() {
+            executionContext = null;
+            runnable = null;
+            description = null;
+            onError = null;
+        }
+
+        /** Run this job, which the submitting thread has claimed after the executor refused it. */
+        private void runOnSubmittingThread() {
+            try {
+                JobScheduler.runJob(executionContext, runnable, description, onError);
+            } finally {
+                release();
+            }
+        }
+
+        @Override
+        public void run() {
+            if (!tryClaim()) {
+                // withdrawn, and its count released, before the executor started it
+                return;
+            }
+            try {
+                if (Thread.currentThread() == submitter) {
+                    // A synchronous executor ran it here: the submitting thread's own work, as a refused job is
+                    JobScheduler.runJob(executionContext, runnable, description, onError);
+                    return;
+                }
+                final BasePerformanceEntry baseEntry = new BasePerformanceEntry();
+                baseEntry.onBaseEntryStart();
+                try {
+                    JobScheduler.runJob(executionContext, runnable, description, onError);
+                } finally {
+                    baseEntry.onBaseEntryEnd();
+                    accumulatedBaseEntry.accumulate(baseEntry);
+                }
+            } finally {
+                release();
+                decrementOutstandingJobs();
+            }
+        }
     }
 }

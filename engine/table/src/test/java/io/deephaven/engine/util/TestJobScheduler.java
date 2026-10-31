@@ -742,7 +742,7 @@ public final class TestJobScheduler {
         }
 
         @Override
-        public void submit(
+        public Submission submit(
                 final ExecutionContext executionContext,
                 final Runnable runnable,
                 final LogOutputAppendable description,
@@ -752,6 +752,7 @@ public final class TestJobScheduler {
             }
             --remainingAccepts;
             accepted.add(runnable);
+            return Submission.NOT_WITHDRAWABLE;
         }
 
         private void runAccepted() {

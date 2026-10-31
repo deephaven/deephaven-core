@@ -304,7 +304,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         try {
             new StaticRangeJoinPhase1(jobScheduler, executionContext, resultFuture).start();
             try {
-                return resultFuture.get();
+                return jobScheduler.awaitCompletion(resultFuture);
             } catch (InterruptedException e) {
                 final CancellationException cancellation =
                         new CancellationException(String.format("%s interrupted", description), e);
@@ -368,7 +368,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             }
             final Table leftTableGrouped;
             try {
-                leftTableGrouped = groupLeftTableFuture.get();
+                leftTableGrouped = jobScheduler.awaitCompletion(groupLeftTableFuture);
             } catch (InterruptedException e) {
                 // staticRangeJoin observes the restored interrupt in its wait for the result and reports cancellation
                 Thread.currentThread().interrupt();
@@ -722,8 +722,9 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 @NotNull final TaskContext tc,
                 final int index,
                 @NotNull final Consumer<Exception> nestedErrorConsumer) {
-            if (resultFuture.isDone()) {
-                // The result is complete before all range search tasks have run only if the operation was cancelled
+            // The result is complete before all range search tasks have run only if the operation was cancelled. A task
+            // that the thread waiting for the result runs sees that thread's interrupt before the result is cancelled.
+            if (resultFuture.isDone() || Thread.currentThread().isInterrupted()) {
                 throw new CancellationException(String.format("%s cancelled", description));
             }
             final RowSet leftRows = leftGroupRowSets.get(index);

@@ -15,7 +15,6 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -177,13 +176,9 @@ class MergedDataIndex extends AbstractDataIndex implements DataIndexer.Retainabl
                 }
             }
             try {
-                // Initialization threads may be waiting for this index's lock, so the merge runs on the common pool
-                // rather than on those threads.
                 return QueryPerformanceRecorder.withNugget(
                         String.format("Merge Data Indexes [%s]", String.join(", ", keyColumnNames)),
-                        () -> ExecutionContext.getContext()
-                                .withOperationInitializer(ForkJoinPoolOperationInitializer.fromCommonPool())
-                                .apply(() -> buildTable(lazyRowSetMerge)));
+                        ForkJoinPoolOperationInitializer.ensureParallelizable(() -> buildTable(lazyRowSetMerge)));
             } catch (Throwable t) {
                 isCorrupt = true;
                 throw t;

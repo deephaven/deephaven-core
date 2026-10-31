@@ -149,7 +149,8 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
 
         try {
             // need to wait until this future is complete
-            sm.processUpdate().get();
+            sm.processUpdate();
+            sm.awaitResult();
         } catch (InterruptedException e) {
             throw new CancellationException("Interrupted while initializing bucketed updateBy");
         } catch (ExecutionException e) {

@@ -11,7 +11,6 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraphWaitForbiddenException;
 import io.deephaven.engine.updategraph.UpdateGraphWaitGuard;
 import io.deephaven.util.SafeCloseable;
@@ -65,13 +64,12 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
      * Also note that the implementation should copy attributes, as in
      * {@code copyAttributes(resultTable, CopyAttributeOperation.Coalesce)}.
      * <p>
-     * This is never invoked concurrently for the same table, and is invoked with an {@link OperationInitializer} that
-     * cannot parallelize: initialization threads may be waiting for the coalescing lock that the invoking thread holds,
-     * so it must not wait for work on those threads. For a refreshing table, a thread that may wait for its update
-     * graph first invokes this within its own {@link LivenessScope} while {@link UpdateGraphWaitGuard#forbidWaits()
-     * forbidden} to wait for any update graph. If the attempt succeeds, the liveness referents it produced are
-     * transferred to the caller's liveness manager. If it would wait, it is abandoned, the liveness referents it
-     * produced are released, and this is invoked again while the thread holds the shared lock.
+     * This is never invoked concurrently for the same table. For a refreshing table, a thread that may wait for its
+     * update graph first invokes this within its own {@link LivenessScope} while
+     * {@link UpdateGraphWaitGuard#forbidWaits() forbidden} to wait for any update graph. If the attempt succeeds, the
+     * liveness referents it produced are transferred to the caller's liveness manager. If it would wait, it is
+     * abandoned, the liveness referents it produced are released, and this is invoked again while the thread holds the
+     * shared lock.
      *
      * @return The coalesced result table, suitable for caching
      */
@@ -79,8 +77,7 @@ public abstract class UncoalescedTableImpl<IMPL_TYPE extends UncoalescedTable<IM
 
     @Override
     public final Table coalesce() {
-        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph)
-                .withOperationInitializer(OperationInitializer.NON_PARALLELIZABLE).open()) {
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             Table localCoalesced;
             if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
                 return localCoalesced;

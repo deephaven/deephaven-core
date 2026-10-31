@@ -170,8 +170,8 @@ public class UncoalescedTableTest {
 
     /**
      * A thread coalesces a table, with a parallel where, while every initialization thread runs a job that waits for
-     * the same coalesce. The coalesce does not wait for work on those threads, so it completes, and then so do the
-     * jobs.
+     * the same coalesce. The coalescing thread runs the where's jobs itself, since no initialization thread can start
+     * them, so the coalesce completes, and then so do the jobs.
      */
     @Test
     public void testCoalesceCompletesWhileInitializationThreadsWaitForIt() throws Exception {
