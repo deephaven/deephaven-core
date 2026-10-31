@@ -408,6 +408,21 @@ public class GrpcServiceOverrideBuilder {
 
             final SessionState.ExportObject<BrowserStream<ReqT>> browserStream =
                     session.getExport(streamData.getRpcTicket(), "rpcTicket");
+            if (SessionState.isExportStateTerminal(browserStream.getState())) {
+                // The stream has already ended, most often because this call and the client's cancel of the open
+                // request are separate calls that arrived in the other order. A half-close carries nothing to deliver;
+                // a message is an undelivered body, and the client is told so.
+                if (streamData.isHalfClose()) {
+                    log.debug().append("dropping half-close for ended stream, sequence ")
+                            .append(streamData.getSequence()).endl();
+                    responseObserver.onNext(null);
+                    responseObserver.onCompleted();
+                    return;
+                }
+                throw Exceptions.statusRuntimeException(Code.CANCELLED,
+                        "stream ended before this message arrived; sequence " + streamData.getSequence()
+                                + " was not delivered");
+            }
 
             session.nonExport()
                     .require(browserStream)

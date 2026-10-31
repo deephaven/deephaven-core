@@ -1276,22 +1276,32 @@ public class SessionState {
             if (errorId == null) {
                 errorId = UuidCreator.toString(UuidCreator.getRandomBased());
 
+                // A cancel or release, of this export or of one it depends on, is the client's doing and not an
+                // internal error; the status the client gets names the cause and the related export. A cancel that
+                // lands while doExport() is recording a failure is reported here first, with that exception; it is
+                // still a server failure and keeps ERROR.
+                final boolean clientDriven = caughtException == null
+                        && (state == ExportNotification.State.CANCELLED
+                                || state == ExportNotification.State.DEPENDENCY_CANCELLED
+                                || state == ExportNotification.State.DEPENDENCY_RELEASED);
+                final String prefix = clientDriven ? "Export ended by client '" : "Internal Error '";
+
                 if (caughtException == null && errorDetails == null) {
                     // We log the assigned error ID, even though we have no details. If we do not assign the error ID,
                     // then we may not correctly propagate than an error occurred.
-                    LogEntry level = state == ExportNotification.State.CANCELLED ? log.info() : log.error();
-                    level.append("Internal Error '").append(errorId).append("' for ").append(logIdentity)
+                    final LogEntry level = clientDriven ? log.info() : log.error();
+                    level.append(prefix).append(errorId).append("' for ").append(logIdentity)
                             .append(" and no error details are available; state is ").append(state.name()).endl();
                     return;
                 }
 
                 this.caughtException = caughtException;
                 if (!(caughtException instanceof StatusRuntimeException)) {
+                    final LogEntry level = clientDriven ? log.info() : log.error();
                     if (errorDetails != null) {
-                        log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails).endl();
+                        level.append(prefix).append(errorId).append("' ").append(errorDetails).endl();
                     } else {
-                        log.error().append("Internal Error '").append(errorId).append("' ").append(caughtException)
-                                .endl();
+                        level.append(prefix).append(errorId).append("' ").append(caughtException).endl();
                     }
                 } else {
                     if (errorDetails != null) {
