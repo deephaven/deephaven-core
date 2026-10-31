@@ -37,6 +37,30 @@ public interface WritableSourceWithPrepareForParallelPopulation {
     void prepareForParallelPopulation(RowSequence rowSequence);
 
     /**
+     * The number of consecutive row keys, a power of two, that a caller of
+     * {@link #prepareForParallelPopulation(RowSequence, boolean)} keeps together: when its divisions are aligned, every
+     * row key from {@code k * alignment} through {@code (k + 1) * alignment - 1} that is written in a cycle is written
+     * by the same thread.
+     *
+     * @return the alignment of the divisions this source can prepare for more cheaply, or 1 if any division is as cheap
+     */
+    default int parallelPopulationAlignment() {
+        return 1;
+    }
+
+    /**
+     * Prepare this column source as {@link #prepareForParallelPopulation(RowSequence)} does, for a caller whose
+     * divisions of the rows between threads may be aligned to {@link #parallelPopulationAlignment()}.
+     *
+     * @param rowSequence the row sequence of values that will change on this cycle
+     * @param alignedDivisions whether every row key from {@code k * alignment} through {@code (k + 1) * alignment - 1}
+     *        that is written in this cycle is written by the same thread
+     */
+    default void prepareForParallelPopulation(final RowSequence rowSequence, final boolean alignedDivisions) {
+        prepareForParallelPopulation(rowSequence);
+    }
+
+    /**
      * Test if all {@code sources} support parallel parallel population.
      *
      * @param sources The {@link WritableColumnSource sources} to test

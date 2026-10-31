@@ -38,7 +38,8 @@ public abstract class DoubleCompactLeaf {
     public abstract void put(int offset, double value);
 
     /**
-     * Set the values at several offsets, adding the offsets that hold no value.
+     * Set the values at several offsets, adding the offsets that hold no value. When every offset already holds a
+     * value, only the values of those offsets are written, so writers of distinct offsets may call this concurrently.
      *
      * @param offsets the offsets, ascending and distinct, in the first {@code count} entries
      * @param src the values, in the order of {@code offsets}
@@ -46,6 +47,11 @@ public abstract class DoubleCompactLeaf {
      * @param count the number of offsets
      */
     public abstract void putSorted(int[] offsets, DoubleChunk<?> src, int srcOffset, int count);
+
+    /**
+     * Add each of {@code offsets[0, count)}, ascending and distinct, that holds no value, with a null value.
+     */
+    public abstract void insertAbsent(int[] offsets, int count);
 
     /**
      * @return the number of {@code offsets[0, count)}, ascending and distinct, that hold no value

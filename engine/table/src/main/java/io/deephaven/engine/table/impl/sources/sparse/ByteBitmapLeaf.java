@@ -102,6 +102,12 @@ public final class ByteBitmapLeaf extends ByteCompactLeaf {
             return;
         }
         final int newSize = size + countAbsent(offsets, count);
+        if (newSize == size) {
+            for (int ii = 0; ii < count; ++ii) {
+                values[rank(offsets[ii])] = src.get(srcOffset + ii);
+            }
+            return;
+        }
         ensureCapacity(newSize);
         // merge from the highest offset down, walking the existing offsets through the bitmap, so that each value
         // moves at most once and lands above any value not yet moved
@@ -137,6 +143,15 @@ public final class ByteBitmapLeaf extends ByteCompactLeaf {
             rank += Long.bitCount(bits[ii]);
         }
         size = newSize;
+    }
+
+    @Override
+    public void insertAbsent(final int[] offsets, final int count) {
+        for (int ii = 0; ii < count; ++ii) {
+            if (!contains(offsets[ii])) {
+                put(offsets[ii], NULL_BYTE);
+            }
+        }
     }
 
     @Override
