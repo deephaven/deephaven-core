@@ -424,7 +424,7 @@ public class CsvTools {
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
-     * @param compressed whether to zip the file being written
+     * @param compressed whether to compress (bz2) the file being written
      * @param timeZone a time zone constant relative to which date time data should be adjusted
      * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
@@ -440,7 +440,7 @@ public class CsvTools {
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
-     * @param compressed whether to zip the file being written
+     * @param compressed whether to compress (bz2) the file being written
      * @param timeZone a time zone constant relative to which date time data should be adjusted
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param columns a list of columns to include in the export
@@ -457,7 +457,7 @@ public class CsvTools {
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
-     * @param compressed whether to zip the file being written
+     * @param compressed whether to compress (bz2) the file being written
      * @param timeZone a time zone constant relative to which date time data should be adjusted
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param separator the delimiter for the CSV
@@ -544,7 +544,7 @@ public class CsvTools {
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
-     * @param compressed whether to zip the file being written
+     * @param compressed whether to compress (bz2) the file being written
      * @param timeZone a time zone constant relative to which date time data should be adjusted
      * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
      *        update progress
@@ -562,7 +562,7 @@ public class CsvTools {
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
-     * @param compressed whether to zip the file being written
+     * @param compressed whether to compress (bz2) the file being written
      * @param timeZone a time zone constant relative to which date time data should be adjusted
      * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
      *        update progress
@@ -582,7 +582,7 @@ public class CsvTools {
      *
      * @param source a Deephaven table object to be exported
      * @param destPath path to the CSV file to be written
-     * @param compressed whether to zip the file being written
+     * @param compressed whether to compress (bz2) the file being written
      * @param timeZone a time zone constant relative to which date time data should be adjusted
      * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
      *        update progress

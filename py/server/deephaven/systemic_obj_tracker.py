@@ -3,7 +3,8 @@
 #
 """This module allows user to enable/disable Deephaven systemic object marking. When enabled, Deephaven will mark
 all objects created in the current thread as systemic. These systemic objects will be tracked and if errors occur to
-them, the errors are deemed to be systemic and fatal.
+them, the errors are deemed to be systemic. In Deephaven Community Core, such errors are logged and passed to the
+registered error reporter, if there is one; they do not stop the server.
 """
 
 import contextlib

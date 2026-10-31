@@ -382,6 +382,8 @@ class Session:
 
     @property
     def exportable_objects(self) -> dict[str, ServerObject]:
+        """The objects the server can export to this session, keyed by field name. Each value is a ServerObject
+        holding the object's type and a ticket to it."""
         with self._r_lock:
             fields = self._fetch_fields()
             return {
@@ -849,8 +851,9 @@ class Session:
     def import_table(self, data: pa.Table) -> Table:
         """Imports the pyarrow table as a new Deephaven table on the server.
 
-        Deephaven supports most of the Arrow data types. However, if the pyarrow table contains any field with a data
-        type not supported by Deephaven, the import operation will fail.
+        Deephaven supports most of the Arrow data types. Before sending any data, the client checks each field's data
+        type and rejects the import if it does not map the type. Rejected types include dictionary-encoded and
+        run-end encoded fields. To upload a table with such fields, use pyarrow.flight directly.
 
         Args:
             data (pa.Table): a pyarrow Table object

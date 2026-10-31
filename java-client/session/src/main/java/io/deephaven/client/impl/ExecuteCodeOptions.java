@@ -23,12 +23,13 @@ public interface ExecuteCodeOptions {
     }
 
     /**
-     * If the code should be executed systemically or not. When code is executed systemically, failures of the script or
-     * tables in the script are fatal.
+     * If the code should be executed systemically or not. When code is executed systemically and systemic object
+     * marking is enabled on the server, objects the script creates are marked as systemic. Update errors in systemic
+     * objects are passed to the server's registered error reporter, if there is one.
      *
      * <p>
-     * The default value is {@code null} which uses the system default behavior. See the documentation for
-     * SystemicObjectTracker for more details.
+     * The default value is {@link SystemicType#ServerDefault}, which uses the server's default behavior. See the
+     * documentation for SystemicObjectTracker for more details.
      * </p>
      * 
      * @return if the code should be systemically executed.
@@ -49,7 +50,8 @@ public interface ExecuteCodeOptions {
 
     interface Builder {
         /**
-         * Set if the code should be executed systemically or not. A value of {@code null} uses default system behavior.
+         * Set if the code should be executed systemically or not. {@link SystemicType#ServerDefault} uses the server's
+         * default behavior.
          *
          * @param systemicType if the code should be executed systemically.
          * @return this {@link Builder}

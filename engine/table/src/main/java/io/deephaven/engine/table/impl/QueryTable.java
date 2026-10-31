@@ -210,9 +210,9 @@ public class QueryTable extends BaseTable<QueryTable> {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.useDataIndexForWhere", true);
 
     /**
-     * Before using a data index for a where filter, ensure that the index table size is at most this fraction of the
-     * size of the rows remaining to be filtered. If the fraction is greater than this threshold, then the engine will
-     * ignore the index table and filter the rows directly.
+     * Before using a data index for a where filter, ensure that the index table size is strictly less than this
+     * fraction of the size of the rows remaining to be filtered. If the fraction is at or above this threshold, then
+     * the engine will ignore the index table and filter the rows directly.
      * <p>
      * The default, {@code 1 / 16}, uses an index only when the rows to be filtered average more than 16 per index key:
      * below that, reading and merging a row set per key costs more than matching each row.

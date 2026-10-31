@@ -28,10 +28,11 @@ public class ConnectOptions {
     public boolean debug = false;
 
     /**
-     * Set this to {@code true} to force the use of websockets when connecting to the deephaven instance, of
-     * {@code false} to force the use of {@code fetch}. Ignored if {@link #transportFactory} is set.
+     * Set this to {@code true} to force the use of websockets when connecting to the Deephaven instance. Ignored if
+     * {@link #transportFactory} is set.
      * <p>
-     * Defaults to null, indicating that the server URL should be checked to see if we connect with fetch or websockets.
+     * Any other value, including the default of null, lets the server URL decide: an {@code https} URL uses
+     * {@code fetch}, and any other URL uses websockets. Setting {@code false} does not force {@code fetch}.
      */
     @JsNullable
     public Boolean useWebsockets;

@@ -83,8 +83,8 @@ def process_metrics_log() -> Table:
 
 
 def query_operation_performance_log() -> Table:
-    """Returns a table with Deephaven performance data for individual subqueries. Performance data for the entire query
-    is available from calling 'query_performance_log'.
+    """Returns a table with Deephaven performance data for the individual operations within each query. Performance
+    data for the entire query is available from calling 'query_performance_log'.
 
     Returns:
         a Table
@@ -117,7 +117,7 @@ def query_performance_log() -> Table:
 
 
 def query_operation_performance_tree_table() -> TreeTable:
-    """Returns a tree table with Deephaven performance data for individual subqueries.
+    """Returns a tree table with Deephaven performance data for the individual operations within each query.
 
     Returns:
         a TreeTable

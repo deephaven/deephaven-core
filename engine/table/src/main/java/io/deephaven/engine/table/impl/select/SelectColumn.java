@@ -90,7 +90,7 @@ public interface SelectColumn extends Selectable, ConcurrencyControl<Selectable>
     }
 
     /**
-     * Produce a SelectColumn that {@link #recomputeOnModifiedRow()} recomputes values on any modified row} from
+     * Produce a SelectColumn that {@link #recomputeOnModifiedRow() recomputes values on any modified row} from
      * {@code selectable}.
      *
      * @param selectable The {@link Selectable} to adapt and mark as requiring row-level recomputation
