@@ -20,8 +20,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -77,10 +77,11 @@ public class TestExecutorJobScheduler {
     @Test
     public void testHelperPoolShape() {
         final ThreadPoolExecutor pool = newPool(3);
-        assertThat(pool.getCorePoolSize()).isZero();
+        assertThat(pool.getCorePoolSize()).isEqualTo(3);
         assertThat(pool.getMaximumPoolSize()).isEqualTo(3);
-        assertThat(pool.getQueue()).isInstanceOf(SynchronousQueue.class);
+        assertThat(pool.getQueue()).isInstanceOf(LinkedBlockingQueue.class);
         assertThat(pool.getKeepAliveTime(TimeUnit.SECONDS)).isEqualTo(60);
+        assertThat(pool.allowsCoreThreadTimeOut()).isTrue();
 
         assertThatThrownBy(() -> ExecutorJobScheduler.newHelperPool(0, Thread::new))
                 .isInstanceOf(RequirementFailure.class);
@@ -149,12 +150,15 @@ public class TestExecutorJobScheduler {
         assertThat(outstandingJobs(scheduler)).isZero();
     }
 
+    /** A job submitted while every thread of the pool is busy waits for one to finish, and then runs on it. */
     @Test
-    public void testBusyPoolRefusesAndTheSubmitterRunsTheJob() throws InterruptedException {
+    public void testBusyPoolQueuesTheJobForTheFirstThreadToFinish() throws InterruptedException {
         final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(newPool(1), 2);
         final CountDownLatch holdTheThread = new CountDownLatch(1);
         final CountDownLatch holding = new CountDownLatch(1);
+        final AtomicReference<Thread> poolThread = new AtomicReference<>();
         scheduler.submit(null, () -> {
+            poolThread.set(Thread.currentThread());
             holding.countDown();
             try {
                 holdTheThread.await();
@@ -165,12 +169,102 @@ public class TestExecutorJobScheduler {
         });
         await(holding);
 
-        // The pool's only thread is busy, so this job is refused and runs here
         final AtomicReference<Thread> runningThread = new AtomicReference<>();
-        scheduler.submit(null, () -> runningThread.set(Thread.currentThread()), null, e -> {
+        final CountDownLatch ran = new CountDownLatch(1);
+        scheduler.submit(null, () -> {
+            runningThread.set(Thread.currentThread());
+            ran.countDown();
+        }, null, e -> {
         });
-        assertThat(runningThread.get()).isSameAs(Thread.currentThread());
+        assertThat(runningThread.get()).as("queued, not run by the submitter").isNull();
         holdTheThread.countDown();
+        await(ran);
+        assertThat(runningThread.get()).isSameAs(poolThread.get());
+    }
+
+    /**
+     * An invocation whose helpers are all queued behind other work while it starts is helped by each helper thread as
+     * it frees up, rather than left to the calling thread.
+     */
+    @Test
+    public void testInvocationIsHelpedByThreadsThatFreeUpWhileItRuns() throws InterruptedException {
+        final int helpers = 2;
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(newPool(helpers), helpers + 1);
+        final CountDownLatch holdTheThreads = new CountDownLatch(1);
+        final CountDownLatch holding = new CountDownLatch(helpers);
+        final ExecutorJobScheduler otherCaller = new ExecutorJobScheduler(pools.get(0), helpers + 1);
+        for (int ii = 0; ii < helpers; ++ii) {
+            otherCaller.submit(null, () -> {
+                holding.countDown();
+                try {
+                    holdTheThreads.await();
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }, null, e -> {
+            });
+        }
+        await(holding);
+
+        final Thread caller = Thread.currentThread();
+        final CountDownLatch helped = new CountDownLatch(1);
+        final AtomicReference<Boolean> helpedWhileTheCallerWaited = new AtomicReference<>();
+        scheduler.invokeParallel(ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 16,
+                (context, idx, nec) -> {
+                    if (Thread.currentThread() != caller) {
+                        helped.countDown();
+                    } else if (helpedWhileTheCallerWaited.get() == null) {
+                        // the caller's first task frees the pool, then waits for a freed thread to take a task
+                        holdTheThreads.countDown();
+                        try {
+                            helpedWhileTheCallerWaited.set(helped.await(10, TimeUnit.SECONDS));
+                        } catch (final InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                });
+        assertThat(helpedWhileTheCallerWaited.get()).isTrue();
+    }
+
+    /**
+     * A callback-form iteration with more tasks than threads returns once its jobs are submitted, with none of its
+     * tasks run on the calling thread, even while every thread of the pool is busy.
+     */
+    @Test
+    public void testCallbackIterationDoesNotRunTasksOnTheCallingThread() throws InterruptedException {
+        final int helpers = 2;
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(newPool(helpers), helpers + 1);
+        final Thread caller = Thread.currentThread();
+        final CountDownLatch release = new CountDownLatch(1);
+        final AtomicInteger onCaller = new AtomicInteger();
+        final AtomicInteger run = new AtomicInteger();
+        final CountDownLatch completed = new CountDownLatch(1);
+        final AtomicReference<Exception> failure = new AtomicReference<>();
+        scheduler.iterateParallel(ExecutionContext.getContext(), null, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 16,
+                (context, idx, nec) -> {
+                    if (Thread.currentThread() == caller) {
+                        onCaller.incrementAndGet();
+                    }
+                    try {
+                        // held until the iteration has returned, which it does only if no task runs on the caller
+                        assertThat(release.await(10, TimeUnit.SECONDS)).isTrue();
+                    } catch (final InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    run.incrementAndGet();
+                },
+                completed::countDown,
+                () -> {
+                },
+                e -> {
+                    failure.set(e);
+                    completed.countDown();
+                });
+        release.countDown();
+        await(completed);
+        assertThat(failure.get()).isNull();
+        assertThat(onCaller.get()).isZero();
+        assertThat(run.get()).isEqualTo(16);
     }
 
     /**
