@@ -2,25 +2,28 @@
 title: Triage errors in queries
 ---
 
-This guide will show you how to interpret query errors and exception messages.
+Everyone makes mistakes when writing queries in the Deephaven Query Language (DQL), as in any programming language. Mistakes often cause queries to fail to start properly or to crash during runtime. This guide shows you how to:
 
-As with any programming language, when writing queries in Deephaven Query Language, you will certainly make mistakes. Mistakes will often result in queries failing to start up properly or crashing at some point during their runtime. Here, we provide a set of best practices to use when interpreting and fixing these issues.
+- Read a stack trace to find the root cause.
+- Recognize and fix common mistakes, including problems that produce wrong results or pauses instead of an exception.
+- Check your [query strings](./query-string-overview.md) for errors.
+- Get help, including what to put in a bug report, when you can't find the cause.
 
-## Simple triage
+## Read a stack trace
 
 At this point, you have written some Deephaven queries that _should_ produce some interesting tables and visualizations, but when you attempt to run the query, it fails.
 
-The first step is to find the error (referred to as an Exception) and isolate its root cause. This will usually appear in the log panel.
+The first step is to find the error (an exception) and isolate its root cause. When you run code in the IDE console, the error appears in the console output. The [Log panel](./logs.md#log-panel) shows the same error with its log header.
 
-The log will display a large block of text that describes the exception and a chain of further exceptions that leads to the root of the problem.
+The log displays a large block of text that describes the exception and a chain of further exceptions that leads to the root of the problem.
 
 > [!TIP]
-> Identify the root cause by looking at the `caused by` statements. Start from the last exception in the chain and work backwards.
+> Identify the root cause by looking at the `Caused by` lines. Start from the last exception in the chain and work backwards.
 
-For example, we'll start by creating a function that generates an error, then a table that invokes it, with the following commands:
+For example, the following code creates a function that throws an error and a table that calls it, passing the row index [special variable](../reference/query-language/variables/special-variables.md) `i`:
 
 ```groovy should-fail
-throwFunc = { val -> throw new RuntimeException(new IllegalStateException("Error: " + val))}
+throwFunc = { val -> throw new RuntimeException(new IllegalStateException("Error: " + val)) }
 
 x = emptyTable(1).update("X = throwFunc(i)")
 ```
@@ -117,7 +120,7 @@ Caused by: java.lang.IllegalStateException: Error: 0
 
 </details>
 
-Deephaven stack traces tend to be very large, but lead off with a summation of the underlying error. Look at the first few lines of the above stack trace:
+Deephaven stack traces tend to be very large, but they open with a summary of the failing operation. The block below is the trace above with the `at ...` frames removed. Its first line names the operation that failed. The remaining lines are the `Caused by:` lines:
 
 ```none {2,4}
 r-Scheduler-Serial-1 | .c.ConsoleServiceGrpcImpl | Error running script: io.deephaven.engine.exceptions.TableInitializationException: Error while initializing Update([X]): an exception occurred while performing the initial select or update
@@ -126,35 +129,37 @@ Caused by: java.lang.RuntimeException: java.lang.IllegalStateException: Error: 0
 Caused by: java.lang.IllegalStateException: Error: 0
 ```
 
-When you interpret these exception chains, it's best to start from the last exception in the chain and work backwards. Let’s analyze this exception in that order:
+Following the tip above, read the chain from the last exception up:
 
-- The lowest exception is an [`IllegalStateException`](https://docs.oracle.com/javase/7/docs/api/java/lang/IllegalStateException.html), since that is the innermost error in our `throwFunc` function. The error occurs when the table tries to compute a value for the `X` column and invokes our function.
-- Just above, we see [`RuntimeException`](https://docs.oracle.com/javase/7/docs/api/java/lang/RuntimeException.html) as another 'caused by' statement because the [`IllegalStateException`](https://docs.oracle.com/javase/7/docs/api/java/lang/IllegalStateException.html) was passed as the argument to a [`RuntimeException`](https://docs.oracle.com/javase/7/docs/api/java/lang/RuntimeException.html).
-- Above that, the [`FormulaEvaluationException`](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaEvaluationException.html) is the point where the Deephaven engine recognized that it had an error it could not handle internally. Any sort of uncaught exception could have been in this position, but a [`FormulaEvaluationException`](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaEvaluationException.html) indicates that some specified formula had a problem. A formula that references a column that doesn't exist, such as a misspelled column name, fails earlier with a [`FormulaCompilationException`](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaCompilationException.html), because the engine cannot compile the formula.
+- The last exception is the innermost error, an [`IllegalStateException`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/IllegalStateException.html) that our `throwFunc` function creates. The error occurs when the table tries to compute a value for the `X` column and invokes our function.
+- Just above, [`RuntimeException`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/RuntimeException.html) appears as another `Caused by` line because `throwFunc` passes the [`IllegalStateException`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/IllegalStateException.html) to the [`RuntimeException`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/RuntimeException.html) constructor.
+- Above that, the engine wraps the error in a [`FormulaEvaluationException`](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaEvaluationException.html). The engine adds this wrapper whenever a [formula](./formulas.md) throws an exception, and its message names the formula that failed: `In formula: X = throwFunc(i)`.
 
-This is a very simple example of triaging an equally simple query with deliberate errors. In practice, queries will be much more sophisticated and contain many interdependencies between tables. The recipe for triage, however, is the same.
+This is a very simple example of triaging an equally simple query with a deliberate error. In practice, queries are much more sophisticated and contain many interdependencies between tables. The recipe for triage, however, is the same.
 
-See the sections below for examples of some common mistakes.
+The Console in the Deephaven IDE is a critical tool during triage. After the stack trace isolates the failing operation, use it to execute parts of the query bit by bit, analyze the inputs to the failing method, and experiment with changes to solve the problem.
+
+For a fuller walkthrough of Groovy error output, see [Decipher Groovy errors](./groovy-errors.md).
 
 ## Common mistakes
 
-Once you've fixed the static problems, your query will start serving up tables and plots. Sometimes the query may crash unexpectedly during its normal runtime. These problems can be trickier to triage because they will often be related to unexpected streaming data patterns.
+Once you've fixed the problems that stop a query from starting, it starts serving up tables and plots. The following sections show common mistakes, how to recognize them, and how to fix them.
 
-Your first steps should be the same as for a startup error:
+Some queries fail as soon as they run. Others fail later, when new data brings an unexpected value. These runtime failures can be trickier to triage because they often depend on unexpected patterns in streaming data.
+
+To triage either kind, follow the same steps as in [Read a stack trace](#read-a-stack-trace):
 
 1. Find the exception.
-2. Reduce to its set of `caused by` expressions.
+2. List its `Caused by` lines.
 3. Start at the last one and work backwards.
 
-The Console in the Deephaven IDE is a critical tool during this process. Once you've isolated the failing operation, you can execute parts of the query bit by bit to analyze the inputs to the failing method and experiment with changes to solve the problem.
-
-Below we will discuss some of the most common categories of failure.
+Two of the problems below, [Non-deterministic formulas](#non-deterministic-formulas) and [Garbage collection (GC) pauses](#garbage-collection-gc-pauses), show up as wrong results or pauses rather than an exception. Those sections describe what to look for instead.
 
 ### Unexpected null values
 
-It's easy to forget that columns can contain null values. If your queries don't account for this, they will fail with a [`NullPointerException`](https://docs.oracle.com/javase/7/docs/api/java/lang/NullPointerException.html).
+It's easy to forget that columns can contain [null values](./null-inf-nan.md). Calling a Java method on a null value, such as `Items.charAt(0)` when `Items` is null, fails with a [`NullPointerException`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/NullPointerException.html).
 
-The following shows a simple dataset consisting of a string column with a null value. It attempts to grab strings that start with `B` using the `charAt` method.
+The following query creates a table with a [string column](../reference/table-operations/create/stringCol.md) that contains a null value. It then uses the `charAt` method to keep strings that start with `B`.
 
 ```groovy should-fail
 table = newTable(stringCol("Items", "A", "B", null, "D"))
@@ -162,15 +167,15 @@ table = newTable(stringCol("Items", "A", "B", null, "D"))
 result = table.where("Items.charAt(0) == 'B'")
 ```
 
-In this example, the following information can be found in the last 'Caused by' line of the stack trace:
+In this example, the last `Caused by` line of the stack trace contains the cause:
 
 ```none
 Caused by: java.lang.NullPointerException: Cannot invoke "String.charAt(int)" because "<local7>" is null
 ```
 
-As discussed above, using the Console is a good way to inspect the tables for this condition.
+`<local7>` is the JVM's name for a variable in the [filter](./filters.md) code that Deephaven generates. The number can differ.
 
-In this case, we must check if the value we are trying to inspect is null:
+To fix the [filter](./filters.md), check whether the value is null before you call a method on it:
 
 ```groovy order=table,result
 table = newTable(stringCol("Items", "A", "B", null, "D"))
@@ -179,13 +184,17 @@ result = table.where("!isNull(Items) && Items.charAt(0) == 'B'")
 ```
 
 > [!NOTE]
-> Adding [`!isNull(Items)`](https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)) to the start of our filter statement works because of boolean short circuiting. In this example, when [`!isNull(Items)`](https://deephaven.io/core/javadoc/io/deephaven/function/Basic.html#isNull(byte)) is `false`, the query will stop evaulating the remainder of the [`where`](../reference/table-operations/filter/where.md) clause, meaning the problematic `Items.charAt(0) == 'B'` statement is never executed on a null value.
+> Adding [`!isNull(Items)`](/core/javadoc/io/deephaven/function/Basic.html#isNull(T)) to the start of the [filter](./filters.md) works because of short-circuit evaluation. When [`!isNull(Items)`](/core/javadoc/io/deephaven/function/Basic.html#isNull(T)) is `false`, the engine skips the rest of the [`where`](../reference/table-operations/filter/where.md) clause, so `Items.charAt(0) == 'B'` never runs on a null value.
 
 ### String and array access
 
-Accessing [strings](../reference/query-language/types/strings.md) or [arrays](../reference/query-language/types/arrays.md) may also present difficulties. You may need to classify rows based upon the value of a character within a string of expected size; operations such as [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) will produce cells that contain [arrays](../reference/query-language/types/arrays.md) of values. It's possible you might try to access a value in one of these types that does not exist.
+Reading past the end of a [string](../reference/query-language/types/strings.md), a [vector](../conceptual/arrays-vs-vectors.md), or a Java [array](../reference/query-language/types/arrays.md) behaves differently for each type:
 
-The following example shows a simple dataset consisting of a [string column](../reference/table-operations/create/stringCol.md) with [strings](../reference/query-language/types/strings.md) of varying length. It attempts to grab [strings](../reference/query-language/types/strings.md) that have `i` as the second character.
+- [Strings](../reference/query-language/types/strings.md): reading a character at a position that does not exist throws an exception.
+- [Vectors](../conceptual/arrays-vs-vectors.md): reading an element past the end of a vector cell, such as one that [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) produces, returns null. The failure shows up later as an [unexpected null value](#unexpected-null-values) rather than as an exception.
+- Java [arrays](../reference/query-language/types/arrays.md): reading an element past the end of a Java array cell, such as one holding `int[]` values, throws an [`ArrayIndexOutOfBoundsException`](https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/ArrayIndexOutOfBoundsException.html).
+
+The following query creates a table with a [string column](../reference/table-operations/create/stringCol.md) that holds [strings](../reference/query-language/types/strings.md) of varying length. It then keeps the [strings](../reference/query-language/types/strings.md) whose second character is `i`.
 
 ```groovy should-fail
 table = newTable(stringCol("Items", "Ai", "B", "Ci", "Da"))
@@ -193,13 +202,13 @@ table = newTable(stringCol("Items", "Ai", "B", "Ci", "Da"))
 result = table.where("Items.charAt(1) == 'i'")
 ```
 
-Like the previous examples, the root cause can be found near the end of the stack trace:
+As with the null-value error in [Unexpected null values](#unexpected-null-values), the last `Caused by` line contains the cause:
 
-```none {3}
+```none
 Caused by: java.lang.StringIndexOutOfBoundsException: Index 1 out of bounds for length 1
 ```
 
-This tells you that the formula tried to read index 1 of a string that has only one character.
+As in [Read a stack trace](#read-a-stack-trace), the first line of the stack trace names the [`TableInitializationException`](/core/javadoc/io/deephaven/engine/exceptions/TableInitializationException.html). It also shows the [query string](./query-string-overview.md) that failed, `where([Items.charAt(1) == 'i'])`. The [filter](./filters.md) tried to read index 1 of a string that has only one character.
 
 We can inspect the table by adding a new column `ItemsLength = Items.length()`:
 
@@ -209,11 +218,11 @@ table = newTable(stringCol("Items", "Ai", "B", "Ci", "Da"))
 length = table.update("ItemsLength = Items.length()")
 ```
 
-To see rows where the string is less than two characters long, filter that table to only rows where `ItemsLength < 2` using the right-click menu results:
+To see the rows where the string is less than two characters long, right-click the `ItemsLength` column header, open the [Advanced Filters](./user-interface/filters.md#advanced-filters) panel, and filter to values less than 2:
 
 ![The Advanced Filters panel, set to filter ItemsLength to less than 2](../assets/how-to/errors/triage2.png)
 
-Following the advice above, let's change the query to:
+Guard the `charAt` call with a length check, the same way [Unexpected null values](#unexpected-null-values) guards it with a null check:
 
 ```groovy order=result
 table = newTable(stringCol("Items", "Ai", "B", "Ci", "Da"))
@@ -221,9 +230,9 @@ table = newTable(stringCol("Items", "Ai", "B", "Ci", "Da"))
 result = table.where("Items.length() >= 2 && Items.charAt(1) == 'i'")
 ```
 
-This works due to Java's boolean short circuiting described above.
+This works because of short-circuit evaluation. When `Items.length() >= 2` is `false`, the engine skips `Items.charAt(1)`, so it never reads past the end of a short string.
 
-If you really only care about the presence of the `i` character in the string, a better solution is:
+If you only care whether the string contains the `i` character, a better solution is:
 
 ```groovy order=result
 table = newTable(stringCol("Items", "Ai", "B", "Ci", "Da"))
@@ -232,36 +241,66 @@ result = table.where("Items.contains(`i`)")
 
 As always, use the Deephaven IDE to validate that this change works and produces the result you expect!
 
+Vectors behave differently. The following query uses [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md) to collect the `Value` column into a [vector](../conceptual/arrays-vs-vectors.md) for each `Key`, then reads the third element of each vector:
+
+```groovy order=result
+grouped = emptyTable(5).update("Key = ii % 2", "Value = (int) ii").groupBy("Key")
+result = grouped.update("ThirdValue = Value[2]")
+```
+
+The vector for `Key` 1 has only two elements, so `ThirdValue` is null in that row. The query doesn't fail. When a query reads vector elements by position, look downstream for [unexpected null values](#unexpected-null-values).
+
 ### Join key problems
 
-Deephaven's join operations are one of its most powerful features. They merge tables together based upon matching parameters to produce new tables.
+Deephaven's [join operations](./joins-exact-relational.md) are one of its most powerful features. They combine tables by matching values in key columns to produce new tables.
 
-Some flavors of join are tolerant to the cardinality of key instances on the left and right hand sides, but some are not. [`naturalJoin`](../reference/table-operations/join/natural-join.md), for example, requires that there is no more than one right hand side key mapped to every left hand side key. This causes issues when the input data to a joined table does not adhere to these requirements. Below is a query that exhibits this behavior.
+Some [joins](./joins-exact-relational.md) allow any number of matching rows on each side, but others do not. By default, [`naturalJoin`](../reference/table-operations/join/natural-join.md) allows at most one right-table row for each key that a left row matches. If a left row's key matches more than one right-table row, the [join](../reference/table-operations/join/natural-join.md) fails. The following query shows this:
 
 ```groovy should-fail
 left = newTable(
-	stringCol("LastName", "Rafferty"),
-  intCol("DeptID", 31),
-  stringCol("Telephone", "(303) 555-0162"),
+    stringCol("LastName", "Rafferty"),
+    intCol("DeptID", 31),
+    stringCol("Telephone", "(303) 555-0162")
 )
 right = newTable(
-  intCol("DeptID", 31, 33, 34, 31),
-  stringCol("DeptName", "Sales", "Engineering", "Clerical", "Marketing"),
-  stringCol("DeptTelephone", "(303) 555-0136", "(303) 555-0162", "(303) 555-0175", "(303) 555-0171"),
+    intCol("DeptID", 31, 33, 34, 31),
+    stringCol("DeptName", "Sales", "Engineering", "Clerical", "Marketing"),
+    stringCol("DeptTelephone", "(303) 555-0136", "(303) 555-0162", "(303) 555-0175", "(303) 555-0171")
 )
 
 result = left.naturalJoin(right, "DeptID")
 ```
 
-Because `31` appears twice in the `DeptID` column in the right table, the following error will be thrown:
+Because `31` appears twice in the `DeptID` column in the right table, the query fails. In this case, the first line of the stack trace already names the root cause:
 
 ```none
 r-Scheduler-Serial-1 | .c.ConsoleServiceGrpcImpl | Error running script: io.deephaven.engine.exceptions.DuplicateRightKeyException: Natural Join found duplicate right key for 31
 ```
 
+If the right table can contain duplicate keys, pass `NaturalJoinType.FIRST_MATCH` or `NaturalJoinType.LAST_MATCH` as the `joinType` argument of [`naturalJoin`](../reference/table-operations/join/natural-join.md) to choose which match to keep. The Groovy console imports `io.deephaven.api.*` by default, so [`NaturalJoinType`](/core/javadoc/io/deephaven/api/NaturalJoinType.html) needs no import. The following query keeps the last match:
+
+```groovy order=result
+left = newTable(
+    stringCol("LastName", "Rafferty"),
+    intCol("DeptID", 31),
+    stringCol("Telephone", "(303) 555-0162")
+)
+right = newTable(
+    intCol("DeptID", 31, 33, 34, 31),
+    stringCol("DeptName", "Sales", "Engineering", "Clerical", "Marketing"),
+    stringCol("DeptTelephone", "(303) 555-0136", "(303) 555-0162", "(303) 555-0175", "(303) 555-0171")
+)
+
+result = left.naturalJoin(right, "DeptID", NaturalJoinType.LAST_MATCH)
+```
+
+The [join](../reference/table-operations/join/natural-join.md) now succeeds. `LAST_MATCH` keeps the last right-table row for key `31`, so `DeptName` is `Marketing`.
+
 ### Non-deterministic formulas
 
-Not all errors have stack traces. For instance, the use of non-deterministic functions in [formula columns](../how-to-guides/use-select-view-update.md) can lead to undefined results. A deterministic algorithm is one that produces the _exact_ same result every single time when given the same input parameters. A simple example of a non-deterministic function is a random number generator. Consider the following query:
+Not all errors have stack traces. Some queries run without an error but produce wrong results.
+
+A deterministic function is one that produces the _exact_ same result every single time when given the same input parameters. A non-deterministic function, such as a random number generator, does not. In a [formula column](./use-select-view-update.md), a non-deterministic function can return a different value each time the column is read. Consider the following query:
 
 ```groovy order=result,source
 source = emptyTable(10).updateView("Number = randomInt(1, 10)")
@@ -269,97 +308,158 @@ source = emptyTable(10).updateView("Number = randomInt(1, 10)")
 result = source.update("NumberTimesTwo = Number * 2")
 ```
 
-Notice how the `NumberTimesTwo` column contains values that are all even, but not two times what's in the `Number` column. This is because [`updateView`](../reference/table-operations/select/update-view.md) was used with a random number generator. An [`updateView`](../reference/table-operations/select/update-view.md) creates a formula column, which only stores the formula and calculates values on-demand. So, the values are calculated in `Number`, then re-calculated when computing `NumberTimesTwo`. Thus, `NumberTimesTwo` has two times a completely different random number. Errors like these can be trickier to diagnose, so it's important to be cognizant of what type of columns are created when using any non-deterministic functions.
+The `NumberTimesTwo` values are all even, but most are not twice the value in `Number`. Here is why:
+
+- [`updateView`](../reference/table-operations/select/update-view.md) creates a [formula column](./use-select-view-update.md). A formula column stores the formula, not the values, and calculates each value on demand.
+- Each time something reads `Number`, [`randomInt`](/core/javadoc/io/deephaven/function/Random.html#randomInt(int,int)) runs again and returns a new value.
+- `NumberTimesTwo` reads `Number` again, so it doubles a different random number than the one `Number` shows.
+
+When a [formula](./formulas.md) calls a non-deterministic function, create its column with [`update`](../reference/table-operations/select/update.md) instead of [`updateView`](../reference/table-operations/select/update-view.md), so that Deephaven calculates and stores each value once:
+
+```groovy order=result,source
+source = emptyTable(10).update("Number = randomInt(1, 10)")
+
+result = source.update("NumberTimesTwo = Number * 2")
+```
+
+Now every `NumberTimesTwo` value is exactly twice `Number`.
+
+Errors like these are trickier to diagnose than an exception, so pay attention to which kind of column you create when a formula calls a non-deterministic function.
 
 ### Out of memory
 
-One of the most common problems with a query can be a lack of memory (referred to as heap) to handle a query as the data volume grows throughout the day. This occurs if enough heap is not allocated to your Deephaven instance but can be exacerbated by unexpected data patterns, like unusually large Kafka input. Most often this can be fixed by increasing the heap allocated to Deephaven, but an analysis of the query itself may yield improvements to the script that reduces overall heap usage.
+A common problem is running out of heap memory as data volume grows during the day. It happens when your Deephaven instance has too little heap. Unexpected data patterns, such as unusually large [Kafka](./data-import-export/kafka-stream.md) input, make it worse.
 
-<!--TODO: docker ram article https://github.com/deephaven/deephaven.io/issues/577 -->
+The most common out-of-memory error looks like this:
 
-Below is the most common example an Out Of Heap failure:
+```none
+Caused by: java.lang.OutOfMemoryError: Java heap space
+```
 
-`Caused by: java.lang.OutOfMemoryError: Java heap space`
+Start by increasing the heap. If that isn't enough, review the query for changes that reduce heap usage. In practice, the fix often combines several of the techniques below.
 
-There are many ways to approach this problem and, in practice, resolution will require some combination of all of the techniques mentioned below.
+To increase the heap allocated to the Java Virtual Machine (JVM), set `-Xmx` in the `START_OPTS` environment variable, which Docker and the `start` script read (for example, `START_OPTS=-Xmx8g`). If you run Deephaven with Docker, as in the [Docker install guide](../getting-started/docker-install.md), make sure Docker itself has enough memory for that heap. See [Configure and adjust heap size](./heap-size.md).
 
-The first, and simplest, action to take is to increase the heap allocated to your Java Virtual Machine. Using the Docker-based example provided by Deephaven in the [Docker install guide](../getting-started/docker-install.md), you could simply increase the amount of memory allocated to Docker, up to certain limits. If you are using the Docker-based example and want to adjust the memory allocation, please see the file `docker-compose-common.yml` in your Deephaven Core base directory.
+Increasing the heap is enough for many workloads. Be careful when you cross 32GB:
 
-For many workloads this will be enough. However, users must be aware that you may not get the results you expect when you increase memory across the 32GB boundary. Java uses address compression techniques to optimize memory usage when maximum heap size is smaller than 32GB. Once you request 32GB or more, this feature is disabled so that the program can access its entire memory space. This means that if you start with 30GB of heap and then increase the size to 32GB, you will have less heap available to your query.
+- Below about 32GB, the JVM uses compressed object pointers, which make each object reference smaller.
+- At about 32GB and above, the JVM turns compressed object pointers off so it can address the whole heap.
+- As a result, raising the heap from 30GB to 32GB leaves less usable heap for your query.
 
 > [!TIP]
-> If you must cross the 32GB boundary, it is best to jump directly to 42GB to account for this.
+> If you must cross the 32GB boundary, increase the heap well past it, because uncompressed object pointers use more of the heap.
 
 The next step is to review your query code.
 
-- Look for places where you use [`update`](../reference/table-operations/select/update.md). Would [`updateView`](../reference/table-operations/select/update-view.md) be better? Keep in mind formula stability. The choice between [`update`](../reference/table-operations/select/update.md) and [`update_view`](../reference/table-operations/select/update-view.md) is a memory vs. CPU tradeoff. You will pay more in CPU time with [`updateView`](../reference/table-operations/select/update-view.md) in order to save on memory. For simple computations and transformations, this is often a very good tradeoff. See our guide, [Choose the right selection method](../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method).
-- Search for duplicate tables, or tables that only differ in column count. Try to re-use tables in derivative computations as much as possible to make use of the query's previous work. In most cases, Deephaven automatically recognizes duplicate computations and uses the original tables. However, it is best not to rely on this behavior and instead be explicit about what tables you derive from.
-- When using Deephaven query expressions that group rows based on keys ([`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md), [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md), and [`join`](../reference/table-operations/join/join.md) operations), pay close attention to the number of unique keys in the tables you apply these operations to. If keys are generally unique (`SaleID`, for example) within a table, then an operation like [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) will produce potentially millions of single row tables that all consume some heap space in overhead. In these cases, consider if you can use different keys, or even a different set of Deephaven query operations.
-- Carefully consider the order you execute Deephaven query expressions. It’s best to filter data before joining tables.
-  - A very simple example is applying a [`join`](../reference/table-operations/join/join.md) and a [`where`](../reference/table-operations/filter/where.md) condition. If you were to execute ``derived = myTable.join(myOtherTable, "JoinColumn").where("FilterColumn = `FilterValue`")``, the [`join`](../reference/table-operations/join/join.md) operation consumes much more heap than it needs to, since it will take time matching rows from `myTable` that would later be filtered down in the [`where`](../reference/table-operations/filter/where.md) expression.
-  - This query would be better expressed as ``derived = myTable.where("FilterColumn = `FilterValue`").join(myOtherTable, "JoinColumn")``. This saves in heap usage, but also reduces how many rows downstream tables process each time the left or right table ticks.
+- Where you use [`update`](../reference/table-operations/select/update.md), consider [`updateView`](../reference/table-operations/select/update-view.md). It stores the formula instead of the values, which trades CPU time for memory. For simple computations, this is often a good trade. See [Choose the right column selection method](./use-select-view-update.md#choose-the-right-column-selection-method).
+  - Only switch deterministic [formulas](./formulas.md). [`updateView`](../reference/table-operations/select/update-view.md) recalculates values each time they are read, so a formula that uses random numbers returns different values each time. See [Non-deterministic formulas](#non-deterministic-formulas).
+- Reuse tables instead of recomputing them. Look for duplicate tables, or tables that differ only in which columns they keep, and derive later tables from one shared table. Deephaven reuses the result of many repeated operations on the same table, but derive from a shared table explicitly rather than rely on that.
+- Watch the number of unique keys in tables you pass to key-based operations such as [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md), [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md), and [`join`](../reference/table-operations/join/join.md). If keys are mostly unique within a table, such as a `SaleID` column, [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md) can produce millions of single-row tables, each with some heap overhead. In that case, consider different keys or different operations.
+- Consider the order of your query operations. [Filter](../reference/table-operations/filter/where.md) data before you [join](./joins-exact-relational.md) tables.
+  - A very simple example is applying a [`join`](../reference/table-operations/join/join.md) and a [`where`](../reference/table-operations/filter/where.md) condition. In ``derived = myTable.join(myOtherTable, "JoinColumn").where("FilterColumn = `FilterValue`")``, the [`join`](../reference/table-operations/join/join.md) matches rows from `myTable` that the [`where`](../reference/table-operations/filter/where.md) expression later filters out, so it uses much more heap than it needs to.
+  - [Filter](../reference/table-operations/filter/where.md) first instead: ``derived = myTable.where("FilterColumn = `FilterValue`").join(myOtherTable, "JoinColumn")``. This uses less heap and reduces how many rows downstream tables process each time the left or right table updates.
 
-There are many other reasons that a query may use more heap than expected. This requires a deep analysis of how the query is performing at runtime. You may need to use a Java profiling tool (such as [JProfiler](https://www.ej-technologies.com/products/jprofiler/overview.html)) to identify poorly-performing sections of your code.
+A query can use more heap than expected for many other reasons. Finding them requires a deep analysis of how the query performs at runtime. You may need to use a Java profiling tool (such as [JProfiler](https://www.ej-technologies.com/products/jprofiler/overview.html)) to identify poorly performing sections of your code.
 
-### Garbage Collection (GC) timeouts
+### Garbage collection (GC) pauses
 
-GC timeouts are another type of heap-related problem. These occur when you have enough memory for your query, but lots of data is being manipulated in memory each time your data ticks. This can happen, for example, when performing a long series of query operations. This results in lots of temporary heap allocation to process those upstream ticks. When the upstream computations are done, the JVM can re-collect that memory for use in later calculations. This is called the 'Garbage Collection' phase of JVM processing. Garbage Collection consumes CPU time, which can halt your normal query processing and cause computations to back up even further.
+GC pauses are another heap-related problem. They happen when your query has enough memory but processes a lot of data on each tick. A tick is one update cycle of a [ticking table](../conceptual/table-types.md), which can add, modify, or remove rows.
 
-This behavior is characterized by periodic long pauses as the JVM frees up memory. When this happens, look for ways to reduce your tick frequency.
+- A long series of query operations allocates a lot of temporary heap on each tick.
+- When those computations finish, the JVM garbage collector reclaims that memory.
+- Garbage collection uses CPU time. Long collections pause query processing, and computations back up.
 
-> [!NOTE]
-> See [How to reduce the update frequency of ticking tables](./performance/reduce-update-frequency.md)
+The symptom is periodic long pauses while the JVM frees memory. When you see this, [reduce how often your tables tick](./performance/reduce-update-frequency.md).
 
-## Get help
+## Checklist for query string errors
 
-If you've gone through all of the steps to identify the root of a problem, but can’t find a cause in your query, you may have uncovered a bug. In this case, you should file a bug report at https://github.com/deephaven/deephaven-core/issues. Be sure to include the following with your bug report:
+Before you file a bug, check your [query strings](./query-string-overview.md) against this list.
 
-- The version of the Deephaven system.
-- The complete stack trace, not just the list of `Caused By` expressions.
-- A code snippet or a description of the query.
-- Any logs from your user console or, if running Docker, from your terminal.
-- Support logs exported from the browser. In the Settings menu, click the Export Logs button to download a zip with the browser logs and the current state of the application.
+1. Is the [query string](./query-string-overview.md) itself properly quoted as a Groovy string?
 
-You can also get help by asking questions in our [GitHub Discussions](https://github.com/deephaven/deephaven-core/discussions/categories/q-a) forum.
-
-## Appendix: Common errors in queries
-
-1. Is your Deephaven query expression properly quoted?
-
-- Expressions within Deephaven query statements such as [`where`](../reference/table-operations/filter/where.md) or [`update`](../reference/table-operations/select/update.md) must be surrounded by double quotes. For example, ``myTable.where("StringColumn=`TheValue`")``.
-- If you copy-pasted an expression from somewhere (e.g., Slack), some systems will copy a unicode double quotation (U+201C and U+201D) instead of an ASCII quotation (U+0022).
+   - [Query strings](./query-string-overview.md) in operations such as [`where`](../reference/table-operations/filter/where.md) or [`update`](../reference/table-operations/select/update.md) must be Groovy strings, in double or single quotes. For example, ``myTable.where("StringColumn = `TheValue`")``.
+   - If you pasted an expression from another app, such as Slack, check for Unicode curly quotation marks (U+201C and U+201D). Some apps substitute them for the ASCII quotation mark (U+0022).
 
 2. Do you have matching parentheses?
 
-   - Make sure that any open parenthesis that you are using are matched by a close parenthesis.
+   - Make sure every opening parenthesis has a matching closing parenthesis.
 
 3. If you are referring to a column in a Deephaven query expression:
 
-   - Check the spelling and capitalization.
+   - Is the column name spelled and capitalized correctly?
+     - A [formula](./formulas.md) or a [range filter](./filters.md#range-filters), such as `Price > 5`, that references a column that doesn't exist fails with a [`FormulaCompilationException`](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaCompilationException.html), because the engine cannot compile it.
+     - A simple [match filter](./filters.md#match-filters), such as `` StringColumn = `TheValue` ``, fails instead with a message that the column doesn't exist in this table, followed by the table's available columns.
    - Is the type of the column what you expect it to be?
-   - Did you account for null values?
+   - Did you account for [null values](./null-inf-nan.md)?
 
-4. If you are using strings in your expression, did you quote them properly?
+4. If your query string contains [string literals](../reference/query-language/types/strings.md), did you quote them properly?
 
-   - Strings are quoted with the backtick character (`` ` ``), **not** single quotes (`'`) or double quotes (`"`).
+   - Inside a query string, quote string literals with backticks (`` ` ``) or Java double quotes (`"`), **not** single quotes (`'`), which Deephaven uses for character and [date-time literals](./date-time-literals.md).
    - Do you have matching close quotes for your open quotes?
 
-5. If you are using date-times in your expressions:
+5. If you are using [date-times](./date-time-literals.md) in your expressions:
 
    - Did you use single quotes (`'`), not double quotes (`"`) or backticks (`` ` ``)?
-   - Did you use the proper format? Deephaven date-times are expected in the format `yyyy-MM-ddTHH:mm:ss[.SSSSSSSSS] TZ`, where the fractional seconds are optional and can have up to nine digits, for example `'2024-01-01T09:30:00 ET'` or `'2024-01-01T09:30:00.123 ET'`.
+   - Did you use the proper format? The most common date-time format is `yyyy-MM-ddTHH:mm:ss[.SSSSSSSSS] TZ`. The fractional seconds are optional and can have up to nine digits. For example, `'2024-01-01T09:30:00 ET'` or `'2024-01-01T09:30:00.123 ET'`.
 
 6. Are all classes that you are trying to use properly imported?
 
-   - will not search for classes Groovy that you use. If they are not part of the [standard set of Deephaven imports](https://github.com/deephaven/deephaven-core/blob/main/engine/table/src/main/java/io/deephaven/engine/table/lang/impl/QueryLibraryImportsDefaults.java), you must import them yourself.
+   - A [query string](./query-string-overview.md) can use a class by its simple name only if the query library imports it. The query library imports a set of [defaults](https://github.com/deephaven/deephaven-core/blob/main/engine/table/src/main/java/io/deephaven/engine/table/lang/impl/QueryLibraryImportsDefaults.java), and server configuration and installed extensions can add more.
+   - A Groovy `import` statement makes a class available to your script, not to query strings.
+   - To use any other Java class, write its fully-qualified name, such as ``java.net.URI.create(`https://deephaven.io`)``. Or import it with [`importClass`](/core/javadoc/io/deephaven/engine/context/QueryLibrary.html#importClass(java.lang.Class)) or [`importPackage`](/core/javadoc/io/deephaven/engine/context/QueryLibrary.html#importPackage(java.lang.Package)), and then use its simple name. For example, after `ExecutionContext.getContext().getQueryLibrary().importClass(java.net.URI.class)`, a query string can call ``URI.create(`https://deephaven.io`)``. See [Java objects and classes in query strings](./java-classes.md).
+
+## Get help
+
+If you've gone through all of the steps to identify the root of a problem, but can't find a cause in your query, you may have uncovered a bug. In this case, you should file a [bug report](https://github.com/deephaven/deephaven-core/issues). Be sure to include the following with your bug report:
+
+- The Deephaven server and web UI versions. See [Get version information](./get-version.md).
+- The complete stack trace, not just the list of `Caused by` lines.
+- A code snippet or a description of the query.
+- Any logs from your user console, or from your terminal if you run Deephaven in Docker.
+- Support logs exported from the browser. Open **User Settings** and click **Export Logs** to download a zip with the browser logs and the current state of the application. See [Export support logs](./logs.md#export-support-logs).
+
+You can also get help by asking questions in our [GitHub Discussions](https://github.com/deephaven/deephaven-core/discussions/categories/q-a) forum.
 
 ## Related documentation
 
+- [Deephaven's table types](../conceptual/table-types.md)
+- [Arrays vs vectors](../conceptual/arrays-vs-vectors.md)
 - [Create a new table](./new-and-empty-table.md#newtable)
 - [How to handle null, infinity, and not-a-number values](./null-inf-nan.md)
 - [Joins: Exact and Relational](./joins-exact-relational.md)
-- [Joins: Time-Series and Range](./joins-timeseries-range.md)
 - [How to select, view, and update data in tables](./use-select-view-update.md)
 - [How to work with strings](./work-with-strings.md)
-- [Formulas](../how-to-guides/formulas.md)
+- [Filters in query strings](./filters.md)
+- [Formulas in query strings](./formulas.md)
+- [Java objects and classes in query strings](./java-classes.md)
+- [Date-time literals in query strings](./date-time-literals.md)
+- [Configure and adjust heap size](./heap-size.md)
+- [Connect to a Kafka stream](./data-import-export/kafka-stream.md)
+- [Retrieve logs](./logs.md)
+- [Decipher Groovy errors](./groovy-errors.md)
+- [Get version information](./get-version.md)
+- [Query string overview](./query-string-overview.md)
+- [Table filters in the UI](./user-interface/filters.md)
+- [How to reduce the update frequency of ticking tables](./performance/reduce-update-frequency.md)
+- [Install and run with Docker](../getting-started/docker-install.md)
 - [Special variables](../reference/query-language/variables/special-variables.md)
+- [Strings](../reference/query-language/types/strings.md)
+- [Arrays](../reference/query-language/types/arrays.md)
+- [`emptyTable`](../reference/table-operations/create/emptyTable.md)
+- [`groupBy`](../reference/table-operations/group-and-aggregate/groupBy.md)
+- [`intCol`](../reference/table-operations/create/intCol.md)
+- [`join`](../reference/table-operations/join/join.md)
+- [`naturalJoin`](../reference/table-operations/join/natural-join.md)
+- [`newTable`](../reference/table-operations/create/newTable.md)
+- [`partitionBy`](../reference/table-operations/group-and-aggregate/partitionBy.md)
+- [`stringCol`](../reference/table-operations/create/stringCol.md)
+- [`update`](../reference/table-operations/select/update.md)
+- [`updateView`](../reference/table-operations/select/update-view.md)
+- [`where`](../reference/table-operations/filter/where.md)
+- [`NaturalJoinType` Javadoc](/core/javadoc/io/deephaven/api/NaturalJoinType.html)
+- [`QueryLibrary` Javadoc](/core/javadoc/io/deephaven/engine/context/QueryLibrary.html)
+- [`Basic` Javadoc](/core/javadoc/io/deephaven/function/Basic.html)
+- [`Random` Javadoc](/core/javadoc/io/deephaven/function/Random.html)
+- [`FormulaCompilationException` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaCompilationException.html)
+- [`FormulaEvaluationException` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaEvaluationException.html)
+- [`TableInitializationException` Javadoc](/core/javadoc/io/deephaven/engine/exceptions/TableInitializationException.html)

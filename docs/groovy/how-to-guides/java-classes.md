@@ -35,10 +35,11 @@ All three are supported in query strings.
 The following example demonstrates all three method types by calling static methods, creating instances with constructors, and calling instance methods:
 
 ```groovy order=source,sourceMeta
+// Query strings import java.util by default, so UUID needs no import
 source = emptyTable(1).update(
     "RandomValueStaticMethod = Math.random()",
     "MaxValueStaticMethod = Math.max(10, 20)",
-    "MyUUIDConstructorMethod = new java.util.UUID(123456789, 987654321)",
+    "MyUUIDConstructorMethod = new UUID(123456789, 987654321)",
     "UUIDStringInstanceMethod = MyUUIDConstructorMethod.toString()",
 )
 sourceMeta = source.meta()

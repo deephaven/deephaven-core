@@ -3,87 +3,88 @@ id: source-setup
 title: Debug built-from-source Deephaven with PyCharm
 ---
 
-When building Deephaven from source code for development tasks, you can debug both your own code and Deephaven's internal source code. This is particularly useful for:
+When building Deephaven from source code for development tasks, you can debug both your own code and Deephaven's Python source (the `deephaven` package). This is particularly useful for:
 
 - Contributing to Deephaven development.
 - Understanding how Deephaven works internally.
-- Debugging issues that require stepping through Deephaven's source.
+- Debugging issues that require stepping through Deephaven's Python source.
 - Testing changes to Deephaven itself.
 
-This guide walks through setting up [PyCharm Professional](https://www.jetbrains.com/pycharm/)'s remote debugging server for source-built Deephaven.
+This guide walks through setting up the remote debugging server in [PyCharm](https://www.jetbrains.com/pycharm/) for source-built Deephaven. The debug server is a paid PyCharm feature. [Prerequisites](#prerequisites) lists which editions include it.
 
-> [!WARNING]
-> Debugging Deephaven with PyCharm has only been shown to work for PyCharm major version **2024** or higher. Some issues have been discovered with using PyCharm 2023, and there is no plan to fix these issues.
+PyCharm's debugger reaches only Python code. Deephaven's query engine is Java, so PyCharm can't step into it. The engine includes [table operations](../../conceptual/table-operations-overview.md), the [update graph](../../conceptual/dag.md#update-graph-cycles), and the compiled [formula](../formulas.md) code. PyCharm can still step into Python functions that a [formula](../formulas.md) calls. To debug the engine, see [Debug Deephaven's Java engine](#debug-deephavens-java-engine).
 
-> [!NOTE]
-> PyCharm Professional is a paid product with remote debugging capabilities.
+## Prerequisites
 
-## Setup
+This guide assumes you built Deephaven by following the [guide on building Deephaven from source](../../getting-started/launch-build.md). Those steps produce a local clone of the [deephaven-core repository](https://github.com/deephaven/deephaven-core) in a directory called `deephaven-core`, and a Python virtual environment for the Deephaven installation. The build guide names that virtual environment `~/my-dh-venv`. This guide calls it `source-dh-venv`. Substitute the name and path you used.
 
-This guide assumes that Deephaven is built using the steps in the [guide on building Deephaven from source](../../getting-started/launch-build.md). Following these steps produces a local clone of [Deephaven Core](https://github.com/deephaven/deephaven-core) in a directory called `deephaven-core`, and a Python virtual environment for the Deephaven installation. This guide will assume that virtual environment is called `source-dh-venv`.
+Use PyCharm 2024 or later. Debugging Deephaven with PyCharm 2023 has known problems.
+
+Before 2025.1, the **Python Debug Server** configuration this guide uses was part of PyCharm Professional. In 2025.1 and later, it's a PyCharm Pro subscription feature. [Debug Python code in Deephaven](./debugging-landing.md) explains which PyCharm releases include which free and paid features.
 
 ## 1. Install `pydevd`
 
-First, install the `pydevd` Python package into the `source-dh-venv` virtual environment using pip:
+First, install the [`pydevd`](https://pypi.org/project/pydevd/) Python package into the `source-dh-venv` virtual environment. `pydevd` is the debugger library that connects the Deephaven server's Python process to PyCharm's debug server. The Deephaven server's Python process loads `pydevd` from `source-dh-venv`, so install it with `source-dh-venv` active:
 
 ```bash
 pip install pydevd
 ```
 
-It's critical that this is installed into the same virtual environment as the source build of Deephaven. The debugger will not work properly if this is not the case.
+## 2. Create a PyCharm project
 
-## 2. Create PyCharm project
-
-To debug Deephaven from PyCharm, create a PyCharm project from the source code clone that the server will be run from. This PyCharm project must be based on the _same_ code used to build and run the server.
+To debug Deephaven from PyCharm, create a PyCharm project from the _same_ `deephaven-core` clone that you used to build and run the server.
 
 From PyCharm's launch window, click **Open** and navigate to the `deephaven-core` directory. The new project should look like this:
 
 ![img](../../assets/how-to/debugging/source-1.png)
 
-PyCharm should automatically set the project interpreter to be the virtual environment you created when building Deephaven from source (`source-dh-venv`). Confirm this by going to **PyCharm** > **Settings** > **Project: deephaven-core** > **Python Interpreter**. Verify that the path selected matches the path of `source-dh-venv`:
+Set the project interpreter to the virtual environment you created when building Deephaven from source (`source-dh-venv`). Open PyCharm's settings. On macOS, go to **PyCharm > Settings**. On Windows and Linux, go to **File > Settings**. Then select **Project: deephaven-core > Python Interpreter** and check that the selected path is the path of `source-dh-venv`:
 
 ![img](../../assets/how-to/debugging/source-2.png)
 
-## 3. Configure debugger
+If the selected path isn't `source-dh-venv`, click **Add Interpreter > Add Local Interpreter**, choose **Existing**, and select the `python` executable in `source-dh-venv/bin`. The build guide creates the virtual environment in your home directory, outside the clone, so PyCharm might not select it on its own.
+
+## 3. Configure the debugger
 
 Next, create a remote debugging server from PyCharm.
 
-Go to **Run > Edit Configurations**, which opens up the **Run/Debug Configurations** window. Click on **+** in the top left corner to add a new configuration. This will bring up a list of configuration types to select. Scroll down and select the **Python Debug Server** configuration option:
+Go to **Run > Edit Configurations** to open the **Run/Debug Configurations** window. Click **+** in the top-left corner to add a new configuration. PyCharm shows a list of configuration types. Scroll down and select the **Python Debug Server** configuration option:
 
 ![img](../../assets/how-to/debugging/source-3.png)
 
-Give the configuration a reasonable, memorable name. The virtual environment is named `source-dh-venv`, so the configuration will be named `source-dh-venv-debugging-server`.
+Give the configuration a reasonable, memorable name. The virtual environment is named `source-dh-venv`, so this guide names the configuration `source-dh-venv-debugging-server`.
 
-Next, set the IDE host name. Since the Deephaven server is going to be running locally, the hostname is `localhost`.
+Next, set **IDE host name**. The Deephaven server runs locally, so set it to `localhost`.
 
-Finally, choose a port for the debug server to run on. Note that this is _not the same_ as the port that the _Deephaven_ server runs on, which is port `10000` by default. Any unused port will work for this - we will use port `4444`.
+Finally, choose a port for the debug server to run on. This port is _not the same_ as the port the _Deephaven_ server runs on, which is `10000` by default. Any unused port works. This guide uses port `4444`.
+
+The dialog also shows instructions to install `pydevd-pycharm` and call `pydevd_pycharm.settrace`. This guide uses the generic `pydevd` package from [step 1](#1-install-pydevd) instead, so you can skip those instructions. If `pydevd` doesn't work with your PyCharm version, see [Version compatibility issues](#version-compatibility-issues).
 
 ![img](../../assets/how-to/debugging/source-4.png)
 
-Click **Apply** and **Ok**, and the new debug server will be immediately available for use.
+Click **Apply** and **OK** to save the configuration.
 
-## 4. Attach debugger to Deephaven
+## 4. Attach the debugger to Deephaven
 
-> [!WARNING]
-> The Deephaven server must be run with anonymous authentication for this kind of debugging to work. Use the `-Panonymous` flag when starting the server (shown below).
-
-Start the debugger in PyCharm by clicking the small green bug icon in the window's top right corner. This will start the debugger and open a debugging console:
+Start the debugger in PyCharm by clicking the small green bug icon in the window's top-right corner. This starts the debugger and opens a debugging console:
 
 ![img](../../assets/how-to/debugging/source-5.png)
 
 The output above states that the debugger is "waiting for process connection". This means that the debugger is not yet attached to the Deephaven process.
 
-Now, _from the same virtual environment that the PyCharm debugger is running in_, start the Deephaven server with anonymous authentication. The easiest way to do this is to open up a new terminal in the current PyCharm project and run:
+Now start the Deephaven server from a shell where `source-dh-venv` is active. The server runs Python from the active virtual environment, which is where `pydevd` is installed. A new terminal in this PyCharm project activates the project interpreter's environment for you. In it, run:
 
 ```bash
-./gradlew server-jetty-app:run -Panonymous
+./gradlew server-jetty-app:run
 ```
-
-The `-Panonymous` flag enables anonymous authentication, which is required for the debugger to connect.
 
 ![img](../../assets/how-to/debugging/source-6.png)
 
-To attach the debugger, navigate to the Deephaven IDE and execute the following commands in the _console_:
+By default, the server uses [pre-shared key authentication](../authentication/auth-psk.md) and prints the key to the server log, so enter that key when you open the Deephaven IDE. To skip the key prompt, add the `-Panonymous` flag to the command above. The flag enables [anonymous authentication](../authentication/auth-anon.md), so anyone who can reach port 10000 can use the server, and the server listens on all network interfaces. Use it only on a network you trust. The debugger works with either.
+
+The server is ready when the log shows `Server started on port 10000`.
+
+To attach the debugger, open the Deephaven IDE at [http://localhost:10000/ide/](http://localhost:10000/ide/) and execute the following commands in the _console_:
 
 ```python skip-test
 import pydevd
@@ -97,35 +98,38 @@ pydevd.settrace(
 
 ![img](../../assets/how-to/debugging/source-7.png)
 
-This will produce some output, indicating that Deephaven is connected to the debugger:
+The console might print a warning from `pydevd` that frozen modules are in use. The warning doesn't stop debugging:
 
 ![img](../../assets/how-to/debugging/source-8.png)
 
-Navigate back to PyCharm and verify that Deephaven is connected by finding this new line of output in the debugging console:
+To confirm the connection, check PyCharm. Its debugging console shows a new line of output like the following. The build number matches your PyCharm build:
 
 ```text
 Connected to pydev debugger (build 242.23726.102)
 ```
 
-The debugger is ready to be used!
-
 ![img](../../assets/how-to/debugging/source-9.png)
+
+The debugger is ready.
 
 ## 5. Use the PyCharm debugger
 
 Once connected, you can use the PyCharm debugger in two ways:
 
-1. **Set breakpoints in PyCharm**: Click in the left margin of your code editor to set breakpoints on any line in both your code and Deephaven's source.
-2. **Use `pydevd.settrace()` in code**: Call this function to programmatically pause execution at that point.
+1. **Set breakpoints in PyCharm**: Click in the left margin next to a line of Python to set a breakpoint. Set it in the copy of Deephaven's Python source that the server actually runs:
+   - **Wheel install** (the build guide's default): the `deephaven` package installed in `source-dh-venv`. PyCharm lists it under **External Libraries** in the **Project** tool window. Breakpoints in `py/server` in the clone aren't hit.
+   - **[Editable install](https://github.com/deephaven/deephaven-core/blob/main/py/README.md)**: `py/server` in the clone.
+2. **Use `pydevd.settrace` in code**: Call `pydevd.settrace` on the line where you want execution to pause. This works for code typed into the Deephaven console, which has no source file for PyCharm to set a breakpoint in.
 
-After the initial connection (step 4), you no longer need to pass parameters to `settrace`. Here's an example using it as a breakpoint:
+After the initial connection in [step 4](#4-attach-the-debugger-to-deephaven), you can call `pydevd.settrace` with no arguments. Here's an example using it as a breakpoint:
 
 ```python skip-test
+import pydevd
 from deephaven import empty_table
 
 
 def udf(x) -> int:
-    # Acts like a breakpoint - execution will pause here
+    # Acts like a breakpoint - execution pauses here
     pydevd.settrace()
     y = x + 1
     return y
@@ -136,22 +140,41 @@ t = empty_table(10).update("X = ii")
 t_new = t.update("Y = udf(X)")
 ```
 
-Navigating over to PyCharm, the debugger's full suite of capabilities is on offer. It can assist in stepping through Deephaven source code, setting breakpoints to halt execution, inspecting variables and intermediate values from deep within function calls, and much more. Many resources are available online for using PyCharm's debugger, and [this Jetbrains guide](https://www.jetbrains.com/help/pycharm/using-debug-console.html) is a good starting point.
+Each time the [`update`](../../reference/table-operations/select/update.md) call evaluates `udf`, execution pauses inside `udf`, and PyCharm shows its local variables, such as `x`. The table has 10 rows, so execution pauses 10 times. Click **Resume Program** to continue to the next row.
 
-**There are some Deephaven-specific things to consider when debugging**. Check out [Common problems](./common-problems.md) for issues specific to debugging Deephaven's table operations and ticking tables.
+While execution is paused in a command you ran from the console, that command holds the [update graph](../../conceptual/dag.md#update-graph-cycles)'s lock. [Ticking tables](../../conceptual/table-types.md) stop updating, and other console commands wait, until you resume. The tables then catch up.
+
+In PyCharm, you can now use the full debugger. Step through Deephaven's Python source code, set breakpoints, and inspect variables and intermediate values inside function calls. Many resources are available online for using PyCharm's debugger, and [JetBrains' guide to the debug console](https://www.jetbrains.com/help/pycharm/using-debug-console.html) is a good starting point.
+
+Debugging Deephaven has a few quirks of its own. [Common problems when debugging Deephaven](./common-problems.md) covers issues specific to Deephaven's table operations and [ticking tables](../../conceptual/table-types.md). For example, a breakpoint might not be hit because a [table operation](../../conceptual/table-operations-overview.md) evaluates lazily. See [Lazy evaluation of some table operations](./common-problems.md#lazy-evaluation-of-some-table-operations).
+
+## Debug Deephaven's Java engine
+
+PyCharm can't step into Deephaven's Java engine. To debug the engine, use a JVM debugger such as [IntelliJ IDEA](https://www.jetbrains.com/idea/). The [Groovy version of this guide](/core/groovy/docs/how-to-guides/debugging/source-setup/) walks through it, with two changes for Python:
+
+- Start the server from a shell where `source-dh-venv` is active, with `./gradlew server-jetty-app:run -Pdebug`. Leave out `-Pgroovy`, which starts a Groovy console.
+- Follow that guide's steps 1-4 and **Debugging Deephaven's internals** in step 5, but run this Python code in place of its Groovy example:
+
+```python order=t
+from deephaven import empty_table
+
+t = empty_table(10).update("X = ii").where("X > 5")
+```
+
+IntelliJ pauses inside [`where`](../../reference/table-operations/filter/where.md) when the JVM reaches the breakpoint.
 
 ## Troubleshooting
 
 ### Debugger won't connect
 
-**Problem**: `pydevd.settrace()` fails with connection error.
+**Problem**: `import pydevd` or `pydevd.settrace` fails in the Deephaven console.
 
 **Solutions**:
 
-- Verify the PyCharm debug server is running (green bug icon should be active).
-- Check that port 4444 is not blocked by a firewall.
-- Ensure the port in `settrace` matches the PyCharm configuration.
-- Verify both the Deephaven server and PyCharm are using the same `source-dh-venv` environment.
+- Verify that the PyCharm debug server is running. Its green bug icon is active while it runs.
+- Check that no firewall blocks port 4444.
+- Ensure the port in the `pydevd.settrace` call matches the port in the PyCharm configuration.
+- If `import pydevd` fails, verify that `source-dh-venv` is active in the shell where you started the server, and that it is the PyCharm project interpreter.
 
 ### Gradle build fails
 
@@ -160,9 +183,9 @@ Navigating over to PyCharm, the debugger's full suite of capabilities is on offe
 **Solutions**:
 
 - Verify you successfully built Deephaven from source following the [build guide](../../getting-started/launch-build.md).
-- Check that you're running the gradle command from the `deephaven-core` repository root.
-- Ensure all build dependencies are installed.
-- Try cleaning and rebuilding: `./gradlew clean build`.
+- Check that you're running the Gradle command from the `deephaven-core` repository root.
+- Ensure the build guide's [prerequisites](../../getting-started/launch-build.md#prerequisites) are installed.
+- Try cleaning and re-running: `./gradlew clean`, followed by `./gradlew server-jetty-app:run`.
 
 ### PyCharm can't find Deephaven source files
 
@@ -172,7 +195,17 @@ Navigating over to PyCharm, the debugger's full suite of capabilities is on offe
 
 - Verify the PyCharm project was created from the same `deephaven-core` directory used to build and run the server.
 - Check that the Python interpreter is set to `source-dh-venv`.
-- Ensure the project structure in PyCharm matches the actual source directory structure.
+- Look for Deephaven's Python source where the server loads it: under **External Libraries** for a wheel install, or in `py/server` for an editable install (see [step 5](#5-use-the-pycharm-debugger)).
+
+### Breakpoints are not hit
+
+**Problem**: Execution runs through a breakpoint without pausing.
+
+**Solutions**:
+
+- Confirm that the debugger is connected. Look for the `Connected to pydev debugger` line in PyCharm's debugging console.
+- Set breakpoints in the copy of Deephaven's Python source that the server runs: the copy installed in `source-dh-venv` for a wheel install, or `py/server` for an editable install (see [step 5](#5-use-the-pycharm-debugger)).
+- If you use [`update_view`](../../reference/table-operations/select/update-view.md), switch to [`select`](../../reference/table-operations/select/select.md) to force eager evaluation. See [Lazy evaluation of some table operations](./common-problems.md#lazy-evaluation-of-some-table-operations).
 
 ### Version compatibility issues
 
@@ -180,15 +213,27 @@ Navigating over to PyCharm, the debugger's full suite of capabilities is on offe
 
 **Solutions**:
 
-- Verify PyCharm version is 2024 or higher (earlier versions have known compatibility issues).
-- Check that `pydevd` version is compatible with your PyCharm version.
-  - Run `pip show pydevd` in `source-dh-venv` to check installed version.
-  - PyCharm may suggest a specific version in the debug server configuration.
-- If versions mismatch, reinstall `pydevd` with the version PyCharm recommends.
+- Use PyCharm 2024 or later. Debugging Deephaven with PyCharm 2023 has known problems.
+- Check which debugger package your PyCharm version expects. The **Python Debug Server** configuration dialog in [step 3](#3-configure-the-debugger) shows a `pip install pydevd-pycharm~=<build>` command, where `<build>` is your PyCharm build number.
+- Run `pip show pydevd pydevd-pycharm` in `source-dh-venv` to check which packages and versions are installed.
+- If the generic `pydevd` package doesn't work with your PyCharm version, install the `pydevd-pycharm` version the dialog shows, and use `import pydevd_pycharm` and `pydevd_pycharm.settrace` in place of `import pydevd` and `pydevd.settrace`.
 
 ## Related documentation
 
+- [Deephaven's live Directed-Acyclic-Graph (DAG)](../../conceptual/dag.md)
+- [Table operations overview](../../conceptual/table-operations-overview.md)
+- [Deephaven's table types](../../conceptual/table-types.md)
 - [Build Deephaven from source code](../../getting-started/launch-build.md)
-- [Common problems with debugging](./common-problems.md)
-- [Set up debugger for Docker-run Deephaven](./docker-setup.md)
-- [Set up debugger for pip-installed Deephaven](./pip-setup.md)
+- [Debug Python code in Deephaven](./debugging-landing.md)
+- [Common problems when debugging Deephaven](./common-problems.md)
+- [Formulas](../formulas.md)
+- [Debug Docker-run Deephaven with PyCharm](./docker-setup.md)
+- [Debug pip-installed Deephaven](./pip-setup.md)
+- [Debug an embedded Deephaven server with PyCharm](./embedded-setup.md)
+- [Pre-shared key authentication](../authentication/auth-psk.md)
+- [Anonymous authentication](../authentication/auth-anon.md)
+- [`empty_table`](../../reference/table-operations/create/emptyTable.md)
+- [`select`](../../reference/table-operations/select/select.md)
+- [`update`](../../reference/table-operations/select/update.md)
+- [`update_view`](../../reference/table-operations/select/update-view.md)
+- [`where`](../../reference/table-operations/filter/where.md)

@@ -57,11 +57,8 @@ The following example demonstrates all three method types by calling static meth
 
 ```python order=source,source_meta reset
 from deephaven import empty_table
-from deephaven import query_library
 
-# Import Java classes
-query_library.import_class("java.util.UUID")
-
+# Query strings import java.util by default, so UUID needs no import
 source = empty_table(1).update(
     [
         "RandomValueStaticMethod = Math.random()",

@@ -2,25 +2,48 @@
 title: Decipher Groovy errors
 ---
 
-When you develop Groovy queries, you will eventually encounter errors. This guide teaches you how to read Groovy error output so you can find and fix problems quickly.
+When you develop Groovy queries, you eventually encounter errors. This guide teaches you how to read Groovy error output so you can find and fix problems quickly. For a short checklist, see [Tips for reading errors](#tips-for-reading-errors).
 
 ## The basics
 
 Errors in Groovy fall into two categories:
 
-- **Compilation errors** occur before execution, when the Groovy compiler finds invalid syntax.
-- **Runtime exceptions** are unexpected events that occur while code is executing.
+- **Compilation errors** occur before execution, when the Groovy compiler rejects your script, for example because of invalid syntax or a class it can't resolve.
+- **Runtime exceptions** occur during execution, when running code throws an exception. Errors in Deephaven [formulas](./formulas.md) are runtime exceptions too, even when the message says "compilation": Deephaven compiles a [formula](./formulas.md) only when your script calls the [table operation](../conceptual/table-operations-overview.md) that uses it.
 
-Unlike Python errors—which have a structured `Type:` / `Value:` / `Line:` format—Groovy errors appear as Java exception stack traces. When one exception causes another, they chain together using `Caused by:` lines. The root cause is always the last `Caused by:` entry in the chain.
+Groovy errors appear as Java exception stack traces. Each `at ...` line in a trace is a frame: one method call, with the class, file, and line number it ran from. When one exception causes another, they chain together using `Caused by:` lines.
 
-As an example, let's execute a line of code with a syntax error:
+## Read the log header
+
+When code you run in the console fails, the console shows the stack trace. The IDE's [Log panel](./logs.md#log-panel) shows the same error as a log entry. After the time and the log level, such as `ERROR`, the entry has a header that names where the error came from:
+
+```
+r-Scheduler-Serial-1 | .c.ConsoleServiceGrpcImpl | Error running script: ...
+```
+
+The header has two names, separated by `|`, and the message follows them. In the console examples below:
+
+- `r-Scheduler-Serial-1` is the thread that reported the error. It's the end of `DeephavenApiServer-Scheduler-Serial-1`, the server thread that runs console commands.
+- `.c.ConsoleServiceGrpcImpl` is the class that logged the error. It's the end of `i.d.s.c.ConsoleServiceGrpcImpl`, the server class that handles console requests.
+- `Error running script` starts the message. It means the error came from running a console command.
+
+The log shortens both names to fit fixed-width columns:
+
+- The thread name keeps its last 20 characters.
+- The class name keeps its last 25 characters. Before cutting the name, the log shortens package names to their initials, starting from the left, until the name fits or every package is an initial.
+
+In the server's standard output, such as the [Docker container output](./logs.md#retrieve-docker-container-logs), each entry starts with the date and time in UTC, and the log level follows the thread name. Most traces on this page show only the header and the message.
+
+## Read a Groovy compilation error
+
+As an example, let's run a line of code with a syntax error:
 
 ```groovy should-fail
 println("hello"
 ```
 
 <details className="error">
-<summary>This produces output like this:</summary>
+<summary>Click to see the full stack trace.</summary>
 
 ```
 r-Scheduler-Serial-1 | .c.ConsoleServiceGrpcImpl | Error running script: io.deephaven.engine.util.GroovyExceptionWrapper: startup failed:
@@ -72,25 +95,29 @@ Script_6: 5: Unexpected input: ';\nprintln("hello"\n\n// this final true prevent
 
 </details>
 
-For compilation errors, Deephaven wraps the error in a `GroovyExceptionWrapper`. The key information is at the top of the output:
+For compilation errors, Deephaven wraps the error in a [`GroovyExceptionWrapper`](/core/javadoc/io/deephaven/engine/util/GroovyExceptionWrapper.html). The key information is at the top of the output:
 
 ```
 io.deephaven.engine.util.GroovyExceptionWrapper: startup failed:
 Script_6: 5: Unexpected input: ... @ line 5, column 1.
 ```
 
-The line and column numbers show where the parser failed. For an unclosed parenthesis or bracket, as here, the parser fails only after it reaches the code Deephaven appends after your script, so the reported line (5) can be past the end of your own code.
+The line and column numbers show where the parser failed. Deephaven adds a `package io.deephaven.dynamic;` line before your code, so the reported line is one greater than the line in your editor.
+
+In this example, the code never closes the parenthesis, so the parser keeps reading into the code that Deephaven appends after your script and fails there. As a result, the error reports line 5, which is past the end of your own code.
 
 > [!NOTE]
-> Each time you execute code in the Deephaven console, it is compiled into a new class named `Script_N`, where `N` increments with each execution. You will see `Script_N.groovy` references in stack traces wherever your code appears. Line numbers in `Script_N.groovy` frames are one greater than the line in your editor, because Deephaven adds a `package io.deephaven.dynamic;` line before your code when it compiles it.
+> Each time you execute code in the Deephaven console, Deephaven compiles it into a new class named `Script_N`. `N` increments only when an execution compiles successfully. A compilation error doesn't advance it, so the syntax error above and the next example both use `Script_6`.
+>
+> This guide's traces come from more than one session, so their `Script_N` numbers don't always increase down the page. The numbers in your own traces differ from these.
 
-The remainder of the trace shows Groovy compiler and Deephaven session infrastructure frames. These can generally be ignored — the useful signal is in the error message itself.
+The remainder of the trace shows frames from the Groovy compiler and from Deephaven's session infrastructure. You can generally ignore these frames. The useful signal is in the error message itself.
 
-## Create your own exception
+## Read a runtime exception
 
-Now let's look at a runtime exception. Here, a closure `f` throws when its argument is `10` or `20`:
+Now let's look at a runtime exception. Here, a [closure](./groovy-closures.md) `f` throws when its argument is `10` or `20`:
 
-```groovy should-fail
+```groovy skip-test
 f = { int x ->
     if (x == 10) throw new Exception("oops 1")
     else if (x == 20) throw new Exception("oops 2")
@@ -155,12 +182,16 @@ Caused by: java.lang.Exception: oops 1
 
 </details>
 
-Deephaven wraps script-level exceptions in a `java.lang.RuntimeException` via `wrapAndRewriteStackTrace`. To find the actual error, follow the `Caused by:` chain.
+Because `java.lang.Exception` is a checked exception, Deephaven wraps it in a `java.lang.RuntimeException` before reporting it. Deephaven reports unchecked exceptions as is. Either way, follow the `Caused by:` chain to find the actual error.
+
+A line such as `... 15 more` at the end of a `Caused by:` block stands for frames that are the same as the last frames of the exception above it, so nothing is missing.
 
 > [!TIP]
-> When reading a Groovy stack trace, start at the last `Caused by:` entry and work back toward the top. That is where the root cause is.
+> When a Groovy stack trace has `Caused by:` lines, the last `Caused by:` entry holds the root cause. Start there and work back toward the top.
 
-Within the `Caused by:` block, look for lines that reference `io.deephaven.dynamic.Script_N.groovy`. These point to your code:
+Within the `Caused by:` block, look for frames in the `io.deephaven.dynamic.Script_N` class that cite `Script_N.groovy`. These frames point to your code.
+
+Each line number counts from the start of the console command that defined the code. As with compilation errors, each line number is one greater than the line in your editor, because of the added `package io.deephaven.dynamic;` line. Here, line 3 is the `throw` inside `f`, and line 8 is the `f(10)` call:
 
 ```
 at io.deephaven.dynamic.Script_6$_run_closure1.doCall(Script_6.groovy:3)   // inside f
@@ -169,11 +200,11 @@ at io.deephaven.dynamic.Script_6.run(Script_6.groovy:8)                    // f(
 ```
 
 > [!NOTE]
-> Groovy closures appear in stack traces as `Script_N$_run_closureM`, where `M` is a number based on the closure's position in the script. This is how the Groovy compiler names anonymous closures internally. A named method would appear as `Script_N.methodName`. For more on closures, see [Groovy closures](./groovy-closures.md).
+> Groovy [closures](./groovy-closures.md) appear in stack traces as `Script_N$_run_closureM`, where `M` is a number based on the [closure](./groovy-closures.md)'s position in the script. This is how the Groovy compiler names anonymous [closures](./groovy-closures.md) internally. A named method would appear as `Script_N.methodName`.
 
-Now let's add another level of depth. The closure `g` calls `f` and accumulates the results:
+Now let's add another level of depth. The [closure](./groovy-closures.md) `g` calls `f` and accumulates the results:
 
-```groovy should-fail
+```groovy skip-test
 g = {
     def x = 0
     x += f(0)
@@ -256,7 +287,7 @@ Caused by: java.lang.Exception: oops 1
 
 </details>
 
-Because `f` and `g` were defined in separate console executions, they live in different compiled classes: `Script_6` and `Script_7`. The trace crosses those boundaries, showing the full call chain from the root cause upward:
+Because you defined `f` and `g` in separate console executions, they live in different compiled classes: `Script_6` and `Script_7`. The trace crosses those boundaries, showing the full call chain from the root cause upward:
 
 ```
 at io.deephaven.dynamic.Script_6$_run_closure1.doCall(Script_6.groovy:3)   // inside f
@@ -266,11 +297,165 @@ at io.deephaven.dynamic.Script_7$_run_closure1.doCall(Script_7.groovy:6)   // x 
 at io.deephaven.dynamic.Script_7.run(Script_7.groovy:9)                    // g() call
 ```
 
-## Exceptions in Deephaven tables
+## Read an undefined-variable error
 
-Closures can be used inside table formulas. When they throw, the error becomes more complex. In this example, `f` is applied as a column formula on a static table:
+A common Groovy mistake is a misspelled variable name. In this example, the second line misspells `t` as `tt`. Here, `i` is the row index, one of Deephaven's [special variables](../reference/query-language/variables/special-variables.md):
 
 ```groovy should-fail
+t = emptyTable(5)
+t2 = tt.update("X = i")
+```
+
+This output comes from the server's standard output, so the entry also has a timestamp and a log level, as [Read the log header](#read-the-log-header) describes. Here are the first lines of the trace:
+
+```
+2026-10-21T20:54:35.786Z | r-Scheduler-Serial-1 | ERROR | .c.ConsoleServiceGrpcImpl | Error running script: groovy.lang.MissingPropertyException: No such property: tt for class: io.deephaven.dynamic.Script_9
+	at org.codehaus.groovy.runtime.ScriptBytecodeAdapter.unwrap(ScriptBytecodeAdapter.java:66)
+	at org.codehaus.groovy.runtime.callsite.PogoGetPropertySite.getProperty(PogoGetPropertySite.java:51)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callGroovyObjectGetProperty(AbstractCallSite.java:341)
+	at io.deephaven.dynamic.Script_9.run(Script_9.groovy:3)
+	at groovy.lang.GroovyShell.evaluate(GroovyShell.java:427)
+	at groovy.lang.GroovyShell.evaluate(GroovyShell.java:461)
+	at groovy.lang.GroovyShell.evaluate(GroovyShell.java:436)
+	at io.deephaven.engine.util.GroovyDeephavenSession.lambda$evaluate$0(GroovyDeephavenSession.java:351)
+	at io.deephaven.util.locks.FunctionalLock.doLockedInterruptibly(FunctionalLock.java:51)
+	at io.deephaven.engine.util.GroovyDeephavenSession.evaluate(GroovyDeephavenSession.java:351)
+	at io.deephaven.engine.util.AbstractScriptSession.lambda$evaluateScript$0(AbstractScriptSession.java:169)
+	at io.deephaven.engine.context.ExecutionContext.lambda$apply$0(ExecutionContext.java:214)
+	at io.deephaven.engine.context.ExecutionContext.apply(ExecutionContext.java:225)
+	at io.deephaven.engine.context.ExecutionContext.apply(ExecutionContext.java:213)
+	at io.deephaven.engine.util.AbstractScriptSession.evaluateScript(AbstractScriptSession.java:169)
+```
+
+Reading this trace:
+
+- **No `Caused by:` line**: The full trace has none. `MissingPropertyException` is an unchecked exception, so Deephaven reports it as is, without wrapping it. The exception on the first line is the root cause.
+- **Message**: `No such property: tt` names the variable that Groovy couldn't find. `Script_9` is the class that Deephaven compiled your command into.
+- **Script line**: The `Script_9.groovy:3` frame points to the typo. It's one greater than the editor line (2) because Deephaven adds a `package` line before your code.
+
+To fix the error, correct the variable name, or define the variable before you use it.
+
+## Read a formula compilation error
+
+Now let's look at a [formula](./formulas.md) that references a column that doesn't exist. In the following example, `f1` uses column `X` correctly, but `f2` does not.
+
+This is not a Groovy syntax error. The Groovy code is valid, but Deephaven fails to compile the [formula](./formulas.md) `Y = X * 3` when [`update`](../reference/table-operations/select/update.md) runs. As [The basics](#the-basics) explains, the error therefore arrives as a runtime exception.
+
+```groovy skip-test
+f1 = { return emptyTable(10).update("X = i").update("Y = X * 3") }
+f2 = { return emptyTable(10).update("Y = X * 3") }
+f1()
+f2()
+```
+
+<details className="error">
+<summary>Click to see the full stack trace.</summary>
+
+```
+r-Scheduler-Serial-1 | .c.ConsoleServiceGrpcImpl | Error running script: io.deephaven.engine.table.impl.select.FormulaCompilationException: Formula compilation error for: X * 3
+	at io.deephaven.engine.table.impl.select.DhFormulaColumn.initDef(DhFormulaColumn.java:210)
+	at io.deephaven.engine.table.impl.select.SwitchColumn.initDef(SwitchColumn.java:65)
+	at io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.createContext(SelectAndViewAnalyzer.java:128)
+	at io.deephaven.engine.table.impl.QueryTable.lambda$selectOrUpdate$38(QueryTable.java:1720)
+	at io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder.withNugget(QueryPerformanceRecorder.java:390)
+	at io.deephaven.engine.table.impl.QueryTable.lambda$selectOrUpdate$39(QueryTable.java:1702)
+	at io.deephaven.engine.table.impl.QueryTable.memoizeResult(QueryTable.java:3216)
+	at io.deephaven.engine.table.impl.QueryTable.selectOrUpdate(QueryTable.java:1701)
+	at io.deephaven.engine.table.impl.QueryTable.update(QueryTable.java:1680)
+	at io.deephaven.engine.table.impl.QueryTable.update(QueryTable.java:98)
+	at io.deephaven.api.TableOperationsDefaults.update(TableOperationsDefaults.java:94)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.codehaus.groovy.runtime.callsite.PlainObjectMetaMethodSite.doInvoke(PlainObjectMetaMethodSite.java:48)
+	at org.codehaus.groovy.runtime.callsite.PojoMetaMethodSite$PojoCachedMethodSite.invoke(PojoMetaMethodSite.java:186)
+	at org.codehaus.groovy.runtime.callsite.PojoMetaMethodSite.call(PojoMetaMethodSite.java:51)
+	at org.codehaus.groovy.runtime.callsite.CallSiteArray.defaultCall(CallSiteArray.java:47)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.call(AbstractCallSite.java:125)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.call(AbstractCallSite.java:139)
+	at io.deephaven.dynamic.Script_11$_run_closure2.doCall(Script_11.groovy:3)
+	at io.deephaven.dynamic.Script_11$_run_closure2.doCall(Script_11.groovy)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.codehaus.groovy.reflection.CachedMethod.invoke(CachedMethod.java:107)
+	at groovy.lang.MetaMethod.doMethodInvoke(MetaMethod.java:323)
+	at org.codehaus.groovy.runtime.metaclass.ClosureMetaClass.invokeMethod(ClosureMetaClass.java:274)
+	at groovy.lang.MetaClassImpl.invokePropertyOrMissing(MetaClassImpl.java:1318)
+	at groovy.lang.MetaClassImpl.invokeMethod(MetaClassImpl.java:1256)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaClassSite.callCurrent(PogoMetaClassSite.java:61)
+	at org.codehaus.groovy.runtime.callsite.CallSiteArray.defaultCallCurrent(CallSiteArray.java:51)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:171)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:176)
+	at io.deephaven.dynamic.Script_11.run(Script_11.groovy:5)
+	at groovy.lang.GroovyShell.evaluate(GroovyShell.java:427)
+	at groovy.lang.GroovyShell.evaluate(GroovyShell.java:461)
+	at groovy.lang.GroovyShell.evaluate(GroovyShell.java:436)
+	at io.deephaven.engine.util.GroovyDeephavenSession.lambda$evaluate$0(GroovyDeephavenSession.java:351)
+	at io.deephaven.util.locks.FunctionalLock.doLockedInterruptibly(FunctionalLock.java:51)
+	at io.deephaven.engine.util.GroovyDeephavenSession.evaluate(GroovyDeephavenSession.java:351)
+	at io.deephaven.engine.util.AbstractScriptSession.lambda$evaluateScript$0(AbstractScriptSession.java:169)
+	at io.deephaven.engine.context.ExecutionContext.lambda$apply$0(ExecutionContext.java:214)
+	at io.deephaven.engine.context.ExecutionContext.apply(ExecutionContext.java:225)
+	at io.deephaven.engine.context.ExecutionContext.apply(ExecutionContext.java:213)
+	at io.deephaven.engine.util.AbstractScriptSession.evaluateScript(AbstractScriptSession.java:169)
+	at io.deephaven.engine.util.DelegatingScriptSession.evaluateScript(DelegatingScriptSession.java:77)
+	at io.deephaven.engine.util.ScriptSession.evaluateScript(ScriptSession.java:123)
+	at io.deephaven.server.console.ConsoleServiceGrpcImpl.lambda$executeCommand$7(ConsoleServiceGrpcImpl.java:204)
+	at io.deephaven.server.session.SessionState$ExportObject.doExport(SessionState.java:1000)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at io.deephaven.server.runner.scheduler.SchedulerModule$ThreadFactory.lambda$newThread$0(SchedulerModule.java:100)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: io.deephaven.engine.table.impl.lang.QueryLanguageParser$QueryLanguageParseException:
+
+Having trouble with the following expression:
+Full expression           : X * 3
+Expression having trouble : 
+Exception type            : io.deephaven.engine.table.impl.lang.QueryLanguageParser$ParserResolutionFailure
+Exception message         : Cannot find variable or class X
+
+	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.resolveName(QueryLanguageParser.java:1458)
+	at java.base/java.util.HashMap.computeIfAbsent(HashMap.java:1228)
+	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.visit(QueryLanguageParser.java:1412)
+	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.visit(QueryLanguageParser.java:135)
+	at com.github.javaparser.ast.expr.NameExpr.accept(NameExpr.java:80)
+	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.getTypeWithCaching(QueryLanguageParser.java:1182)
+	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.visit(QueryLanguageParser.java:1568)
+	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.visit(QueryLanguageParser.java:135)
+	at com.github.javaparser.ast.expr.BinaryExpr.accept(BinaryExpr.java:140)
+	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.<init>(QueryLanguageParser.java:326)
+	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.<init>(QueryLanguageParser.java:219)
+	at io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer.parseFormula(FormulaAnalyzer.java:240)
+	at io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer.parseFormula(FormulaAnalyzer.java:122)
+	at io.deephaven.engine.table.impl.select.DhFormulaColumn.initDef(DhFormulaColumn.java:189)
+	... 53 more
+```
+
+</details>
+
+Working up the trace from the last `Caused by:` entry:
+
+1. `QueryLanguageParser$QueryLanguageParseException` — the root cause. The Deephaven [query language](./query-string-overview.md) parser failed on the [formula](./formulas.md). Its message shows the full expression, `X * 3`, and the exact problem, `Cannot find variable or class X`.
+2. [`FormulaCompilationException`](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaCompilationException.html) `: Formula compilation error for: X * 3` — Deephaven could not compile the [formula](./formulas.md).
+
+The frames that point to your code are `Script_11$_run_closure2.doCall(Script_11.groovy:3)` and `Script_11.run(Script_11.groovy:5)`. The first is inside `f2`, at the [`update`](../reference/table-operations/select/update.md) call. The second is the line that calls `f2`.
+
+The `_run_closure2` suffix marks the second [closure](./groovy-closures.md) defined in the script, which is `f2`. This confirms that `f2` caused the problem.
+
+This is a common mistake: a [formula](./formulas.md) refers to a column that the table does not have. To fix it, create the column before the [formula](./formulas.md) that uses it, as `f1` does, or correct the column name in the [formula](./formulas.md).
+
+## Read a formula evaluation error
+
+Sometimes a [formula](./formulas.md) compiles, but code that it calls throws an exception during evaluation. The trace then depends on whether the table is [static](../conceptual/table-types.md#static-tables) or [ticking](../conceptual/table-types.md#standard-streaming-tables).
+
+### Static tables
+
+You can use [closures](./groovy-closures.md) inside table [formulas](./formulas.md). When one throws, the trace chains more exceptions than a plain [closure](./groovy-closures.md) call does.
+
+This example reuses the [closure](./groovy-closures.md) `f` from [Read a runtime exception](#read-a-runtime-exception), which throws an exception when its argument is `10` or `20`. Here, a column [formula](./formulas.md) on a [static table](../conceptual/table-types.md#static-tables) calls `f`:
+
+```groovy skip-test
 t = emptyTable(20).update("X = i")
 t1 = t.update("Y = f(X)")
 ```
@@ -364,20 +549,28 @@ Caused by: java.lang.Exception: oops 1
 
 </details>
 
-Working through the `Caused by:` chain from the bottom:
+Working up the trace from the last `Caused by:` entry:
 
-1. `java.lang.Exception: oops 1` — the root cause, thrown inside the closure `f`.
-2. `FormulaEvaluationException: In formula: Y = f(X)` — the query engine detected a failure while evaluating that formula.
-3. `TableInitializationException: Error while initializing Update([Y])` — the table failed to initialize because of the above.
+1. `java.lang.Exception: oops 1` — the root cause. The [closure](./groovy-closures.md) `f` threw it.
+2. [`FormulaEvaluationException`](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaEvaluationException.html) `: In formula: Y = f(X)` — the query engine detected a failure while evaluating that [formula](./formulas.md).
+3. [`TableInitializationException`](/core/javadoc/io/deephaven/engine/exceptions/TableInitializationException.html) `: Error while initializing Update([Y])` — the table failed to initialize because the [formula](./formulas.md) failed.
 
-The line `Script_8.groovy:3` tells you which line in your code triggered the failing `update` call.
+The line `Script_8.groovy:3` tells you which line in your code triggered the failing [`update`](../reference/table-operations/select/update.md) call.
 
-Ticking tables behave differently. When a formula is applied to a ticking table, it is evaluated for existing rows at creation time, then again for every new row as it arrives. Errors may appear well after the table is open and apparently working.
+### Ticking tables
 
-```groovy should-fail
+A [ticking table](../conceptual/table-types.md#standard-streaming-tables) adds, modifies, or removes rows as new data arrives, so [formula](./formulas.md) errors in it behave differently.
+
+When you apply a [formula](./formulas.md) to a [ticking table](../conceptual/table-types.md#standard-streaming-tables), Deephaven evaluates it for the existing rows when it creates the table, then again for each added row and for each modified row whose input columns changed. Errors may appear well after the table is open and apparently working.
+
+This example reuses the [closure](./groovy-closures.md) `f` from [Read a runtime exception](#read-a-runtime-exception), which throws when its argument is `10` or `20`. It applies `f` to a [ticking table](../conceptual/table-types.md#standard-streaming-tables) from [`timeTable`](../reference/table-operations/create/timeTable.md), which adds one row per second:
+
+```groovy skip-test
 t2 = timeTable("PT1S").update("X = i")
 t3 = t2.update("Y = f(X)")
 ```
+
+The table runs for about ten seconds before it fails, when `X` reaches `10`.
 
 <details className="error">
 <summary>Click to see the full stack trace.</summary>
@@ -425,136 +618,34 @@ Caused by: java.lang.Exception: oops 1
 
 </details>
 
-Several things differ from the static table error:
+Several things differ from the [static table](../conceptual/table-types.md#static-tables) error:
 
-- **Thread prefix**: `aph-updateExecutor-N` instead of `r-Scheduler-Serial-1`. The error occurred on a background update thread, not the session thread.
+- **Thread**: `aph-updateExecutor-5` instead of `r-Scheduler-Serial-1`. The name is the end of `PeriodicUpdateGraph-updateExecutor-5`, a thread of the [update graph](../conceptual/periodic-update-graph-configuration.md), not the thread that runs console commands.
 - **Log source**: `.AsyncClientErrorNotifier | Error in table update:` instead of `.c.ConsoleServiceGrpcImpl | Error running script`.
-- **No `TableInitializationException`**: The trace starts directly with `FormulaEvaluationException`. The table was created successfully; it only failed when a new row arrived.
-- **No script line**: Because the error occurred asynchronously, there is no reference back to the line that created the table.
+- **First exception**: The trace starts directly with [`FormulaEvaluationException`](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaEvaluationException.html), with no [`TableInitializationException`](/core/javadoc/io/deephaven/engine/exceptions/TableInitializationException.html). Deephaven created the table successfully. The [formula](./formulas.md) failed later, when a new row arrived.
+- **Script line**: No frame points to the line that created the table, because the error occurred asynchronously. The `Script_6$_run_closure1` frame still points to the `throw` inside `f`.
 
-In addition to the server log, the Deephaven IDE marks the failed ticking table with an error indicator in the UI.
+In the IDE, the failed table's panel is covered by a warning icon and a message that begins with `Unable to open table`. The message gives an ID. Search the [Deephaven logs](./logs.md) for that ID to find the full error.
 
-## More complex example
+The [next section](#find-a-ticking-table-error-by-its-log-id) shows the second log entry the server writes when a client is viewing the table, using a different [formula](./formulas.md).
 
-Now let's look at a formula that references a column that doesn't exist. `f1` uses column `X` correctly; `f2` does not:
+### Find a ticking-table error by its log ID
 
-```groovy should-fail
-f1 = { return emptyTable(10).update("X = i").update("Y = X * 3") }
-f2 = { return emptyTable(10).update("Y = X * 3") }
-f1()
-f2()
-```
+When a client such as the IDE is viewing a [ticking table](../conceptual/table-types.md#standard-streaming-tables) that fails, the server writes a second log entry, `Internal Error '<id>'`, and sends the same ID to the client. The first entry is the `Error in table update` entry shown in [Ticking tables](#ticking-tables).
 
-<details className="error">
-<summary>Click to see the full stack trace.</summary>
+In this example, a [formula](./formulas.md) calls `Math.floorDiv`, which throws when its divisor reaches zero. In a Deephaven [formula](./formulas.md), `/` on integers returns a `double`, so dividing by zero gives `Infinity` instead of throwing.
 
-```
-r-Scheduler-Serial-1 | .c.ConsoleServiceGrpcImpl | Error running script: io.deephaven.engine.table.impl.select.FormulaCompilationException: Formula compilation error for: X * 3
-	at io.deephaven.engine.table.impl.select.DhFormulaColumn.initDef(DhFormulaColumn.java:210)
-	at io.deephaven.engine.table.impl.select.SwitchColumn.initDef(SwitchColumn.java:65)
-	at io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.createContext(SelectAndViewAnalyzer.java:128)
-	at io.deephaven.engine.table.impl.QueryTable.lambda$selectOrUpdate$38(QueryTable.java:1720)
-	at io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder.withNugget(QueryPerformanceRecorder.java:390)
-	at io.deephaven.engine.table.impl.QueryTable.lambda$selectOrUpdate$39(QueryTable.java:1702)
-	at io.deephaven.engine.table.impl.QueryTable.memoizeResult(QueryTable.java:3216)
-	at io.deephaven.engine.table.impl.QueryTable.selectOrUpdate(QueryTable.java:1701)
-	at io.deephaven.engine.table.impl.QueryTable.update(QueryTable.java:1680)
-	at io.deephaven.engine.table.impl.QueryTable.update(QueryTable.java:98)
-	at io.deephaven.api.TableOperationsDefaults.update(TableOperationsDefaults.java:94)
-	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at org.codehaus.groovy.runtime.callsite.PlainObjectMetaMethodSite.doInvoke(PlainObjectMetaMethodSite.java:48)
-	at org.codehaus.groovy.runtime.callsite.PojoMetaMethodSite$PojoCachedMethodSite.invoke(PojoMetaMethodSite.java:186)
-	at org.codehaus.groovy.runtime.callsite.PojoMetaMethodSite.call(PojoMetaMethodSite.java:51)
-	at org.codehaus.groovy.runtime.callsite.CallSiteArray.defaultCall(CallSiteArray.java:47)
-	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.call(AbstractCallSite.java:125)
-	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.call(AbstractCallSite.java:139)
-	at io.deephaven.dynamic.Script_11$_run_closure2.doCall(Script_11.groovy:3)
-	at io.deephaven.dynamic.Script_11$_run_closure2.doCall(Script_11.groovy)
-	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
-	at org.codehaus.groovy.reflection.CachedMethod.invoke(CachedMethod.java:107)
-	at groovy.lang.MetaMethod.doMethodInvoke(MetaMethod.java:323)
-	at org.codehaus.groovy.runtime.metaclass.ClosureMetaClass.invokeMethod(ClosureMetaClass.java:274)
-	at groovy.lang.MetaClassImpl.invokePropertyOrMissing(MetaClassImpl.java:1318)
-	at groovy.lang.MetaClassImpl.invokeMethod(MetaClassImpl.java:1256)
-	at org.codehaus.groovy.runtime.callsite.PogoMetaClassSite.callCurrent(PogoMetaClassSite.java:61)
-	at org.codehaus.groovy.runtime.callsite.CallSiteArray.defaultCallCurrent(CallSiteArray.java:51)
-	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:171)
-	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callCurrent(AbstractCallSite.java:176)
-	at io.deephaven.dynamic.Script_11.run(Script_11.groovy:5)
-	at groovy.lang.GroovyShell.evaluate(GroovyShell.java:427)
-	at groovy.lang.GroovyShell.evaluate(GroovyShell.java:461)
-	at groovy.lang.GroovyShell.evaluate(GroovyShell.java:436)
-	at io.deephaven.engine.util.GroovyDeephavenSession.lambda$evaluate$0(GroovyDeephavenSession.java:351)
-	at io.deephaven.util.locks.FunctionalLock.doLockedInterruptibly(FunctionalLock.java:51)
-	at io.deephaven.engine.util.GroovyDeephavenSession.evaluate(GroovyDeephavenSession.java:351)
-	at io.deephaven.engine.util.AbstractScriptSession.lambda$evaluateScript$0(AbstractScriptSession.java:169)
-	at io.deephaven.engine.context.ExecutionContext.lambda$apply$0(ExecutionContext.java:214)
-	at io.deephaven.engine.context.ExecutionContext.apply(ExecutionContext.java:225)
-	at io.deephaven.engine.context.ExecutionContext.apply(ExecutionContext.java:213)
-	at io.deephaven.engine.util.AbstractScriptSession.evaluateScript(AbstractScriptSession.java:169)
-	at io.deephaven.engine.util.DelegatingScriptSession.evaluateScript(DelegatingScriptSession.java:77)
-	at io.deephaven.engine.util.ScriptSession.evaluateScript(ScriptSession.java:123)
-	at io.deephaven.server.console.ConsoleServiceGrpcImpl.lambda$executeCommand$7(ConsoleServiceGrpcImpl.java:204)
-	at io.deephaven.server.session.SessionState$ExportObject.doExport(SessionState.java:1000)
-	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
-	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
-	at io.deephaven.server.runner.scheduler.SchedulerModule$ThreadFactory.lambda$newThread$0(SchedulerModule.java:100)
-	at java.base/java.lang.Thread.run(Thread.java:1583)
-Caused by: io.deephaven.engine.table.impl.lang.QueryLanguageParser$QueryLanguageParseException:
-
-Having trouble with the following expression:
-Full expression           : X * 3
-Expression having trouble : 
-Exception type            : io.deephaven.engine.table.impl.lang.QueryLanguageParser$ParserResolutionFailure
-Exception message         : Cannot find variable or class X
-
-	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.resolveName(QueryLanguageParser.java:1458)
-	at java.base/java.util.HashMap.computeIfAbsent(HashMap.java:1228)
-	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.visit(QueryLanguageParser.java:1412)
-	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.visit(QueryLanguageParser.java:135)
-	at com.github.javaparser.ast.expr.NameExpr.accept(NameExpr.java:80)
-	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.getTypeWithCaching(QueryLanguageParser.java:1182)
-	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.visit(QueryLanguageParser.java:1568)
-	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.visit(QueryLanguageParser.java:135)
-	at com.github.javaparser.ast.expr.BinaryExpr.accept(BinaryExpr.java:140)
-	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.<init>(QueryLanguageParser.java:326)
-	at io.deephaven.engine.table.impl.lang.QueryLanguageParser.<init>(QueryLanguageParser.java:219)
-	at io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer.parseFormula(FormulaAnalyzer.java:240)
-	at io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer.parseFormula(FormulaAnalyzer.java:122)
-	at io.deephaven.engine.table.impl.select.DhFormulaColumn.initDef(DhFormulaColumn.java:189)
-	... 53 more
-```
-
-</details>
-
-The `Caused by:` chain:
-
-1. `QueryLanguageParser$QueryLanguageParseException` — the Deephaven query language parser failed. The message is specific: it shows the full expression (`X * 3`) and the problem (`Cannot find variable or class X`).
-2. `FormulaCompilationException: Formula compilation error for: X * 3` — the formula could not be compiled.
-
-The script trace points to `Script_11$_run_closure2` (inside `f2`) and `Script_11.groovy:5` (the `f2()` call). The `_run_closure2` suffix indicates this is the second closure defined in the script (`f2`), confirming which function caused the problem.
-
-This is a common mistake: referencing a column name in a formula that does not exist in the table at the point the formula is evaluated. Here, `f2` tries to use `X` in a table that has no `X` column.
-
-## One more complex example
-
-In this last example, a ticking table calls `Math.floorDiv`, which throws when its divisor reaches zero:
-
-```groovy should-fail
+```groovy skip-test
 t4 = timeTable("PT1S").update("X = 10 - i", "Y = Math.floorDiv((long)1, X)")
 ```
 
-The table runs without error at first. After ten seconds, when `X` reaches zero, the table fails.
+The table runs without error at first. After about ten seconds, when `X` reaches zero, the table fails.
 
 <details className="error">
 <summary>Click to see the full stack trace.</summary>
 
 ```
-aph-updateExecutor-10 | i.d.s.s.SessionService    | Internal Error 'aa3f5f3e-af03-45af-827c-f6bd8d3a5009' io.deephaven.engine.table.impl.select.FormulaEvaluationException: In formula: Y = Math.floorDiv((long)1, X)
+ph-updateExecutor-10 | i.d.s.s.SessionService    | Internal Error 'aa3f5f3e-af03-45af-827c-f6bd8d3a5009' io.deephaven.engine.table.impl.select.FormulaEvaluationException: In formula: Y = Math.floorDiv((long)1, X)
 	at io.deephaven.temp.c_acf05682d28d54381b192ae326ae1233c4dcfd572f7487269547deef388bfba7v65_0.Formula.applyFormulaPerItem(Formula.java:168)
 	at io.deephaven.temp.c_acf05682d28d54381b192ae326ae1233c4dcfd572f7487269547deef388bfba7v65_0.Formula.lambda$fillChunkHelper$4(Formula.java:157)
 	at io.deephaven.engine.rowset.RowSequence.lambda$forAllRowKeys$0(RowSequence.java:175)
@@ -583,17 +674,43 @@ Caused by: java.lang.ArithmeticException: / by zero
 
 </details>
 
-As expected for a ticking table error, the thread is `aph-updateExecutor-N` and the log entry includes a UUID. There is no reference back to the original script line.
+Reading this trace:
 
-The formula string in the error is `Y = Math.floorDiv((long)1, X)`—preserved exactly as written. The `Caused by:` chain shows the root cause: `ArithmeticException: / by zero`, thrown by `Math.floorDiv` when `X` reached zero.
+- **Log entry**: `SessionService`, the server component that manages client sessions, writes this entry. The client receives a message that contains `Details Logged w/ID '<id>'` with the same ID, so you can search the [Deephaven logs](./logs.md) for the full error.
+- **Thread**: `ph-updateExecutor-10`, the end of `PeriodicUpdateGraph-updateExecutor-10`. This is an [update graph](../conceptual/periodic-update-graph-configuration.md) thread, as in [Ticking tables](#ticking-tables).
+- **Script line**: None. As in [Ticking tables](#ticking-tables), the error occurred asynchronously.
+- **Formula**: The `In formula:` text shows the column name and the [formula](./formulas.md) expression, `Y = Math.floorDiv((long)1, X)`, so you can match it to your code.
+- **Root cause**: `ArithmeticException: / by zero`, at the end of the `Caused by:` chain. `Math.floorDiv` threw it when `X` reached zero.
 
-> [!NOTE]
-> In Deephaven query strings, the `/` operator on integer columns performs `double` division, so dividing by zero returns `Infinity`, `-Infinity`, or `NaN` (for `0 / 0`) instead of throwing an exception. To reliably produce an exception on zero, use `Math.floorDiv` or a similar Java `Math` method.
+## Tips for reading errors
+
+The examples on this page follow the same steps:
+
+1. Find the error. Code you run in the console reports its error in the console. The full error for a [ticking table](../conceptual/table-types.md#standard-streaming-tables) appears only in the [Deephaven logs](./logs.md), such as the IDE's [Log panel](./logs.md#log-panel).
+2. In the log, read the header. `Error running script` means the error happened while the console ran your code. In the [ticking-table](../conceptual/table-types.md#standard-streaming-tables) examples, the header is `Error in table update` or `Internal Error '<id>'` instead, because the table failed later, while Deephaven updated it.
+3. If the IDE shows an error message with an ID, such as `Details Logged w/ID '<id>'`, search the [Deephaven logs](./logs.md) for that ID.
+4. For a [`GroovyExceptionWrapper`](/core/javadoc/io/deephaven/engine/util/GroovyExceptionWrapper.html) `: startup failed:` error, read the line and column in the message. The line is one greater than the line in your editor. If it points past the end of your code, look for a parenthesis or bracket that you didn't close.
+5. For other errors, find the last `Caused by:` entry. It holds the root cause. If the trace has no `Caused by:` line, the exception on the first line is the root cause.
+6. Find the frames in `io.deephaven.dynamic.Script_N` classes. They point to your code. Each line number counts from the start of the console command that defined that code and is one greater than the line in your editor.
+7. Match the `In formula:` or `Full expression` text to the [formula](./formulas.md) in your code.
 
 ## Related documentation
 
+- [Deephaven's table types](../conceptual/table-types.md)
+- [Table operations overview](../conceptual/table-operations-overview.md)
+- [Periodic Update Graph](../conceptual/periodic-update-graph-configuration.md)
+- [Query string overview](./query-string-overview.md)
 - [Triage errors in queries](./triage-errors.md)
+- [Retrieve logs](./logs.md)
 - [Groovy closures](./groovy-closures.md)
 - [Formulas](./formulas.md)
-- [Use filters in query strings](./use-filters.md)
-- [Create and work with time tables](./time-table.md)
+- [Create static tables](./new-and-empty-table.md)
+- [Create a time table](./time-table.md)
+- [`emptyTable`](../reference/table-operations/create/emptyTable.md)
+- [`timeTable`](../reference/table-operations/create/timeTable.md)
+- [`update`](../reference/table-operations/select/update.md)
+- [Special variables](../reference/query-language/variables/special-variables.md)
+- [`GroovyExceptionWrapper` Javadoc](/core/javadoc/io/deephaven/engine/util/GroovyExceptionWrapper.html)
+- [`FormulaCompilationException` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaCompilationException.html)
+- [`FormulaEvaluationException` Javadoc](/core/javadoc/io/deephaven/engine/table/impl/select/FormulaEvaluationException.html)
+- [`TableInitializationException` Javadoc](/core/javadoc/io/deephaven/engine/exceptions/TableInitializationException.html)
