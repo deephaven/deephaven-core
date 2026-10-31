@@ -15,6 +15,7 @@ import org.junit.Test;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Target;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -204,12 +205,18 @@ public class TestFinalDefault {
 
     @SuppressWarnings("SameParameterValue")
     private static void checkForOverridesInPackage(final String packageName, final String annotationName) {
-        checkForOverrides(new ClassGraph().enableAllInfo().acceptPackages(packageName), annotationName);
+        checkForOverrides(newClassGraph().acceptPackages(packageName), annotationName);
     }
 
     @SuppressWarnings("SameParameterValue")
     private static void checkForOverridesInClass(final Class<?> cls, final String annotationName) {
-        checkForOverrides(new ClassGraph().enableAllInfo().acceptClasses(cls.getName()), annotationName);
+        checkForOverrides(newClassGraph().acceptClasses(cls.getName()), annotationName);
+    }
+
+    private static ClassGraph newClassGraph() {
+        // External classes are needed to report an annotated supertype outside the accepted packages or classes
+        return new ClassGraph().enableClasspath().enableClassInfo().enableMethodInfo().enableAnnotationInfo()
+                .enableExternalClasses().ignoreClassVisibility().ignoreMethodVisibility();
     }
 
     private static void checkForOverrides(final ClassGraph classGraph, final String annotationName) {
@@ -217,11 +224,16 @@ public class TestFinalDefault {
         int numClassesChecked = 0;
         int numAnnotatedMethodsChecked = 0;
         try (ScanResult scanResult = classGraph.scan()) {
+            // This includes classes that only inherit an annotated method, so count the classes that declare one
             for (final ClassInfo classInfo : scanResult.getClassesWithMethodAnnotation(annotationName)) {
-                numClassesChecked++;
+                boolean declaresAnnotatedMethod = false;
                 for (final MethodInfo methodInfo : classInfo.getDeclaredMethodInfo()) {
                     if (!methodInfo.hasAnnotation(annotationName)) {
                         continue;
+                    }
+                    if (!declaresAnnotatedMethod) {
+                        declaresAnnotatedMethod = true;
+                        numClassesChecked++;
                     }
                     numAnnotatedMethodsChecked++;
                     findOverrides(methodInfo).forEach(method -> {
@@ -245,20 +257,38 @@ public class TestFinalDefault {
     private static Collection<Method> findOverrides(final MethodInfo target) {
         final Collection<Method> overrides = new ArrayList<>();
 
-        final Method targetMethod = target.loadClassAndGetMethod();
+        final Method targetMethod = loadMethod(target);
         final Consumer<ClassInfo> visitClass = (ci) -> {
-            Arrays.stream(ci.loadClass().getDeclaredMethods())
+            Arrays.stream(loadClass(ci.getName()).getDeclaredMethods())
                     .filter(m -> overrides(m, targetMethod))
                     .forEach(overrides::add);
         };
 
         final ClassInfo clsInfo = target.getClassInfo();
-        clsInfo.getSubclasses().forEach(visitClass);
+        clsInfo.getAllSubclasses().forEach(visitClass);
         if (clsInfo.isInterface()) {
-            clsInfo.getClassesImplementing().forEach(visitClass);
+            clsInfo.getAllClassesImplementing().forEach(visitClass);
         }
 
         return overrides;
+    }
+
+    private static Class<?> loadClass(final String className) {
+        try {
+            return Class.forName(className, false, TestFinalDefault.class.getClassLoader());
+        } catch (final ClassNotFoundException e) {
+            throw new IllegalStateException("Could not load scanned class " + className, e);
+        }
+    }
+
+    private static Method loadMethod(final MethodInfo methodInfo) {
+        final String descriptor = methodInfo.getTypeDescriptorString();
+        return Arrays.stream(loadClass(methodInfo.getClassName()).getDeclaredMethods())
+                .filter(m -> m.getName().equals(methodInfo.getName()))
+                .filter(m -> MethodType.methodType(m.getReturnType(), m.getParameterTypes())
+                        .toMethodDescriptorString().equals(descriptor))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Could not find method " + methodInfo));
     }
 
     private static boolean overrides(final Method override, final Method target) {
