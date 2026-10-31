@@ -10,7 +10,7 @@ import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
-import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseMemoryColumnSourceFactory;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
@@ -126,7 +126,7 @@ public class SourceColumn implements SelectColumn {
 
     @Override
     public WritableColumnSource<?> newDestInstance(long size) {
-        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, sourceColumn.getType(),
+        return SparseMemoryColumnSourceFactory.getMemoryColumnSource(size, sourceColumn.getType(),
                 sourceColumn.getComponentType());
     }
 
