@@ -63,6 +63,19 @@ public interface DataIndex extends BasicDataIndex {
                 @NotNull Chunk<? extends Values>[] keyChunks,
                 @NotNull WritableLongChunk<RowKeys> rowKeys,
                 boolean usePrev);
+
+        /**
+         * Whether the lookups made through this since it was created answered for the index's state in {@code usePrev}
+         * space. A refreshing index may change the structure its lookups read while a reader that is not on the update
+         * graph thread uses it; a caller in such a reader checks this after its lookups, and discards their results if
+         * it is {@code false}.
+         *
+         * @param usePrev Whether the lookups were in previous space
+         * @return Whether no change to the index overlapped the lookups made through this since it was created
+         */
+        default boolean lookupsValid(final boolean usePrev) {
+            return true;
+        }
     }
 
     /**
@@ -140,6 +153,8 @@ public interface DataIndex extends BasicDataIndex {
         }
         Assert.neq(indexToCallerOffsetMap.length, "indexToCallerOffsetMap.length", 1);
 
+        // Created now, so that it answers lookupsValid for the lookups made through the result since its creation.
+        final RowKeyLookup creationLookup = rowKeyLookup();
         return new RowKeyLookup() {
             // This is the complex key we need to provide to our lookup function.
             final Object[] indexKey = new Object[indexToCallerOffsetMap.length];
@@ -177,6 +192,11 @@ public interface DataIndex extends BasicDataIndex {
                     indexLookup = rowKeyLookup();
                 }
                 indexLookup.apply(indexKeyChunks, rowKeys, usePrev);
+            }
+
+            @Override
+            public boolean lookupsValid(final boolean usePrev) {
+                return creationLookup.lookupsValid(usePrev);
             }
         };
     }

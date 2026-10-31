@@ -321,6 +321,39 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     }
 
     /**
+     * {@link #lookupIndexRowKeys(long, DataIndex.RowKeyLookup, boolean) Look up} the index row keys, or return null if
+     * a change to the index overlapped the lookups; see {@link DataIndex.RowKeyLookup#lookupsValid(boolean)}.
+     *
+     * @param kernelGeneration The value {@link SharedSetKernel#beginRead()} returned before the kernel was read
+     * @param rowKeyLookup The source data index row key lookup
+     * @param usePrev Whether to use previous values
+     * @return The matching index row keys, which the caller must close, or null if the lookups are not valid
+     */
+    @Nullable
+    private RowSet validIndexRowKeys(
+            final long kernelGeneration,
+            @NotNull final DataIndex.RowKeyLookup rowKeyLookup,
+            final boolean usePrev) {
+        final RowSet indexRowKeys;
+        try {
+            indexRowKeys = lookupIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev);
+        } catch (final ConstructSnapshot.SnapshotInconsistentException e) {
+            throw e;
+        } catch (final RuntimeException e) {
+            if (rowKeyLookup.lookupsValid(usePrev)) {
+                throw e;
+            }
+            // a change to the index during the lookups tore their reads
+            return null;
+        }
+        if (!rowKeyLookup.lookupsValid(usePrev)) {
+            indexRowKeys.close();
+            return null;
+        }
+        return indexRowKeys;
+    }
+
+    /**
      * Apply {@code action} to the index row set at each of {@code indexRowKeys}, reading them in chunks. The second of
      * the two phases described by {@link #lookupIndexRowKeys(long, DataIndex.RowKeyLookup, boolean)}; it reads only the
      * index, which is stable for the duration of this snapshot attempt, so it needs no further kernel generation
@@ -364,7 +397,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         // snapshot attempt; that triggers the normal retry path and is not an error. The batcher owns everything it
         // has gathered until it is built, so an abandoned attempt releases it; what is built is closed here.
         WritableRowSet matching = null;
-        try (final RowSet indexRowKeys = lookupIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev)) {
+        try (final RowSet indexRowKeys = validIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev)) {
+            if (indexRowKeys == null) {
+                // the index changed during the lookups, so the source's own columns are filtered instead
+                return filterLinear(selection, inclusion, usePrev);
+            }
             // One row set per index row, and the lookup has already reduced the values to distinct row keys.
             try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(indexRowKeys.size())) {
                 // An index row set holds every source row for its key, so it is clipped to selection on the way in.
@@ -401,7 +438,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         final long kernelGeneration = sharedSet.beginRead();
 
         final WritableRowSet matching;
-        try (final RowSet indexRowKeys = lookupIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev)) {
+        try (final RowSet indexRowKeys = validIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev)) {
+            if (indexRowKeys == null) {
+                // the index changed during the lookups, so the source's own columns are filtered instead
+                return filterLinear(selection, inclusion, usePrev);
+            }
             // Set keys project onto a subset of their columns here, so many of them can land on the same index row.
             // The lookup collects the row keys into a row set, which leaves each index row set taken once.
             final WritableRowSet possiblyMatching;

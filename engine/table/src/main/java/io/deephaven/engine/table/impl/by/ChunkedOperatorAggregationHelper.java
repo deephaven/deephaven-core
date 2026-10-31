@@ -33,6 +33,7 @@ import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseableList;
@@ -246,10 +247,15 @@ public class ChunkedOperatorAggregationHelper {
                 // noinspection ConstantConditions,unchecked
                 keyColumnsCopied[kci] = ArrayBackedColumnSource.getMemoryColumnSource(outputPosition.get(),
                         keyColumnsRaw[kci].getType());
-                resultColumnSourceMap.put(keyNames[kci], keyColumnsCopied[kci]);
-            } else {
-                resultColumnSourceMap.put(keyNames[kci], keyColumnsRaw[kci]);
             }
+            final ColumnSource<?> resultKeySource = input.isRefreshing() ? keyColumnsCopied[kci] : keyColumnsRaw[kci];
+            // A single key column answers match filters by probing the hash table. The symbol table manager builds its
+            // lookup map of every key on the first probe, so its key column is scanned instead.
+            resultColumnSourceMap.put(keyNames[kci], keyHashTableSources.length == 1
+                    && !(stateManager instanceof StaticSymbolTableChunkedOperatorAggregationStateManager)
+                            ? AggregationKeyColumnSource.create(resultKeySource, stateManager,
+                                    keySources[kci] != reinterpretedKeySources[kci], input.getUpdateGraph())
+                            : resultKeySource);
         }
         ac.getResultColumns(resultColumnSourceMap);
 
@@ -293,7 +299,7 @@ public class ChunkedOperatorAggregationHelper {
 
                 @Override
                 public void onUpdate(@NotNull final TableUpdate upstream) {
-                    incrementalStateManager.beginUpdateCycle();
+                    incrementalStateManager.beginUpdateCycle(getUpdateGraph().clock().currentStep());
 
                     final TableUpdate upstreamToUse = isBlink ? adjustForBlinkTable(upstream) : upstream;
                     if (upstreamToUse.empty()) {
@@ -363,6 +369,10 @@ public class ChunkedOperatorAggregationHelper {
                         control.getTargetLoadFactor());
             }
         }
+        final IncrementalOperatorAggregationStateManager incrementalStateManager =
+                stateManager instanceof IncrementalOperatorAggregationStateManager
+                        ? (IncrementalOperatorAggregationStateManager) stateManager
+                        : null;
         ac.supplyRowLookup(() -> new AggregationRowLookup() {
             @Override
             public int get(@Nullable final Object key) {
@@ -374,6 +384,13 @@ public class ChunkedOperatorAggregationHelper {
                     @NotNull final Chunk<? extends Values>[] keyChunks,
                     @NotNull final WritableLongChunk<RowKeys> rowKeys) {
                 stateManager.findPositionsForKeys(keyChunks, rowKeys);
+            }
+
+            @Override
+            public long updateCycleStep() {
+                return incrementalStateManager == null
+                        ? QueryConstants.NULL_LONG
+                        : incrementalStateManager.updateCycleStep();
             }
         });
         return stateManager;

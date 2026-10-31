@@ -10,6 +10,7 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
@@ -76,6 +77,17 @@ public interface AggregationRowLookup {
      *        is set to the number of keys
      */
     void get(@NotNull Chunk<? extends Values>[] keyChunks, @NotNull WritableLongChunk<RowKeys> rowKeys);
+
+    /**
+     * The step of the last update cycle in which the aggregation began to change the structure this lookup reads, for a
+     * reader on another thread; see {@link IncrementalOperatorAggregationStateManager#updateCycleStep()}.
+     *
+     * @return The step of the last update cycle that began, or {@link QueryConstants#NULL_LONG} if the structure never
+     *         changes
+     */
+    default long updateCycleStep() {
+        return QueryConstants.NULL_LONG;
+    }
 
     /**
      * Implement {@link #get(Chunk[], WritableLongChunk)} by boxing each key and calling {@link #get(Object)} on
