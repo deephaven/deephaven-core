@@ -333,6 +333,36 @@ public class TestOperationInitializerJobScheduler {
         });
     }
 
+    /**
+     * A job whose future is already done returns from its wait at once, rather than running a queued sibling that is
+     * waiting for it to finish.
+     */
+    @Test
+    public void testJobWithADoneFutureDoesNotRunASiblingWaitingForIt() throws InterruptedException {
+        blockPool();
+        withTimeout(() -> {
+            final OperationInitializerJobScheduler scheduler = new OperationInitializerJobScheduler(pool);
+            final CountDownLatch firstFinished = new CountDownLatch(1);
+            final CompletableFuture<Boolean> done = new CompletableFuture<>();
+            scheduler.submit(ExecutionContext.getContext(), () -> {
+                scheduler.submit(ExecutionContext.getContext(), () -> {
+                    try {
+                        done.complete(firstFinished.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+                    } catch (final InterruptedException e) {
+                        done.completeExceptionally(e);
+                    }
+                }, null, done::completeExceptionally);
+                try {
+                    scheduler.awaitCompletion(CompletableFuture.completedFuture(null));
+                } catch (final InterruptedException | ExecutionException e) {
+                    done.completeExceptionally(e);
+                }
+                firstFinished.countDown();
+            }, null, done::completeExceptionally);
+            assertThat(scheduler.awaitCompletion(done)).isTrue();
+        });
+    }
+
     /** An inline initializer runs each job inside submit, so there is nothing left for the waiting thread to run. */
     @Test
     public void testInlineInitializerLeavesNothingToRun() throws InterruptedException, ExecutionException {

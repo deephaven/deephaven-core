@@ -111,6 +111,11 @@ public class OperationInitializerJobScheduler implements JobScheduler {
                 // released
                 future.cancel(false);
             }
+            if (jobsRunningHere.intValue() > 0 && future.isDone()) {
+                // A job waiting for its own scheduler runs other jobs only while it must wait: one of them may be
+                // waiting for this job to finish.
+                break;
+            }
             final Job job = claimNextPendingJob();
             if (job != null) {
                 runOnWaitingThread(job);
