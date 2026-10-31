@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -572,6 +573,129 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharBitmapLeaf.java");
         charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterAdaptiveSparseArraySource.java");
+        replicateObjectAdaptiveSparseArraySource();
+    }
+
+    private static void replicateObjectAdaptiveSparseArraySource() throws IOException {
+        for (final String leaf : new String[] {"CharCompactLeaf", "CharSortedLeaf", "CharBitmapLeaf"}) {
+            final File leafFile = new File(charToObject(TASK,
+                    "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/" + leaf + ".java"));
+            List<String> lines = FileUtils.readLines(leafFile, Charset.defaultCharset());
+            if (lines.contains("import static io.deephaven.util.QueryConstants.NULL_OBJECT;")) {
+                lines = removeImport(lines, "import static io.deephaven.util.QueryConstants.NULL_OBJECT;");
+            }
+            lines = globalReplacements(lines,
+                    "ObjectChunk<\\?>", "ObjectChunk<Object, ?>",
+                    "NULL_OBJECT", "null",
+                    "Object.BYTES", "REFERENCE_SIZE");
+            if (lines.stream().anyMatch(line -> line.contains("REFERENCE_SIZE"))) {
+                lines = addReferenceSize(lines);
+            }
+            FileUtils.writeLines(leafFile, lines);
+        }
+
+        final File sourceFile = new File(charToObject(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterAdaptiveSparseArraySource.java"));
+        List<String> lines = FileUtils.readLines(sourceFile, Charset.defaultCharset());
+        lines = removeRegion(lines, "boxed methods");
+        lines = removeRegion(lines, "boxing imports");
+        lines = removeImport(lines, "import static io.deephaven.util.QueryConstants.NULL_OBJECT;");
+        lines = globalReplacements(lines,
+                "public class ObjectAdaptiveSparseArraySource extends AbstractColumnSource<Object>",
+                "public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>",
+                "MutableColumnSourceGetDefaults.ForObject ", "MutableColumnSourceGetDefaults.ForObject<T> ",
+                "WritableColumnSource<Object>", "WritableColumnSource<T>",
+                "WritableObjectChunk<\\? super Values>", "WritableObjectChunk<Object, ? super Values>",
+                "ObjectChunk<\\? extends Values>", "ObjectChunk<Object, ? extends Values>",
+                "public ObjectChunk<Values>", "public ObjectChunk<T, Values>",
+                "copyFromTypedArray", "copyFromArray",
+                "copyToTypedArray", "copyToArray",
+                "public final void set\\(final long key, final Object value\\)",
+                "public final void set(final long key, final T value)",
+                "getObject\\(", "get(",
+                "NULL_OBJECT", "null",
+                "Object.BYTES", "REFERENCE_SIZE");
+        lines = replaceRegion(lines, "constructor", Arrays.asList(
+                "    public ObjectAdaptiveSparseArraySource(final Class<T> type) {",
+                "        this(type, null);",
+                "    }",
+                "",
+                "    public ObjectAdaptiveSparseArraySource(final Class<T> type, final Class<?> componentType) {",
+                "        this(type, componentType, DEFAULT_SORTED_THRESHOLD, DEFAULT_COMPACT_THRESHOLD);",
+                "    }",
+                "",
+                "    /**",
+                "     * @param type the type of the values",
+                "     * @param componentType the component type of the values, if they are arrays or vectors",
+                "     * @param sortedThreshold the largest number of values a sorted leaf holds",
+                "     * @param compactThreshold the largest number of values a sorted or bitmap leaf holds, from 1 to the",
+                "     *        block size",
+                "     */",
+                "    ObjectAdaptiveSparseArraySource(",
+                "            final Class<T> type,",
+                "            final Class<?> componentType,",
+                "            final int sortedThreshold,",
+                "            final int compactThreshold) {",
+                "        super(type, componentType);",
+                "        this.sortedThreshold = checkSortedThreshold(sortedThreshold, compactThreshold);",
+                "        this.compactThreshold = compactThreshold;",
+                "    }"));
+        lines = replaceRegion(lines, "primitive get", Arrays.asList(
+                "    @Override",
+                "    public final T get(final long rowKey) {",
+                "        if (rowKey < 0) {",
+                "            return null;",
+                "        }",
+                "        final Level2 level2 = getLevel2(rowKey);",
+                "        if (level2 == null) {",
+                "            return null;",
+                "        }",
+                "        final int block2 = block2(rowKey);",
+                "        final int offset = (int) (rowKey & INDEX_MASK);",
+                "        final Object[] block = level2.getBlock(block2);",
+                "        if (block != null) {",
+                "            // noinspection unchecked",
+                "            return (T) block[offset];",
+                "        }",
+                "        final ObjectCompactLeaf compact = level2.getCompact(block2);",
+                "        // noinspection unchecked",
+                "        return compact == null ? null : (T) compact.get(offset);",
+                "    }",
+                "",
+                "    @Override",
+                "    public final T getPrev(final long rowKey) {",
+                "        return get(rowKey);",
+                "    }"));
+        lines = addReferenceSize(lines);
+        FileUtils.writeLines(sourceFile, lines);
+    }
+
+    /**
+     * Declare {@code REFERENCE_SIZE}, the bytes an object reference occupies, after the opening line of the class.
+     */
+    private static List<String> addReferenceSize(final List<String> lines) {
+        final int classLine = findClassBodyStart(lines);
+        final List<String> result = new ArrayList<>(lines.subList(0, classLine + 1));
+        result.add("    private static final int REFERENCE_SIZE = 8;");
+        result.add("");
+        result.addAll(lines.subList(classLine + 1, lines.size()));
+        return result;
+    }
+
+    /**
+     * @return the index of the line that opens the body of the first top level class
+     */
+    private static int findClassBodyStart(final List<String> lines) {
+        for (int ii = 0; ii < lines.size(); ++ii) {
+            if (lines.get(ii).startsWith("public ") && lines.get(ii).contains(" class ")) {
+                for (int jj = ii; jj < lines.size(); ++jj) {
+                    if (lines.get(jj).endsWith("{")) {
+                        return jj;
+                    }
+                }
+            }
+        }
+        throw new IllegalStateException("No class declaration found");
     }
 
     private static void replicateChunks() throws IOException {
