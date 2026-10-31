@@ -19,6 +19,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftCallback;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
@@ -57,11 +58,17 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * the same thresholds, or, once more offsets are recorded than a compact leaf holds, a full block that snapshots the
  * whole leaf. A row without a recorded value has not changed this cycle, so its previous value is its current value.
  * The previous values are discarded when the cycle completes.
+ * <p>
+ * For parallel population, {@link #prepareForParallelPopulation(RowSequence, boolean)} allocates the page table above
+ * each leaf to be written, for current and previous values, so that writers of different leaves change no shared
+ * structure. When the writers' divisions are aligned to leaves, each writer builds and records its own leaves.
+ * Otherwise it also builds each leaf with every offset to be written, holding null, and records the previous values, so
+ * that writers only store values.
  */
 public class LongAdaptiveSparseArraySource extends AbstractColumnSource<Long>
         implements MutableColumnSourceGetDefaults.ForLong /* MIXIN_IMPLS */, WritableColumnSource<Long>,
         FillUnordered<Values>, InMemoryColumnSource, PossiblyImmutableColumnSource, RowSetShiftCallback,
-        SparseBlockColumnSource {
+        SparseBlockColumnSource, WritableSourceWithPrepareForParallelPopulation {
 
     /** The largest number of values a sorted leaf holds. */
     public static final int DEFAULT_SORTED_THRESHOLD = 16;
@@ -90,6 +97,15 @@ public class LongAdaptiveSparseArraySource extends AbstractColumnSource<Long>
     private transient RowSet blocks2ToClear;
     private transient RowSet blocks1ToClear;
     private transient boolean emptyResult;
+
+    /**
+     * The clock step of the last call to {@link #prepareForParallelPopulation(RowSequence, boolean)}.
+     */
+    private transient long prepareClockStep = -1;
+    /**
+     * Whether that call built the leaves to be written and recorded their previous values.
+     */
+    private transient boolean preparedLeaves;
 
     /**
      * Whether the values are known never to change, as for the result of a static select.
@@ -295,6 +311,26 @@ public class LongAdaptiveSparseArraySource extends AbstractColumnSource<Long>
             compacts[index] = compact;
         }
 
+        /**
+         * Allocate what writing the leaf at {@code index} may need, so that making it a block or a compact leaf writes
+         * only its own slot.
+         *
+         * @param mayBeBlock whether the leaf may become a full block
+         * @param mayBeCompact whether the leaf may become a compact leaf
+         */
+        private void prepareIndex(final int index, final boolean mayBeBlock, final boolean mayBeCompact) {
+            ensureIndex(index);
+            if (oneIndex != MANY_CHILDREN) {
+                return;
+            }
+            if (mayBeBlock && blocks == null) {
+                blocks = new long[BLOCK2_SIZE][];
+            }
+            if (mayBeCompact && compacts == null) {
+                compacts = new LongCompactLeaf[BLOCK2_SIZE];
+            }
+        }
+
         /** Release the leaf at {@code index}, if any. */
         private void clear(final int index) {
             if (oneIndex == index) {
@@ -404,7 +440,7 @@ public class LongAdaptiveSparseArraySource extends AbstractColumnSource<Long>
 
     /**
      * Make the leaf at {@code block2} of {@code level2}, whose current compact leaf is {@code compact} (or null if the
-     * leaf is absent), ready for {@code count} more values.
+     * leaf is absent), ready for {@code count} more offsets.
      *
      * @return the compact leaf to write, or null if the leaf is now a full block
      */
@@ -424,7 +460,6 @@ public class LongAdaptiveSparseArraySource extends AbstractColumnSource<Long>
         }
         final int newSize = compact.size() + count;
         if (newSize > compactThreshold) {
-            // some of the offsets may already hold values, so this may convert a leaf that would have fit
             level2.setBlock(block2, toBlock(compact));
             return null;
         }
@@ -453,7 +488,70 @@ public class LongAdaptiveSparseArraySource extends AbstractColumnSource<Long>
      * @return whether writes must record previous values
      */
     private boolean shouldTrackPrevious() {
-        return prevFlusher != null;
+        return prevFlusher != null && !(preparedLeaves && prepareClockStep == updateGraph.clock().currentStep());
+    }
+
+    @Override
+    public int parallelPopulationAlignment() {
+        return BLOCK_SIZE;
+    }
+
+    @Override
+    public void prepareForParallelPopulation(final RowSequence changedRows) {
+        prepareForParallelPopulation(changedRows, false);
+    }
+
+    @Override
+    public void prepareForParallelPopulation(final RowSequence changedRows, final boolean alignedDivisions) {
+        final long currentStep = updateGraph.clock().currentStep();
+        if (prepareClockStep == currentStep) {
+            throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");
+        }
+        prepareClockStep = currentStep;
+        preparedLeaves = !alignedDivisions;
+        if (changedRows.isEmpty()) {
+            return;
+        }
+        final boolean trackPrevious = prevFlusher != null;
+        final int[] offsets = alignedDivisions ? null : new int[BLOCK_SIZE];
+        final MutableInt offsetCount = new MutableInt();
+        try (final RowSequence.Iterator it = changedRows.getRowSequenceIterator()) {
+            while (it.hasMore()) {
+                final long firstKey = it.peekNextKey();
+                final RowSequence leafKeys = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
+                final int count = leafKeys.intSize();
+                final int block2 = block2(firstKey);
+                final Level2 level2 = ensureLevel2(firstKey);
+                final LongCompactLeaf compact = level2.getCompact(block2);
+                final boolean isBlock = level2.getBlock(block2) != null;
+                final boolean mayBeBlock =
+                        !isBlock && (compact == null ? 0 : compact.size()) + count > compactThreshold;
+                level2.prepareIndex(block2, mayBeBlock, !isBlock && !mayBeBlock);
+                if (trackPrevious) {
+                    final Level2 prevLevel2 = ensurePrevLevel2(firstKey);
+                    final LongCompactLeaf recorded = prevLevel2.getCompact(block2);
+                    final boolean mayBeSnapshot = prevLevel2.getBlock(block2) == null
+                            && (recorded == null ? 0 : recorded.size()) + count > compactThreshold;
+                    prevLevel2.prepareIndex(block2, mayBeSnapshot, true);
+                }
+                if (alignedDivisions) {
+                    continue;
+                }
+                offsetCount.set(0);
+                leafKeys.forAllRowKeys(
+                        (final long key) -> offsets[offsetCount.getAndIncrement()] = (int) (key & INDEX_MASK));
+                if (trackPrevious) {
+                    recordPrevious(firstKey, level2, block2, offsets, count);
+                }
+                if (!isBlock) {
+                    final int absent = compact == null ? count : compact.countAbsent(offsets, count);
+                    final LongCompactLeaf prepared = prepareCompactLeaf(level2, block2, compact, absent);
+                    if (prepared != null) {
+                        prepared.insertAbsent(offsets, count);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -1127,8 +1225,9 @@ public class LongAdaptiveSparseArraySource extends AbstractColumnSource<Long>
                 }
                 long[] block = level2.getBlock(block2);
                 if (block == null) {
-                    final LongCompactLeaf compact =
-                            prepareCompactLeaf(level2, block2, level2.getCompact(block2), count);
+                    final LongCompactLeaf existing = level2.getCompact(block2);
+                    final int absent = existing == null ? count : existing.countAbsent(offsets, count);
+                    final LongCompactLeaf compact = prepareCompactLeaf(level2, block2, existing, absent);
                     if (compact != null) {
                         compact.putSorted(offsets, values, srcOffset, count);
                         srcOffset += count;

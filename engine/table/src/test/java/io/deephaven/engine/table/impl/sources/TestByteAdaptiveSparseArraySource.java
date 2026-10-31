@@ -26,7 +26,12 @@ import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
@@ -169,6 +174,94 @@ public class TestByteAdaptiveSparseArraySource extends AbstractByteColumnSourceT
             assertMatches(source, expectedPrev, random, true);
             updateGraph.completeCycleForUnitTests();
             assertMatches(source, expected, random, true);
+        }
+    }
+
+    @Test
+    public void testParallelPopulation() throws Exception {
+        for (final boolean aligned : new boolean[] {true, false}) {
+            for (final int compactThreshold : new int[] {4,
+                    ByteAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD}) {
+                checkParallelPopulation(new ByteAdaptiveSparseArraySource(16, compactThreshold), aligned,
+                        compactThreshold + (aligned ? 1 : 0));
+            }
+        }
+    }
+
+    /**
+     * Populate random rows from several threads after preparing for parallel population, in update cycles, and check
+     * the current and previous values.
+     */
+    private static void checkParallelPopulation(
+            final ByteAdaptiveSparseArraySource source,
+            final boolean aligned,
+            final int seed) throws Exception {
+        final Random random = new Random(seed);
+        final Long2ByteOpenHashMap expected = new Long2ByteOpenHashMap();
+        expected.defaultReturnValue(NULL_BYTE);
+        source.startTrackingPrevValues();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final ExecutorService executor = Executors.newFixedThreadPool(4);
+        try {
+            for (int cycle = 0; cycle < 20; ++cycle) {
+                final Long2ByteOpenHashMap expectedPrev = new Long2ByteOpenHashMap(expected);
+                expectedPrev.defaultReturnValue(NULL_BYTE);
+                updateGraph.startCycleForUnitTests();
+                try (final RowSet rows = randomRowSet(random, 4000)) {
+                    final byte[] values = new byte[rows.intSize()];
+                    final MutableInt position = new MutableInt(0);
+                    rows.forAllRowKeys(key -> {
+                        final byte value = randomValue(random);
+                        values[position.get()] = value;
+                        position.increment();
+                        expected.put(key, value);
+                    });
+                    source.prepareForParallelPopulation(rows, aligned);
+                    // aligned divisions end at a leaf boundary, others anywhere
+                    final List<Future<?>> futures = new ArrayList<>();
+                    long start = 0;
+                    while (start < rows.size()) {
+                        long end = Math.min(rows.size(), start + 1 + random.nextInt(300));
+                        if (aligned && end < rows.size()) {
+                            final long leafEnd = rows.get(end - 1) | (BLOCK_SIZE - 1);
+                            end = rows.find(leafEnd + 1);
+                            end = end < 0 ? -end - 1 : end;
+                        }
+                        final long divisionStart = start;
+                        final long divisionEnd = end;
+                        futures.add(executor.submit(() -> fillDivision(source, rows, values, divisionStart,
+                                divisionEnd)));
+                        start = end;
+                    }
+                    for (final Future<?> future : futures) {
+                        future.get();
+                    }
+                }
+                assertMatches(source, expected, random, false);
+                assertMatches(source, expectedPrev, random, true);
+                updateGraph.completeCycleForUnitTests();
+                assertMatches(source, expected, random, true);
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    /**
+     * Write positions {@code start} through {@code end - 1} of {@code rows} with their {@code values}.
+     */
+    private static void fillDivision(
+            final ByteAdaptiveSparseArraySource source,
+            final RowSet rows,
+            final byte[] values,
+            final long start,
+            final long end) {
+        try (final RowSet division = rows.subSetByPositionRange(start, end);
+                final WritableByteChunk<Values> chunk = WritableByteChunk.makeWritableChunk(division.intSize());
+                final ChunkSink.FillFromContext context = source.makeFillFromContext(division.intSize())) {
+            chunk.copyFromTypedArray(values, (int) start, 0, division.intSize());
+            chunk.setSize(division.intSize());
+            source.fillFromChunk(context, chunk, division);
         }
     }
 

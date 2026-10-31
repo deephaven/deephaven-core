@@ -180,6 +180,18 @@ public final class LongSortedLeaf extends LongCompactLeaf {
             return;
         }
         final int newSize = size + countAbsent(offsets, count);
+        if (newSize == size) {
+            // both lists ascend, so one pass finds the index of each offset
+            int index = 0;
+            for (int ii = 0; ii < count; ++ii) {
+                final int offset = offsets[ii];
+                while (offsetAt(index) < offset) {
+                    ++index;
+                }
+                values[index++] = src.get(srcOffset + ii);
+            }
+            return;
+        }
         ensureCapacity(newSize);
         // merge from the highest offset down, so that each entry moves at most once and lands above any entry not yet
         // moved
@@ -197,6 +209,35 @@ public final class LongSortedLeaf extends LongCompactLeaf {
                 }
                 setOffset(dest, offset);
                 values[dest] = src.get(srcOffset + ii--);
+            }
+            --dest;
+        }
+        size = newSize;
+    }
+
+    @Override
+    public void insertAbsent(final int[] offsets, final int count) {
+        final int newSize = size + countAbsent(offsets, count);
+        if (newSize == size) {
+            return;
+        }
+        ensureCapacity(newSize);
+        // merge from the highest offset down, as putSorted does, keeping the values of the offsets already present
+        int index = size - 1;
+        int dest = newSize - 1;
+        for (int ii = count - 1; ii >= 0;) {
+            final int offset = offsets[ii];
+            final int existing = index >= 0 ? offsetAt(index) : -1;
+            if (existing >= offset) {
+                setOffset(dest, existing);
+                values[dest] = values[index--];
+                if (existing == offset) {
+                    --ii;
+                }
+            } else {
+                setOffset(dest, offset);
+                values[dest] = NULL_LONG;
+                --ii;
             }
             --dest;
         }
