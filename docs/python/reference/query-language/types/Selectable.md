@@ -1,0 +1,112 @@
+---
+title: Selectable
+---
+
+A [`Selectable`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable) is a column definition: a formula such as `NewColumn = ExistingColumn * 2`, optionally with concurrency controls attached. [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) accept it in place of a [formula string](../../../how-to-guides/formulas.md). [`view`](../../table-operations/select/view.md), [`update_view`](../../table-operations/select/update-view.md), and [`lazy_update`](../../table-operations/select/lazy-update.md) accept formula strings only.
+
+## Why use a Selectable?
+
+Most formulas need no `Selectable` object. A `Selectable` adds concurrency controls to a column formula, so it matters only when a formula needs those controls.
+
+### Do you need a Selectable at all?
+
+A [formula string](../../../how-to-guides/formulas.md) passed to [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md) becomes a `Selectable` internally, and Deephaven [parallelizes](../../../conceptual/query-engine/parallelization.md) it by default. A string is enough for a formula that meets both of these conditions:
+
+- It uses only values from the current row, such as `"Total = Price * Quantity"`.
+- It has no side effects. It does not modify global variables, write to files, or depend on processing order.
+
+Such a formula gains nothing from an explicit `Selectable` object. A formula that calls a Python function runs in parallel only on a free-threaded Python build, as described under [`with_serial`](#with_serial).
+
+### When you need explicit control
+
+A formula that reads or writes shared state can give wrong results when threads process rows in parallel, unless its result is the same for any row order. Such a formula needs a `Selectable` with one of these controls:
+
+- [`with_serial`](./ConcurrencyControl.md#with_serial): the formula evaluates its rows in row set order, never in parallel. Typical cases are:
+  - A counter or accumulator that increments for each row.
+  - Logging or file writes that must happen sequentially.
+  - A formula whose result for row N depends on what happened in row N-1.
+- [Barriers](./Barrier.md): one column finishes all of its rows before another column starts. A [Barrier](./Barrier.md) does not make a column serial, so a column that writes state that is not thread-safe also needs [`with_serial`](./ConcurrencyControl.md#with_serial). A column that only reads state that a Barrier has already finalized does not.
+
+See [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide for broader context.
+
+## Create a Selectable
+
+[`Selectable.parse`](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable.parse) creates a `Selectable` from a [formula string](../../../how-to-guides/formulas.md). The string follows the same `"ColumnName = expression"` syntax as a [formula string](../../../how-to-guides/formulas.md) passed to [`select`](../../table-operations/select/select.md) or [`update`](../../table-operations/select/update.md).
+
+```python order=source,result
+from deephaven.table import Selectable
+from deephaven import empty_table
+
+source = empty_table(5).update("ExistingColumn = i")
+
+col = Selectable.parse("NewColumn = ExistingColumn * 2")
+result = source.update(col)
+```
+
+Chain a concurrency method onto the `Selectable` before passing it to a table operation. [Methods](#methods) describes them.
+
+## Methods
+
+A `Selectable` has the three methods defined in [`ConcurrencyControl`](./ConcurrencyControl.md): [`with_serial`](./ConcurrencyControl.md#with_serial), [`with_declared_barriers`](./ConcurrencyControl.md#with_declared_barriers), and [`with_respected_barriers`](./ConcurrencyControl.md#with_respected_barriers).
+
+### `with_serial`
+
+[`with_serial`](./ConcurrencyControl.md#with_serial) returns a `Selectable` that is serial, as [`ConcurrencyControl`](./ConcurrencyControl.md) defines the term: the column calculation never runs concurrently with itself, and it evaluates its rows one at a time in row set order.
+
+Without [`with_serial`](./ConcurrencyControl.md#with_serial), Deephaven can evaluate a column calculation in parallel under these conditions:
+
+- Deephaven considers a column calculation for parallel evaluation once it processes 4,194,304 rows or more. [`QueryTable.minimumParallelSelectRows`](../../../conceptual/query-table-configuration.md#parallel-processing-with-select) sets the row count.
+- The row count is the whole table on initialization, or the added and modified rows of each cycle on a refreshing table.
+- Deephaven also needs more than one worker thread.
+- A formula backed by a Python callback is eligible only on a free-threaded Python build. On a build that is not free-threaded, Deephaven never splits that column's rows across cores. That alone does not guarantee row set order, which only [`with_serial`](./ConcurrencyControl.md#with_serial) guarantees. See [Python formulas and free-threading](../../../conceptual/query-engine/parallelization.md#python-formulas-and-free-threading).
+
+The following example evaluates 10 rows, far below the parallelization threshold. It shows the ordering guarantee rather than a speedup.
+
+```python order=result
+from deephaven.table import Selectable
+from deephaven import empty_table
+
+counter = 0
+
+
+def get_next_id() -> int:
+    global counter
+    counter += 1
+    return counter
+
+
+col = Selectable.parse("ID = get_next_id()").with_serial()
+result = empty_table(10).update(col)
+```
+
+### `with_declared_barriers` and `with_respected_barriers`
+
+A [Barrier](./Barrier.md) is a synchronization object shared between columns. One column declares it, and another column respects it. The two roles are:
+
+- [`with_declared_barriers`](./ConcurrencyControl.md#with_declared_barriers): this column goes first. It computes all of its rows before any respecting column computes its rows.
+- [`with_respected_barriers`](./ConcurrencyControl.md#with_respected_barriers): this column waits. It computes no rows until the declaring column has finished.
+
+A [Barrier](./Barrier.md) orders columns relative to each other and does not make a column serial.
+
+See [Barrier](./Barrier.md) and [`ConcurrencyControl`](./ConcurrencyControl.md) for the full constraints and worked examples, and [Barriers](../../../conceptual/query-engine/parallelization.md#barriers) in the parallelization guide for broader context.
+
+## Table operations that accept a Selectable
+
+The table operations differ in what they accept:
+
+- [`select`](../../table-operations/select/select.md) and [`update`](../../table-operations/select/update.md) accept `Selectable` objects, so all three concurrency methods apply.
+- [`view`](../../table-operations/select/view.md), [`update_view`](../../table-operations/select/update-view.md), and [`lazy_update`](../../table-operations/select/lazy-update.md) accept [formula strings](../../../how-to-guides/formulas.md) only. They cannot take a `Selectable`, so none of the concurrency methods attach to their formulas.
+
+## Related documentation
+
+- [Filter](./Filter.md)
+- [Barrier](./Barrier.md)
+- [ConcurrencyControl](./ConcurrencyControl.md)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Formulas](../../../how-to-guides/formulas.md)
+- [`select`](../../table-operations/select/select.md)
+- [`update`](../../table-operations/select/update.md)
+- [`view`](../../table-operations/select/view.md)
+- [`update_view`](../../table-operations/select/update-view.md)
+- [`lazy_update`](../../table-operations/select/lazy-update.md)
+- [Selectable Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.table.html#deephaven.table.Selectable)

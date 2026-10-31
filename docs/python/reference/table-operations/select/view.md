@@ -2,22 +2,27 @@
 title: view
 ---
 
-The `view` method creates a new formula table that includes one column for each argument.
+The `view` method creates a new table that includes one formula column for each argument.
 
-When using `view`, the data being requested is not stored in memory. Rather, a formula is stored that is used to recalculate each cell every time it is accessed.
+A formula column is [not stored in memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand). Instead, the table stores the column's formula and recalculates each cell every time the cell is accessed.
 
 > [!NOTE]
-> The syntax for the `view` and [`select`](./select.md) methods is identical, as is the resulting table. `view` is recommended when:
+> `view` accepts only [formula strings](../../../how-to-guides/formulas.md). [`select`](./select.md) accepts [formula strings](../../../how-to-guides/formulas.md) and [`Selectable`](../../query-language/types/Selectable.md) objects. Both methods return a table with one column for each argument. `view` stores formulas and recalculates cells on access, while [`select`](./select.md) stores those columns [in memory](../../../how-to-guides/use-select-view-update.md#store-new-columns-in-memory-or-calculate-them-on-demand).
+>
+> `view` fits best when:
 >
 > 1. the formula is fast to compute,
 > 2. only a small portion of the data is being accessed,
 > 3. cells are accessed very few times, or
 > 4. memory usage must be minimized.
 >
-> When memory usage or computation needs to be reduced, consider using `select`, `update_view`, `update`, or `lazy_update`. These methods have different memory and computation expenses.
+> [`select`](./select.md), [`update_view`](./update-view.md), [`update`](./update.md), and [`lazy_update`](./lazy-update.md) differ from `view` in memory and computation costs.
 
 > [!CAUTION]
-> When using `view` or [`update_view`](./update-view.md), non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods should use [`select`](./select.md) or [`update`](./update.md) instead.
+> When using `view` or [`update_view`](./update-view.md), non-deterministic methods (e.g., random numbers, current time, or mutable structures) produce _unstable_ results. Downstream operations on these results produce _undefined_ behavior. Non-deterministic methods belong in [`select`](./select.md) or [`update`](./update.md) instead.
+
+> [!CAUTION]
+> `view` and [`update_view`](./update-view.md) do not support [serial execution](../../../conceptual/query-engine/parallelization.md#serial-execution) or respecting [Barriers](../../../conceptual/query-engine/parallelization.md#barriers). These operations compute results lazily, when cells are accessed, so rows can be evaluated in any order, at any time, and by any thread. This makes ordering guarantees meaningless. A formula that requires serial evaluation or must wait for another operation belongs in [`select`](./select.md) or [`update`](./update.md) instead.
 
 ## Syntax
 
@@ -41,7 +46,7 @@ Formulas to compute columns in the new table:
 
 ## Returns
 
-A new formula table that includes one column for each argument.
+A new table that includes one formula column for each argument. If `formulas` is an empty sequence, `view` returns the source table.
 
 ## Examples
 
@@ -79,7 +84,7 @@ source = new_table(
 result = source.view(formulas=["X = A", "B"])
 ```
 
-The following example creates a table containing column `A`, column `B` (renamed as `X`), and the square root of column `C` (renamed as `Y`). While no memory is used to store column `Y`, the square root function is evaluated every time a cell in column `Y` is accessed.
+The following example creates a table containing column `A`, column `B` (renamed as `X`), and the square root of column `C` (renamed as `Y`). While Deephaven stores no values for column `Y`, it evaluates the square root function every time a reader accesses a cell in column `Y`.
 
 ```python order=source,result
 from deephaven import new_table
@@ -92,12 +97,22 @@ source = new_table(
         int_col("C", [5, 6, 7, 8]),
     ]
 )
+
 result = source.view(formulas=["A", "X = B", "Y = sqrt(C)"])
 ```
 
 ## Related documentation
 
+- [Choose the right selection method for your query](../../../how-to-guides/use-select-view-update.md#choose-the-right-column-selection-method)
 - [Create a new table](../../../how-to-guides/new-and-empty-table.md#new_table)
+- [Formulas](../../../how-to-guides/formulas.md)
 - [How to select, view, and update data](../../../how-to-guides/use-select-view-update.md)
+- [Parallelization](../../../conceptual/query-engine/parallelization.md)
+- [Selectable](../../query-language/types/Selectable.md)
+- [ConcurrencyControl](../../query-language/types/ConcurrencyControl.md)
+- [select](./select.md)
+- [update_view](./update-view.md)
+- [update](./update.md)
+- [lazy_update](./lazy-update.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/api/TableOperations.html#view(java.lang.String...))
 - [Pydoc](/core/pydoc/code/deephaven.table.html#deephaven.table.Table.view)
