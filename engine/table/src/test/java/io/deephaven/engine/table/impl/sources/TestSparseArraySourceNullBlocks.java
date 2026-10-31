@@ -176,7 +176,7 @@ public class TestSparseArraySourceNullBlocks {
             updateGraph().runWithinUnitTestCycle(() -> {
                 try (final RowSet candidates = i(unwrittenBlockKey, unwrittenBlock2Key, unwrittenBlock1Key);
                         final RowSet live = i(0)) {
-                    SparseArrayColumnSource.clearBlocksWithoutLiveRows(candidates, live, sparseSource);
+                    SparseBlockColumnSource.clearBlocksWithoutLiveRows(candidates, live, sparseSource);
                 }
             });
 
