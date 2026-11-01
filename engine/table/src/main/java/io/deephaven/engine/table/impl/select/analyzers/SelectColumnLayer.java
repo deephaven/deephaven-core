@@ -224,7 +224,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 final int alignment = resultTypeIsTableOrRowSet ? 1
                         : ((WritableSourceWithPrepareForParallelPopulation) writableSource)
                                 .parallelPopulationAlignment();
-                final List<TableUpdate> updates = alignment > 1
+                final boolean alignedDivisions = alignment > 1;
+                final List<TableUpdate> updates = alignedDivisions
                         ? divideAligned(upstream, divisionSize, alignment, firstAddedPosition)
                         : divideByCount(upstream, divisionSize);
 
@@ -235,7 +236,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 jobScheduler.submit(
                         executionContext,
                         () -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper, liveResultOwner, onSuccess,
-                                onError, updates, serialTableOperationsSafe, firstAddedPosition, alignment > 1),
+                                onError, updates, serialTableOperationsSafe, firstAddedPosition, alignedDivisions),
                         SelectColumnLayer.this, onError);
             } else {
                 jobScheduler.submit(
