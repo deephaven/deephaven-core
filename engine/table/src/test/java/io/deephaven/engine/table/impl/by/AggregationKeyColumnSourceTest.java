@@ -300,9 +300,10 @@ public class AggregationKeyColumnSourceTest {
     }
 
     /**
-     * Probe current values on another thread, and hold the probe in its first hash while an update cycle adds keys to
-     * the aggregation. The probe then completes, or throws, after the cycle; either way a cycle began after the step
-     * the probe read, so it is abandoned and the filter scans the column.
+     * Probe current values on another thread, and hold the probe in its first hash while an update cycle adds as many
+     * keys as the aggregation's initial hash table has slots, more than its maximum load factor allows, so that the
+     * update grows the hash table. The probe then completes, or throws, after the cycle; either way a cycle began after
+     * the step the probe read, so it is abandoned and the filter scans the column.
      */
     private static void checkProbeOverlappingUpdate(final MatchOptions options, final boolean probeThrows)
             throws Exception {
@@ -324,7 +325,9 @@ public class AggregationKeyColumnSourceTest {
             });
             assertTrue(probeValue.entered.await(30, TimeUnit.SECONDS));
 
-            final int added = 64;
+            final int added = AggregationControl.DEFAULT.initialHashTableSize(source);
+            // a table that holds as many keys as it has slots is over any maximum load factor below one
+            assertTrue(AggregationControl.DEFAULT.getMaximumLoadFactor() < 1);
             updateGraph.runWithinUnitTestCycle(() -> {
                 final GatedKey[] keys = new GatedKey[added];
                 final int[] values = new int[added];
