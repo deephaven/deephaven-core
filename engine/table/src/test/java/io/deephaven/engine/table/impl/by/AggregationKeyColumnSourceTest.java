@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
@@ -33,7 +34,10 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
@@ -48,6 +52,7 @@ import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class AggregationKeyColumnSourceTest {
@@ -215,6 +220,150 @@ public class AggregationKeyColumnSourceTest {
             assertTableEquals(scanned(lastBy, filter), filtered);
         } finally {
             pool.shutdownNow();
+        }
+    }
+
+    @Test
+    public void testProbeOverlappingAnUpdateIsAbandoned() throws Exception {
+        checkProbeOverlappingUpdate(MatchOptions.REGULAR, false);
+        checkProbeOverlappingUpdate(MatchOptions.INVERTED, false);
+    }
+
+    @Test
+    public void testProbeThatThrowsDuringAnUpdateIsAbandoned() throws Exception {
+        checkProbeOverlappingUpdate(MatchOptions.REGULAR, true);
+        checkProbeOverlappingUpdate(MatchOptions.INVERTED, true);
+    }
+
+    @Test
+    public void testProbeThatThrowsWithoutAnUpdateFails() throws Exception {
+        final QueryTable source = testRefreshingTable(i(2, 4).toTracking(),
+                col("Key", new GatedKey(3), new GatedKey(5)), intCol("Value", 1, 2));
+        final QueryTable lastBy = (QueryTable) source.lastBy("Key");
+        final GatedKey probeValue = new GatedKey(3);
+        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "Key", probeValue);
+        filter.init(lastBy.getDefinition());
+        final ExecutionContext context = ExecutionContext.getContext();
+        final ExecutorService pool = Executors.newSingleThreadExecutor();
+        try {
+            probeValue.arm(true);
+            final Future<PushdownResult> probe = pool.submit(() -> {
+                try (final SafeCloseable ignored = context.open()) {
+                    return pushdown(keySource(lastBy), filter, lastBy.getRowSet(), false);
+                }
+            });
+            assertTrue(probeValue.entered.await(30, TimeUnit.SECONDS));
+            probeValue.release.countDown();
+            final ExecutionException failure =
+                    assertThrows(ExecutionException.class, () -> probe.get(30, TimeUnit.SECONDS));
+            assertTrue(failure.getCause() instanceof IllegalStateException);
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    /**
+     * Probe current values on another thread, and hold the probe in its first hash while an update cycle adds enough
+     * keys to rehash the aggregation's hash table. The probe then completes, or throws, and is abandoned either way, so
+     * that the filter scans the column.
+     */
+    private static void checkProbeOverlappingUpdate(final MatchOptions options, final boolean probeThrows)
+            throws Exception {
+        final QueryTable source = testRefreshingTable(i(2, 4).toTracking(),
+                col("Key", new GatedKey(3), new GatedKey(5)), intCol("Value", 1, 2));
+        final QueryTable lastBy = (QueryTable) source.lastBy("Key");
+        final GatedKey probeValue = new GatedKey(3);
+        final MatchFilter filter = new MatchFilter(options, "Key", probeValue);
+        filter.init(lastBy.getDefinition());
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final ExecutionContext context = ExecutionContext.getContext();
+        final ExecutorService pool = Executors.newSingleThreadExecutor();
+        try (final RowSet selection = lastBy.getRowSet().copy()) {
+            probeValue.arm(probeThrows);
+            final Future<PushdownResult> probe = pool.submit(() -> {
+                try (final SafeCloseable ignored = context.open()) {
+                    return pushdown(keySource(lastBy), filter, selection, false);
+                }
+            });
+            assertTrue(probeValue.entered.await(30, TimeUnit.SECONDS));
+
+            final int added = 4096;
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final GatedKey[] keys = new GatedKey[added];
+                final int[] values = new int[added];
+                for (int ii = 0; ii < added; ++ii) {
+                    keys[ii] = new GatedKey(100 + ii);
+                    values[ii] = ii;
+                }
+                final RowSet rows = RowSetFactory.fromRange(10, 10 + added - 1);
+                addToTable(source, rows, col("Key", keys), intCol("Value", values));
+                source.notifyListeners(rows, i(), i());
+            });
+            assertEquals(2 + added, lastBy.size());
+
+            probeValue.release.countDown();
+            try (final PushdownResult result = probe.get(30, TimeUnit.SECONDS)) {
+                assertEquals(selection, result.maybeMatch());
+                assertTrue(result.match().isEmpty());
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+        assertTableEquals(scanned(lastBy, filter), lastBy.where(filter.copy()));
+    }
+
+    private static AggregationKeyColumnSource<?> keySource(final Table table) {
+        return (AggregationKeyColumnSource<?>) table.getColumnSource("Key");
+    }
+
+    /**
+     * An aggregation key whose hash, once {@link #arm armed}, signals {@link #entered} and waits for {@link #release}
+     * the first time it is computed, then returns or throws.
+     */
+    private static final class GatedKey {
+        private final int value;
+        private final CountDownLatch entered = new CountDownLatch(1);
+        private final CountDownLatch release = new CountDownLatch(1);
+        private volatile boolean armed;
+        private volatile boolean throwOnRelease;
+
+        private GatedKey(final int value) {
+            this.value = value;
+        }
+
+        private void arm(final boolean throwOnRelease) {
+            this.throwOnRelease = throwOnRelease;
+            armed = true;
+        }
+
+        @Override
+        public int hashCode() {
+            if (armed) {
+                armed = false;
+                entered.countDown();
+                try {
+                    if (!release.await(30, TimeUnit.SECONDS)) {
+                        throw new AssertionError("the test never released the probe");
+                    }
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError(e);
+                }
+                if (throwOnRelease) {
+                    throw new IllegalStateException("probe failed");
+                }
+            }
+            return Integer.hashCode(value);
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            return other instanceof GatedKey && ((GatedKey) other).value == value;
+        }
+
+        @Override
+        public String toString() {
+            return "GatedKey(" + value + ")";
         }
     }
 
