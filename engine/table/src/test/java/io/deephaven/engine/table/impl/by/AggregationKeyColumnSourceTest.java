@@ -98,6 +98,20 @@ public class AggregationKeyColumnSourceTest {
     }
 
     @Test
+    public void testBigDecimalAndBooleanKeysAreScanned() {
+        final Table bigDecimals =
+                newTable(col("Key", new BigDecimal("1.0"), new BigDecimal("1.00"), BigDecimal.ONE, BigDecimal.TEN));
+        final Table booleans = TableTools.emptyTable(12).update("Key = ii == 3 ? null : ii % 2 == 0");
+        for (final Table keyed : new Table[] {bigDecimals, booleans}) {
+            assertFalse(keyed.selectDistinct("Key").getColumnSource("Key") instanceof AggregationKeyColumnSource);
+            assertFalse(keyed.update("Value = i").lastBy("Key")
+                    .getColumnSource("Key") instanceof AggregationKeyColumnSource);
+        }
+        checkStatic(bigDecimals, new BigDecimal("1"));
+        checkStatic(booleans, true, null);
+    }
+
+    @Test
     public void testZonedDateTimeKeysAreScanned() {
         final Table base = TableTools.emptyTable(120).update("Base = (int) (ii % 50)");
         // in a fixed time zone, hashed as epoch nanoseconds, and with no fixed time zone, hashed as objects

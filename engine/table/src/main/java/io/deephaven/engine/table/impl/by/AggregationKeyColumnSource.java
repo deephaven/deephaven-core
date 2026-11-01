@@ -45,7 +45,7 @@ import java.util.function.LongConsumer;
  *
  * <p>
  * The key source's time conversions are delegated as well, so that a key column reinterprets as the column it was
- * grouped from does. A {@link ZonedDateTime} key column is not wrapped, since the hash table does not hold its zone.
+ * grouped from does.
  */
 public final class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
         implements ConvertibleTimeSource {
@@ -58,20 +58,32 @@ public final class AggregationKeyColumnSource<T> extends DelegatingColumnSource<
     private final UpdateGraph updateGraph;
 
     /**
-     * Create the key column for {@code keySource}.
+     * Create the key column for {@code keySource}, wrapping it unless its type is one whose matches a probe can not
+     * answer:
+     * <ul>
+     * <li>a {@link BigDecimal} match is decided by {@code compareTo}, but the aggregation groups BigDecimals by
+     * {@code equals};</li>
+     * <li>every positive byte reads as a true {@link Boolean}, but the aggregation groups Booleans by their bytes, so a
+     * value has no one byte to probe;</li>
+     * <li>the aggregation does not hold a {@link ZonedDateTime}'s zone.</li>
+     * </ul>
      *
-     * @param keySource the result's key source, of the group-by column's type, which is not {@link ZonedDateTime}
+     * @param keySource the result's key source, of the group-by column's type
      * @param stateManager the aggregation's state manager, whose output positions are the result's row keys
      * @param reinterpretedKeys whether {@code stateManager} hashes the keys reinterpreted as primitives, per
      *        {@link io.deephaven.engine.table.impl.sources.ReinterpretUtils#maybeConvertToPrimitive}
      * @param updateGraph the aggregation's update graph
-     * @return the key column
+     * @return the key column, which is {@code keySource} itself when a probe can not answer its matches
      */
-    static <T> AggregationKeyColumnSource<T> create(
+    static <T> ColumnSource<T> maybeWrap(
             @NotNull final ColumnSource<T> keySource,
             @NotNull final OperatorAggregationStateManager stateManager,
             final boolean reinterpretedKeys,
             @NotNull final UpdateGraph updateGraph) {
+        final Class<T> type = keySource.getType();
+        if (type == BigDecimal.class || type == Boolean.class || type == ZonedDateTime.class) {
+            return keySource;
+        }
         return new AggregationKeyColumnSource<>(keySource, stateManager, reinterpretedKeys, updateGraph);
     }
 
@@ -131,11 +143,7 @@ public final class AggregationKeyColumnSource<T> extends DelegatingColumnSource<
         }
         final MatchFilter matchFilter =
                 MatchFilter.extractMatchFilter(WhereFilterDelegating.maybeUnwrapFilter(filter)).orElse(null);
-        // A BigDecimal match is decided by compareTo, but the aggregation groups BigDecimals by equals. Every positive
-        // byte reads as a true Boolean, but the aggregation groups Booleans by their bytes, so a value has no one byte
-        // to probe; a Boolean key has few states anyway.
-        if (matchFilter == null || matchFilter.getMatchOptions().caseInsensitive()
-                || getType() == BigDecimal.class || getType() == Boolean.class) {
+        if (matchFilter == null || matchFilter.getMatchOptions().caseInsensitive()) {
             return null;
         }
         // A probe costs about as much as testing one row, so a selection with fewer rows than values is scanned.
@@ -256,7 +264,8 @@ public final class AggregationKeyColumnSource<T> extends DelegatingColumnSource<
     }
 
     /**
-     * Convert a match value of this column's type, {@link Instant}, to the epoch nanoseconds the state manager hashes.
+     * Convert a match value of this column's type, {@link Instant}, the only reinterpreted type this wraps, to the
+     * epoch nanoseconds the state manager hashes.
      */
     private static Object reinterpretKey(final Object value) {
         return DateTimeUtils.epochNanos((Instant) value);
