@@ -19,6 +19,7 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.DataIndexOptions;
@@ -1168,6 +1169,42 @@ public class TestDynamicWhereFilter {
     }
 
     /**
+     * A filter of current values whose index lookups a later cycle's update of the index overlaps abandons the snapshot
+     * attempt, since the lookups may have read the later cycle's changes.
+     */
+    @Test
+    public void testCurrentValuesIndexLookupsOverlappedByALaterCycleAreAbandoned() throws Exception {
+        final BlockingKey[] sourceKeys = new BlockingKey[INDEXED_SIZE];
+        for (int ii = 0; ii < INDEXED_SIZE; ++ii) {
+            sourceKeys[ii] = new BlockingKey(ii % 2 == 0 ? 3 : 5);
+        }
+        final QueryTable source =
+                TstUtils.testRefreshingTable(RowSetFactory.flat(INDEXED_SIZE).toTracking(), col(KEY, sourceKeys));
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(source, KEY);
+        index.table();
+        final BlockingKey setKey = new BlockingKey(3);
+        final DynamicWhereFilter filter = new DynamicWhereFilter(newTable(col(KEY, setKey)), true, pairs());
+        filter.beginOperation(source).close();
+
+        try (final RowSet rows = source.getRowSet().copy()) {
+            setKey.arm();
+            final Future<WritableRowSet> filtered = pool.submit(() -> filter.filter(rows, rows, source, false));
+            assertTrue(setKey.entered.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+            try {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(source, i(INDEXED_SIZE), col(KEY, new BlockingKey(11)));
+                    source.notifyListeners(i(INDEXED_SIZE), i(), i());
+                });
+            } finally {
+                setKey.release.countDown();
+            }
+            final ExecutionException failure =
+                    assertThrows(ExecutionException.class, () -> filtered.get(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+            assertTrue(failure.getCause() instanceof ConstructSnapshot.SnapshotInconsistentException);
+        }
+    }
+
+    /**
      * A where on an indexed source with a refreshing set commits once the index has changed on a later step than the
      * set ever has, since the filter's change step is then the index's, and follows the set's changes after.
      */
@@ -1349,6 +1386,51 @@ public class TestDynamicWhereFilter {
         final long step = updateGraph.clock().currentStep();
         while (!index.table().satisfied(step)) {
             assertTrue(updateGraph.flushOneNotificationForUnitTests());
+        }
+    }
+
+    /**
+     * A key whose hash, the first time it is computed after {@link #arm()}, signals {@link #entered} and waits for
+     * {@link #release}.
+     */
+    private static final class BlockingKey {
+        private final int value;
+        private final CountDownLatch entered = new CountDownLatch(1);
+        private final CountDownLatch release = new CountDownLatch(1);
+        private final AtomicBoolean armed = new AtomicBoolean();
+
+        private BlockingKey(final int value) {
+            this.value = value;
+        }
+
+        private void arm() {
+            armed.set(true);
+        }
+
+        @Override
+        public int hashCode() {
+            if (armed.compareAndSet(true, false)) {
+                entered.countDown();
+                try {
+                    if (!release.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                        throw new AssertionError("the test never released the lookup");
+                    }
+                } catch (final InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError(interrupted);
+                }
+            }
+            return Integer.hashCode(value);
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            return other instanceof BlockingKey && ((BlockingKey) other).value == value;
+        }
+
+        @Override
+        public String toString() {
+            return "BlockingKey(" + value + ")";
         }
     }
 

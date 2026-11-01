@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.NoPushdownColumnSourceWrapper;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
@@ -29,6 +30,8 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.LinkedHashMap;
@@ -140,6 +143,109 @@ public class AggregationKeyColumnSourceTest {
         final Table pushedDown = distinct.where(filter);
         assertEquals(2, pushedDown.size());
         assertTableEquals(scanned(distinct, filter), pushedDown);
+    }
+
+    /**
+     * An {@link Instant} key column converts as its key source does, row for row.
+     */
+    @Test
+    public void testTimeConversionsDelegateToTheKeySource() {
+        final Table base = TableTools.emptyTable(12).update("Base = (int) (ii % 5)");
+        final Table distinct = reinterpreted(true,
+                withKeyFormula(base, "Key = Base == 3 ? null : DateTimeUtils.plus(T0, (long) Base)"))
+                .selectDistinct("Key");
+        final AggregationKeyColumnSource<?> keySource = keySource(distinct);
+        assertTrue(keySource.supportsTimeConversion());
+        final ColumnSource<ZonedDateTime> zoned = keySource.toZonedDateTime(UTC);
+        final ColumnSource<LocalDate> dates = keySource.toLocalDate(UTC);
+        final ColumnSource<LocalTime> times = keySource.toLocalTime(UTC);
+        final ColumnSource<Instant> instants = keySource.toInstant();
+        final ColumnSource<Long> nanos = keySource.toEpochNano();
+        distinct.getRowSet().forAllRowKeys(rowKey -> {
+            final Instant key = (Instant) keySource.get(rowKey);
+            assertEquals(key, instants.get(rowKey));
+            assertEquals(DateTimeUtils.epochNanos(key), nanos.getLong(rowKey));
+            if (key == null) {
+                assertEquals(null, zoned.get(rowKey));
+                assertEquals(null, dates.get(rowKey));
+                assertEquals(null, times.get(rowKey));
+            } else {
+                assertEquals(key.atZone(UTC), zoned.get(rowKey));
+                assertEquals(key.atZone(UTC).toLocalDate(), dates.get(rowKey));
+                assertEquals(key.atZone(UTC).toLocalTime(), times.get(rowKey));
+            }
+        });
+
+        // a key column that is not a time does not convert
+        assertFalse(keySource(newTable(intCol("Key", 1, 2)).selectDistinct("Key")).supportsTimeConversion());
+    }
+
+    /**
+     * A pushdown whose cost ceiling is below a probe's cost answers that every row may match, without probing.
+     */
+    @Test
+    public void testCostCeilingBelowAProbeDeclines() {
+        final Table distinct = newTable(intCol("Key", 1, 2, 3)).selectDistinct("Key");
+        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "Key", 2);
+        filter.init(distinct.getDefinition());
+        final MutableObject<PushdownResult> result = new MutableObject<>();
+        keySource(distinct).pushdownFilter(filter, distinct.getRowSet(), false,
+                PushdownFilterContext.NO_PUSHDOWN_CONTEXT, PushdownResult.TABLE_KEY_LOOKUP_COST - 1,
+                new ImmediateJobScheduler(), result::setValue, failure -> {
+                    throw new AssertionError(failure);
+                });
+        try (final PushdownResult declined = result.getValue()) {
+            assertEquals(distinct.getRowSet(), declined.maybeMatch());
+            assertTrue(declined.match().isEmpty());
+        }
+        try (final PushdownResult probed = pushdown(keySource(distinct), filter, distinct.getRowSet(), false)) {
+            assertEquals(i(1), probed.match());
+        }
+    }
+
+    /**
+     * With aggregation key pushdown disabled, a key column declines every filter, and the where scans it.
+     */
+    @Test
+    public void testDisabledPushdownDeclines() {
+        final Table distinct = newTable(intCol("Key", 1, 2, 3)).selectDistinct("Key");
+        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "Key", 2);
+        filter.init(distinct.getDefinition());
+        final boolean wasDisabled = QueryTable.DISABLE_WHERE_PUSHDOWN_AGGREGATION_KEY;
+        QueryTable.DISABLE_WHERE_PUSHDOWN_AGGREGATION_KEY = true;
+        try {
+            final MutableObject<Long> cost = new MutableObject<>();
+            keySource(distinct).estimatePushdownFilterCost(filter, distinct.getRowSet(), false,
+                    PushdownFilterContext.NO_PUSHDOWN_CONTEXT, new ImmediateJobScheduler(), cost::setValue,
+                    failure -> {
+                        throw new AssertionError(failure);
+                    });
+            assertEquals(PushdownResult.UNSUPPORTED_ACTION_COST, cost.getValue().longValue());
+            try (final PushdownResult declined = pushdown(keySource(distinct), filter, distinct.getRowSet(), false)) {
+                assertEquals(distinct.getRowSet(), declined.maybeMatch());
+                assertTrue(declined.match().isEmpty());
+            }
+            assertTableEquals(scanned(distinct, filter), distinct.where(filter.copy()));
+        } finally {
+            QueryTable.DISABLE_WHERE_PUSHDOWN_AGGREGATION_KEY = wasDisabled;
+        }
+    }
+
+    /**
+     * The row lookups of a static aggregation built from a data index and of a no-key aggregation never change, so
+     * neither reports an update cycle step.
+     */
+    @Test
+    public void testStaticIndexedAndNoKeyLookupsHaveNoUpdateCycleStep() {
+        final Table source = TableTools.emptyTable(12).update("Key = (int) (ii % 3)", "Value = ii");
+        DataIndexer.getOrCreateDataIndex(source, "Key").table();
+        final Table indexed = source.lastBy("Key");
+        assertTrue(AggregationProcessor.getRowLookup(indexed).get(2) >= 0);
+        assertEquals(QueryConstants.NULL_LONG, AggregationProcessor.getRowLookup(indexed).updateCycleStep());
+
+        final Table noKey = source.view("Value").sumBy();
+        assertEquals(0, AggregationProcessor.getRowLookup(noKey).get(AggregationRowLookup.EMPTY_KEY));
+        assertEquals(QueryConstants.NULL_LONG, AggregationProcessor.getRowLookup(noKey).updateCycleStep());
     }
 
     @Test
