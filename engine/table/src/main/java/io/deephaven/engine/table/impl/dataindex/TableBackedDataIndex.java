@@ -168,15 +168,16 @@ public class TableBackedDataIndex extends AbstractDataIndex {
             }
 
             @Override
-            public boolean lookupsValid(final boolean usePrev) {
+            public boolean lookupsValid(final boolean usePrev, final long step) {
                 if (!isRefreshing) {
                     return true;
                 }
                 // a volatile read does not keep the hash table reads before it from happening after it
                 VarHandle.acquireFence();
-                // the hash table no longer holds the previous keys once this cycle's changes begin
+                // The hash table holds the keys of step's previous values until step's changes begin, and of its
+                // current values until a later step's changes begin.
                 return lookupFunction.updateCycleStep() == creationStep
-                        && !(usePrev && creationStep == indexTable.getUpdateGraph().clock().currentStep());
+                        && (usePrev ? creationStep < step : creationStep <= step);
             }
         };
     }

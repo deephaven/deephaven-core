@@ -320,31 +320,33 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
     /**
      * {@link #lookupIndexRowKeys(long, DataIndex.RowKeyLookup, boolean) Look up} the index row keys, or return null if
-     * a change to the index overlapped the lookups; see {@link DataIndex.RowKeyLookup#lookupsValid(boolean)}.
+     * a change to the index overlapped the lookups; see {@link DataIndex.RowKeyLookup#lookupsValid(boolean, long)}.
      *
      * @param kernelGeneration The value {@link SharedSetKernel#beginRead()} returned before the kernel was read
      * @param rowKeyLookup The source data index row key lookup
      * @param usePrev Whether to use previous values
+     * @param step The step whose state the lookups read, read before {@code rowKeyLookup} was created
      * @return The matching index row keys, which the caller must close, or null if the lookups are not valid
      */
     @Nullable
     private RowSet validIndexRowKeys(
             final long kernelGeneration,
             @NotNull final DataIndex.RowKeyLookup rowKeyLookup,
-            final boolean usePrev) {
+            final boolean usePrev,
+            final long step) {
         final RowSet indexRowKeys;
         try {
             indexRowKeys = lookupIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev);
         } catch (final ConstructSnapshot.SnapshotInconsistentException e) {
             throw e;
         } catch (final RuntimeException e) {
-            if (rowKeyLookup.lookupsValid(usePrev)) {
+            if (rowKeyLookup.lookupsValid(usePrev, step)) {
                 throw e;
             }
             // a change to the index during the lookups tore their reads
             return null;
         }
-        if (!rowKeyLookup.lookupsValid(usePrev)) {
+        if (!rowKeyLookup.lookupsValid(usePrev, step)) {
             indexRowKeys.close();
             return null;
         }
@@ -385,6 +387,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private WritableRowSet filterFullIndex(@NotNull final RowSet selection, final boolean usePrev) {
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
 
+        final long step = getUpdateGraph().clock().currentStep();
         // noinspection DataFlowIssue
         final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup(DataIndexOptions.USING_PARTIAL_TABLE);
         final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn(DataIndexOptions.USING_PARTIAL_TABLE);
@@ -395,7 +398,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         // snapshot attempt; that triggers the normal retry path and is not an error. The batcher owns everything it
         // has gathered until it is built, so an abandoned attempt releases it; what is built is closed here.
         WritableRowSet matching = null;
-        try (final RowSet indexRowKeys = validIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev)) {
+        try (final RowSet indexRowKeys = validIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev, step)) {
             if (indexRowKeys == null) {
                 // the index changed during the lookups, so the source's own columns are filtered instead
                 return filterLinear(selection, inclusion, usePrev);
@@ -429,6 +432,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
         // First, compute a possibly-matching subset of selection based on the partial index.
 
+        final long step = getUpdateGraph().clock().currentStep();
         // noinspection DataFlowIssue
         final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup(DataIndexOptions.USING_PARTIAL_TABLE);
         final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn(DataIndexOptions.USING_PARTIAL_TABLE);
@@ -436,7 +440,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         final long kernelGeneration = sharedSet.beginRead();
 
         final WritableRowSet matching;
-        try (final RowSet indexRowKeys = validIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev)) {
+        try (final RowSet indexRowKeys = validIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev, step)) {
             if (indexRowKeys == null) {
                 // the index changed during the lookups, so the source's own columns are filtered instead
                 return filterLinear(selection, inclusion, usePrev);

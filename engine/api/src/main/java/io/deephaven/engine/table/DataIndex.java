@@ -65,15 +65,18 @@ public interface DataIndex extends BasicDataIndex {
                 boolean usePrev);
 
         /**
-         * Whether the lookups made through this since it was created answered for the index's state in {@code usePrev}
-         * space. A refreshing index may change the structure its lookups read while a reader that is not on the update
-         * graph thread uses it; a caller in such a reader checks this after its lookups, and discards their results if
-         * it is {@code false}.
+         * Whether the lookups made through this since it was created answered for the index's state at {@code step}, in
+         * {@code usePrev} space. A refreshing index may change the structure its lookups read while a reader that is
+         * not on the update graph thread uses it; a caller in such a reader checks this after its lookups, and discards
+         * their results if it is {@code false}.
          *
          * @param usePrev Whether the lookups were in previous space
-         * @return Whether no change to the index overlapped the lookups made through this since it was created
+         * @param step The update graph step whose state the lookups read, read from the clock before this lookup was
+         *        created
+         * @return Whether the index held its state at {@code step} for every lookup made through this since it was
+         *         created
          */
-        default boolean lookupsValid(final boolean usePrev) {
+        default boolean lookupsValid(final boolean usePrev, final long step) {
             return true;
         }
     }
@@ -195,8 +198,8 @@ public interface DataIndex extends BasicDataIndex {
             }
 
             @Override
-            public boolean lookupsValid(final boolean usePrev) {
-                return creationLookup.lookupsValid(usePrev);
+            public boolean lookupsValid(final boolean usePrev, final long step) {
+                return creationLookup.lookupsValid(usePrev, step);
             }
         };
     }
