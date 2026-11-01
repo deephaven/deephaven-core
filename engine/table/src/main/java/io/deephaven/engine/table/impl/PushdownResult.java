@@ -44,7 +44,7 @@ public final class PushdownResult implements SafeCloseable {
      * Complexity/access: O(values) / In-Memory Data, resolves "yes", "no"
      */
     public static final long TABLE_KEY_LOOKUP_COST =
-            Configuration.getInstance().getLongWithDefault("PredicatePushdown.tableKeyLookupCost", 2_500L);
+            Configuration.getInstance().getLongWithDefault("PredicatePushdown.tableKeyLookupCost", 6_000L);
 
     /**
      * Binary searches sorted data at the Table-level.
