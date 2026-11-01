@@ -11,6 +11,7 @@ public class EncodingTest {
   // encoded by handing the server a BarrageSchema attribute whose field of the same name carries
   // the desired encoding; columns absent from that schema keep their natural (unencoded) type.
   private const string EncodingPreamble = """
+    import datetime
     import jpy
     from deephaven import empty_table, new_table, time_table
     from deephaven.column import string_col
@@ -124,8 +125,9 @@ public class EncodingTest {
   // on the division: the query language's '/' is floating-point division even for integral operands,
   // so without it every row would get a distinct fractional value instead of runs of three.
   private const string TickingEncodingTables = """
+    _ticking_columns = ['II = ii', 'Sym = (ii % 7 == 3) ? null : (`sym` + (long)(ii / 3))']
     _ticking_src = (time_table('PT0.1S')
-                    .update(['II = ii', 'Sym = (ii % 7 == 3) ? null : (`sym` + (long)(ii / 3))'])
+                    .update(_ticking_columns)
                     .drop_columns(['Timestamp']))
 
     # Each of these is an attribute-only copy of the one source above, so all three tests see
@@ -138,6 +140,18 @@ public class EncodingTest {
 
     reedict_ticking_table = _ticking_src.with_attributes(
         {'BarrageSchema': _encoded_schema(_ticking_src, 'Sym', _to_ree_dict_field)})
+
+    # The same table once more, but starting empty: its time_table's start_time is a few seconds
+    # in the future, so the subscription's initial snapshot has no rows by construction and the
+    # server sends an empty isDelta=false base dictionary with it, every value then arriving by
+    # isDelta=true delta. That is the sequence FlightIpcReader.NormalizeEmptyDictionaries exists
+    # for, which the tables above reach only by timing luck.
+    _empty_start = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=3)
+    _empty_start_src = (time_table('PT0.1S', start_time=_empty_start)
+                        .update(_ticking_columns)
+                        .drop_columns(['Timestamp']))
+    dict_empty_start_ticking_table = _empty_start_src.with_attributes(
+        {'BarrageSchema': _encoded_schema(_empty_start_src, 'Sym', _to_dict_field)})
 
     """;
 
@@ -249,13 +263,26 @@ public class EncodingTest {
     await SubscribeAndValidate(thm, "reedict_ticking_table");
   }
 
+  [Test]
+  public async Task TickingDictionaryTableStartingEmptyIsDecodedCorrectly() {
+    using var ctx = CommonContextForTests.Create(new ClientOptions());
+    var thm = ctx.Client.Manager;
+
+    thm.RunScript(TickingSetupScript);
+    await SubscribeAndValidate(thm, "dict_empty_start_ticking_table", requireEmptyInitialSnapshot: true);
+  }
+
   /// <summary>
-  /// Subscribes to the named ticking table and validates every update until the table reaches
-  /// TargetRows rows.
+  /// Subscribes to the named ticking table and validates every update until the table has grown
+  /// by TargetRows rows beyond its initial snapshot, so that post-snapshot updates (and the
+  /// dictionary deltas they carry) are always exercised, however many rows the snapshot held.
+  /// With requireEmptyInitialSnapshot the first update must be empty, which pins down that the
+  /// snapshot carried an empty base dictionary and every value arrived by delta.
   /// </summary>
-  private static async Task SubscribeAndValidate(TableHandleManager thm, string tableName) {
+  private static async Task SubscribeAndValidate(TableHandleManager thm, string tableName,
+    bool requireEmptyInitialSnapshot = false) {
     using var table = thm.FetchTable(tableName);
-    var callback = new EncodedTickingCallback(TargetRows);
+    var callback = new EncodedTickingCallback(TargetRows, requireEmptyInitialSnapshot);
     using var cookie = table.Subscribe(callback);
 
     while (true) {
@@ -281,17 +308,28 @@ public class EncodingTest {
   /// Ticking callback for the encoded-column tests. On every update it recomputes the expected
   /// contents of the entire table from the current row count and compares. Validating on each tick,
   /// rather than only once at the end, means a bad dictionary delta or a mis-expanded run is caught
-  /// on the update that carries it. Finishes once the table has reached 'targetRows' rows.
+  /// on the update that carries it. Finishes once the table has grown by 'targetAdditionalRows'
+  /// rows beyond its initial snapshot.
   ///
   /// A mismatch throws out of OnNext, which the subscription machinery reports through OnError;
   /// the test body then rethrows it on the main thread.
   /// </summary>
-  private sealed class EncodedTickingCallback(Int64 targetRows) : CommonBase {
+  private sealed class EncodedTickingCallback(Int64 targetAdditionalRows, bool requireEmptyInitialSnapshot)
+    : CommonBase {
+    private Int64? _initialRows;
+
     public override void OnNext(TickingUpdate update) {
       var current = update.Current;
       var numRows = current.NumRows;
       // Progress trace: if the test dies, the last line recorded tells us which update it died on.
       Console.WriteLine($"=== update: {numRows} rows ===");
+      if (_initialRows == null) {
+        _initialRows = numRows;
+        if (requireEmptyInitialSnapshot && numRows != 0) {
+          throw new Exception($"Expected an empty initial snapshot but got {numRows} rows: " +
+            "the table's start_time margin is too small for this machine");
+        }
+      }
       if (numRows == 0) {
         // The initial snapshot of a fresh time table can be empty.
         return;
@@ -309,7 +347,7 @@ public class EncodingTest {
       expected.AddColumn("Sym", syms);
       TableComparer.AssertSame(expected, current);
 
-      if (numRows >= targetRows) {
+      if (numRows >= _initialRows + targetAdditionalRows) {
         NotifyDone();
       }
     }
