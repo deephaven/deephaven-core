@@ -327,8 +327,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     /**
      * {@link #lookupIndexRowKeys(long, DataIndex.RowKeyLookup, boolean) Look up} the index row keys, abandoning this
      * snapshot attempt if a change to the index overlapped the lookups; see
-     * {@link DataIndex.RowKeyLookup#lastStateChangeStep()}. The snapshot control then sees the change through
-     * {@link #lastStateChangeStep()}, or through its clock, and retries.
+     * {@link DataIndex.RowKeyLookup#lastStateChangeStep()}. The snapshot control retries the attempt because it judges
+     * it inconsistent: an attempt that read previous values finds that {@link #lastStateChangeStep()}, which includes
+     * the index's change step, equals its step, and an attempt that read current values finds that the clock moved.
      *
      * @param kernelGeneration The value {@link SharedSetKernel#beginRead()} returned before the kernel was read
      * @param rowKeyLookup The source data index row key lookup
@@ -655,7 +656,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
     /**
      * The later of the steps on which the shared set and the source data index, whose lookups a snapshot attempt reads
-     * as it reads the set, last began changing.
+     * as it reads the set, last began changing. Including the index's step is what makes a snapshot control reject an
+     * attempt that read previous values while the index began changing.
      */
     @Override
     public long lastStateChangeStep() {
