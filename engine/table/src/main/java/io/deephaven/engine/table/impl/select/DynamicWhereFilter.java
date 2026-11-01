@@ -66,6 +66,12 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
      */
     private @Nullable DataIndex sourceDataIndex;
     /**
+     * A lookup of {@link #sourceDataIndex}, created on first use, through which {@link #lastStateChangeStep()} reads
+     * the step on which the index last began changing. A lookup reports that step whenever it is asked, so one serves
+     * every call; threads that race to create it create equivalent lookups.
+     */
+    private volatile DataIndex.RowKeyLookup sourceIndexChangeLookup;
+    /**
      * The position among this filter's key columns of each of {@link #sourceDataIndex}'s key columns, in the index's
      * order, which projects a set key onto the index's lookup key.
      */
@@ -657,8 +663,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         if (sourceDataIndex == null) {
             return setStep;
         }
-        return Math.max(setStep,
-                sourceDataIndex.rowKeyLookup(DataIndexOptions.USING_PARTIAL_TABLE).lastStateChangeStep());
+        DataIndex.RowKeyLookup indexLookup = sourceIndexChangeLookup;
+        if (indexLookup == null) {
+            sourceIndexChangeLookup = indexLookup = sourceDataIndex.rowKeyLookup(DataIndexOptions.USING_PARTIAL_TABLE);
+        }
+        return Math.max(setStep, indexLookup.lastStateChangeStep());
     }
 
     @Override
