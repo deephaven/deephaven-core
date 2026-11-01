@@ -105,15 +105,22 @@ public class TableState {
 
 
   /// <summary>
-  /// Erases the data at the positions in 'rowsToEraseKeySpace'.
+  /// Erases the rows whose keys are in 'rowsToEraseKeySpace'. Keys that are not held are ignored: a full
+  /// subscription is sent the server's entire removed set, which while the initial snapshot is still arriving can
+  /// name rows this client has not been given yet.
   /// </summary>
   /// <param name="rowsToEraseKeySpace">The keys, represented in key space, to erase</param>
-  /// <returns>The keys, represented in index space, that were erased</returns>
+  /// <returns>The positions, in index space, of the rows that were erased</returns>
   public RowSequence Erase(RowSequence rowsToEraseKeySpace) {
-    var result = _spaceMapper.ConvertKeysToIndices(rowsToEraseKeySpace);
+    var result = _spaceMapper.ConvertPresentKeysToIndices(rowsToEraseKeySpace);
+    if (result.IsEmpty) {
+      // None of the named rows is held, so there is nothing to do, not even to the key mapping.
+      return result;
+    }
+
     var ncols = _colData.Length;
-    var nrows = rowsToEraseKeySpace.Count;
-    var newNumRows = ((UInt64)_numRows - (UInt64)nrows).ToIntExact();
+    var nrows = result.Count;
+    var newNumRows = ((UInt64)_numRows - nrows).ToIntExact();
 
     for (var i = 0; i != ncols; ++i) {
       var srcData = _colData[i];

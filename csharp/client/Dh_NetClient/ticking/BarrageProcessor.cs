@@ -104,6 +104,20 @@ class AwaitingMetadata(TableState tableState) : IChunkProcessor {
     var shiftDestIndex = RowSequenceDecoder.ReadExternalCompressedDelta(diThreeShiftIndices);
     var addedRows = RowSequenceDecoder.ReadExternalCompressedDelta(diAdded);
 
+    // added_rows_included is the set of rows this message actually carries data for. The server omits it
+    // when it would be identical to added_rows, which is the case for every message of an established
+    // subscription. The two differ only while the server is still delivering the initial snapshot of a
+    // large table in rounds. A snapshot round announces the table's whole row set in added_rows but carries
+    // data only for its own slice of rows. A delta between rounds can carry data for rows that added_rows
+    // does not mention (rows that moved into the already-delivered region of the table) and no data for rows
+    // that it does (rows beyond that region, which a later round will deliver). The record batches are sized
+    // from this set, so the add phase must be too. This mirrors the Java client, whose reader defaults
+    // rowsIncluded to a copy of rowsAdded when the field is absent.
+    var addedRowsIncludedBytes = bmd.GetAddedRowsIncludedBytes();
+    var addedRowsIncluded = addedRowsIncludedBytes == null
+      ? addedRows
+      : RowSequenceDecoder.ReadExternalCompressedDelta(new DataInput(addedRowsIncludedBytes));
+
     var perColumnModifies = new List<RowSequence>();
     for (var i = 0; i != bmd.ModColumnNodesLength; ++i) {
       var mcns = bmd.ModColumnNodes(i);
@@ -131,7 +145,12 @@ class AwaitingMetadata(TableState tableState) : IChunkProcessor {
     var (prev, removedRowsIndexSpace, afterRemoves) = ProcessRemoves(removedRows);
     tableState.ApplyShifts(shiftStartIndex, shiftEndIndex, shiftDestIndex);
 
-    var addedRowsIndexSpace = tableState.AddKeys(addedRows);
+    // We track only the rows we hold data for, so the keys we add are the ones data is arriving for. A key
+    // that added_rows announces without data will arrive, with data, in a later snapshot round and is added
+    // then. The insertion is strict. During the initial snapshot the server can legitimately re-send a row we
+    // already hold; supporting that is a separate change, so for now such a row fails loudly inside
+    // SpaceMapper rather than being silently inserted a second time.
+    var addedRowsIndexSpace = tableState.AddKeys(addedRowsIncluded);
 
     var nextState = new AwaitingAdds(tableState, perColumnModifies.ToArray(), prev, removedRowsIndexSpace, afterRemoves,
       addedRowsIndexSpace);
@@ -149,7 +168,10 @@ class AwaitingMetadata(TableState tableState) : IChunkProcessor {
       afterRemoves = prev;
     } else {
       removedRowsIndexSpace = tableState.Erase(removedRows);
-      afterRemoves = tableState.Snapshot();
+      // A non-empty removed set can still erase nothing: a full subscription is sent the server's entire removed
+      // set, which while the initial snapshot is still arriving can name only rows this client has not been given
+      // yet. The table is unchanged then, so this takes the pointer-equality path too.
+      afterRemoves = removedRowsIndexSpace.IsEmpty ? prev : tableState.Snapshot();
     }
 
     return (prev, removedRowsIndexSpace, afterRemoves);
