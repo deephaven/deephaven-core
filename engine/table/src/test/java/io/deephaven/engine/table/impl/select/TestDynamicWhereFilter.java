@@ -1242,6 +1242,8 @@ public class TestDynamicWhereFilter {
             }
         });
         assertNotNull(DataIndexer.getDataIndex(shared, KEY));
+        // built now, so that its aggregation follows the source's next cycle
+        index.table();
         final Table set = newTable(intCol(KEY, 3, 11));
 
         updateGraph.startCycleForUnitTests(false);
