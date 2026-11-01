@@ -15,7 +15,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
+import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
@@ -26,6 +28,7 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.IntVectorDirect;
 import io.deephaven.vector.LongVector;
@@ -497,6 +500,27 @@ public class TestRollupTable extends RefreshingTableTestCase {
         freeSnapshotTableChunks(snapshot2);
         freeSnapshotTableChunks(snapshot3);
         freeSnapshotTableChunks(snapshot4);
+    }
+
+    /**
+     * Filtering a rollup on its group-by columns filters its base level's row lookup, which has no update cycle step to
+     * report, since the filtered rows change with the filter's result rather than the aggregation's hash table.
+     */
+    @Test
+    public void testFilteredBaseLevelLookupHasNoUpdateCycleStep() {
+        final Table source = emptyTable(12).update("Key = (int) (ii % 3)", "Value = ii");
+        final RollupTableImpl rollup = (RollupTableImpl) source.rollup(List.of(AggSum("Value")), false, "Key");
+        final AggregationRowLookup lookup = rollup.baseLevelRowLookup();
+        assertTrue(lookup.get(2) >= 0);
+        // the aggregation of a static source never changes
+        assertEquals(QueryConstants.NULL_LONG, lookup.updateCycleStep());
+
+        final RollupTableImpl filtered =
+                (RollupTableImpl) rollup.withFilter(WhereFilterFactory.getExpression("Key = 1"));
+        final AggregationRowLookup filteredLookup = filtered.baseLevelRowLookup();
+        assertTrue(filteredLookup.get(1) >= 0);
+        assertEquals(AggregationRowLookup.DEFAULT_UNKNOWN_ROW, filteredLookup.get(2));
+        Assert.assertThrows(UnsupportedOperationException.class, filteredLookup::updateCycleStep);
     }
 
     private Table snapshotFilteredRollup(RollupTable rollup) {

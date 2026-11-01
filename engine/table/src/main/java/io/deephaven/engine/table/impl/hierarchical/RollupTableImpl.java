@@ -249,7 +249,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
      * @return the row lookup of this rollup's base level
      */
     @VisibleForTesting
-    AggregationRowLookup baseLevelRowLookup() {
+    public AggregationRowLookup baseLevelRowLookup() {
         return levelRowLookups[numLevels - 1];
     }
 
