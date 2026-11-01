@@ -152,6 +152,27 @@ public class EncodedArrayDecoderTest {
   }
 
   /// <summary>
+  /// Metadata from the REE parent and from its values child are both kept, the parent winning on
+  /// duplicate keys, so a parent that carries only unrelated annotations does not lose the
+  /// child's type tags.
+  /// </summary>
+  [Test]
+  public void RunEndEncodedFieldMergesParentAndValuesChildMetadata() {
+    var runEndsField = new Field("run_ends", Int32Type.Default, false);
+    var valuesField = new Field("values", StringType.Default, true,
+      new Dictionary<string, string> { { "deephaven:type", "java.lang.String" }, { "shared", "child" } });
+    var reeField = new Field("Sym", new RunEndEncodedType(runEndsField, valuesField), false,
+      new Dictionary<string, string> { { "deephaven:isSortable", "true" }, { "shared", "parent" } });
+
+    var decoded = EncodedArrayDecoder.DecodeField(reeField);
+    AssertTrue(decoded.Metadata.Count == 3, "union of both maps");
+    AssertTrue(decoded.Metadata["deephaven:type"] == "java.lang.String", "child-only key kept");
+    AssertTrue(decoded.Metadata["deephaven:isSortable"] == "true", "parent-only key kept");
+    AssertTrue(decoded.Metadata["shared"] == "parent", "parent wins on a duplicate key");
+    AssertTrue(reeField.Metadata.Count == 2 && valuesField.Metadata.Count == 2, "inputs untouched");
+  }
+
+  /// <summary>
   /// The server (BarrageUtil.toReeField) builds a non-nullable REE parent and keeps the column's
   /// nullability on the values child, so the decoded field must take its nullability from there.
   /// </summary>

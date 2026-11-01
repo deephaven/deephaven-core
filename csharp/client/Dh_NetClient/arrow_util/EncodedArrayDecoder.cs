@@ -65,10 +65,12 @@ public static class EncodedArrayDecoder {
         var valueType = valuesField.DataType is DictionaryType innerDict
           ? innerDict.ValueType
           : valuesField.DataType;
-        // The server attaches column metadata (e.g. "deephaven:type") to the REE values
-        // child rather than the top-level field, so prefer the top-level metadata but
-        // fall back to the child's.
-        var metadata = field.Metadata is { Count: > 0 } ? field.Metadata : valuesField.Metadata;
+        // Column metadata (e.g. "deephaven:type") can sit on the top-level field, on the values
+        // child, or on both: the server stamps the column's metadata on the top-level field and,
+        // when it applies the encoding itself, copies it to the values child as well, while a
+        // hand-built BarrageSchema may put it on either. Keep the union, the top-level field
+        // winning on duplicate keys.
+        var metadata = MergeMetadata(field.Metadata, valuesField.Metadata);
         // An REE array has no validity bitmap of its own; its nulls live on the values child. The
         // server (BarrageUtil.toReeField) accordingly makes the REE parent non-nullable and keeps
         // the column's real nullability on the values child, so that is where the decoded field's
@@ -79,6 +81,25 @@ public static class EncodedArrayDecoder {
       default:
         return field;
     }
+  }
+
+  /// <summary>
+  /// The union of two metadata maps, 'primary' winning on duplicate keys. Either may be null or
+  /// empty; a map that is the only non-empty one is returned as is.
+  /// </summary>
+  private static IReadOnlyDictionary<string, string>? MergeMetadata(
+    IReadOnlyDictionary<string, string>? primary, IReadOnlyDictionary<string, string>? secondary) {
+    if (secondary is not { Count: > 0 }) {
+      return primary;
+    }
+    if (primary is not { Count: > 0 }) {
+      return secondary;
+    }
+    var result = new Dictionary<string, string>(secondary);
+    foreach (var (key, value) in primary) {
+      result[key] = value;
+    }
+    return result;
   }
 
   /// <summary>
