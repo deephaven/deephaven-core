@@ -77,6 +77,7 @@ public class EncodingTest {
   // ree_table     : 6 rows, Sym = ["a","a","a","b","b","b"]
   // dict_table    : 5 rows, Sym = ["x","y","z","x","y"]
   // reedict_table : 6 rows, Sym = ["a","a","a","b","b","b"], doubly-encoded RunEndEncoded<Dictionary<...>>
+  // ree_list_table: 2 rows, V = [[0,1,2],[0,1,2]], a run-end encoded list-valued column
   private const string StaticEncodingTables = """
     # A dictionary-encoded column that is null for every row of the snapshot's first batch. Snapshots
     # start with a 4096-row batch and grow from there, so the server's isDelta=false base dictionary
@@ -98,6 +99,15 @@ public class EncodingTest {
     _reedict_src   = new_table([string_col('Sym', ['a', 'a', 'a', 'b', 'b', 'b'])])
     reedict_table  = _reedict_src.with_attributes(
         {'BarrageSchema': _encoded_schema(_reedict_src, 'Sym', _to_ree_dict_field)})
+
+    # A list-valued column: group_by yields an IntVector per row, which travels as an Arrow list.
+    # Both rows hold the same vector, so run-end encoding has a genuine multi-row run to expand.
+    _ree_list_src  = (empty_table(6)
+                      .update(['K = (int)(ii / 3)', 'V = (int)(ii % 3)'])
+                      .group_by('K')
+                      .drop_columns('K'))
+    ree_list_table = _ree_list_src.with_attributes(
+        {'BarrageSchema': _encoded_schema(_ree_list_src, 'V', _to_ree_field)})
 
     """;
 
@@ -196,6 +206,19 @@ public class EncodingTest {
 
     var expected = new TableMaker();
     expected.AddColumn("Sym", new[] { "a", "a", "a", "b", "b", "b" });
+    await Assert.That(() => TableComparer.AssertSame(expected, t)).ThrowsNothing();
+  }
+
+  [Test]
+  public async Task RunEndEncodedListTableIsFetchedAndDecodedCorrectly() {
+    using var ctx = CommonContextForTests.Create(new ClientOptions());
+    var thm = ctx.Client.Manager;
+
+    thm.RunScript(StaticSetupScript);
+    using var t = thm.FetchTable("ree_list_table");
+
+    var expected = new TableMaker();
+    expected.AddColumn<List<Int32>>("V", [[0, 1, 2], [0, 1, 2]]);
     await Assert.That(() => TableComparer.AssertSame(expected, t)).ThrowsNothing();
   }
 
