@@ -93,15 +93,24 @@ public class AggregationKeyColumnSourceTest {
         assertEquals(QueryConstants.NULL_LONG, DateTimeUtils.epochNanos(nullNanos));
         checkStatic(reinterpreted(true, withKeyFormula(base, "Key = Base == 3 ? null : DateTimeUtils.plus(T0, "
                 + "(long) Base)")), instant(1), instant(4), null, instant(9), overflow, nullNanos);
-        // the same instant in another zone is not equal
-        checkStatic(reinterpreted(true, withZonedKey(base, 3)), zoned(1), zoned(4), null, zoned(9),
-                zoned(2).withZoneSameInstant(ZoneId.of("America/New_York")), overflow.atZone(UTC),
-                nullNanos.atZone(UTC));
         checkStatic(reinterpreted(true, withKeyFormula(base, "Key = Base == 3 ? null : Base % 2 == 0")), true, null);
         checkStatic(reinterpreted(true, withKeyFormula(base, "Key = Base % 2 == 0")), false);
-        // a ZonedDateTime column without a fixed time zone is hashed as objects
-        checkStatic(reinterpreted(false, withKeyFormula(base, "Key = Base == 3 ? null : DateTimeUtils.toZonedDateTime("
-                + "DateTimeUtils.plus(T0, (long) Base), UTC)")), zoned(1), zoned(4), null, zoned(9));
+    }
+
+    @Test
+    public void testZonedDateTimeKeysAreScanned() {
+        final Table base = TableTools.emptyTable(120).update("Base = (int) (ii % 50)");
+        // in a fixed time zone, hashed as epoch nanoseconds, and with no fixed time zone, hashed as objects
+        for (final Table keyed : new Table[] {
+                reinterpreted(true, withZonedKey(base, 3)),
+                reinterpreted(false, withKeyFormula(base, "Key = Base == 3 ? null : DateTimeUtils.toZonedDateTime("
+                        + "DateTimeUtils.plus(T0, (long) Base), UTC)"))}) {
+            assertFalse(keyed.selectDistinct("Key").getColumnSource("Key") instanceof AggregationKeyColumnSource);
+            assertFalse(keyed.lastBy("Key").getColumnSource("Key") instanceof AggregationKeyColumnSource);
+            // the same instant in another zone is not equal
+            checkStatic(keyed, zoned(1), zoned(4), null, zoned(9),
+                    zoned(2).withZoneSameInstant(ZoneId.of("America/New_York")));
+        }
     }
 
     @Test
@@ -160,11 +169,6 @@ public class AggregationKeyColumnSourceTest {
     public void testRefreshingInstant() {
         checkRefreshing(table -> withKeyFormula(table, "Key = DateTimeUtils.plus(T0, (long) Base)"), true,
                 AggregationKeyColumnSourceTest::instant);
-    }
-
-    @Test
-    public void testRefreshingZonedDateTime() {
-        checkRefreshing(table -> withZonedKey(table, NULL_INT), true, AggregationKeyColumnSourceTest::zoned);
     }
 
     @Test

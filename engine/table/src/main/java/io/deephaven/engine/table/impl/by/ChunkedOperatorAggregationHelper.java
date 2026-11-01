@@ -44,6 +44,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
@@ -246,9 +247,11 @@ public class ChunkedOperatorAggregationHelper {
             }
             final ColumnSource<?> resultKeySource = input.isRefreshing() ? keyColumnsCopied[kci] : keyColumnsRaw[kci];
             // A single key column answers match filters by probing the hash table. The symbol table manager builds its
-            // lookup map of every key on the first probe, so its key column is scanned instead.
+            // lookup map of every key on the first probe, and the hash table does not hold a ZonedDateTime's zone, so
+            // those key columns are scanned instead.
             resultColumnSourceMap.put(keyNames[kci], keyHashTableSources.length == 1
                     && !(stateManager instanceof StaticSymbolTableChunkedOperatorAggregationStateManager)
+                    && resultKeySource.getType() != ZonedDateTime.class
                             ? AggregationKeyColumnSource.create(resultKeySource, stateManager,
                                     keySources[kci] != reinterpretedKeySources[kci], input.getUpdateGraph())
                             : resultKeySource);

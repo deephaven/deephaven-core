@@ -44,10 +44,10 @@ import java.util.function.LongConsumer;
  * cycle at that step or later began, filtering previous values, or a later cycle began, filtering current ones.
  *
  * <p>
- * The key source's time conversions are delegated as well, and the result is a {@link ConvertibleTimeSource.Zoned} if
- * and only if the key source is, so that a key column reinterprets as the column it was grouped from does.
+ * The key source's time conversions are delegated as well, so that a key column reinterprets as the column it was
+ * grouped from does. A {@link ZonedDateTime} key column is not wrapped, since the hash table does not hold its zone.
  */
-public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
+public final class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
         implements ConvertibleTimeSource {
 
     private final ColumnSource<T> keySource;
@@ -60,22 +60,18 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
     /**
      * Create the key column for {@code keySource}.
      *
-     * @param keySource the result's key source, of the group-by column's type
+     * @param keySource the result's key source, of the group-by column's type, which is not {@link ZonedDateTime}
      * @param stateManager the aggregation's state manager, whose output positions are the result's row keys
      * @param reinterpretedKeys whether {@code stateManager} hashes the keys reinterpreted as primitives, per
      *        {@link io.deephaven.engine.table.impl.sources.ReinterpretUtils#maybeConvertToPrimitive}
      * @param updateGraph the aggregation's update graph
-     * @return the key column, which is a {@link ConvertibleTimeSource.Zoned} if and only if {@code keySource} is
+     * @return the key column
      */
     static <T> AggregationKeyColumnSource<T> create(
             @NotNull final ColumnSource<T> keySource,
             @NotNull final OperatorAggregationStateManager stateManager,
             final boolean reinterpretedKeys,
             @NotNull final UpdateGraph updateGraph) {
-        if (keySource instanceof ConvertibleTimeSource.Zoned) {
-            return new Zoned<>(keySource, stateManager, reinterpretedKeys, updateGraph,
-                    ((ConvertibleTimeSource.Zoned) keySource).getZone());
-        }
         return new AggregationKeyColumnSource<>(keySource, stateManager, reinterpretedKeys, updateGraph);
     }
 
@@ -92,25 +88,6 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
                 ? (IncrementalOperatorAggregationStateManager) stateManager
                 : null;
         this.updateGraph = updateGraph;
-    }
-
-    private static final class Zoned<T> extends AggregationKeyColumnSource<T> implements ConvertibleTimeSource.Zoned {
-        private final ZoneId zone;
-
-        private Zoned(
-                @NotNull final ColumnSource<T> keySource,
-                @NotNull final OperatorAggregationStateManager stateManager,
-                final boolean reinterpretedKeys,
-                @NotNull final UpdateGraph updateGraph,
-                @NotNull final ZoneId zone) {
-            super(keySource, stateManager, reinterpretedKeys, updateGraph);
-            this.zone = zone;
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return zone;
-        }
     }
 
     @Override
@@ -254,7 +231,7 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
             }
             final int rowKey = stateManager.findPositionForKey(lookupKey);
             // The filter matches the column's values by equals, which distinguishes what the primitive does not: a
-            // ZonedDateTime's zone, and a time that converts to the null primitive.
+            // time that converts to the null primitive.
             if (rowKey >= 0 && Objects.equals(keySource.get(rowKey), value)) {
                 foundBuilder.addKey(rowKey);
             }
@@ -279,13 +256,9 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
     }
 
     /**
-     * Convert a match value of this column's type, an {@link Instant} or a {@link ZonedDateTime}, to the epoch
-     * nanoseconds the state manager hashes.
+     * Convert a match value of this column's type, {@link Instant}, to the epoch nanoseconds the state manager hashes.
      */
-    private Object reinterpretKey(final Object value) {
-        if (getType() == Instant.class) {
-            return DateTimeUtils.epochNanos((Instant) value);
-        }
-        return DateTimeUtils.epochNanos((ZonedDateTime) value);
+    private static Object reinterpretKey(final Object value) {
+        return DateTimeUtils.epochNanos((Instant) value);
     }
 }
