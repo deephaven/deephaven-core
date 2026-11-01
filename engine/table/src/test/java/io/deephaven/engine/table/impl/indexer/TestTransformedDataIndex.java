@@ -28,7 +28,6 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
@@ -427,18 +426,15 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
 
         updateGraph.startCycleForUnitTests(false);
         final long cycleStep = updateGraph.clock().currentStep();
-        try {
-            TstUtils.addToTable(source, TstUtils.i(KEYED_SIZE), TableTools.intCol("Key", 11),
-                    TableTools.intCol("Value", KEYED_SIZE));
-            source.notifyListeners(TstUtils.i(KEYED_SIZE), TstUtils.i(), TstUtils.i());
-            updateGraph.markSourcesRefreshedForUnitTests();
-            assertTrue(lookup.lastStateChangeStep() < cycleStep);
-            flushIndexUpdate(updateGraph, index);
-            // the index's update began on the cycle's step
-            assertEquals(cycleStep, lookup.lastStateChangeStep());
-        } finally {
-            completeCycleIfOpen(updateGraph);
-        }
+        TstUtils.addToTable(source, TstUtils.i(KEYED_SIZE), TableTools.intCol("Key", 11),
+                TableTools.intCol("Value", KEYED_SIZE));
+        source.notifyListeners(TstUtils.i(KEYED_SIZE), TstUtils.i(), TstUtils.i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+        assertTrue(lookup.lastStateChangeStep() < cycleStep);
+        flushIndexUpdate(updateGraph, index);
+        // the index's update began on the cycle's step
+        assertEquals(cycleStep, lookup.lastStateChangeStep());
+        updateGraph.completeCycleForUnitTests();
 
         assertEquals(cycleStep, lookup.lastStateChangeStep());
         final long rowKey = lookup.apply(11, false);
@@ -460,16 +456,13 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.startCycleForUnitTests(false);
         final long cycleStep = updateGraph.clock().currentStep();
-        try {
-            TstUtils.addToTable(source, TstUtils.i(4), TableTools.intCol("A", 3), TableTools.intCol("B", 4));
-            source.notifyListeners(TstUtils.i(4), TstUtils.i(), TstUtils.i());
-            updateGraph.markSourcesRefreshedForUnitTests();
-            assertTrue(lookup.lastStateChangeStep() < cycleStep);
-            flushIndexUpdate(updateGraph, index);
-            assertEquals(cycleStep, lookup.lastStateChangeStep());
-        } finally {
-            completeCycleIfOpen(updateGraph);
-        }
+        TstUtils.addToTable(source, TstUtils.i(4), TableTools.intCol("A", 3), TableTools.intCol("B", 4));
+        source.notifyListeners(TstUtils.i(4), TstUtils.i(), TstUtils.i());
+        updateGraph.markSourcesRefreshedForUnitTests();
+        assertTrue(lookup.lastStateChangeStep() < cycleStep);
+        flushIndexUpdate(updateGraph, index);
+        assertEquals(cycleStep, lookup.lastStateChangeStep());
+        updateGraph.completeCycleForUnitTests();
 
         // the lookup takes its keys in its own column order
         final long rowKey = lookup.apply(new Object[] {4, 3}, false);
@@ -494,20 +487,6 @@ public class TestTransformedDataIndex extends RefreshingTableTestCase {
         while (!index.table().satisfied(step)) {
             assertTrue(updateGraph.flushOneNotificationForUnitTests());
         }
-    }
-
-    /**
-     * Complete the cycle a test started, if it is still open, so that a failed assertion does not leave the update
-     * graph's lock held.
-     */
-    private static void completeCycleIfOpen(final ControlledUpdateGraph updateGraph) {
-        if (updateGraph.clock().currentState() != LogicalClock.State.Updating) {
-            return;
-        }
-        if (!updateGraph.satisfied(updateGraph.clock().currentStep())) {
-            updateGraph.markSourcesRefreshedForUnitTests();
-        }
-        updateGraph.completeCycleForUnitTests();
     }
 
     private void assertStatic(final BasicDataIndex subIndex) {

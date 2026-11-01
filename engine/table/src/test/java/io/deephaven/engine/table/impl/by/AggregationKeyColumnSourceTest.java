@@ -19,7 +19,6 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -208,7 +207,6 @@ public class AggregationKeyColumnSourceTest {
             assertEquals(2, filtered.size());
             assertTableEquals(scanned(lastBy, filter), filtered);
         } finally {
-            completeCycleIfOpen(updateGraph);
             pool.shutdownNow();
         }
     }
@@ -253,9 +251,9 @@ public class AggregationKeyColumnSourceTest {
                 assertEquals(prevRows, result.maybeMatch());
                 assertTrue(result.match().isEmpty());
             }
+            updateGraph.completeCycleForUnitTests();
         } finally {
             probeValue.release.countDown();
-            completeCycleIfOpen(updateGraph);
             pool.shutdownNow();
         }
     }
@@ -379,20 +377,6 @@ public class AggregationKeyColumnSourceTest {
             failure.setValue(thrown);
         }
         return new ProbeOutcome(result.getValue(), failure.getValue());
-    }
-
-    /**
-     * Complete the cycle a test started, if it is still open, so that a failed assertion does not leave the update
-     * graph's lock held.
-     */
-    private static void completeCycleIfOpen(final ControlledUpdateGraph updateGraph) {
-        if (updateGraph.clock().currentState() != LogicalClock.State.Updating) {
-            return;
-        }
-        if (!updateGraph.satisfied(updateGraph.clock().currentStep())) {
-            updateGraph.markSourcesRefreshedForUnitTests();
-        }
-        updateGraph.completeCycleForUnitTests();
     }
 
     private static AggregationKeyColumnSource<?> keySource(final Table table) {
