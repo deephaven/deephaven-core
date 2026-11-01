@@ -124,4 +124,18 @@ public class BarrageProcessorTest {
       .Throws<Exception>()
       .WithMessageContaining("duplicates");
   }
+
+  /// <summary>
+  /// A full subscription is sent the server's entire removed set, which while the snapshot is still arriving can
+  /// name rows this client has not been given yet. Skipping those is a separate change; until it lands, such a
+  /// remove must be rejected rather than silently applied.
+  /// </summary>
+  [Test]
+  public async Task RemoveOfUndeliveredRowsIsRejected() {
+    var driver = AfterFirstRound();
+    var metadata = BarrageMessages.Metadata(Range(800, 820), None, null, [None, None]);
+    await Assert.That(() => { driver.Feed(metadata, [], []); })
+      .Throws<Exception>()
+      .WithMessageContaining("the set only contains");
+  }
 }

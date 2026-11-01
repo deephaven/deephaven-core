@@ -149,7 +149,10 @@ class AwaitingMetadata(TableState tableState) : IChunkProcessor {
     // that added_rows announces without data will arrive, with data, in a later snapshot round and is added
     // then. The insertion is strict. During the initial snapshot the server can legitimately re-send a row we
     // already hold; supporting that is a separate change, so for now such a row fails loudly inside
-    // SpaceMapper rather than being silently inserted a second time.
+    // SpaceMapper rather than being silently inserted a second time. Removes have the same gap: a full
+    // subscription is sent the server's entire removed set, which during the initial snapshot can name rows we
+    // have not been given yet. Skipping those is a separate change too, so for now such a remove fails loudly
+    // inside SpaceMapper as well.
     var addedRowsIndexSpace = tableState.AddKeys(addedRowsIncluded);
 
     var nextState = new AwaitingAdds(tableState, perColumnModifies.ToArray(), prev, removedRowsIndexSpace, afterRemoves,
