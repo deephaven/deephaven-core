@@ -3,13 +3,9 @@
 //
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
@@ -19,7 +15,6 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterDelegating;
 import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
-import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
@@ -54,7 +49,7 @@ import java.util.function.LongConsumer;
  * and only if the key source is, so that a key column reinterprets as the column it was grouped from does.
  */
 public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
-        implements FillUnordered<Values>, ConvertibleTimeSource {
+        implements ConvertibleTimeSource {
 
     private final ColumnSource<T> keySource;
     private final OperatorAggregationStateManager stateManager;
@@ -148,29 +143,6 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
     @Override
     public ColumnSource<Long> toEpochNano() {
         return ((ConvertibleTimeSource) keySource).toEpochNano();
-    }
-
-    @Override
-    public boolean providesFillUnordered() {
-        return FillUnordered.providesFillUnordered(keySource);
-    }
-
-    @Override
-    public void fillChunkUnordered(
-            @NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Values> dest,
-            @NotNull final LongChunk<? extends RowKeys> keys) {
-        // noinspection unchecked
-        ((FillUnordered<Values>) keySource).fillChunkUnordered(context, dest, keys);
-    }
-
-    @Override
-    public void fillPrevChunkUnordered(
-            @NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Values> dest,
-            @NotNull final LongChunk<? extends RowKeys> keys) {
-        // noinspection unchecked
-        ((FillUnordered<Values>) keySource).fillPrevChunkUnordered(context, dest, keys);
     }
 
     /**
