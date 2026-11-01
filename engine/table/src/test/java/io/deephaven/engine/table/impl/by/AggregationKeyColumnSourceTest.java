@@ -293,6 +293,7 @@ public class AggregationKeyColumnSourceTest {
             assertEquals(null, outcome.result);
             assertTrue(outcome.failure instanceof IllegalStateException);
         } finally {
+            probeValue.release.countDown();
             pool.shutdownNow();
         }
     }
@@ -345,6 +346,7 @@ public class AggregationKeyColumnSourceTest {
                 assertTrue(result.match().isEmpty());
             }
         } finally {
+            probeValue.release.countDown();
             pool.shutdownNow();
         }
         assertTableEquals(scanned(lastBy, filter), lastBy.where(filter.copy()));

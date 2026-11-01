@@ -35,6 +35,7 @@ import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.sources.IntTestSource;
@@ -55,6 +56,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -106,6 +108,9 @@ import static org.junit.Assert.fail;
 public class TestDynamicWhereFilter {
 
     private static final long TIMEOUT_SECONDS = 10;
+
+    /** A second key column, for a filter that an index on {@link #KEY} covers only in part. */
+    private static final String OTHER = "W";
 
     /** The rows of {@link #indexedSource()}. */
     private static final int INDEXED_SIZE = 40;
@@ -1067,18 +1072,35 @@ public class TestDynamicWhereFilter {
     /**
      * A filter of previous values looks up the index's rows until the index's update begins, and then abandons the
      * snapshot attempt rather than use lookups that no longer answer for previous values. Current values, once the
-     * index is satisfied, are looked up again.
+     * index is satisfied, are looked up again. A filter on more columns than the index covers looks up the index's rows
+     * before filtering them, and abandons its attempt the same way.
      */
     @Test
     public void testPreviousValuesIndexLookupsAreAbandonedOnceTheIndexChanges() {
-        final QueryTable source = indexedSource();
+        checkPreviousValuesIndexLookupsAbandoned(false);
+        checkPreviousValuesIndexLookupsAbandoned(true);
+    }
+
+    /**
+     * @param partial whether the filter also matches {@link #OTHER}, which the index on {@link #KEY} does not cover
+     */
+    private void checkPreviousValuesIndexLookupsAbandoned(final boolean partial) {
+        final int[] keys = new int[INDEXED_SIZE];
+        for (int ii = 0; ii < INDEXED_SIZE; ++ii) {
+            keys[ii] = ii % 2 == 0 ? 3 : 5;
+        }
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(INDEXED_SIZE).toTracking(),
+                keyColumns(intCol(KEY, keys), partial));
         final DataIndex index = DataIndexer.getOrCreateDataIndex(source, KEY);
-        final DynamicWhereFilter filter = new DynamicWhereFilter(newTable(intCol(KEY, 3)), true, pairs());
+        final DynamicWhereFilter filter =
+                new DynamicWhereFilter(newTable(keyColumns(intCol(KEY, 3), partial)), true, keyPairs(partial));
         filter.beginOperation(source).close();
 
         updateGraph.startCycleForUnitTests(false);
         try (final RowSet prevRows = source.getRowSet().copyPrev()) {
-            addIndexedRow(source, 3);
+            TstUtils.addToTable(source, i(INDEXED_SIZE), keyColumns(intCol(KEY, 3), partial));
+            source.notifyListeners(i(INDEXED_SIZE), i(), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
             try (final RowSet matched = filter.filter(prevRows, prevRows, source, true);
                     final RowSet expected = evenRows(INDEXED_SIZE)) {
                 assertEquals(expected, matched);
@@ -1100,24 +1122,34 @@ public class TestDynamicWhereFilter {
 
     /**
      * A lookup that throws is reported as the failure it is while the index is unchanged, and abandons the snapshot
-     * attempt once the index's update has begun, when the throw may come from a read the update tore.
+     * attempt once the index's update has begun, when the throw may come from a read the update tore; with a full index
+     * and with a partial one.
      */
     @Test
     public void testIndexLookupThatThrowsIsAbandonedOnlyOnceTheIndexChanges() {
+        checkThrowingIndexLookupAbandoned(false);
+        checkThrowingIndexLookupAbandoned(true);
+    }
+
+    /**
+     * @param partial whether the filter also matches {@link #OTHER}, which the index on {@link #KEY} does not cover
+     */
+    private void checkThrowingIndexLookupAbandoned(final boolean partial) {
         final ThrowingKey[] sourceKeys = new ThrowingKey[INDEXED_SIZE];
         for (int ii = 0; ii < INDEXED_SIZE; ++ii) {
             sourceKeys[ii] = new ThrowingKey(ii % 2 == 0 ? 3 : 5);
         }
-        final QueryTable source =
-                TstUtils.testRefreshingTable(RowSetFactory.flat(INDEXED_SIZE).toTracking(), col(KEY, sourceKeys));
+        final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(INDEXED_SIZE).toTracking(),
+                keyColumns(col(KEY, sourceKeys), partial));
         final DataIndex index = DataIndexer.getOrCreateDataIndex(source, KEY);
         final ThrowingKey setKey = new ThrowingKey(3);
-        final DynamicWhereFilter filter = new DynamicWhereFilter(newTable(col(KEY, setKey)), true, pairs());
+        final DynamicWhereFilter filter =
+                new DynamicWhereFilter(newTable(keyColumns(col(KEY, setKey), partial)), true, keyPairs(partial));
         filter.beginOperation(source).close();
 
         updateGraph.startCycleForUnitTests(false);
         try (final RowSet prevRows = source.getRowSet().copyPrev()) {
-            TstUtils.addToTable(source, i(INDEXED_SIZE), col(KEY, new ThrowingKey(3)));
+            TstUtils.addToTable(source, i(INDEXED_SIZE), keyColumns(col(KEY, new ThrowingKey(3)), partial));
             source.notifyListeners(i(INDEXED_SIZE), i(), i());
             updateGraph.markSourcesRefreshedForUnitTests();
 
@@ -1133,6 +1165,50 @@ public class TestDynamicWhereFilter {
             setKey.throwOnHash = false;
             endCycleIfOpen();
         }
+    }
+
+    /**
+     * A where on an indexed source with a refreshing set commits once the index has changed on a later step than the
+     * set ever has, since the filter's change step is then the index's, and follows the set's changes after.
+     */
+    @Test
+    public void testWhereInRefreshingSetAfterTheIndexChanges() throws Exception {
+        final QueryTable source = indexedSource();
+        // built now, so that its aggregation follows the source's next cycle
+        final DataIndex index = DataIndexer.getOrCreateDataIndex(source, KEY);
+        index.table();
+        final QueryTable setTable = TstUtils.testRefreshingTable(i(0).toTracking(), intCol(KEY, 3));
+        updateGraph.runWithinUnitTestCycle(() -> addIndexedRow(source, 3));
+        assertEquals(updateGraph.clock().currentStep(), index.rowKeyLookup().lastStateChangeStep());
+
+        final Table result = pool.submit(() -> source.whereIn(setTable, KEY)).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        try (final RowSet evens = evenRows(INDEXED_SIZE);
+                final RowSet expected = evens.union(i(INDEXED_SIZE))) {
+            assertEquals(expected, result.getRowSet());
+        }
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(setTable, i(1), intCol(KEY, 5));
+            setTable.notifyListeners(i(1), i(), i());
+        });
+        assertEquals(source.getRowSet(), result.getRowSet());
+    }
+
+    /**
+     * {@code keys}, and when {@code partial}, a column of {@link #OTHER} that is 7 in every row, for a filter on
+     * {@link #KEY} and {@link #OTHER} that an index on {@link #KEY} covers only in part.
+     */
+    private static ColumnHolder<?>[] keyColumns(final ColumnHolder<?> keys, final boolean partial) {
+        if (!partial) {
+            return new ColumnHolder<?>[] {keys};
+        }
+        final int[] others = new int[keys.size()];
+        Arrays.fill(others, 7);
+        return new ColumnHolder<?>[] {keys, intCol(OTHER, others)};
+    }
+
+    private static MatchPair[] keyPairs(final boolean partial) {
+        return partial ? MatchPairFactory.getExpressions(KEY, OTHER) : pairs();
     }
 
     /**
