@@ -45,13 +45,15 @@ public class GrowingSubscriptionTest {
   /// </summary>
   [Test]
   public async Task LargeAppendingTableIsFullyDelivered() {
+    const int tickRows = 2_000;
     var script = Expensive + "\n\n" + $"""
       _base = empty_table({BaseRows}).update(["K = ii", "Price = ii * 1.5"]).update_view(["Slow = (long) expensive(K)"])
+      # Appends a row every 2ms and stops after {tickRows} of them so that the table settles.
       _tick = (time_table("PT0.002S").update(["K = 9_000_000 + ii", "Price = ii * 2.5"])
-          .update_view(["Slow = (long) expensive(K)"]).drop_columns("Timestamp"))
+          .update_view(["Slow = (long) expensive(K)"]).drop_columns("Timestamp").head({tickRows}))
       growing_appends = merge([_base, _tick])
       """;
-    var table = await AssertFullyDelivered(script, "growing_appends");
+    var table = await AssertFullyDelivered(script, "growing_appends", settlesAt: BaseRows + tickRows);
 
     // The base rows come first, with keys 0, 1, 2, ...; the appended rows follow, with keys from 9,000,000 up.
     // Every row's other columns are functions of its key, so a misaligned row shows up as a wrong value.
@@ -119,10 +121,14 @@ public class GrowingSubscriptionTest {
 
   /// <summary>
   /// Defines the table, subscribes, and waits until the subscription has held at least as many rows as the table
-  /// had when it was opened, which means the initial snapshot has been delivered in full. Returns the table as of
-  /// that update.
+  /// had when it was opened, which for a table of fixed size means the initial snapshot has been delivered in
+  /// full. A table whose row count is changing while the snapshot is delivered is complete at some other count: a
+  /// growing one, for instance, reaches its opening count while the snapshot still owes it the rows appended
+  /// since. For such a table 'settlesAt' gives the row count at which it is complete, which the completing update
+  /// must hit exactly. Returns the table as of the completing update.
   /// </summary>
-  private static async Task<IClientTable> AssertFullyDelivered(string script, string tableName) {
+  private static async Task<IClientTable> AssertFullyDelivered(string script, string tableName,
+      Int64? settlesAt = null) {
     using var ctx = CommonContextForTests.Create(new ClientOptions().SetSessionType(SessionTypes.Python));
     var manager = ctx.Client.Manager;
     manager.RunScript(script);
@@ -131,18 +137,23 @@ public class GrowingSubscriptionTest {
     var rowsAtOpen = table.NumRows;
     Console.WriteLine($"{tableName}: {rowsAtOpen:N0} rows at open");
 
-    var observer = new SnapshotObserver(rowsAtOpen);
+    var observer = new SnapshotObserver(rowsAtOpen, settlesAt);
     using var cookie = table.Subscribe(observer);
     Exception? error;
     try {
       error = await observer.Finished.WaitAsync(TimeSpan.FromSeconds(120));
     } catch (TimeoutException) {
+      var target = settlesAt ?? rowsAtOpen;
       throw new Exception($"Timed out after {observer.UpdateCount} updates, having reached only " +
-                          $"{observer.PeakRowCount:N0} of {rowsAtOpen:N0} rows");
+                          $"{observer.PeakRowCount:N0} of {target:N0} rows");
     }
 
     await Assert.That(error).IsNull();
-    await Assert.That(observer.PeakRowCount).IsGreaterThanOrEqualTo(rowsAtOpen);
+    if (settlesAt == null) {
+      await Assert.That(observer.PeakRowCount).IsGreaterThanOrEqualTo(rowsAtOpen);
+    } else {
+      await Assert.That(observer.Last!.NumRows).IsEqualTo(settlesAt.Value);
+    }
     return observer.Last!;
   }
 
@@ -168,10 +179,10 @@ public class GrowingSubscriptionTest {
   }
 
   /// <summary>
-  /// Logs each update and completes once the table has reached its opening row count, or on error. Keeps the table
-  /// as of the completing update for the caller to inspect.
+  /// Logs each update and completes once the table has reached its opening row count, or exactly 'settlesAt' rows
+  /// when that is given, or on error. Keeps the table as of the completing update for the caller to inspect.
   /// </summary>
-  private sealed class SnapshotObserver(Int64 rowsAtOpen) : IObserver<TickingUpdate> {
+  private sealed class SnapshotObserver(Int64 rowsAtOpen, Int64? settlesAt) : IObserver<TickingUpdate> {
     private const int MaxLoggedUpdates = 40;
     private readonly TaskCompletionSource<Exception?> _finished =
       new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -201,7 +212,8 @@ public class GrowingSubscriptionTest {
       }
       _previousAtMs = nowMs;
 
-      if (PeakRowCount >= rowsAtOpen) {
+      var complete = settlesAt == null ? PeakRowCount >= rowsAtOpen : rowCount == settlesAt.Value;
+      if (complete) {
         Last = update.Current;
         _finished.TrySetResult(null);
       }
