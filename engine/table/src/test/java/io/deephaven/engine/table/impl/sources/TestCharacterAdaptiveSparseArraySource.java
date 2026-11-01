@@ -12,6 +12,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
@@ -25,6 +26,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -225,8 +227,10 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
                         }
                         final long divisionStart = start;
                         final long divisionEnd = end;
+                        // a division is written in pieces, which may end inside a leaf
+                        final int pieceSize = 1 + random.nextInt(48);
                         futures.add(executor.submit(() -> fillDivision(source, rows, values, divisionStart,
-                                divisionEnd)));
+                                divisionEnd, pieceSize)));
                         start = end;
                     }
                     for (final Future<?> future : futures) {
@@ -244,20 +248,84 @@ public class TestCharacterAdaptiveSparseArraySource extends AbstractCharacterCol
     }
 
     /**
-     * Write positions {@code start} through {@code end - 1} of {@code rows} with their {@code values}.
+     * Populate leaves that each become full blocks from several threads at once, in pieces that end inside the leaves,
+     * so that each thread's first piece briefly makes a compact leaf in the same, newly prepared, bottom page table
+     * level.
+     */
+    @Test
+    public void testParallelPopulationOfSplitFullLeaves() throws Exception {
+        final int threads = 4;
+        final int leavesPerThread = 4;
+        final int rowsPerLeaf = CharacterAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD + 72;
+        final int pieceSize = CharacterAdaptiveSparseArraySource.DEFAULT_COMPACT_THRESHOLD - 31;
+        final ExecutorService executor = Executors.newFixedThreadPool(threads);
+        try {
+            for (int trial = 0; trial < 200; ++trial) {
+                final Random random = new Random(trial);
+                final CharacterAdaptiveSparseArraySource source = new CharacterAdaptiveSparseArraySource();
+                final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+                for (int leaf = 0; leaf < threads * leavesPerThread; ++leaf) {
+                    builder.appendRange((long) leaf * BLOCK_SIZE, (long) leaf * BLOCK_SIZE + rowsPerLeaf - 1);
+                }
+                try (final RowSet rows = builder.build()) {
+                    final Long2CharOpenHashMap expected = new Long2CharOpenHashMap();
+                    expected.defaultReturnValue(NULL_CHAR);
+                    final char[] values = new char[rows.intSize()];
+                    final MutableInt position = new MutableInt(0);
+                    rows.forAllRowKeys(key -> {
+                        final char value = randomValue(random);
+                        values[position.get()] = value;
+                        position.increment();
+                        expected.put(key, value);
+                    });
+                    source.prepareForParallelPopulation(rows, true);
+                    final CountDownLatch startLatch = new CountDownLatch(1);
+                    final List<Future<?>> futures = new ArrayList<>();
+                    final long divisionSize = (long) leavesPerThread * rowsPerLeaf;
+                    for (int ti = 0; ti < threads; ++ti) {
+                        final long divisionStart = ti * divisionSize;
+                        futures.add(executor.submit(() -> {
+                            startLatch.await();
+                            fillDivision(source, rows, values, divisionStart, divisionStart + divisionSize,
+                                    pieceSize);
+                            return null;
+                        }));
+                    }
+                    startLatch.countDown();
+                    for (final Future<?> future : futures) {
+                        future.get();
+                    }
+                    assertMatches(source, expected, random, false);
+                }
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    /**
+     * Write positions {@code start} through {@code end - 1} of {@code rows} with their {@code values},
+     * {@code pieceSize} rows at a time.
      */
     private static void fillDivision(
             final CharacterAdaptiveSparseArraySource source,
             final RowSet rows,
             final char[] values,
             final long start,
-            final long end) {
+            final long end,
+            final int pieceSize) {
         try (final RowSet division = rows.subSetByPositionRange(start, end);
-                final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(division.intSize());
-                final ChunkSink.FillFromContext context = source.makeFillFromContext(division.intSize())) {
-            chunk.copyFromTypedArray(values, (int) start, 0, division.intSize());
-            chunk.setSize(division.intSize());
-            source.fillFromChunk(context, chunk, division);
+                final RowSequence.Iterator pieces = division.getRowSequenceIterator();
+                final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(pieceSize);
+                final ChunkSink.FillFromContext context = source.makeFillFromContext(pieceSize)) {
+            int position = (int) start;
+            while (pieces.hasMore()) {
+                final RowSequence piece = pieces.getNextRowSequenceWithLength(pieceSize);
+                chunk.copyFromTypedArray(values, position, 0, piece.intSize());
+                chunk.setSize(piece.intSize());
+                source.fillFromChunk(context, chunk, piece);
+                position += piece.intSize();
+            }
         }
     }
 
