@@ -832,7 +832,8 @@ public class CharacterAdaptiveSparseArraySource extends AbstractColumnSource<Cha
         final CharCompactLeaf compact = level2.getCompact(block2);
         final boolean isBlock = level2.getBlock(block2) != null;
         final boolean mayBeBlock = !isBlock && (compact == null ? 0 : compact.size()) + count > compactThreshold;
-        level2.prepareIndex(block2, mayBeBlock, !isBlock && !mayBeBlock);
+        // a leaf that becomes a block may still be a compact leaf in between, when its rows are written in pieces
+        level2.prepareIndex(block2, mayBeBlock, !isBlock);
         if (trackPrevious) {
             final Level2 prevLevel2 = ensurePrevLevel2(firstKey);
             final CharCompactLeaf recorded = prevLevel2.getCompact(block2);
