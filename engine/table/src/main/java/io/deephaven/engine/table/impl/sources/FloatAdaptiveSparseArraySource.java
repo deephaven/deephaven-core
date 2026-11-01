@@ -646,8 +646,8 @@ public class FloatAdaptiveSparseArraySource extends AbstractColumnSource<Float>
     }
 
     /**
-     * A {@link LeafCursor} over a chunk of row key ranges. A range that crosses a leaf boundary is visited in parts, one
-     * in each leaf.
+     * A {@link LeafCursor} over a chunk of row key ranges. A range that crosses a leaf boundary is visited in parts,
+     * one in each leaf.
      */
     private static final class LeafRanges extends LeafCursor {
         private LongChunk<OrderedRowKeyRanges> ranges;
