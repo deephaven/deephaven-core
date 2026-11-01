@@ -653,7 +653,10 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         try (final RowSequence.Iterator rsAddIt = upstream.added().getRowSequenceIterator();
                 final RowSequence.Iterator rsModIt = upstream.modified().getRowSequenceIterator()) {
             if (writesByPosition) {
-                // the adds are written to consecutive positions starting at firstAddedPosition
+                // the destination is addressed by position, and the adds of a static or append-only parent occupy its
+                // final positions, so they are written to consecutive positions starting at firstAddedPosition,
+                // whatever
+                // gaps lie between their row keys
                 long position = firstAddedPosition;
                 while (rsAddIt.hasMore()) {
                     final long divisionEnd = (position + divisionSize - 1) | alignmentMask;
