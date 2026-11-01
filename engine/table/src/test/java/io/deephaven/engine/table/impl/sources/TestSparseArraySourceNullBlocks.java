@@ -36,6 +36,7 @@ import java.util.stream.LongStream;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK0_SHIFT;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK1_SHIFT;
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK2_SIZE;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static io.deephaven.engine.testutil.TstUtils.addToTable;
 import static io.deephaven.engine.testutil.TstUtils.i;
@@ -176,7 +177,7 @@ public class TestSparseArraySourceNullBlocks {
             updateGraph().runWithinUnitTestCycle(() -> {
                 try (final RowSet candidates = i(unwrittenBlockKey, unwrittenBlock2Key, unwrittenBlock1Key);
                         final RowSet live = i(0)) {
-                    SparseArrayColumnSource.clearBlocksWithoutLiveRows(candidates, live, sparseSource);
+                    SparseBlockColumnSource.clearBlocksWithoutLiveRows(candidates, live, sparseSource);
                 }
             });
 
@@ -463,8 +464,8 @@ public class TestSparseArraySourceNullBlocks {
 
     private static long sparseSize(final Table result, final String column) {
         final ColumnSource<?> source = ReinterpretUtils.maybeConvertToPrimitive(result.getColumnSource(column));
-        assertTrue(source.getClass().getName(), source instanceof SparseArrayColumnSource);
-        return ((SparseArrayColumnSource<?>) source).estimateSize();
+        assertTrue(source.getClass().getName(), source instanceof SparseBlockColumnSource);
+        return ((SparseBlockColumnSource) source).estimateSize();
     }
 
     /**
@@ -504,8 +505,10 @@ public class TestSparseArraySourceNullBlocks {
             maxSize = Math.max(maxSize, currentSize);
         }
         assertEquals(LIVE_ROWS, result.size());
-        // the live rows are a contiguous range, so they span the same number of blocks, give or take one, each cycle
-        assertTrue("firstSize=" + firstSize + ", maxSize=" + maxSize, maxSize <= firstSize + 2 * LONG_BLOCK_BYTES);
+        // the live rows are a contiguous range, so they span the same number of blocks, give or take one, each cycle;
+        // an adaptive source's block2 may also hold a second array of references, for its compact leaves
+        assertTrue("firstSize=" + firstSize + ", maxSize=" + maxSize,
+                maxSize <= firstSize + 2 * LONG_BLOCK_BYTES + (long) BLOCK2_SIZE * Long.BYTES);
         return result;
     }
 

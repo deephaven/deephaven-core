@@ -12,7 +12,7 @@ import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseBlockColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -98,7 +98,7 @@ public final class LongColumnSourceWritableRowRedirection
     }
 
     /**
-     * When the column source is a {@link SparseArrayColumnSource}, releases at the end of this cycle each of its blocks
+     * When the column source is a {@link SparseBlockColumnSource}, releases at the end of this cycle each of its blocks
      * that holds a row key vacated this cycle and no row key of {@code outerRowSet}.
      */
     @Override
@@ -106,9 +106,9 @@ public final class LongColumnSourceWritableRowRedirection
             @NotNull final RowSet removed,
             @NotNull final RowSetShiftData shifted,
             @NotNull final TrackingRowSet outerRowSet) {
-        if (columnSource instanceof SparseArrayColumnSource) {
-            SparseArrayColumnSource.clearVacatedBlocks(removed, shifted, outerRowSet,
-                    (SparseArrayColumnSource<?>) columnSource);
+        if (columnSource instanceof SparseBlockColumnSource) {
+            SparseBlockColumnSource.clearVacatedBlocks(removed, shifted, outerRowSet,
+                    (SparseBlockColumnSource) columnSource);
         }
     }
 }

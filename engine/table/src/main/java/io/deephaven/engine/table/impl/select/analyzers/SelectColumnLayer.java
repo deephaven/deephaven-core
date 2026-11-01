@@ -220,33 +220,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 final long divisionSize = resultTypeIsTableOrRowSet ? 1
                         : Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
                                 (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
-                final List<TableUpdate> updates = new ArrayList<>();
-                // divide up the additions and modifications
-                try (final RowSequence.Iterator rsAddIt = upstream.added().getRowSequenceIterator();
-                        final RowSequence.Iterator rsModIt = upstream.modified().getRowSequenceIterator()) {
-                    while (rsAddIt.hasMore() || rsModIt.hasMore()) {
-                        final TableUpdateImpl update = new TableUpdateImpl();
-                        update.modifiedColumnSet = upstream.modifiedColumnSet();
-                        update.shifted = RowSetShiftData.EMPTY;
-                        update.removed = RowSetFactory.empty();
-
-                        if (rsAddIt.hasMore()) {
-                            update.added = rsAddIt.getNextRowSequenceWithLength(divisionSize).asRowSet();
-                        } else {
-                            update.added = RowSetFactory.empty();
-                        }
-
-                        if (update.added.size() < divisionSize && rsModIt.hasMore()) {
-                            update.modified = rsModIt
-                                    .getNextRowSequenceWithLength(divisionSize - update.added().size())
-                                    .asRowSet();
-                        } else {
-                            update.modified = RowSetFactory.empty();
-                        }
-
-                        updates.add(update);
-                    }
-                }
+                // a Table or RowSet result divides its rows singly, and leaves the destination to prepare for that
+                final int alignment = resultTypeIsTableOrRowSet ? 1
+                        : ((WritableSourceWithPrepareForParallelPopulation) writableSource)
+                                .parallelPopulationAlignment();
+                final boolean alignedDivisions = alignment > 1;
+                final List<TableUpdate> updates = alignedDivisions
+                        ? divideAligned(upstream, divisionSize, alignment, firstAddedPosition)
+                        : divideByCount(upstream, divisionSize);
 
                 if (updates.isEmpty()) {
                     throw new IllegalStateException();
@@ -255,7 +236,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 jobScheduler.submit(
                         executionContext,
                         () -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper, liveResultOwner, onSuccess,
-                                onError, updates, serialTableOperationsSafe, firstAddedPosition),
+                                onError, updates, serialTableOperationsSafe, firstAddedPosition, alignedDivisions),
                         SelectColumnLayer.this, onError);
             } else {
                 jobScheduler.submit(
@@ -277,12 +258,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             final Consumer<Exception> onError,
             final List<TableUpdate> splitUpdates,
             final boolean serialTableOperationsSafe,
-            final long firstAddedPosition) {
+            final long firstAddedPosition,
+            final boolean alignedDivisions) {
         // we have to do removal and previous initialization before we can do any of the actual filling in multiple
         // threads to avoid concurrency problems with our destination column sources
         doEnsureCapacity();
 
-        prepareSourcesForParallelPopulation(upstream, firstAddedPosition);
+        prepareSourcesForParallelPopulation(upstream, firstAddedPosition, alignedDivisions);
 
         final int numTasks = splitUpdates.size();
         final long[] destinationOffsets = new long[numTasks];
@@ -636,7 +618,89 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
     }
 
-    void prepareSourcesForParallelPopulation(@NotNull final TableUpdate upstream, final long firstAddedPosition) {
+    /**
+     * Divide the adds, then the modifies, of {@code upstream} into updates of {@code divisionSize} rows each.
+     */
+    private static List<TableUpdate> divideByCount(@NotNull final TableUpdate upstream, final long divisionSize) {
+        final List<TableUpdate> updates = new ArrayList<>();
+        try (final RowSequence.Iterator rsAddIt = upstream.added().getRowSequenceIterator();
+                final RowSequence.Iterator rsModIt = upstream.modified().getRowSequenceIterator()) {
+            while (rsAddIt.hasMore() || rsModIt.hasMore()) {
+                final RowSet added = rsAddIt.hasMore()
+                        ? rsAddIt.getNextRowSequenceWithLength(divisionSize).asRowSet()
+                        : RowSetFactory.empty();
+                final RowSet modified = added.size() < divisionSize && rsModIt.hasMore()
+                        ? rsModIt.getNextRowSequenceWithLength(divisionSize - added.size()).asRowSet()
+                        : RowSetFactory.empty();
+                updates.add(newDivision(upstream, added, modified));
+            }
+        }
+        return updates;
+    }
+
+    /**
+     * Divide the adds and modifies of {@code upstream} into updates of about {@code divisionSize} rows each, such that
+     * each block of {@code alignment} destination row keys starting at a multiple of {@code alignment} is written by
+     * one update.
+     */
+    private List<TableUpdate> divideAligned(
+            @NotNull final TableUpdate upstream,
+            final long divisionSize,
+            final int alignment,
+            final long firstAddedPosition) {
+        final List<TableUpdate> updates = new ArrayList<>();
+        final long alignmentMask = alignment - 1;
+        try (final RowSequence.Iterator rsAddIt = upstream.added().getRowSequenceIterator();
+                final RowSequence.Iterator rsModIt = upstream.modified().getRowSequenceIterator()) {
+            if (writesByPosition) {
+                // the destination is addressed by position, and the adds of a static or append-only parent occupy
+                // its final positions, so they are written to consecutive positions starting at firstAddedPosition,
+                // whatever gaps lie between their row keys
+                long position = firstAddedPosition;
+                while (rsAddIt.hasMore()) {
+                    final long divisionEnd = (position + divisionSize - 1) | alignmentMask;
+                    final RowSequence added = rsAddIt.getNextRowSequenceWithLength(divisionEnd - position + 1);
+                    position += added.size();
+                    updates.add(newDivision(upstream, added.asRowSet(), RowSetFactory.empty()));
+                }
+                return updates;
+            }
+            try (final WritableRowSet changed = upstream.added().union(upstream.modified());
+                    final RowSequence.Iterator changedIt = changed.getRowSequenceIterator()) {
+                while (changedIt.hasMore()) {
+                    final long divisionEnd =
+                            changedIt.getNextRowSequenceWithLength(divisionSize).lastRowKey() | alignmentMask;
+                    if (divisionEnd != Long.MAX_VALUE) {
+                        changedIt.advance(divisionEnd + 1);
+                    }
+                    updates.add(newDivision(upstream, rsAddIt.getNextRowSequenceThrough(divisionEnd).asRowSet(),
+                            rsModIt.getNextRowSequenceThrough(divisionEnd).asRowSet()));
+                    if (divisionEnd == Long.MAX_VALUE) {
+                        break;
+                    }
+                }
+            }
+        }
+        return updates;
+    }
+
+    private static TableUpdate newDivision(
+            @NotNull final TableUpdate upstream,
+            @NotNull final RowSet added,
+            @NotNull final RowSet modified) {
+        final TableUpdateImpl update = new TableUpdateImpl();
+        update.modifiedColumnSet = upstream.modifiedColumnSet();
+        update.shifted = RowSetShiftData.EMPTY;
+        update.removed = RowSetFactory.empty();
+        update.added = added;
+        update.modified = modified;
+        return update;
+    }
+
+    void prepareSourcesForParallelPopulation(
+            @NotNull final TableUpdate upstream,
+            final long firstAddedPosition,
+            final boolean alignedDivisions) {
         // We do not permit in-column parallelization with redirected results, so do not need to worry about how this
         // interacts with the previous clearing of the RowRedirection that has occurred at the start of applyUpdate.
         Assert.eqFalse(isRedirected, "isRedirected");
@@ -651,7 +715,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             try (final RowSequence addedPositions = RowSequenceFactory.forRange(
                     firstAddedPosition, firstAddedPosition + upstream.added().size() - 1)) {
                 ((WritableSourceWithPrepareForParallelPopulation) (writableSource))
-                        .prepareForParallelPopulation(addedPositions);
+                        .prepareForParallelPopulation(addedPositions, alignedDivisions);
             }
         } else {
             // Upstream is not permitted to have shifts for parallel update processing.
@@ -659,7 +723,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             try (final WritableRowSet changedRows = upstream.added().union(upstream.modified())) {
                 changedRows.insert(upstream.removed());
                 ((WritableSourceWithPrepareForParallelPopulation) (writableSource))
-                        .prepareForParallelPopulation(changedRows);
+                        .prepareForParallelPopulation(changedRows, alignedDivisions);
             }
         }
     }

@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseMemoryColumnSourceFactory;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -160,9 +161,17 @@ public class SparseSelectTest {
     @Test
     public void testSparseSelectSkipMemoryColumns() {
         final int[] intVals = {1, 2, 3, 4, 5};
-        final Table table = TstUtils.testRefreshingTable(RowSetFactory.flat(5).toTracking(),
-                TableTools.intCol("Value", intVals))
-                .update("V2=Value*2");
+        // sparseSelect passes through the sparse array sources that update creates without adaptive sources
+        final boolean startAdaptive = SparseMemoryColumnSourceFactory.USE_ADAPTIVE;
+        final Table table;
+        try {
+            SparseMemoryColumnSourceFactory.USE_ADAPTIVE = false;
+            table = TstUtils.testRefreshingTable(RowSetFactory.flat(5).toTracking(),
+                    TableTools.intCol("Value", intVals))
+                    .update("V2=Value*2");
+        } finally {
+            SparseMemoryColumnSourceFactory.USE_ADAPTIVE = startAdaptive;
+        }
         final Table selected = SparseSelect.sparseSelect(table);
         assertTableEquals(table, selected);
         assertSame(table.getColumnSource("V2"), selected.getColumnSource("V2"));

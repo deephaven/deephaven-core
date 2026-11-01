@@ -9,7 +9,6 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.rowset.RowSetShiftCallback;
-import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
@@ -19,11 +18,6 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -80,7 +74,7 @@ import java.util.Collection;
 public abstract class SparseArrayColumnSource<T>
         extends AbstractColumnSource<T>
         implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource, PossiblyImmutableColumnSource,
-        WritableSourceWithPrepareForParallelPopulation, RowSetShiftCallback {
+        WritableSourceWithPrepareForParallelPopulation, RowSetShiftCallback, SparseBlockColumnSource {
 
 
     // Usage:
@@ -214,14 +208,7 @@ public abstract class SparseArrayColumnSource<T>
         setNull(toRemove);
     }
 
-    /**
-     * At the end of this cycle, clear the provided rowsets of blocks by releasing the blocks back to the recyclers.
-     *
-     * @param blocksToClear the lowest level blocks to clear
-     * @param removeBlocks2 Block2 structures to clear from the Block1 structures
-     * @param removeBlocks1 Block1 structures to clear from the Block0 structure
-     * @param empty if the resulting table is empty
-     */
+    @Override
     public void clearBlocks(final RowSet blocksToClear,
             final RowSet removeBlocks2,
             final RowSet removeBlocks1,
@@ -237,110 +224,6 @@ public abstract class SparseArrayColumnSource<T>
         this.blocks2ToClear = removeBlocks2.copy();
         this.blocks1ToClear = removeBlocks1.copy();
         this.emptyResult = empty;
-    }
-
-    /**
-     * At the end of this cycle, release each block, block2 and block1 structure of {@code sources} that holds a row key
-     * of {@code candidateRowKeys} and no row key of {@code liveRowSet}.
-     *
-     * <p>
-     * The values each source holds at row keys outside {@code liveRowSet} must be unused after this cycle. The cost is
-     * proportional to the number of blocks that {@code candidateRowKeys} spans, so it should hold the row keys that
-     * were live at the start of this cycle and are not live now (the removed rows and the rows that shifts vacated),
-     * and as few others as practical. Each source may be passed to this method, or to
-     * {@link #clearBlocks(RowSet, RowSet, RowSet, boolean)}, at most once per cycle.
-     * </p>
-     *
-     * @param candidateRowKeys the row keys whose blocks may have no live rows
-     * @param liveRowSet the row keys whose values the sources hold after this cycle
-     * @param sources the sources to release blocks from
-     */
-    public static void clearBlocksWithoutLiveRows(
-            @NotNull final RowSet candidateRowKeys,
-            @NotNull final RowSet liveRowSet,
-            @NotNull final SparseArrayColumnSource<?>... sources) {
-        if (sources.length == 0 || candidateRowKeys.isEmpty()) {
-            return;
-        }
-        try (final RowSet removeBlocks = getBlocksWithoutLiveRows(candidateRowKeys, liveRowSet, LOG_BLOCK_SIZE);
-                final RowSet removeBlocks2 = removeBlocks.isNonempty()
-                        ? getBlocksWithoutLiveRows(candidateRowKeys, liveRowSet, BLOCK1_SHIFT)
-                        : RowSetFactory.empty();
-                final RowSet removeBlocks1 = removeBlocks2.isNonempty()
-                        ? getBlocksWithoutLiveRows(candidateRowKeys, liveRowSet, BLOCK0_SHIFT)
-                        : RowSetFactory.empty()) {
-            if (removeBlocks.isEmpty()) {
-                return;
-            }
-            for (final SparseArrayColumnSource<?> source : sources) {
-                source.clearBlocks(removeBlocks, removeBlocks2, removeBlocks1, liveRowSet.isEmpty());
-            }
-        }
-    }
-
-    /**
-     * At the end of this cycle, release each block, block2 and block1 structure of {@code source} that holds a row key
-     * vacated this cycle and no row key of {@code outerRowSet}. The vacated row keys are those removed and those within
-     * the range of a shift, as {@link #clearBlocksWithoutLiveRows(RowSet, RowSet, SparseArrayColumnSource[])} requires;
-     * the shifted row keys that are still live keep their blocks.
-     *
-     * @param removed the row keys removed from {@code outerRowSet} this cycle, in the pre-shift key space
-     * @param shifted the shifts applied to {@code outerRowSet} this cycle
-     * @param outerRowSet the row keys whose values {@code source} holds, whose previous value is the row set at the
-     *        start of this cycle
-     * @param source the source to release blocks from
-     */
-    public static void clearVacatedBlocks(
-            @NotNull final RowSet removed,
-            @NotNull final RowSetShiftData shifted,
-            @NotNull final TrackingRowSet outerRowSet,
-            @NotNull final SparseArrayColumnSource<?> source) {
-        if (shifted.empty()) {
-            clearBlocksWithoutLiveRows(removed, outerRowSet, source);
-            return;
-        }
-        final RowSet prevRowSet = outerRowSet.prev();
-        try (final WritableRowSet candidates = removed.copy()) {
-            final int shiftCount = shifted.size();
-            for (int ii = 0; ii < shiftCount; ++ii) {
-                try (final RowSet shiftedRows =
-                        prevRowSet.subSetByKeyRange(shifted.getBeginRange(ii), shifted.getEndRange(ii))) {
-                    candidates.insert(shiftedRows);
-                }
-            }
-            clearBlocksWithoutLiveRows(candidates, outerRowSet, source);
-        }
-    }
-
-    /**
-     * @return the indices ({@code rowKey >> logBlockSize}) of the blocks of {@code 1 << logBlockSize} row keys that
-     *         hold a row key of {@code candidateRowKeys} and no row key of {@code liveRowSet}
-     */
-    @NotNull
-    private static RowSet getBlocksWithoutLiveRows(
-            final RowSet candidateRowKeys,
-            final RowSet liveRowSet,
-            final int logBlockSize) {
-        final long blockSize = 1L << logBlockSize;
-        final RowSet.SearchIterator liveIterator = liveRowSet.searchIterator();
-        final RowSet.SearchIterator candidateIterator = candidateRowKeys.searchIterator();
-
-        final RowSetBuilderSequential removeBlockBuilder = RowSetFactory.builderSequential();
-        long startOfNextBlock = 0;
-        while (candidateIterator.advance(startOfNextBlock)) {
-            final long candidateKey = candidateIterator.currentValue();
-            final long endOfCandidateBlock = candidateKey | (blockSize - 1);
-
-            final long startOfCandidateBlock = candidateKey & ~(blockSize - 1);
-            if (!liveIterator.advance(startOfCandidateBlock) || liveIterator.currentValue() > endOfCandidateBlock) {
-                removeBlockBuilder.appendKey(candidateKey >> logBlockSize);
-            }
-            if (endOfCandidateBlock == Long.MAX_VALUE) {
-                break;
-            }
-            startOfNextBlock = endOfCandidateBlock + 1;
-        }
-        return removeBlockBuilder.build();
     }
 
     public static <T> WritableColumnSource<T> getSparseMemoryColumnSource(Collection<T> data, Class<T> type) {
@@ -626,17 +509,4 @@ public abstract class SparseArrayColumnSource<T>
     public boolean providesFillUnordered() {
         return true;
     }
-
-    /**
-     * Return an estimate of the heap size taken by the current values within this sparse array source.
-     *
-     * <p>
-     * Only leaf nodes and the size arrays of references are included in this estimate. Intermediate objects are
-     * ignored, and an array of references is assumed to take 8 bytes per element with no overhead.
-     * </p>
-     *
-     * @return an estimate of the size of this column source's current data
-     */
-    @TestUseOnly
-    abstract public long estimateSize();
 }

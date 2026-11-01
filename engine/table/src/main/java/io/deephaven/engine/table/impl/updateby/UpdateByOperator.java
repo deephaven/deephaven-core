@@ -17,7 +17,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseBlockColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -375,20 +375,20 @@ public abstract class UpdateByOperator {
     protected abstract void clearOutputRows(RowSet toClear);
 
     /**
-     * Pass to {@code consumer} each sparse array source that this operator writes at the source table's row keys, so
+     * Pass to {@code consumer} each sparse block source that this operator writes at the source table's row keys, so
      * that the blocks of row keys that no longer hold a row can be released. The default passes each output source that
-     * is a sparse array source.
+     * is a sparse block source.
      *
-     * @param consumer the consumer of this operator's sparse array sources
+     * @param consumer the consumer of this operator's sparse block sources
      */
-    protected void collectSparseSources(@NotNull final Consumer<SparseArrayColumnSource<?>> consumer) {
+    protected void collectSparseSources(@NotNull final Consumer<SparseBlockColumnSource> consumer) {
         for (final ColumnSource<?> outputSource : getOutputColumns().values()) {
             // a reinterpretable output, such as an Instant source, may hold its values in a sparse primitive source
-            final ColumnSource<?> storage = outputSource instanceof SparseArrayColumnSource
+            final ColumnSource<?> storage = outputSource instanceof SparseBlockColumnSource
                     ? outputSource
                     : ReinterpretUtils.maybeConvertToPrimitive(outputSource);
-            if (storage instanceof SparseArrayColumnSource) {
-                consumer.accept((SparseArrayColumnSource<?>) storage);
+            if (storage instanceof SparseBlockColumnSource) {
+                consumer.accept((SparseBlockColumnSource) storage);
             }
         }
     }

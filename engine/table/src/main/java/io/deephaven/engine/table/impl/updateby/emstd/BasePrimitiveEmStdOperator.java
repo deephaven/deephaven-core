@@ -14,7 +14,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.engine.table.impl.sources.DoubleSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseBlockColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
@@ -187,10 +187,10 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
     // endregion Shifts
 
     @Override
-    protected void collectSparseSources(@NotNull final Consumer<SparseArrayColumnSource<?>> consumer) {
+    protected void collectSparseSources(@NotNull final Consumer<SparseBlockColumnSource> consumer) {
         super.collectSparseSources(consumer);
-        if (emaSource instanceof SparseArrayColumnSource) {
-            consumer.accept((SparseArrayColumnSource<?>) emaSource);
+        if (emaSource instanceof SparseBlockColumnSource) {
+            consumer.accept((SparseBlockColumnSource) emaSource);
         }
     }
 

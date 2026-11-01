@@ -16,7 +16,7 @@ import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
+import io.deephaven.engine.table.impl.sources.SparseMemoryColumnSourceFactory;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
 import org.jetbrains.annotations.NotNull;
 
@@ -182,7 +182,7 @@ class FilterSelectColumn implements SelectColumn {
 
     @Override
     public final WritableColumnSource<?> newDestInstance(final long size) {
-        return SparseArrayColumnSource.getSparseMemoryColumnSource(size, Boolean.class);
+        return SparseMemoryColumnSourceFactory.getMemoryColumnSource(size, Boolean.class);
     }
 
     @Override
