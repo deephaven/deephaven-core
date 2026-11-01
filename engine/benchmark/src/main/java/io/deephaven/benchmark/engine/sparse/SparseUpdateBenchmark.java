@@ -48,7 +48,7 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
 /**
  * Measures {@code update()} into the sparse array sources and the adaptive sparse array sources, selected by
  * {@link SparseMemoryColumnSourceFactory#USE_ADAPTIVE}, for a refreshing parent whose row keys follow a pattern over a
- * window of {@link #WINDOW} row keys:
+ * window of {@code 2^logWindow} row keys:
  * <ul>
  * <li>Dense: every row key</li>
  * <li>Stride8, Stride64, Stride512: every 8th, 64th or 512th row key</li>
@@ -58,10 +58,10 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
  * The benchmarks are:
  * <ul>
  * <li>{@link #initialUpdate()}: computing the result of the whole parent</li>
- * <li>{@link #marchCycle()}: a cycle that removes the parent's lowest {@link #CYCLE_KEYS} row keys and adds as many
+ * <li>{@link #marchCycle()}: a cycle that removes the parent's lowest {@code 2^logCycleKeys} row keys and adds as many
  * beyond its highest, so that the result fills new leaves and releases old ones</li>
- * <li>{@link #modifyCycle()}: a cycle that modifies every parent row within {@link #CYCLE_KEYS} row keys, so that the
- * result records previous values for them</li>
+ * <li>{@link #modifyCycle()}: a cycle that modifies every parent row within {@code 2^logCycleKeys} row keys, so that
+ * the result records previous values for them</li>
  * </ul>
  * The parent's value column is computed from the row key, so the measured work is the result's. The retained size that
  * {@link SparseBlockColumnSource#estimateSize()} reports for the result column is printed at the end of each trial.
@@ -73,8 +73,6 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
 @Measurement(iterations = 5, time = 3)
 @Fork(1)
 public class SparseUpdateBenchmark {
-    static final long WINDOW = 1L << 23;
-    static final long CYCLE_KEYS = 1L << 16;
     private static final String FORMULA = "X = V * 2.0";
 
     /**
@@ -119,6 +117,12 @@ public class SparseUpdateBenchmark {
     @Param({"serial", "parallel"})
     private String threads;
 
+    @Param({"23"})
+    private int logWindow;
+
+    @Param({"16"})
+    private int logCycleKeys;
+
     private ControlledUpdateGraph updateGraph;
     private QueryTable parent;
     private ComputedSource values;
@@ -126,6 +130,8 @@ public class SparseUpdateBenchmark {
     private Table result;
     private long windowStart;
     private long modifyStart;
+    private long window;
+    private long cycleKeys;
 
     @Setup(Level.Trial)
     public void setupTrial() {
@@ -140,8 +146,10 @@ public class SparseUpdateBenchmark {
         // divide a cycle's rows between several jobs
         QueryTable.MINIMUM_PARALLEL_SELECT_ROWS = 1L << 14;
 
+        window = 1L << logWindow;
+        cycleKeys = 1L << logCycleKeys;
         values = new ComputedSource();
-        parent = new QueryTable(keys(pattern, 0, WINDOW).toTracking(), Map.of("V", values));
+        parent = new QueryTable(keys(pattern, 0, window).toTracking(), Map.of("V", values));
         parent.setRefreshing(true);
         valuesModified = parent.newModifiedColumnSet("V");
         result = locked(() -> parent.update(FORMULA));
@@ -174,15 +182,15 @@ public class SparseUpdateBenchmark {
     public Table marchCycle() {
         final long removeStart = windowStart;
         updateGraph.runWithinUnitTestCycle(() -> {
-            final RowSet removed = keys(pattern, removeStart, removeStart + CYCLE_KEYS);
-            final RowSet added = keys(pattern, removeStart + WINDOW, removeStart + WINDOW + CYCLE_KEYS);
+            final RowSet removed = keys(pattern, removeStart, removeStart + cycleKeys);
+            final RowSet added = keys(pattern, removeStart + window, removeStart + window + cycleKeys);
             final WritableRowSet rowSet = parent.getRowSet().writableCast();
             rowSet.remove(removed);
             rowSet.insert(added);
             parent.notifyListeners(new TableUpdateImpl(added, removed, RowSetFactory.empty(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         });
-        windowStart += CYCLE_KEYS;
+        windowStart += cycleKeys;
         return result;
     }
 
@@ -192,12 +200,12 @@ public class SparseUpdateBenchmark {
         updateGraph.runWithinUnitTestCycle(() -> {
             values.prevOffset = values.offset;
             ++values.offset;
-            final RowSet modified = keys(pattern, first, first + CYCLE_KEYS);
+            final RowSet modified = keys(pattern, first, first + cycleKeys);
             parent.notifyListeners(new TableUpdateImpl(RowSetFactory.empty(), RowSetFactory.empty(), modified,
                     RowSetShiftData.EMPTY, valuesModified));
         });
         values.prevOffset = values.offset;
-        modifyStart = (modifyStart + CYCLE_KEYS) % WINDOW;
+        modifyStart = (modifyStart + cycleKeys) % window;
         return result;
     }
 
