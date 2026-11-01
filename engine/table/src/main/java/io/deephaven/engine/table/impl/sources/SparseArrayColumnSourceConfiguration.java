@@ -158,14 +158,10 @@ public abstract class SparseArrayColumnSourceConfiguration {
     public static final int LONG_RECYCLER_MAXIMUM_CAPACITY0 =
             getRecyclerMaximumCapacity("long.0", LONG_RECYCLER_MAXIMUM_CAPACITY, LONG_RECYCLER_CAPACITY0);
 
-    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY =
-            getRecyclerMaximumCapacity("inuse", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, IN_USE_RECYCLER_CAPACITY);
-    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY2 =
-            getRecyclerMaximumCapacity("inuse.2", IN_USE_RECYCLER_MAXIMUM_CAPACITY, IN_USE_RECYCLER_CAPACITY2);
-    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY1 =
-            getRecyclerMaximumCapacity("inuse.1", IN_USE_RECYCLER_MAXIMUM_CAPACITY, IN_USE_RECYCLER_CAPACITY1);
-    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY0 =
-            getRecyclerMaximumCapacity("inuse.0", IN_USE_RECYCLER_MAXIMUM_CAPACITY, IN_USE_RECYCLER_CAPACITY0);
+    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY = getInUseLowestLevelRecyclerMaximumCapacity();
+    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY2 = getInUseRecyclerMaximumCapacity2();
+    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY1 = getInUseRecyclerMaximumCapacity1();
+    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY0 = getInUseRecyclerMaximumCapacity0();
 
     private static int getRecyclerCapacity(final String thisType, final int defaultValue) {
         return Configuration.getInstance().getIntegerWithDefault(RECYCLER_CAPACITY_PROPERTY_PREFIX + thisType,
@@ -254,6 +250,70 @@ public abstract class SparseArrayColumnSourceConfiguration {
                 OBJECT_RECYCLER_CAPACITY,
                 SHORT_RECYCLER_CAPACITY,
                 LONG_RECYCLER_CAPACITY);
+    }
+
+    /**
+     * The lowest-level in-use recycler's maximum, by the same reasoning as
+     * {@link #getInUseLowestLevelRecyclerCapacity()}: the sum of the types' maximum capacities.
+     */
+    private static int getInUseLowestLevelRecyclerMaximumCapacity() {
+        return saturatingSum(BOOLEAN_RECYCLER_MAXIMUM_CAPACITY,
+                BYTE_RECYCLER_MAXIMUM_CAPACITY,
+                CHAR_RECYCLER_MAXIMUM_CAPACITY,
+                DOUBLE_RECYCLER_MAXIMUM_CAPACITY,
+                FLOAT_RECYCLER_MAXIMUM_CAPACITY,
+                INT_RECYCLER_MAXIMUM_CAPACITY,
+                OBJECT_RECYCLER_MAXIMUM_CAPACITY,
+                SHORT_RECYCLER_MAXIMUM_CAPACITY,
+                LONG_RECYCLER_MAXIMUM_CAPACITY);
+    }
+
+    /**
+     * The level-2 in-use recycler's maximum, by the same reasoning as {@link #getInUseRecyclerCapacity2()}: the sum of
+     * the types' level-2 maximum capacities.
+     */
+    private static int getInUseRecyclerMaximumCapacity2() {
+        return saturatingSum(BOOLEAN_RECYCLER_MAXIMUM_CAPACITY2,
+                BYTE_RECYCLER_MAXIMUM_CAPACITY2,
+                CHAR_RECYCLER_MAXIMUM_CAPACITY2,
+                DOUBLE_RECYCLER_MAXIMUM_CAPACITY2,
+                FLOAT_RECYCLER_MAXIMUM_CAPACITY2,
+                INT_RECYCLER_MAXIMUM_CAPACITY2,
+                OBJECT_RECYCLER_MAXIMUM_CAPACITY2,
+                SHORT_RECYCLER_MAXIMUM_CAPACITY2,
+                LONG_RECYCLER_MAXIMUM_CAPACITY2);
+    }
+
+    /**
+     * The level-1 in-use recycler's maximum, by the same reasoning as {@link #getInUseRecyclerCapacity1()}: the sum of
+     * the types' level-1 maximum capacities.
+     */
+    private static int getInUseRecyclerMaximumCapacity1() {
+        return saturatingSum(BOOLEAN_RECYCLER_MAXIMUM_CAPACITY1,
+                BYTE_RECYCLER_MAXIMUM_CAPACITY1,
+                CHAR_RECYCLER_MAXIMUM_CAPACITY1,
+                DOUBLE_RECYCLER_MAXIMUM_CAPACITY1,
+                FLOAT_RECYCLER_MAXIMUM_CAPACITY1,
+                INT_RECYCLER_MAXIMUM_CAPACITY1,
+                OBJECT_RECYCLER_MAXIMUM_CAPACITY1,
+                SHORT_RECYCLER_MAXIMUM_CAPACITY1,
+                LONG_RECYCLER_MAXIMUM_CAPACITY1);
+    }
+
+    /**
+     * The level-0 in-use recycler's maximum, by the same reasoning as {@link #getInUseRecyclerCapacity0()}: the sum of
+     * the types' level-0 maximum capacities.
+     */
+    private static int getInUseRecyclerMaximumCapacity0() {
+        return saturatingSum(BOOLEAN_RECYCLER_MAXIMUM_CAPACITY0,
+                BYTE_RECYCLER_MAXIMUM_CAPACITY0,
+                CHAR_RECYCLER_MAXIMUM_CAPACITY0,
+                DOUBLE_RECYCLER_MAXIMUM_CAPACITY0,
+                FLOAT_RECYCLER_MAXIMUM_CAPACITY0,
+                INT_RECYCLER_MAXIMUM_CAPACITY0,
+                OBJECT_RECYCLER_MAXIMUM_CAPACITY0,
+                SHORT_RECYCLER_MAXIMUM_CAPACITY0,
+                LONG_RECYCLER_MAXIMUM_CAPACITY0);
     }
 }
 

@@ -52,8 +52,7 @@ public class ArrayColumnSourceConfiguration {
             getRecyclerMaximumCapacity("short", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, SHORT_RECYCLER_CAPACITY);
     public static final int LONG_RECYCLER_MAXIMUM_CAPACITY =
             getRecyclerMaximumCapacity("long", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, LONG_RECYCLER_CAPACITY);
-    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY =
-            getRecyclerMaximumCapacity("inuse", DEFAULT_RECYCLER_MAXIMUM_CAPACITY, IN_USE_RECYCLER_CAPACITY);
+    public static final int IN_USE_RECYCLER_MAXIMUM_CAPACITY = getInUseRecyclerMaximumCapacity();
 
     private static int getRecyclerCapacity(final String thisType, final int defaultValue) {
         return Configuration.getInstance().getIntegerWithDefault(RECYCLER_CAPACITY_PROPERTY_PREFIX + thisType,
@@ -91,6 +90,22 @@ public class ArrayColumnSourceConfiguration {
                 OBJECT_RECYCLER_CAPACITY,
                 SHORT_RECYCLER_CAPACITY,
                 LONG_RECYCLER_CAPACITY);
+    }
+
+    /**
+     * The in-use recycler's maximum, by the same reasoning as {@link #getInUseRecyclerCapacity()}: the sum of the
+     * types' maximum capacities.
+     */
+    private static int getInUseRecyclerMaximumCapacity() {
+        return saturatingSum(BOOLEAN_RECYCLER_MAXIMUM_CAPACITY,
+                BYTE_RECYCLER_MAXIMUM_CAPACITY,
+                CHAR_RECYCLER_MAXIMUM_CAPACITY,
+                DOUBLE_RECYCLER_MAXIMUM_CAPACITY,
+                FLOAT_RECYCLER_MAXIMUM_CAPACITY,
+                INT_RECYCLER_MAXIMUM_CAPACITY,
+                OBJECT_RECYCLER_MAXIMUM_CAPACITY,
+                SHORT_RECYCLER_MAXIMUM_CAPACITY,
+                LONG_RECYCLER_MAXIMUM_CAPACITY);
     }
 }
 
