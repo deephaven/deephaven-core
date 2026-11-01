@@ -31,6 +31,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -242,6 +243,14 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                         : constituentNodeDefinition.getColumnStream())
                 .flatMap(Function.identity())
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * @return the row lookup of this rollup's base level
+     */
+    @VisibleForTesting
+    AggregationRowLookup baseLevelRowLookup() {
+        return levelRowLookups[numLevels - 1];
     }
 
     @Override
