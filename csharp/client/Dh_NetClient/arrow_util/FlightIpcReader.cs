@@ -39,7 +39,8 @@ internal sealed class FlightIpcReader : IDisposable {
   }
 
   /// <summary>
-  /// The stream's schema, or null until a read has consumed the schema message.
+  /// The stream's schema. Touching this before any batch has been read makes ArrowStreamReader
+  /// consume the schema message synchronously, so prefer reading it after the first batch.
   /// </summary>
   public Schema? Schema => _reader.Schema;
 
@@ -123,7 +124,8 @@ internal sealed class FlightIpcReader : IDisposable {
   /// pulling from the gRPC stream one message at a time as the reader consumes bytes. Each
   /// message is framed in the IPC "encapsulated message" format: a 0xFFFFFFFF continuation
   /// marker, a little-endian int32 header size, the flatbuffer message header, and then the
-  /// message body. gRPC stream end reads as end-of-stream (zero bytes).
+  /// message body. gRPC stream end reads as end-of-stream (zero bytes). A zero-length read is
+  /// answered without touching the stream.
   /// </summary>
   private sealed class FramingStream(IAsyncStreamReader<FlightData> source) : Stream {
     private byte[] _current = [];
@@ -134,6 +136,15 @@ internal sealed class FlightIpcReader : IDisposable {
 
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer,
       CancellationToken cancellationToken = default) {
+      // ArrowStreamReader reads a message body with a buffer of exactly the body's length, and it
+      // issues that read even when the length is zero (a schema message, or a record batch of a
+      // zero-column table). Answer such a read here: if it fell into the loop below at a message
+      // boundary it would pull the next FlightData off the stream, which on an open subscription
+      // blocks until the next update arrives and then pairs that update's metadata with the
+      // current batch.
+      if (buffer.IsEmpty) {
+        return 0;
+      }
       while (_pos == _current.Length) {
         if (_exhausted || !await source.MoveNext(cancellationToken)) {
           _exhausted = true;
