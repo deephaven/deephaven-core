@@ -615,6 +615,14 @@ public class ReplicateSourcesAndChunks {
                 "getObject\\(", "get(",
                 "NULL_OBJECT", "null",
                 "Object.BYTES", "REFERENCE_SIZE");
+        lines = replaceRegion(lines, "recycler", Arrays.asList(
+                "    /**",
+                "     * Blocks for previous value snapshots, which are not null-filled when borrowed. A returned block is",
+                "     * cleared, so that the recycler holds no references to previous values.",
+                "     */",
+                "    private static final SoftRecycler<Object[]> snapshotRecycler =",
+                "            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY,",
+                "                    () -> new Object[BLOCK_SIZE], block -> Arrays.fill(block, null));"));
         lines = replaceRegion(lines, "constructor", Arrays.asList(
                 "    public ObjectAdaptiveSparseArraySource(final Class<T> type) {",
                 "        this(type, null);",

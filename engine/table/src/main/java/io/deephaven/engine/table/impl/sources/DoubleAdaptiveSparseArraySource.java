@@ -18,6 +18,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftCallback;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
@@ -28,8 +30,9 @@ import io.deephaven.engine.table.impl.sources.sparse.DoubleBitmapLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.DoubleCompactLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.DoubleSortedLeaf;
 import io.deephaven.engine.updategraph.UpdateCommitter;
+import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.annotations.TestUseOnly;
-import io.deephaven.util.mutable.MutableInt;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -58,7 +61,10 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  * previous values. Each leaf of that table holds the recorded offsets of its leaf as a sorted or bitmap leaf, following
  * the same thresholds, or, once more offsets are recorded than a compact leaf holds, a full block that snapshots the
  * whole leaf. A row without a recorded value has not changed this cycle, so its previous value is its current value.
- * The previous values are discarded when the cycle completes.
+ * The previous values are discarded when the cycle completes. The snapshot blocks and the arrays of the previous value
+ * page table come from recyclers shared by the sources of this type, as in {@link DoubleSparseArraySource}; the
+ * leaves and page table levels created in a cycle are listed, so that completing it clears exactly the entries set and
+ * returns each array with every entry null.
  * <p>
  * For parallel population, {@link #prepareForParallelPopulation(RowSequence, boolean)} allocates the page table above
  * each leaf to be written, for current and previous values, so that writers of different leaves change no shared
@@ -76,9 +82,35 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
     /** The largest number of values a sorted or bitmap leaf holds. */
     public static final int DEFAULT_COMPACT_THRESHOLD = 128;
 
+    /**
+     * Prepare reads the row keys in pieces of 64 leaves of key space, which bounds the chunk of ranges each piece
+     * builds while sharing the cost of building it among many leaves.
+     */
+    private static final long PREPARE_PIECE_MASK = (64L << LOG_BLOCK_SIZE) - 1;
+
+    // region recycler
+    /** Blocks for previous value snapshots, which are not null-filled when borrowed. */
+    private static final SoftRecycler<double[]> snapshotRecycler =
+            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY,
+                    () -> new double[BLOCK_SIZE], null);
+    // endregion recycler
+    // The arrays of the previous value page table, which are returned with every entry null.
+    private static final SoftRecycler<double[][]> blocksArrayRecycler =
+            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY2,
+                    () -> new double[BLOCK2_SIZE][], null);
+    private static final SoftRecycler<DoubleCompactLeaf[]> compactsArrayRecycler =
+            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY2,
+                    () -> new DoubleCompactLeaf[BLOCK2_SIZE], null);
+    private static final SoftRecycler<Level2[]> level2ArrayRecycler =
+            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY1,
+                    () -> new Level2[BLOCK1_SIZE], null);
+    private static final SoftRecycler<Level1[]> level1ArrayRecycler =
+            new SoftRecycler<>(SparseArrayColumnSourceConfiguration.DOUBLE_RECYCLER_CAPACITY0,
+                    () -> new Level1[BLOCK0_SIZE], null);
+
     private final int sortedThreshold;
     private final int compactThreshold;
-    private final Level0 root = new Level0();
+    private final Level0 root = new Level0(false);
 
     /**
      * Commits the previous values at the end of each cycle in which a value changed; null when not tracking previous
@@ -89,6 +121,17 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
      * The previous values recorded this cycle, or null if none have been recorded.
      */
     private transient Level0 prevRoot;
+    /**
+     * The leaves of {@link #prevRoot}, as row keys shifted right by {@code LOG_BLOCK_SIZE}, so that completing the
+     * cycle clears their entries and returns their snapshot blocks without reading through the page table. Writers of
+     * different leaves may add to it concurrently, so it and {@link #prevLevel2Keys} are guarded by its lock.
+     */
+    private transient final LongArrayList prevLeafKeys = new LongArrayList();
+    /**
+     * The bottom page table levels of {@link #prevRoot}, as row keys shifted right by {@code BLOCK1_SHIFT}, so that
+     * completing the cycle returns their arrays and clears their entries in the levels above.
+     */
+    private transient final LongArrayList prevLevel2Keys = new LongArrayList();
 
     /**
      * The blocks, block2 structures and block1 structures to release at the end of this cycle, as passed to
@@ -144,9 +187,15 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
 
     /** The top page table level, holding {@link Level1} children. */
     private static final class Level0 {
+        /** Whether the array of children is borrowed from a recycler, as for previous values. */
+        private final boolean recycled;
         private int oneIndex = NO_CHILD;
         private Level1 oneChild;
         private Level1[] children;
+
+        private Level0(final boolean recycled) {
+            this.recycled = recycled;
+        }
 
         private Level1 get(final int index) {
             if (oneIndex == index) {
@@ -162,12 +211,20 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
                 return;
             }
             if (children == null) {
-                children = new Level1[BLOCK0_SIZE];
+                children = recycled ? level1ArrayRecycler.borrowItem() : new Level1[BLOCK0_SIZE];
                 children[oneIndex] = oneChild;
                 oneChild = null;
                 oneIndex = MANY_CHILDREN;
             }
             children[index] = child;
+        }
+
+        /** Return the array of children, whose entries must all be null, to its recycler. */
+        private void recycleArray() {
+            if (children != null) {
+                level1ArrayRecycler.returnItem(children);
+                children = null;
+            }
         }
 
         private void clear() {
@@ -192,9 +249,15 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
 
     /** The middle page table level, holding {@link Level2} children. */
     private static final class Level1 {
+        /** Whether the array of children is borrowed from a recycler, as for previous values. */
+        private final boolean recycled;
         private int oneIndex = NO_CHILD;
         private Level2 oneChild;
         private Level2[] children;
+
+        private Level1(final boolean recycled) {
+            this.recycled = recycled;
+        }
 
         private Level2 get(final int index) {
             if (oneIndex == index) {
@@ -210,12 +273,20 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
                 return;
             }
             if (children == null) {
-                children = new Level2[BLOCK1_SIZE];
+                children = recycled ? level2ArrayRecycler.borrowItem() : new Level2[BLOCK1_SIZE];
                 children[oneIndex] = oneChild;
                 oneChild = null;
                 oneIndex = MANY_CHILDREN;
             }
             children[index] = child;
+        }
+
+        /** Return the array of children, whose entries must all be null, to its recycler. */
+        private void recycleArray() {
+            if (children != null) {
+                level2ArrayRecycler.returnItem(children);
+                children = null;
+            }
         }
 
         private long estimateSize() {
@@ -237,11 +308,37 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
      * arrays so that reading a full block takes no more than reading a {@link DoubleSparseArraySource} block.
      */
     private static final class Level2 {
+        /** Whether the arrays of leaves are borrowed from recyclers, as for previous values. */
+        private final boolean recycled;
         private int oneIndex = NO_CHILD;
         private double[] oneBlock;
         private DoubleCompactLeaf oneCompact;
         private double[][] blocks;
         private DoubleCompactLeaf[] compacts;
+
+        private Level2(final boolean recycled) {
+            this.recycled = recycled;
+        }
+
+        private double[][] newBlocks() {
+            return recycled ? blocksArrayRecycler.borrowItem() : new double[BLOCK2_SIZE][];
+        }
+
+        private DoubleCompactLeaf[] newCompacts() {
+            return recycled ? compactsArrayRecycler.borrowItem() : new DoubleCompactLeaf[BLOCK2_SIZE];
+        }
+
+        /** Return the arrays of leaves, whose entries must all be null, to their recyclers. */
+        private void recycleArrays() {
+            if (blocks != null) {
+                blocksArrayRecycler.returnItem(blocks);
+                blocks = null;
+            }
+            if (compacts != null) {
+                compactsArrayRecycler.returnItem(compacts);
+                compacts = null;
+            }
+        }
 
         private double[] getBlock(final int index) {
             if (oneIndex == index) {
@@ -269,10 +366,10 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
                 return;
             }
             if (oneBlock != null) {
-                blocks = new double[BLOCK2_SIZE][];
+                blocks = newBlocks();
                 blocks[oneIndex] = oneBlock;
             } else if (oneCompact != null) {
-                compacts = new DoubleCompactLeaf[BLOCK2_SIZE];
+                compacts = newCompacts();
                 compacts[oneIndex] = oneCompact;
             }
             oneBlock = null;
@@ -289,7 +386,7 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
                 return;
             }
             if (blocks == null) {
-                blocks = new double[BLOCK2_SIZE][];
+                blocks = newBlocks();
             }
             blocks[index] = block;
             if (compacts != null) {
@@ -305,7 +402,7 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
                 return;
             }
             if (compacts == null) {
-                compacts = new DoubleCompactLeaf[BLOCK2_SIZE];
+                compacts = newCompacts();
             }
             compacts[index] = compact;
         }
@@ -323,10 +420,10 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
                 return;
             }
             if (mayBeBlock && blocks == null) {
-                blocks = new double[BLOCK2_SIZE][];
+                blocks = newBlocks();
             }
             if (mayBeCompact && compacts == null) {
-                compacts = new DoubleCompactLeaf[BLOCK2_SIZE];
+                compacts = newCompacts();
             }
         }
 
@@ -417,12 +514,12 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
         final int block0 = block0(key);
         Level1 level1 = root.get(block0);
         if (level1 == null) {
-            root.set(block0, level1 = new Level1());
+            root.set(block0, level1 = new Level1(false));
         }
         final int block1 = block1(key);
         Level2 level2 = level1.get(block1);
         if (level2 == null) {
-            level1.set(block1, level2 = new Level2());
+            level1.set(block1, level2 = new Level2(false));
         }
         return level2;
     }
@@ -464,18 +561,196 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
     }
 
     /**
-     * Store the offsets within their leaf of {@code leafKeys}, which are all within one leaf, in {@code offsets}.
+     * Walks the row keys of a write one leaf at a time, so that it visits each leaf's row keys together without a row
+     * key consumer or a row sequence per leaf.
      */
-    private static void leafOffsets(final RowSequence leafKeys, final int[] offsets, final MutableInt offsetCount) {
-        offsetCount.set(0);
-        leafKeys.forAllRowKeyRanges((final long rangeFirst, final long rangeLast) -> {
-            int next = offsetCount.get();
-            final int lastOffset = (int) (rangeLast & INDEX_MASK);
-            for (int offset = (int) (rangeFirst & INDEX_MASK); offset <= lastOffset; ++offset) {
-                offsets[next++] = offset;
+    private abstract static class LeafCursor {
+        /** The first row key of the current leaf. */
+        long firstKey;
+        /** The number of row keys in the current leaf. */
+        int count;
+
+        abstract boolean hasMore();
+
+        /** Advance to the next leaf that holds a row key. */
+        abstract void nextLeaf();
+
+        /** Store the offsets of the current leaf's row keys, ascending, in {@code offsets}. */
+        abstract void offsets(int[] offsets);
+
+        /**
+         * Copy the values of the current leaf's row keys, which start at {@code srcOffset} in {@code values}, into
+         * {@code block} at their offsets.
+         */
+        abstract void copyTo(DoubleChunk<? extends Values> values, int srcOffset, double[] block);
+    }
+
+    /**
+     * @return {@code ranges} or {@code keys}, whichever walks {@code rowSequence} more cheaply, reset to its row keys
+     */
+    private static LeafCursor leafCursor(final RowSequence rowSequence, final LeafRanges ranges, final LeafKeys keys) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            keys.reset(rowSequence.asRowKeyChunk());
+            return keys;
+        }
+        ranges.reset(rowSequence.asRowKeyRangesChunk());
+        return ranges;
+    }
+
+    /**
+     * A {@link LeafCursor} over a chunk of row keys.
+     */
+    private static final class LeafKeys extends LeafCursor {
+        private LongChunk<OrderedRowKeys> keys;
+        /** The position in {@link #keys} of the current leaf's first row key. */
+        private int firstIndex;
+        /** The position in {@link #keys} of the next leaf's first row key. */
+        private int nextIndex;
+
+        private void reset(final LongChunk<OrderedRowKeys> keys) {
+            this.keys = keys;
+            nextIndex = 0;
+        }
+
+        @Override
+        boolean hasMore() {
+            return nextIndex < keys.size();
+        }
+
+        @Override
+        void nextLeaf() {
+            firstIndex = nextIndex;
+            firstKey = keys.get(firstIndex);
+            final long lastKeyInLeaf = firstKey | INDEX_MASK;
+            int index = firstIndex + 1;
+            while (index < keys.size() && keys.get(index) <= lastKeyInLeaf) {
+                ++index;
             }
-            offsetCount.set(next);
-        });
+            nextIndex = index;
+            count = index - firstIndex;
+        }
+
+        @Override
+        void offsets(final int[] offsets) {
+            for (int ii = 0; ii < count; ++ii) {
+                offsets[ii] = (int) (keys.get(firstIndex + ii) & INDEX_MASK);
+            }
+        }
+
+        @Override
+        void copyTo(final DoubleChunk<? extends Values> values, final int srcOffset, final double[] block) {
+            for (int ii = 0; ii < count; ++ii) {
+                block[(int) (keys.get(firstIndex + ii) & INDEX_MASK)] = values.get(srcOffset + ii);
+            }
+        }
+    }
+
+    /**
+     * A {@link LeafCursor} over a chunk of row key ranges. A range that crosses a leaf boundary is visited in parts, one
+     * in each leaf.
+     */
+    private static final class LeafRanges extends LeafCursor {
+        private LongChunk<OrderedRowKeyRanges> ranges;
+        /** The position in {@link #ranges} of the first range not yet fully visited. */
+        private int nextRange;
+        /** The first row key not yet visited, within the range at {@link #nextRange}. */
+        private long nextKey;
+        /** The positions in {@link #ranges} of the first range in the current leaf and past its last range. */
+        private int firstRange;
+        private int endRange;
+
+        private void reset(final LongChunk<OrderedRowKeyRanges> ranges) {
+            this.ranges = ranges;
+            nextRange = 0;
+            nextKey = ranges.size() == 0 ? 0 : ranges.get(0);
+        }
+
+        @Override
+        boolean hasMore() {
+            return nextRange < ranges.size();
+        }
+
+        @Override
+        void nextLeaf() {
+            firstKey = nextKey;
+            firstRange = nextRange;
+            final long lastKeyInLeaf = firstKey | INDEX_MASK;
+            long rangeFirst = firstKey;
+            int leafCount = 0;
+            int ri = nextRange;
+            while (true) {
+                final long rangeLast = ranges.get(ri + 1);
+                if (rangeLast > lastKeyInLeaf) {
+                    // the range continues into the next leaf
+                    leafCount += (int) (lastKeyInLeaf - rangeFirst + 1);
+                    endRange = ri + 2;
+                    nextRange = ri;
+                    nextKey = lastKeyInLeaf + 1;
+                    break;
+                }
+                leafCount += (int) (rangeLast - rangeFirst + 1);
+                ri += 2;
+                if (ri == ranges.size() || ranges.get(ri) > lastKeyInLeaf) {
+                    endRange = ri;
+                    nextRange = ri;
+                    nextKey = ri == ranges.size() ? 0 : ranges.get(ri);
+                    break;
+                }
+                rangeFirst = ranges.get(ri);
+            }
+            count = leafCount;
+        }
+
+        /** @return the first offset within the current leaf of the range at {@code ri} */
+        private int firstOffset(final int ri) {
+            return (int) (Math.max(ranges.get(ri), firstKey) & INDEX_MASK);
+        }
+
+        /** @return the last offset within the current leaf of the range at {@code ri} */
+        private int lastOffset(final int ri) {
+            return (int) (Math.min(ranges.get(ri + 1), firstKey | INDEX_MASK) & INDEX_MASK);
+        }
+
+        @Override
+        void offsets(final int[] offsets) {
+            int next = 0;
+            for (int ri = firstRange; ri < endRange; ri += 2) {
+                final int lastOffset = lastOffset(ri);
+                for (int offset = firstOffset(ri); offset <= lastOffset; ++offset) {
+                    offsets[next++] = offset;
+                }
+            }
+        }
+
+        @Override
+        void copyTo(final DoubleChunk<? extends Values> values, final int srcOffset, final double[] block) {
+            int position = srcOffset;
+            for (int ri = firstRange; ri < endRange; ri += 2) {
+                final int firstOffset = firstOffset(ri);
+                final int length = lastOffset(ri) - firstOffset + 1;
+                values.copyToTypedArray(position, block, firstOffset, length);
+                position += length;
+            }
+        }
+    }
+
+    /**
+     * Holds the offsets that a write records as previous values in a compact leaf, and their values, for one leaf at a
+     * time.
+     */
+    private static final class PrevScratch {
+        private final int[] offsets;
+        private final double[] values;
+        private final DoubleChunk<? extends Values> valuesChunk;
+
+        /**
+         * @param capacity the most offsets a compact leaf holds
+         */
+        private PrevScratch(final int capacity) {
+            offsets = new int[capacity];
+            values = new double[capacity];
+            valuesChunk = DoubleChunk.chunkWrap(values);
+        }
     }
 
     /**
@@ -526,40 +801,78 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
         }
         final boolean trackPrevious = prevFlusher != null;
         final int[] offsets = alignedDivisions ? null : new int[BLOCK_SIZE];
-        final MutableInt offsetCount = new MutableInt();
+        final PrevScratch scratch = !alignedDivisions && trackPrevious ? new PrevScratch(compactThreshold) : null;
         try (final RowSequence.Iterator it = changedRows.getRowSequenceIterator()) {
+            if (alignedDivisions) {
+                // the writers build their own leaves, so preparing a leaf needs only the number of its row keys
+                while (it.hasMore()) {
+                    final long firstKey = it.peekNextKey();
+                    final int count = it.getNextRowSequenceThrough(firstKey | INDEX_MASK).intSize();
+                    prepareLeafIndex(firstKey, count, trackPrevious);
+                }
+                return;
+            }
+            final LeafRanges ranges = new LeafRanges();
+            final LeafKeys keys = new LeafKeys();
             while (it.hasMore()) {
-                final long firstKey = it.peekNextKey();
-                final RowSequence leafKeys = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
-                final int count = leafKeys.intSize();
-                final int block2 = block2(firstKey);
-                final Level2 level2 = ensureLevel2(firstKey);
-                final DoubleCompactLeaf compact = level2.getCompact(block2);
-                final boolean isBlock = level2.getBlock(block2) != null;
-                final boolean mayBeBlock =
-                        !isBlock && (compact == null ? 0 : compact.size()) + count > compactThreshold;
-                level2.prepareIndex(block2, mayBeBlock, !isBlock && !mayBeBlock);
-                if (trackPrevious) {
-                    final Level2 prevLevel2 = ensurePrevLevel2(firstKey);
-                    final DoubleCompactLeaf recorded = prevLevel2.getCompact(block2);
-                    final boolean mayBeSnapshot = prevLevel2.getBlock(block2) == null
-                            && (recorded == null ? 0 : recorded.size()) + count > compactThreshold;
-                    prevLevel2.prepareIndex(block2, mayBeSnapshot, true);
+                // each piece of the row keys is a whole number of leaves, so that each leaf is prepared once
+                final RowSequence piece = it.getNextRowSequenceThrough(it.peekNextKey() | PREPARE_PIECE_MASK);
+                final LeafCursor leaves = leafCursor(piece, ranges, keys);
+                while (leaves.hasMore()) {
+                    leaves.nextLeaf();
+                    prepareLeaf(leaves, trackPrevious, offsets, scratch);
                 }
-                if (alignedDivisions) {
-                    continue;
-                }
-                leafOffsets(leafKeys, offsets, offsetCount);
-                if (trackPrevious) {
-                    recordPrevious(firstKey, level2, block2, offsets, count);
-                }
-                if (!isBlock) {
-                    final int absent = compact == null ? count : compact.countAbsent(offsets, count);
-                    final DoubleCompactLeaf prepared = prepareCompactLeaf(level2, block2, compact, absent);
-                    if (prepared != null) {
-                        prepared.insertAbsent(offsets, count);
-                    }
-                }
+            }
+        }
+    }
+
+    /**
+     * Allocate the page table entries that writing {@code count} row keys of the leaf holding {@code firstKey} may
+     * need, for current and, if {@code trackPrevious}, previous values.
+     */
+    private void prepareLeafIndex(final long firstKey, final int count, final boolean trackPrevious) {
+        final int block2 = block2(firstKey);
+        final Level2 level2 = ensureLevel2(firstKey);
+        final DoubleCompactLeaf compact = level2.getCompact(block2);
+        final boolean isBlock = level2.getBlock(block2) != null;
+        final boolean mayBeBlock = !isBlock && (compact == null ? 0 : compact.size()) + count > compactThreshold;
+        level2.prepareIndex(block2, mayBeBlock, !isBlock && !mayBeBlock);
+        if (trackPrevious) {
+            final Level2 prevLevel2 = ensurePrevLevel2(firstKey);
+            final DoubleCompactLeaf recorded = prevLevel2.getCompact(block2);
+            final boolean mayBeSnapshot = prevLevel2.getBlock(block2) == null
+                    && (recorded == null ? 0 : recorded.size()) + count > compactThreshold;
+            prevLevel2.prepareIndex(block2, mayBeSnapshot, true);
+        }
+    }
+
+    /**
+     * Build the current leaf of {@code leaves} with each of its row keys, holding null where it held no value, and
+     * record the previous values of those row keys if {@code trackPrevious}.
+     *
+     * @param offsets room for the offsets of a leaf
+     * @param scratch room for previous values, if {@code trackPrevious}
+     */
+    private void prepareLeaf(
+            final LeafCursor leaves,
+            final boolean trackPrevious,
+            final int[] offsets,
+            final PrevScratch scratch) {
+        final long firstKey = leaves.firstKey;
+        final int count = leaves.count;
+        prepareLeafIndex(firstKey, count, trackPrevious);
+        final int block2 = block2(firstKey);
+        final Level2 level2 = getLevel2(firstKey);
+        leaves.offsets(offsets);
+        if (trackPrevious) {
+            recordPrevious(firstKey, level2, block2, offsets, count, scratch);
+        }
+        if (level2.getBlock(block2) == null) {
+            final DoubleCompactLeaf compact = level2.getCompact(block2);
+            final int absent = compact == null ? count : compact.countAbsent(offsets, count);
+            final DoubleCompactLeaf prepared = prepareCompactLeaf(level2, block2, compact, absent);
+            if (prepared != null) {
+                prepared.insertAbsent(offsets, count);
             }
         }
     }
@@ -569,10 +882,23 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
      */
     private Level2 ensurePrevLevel2(final long key) {
         if (prevRoot == null) {
-            prevRoot = new Level0();
+            prevRoot = new Level0(true);
             prevFlusher.maybeActivate();
         }
-        return ensureLevel2(prevRoot, key);
+        final int block0 = block0(key);
+        Level1 level1 = prevRoot.get(block0);
+        if (level1 == null) {
+            prevRoot.set(block0, level1 = new Level1(true));
+        }
+        final int block1 = block1(key);
+        Level2 level2 = level1.get(block1);
+        if (level2 == null) {
+            level1.set(block1, level2 = new Level2(true));
+            synchronized (prevLeafKeys) {
+                prevLevel2Keys.add(key >> BLOCK1_SHIFT);
+            }
+        }
+        return level2;
     }
 
     /**
@@ -589,7 +915,7 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
             return;
         }
         final double value = getValue(level2, block2, offset);
-        recorded = preparePrevLeaf(prevLevel2, block2, recorded, 1, level2);
+        recorded = preparePrevLeaf(key, prevLevel2, block2, recorded, 1, level2);
         if (recorded != null) {
             recorded.put(offset, value);
         }
@@ -599,60 +925,78 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
      * Record the current values at {@code offsets[0, count)}, ascending and distinct, of the leaf at {@code block2} of
      * {@code level2} (null if not allocated), which covers {@code key}, as their previous values, except those this
      * cycle has already recorded.
+     *
+     * @param scratch holds the offsets to record and their values, when they fit in a compact leaf
      */
     private void recordPrevious(
             final long key,
             final Level2 level2,
             final int block2,
             final int[] offsets,
-            final int count) {
+            final int count,
+            final PrevScratch scratch) {
         final Level2 prevLevel2 = ensurePrevLevel2(key);
         if (prevLevel2.getBlock(block2) != null) {
             return;
         }
-        DoubleCompactLeaf recorded = prevLevel2.getCompact(block2);
-        final int absent = recorded == null ? count : recorded.countAbsent(offsets, count);
+        final DoubleCompactLeaf alreadyRecorded = prevLevel2.getCompact(block2);
+        final int absent = alreadyRecorded == null ? count : alreadyRecorded.countAbsent(offsets, count);
         if (absent == 0) {
             return;
         }
-        recorded = preparePrevLeaf(prevLevel2, block2, recorded, absent, level2);
+        final DoubleCompactLeaf recorded = preparePrevLeaf(key, prevLevel2, block2, alreadyRecorded, absent, level2);
         if (recorded == null) {
             return;
         }
+        final double[] block = level2 == null ? null : level2.getBlock(block2);
+        final DoubleCompactLeaf compact = level2 == null || block != null ? null : level2.getCompact(block2);
+        int next = 0;
         for (int ii = 0; ii < count; ++ii) {
             final int offset = offsets[ii];
-            if (!recorded.contains(offset)) {
-                recorded.put(offset, getValue(level2, block2, offset));
+            if (absent == count || !recorded.contains(offset)) {
+                scratch.offsets[next] = offset;
+                if (block != null) {
+                    scratch.values[next] = block[offset];
+                } else {
+                    scratch.values[next] = compact == null ? NULL_DOUBLE : compact.get(offset);
+                }
+                ++next;
             }
         }
+        recorded.putSorted(scratch.offsets, scratch.valuesChunk, 0, absent);
     }
 
     /**
      * Make the previous value leaf at {@code block2} of {@code prevLevel2}, whose recorded offsets are {@code recorded}
      * (or null if none), ready to record {@code count} more offsets of the leaf at {@code block2} of {@code level2}
-     * (null if not allocated).
+     * (null if not allocated), both covering {@code key}.
      *
      * @return the leaf to record into, or null if the previous value leaf is now a snapshot of the whole leaf
      */
     private DoubleCompactLeaf preparePrevLeaf(
+            final long key,
             final Level2 prevLevel2,
             final int block2,
             final DoubleCompactLeaf recorded,
             final int count,
             final Level2 level2) {
+        if (recorded == null) {
+            synchronized (prevLeafKeys) {
+                prevLeafKeys.add(key >> LOG_BLOCK_SIZE);
+            }
+        }
         final int newSize = (recorded == null ? 0 : recorded.size()) + count;
         if (newSize > compactThreshold) {
             // the offsets not yet recorded have not changed this cycle, so their current values are previous values
-            final double[] snapshot = newBlock();
-            if (level2 != null) {
-                final double[] block = level2.getBlock(block2);
-                if (block != null) {
-                    System.arraycopy(block, 0, snapshot, 0, BLOCK_SIZE);
-                } else {
-                    final DoubleCompactLeaf compact = level2.getCompact(block2);
-                    if (compact != null) {
-                        compact.copyTo(snapshot);
-                    }
+            final double[] snapshot = snapshotRecycler.borrowItem();
+            final double[] block = level2 == null ? null : level2.getBlock(block2);
+            if (block != null) {
+                System.arraycopy(block, 0, snapshot, 0, BLOCK_SIZE);
+            } else {
+                Arrays.fill(snapshot, NULL_DOUBLE);
+                final DoubleCompactLeaf compact = level2 == null ? null : level2.getCompact(block2);
+                if (compact != null) {
+                    compact.copyTo(snapshot);
                 }
             }
             if (recorded != null) {
@@ -757,7 +1101,11 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
     }
 
     private void commitUpdates() {
+        final Level0 localPrevRoot = prevRoot;
         prevRoot = null;
+        if (localPrevRoot != null) {
+            recyclePrevious(localPrevRoot);
+        }
         if (blocksToClear == null) {
             return;
         }
@@ -788,6 +1136,52 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
             blocks2ToClear = null;
             blocks1ToClear = null;
             emptyResult = false;
+        }
+    }
+
+    /**
+     * Clear each entry this cycle set in {@code prev}, the previous value page table, returning the snapshot blocks and
+     * the arrays of entries to their recyclers.
+     */
+    private void recyclePrevious(final Level0 prev) {
+        synchronized (prevLeafKeys) {
+            for (int ii = 0; ii < prevLeafKeys.size(); ++ii) {
+                final long key = prevLeafKeys.getLong(ii) << LOG_BLOCK_SIZE;
+                final Level2 level2 = getLevel2(prev, key);
+                final int block2 = block2(key);
+                final double[] snapshot = level2.getBlock(block2);
+                if (snapshot != null) {
+                    snapshotRecycler.returnItem(snapshot);
+                }
+                level2.clear(block2);
+            }
+            prevLeafKeys.clear();
+
+            // each level1 was created with a level2, so the sorted level2 keys visit every level1, one at a time
+            prevLevel2Keys.sort(null);
+            long lastLevel1Key = -1;
+            Level1 level1 = null;
+            for (int ii = 0; ii < prevLevel2Keys.size(); ++ii) {
+                final long level2Key = prevLevel2Keys.getLong(ii);
+                final long key = level2Key << BLOCK1_SHIFT;
+                final long level1Key = level2Key >> LOG_BLOCK1_SIZE;
+                if (level1Key != lastLevel1Key) {
+                    if (level1 != null) {
+                        level1.recycleArray();
+                    }
+                    level1 = prev.get(block0(key));
+                    prev.set(block0(key), null);
+                    lastLevel1Key = level1Key;
+                }
+                final int block1 = block1(key);
+                level1.get(block1).recycleArrays();
+                level1.set(block1, null);
+            }
+            if (level1 != null) {
+                level1.recycleArray();
+            }
+            prevLevel2Keys.clear();
+            prev.recycleArray();
         }
     }
 
@@ -875,6 +1269,7 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
     public void setNull(@NotNull final RowSequence rowSequence) {
         final boolean trackPrevious = shouldTrackPrevious();
         final int[] offsets = trackPrevious ? new int[BLOCK_SIZE] : null;
+        final PrevScratch scratch = trackPrevious ? new PrevScratch(compactThreshold) : null;
         rowSequence.forAllRowKeyRanges((final long firstKey, final long lastKey) -> {
             long key = firstKey;
             while (true) {
@@ -895,7 +1290,7 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
                                 }
                             }
                             if (count > 0) {
-                                recordPrevious(key, level2, block2, offsets, count);
+                                recordPrevious(key, level2, block2, offsets, count, scratch);
                             }
                         }
                         Arrays.fill(block, firstOffset, lastOffset + 1, NULL_DOUBLE);
@@ -905,7 +1300,7 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
                             if (trackPrevious) {
                                 final int count = compact.copyOffsets(firstOffset, lastOffset, offsets);
                                 if (count > 0) {
-                                    recordPrevious(key, level2, block2, offsets, count);
+                                    recordPrevious(key, level2, block2, offsets, count, scratch);
                                 }
                             }
                             compact.removeRange(firstOffset, lastOffset);
@@ -1193,15 +1588,23 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
     }
 
     /**
-     * Holds the offsets of the keys that a chunked write puts into one leaf.
+     * Holds the walk over the leaves of a chunked write, the offsets of the keys it puts into one leaf, and the
+     * previous values it records there.
      */
     private static final class AdaptiveFillFromContext implements FillFromContext {
+        private final LeafRanges ranges = new LeafRanges();
+        private final LeafKeys keys = new LeafKeys();
         private final int[] offsets = new int[BLOCK_SIZE];
+        private final PrevScratch scratch;
+
+        private AdaptiveFillFromContext(final int compactThreshold) {
+            scratch = new PrevScratch(compactThreshold);
+        }
     }
 
     @Override
     public FillFromContext makeFillFromContext(final int chunkCapacity) {
-        return new AdaptiveFillFromContext();
+        return new AdaptiveFillFromContext(compactThreshold);
     }
 
     @Override
@@ -1212,50 +1615,42 @@ public class DoubleAdaptiveSparseArraySource extends AbstractColumnSource<Double
         if (rowSequence.isEmpty()) {
             return;
         }
-        final int[] offsets = ((AdaptiveFillFromContext) context).offsets;
+        final AdaptiveFillFromContext fillFromContext = (AdaptiveFillFromContext) context;
+        final LeafCursor leaves = leafCursor(rowSequence, fillFromContext.ranges, fillFromContext.keys);
+        final int[] offsets = fillFromContext.offsets;
         final DoubleChunk<? extends Values> values = src.asDoubleChunk();
         final boolean trackPrevious = shouldTrackPrevious();
-        final MutableInt offsetCount = new MutableInt();
-        final MutableInt position = new MutableInt();
         int srcOffset = 0;
-        try (final RowSequence.Iterator it = rowSequence.getRowSequenceIterator()) {
-            while (it.hasMore()) {
-                final long firstKey = it.peekNextKey();
-                final RowSequence leafKeys = it.getNextRowSequenceThrough(firstKey | INDEX_MASK);
-                final int count = leafKeys.intSize();
-                final Level2 level2 = ensureLevel2(firstKey);
-                final int block2 = block2(firstKey);
-                double[] block = level2.getBlock(block2);
-                final DoubleCompactLeaf existing = block == null ? level2.getCompact(block2) : null;
-                // a new leaf of more values than a compact leaf holds becomes a full block, which needs no offsets
-                if (trackPrevious || (block == null && (existing != null || count <= compactThreshold))) {
-                    leafOffsets(leafKeys, offsets, offsetCount);
-                }
-                if (trackPrevious) {
-                    recordPrevious(firstKey, level2, block2, offsets, count);
-                }
-                if (block == null) {
-                    final int absent = existing == null ? count : existing.countAbsent(offsets, count);
-                    final DoubleCompactLeaf compact = prepareCompactLeaf(level2, block2, existing, absent);
-                    if (compact != null) {
-                        compact.putSorted(offsets, values, srcOffset, count);
-                        srcOffset += count;
-                        continue;
-                    }
-                    block = level2.getBlock(block2);
-                }
-                if (values.isAlias(block)) {
-                    throw new UnsupportedOperationException("Source chunk is an alias for target data");
-                }
-                final double[] destBlock = block;
-                position.set(srcOffset);
-                leafKeys.forAllRowKeyRanges((final long rangeFirst, final long rangeLast) -> {
-                    final int length = (int) (rangeLast - rangeFirst + 1);
-                    values.copyToTypedArray(position.getAndAdd(length), destBlock, (int) (rangeFirst & INDEX_MASK),
-                            length);
-                });
-                srcOffset += count;
+        while (leaves.hasMore()) {
+            leaves.nextLeaf();
+            final long firstKey = leaves.firstKey;
+            final int count = leaves.count;
+            final Level2 level2 = ensureLevel2(firstKey);
+            final int block2 = block2(firstKey);
+            double[] block = level2.getBlock(block2);
+            final DoubleCompactLeaf existing = block == null ? level2.getCompact(block2) : null;
+            // a new leaf of more values than a compact leaf holds becomes a full block, which needs no offsets
+            if (trackPrevious || (block == null && (existing != null || count <= compactThreshold))) {
+                leaves.offsets(offsets);
             }
+            if (trackPrevious) {
+                recordPrevious(firstKey, level2, block2, offsets, count, fillFromContext.scratch);
+            }
+            if (block == null) {
+                final int absent = existing == null ? count : existing.countAbsent(offsets, count);
+                final DoubleCompactLeaf compact = prepareCompactLeaf(level2, block2, existing, absent);
+                if (compact != null) {
+                    compact.putSorted(offsets, values, srcOffset, count);
+                    srcOffset += count;
+                    continue;
+                }
+                block = level2.getBlock(block2);
+            }
+            if (values.isAlias(block)) {
+                throw new UnsupportedOperationException("Source chunk is an alias for target data");
+            }
+            leaves.copyTo(values, srcOffset, block);
+            srcOffset += count;
         }
     }
 
