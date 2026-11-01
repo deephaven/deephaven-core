@@ -1732,6 +1732,12 @@ public class ChunkedOperatorAggregationHelper {
                         @NotNull final WritableLongChunk<RowKeys> rowKeys) {
                     AggregationRowLookup.boxedGet(this, keyChunks, rowKeys);
                 }
+
+                @Override
+                public long updateCycleStep() {
+                    // the aggregation of a static source never changes
+                    return QueryConstants.NULL_LONG;
+                }
             };
         });
 
@@ -2300,6 +2306,12 @@ public class ChunkedOperatorAggregationHelper {
                     @NotNull final WritableLongChunk<RowKeys> rowKeys) {
                 throw new UnsupportedOperationException(
                         "A chunked lookup needs a key column, and a no-key aggregation has none");
+            }
+
+            @Override
+            public long updateCycleStep() {
+                // the only key is always at row 0
+                return QueryConstants.NULL_LONG;
             }
         });
 

@@ -85,9 +85,7 @@ public interface AggregationRowLookup {
      * @return The step of the last update cycle that began, or {@link QueryConstants#NULL_LONG} if the structure never
      *         changes
      */
-    default long updateCycleStep() {
-        return QueryConstants.NULL_LONG;
-    }
+    long updateCycleStep();
 
     /**
      * Implement {@link #get(Chunk[], WritableLongChunk)} by boxing each key and calling {@link #get(Object)} on

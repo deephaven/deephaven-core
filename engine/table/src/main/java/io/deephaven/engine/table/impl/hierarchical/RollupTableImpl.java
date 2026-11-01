@@ -287,6 +287,14 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                     }
                 }
             }
+
+            @Override
+            public long updateCycleStep() {
+                // Read only under rollup snapshot control. The filtered row set changes with the filtered base level,
+                // which the base level's step does not track.
+                throw new UnsupportedOperationException(
+                        "A filtered rollup's base level lookup is read only under rollup snapshot control");
+            }
         };
         final QueryTable[] levelTables = makeLevelTablesArray(numLevels, filteredBaseLevel);
         final AggregationRowLookup[] levelRowLookups = makeLevelRowLookupsArray(numLevels, filteredBaseLevelRowLookup);
