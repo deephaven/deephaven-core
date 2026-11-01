@@ -120,6 +120,36 @@ std::shared_ptr<RowSequence> SpaceMapper::ConvertKeysToIndices(const RowSequence
   return builder.Build();
 }
 
+std::shared_ptr<RowSequence> SpaceMapper::ConvertPresentKeysToIndices(const RowSequence &keys) const {
+  RowSequenceBuilder builder;
+  keys.ForEachInterval([this, &builder](uint64_t begin_key, uint64_t end_key) {
+    // The keys held in [begin_key, end_key) occupy consecutive ranks, starting at the rank of the
+    // first held key at or after begin_key, so each interval maps to one range of positions.
+    auto begin_index = ZeroBasedRank(begin_key);
+    auto end_index = ZeroBasedRank(end_key);
+    if (begin_index != end_index) {
+      builder.AddInterval(begin_index, end_index);
+    }
+  });
+  return builder.Build();
+}
+
+std::shared_ptr<RowSequence> SpaceMapper::PresentKeys(const RowSequence &keys) const {
+  RowSequenceBuilder builder;
+  keys.ForEachInterval([this, &builder](uint64_t begin_key, uint64_t end_key) {
+    auto it = set_.begin();
+    if (!it.move(begin_key)) {
+      // begin_key is beyond every key in the set, so nothing in this interval is held.
+      return;
+    }
+    while (it != set_.end() && *it < end_key) {
+      builder.Add(*it);
+      ++it;
+    }
+  });
+  return builder.Build();
+}
+
 uint64_t SpaceMapper::ZeroBasedRank(uint64_t value) const {
   // Roaring's convention for rank is to "Return the number of integers that are smaller or equal to x".
   // But we would rather know the number of values that are strictly smaller than x.

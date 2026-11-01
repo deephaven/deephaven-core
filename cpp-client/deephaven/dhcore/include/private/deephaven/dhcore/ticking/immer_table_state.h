@@ -67,6 +67,27 @@ public:
   [[nodiscard]]
   std::shared_ptr<RowSequence> ConvertKeysToIndices(const RowSequence &keys_row_space) const;
 
+  /**
+   * Returns the subset of 'keys_key_space' whose rows this table holds.
+   * @param keys_key_space Keys represented in key space
+   * @return Those of the keys whose rows are held, represented in key space
+   */
+  [[nodiscard]]
+  std::shared_ptr<RowSequence> PresentKeys(const RowSequence &keys_key_space) const;
+
+  /**
+   * Expresses two successive erasures as one. 'first' is the result of an Erase, in the index
+   * space of the table before it; 'second' is the result of a later Erase, in the index space of
+   * the table after the first one, and so has to be lifted past the rows the first one took out
+   * before the two can be merged.
+   * @param first Positions erased first, in the index space of the original table
+   * @param second Positions erased next, in the index space of the table after the first erasure
+   * @return All of the erased positions, in the index space of the original table
+   */
+  [[nodiscard]]
+  static std::shared_ptr<RowSequence> CombineErasures(const RowSequence &first,
+      const RowSequence &second);
+
 
   /**
    * Modifies column 'col_num' with the contiguous data sourced in 'src'
