@@ -28,7 +28,6 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOC
  * Storages:
  * <ul>
  * <li>Sparse: {@link DoubleSparseArraySource}, a page table above full blocks</li>
- * <li>FlatHash: {@link DoubleHashColumnSource}, one hash table keyed by row key</li>
  * <li>Redirected: a {@link DoubleArraySource} of dense positions behind the hash {@link WritableRowRedirection} that
  * {@code QueryTable.redirectUpdate} uses</li>
  * <li>Adaptive: {@link DoubleAdaptiveSparseArraySource}, whose leaves are sorted, bitmap or full blocks by the number
@@ -113,8 +112,6 @@ final class SparseStorage {
                 return new DoubleSparseArraySource();
             case "Adaptive":
                 return new DoubleAdaptiveSparseArraySource();
-            case "FlatHash":
-                return new DoubleHashColumnSource(expectedSize);
             case "Redirected": {
                 final DoubleArraySource dense = new DoubleArraySource();
                 dense.ensureCapacity(expectedSize);
