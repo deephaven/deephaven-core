@@ -18,6 +18,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -167,17 +168,13 @@ public class TableBackedDataIndex extends AbstractDataIndex {
             }
 
             @Override
-            public boolean lookupsValid(final boolean usePrev, final long step) {
+            public long lastStateChangeStep() {
                 if (!isRefreshing) {
-                    return true;
+                    return QueryConstants.NULL_LONG;
                 }
                 // a volatile read does not keep the hash table reads before it from happening after it
                 VarHandle.acquireFence();
-                // Every cycle before step had finished when the reader read step, and a cycle marks its step before it
-                // changes the hash table. The hash table holds the keys of step's previous values until step's changes
-                // begin, and of its current values until a later step's changes begin.
-                final long updateCycleStep = lookupFunction.updateCycleStep();
-                return usePrev ? updateCycleStep < step : updateCycleStep <= step;
+                return lookupFunction.updateCycleStep();
             }
         };
     }

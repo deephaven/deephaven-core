@@ -10,6 +10,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -65,18 +66,24 @@ public interface DataIndex extends BasicDataIndex {
                 boolean usePrev);
 
         /**
-         * Whether the lookups made through this since {@code step} was read answered for the index's state at
-         * {@code step}, in {@code usePrev} space. A refreshing index may change the structure its lookups read while a
-         * reader that is not on the update graph thread uses it. Such a reader reads {@code step} from the update
-         * graph's clock before its lookups, checks this after them, and discards their results if it is {@code false};
-         * it uses current values only once the index is satisfied at {@code step}.
+         * The step on which the index last began changing the structure its lookups read, recorded before the change,
+         * or {@link QueryConstants#NULL_LONG} if it never changes. Calling this orders the lookups made before it ahead
+         * of reading the step.
+         * <p>
+         * A refreshing index may change that structure while a reader that is not on the update graph thread uses it.
+         * Such a reader reads its step from the update graph's clock before its lookups, and this after them. Compared
+         * to the reader's step, this is:
+         * <ul>
+         * <li>less: the lookups answered for the index's state at the reader's step, previous and current alike;</li>
+         * <li>equal: the lookups may not have answered for the previous state, and answered for the current state if
+         * the reader waited for the index to be satisfied at its step;</li>
+         * <li>greater: the lookups may not have answered for either state at the reader's step.</li>
+         * </ul>
          *
-         * @param usePrev Whether the lookups were in previous space
-         * @param step The update graph step the reader read from the clock before its lookups
-         * @return Whether the index held its state at {@code step}, in {@code usePrev} space, throughout the lookups
+         * @return The step on which the index last began changing the structure its lookups read
          */
-        default boolean lookupsValid(final boolean usePrev, final long step) {
-            return true;
+        default long lastStateChangeStep() {
+            return QueryConstants.NULL_LONG;
         }
     }
 
@@ -195,8 +202,8 @@ public interface DataIndex extends BasicDataIndex {
             }
 
             @Override
-            public boolean lookupsValid(final boolean usePrev, final long step) {
-                return rowKeyLookup().lookupsValid(usePrev, step);
+            public long lastStateChangeStep() {
+                return rowKeyLookup().lastStateChangeStep();
             }
         };
     }

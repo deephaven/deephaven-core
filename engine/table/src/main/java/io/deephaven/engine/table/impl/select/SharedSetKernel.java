@@ -303,14 +303,17 @@ final class SharedSetKernel extends LivenessArtifact implements NotificationQueu
      * {@code filter} or is the reason it is refused, with no window in between.
      *
      * @param filter The filter to register
-     * @param requiredLastStateChangeStep The {@link #lastStateChangeStep()} read when the attempt began
+     * @param requiredLastStateChangeStep The filter's {@link DynamicWhereFilter#lastStateChangeStep()} read when the
+     *        attempt began, which is no earlier than this set's
      * @return Whether {@code filter} was registered
      * @throws TableAlreadyFailedException If maintaining this set has failed, so that no attempt can ever commit
      */
     boolean addFilter(@NotNull final DynamicWhereFilter filter, final long requiredLastStateChangeStep) {
         synchronized (filters) {
             throwIfFailed();
-            if (lastStateChangeStep != requiredLastStateChangeStep) {
+            // Steps only increase, and a filter's required step may be a later one that its data index began changing
+            // on.
+            if (lastStateChangeStep > requiredLastStateChangeStep) {
                 // We thought we were consistent, but the set has begun changing since we read it.
                 // Must refuse this filter addition (and the current snapshot attempt).
                 return false;
