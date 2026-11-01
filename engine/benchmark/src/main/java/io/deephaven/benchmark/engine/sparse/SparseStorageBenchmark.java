@@ -42,7 +42,7 @@ import static io.deephaven.benchmark.engine.sparse.SparseStorage.CHUNK_SIZE;
 public class SparseStorageBenchmark {
     private static final int RANDOM_READS = 1_000_000;
 
-    @Param({"Sparse", "FlatHash", "Redirected", "Adaptive"})
+    @Param({"Sparse", "Redirected", "Adaptive"})
     private String storage;
 
     @Param({"Dense", "Stride8", "Stride64", "Stride512", "Runs64", "Random10", "Random1", "Clustered"})

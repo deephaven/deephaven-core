@@ -25,7 +25,7 @@ import java.lang.management.MemoryMXBean;
  * restrict the storages, then the patterns, as comma-separated lists.
  */
 public final class SparseStorageMemory {
-    private static final String[] STORAGES = {"Sparse", "FlatHash", "Redirected", "Redirected2", "Adaptive"};
+    private static final String[] STORAGES = {"Sparse", "Redirected", "Redirected2", "Adaptive"};
     private static final String[] PATTERNS = {"Dense", "Stride8", "Stride64", "Stride512", "Runs64", "Random10",
             "Random1", "Clustered"};
     private static final MemoryMXBean MEMORY = ManagementFactory.getMemoryMXBean();
