@@ -653,17 +653,11 @@ public class TableHandle : IDisposable {
     // We speak the Flight protocol directly (rather than using Apache.Arrow.Flight's
     // stream reader) because that reader throws NotImplementedException on the
     // DictionaryBatch messages the server sends for dictionary-encoded columns.
-    // Instead, we reassemble the raw FlightData messages into a standard Arrow IPC
-    // stream and hand it to ArrowStreamReader, which processes RecordBatch and
-    // DictionaryBatch messages alike.
+    // FlightIpcReader re-frames the raw FlightData messages into a standard Arrow IPC
+    // stream as they arrive and feeds ArrowStreamReader, which processes RecordBatch and
+    // DictionaryBatch messages alike, so the response is never held in memory whole.
     using var call = Server.RawFlightStub.DoGet(ticket, metadata);
-    var ipcStream = new MemoryStream();
-    while (await call.ResponseStream.MoveNext(CancellationToken.None)) {
-      AppendIpcMessage(ipcStream, call.ResponseStream.Current);
-    }
-    ipcStream.Position = 0;
-
-    using var reader = new Apache.Arrow.Ipc.ArrowStreamReader(ipcStream);
+    using var reader = new FlightIpcReader(call.ResponseStream);
     // Gather record batches, expanding any dictionary- or run-end-encoded columns
     // to plain columns of the logical value type.
     var recordBatches = new List<RecordBatch>();
@@ -673,6 +667,9 @@ public class TableHandle : IDisposable {
         break;
       }
       recordBatches.Add(EncodedArrayDecoder.DecodeRecordBatch(recordBatch));
+      // The server may attach Barrage metadata (app_metadata) to snapshot batches. A DoGet has
+      // no use for it, so drop it rather than let the reader accumulate it for the whole fetch.
+      reader.TakeAppMetadata();
     }
 
     var rawSchema = reader.Schema ?? throw new Exception("Flight stream contained no schema");
@@ -689,26 +686,6 @@ public class TableHandle : IDisposable {
     }).ToArray();
 
     return new Table(schema, columns);
-  }
-
-  /// <summary>
-  /// Appends the contents of one FlightData message to 'stream' in the Arrow IPC
-  /// "encapsulated message" format: a 0xFFFFFFFF continuation marker, a little-endian
-  /// int32 header size, the flatbuffer message header, and then the message body.
-  /// FlightData messages that carry no IPC payload (e.g. descriptor-only messages)
-  /// are skipped.
-  /// </summary>
-  private static void AppendIpcMessage(Stream stream, ArrowFlightProtocol.FlightData flightData) {
-    var header = flightData.DataHeader;
-    if (header.IsEmpty) {
-      return;
-    }
-    Span<byte> prefix = stackalloc byte[8];
-    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(prefix[..4], -1);
-    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(prefix[4..], header.Length);
-    stream.Write(prefix);
-    header.WriteTo(stream);
-    flightData.DataBody.WriteTo(stream);
   }
 
   public IClientTable ToClientTable() {

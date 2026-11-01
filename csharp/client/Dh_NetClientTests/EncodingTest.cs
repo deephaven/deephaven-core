@@ -75,6 +75,36 @@ public class EncodingTest {
     reedict_table = _reedict_src.with_attributes({ 'BarrageSchema': _reedict_schema})
     """;
 
+  // A dictionary-encoded column that is null for every row of the snapshot's first batch. Snapshots
+  // start with a 4096-row batch and grow from there, so the server's isDelta=false base dictionary
+  // for that batch is empty and the values in later batches arrive as a dictionary delta, which
+  // Apache.Arrow's reader cannot concatenate onto an empty dictionary without the workaround in
+  // FlightIpcReader. The row counts are kept in sync with the script below.
+  // nulls_first_dict_table : 100000 rows, Sym = null for ii < 50000, otherwise "v" + (ii % 3)
+  private const int NullsFirstNumRows = 100_000;
+  private const int NullsFirstNumLeadingNulls = 50_000;
+  private const string NullsFirstSetupScript =
+    """
+    import jpy
+    from deephaven import empty_table
+
+    _JIntCls     = jpy.get_type('org.apache.arrow.vector.types.pojo.ArrowType$Int')
+    _JUtf8Cls    = jpy.get_type('org.apache.arrow.vector.types.pojo.ArrowType$Utf8')
+    _JDictEncCls = jpy.get_type('org.apache.arrow.vector.types.pojo.DictionaryEncoding')
+    _JField      = jpy.get_type('org.apache.arrow.vector.types.pojo.Field')
+    _JFieldType  = jpy.get_type('org.apache.arrow.vector.types.pojo.FieldType')
+    _JSchema     = jpy.get_type('org.apache.arrow.vector.types.pojo.Schema')
+    _JArrayList  = jpy.get_type('java.util.ArrayList')
+    _JInt32      = _JIntCls(32, True)
+    _JUtf8       = _JUtf8Cls()
+
+    _nf_src    = empty_table(100000).update(['Sym = ii < 50000 ? null : (`v` + (ii % 3))'])
+    _nf_enc    = _JDictEncCls(0, False, _JInt32)
+    _nf_fields = _JArrayList()
+    _nf_fields.add(_JField('Sym', _JFieldType(True, _JUtf8, _nf_enc, None), _JArrayList()))
+    nulls_first_dict_table = _nf_src.with_attributes({'BarrageSchema': _JSchema(_nf_fields)})
+    """;
+
   [Test]
   public async Task RunEndEncodedTable() {
     using var ctx = CommonContextForTests.Create(new ClientOptions());
@@ -113,5 +143,22 @@ public class EncodingTest {
     var expected = new TableMaker();
     expected.AddColumn("Sym", ["a", "a", "a", "b", "b", "b"]);
     TableComparer.AssertSame(expected, actual);
+  }
+
+  [Test]
+  public async Task DictionaryColumnNullThroughoutFirstBatchIsFetchedCorrectly() {
+    using var ctx = CommonContextForTests.Create(new ClientOptions());
+    var thm = ctx.Client.Manager;
+
+    thm.RunScript(NullsFirstSetupScript);
+    using var t = thm.FetchTable("nulls_first_dict_table");
+
+    var syms = new List<string?>();
+    for (var i = 0; i != NullsFirstNumRows; ++i) {
+      syms.Add(i < NullsFirstNumLeadingNulls ? null : $"v{i % 3}");
+    }
+    var expected = new TableMaker();
+    expected.AddColumn("Sym", syms);
+    await Assert.That(() => TableComparer.AssertSame(expected, t)).ThrowsNothing();
   }
 }

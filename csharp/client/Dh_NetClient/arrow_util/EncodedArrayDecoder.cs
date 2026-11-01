@@ -166,6 +166,22 @@ public static class EncodedArrayDecoder {
   }
 
   /// <summary>
+  /// Builds a well-formed empty array of the given value type, or null if the type is not one
+  /// this class knows how to decode. A zero-row variable-width array deserialized from the
+  /// wire has entirely zero-length buffers (in particular, no offsets buffer), a shape that
+  /// Apache.Arrow's ArrowArrayConcatenator throws on; this builds the shape it can handle
+  /// (e.g. an offsets buffer containing the single offset 0). See
+  /// FlightIpcReader.NormalizeEmptyDictionaries for the one place this matters.
+  /// </summary>
+  internal static IArrowArray? TryMakeWellFormedEmpty(IArrowType valueType) {
+    try {
+      return MakeTarget(valueType).Build();
+    } catch (NotSupportedException) {
+      return null;
+    }
+  }
+
+  /// <summary>
   /// A sink that builds a plain array of some value type, one element at a time.
   /// </summary>
   private interface IDecodeTarget {
