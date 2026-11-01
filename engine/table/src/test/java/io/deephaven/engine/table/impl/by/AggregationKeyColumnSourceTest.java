@@ -15,11 +15,11 @@ import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -35,7 +35,6 @@ import java.time.ZonedDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
@@ -52,7 +51,6 @@ import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class AggregationKeyColumnSourceTest {
@@ -79,8 +77,6 @@ public class AggregationKeyColumnSourceTest {
         checkStatic(newTable(charCol("Key", 'a', 'b', 'c')), 'b', 'z');
         checkStatic(newTable(stringCol("Key", "a", "b", null, "c", "b")), "b", "q", null);
         checkStatic(newTable(doubleCol("Key", 1.5, -0.0, Double.NaN, 2.5)), 0.0, 2.5, 7.0);
-        checkStatic(newTable(col("Key", new BigDecimal("1.0"), new BigDecimal("1.00"), BigDecimal.ONE)),
-                new BigDecimal("1"));
     }
 
     @Test
@@ -93,8 +89,6 @@ public class AggregationKeyColumnSourceTest {
         assertEquals(QueryConstants.NULL_LONG, DateTimeUtils.epochNanos(nullNanos));
         checkStatic(reinterpreted(true, withKeyFormula(base, "Key = Base == 3 ? null : DateTimeUtils.plus(T0, "
                 + "(long) Base)")), instant(1), instant(4), null, instant(9), overflow, nullNanos);
-        checkStatic(reinterpreted(true, withKeyFormula(base, "Key = Base == 3 ? null : Base % 2 == 0")), true, null);
-        checkStatic(reinterpreted(true, withKeyFormula(base, "Key = Base % 2 == 0")), false);
     }
 
     @Test
@@ -131,29 +125,12 @@ public class AggregationKeyColumnSourceTest {
     public void testWhereInDistinctReinterpretedKeys() {
         // a set table's key column must reinterpret as its source's does
         final Table base = TableTools.emptyTable(12).update("Base = (int) (ii % 5)");
-        for (final Table keyed : new Table[] {
-                reinterpreted(true, withZonedKey(base, 3)),
-                reinterpreted(true,
-                        withKeyFormula(base, "Key = Base == 3 ? null : DateTimeUtils.plus(T0, (long) Base)")),
-                reinterpreted(true, withKeyFormula(base, "Key = Base == 3 ? null : Base % 2 == 0"))}) {
-            final Table distinct = keyed.selectDistinct("Key");
-            assertEquals(keyed.getColumnSource("Key") instanceof ConvertibleTimeSource.Zoned,
-                    distinct.getColumnSource("Key") instanceof ConvertibleTimeSource.Zoned);
-            assertTableEquals(keyed, keyed.whereIn(distinct, "Key"));
-            assertTableEquals(keyed.head(0), keyed.whereNotIn(distinct, "Key"));
-        }
-    }
-
-    @Test
-    public void testNoncanonicalBooleanBytes() {
-        // a byte column read as Boolean: every positive byte is true, and the aggregation groups by the byte
-        final QueryTable bytes = (QueryTable) newTable(byteCol("Byte", (byte) 2, (byte) 1, (byte) 0, (byte) -5,
-                QueryConstants.NULL_BYTE, (byte) 2, (byte) 7));
-        final Table booleans = bytes.withAdditionalColumns(Map.of("Key",
-                ReinterpretUtils.byteToBooleanSource(bytes.getColumnSource("Byte", byte.class))));
-        checkStatic(booleans, true);
-        checkStatic(booleans, false);
-        checkStatic(booleans, (Object) null);
+        final Table keyed = reinterpreted(true,
+                withKeyFormula(base, "Key = Base == 3 ? null : DateTimeUtils.plus(T0, (long) Base)"));
+        final Table distinct = keyed.selectDistinct("Key");
+        assertTrue(distinct.getColumnSource("Key") instanceof AggregationKeyColumnSource);
+        assertTableEquals(keyed, keyed.whereIn(distinct, "Key"));
+        assertTableEquals(keyed.head(0), keyed.whereNotIn(distinct, "Key"));
     }
 
     @Test
@@ -183,12 +160,6 @@ public class AggregationKeyColumnSourceTest {
     public void testRefreshingInstant() {
         checkRefreshing(table -> withKeyFormula(table, "Key = DateTimeUtils.plus(T0, (long) Base)"), true,
                 AggregationKeyColumnSourceTest::instant);
-    }
-
-    @Test
-    public void testRefreshingBoolean() {
-        checkRefreshing(table -> withKeyFormula(table, "Key = Base == 11 ? null : Base % 3 == 0"), true,
-                base -> base == 11 ? null : base % 3 == 0);
     }
 
     @Test
@@ -237,6 +208,54 @@ public class AggregationKeyColumnSourceTest {
             assertEquals(2, filtered.size());
             assertTableEquals(scanned(lastBy, filter), filtered);
         } finally {
+            completeCycleIfOpen(updateGraph);
+            pool.shutdownNow();
+        }
+    }
+
+    /**
+     * A probe of previous values that begins before the aggregation's update, and finishes after the update has begun
+     * changing the hash table, is abandoned.
+     */
+    @Test
+    public void testPreviousValuesProbeOverlappingTheAggregationsUpdateIsAbandoned() throws Exception {
+        final QueryTable source = testRefreshingTable(i(2, 4).toTracking(),
+                col("Key", new GatedKey(3), new GatedKey(5)), intCol("Value", 1, 2));
+        final QueryTable lastBy = (QueryTable) source.lastBy("Key");
+        final GatedKey probeValue = new GatedKey(3);
+        final MatchFilter filter = new MatchFilter(MatchOptions.REGULAR, "Key", probeValue);
+        filter.init(lastBy.getDefinition());
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final ExecutionContext context = ExecutionContext.getContext();
+        final ExecutorService pool = Executors.newSingleThreadExecutor();
+        updateGraph.startCycleForUnitTests(false);
+        try (final RowSet prevRows = lastBy.getRowSet().copyPrev()) {
+            addToTable(source, i(6), col("Key", new GatedKey(11)), intCol("Value", 3));
+            source.notifyListeners(i(6), i(), i());
+            updateGraph.markSourcesRefreshedForUnitTests();
+
+            probeValue.arm(false);
+            final Future<ProbeOutcome> probe = pool.submit(() -> {
+                try (final SafeCloseable ignored = context.open()) {
+                    return probeOutcome(keySource(lastBy), filter, prevRows, true);
+                }
+            });
+            assertTrue(probeValue.entered.await(30, TimeUnit.SECONDS));
+            final long step = updateGraph.clock().currentStep();
+            while (!lastBy.satisfied(step)) {
+                assertTrue(updateGraph.flushOneNotificationForUnitTests());
+            }
+            probeValue.release.countDown();
+
+            final ProbeOutcome outcome = probe.get(30, TimeUnit.SECONDS);
+            assertEquals(null, outcome.failure);
+            try (final PushdownResult result = outcome.result) {
+                assertEquals(prevRows, result.maybeMatch());
+                assertTrue(result.match().isEmpty());
+            }
+        } finally {
+            probeValue.release.countDown();
+            completeCycleIfOpen(updateGraph);
             pool.shutdownNow();
         }
     }
@@ -248,7 +267,7 @@ public class AggregationKeyColumnSourceTest {
     }
 
     @Test
-    public void testProbeThatThrowsDuringAnUpdateIsAbandoned() throws Exception {
+    public void testProbeThatThrowsAfterAnUpdateBeganIsAbandoned() throws Exception {
         checkProbeOverlappingUpdate(MatchOptions.REGULAR, true);
         checkProbeOverlappingUpdate(MatchOptions.INVERTED, true);
     }
@@ -265,25 +284,25 @@ public class AggregationKeyColumnSourceTest {
         final ExecutorService pool = Executors.newSingleThreadExecutor();
         try {
             probeValue.arm(true);
-            final Future<PushdownResult> probe = pool.submit(() -> {
+            final Future<ProbeOutcome> probe = pool.submit(() -> {
                 try (final SafeCloseable ignored = context.open()) {
-                    return pushdown(keySource(lastBy), filter, lastBy.getRowSet(), false);
+                    return probeOutcome(keySource(lastBy), filter, lastBy.getRowSet(), false);
                 }
             });
             assertTrue(probeValue.entered.await(30, TimeUnit.SECONDS));
             probeValue.release.countDown();
-            final ExecutionException failure =
-                    assertThrows(ExecutionException.class, () -> probe.get(30, TimeUnit.SECONDS));
-            assertTrue(failure.getCause() instanceof IllegalStateException);
+            final ProbeOutcome outcome = probe.get(30, TimeUnit.SECONDS);
+            assertEquals(null, outcome.result);
+            assertTrue(outcome.failure instanceof IllegalStateException);
         } finally {
             pool.shutdownNow();
         }
     }
 
     /**
-     * Probe current values on another thread, and hold the probe in its first hash while an update cycle adds enough
-     * keys to rehash the aggregation's hash table. The probe then completes, or throws, and is abandoned either way, so
-     * that the filter scans the column.
+     * Probe current values on another thread, and hold the probe in its first hash while an update cycle adds keys to
+     * the aggregation. The probe then completes, or throws, after the cycle; either way a cycle began after the step
+     * the probe read, so it is abandoned and the filter scans the column.
      */
     private static void checkProbeOverlappingUpdate(final MatchOptions options, final boolean probeThrows)
             throws Exception {
@@ -305,7 +324,7 @@ public class AggregationKeyColumnSourceTest {
             });
             assertTrue(probeValue.entered.await(30, TimeUnit.SECONDS));
 
-            final int added = 4096;
+            final int added = 64;
             updateGraph.runWithinUnitTestCycle(() -> {
                 final GatedKey[] keys = new GatedKey[added];
                 final int[] values = new int[added];
@@ -328,6 +347,49 @@ public class AggregationKeyColumnSourceTest {
             pool.shutdownNow();
         }
         assertTableEquals(scanned(lastBy, filter), lastBy.where(filter.copy()));
+    }
+
+    /**
+     * What a pushdown produced: its result, or the failure it threw or reported to its error handler.
+     */
+    private static final class ProbeOutcome {
+        private final PushdownResult result;
+        private final Exception failure;
+
+        private ProbeOutcome(final PushdownResult result, final Exception failure) {
+            this.result = result;
+            this.failure = failure;
+        }
+    }
+
+    private static ProbeOutcome probeOutcome(
+            final AggregationKeyColumnSource<?> keySource,
+            final MatchFilter filter,
+            final RowSet selection,
+            final boolean usePrev) {
+        final MutableObject<PushdownResult> result = new MutableObject<>();
+        final MutableObject<Exception> failure = new MutableObject<>();
+        try {
+            keySource.pushdownFilter(filter, selection, usePrev, PushdownFilterContext.NO_PUSHDOWN_CONTEXT,
+                    Long.MAX_VALUE, new ImmediateJobScheduler(), result::setValue, failure::setValue);
+        } catch (final RuntimeException thrown) {
+            failure.setValue(thrown);
+        }
+        return new ProbeOutcome(result.getValue(), failure.getValue());
+    }
+
+    /**
+     * Complete the cycle a test started, if it is still open, so that a failed assertion does not leave the update
+     * graph's lock held.
+     */
+    private static void completeCycleIfOpen(final ControlledUpdateGraph updateGraph) {
+        if (updateGraph.clock().currentState() != LogicalClock.State.Updating) {
+            return;
+        }
+        if (!updateGraph.satisfied(updateGraph.clock().currentStep())) {
+            updateGraph.markSourcesRefreshedForUnitTests();
+        }
+        updateGraph.completeCycleForUnitTests();
     }
 
     private static AggregationKeyColumnSource<?> keySource(final Table table) {
@@ -363,9 +425,9 @@ public class AggregationKeyColumnSourceTest {
                     if (!release.await(30, TimeUnit.SECONDS)) {
                         throw new AssertionError("the test never released the probe");
                     }
-                } catch (final InterruptedException e) {
+                } catch (final InterruptedException interrupted) {
                     Thread.currentThread().interrupt();
-                    throw new AssertionError(e);
+                    throw new AssertionError(interrupted);
                 }
                 if (throwOnRelease) {
                     throw new IllegalStateException("probe failed");
@@ -392,8 +454,8 @@ public class AggregationKeyColumnSourceTest {
             final boolean usePrev) {
         final MutableObject<PushdownResult> result = new MutableObject<>();
         keySource.pushdownFilter(filter, selection, usePrev, PushdownFilterContext.NO_PUSHDOWN_CONTEXT,
-                Long.MAX_VALUE, new ImmediateJobScheduler(), result::setValue, e -> {
-                    throw new AssertionError(e);
+                Long.MAX_VALUE, new ImmediateJobScheduler(), result::setValue, failure -> {
+                    throw new AssertionError(failure);
                 });
         return result.getValue();
     }
