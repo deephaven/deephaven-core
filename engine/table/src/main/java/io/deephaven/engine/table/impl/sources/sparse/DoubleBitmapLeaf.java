@@ -52,6 +52,21 @@ public final class DoubleBitmapLeaf extends DoubleCompactLeaf {
         }
     }
 
+    /**
+     * Set the bits of {@code offsets[0, count)} and recompute every rank, after a merge has placed their values.
+     */
+    private void setBitsAndRanks(final int[] offsets, final int count) {
+        for (int ii = 0; ii < count; ++ii) {
+            final int offset = offsets[ii];
+            bits[offset >>> 6] |= 1L << offset;
+        }
+        int rank = 0;
+        for (int wi = 0; wi < WORDS; ++wi) {
+            rankBefore[wi] = (short) rank;
+            rank += Long.bitCount(bits[wi]);
+        }
+    }
+
     private void ensureCapacity(final int capacity) {
         if (capacity > values.length) {
             values = Arrays.copyOf(values, Math.min(BLOCK_SIZE, Math.max(capacity, size * 2)));
@@ -133,25 +148,44 @@ public final class DoubleBitmapLeaf extends DoubleCompactLeaf {
             }
             --dest;
         }
-        for (int ii = 0; ii < count; ++ii) {
-            final int offset = offsets[ii];
-            bits[offset >>> 6] |= 1L << offset;
-        }
-        int rank = 0;
-        for (int ii = 0; ii < WORDS; ++ii) {
-            rankBefore[ii] = (short) rank;
-            rank += Long.bitCount(bits[ii]);
-        }
+        setBitsAndRanks(offsets, count);
         size = newSize;
     }
 
     @Override
     public void insertAbsent(final int[] offsets, final int count) {
-        for (int ii = 0; ii < count; ++ii) {
-            if (!contains(offsets[ii])) {
-                put(offsets[ii], NULL_DOUBLE);
-            }
+        final int newSize = size + countAbsent(offsets, count);
+        if (newSize == size) {
+            return;
         }
+        ensureCapacity(newSize);
+        // merge from the highest offset down, as putSorted does, keeping the values of the offsets already present;
+        // dest - index is the number of absent offsets not yet placed, so the values below index are already in place
+        // once it reaches zero
+        int index = size - 1;
+        int dest = newSize - 1;
+        int wi = WORDS - 1;
+        long wordBits = bits[wi];
+        for (int ii = count - 1; dest > index;) {
+            while (wordBits == 0 && wi > 0) {
+                wordBits = bits[--wi];
+            }
+            final int existing = wordBits == 0 ? -1 : (wi << 6) + 63 - Long.numberOfLeadingZeros(wordBits);
+            final int offset = offsets[ii];
+            if (existing >= offset) {
+                values[dest] = values[index--];
+                wordBits &= ~(1L << existing);
+                if (existing == offset) {
+                    --ii;
+                }
+            } else {
+                values[dest] = NULL_DOUBLE;
+                --ii;
+            }
+            --dest;
+        }
+        setBitsAndRanks(offsets, count);
+        size = newSize;
     }
 
     @Override
