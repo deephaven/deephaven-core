@@ -646,14 +646,34 @@ public class TableHandle : IDisposable {
   }
 
   private async Task<Table> ToArrowTableAsync() {
-    using var reader = GetFlightStream();
-    // Gather record batches
+    var metadata = new Metadata();
+    Server.ForEachHeaderNameAndValue(metadata.Add);
+    var ticket = new ArrowFlightProtocol.Ticket { Ticket_ = Ticket.Ticket_ };
+
+    // We speak the Flight protocol directly (rather than using Apache.Arrow.Flight's
+    // stream reader) because that reader throws NotImplementedException on the
+    // DictionaryBatch messages the server sends for dictionary-encoded columns.
+    // FlightIpcReader re-frames the raw FlightData messages into a standard Arrow IPC
+    // stream as they arrive and feeds ArrowStreamReader, which processes RecordBatch and
+    // DictionaryBatch messages alike, so the response is never held in memory whole.
+    using var call = Server.RawFlightStub.DoGet(ticket, metadata);
+    using var reader = new FlightIpcReader(call.ResponseStream);
+    // Gather record batches, expanding any dictionary- or run-end-encoded columns
+    // to plain columns of the logical value type.
     var recordBatches = new List<RecordBatch>();
-    while (await reader.MoveNext()) {
-      recordBatches.Add(reader.Current);
+    while (true) {
+      var recordBatch = await reader.ReadNextRecordBatchAsync();
+      if (recordBatch == null) {
+        break;
+      }
+      recordBatches.Add(EncodedArrayDecoder.DecodeRecordBatch(recordBatch));
+      // The server may attach Barrage metadata (app_metadata) to snapshot batches. A DoGet has
+      // no use for it, so drop it rather than let the reader accumulate it for the whole fetch.
+      reader.TakeAppMetadata();
     }
 
-    var schema = await reader.Schema;
+    var rawSchema = reader.Schema ?? throw new Exception("Flight stream contained no schema");
+    var schema = EncodedArrayDecoder.DecodeSchema(rawSchema);
     if (recordBatches.Count != 0) {
       return Table.TableFromRecordBatches(schema, recordBatches);
     }
