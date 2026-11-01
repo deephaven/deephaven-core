@@ -22,12 +22,14 @@ import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraphWaitForbiddenException;
 import io.deephaven.engine.updategraph.UpdateGraphWaitGuard;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.invoke.VarHandle;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -198,7 +200,8 @@ public class TableBackedDataIndex extends AbstractDataIndex {
     @NotNull
     public RowKeyLookup rowKeyLookup(final DataIndexOptions options) {
         table(options);
-        // The aggregation's hash-based lookup is correct in prev or current space alike.
+        // A key's row never moves, so the aggregation's hash-based lookup answers in prev or current space alike, as
+        // long as no update cycle changes the hash table during the lookups.
         return new RowKeyLookup() {
             @Override
             public long apply(@Nullable final Object key, final boolean usePrev) {
@@ -211,6 +214,16 @@ public class TableBackedDataIndex extends AbstractDataIndex {
                     @NotNull final WritableLongChunk<RowKeys> rowKeys,
                     final boolean usePrev) {
                 lookupFunction.get(keyChunks, rowKeys);
+            }
+
+            @Override
+            public long lastStateChangeStep() {
+                if (!isRefreshing) {
+                    return QueryConstants.NULL_LONG;
+                }
+                // a volatile read does not keep the hash table reads before it from happening after it
+                VarHandle.acquireFence();
+                return lookupFunction.updateCycleStep();
             }
         };
     }

@@ -390,6 +390,12 @@ public class SnapshotUtils {
         }
 
         @Override
+        public boolean providesFillUnordered() {
+            // the delegate's unordered fills would not convert to direct vectors
+            return false;
+        }
+
+        @Override
         public ChunkSource.GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
             return directChunks.makeGetContext(chunkCapacity, sharedContext);
         }

@@ -66,6 +66,12 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
      */
     private @Nullable DataIndex sourceDataIndex;
     /**
+     * A lookup of {@link #sourceDataIndex}, created on first use, through which {@link #lastStateChangeStep()} reads
+     * the step on which the index last began changing. A lookup reports that step whenever it is asked, so one serves
+     * every call; threads that race to create it create equivalent lookups.
+     */
+    private volatile DataIndex.RowKeyLookup sourceIndexChangeLookup;
+    /**
      * The position among this filter's key columns of each of {@link #sourceDataIndex}'s key columns, in the index's
      * order, which projects a set key onto the index's lookup key.
      */
@@ -321,6 +327,65 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     }
 
     /**
+     * {@link #lookupIndexRowKeys(long, DataIndex.RowKeyLookup, boolean) Look up} the index row keys, abandoning this
+     * snapshot attempt if a change to the index overlapped the lookups; see
+     * {@link DataIndex.RowKeyLookup#lastStateChangeStep()}. The snapshot control retries the attempt because it judges
+     * it inconsistent: an attempt that read previous values finds that {@link #lastStateChangeStep()}, which includes
+     * the index's change step, equals its step, and an attempt that read current values finds that the clock moved.
+     *
+     * @param kernelGeneration The value {@link SharedSetKernel#beginRead()} returned before the kernel was read
+     * @param rowKeyLookup The source data index row key lookup
+     * @param usePrev Whether to use previous values
+     * @param step The step whose state the lookups read, read from the clock before the lookups
+     * @return The matching index row keys, which the caller must close
+     */
+    @NotNull
+    private RowSet validIndexRowKeys(
+            final long kernelGeneration,
+            @NotNull final DataIndex.RowKeyLookup rowKeyLookup,
+            final boolean usePrev,
+            final long step) {
+        final RowSet indexRowKeys;
+        try {
+            indexRowKeys = lookupIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev);
+        } catch (final ConstructSnapshot.SnapshotInconsistentException e) {
+            throw e;
+        } catch (final RuntimeException e) {
+            if (lookupsValid(rowKeyLookup, usePrev, step)) {
+                throw e;
+            }
+            // a change to the index during the lookups tore their reads
+            throw abandonedIndexLookups();
+        }
+        if (!lookupsValid(rowKeyLookup, usePrev, step)) {
+            indexRowKeys.close();
+            throw abandonedIndexLookups();
+        }
+        return indexRowKeys;
+    }
+
+    /**
+     * Whether the index held its state at {@code step}, in {@code usePrev} space, throughout the lookups made through
+     * {@code rowKeyLookup} since {@code step} was read. Current values are read only once the index is satisfied at
+     * {@code step}, since {@link #satisfied(long)} requires it.
+     */
+    private static boolean lookupsValid(
+            @NotNull final DataIndex.RowKeyLookup rowKeyLookup,
+            final boolean usePrev,
+            final long step) {
+        final long changeStep = rowKeyLookup.lastStateChangeStep();
+        return usePrev ? changeStep < step : changeStep <= step;
+    }
+
+    private ConstructSnapshot.SnapshotInconsistentException abandonedIndexLookups() {
+        // Only a concurrent snapshot attempt can race the index's update; a reader on the update graph thread runs
+        // after it, so a change observed there would be a bug.
+        Assert.eqFalse(getUpdateGraph().currentThreadProcessesUpdates(),
+                "getUpdateGraph().currentThreadProcessesUpdates()");
+        return new ConstructSnapshot.SnapshotInconsistentException();
+    }
+
+    /**
      * Apply {@code action} to the index row set at each of {@code indexRowKeys}, reading them in chunks. The second of
      * the two phases described by {@link #lookupIndexRowKeys(long, DataIndex.RowKeyLookup, boolean)}; it reads only the
      * index, which is stable for the duration of this snapshot attempt, so it needs no further kernel generation
@@ -354,6 +419,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
     private WritableRowSet filterFullIndex(@NotNull final RowSet selection, final boolean usePrev) {
         Assert.neqNull(sourceDataIndex, "sourceDataIndex");
 
+        final long step = getUpdateGraph().clock().currentStep();
         // noinspection DataFlowIssue
         final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup(DataIndexOptions.USING_PARTIAL_TABLE);
         final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn(DataIndexOptions.USING_PARTIAL_TABLE);
@@ -364,7 +430,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         // snapshot attempt; that triggers the normal retry path and is not an error. The batcher owns everything it
         // has gathered until it is built, so an abandoned attempt releases it; what is built is closed here.
         WritableRowSet matching = null;
-        try (final RowSet indexRowKeys = lookupIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev)) {
+        try (final RowSet indexRowKeys = validIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev, step)) {
             // One row set per index row, and the lookup has already reduced the values to distinct row keys.
             try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(indexRowKeys.size())) {
                 // An index row set holds every source row for its key, so it is clipped to selection on the way in.
@@ -394,6 +460,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
 
         // First, compute a possibly-matching subset of selection based on the partial index.
 
+        final long step = getUpdateGraph().clock().currentStep();
         // noinspection DataFlowIssue
         final DataIndex.RowKeyLookup rowKeyLookup = sourceDataIndex.rowKeyLookup(DataIndexOptions.USING_PARTIAL_TABLE);
         final ColumnSource<RowSet> rowSetColumn = sourceDataIndex.rowSetColumn(DataIndexOptions.USING_PARTIAL_TABLE);
@@ -401,7 +468,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         final long kernelGeneration = sharedSet.beginRead();
 
         final WritableRowSet matching;
-        try (final RowSet indexRowKeys = lookupIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev)) {
+        try (final RowSet indexRowKeys = validIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev, step)) {
             // Set keys project onto a subset of their columns here, so many of them can land on the same index row.
             // The lookup collects the row keys into a row set, which leaves each index row set taken once.
             final WritableRowSet possiblyMatching;
@@ -589,9 +656,22 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         return new DynamicWhereFilter(sharedSet, inclusion, sourceToSetColumnNamePairs);
     }
 
+    /**
+     * The later of the steps on which the shared set and the source data index, whose lookups a snapshot attempt reads
+     * as it reads the set, last began changing. Including the index's step is what makes a snapshot control reject an
+     * attempt that read previous values while the index began changing.
+     */
     @Override
     public long lastStateChangeStep() {
-        return sharedSet.lastStateChangeStep();
+        final long setStep = sharedSet.lastStateChangeStep();
+        if (sourceDataIndex == null) {
+            return setStep;
+        }
+        DataIndex.RowKeyLookup indexLookup = sourceIndexChangeLookup;
+        if (indexLookup == null) {
+            sourceIndexChangeLookup = indexLookup = sourceDataIndex.rowKeyLookup(DataIndexOptions.USING_PARTIAL_TABLE);
+        }
+        return Math.max(setStep, indexLookup.lastStateChangeStep());
     }
 
     @Override

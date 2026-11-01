@@ -329,6 +329,13 @@ public class QueryTable extends BaseTable<QueryTable> {
                     false);
 
     /**
+     * Disable probing an aggregation's hash table during push-down filtering of its single key column.
+     */
+    public static boolean DISABLE_WHERE_PUSHDOWN_AGGREGATION_KEY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableWherePushdownAggregationKey",
+                    false);
+
+    /**
      * You can choose to enable or disable the column parallel select and update.
      */
     static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =

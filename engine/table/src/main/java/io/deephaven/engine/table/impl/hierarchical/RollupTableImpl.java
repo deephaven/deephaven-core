@@ -31,6 +31,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -244,6 +245,14 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                 .collect(Collectors.toList());
     }
 
+    /**
+     * @return the row lookup of this rollup's base level
+     */
+    @VisibleForTesting
+    public AggregationRowLookup baseLevelRowLookup() {
+        return levelRowLookups[numLevels - 1];
+    }
+
     @Override
     public RollupTable withFilter(@NotNull final Filter filter) {
         final WhereFilter[] filters = WhereFilter.fromInternal(filter);
@@ -286,6 +295,14 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
                         rowKeys.set(ii, DEFAULT_UNKNOWN_ROW);
                     }
                 }
+            }
+
+            @Override
+            public long updateCycleStep() {
+                // Read only under rollup snapshot control. The filtered row set changes with the filtered base level,
+                // which the base level's step does not track.
+                throw new UnsupportedOperationException(
+                        "A filtered rollup's base level lookup is read only under rollup snapshot control");
             }
         };
         final QueryTable[] levelTables = makeLevelTablesArray(numLevels, filteredBaseLevel);
