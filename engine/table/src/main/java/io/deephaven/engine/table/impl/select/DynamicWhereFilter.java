@@ -325,7 +325,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
      * @param kernelGeneration The value {@link SharedSetKernel#beginRead()} returned before the kernel was read
      * @param rowKeyLookup The source data index row key lookup
      * @param usePrev Whether to use previous values
-     * @param step The step whose state the lookups read, read before {@code rowKeyLookup} was created
+     * @param step The step whose state the lookups read, read from the clock before the lookups
      * @return The matching index row keys, which the caller must close, or null if the lookups are not valid
      */
     @Nullable

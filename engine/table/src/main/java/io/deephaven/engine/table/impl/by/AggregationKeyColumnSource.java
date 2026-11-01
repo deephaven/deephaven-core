@@ -18,7 +18,6 @@ import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.invoke.VarHandle;
@@ -41,8 +40,8 @@ import java.util.function.LongConsumer;
  * The aggregation never moves or removes a key's state, so a key's row key is fixed once assigned, and a probe answers
  * for previous values as well as current ones. A refreshing aggregation changes its hash table only in its update
  * cycle, which it {@link IncrementalOperatorAggregationStateManager#updateCycleStep() marks} before the first change. A
- * probe on another thread is abandoned, and the filter scans the column, when a cycle began during the probe, or when
- * filtering previous values after this cycle began.
+ * probe on another thread reads the clock's step first, and is abandoned, so that the filter scans the column, when a
+ * cycle at that step or later began, filtering previous values, or a later cycle began, filtering current ones.
  *
  * <p>
  * The key source's time conversions are delegated as well, and the result is a {@link ConvertibleTimeSource.Zoned} if
@@ -202,10 +201,9 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
             return;
         }
 
-        final long startStep =
-                incrementalStateManager == null ? QueryConstants.NULL_LONG : incrementalStateManager.updateCycleStep();
-        if (usePrev && incrementalStateManager != null && startStep == updateGraph.clock().currentStep()) {
-            // this cycle's changes to the hash table have begun, so it no longer holds the previous keys
+        final long step = updateGraph.clock().currentStep();
+        if (!probesValid(usePrev, step)) {
+            // the hash table no longer holds the keys at step
             onComplete.accept(PushdownResult.allMaybeMatch(selection));
             return;
         }
@@ -213,7 +211,7 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
         try {
             found = probe(matchFilter.getValues());
         } catch (final RuntimeException e) {
-            if (incrementalStateManager == null || unchangedSince(startStep)) {
+            if (probesValid(usePrev, step)) {
                 throw e;
             }
             // a change to the hash table during the probe tore its reads
@@ -221,7 +219,7 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
             return;
         }
         try (found) {
-            if (incrementalStateManager != null && !unchangedSince(startStep)) {
+            if (!probesValid(usePrev, step)) {
                 // a change to the hash table overlapped the probe
                 onComplete.accept(PushdownResult.allMaybeMatch(selection));
                 return;
@@ -265,13 +263,19 @@ public class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
     }
 
     /**
-     * Whether no update cycle began since {@code startStep} was read, so no change to the hash table overlapped the
-     * reads in between.
+     * Whether the hash table held its keys at {@code step}, in {@code usePrev} space, throughout the probes made since
+     * {@code step} was read from the clock. Every cycle before {@code step} had finished by then, and a cycle marks its
+     * step before it changes the hash table; previous values need no cycle at {@code step} or later to have begun, and
+     * current values, which the filter reads once this column is satisfied at {@code step}, no later one.
      */
-    private boolean unchangedSince(final long startStep) {
+    private boolean probesValid(final boolean usePrev, final long step) {
+        if (incrementalStateManager == null) {
+            return true;
+        }
         // a volatile read does not keep the hash table reads before it from happening after it
         VarHandle.acquireFence();
-        return incrementalStateManager.updateCycleStep() == startStep;
+        final long updateCycleStep = incrementalStateManager.updateCycleStep();
+        return usePrev ? updateCycleStep < step : updateCycleStep <= step;
     }
 
     /**

@@ -57,33 +57,31 @@ public class TableBackedDataIndexTest {
         final DataIndex index = DataIndexer.getOrCreateDataIndex(source, "Key");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         final long idleStep = updateGraph.clock().currentStep();
-        final DataIndex.RowKeyLookup beforeCycle = index.rowKeyLookup();
-        assertTrue(beforeCycle.lookupsValid(false, idleStep));
+        // one lookup, used across the cycle
+        final DataIndex.RowKeyLookup lookup = index.rowKeyLookup();
+        assertTrue(lookup.apply(11, false) < 0);
+        assertTrue(lookup.lookupsValid(false, idleStep));
 
         updateGraph.startCycleForUnitTests(false);
         addToTable(source, i(SIZE), intCol("Key", 11), intCol("Value", SIZE));
         source.notifyListeners(i(SIZE), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
         final long cycleStep = updateGraph.clock().currentStep();
-        final DataIndex.RowKeyLookup beforeIndexUpdate = index.rowKeyLookup();
-        assertTrue(beforeIndexUpdate.lookupsValid(true, cycleStep));
+        assertTrue(lookup.lookupsValid(true, cycleStep));
+        assertTrue(lookup.lookupsValid(false, idleStep));
         flushIndexUpdate(updateGraph, index);
 
-        // the index's update began after these lookups were created
-        assertFalse(beforeCycle.lookupsValid(false, idleStep));
-        assertFalse(beforeIndexUpdate.lookupsValid(true, cycleStep));
-        // created after the index's update, a lookup answers for the cycle's current values, but not its previous ones
-        // or an earlier step's
-        final DataIndex.RowKeyLookup afterIndexUpdate = index.rowKeyLookup();
-        assertTrue(afterIndexUpdate.lookupsValid(false, cycleStep));
-        assertFalse(afterIndexUpdate.lookupsValid(true, cycleStep));
-        assertFalse(afterIndexUpdate.lookupsValid(false, idleStep));
+        // the index's update changed the cycle's previous values, which are the idle step's current ones
+        assertFalse(lookup.lookupsValid(true, cycleStep));
+        assertFalse(lookup.lookupsValid(false, idleStep));
+        assertTrue(lookup.lookupsValid(false, cycleStep));
         updateGraph.completeCycleForUnitTests();
 
-        assertTrue(afterIndexUpdate.lookupsValid(false, cycleStep));
+        assertTrue(lookup.lookupsValid(false, cycleStep));
         // the next cycle's previous values are this cycle's current ones
-        assertTrue(afterIndexUpdate.lookupsValid(true, cycleStep + 1));
-        assertTrue(index.rowKeyLookup().lookupsValid(false, cycleStep));
+        assertTrue(lookup.lookupsValid(true, cycleStep + 1));
+        final long rowKey = lookup.apply(11, false);
+        assertEquals(11, index.table().getColumnSource("Key").getInt(rowKey));
     }
 
     /**
@@ -122,14 +120,14 @@ public class TableBackedDataIndexTest {
         final ExecutionContext context = ExecutionContext.getContext();
         final ExecutorService pool = Executors.newSingleThreadExecutor();
         try {
-            final DataIndex.RowKeyLookup beforeCycle = index.rowKeyLookup();
+            final DataIndex.RowKeyLookup lookup = index.rowKeyLookup();
             updateGraph.startCycleForUnitTests(false);
             addToTable(source, i(SIZE), intCol("Key", 11), intCol("Value", SIZE));
             source.notifyListeners(i(SIZE), i(), i());
             updateGraph.markSourcesRefreshedForUnitTests();
             final long step = updateGraph.clock().currentStep();
             // run the index's aggregation, which notifies the index table's own listener
-            while (beforeCycle.lookupsValid(false, step)) {
+            while (lookup.lookupsValid(true, step)) {
                 assertTrue(updateGraph.flushOneNotificationForUnitTests());
             }
             assertFalse(index.table().satisfied(step));

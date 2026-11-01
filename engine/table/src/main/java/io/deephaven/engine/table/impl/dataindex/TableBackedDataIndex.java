@@ -152,7 +152,6 @@ public class TableBackedDataIndex extends AbstractDataIndex {
         table(options);
         // A key's row never moves, so the aggregation's hash-based lookup answers in prev or current space alike, as
         // long as no update cycle changes the hash table during the lookups.
-        final long creationStep = lookupFunction.updateCycleStep();
         return new RowKeyLookup() {
             @Override
             public long apply(@Nullable final Object key, final boolean usePrev) {
@@ -174,10 +173,11 @@ public class TableBackedDataIndex extends AbstractDataIndex {
                 }
                 // a volatile read does not keep the hash table reads before it from happening after it
                 VarHandle.acquireFence();
-                // The hash table holds the keys of step's previous values until step's changes begin, and of its
-                // current values until a later step's changes begin.
-                return lookupFunction.updateCycleStep() == creationStep
-                        && (usePrev ? creationStep < step : creationStep <= step);
+                // Every cycle before step had finished when the reader read step, and a cycle marks its step before it
+                // changes the hash table. The hash table holds the keys of step's previous values until step's changes
+                // begin, and of its current values until a later step's changes begin.
+                final long updateCycleStep = lookupFunction.updateCycleStep();
+                return usePrev ? updateCycleStep < step : updateCycleStep <= step;
             }
         };
     }

@@ -26,9 +26,11 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
 
     /**
      * The step of the last update cycle that {@link #beginUpdateCycle(long) began}, for a reader of the hash table on
-     * another thread. A reader reads it before and, after a {@link java.lang.invoke.VarHandle#acquireFence() fence},
-     * after its reads; when both are the same, no change to the hash table overlapped the reads. When the step is the
-     * current one, the hash table may be changing, and no longer holds its previous state.
+     * another thread. A cycle marks its step before it changes the hash table. A reader reads the clock's step before
+     * its reads, when every earlier cycle has finished, and this after them, behind a
+     * {@link java.lang.invoke.VarHandle#acquireFence() fence}. While this is earlier than the reader's step, the reads
+     * saw the hash table's state before that step's cycle; while it is no later, they saw its state once that step's
+     * cycle finished, if the reader waited for that.
      *
      * @return the step of the last update cycle that began, or {@link io.deephaven.util.QueryConstants#NULL_LONG}
      */
