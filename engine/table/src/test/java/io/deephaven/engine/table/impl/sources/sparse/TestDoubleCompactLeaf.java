@@ -43,7 +43,8 @@ public class TestDoubleCompactLeaf {
     }
 
     /**
-     * Apply random puts, sorted puts and removes to a leaf and to a plain block, and compare them after each step.
+     * Apply random puts, sorted puts, absent inserts and removes to a leaf and to a plain block, and compare them after
+     * each step.
      */
     private static void checkAgainstBlock(final IntFunction<DoubleCompactLeaf> factory) {
         final Random random = new Random(0);
@@ -56,7 +57,7 @@ public class TestDoubleCompactLeaf {
             // some trials touch only a few offsets, others most of the block
             final int offsetRange = trial % 2 == 0 ? 40 : BLOCK_SIZE;
             for (int step = 0; step < 600; ++step) {
-                switch (random.nextInt(5)) {
+                switch (random.nextInt(6)) {
                     case 0: {
                         final int offset = random.nextInt(offsetRange);
                         leaf.remove(offset);
@@ -73,13 +74,7 @@ public class TestDoubleCompactLeaf {
                         break;
                     }
                     case 2: {
-                        // ascending distinct offsets, some already present
-                        int count = 0;
-                        final int stride = 1 + random.nextInt(8);
-                        for (int offset = random.nextInt(stride); offset < offsetRange && count < 24; offset +=
-                                1 + random.nextInt(stride)) {
-                            offsets[count++] = offset;
-                        }
+                        final int count = randomSortedOffsets(random, offsetRange, offsets);
                         if (count == 0) {
                             break;
                         }
@@ -91,6 +86,15 @@ public class TestDoubleCompactLeaf {
                                 present[offsets[ii]] = true;
                             }
                             leaf.putSorted(offsets, values, 3, count);
+                        }
+                        break;
+                    }
+                    case 3: {
+                        // offsets already present keep their values, and the others hold null
+                        final int count = randomSortedOffsets(random, offsetRange, offsets);
+                        leaf.insertAbsent(offsets, count);
+                        for (int ii = 0; ii < count; ++ii) {
+                            present[offsets[ii]] = true;
                         }
                         break;
                     }
@@ -108,6 +112,22 @@ public class TestDoubleCompactLeaf {
             }
             assertMatches(leaf, expected, present, random);
         }
+    }
+
+    /**
+     * Fill {@code offsets} with ascending distinct offsets below {@code offsetRange}, some of which may already be
+     * present in the leaf.
+     *
+     * @return the number of offsets
+     */
+    private static int randomSortedOffsets(final Random random, final int offsetRange, final int[] offsets) {
+        int count = 0;
+        final int stride = 1 + random.nextInt(8);
+        for (int offset = random.nextInt(stride); offset < offsetRange && count < 24; offset +=
+                1 + random.nextInt(stride)) {
+            offsets[count++] = offset;
+        }
+        return count;
     }
 
     private static void assertMatches(
