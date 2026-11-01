@@ -6,6 +6,7 @@ package io.deephaven.engine.util;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
@@ -15,7 +16,11 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.FakeProcessEnvironment;
 import io.deephaven.engine.updategraph.OperationInitializer;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraphWaitForbiddenException;
+import io.deephaven.engine.updategraph.UpdateGraphWaitGuard;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -1548,6 +1553,61 @@ public class TestInvokeParallel {
         });
         assertThat(runs.get()).isEqualTo(8);
         assertThat(taskThreads).containsExactly(Thread.currentThread());
+    }
+
+    /**
+     * An operation initializer job runs on another thread, which may not wait for the update graph when its submitter
+     * may not. A job submitted while the submitter holds the exclusive lock fails to take the shared lock rather than
+     * waiting for the submitter, and a job submitted while the submitter is forbidden to wait is forbidden too.
+     */
+    @Test
+    public void testOperationInitializerJobInheritsTheSubmittersWaitGuard() throws InterruptedException {
+        final OperationInitializationThreadPool pool =
+                new OperationInitializationThreadPool(ThreadInitializationFactory.NO_OP, 2);
+        try {
+            final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            withTimeout(() -> assertThat(runOnAnotherThread(pool, UpdateGraphWaitGuard::waitsForbidden)).isFalse());
+            withTimeout(() -> {
+                try (final SafeCloseable ignored = UpdateGraphWaitGuard.forbidWaits()) {
+                    assertThat(runOnAnotherThread(pool, UpdateGraphWaitGuard::waitsForbidden)).isTrue();
+                }
+            });
+            withTimeout(() -> updateGraph.exclusiveLock().doLocked(() -> {
+                final Throwable sharedLockFailure = runOnAnotherThread(pool, () -> {
+                    try {
+                        updateGraph.sharedLock().doLocked(() -> {
+                        });
+                        return null;
+                    } catch (final UpdateGraphWaitForbiddenException e) {
+                        return e;
+                    }
+                });
+                assertThat(sharedLockFailure).isInstanceOf(UpdateGraphWaitForbiddenException.class);
+            }));
+        } finally {
+            pool.shutdown();
+        }
+    }
+
+    /**
+     * Run {@code job} as an {@link OperationInitializerJobScheduler} job on {@code operationInitializer}, require that
+     * it ran on a thread other than this one, and return its result.
+     */
+    private static <T> T runOnAnotherThread(
+            final OperationInitializer operationInitializer,
+            final Supplier<T> job) {
+        final OperationInitializerJobScheduler scheduler = new OperationInitializerJobScheduler(operationInitializer);
+        final AtomicReference<Thread> jobThread = new AtomicReference<>();
+        final AtomicReference<T> result = new AtomicReference<>();
+        final AtomicReference<Exception> error = new AtomicReference<>();
+        scheduler.submit(ExecutionContext.getContext(), () -> {
+            jobThread.set(Thread.currentThread());
+            result.set(job.get());
+        }, null, error::set);
+        assertThat(scheduler.getAccumulatedPerformance()).isNotNull();
+        assertThat(error.get()).isNull();
+        assertThat(jobThread.get()).isNotNull().isNotSameAs(Thread.currentThread());
+        return result.get();
     }
 
     private static Throwable catchThrowable(final Runnable runnable) {

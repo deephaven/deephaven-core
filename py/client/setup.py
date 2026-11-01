@@ -49,7 +49,6 @@ setup(
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
@@ -57,7 +56,7 @@ setup(
         "Programming Language :: Python :: 3.14",
         "Programming Language :: Python :: 3.15",
     ],
-    python_requires=">=3.9",
+    python_requires=">=3.10",
     install_requires=["pyarrow", "grpcio", "protobuf", "numpy", "pandas"],
     package_data={"pydeephaven": ["py.typed"]},
 )

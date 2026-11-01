@@ -9,7 +9,7 @@ system and Deephaven queries.
 from __future__ import annotations
 
 import base64
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 import jpy
 
@@ -383,10 +383,10 @@ def query_update_performance_map(eval_number: int) -> dict[str, Table]:
 
 
 def ancestor_svg(
-    ids: Union[list[int], int],
+    ids: list[int] | int,
     update_perf_log: Table,
     ancestors_log: Table,
-    filename: Optional[str] = None,
+    filename: str | None = None,
 ) -> str:
     """Returns the contents of an SVG image containing a graph of the ancestor hierarchy derived from the passed in
     UpdatePerformanceLog and UpdatePerformanceAncestorsLog for the provided Performance Entry identifier. This can be used
@@ -417,7 +417,7 @@ def ancestor_svg(
 
 
 def ancestor_image(
-    ids: Union[list[int], int], update_perf_log: Table, ancestors_log: Table
+    ids: list[int] | int, update_perf_log: Table, ancestors_log: Table
 ) -> Element:
     """Returns a deephaven.ui component with an embedded SVG image containing the hierarchy derived from the passed in
     UpdatePerformanceLog and UpdatePerformanceAncestorsLog for the provided Performance Entry identifier.  This can be used
@@ -455,7 +455,7 @@ def ancestor_image(
 
 
 def ancestor_dot(
-    ids: Union[list[int], int], update_perf_log: Table, ancestors_log: Table
+    ids: list[int] | int, update_perf_log: Table, ancestors_log: Table
 ) -> str:
     """Returns a graphviz DOT representing Deephaven update performance ancestor data.
 

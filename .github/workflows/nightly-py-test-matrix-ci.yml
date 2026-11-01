@@ -48,7 +48,7 @@ jobs:
         run: ./gradlew --scan :py-embedded-server:assemble :py-server:assemble :py-client:assemble
 
       - name: Upload the build outputs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: py-test-matrix-build
           path: |
@@ -79,7 +79,7 @@ jobs:
           lfs: true
 
       - name: Download the wheels
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: py-test-matrix-build
           # upload-artifact stores files relative to their deepest common folder, py/. Downloading into py/ puts each
@@ -95,13 +95,12 @@ jobs:
 
       - name: Setup uv
         # py-test-matrix.sh uses uv to get the Python version and make the venv.
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          # uv compiles any dependency that has no wheel for the job's Python, often grpcio and numba on free-threaded
-          # builds. The cache keeps the built wheels for later runs.
-          enable-cache: true
-          cache-dependency-glob: 'py/*/setup.py'
-          cache-suffix: ${{ matrix.suite }}-${{ matrix.python-version }}
+          # setup-uv caches by default. Each job's cache is 0.4 to 1.4 GB, so the 16 jobs would fill most of the repo's
+          # 10 GB Actions cache and evict the Gradle caches that PR builds use. Without it, uv compiles grpcio and numba
+          # on the free-threaded jobs every run, which adds about 17 minutes to each of them.
+          enable-cache: false
 
       - name: Install Graphviz
         if: ${{ matrix.suite == 'server' }}
@@ -125,14 +124,14 @@ jobs:
         run: .github/scripts/py-test-matrix.sh ${{ matrix.suite }} ${{ matrix.python-version }}
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: nightly-py-test-matrix-${{ matrix.suite }}-py${{ matrix.python-version }}-ci-results
           path: py/${{ matrix.suite }}/build/test-results/test-venv/**
 
       - name: Upload JVM Error Logs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: nightly-py-test-matrix-${{ matrix.suite }}-py${{ matrix.python-version }}-ci-jvm-err

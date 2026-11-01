@@ -1134,8 +1134,16 @@
                 "path": "how-to-guides/install-and-use-python-packages.md"
               },
               {
+                "label": "Package a Deephaven Python project",
+                "path": "how-to-guides/sysadmin/setuptools-deployment.md"
+              },
+              {
                 "label": "Install and use Java packages",
                 "path": "how-to-guides/install-and-use-java-packages.md"
+              },
+              {
+                "label": "Local development",
+                "path": "how-to-guides/local-development.md"
               },
               {
                 "label": "Configure the production application",

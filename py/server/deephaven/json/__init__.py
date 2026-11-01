@@ -64,10 +64,11 @@ can be modelled as
 See the methods in this module more more details on modelling JSON values.
 """
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Iterable, Literal, Optional, Union
+from typing import Literal, Union
 
 import jpy
 
@@ -157,7 +158,7 @@ class JsonValue(JObjectWrapper):
         return self.j_value
 
 
-JsonValueType = Union[
+JsonValueType = Union[  # noqa: UP007 - the string forward refs need Union
     JsonValue,
     dtypes.DType,
     type,
@@ -250,7 +251,7 @@ class ObjectField:
 
     value_type: JsonValueType
     """The json value type"""
-    aliases: Union[str, list[str]] = field(default_factory=list)
+    aliases: str | list[str] = field(default_factory=list)
     """The field name aliases. By default, is an empty list."""
     repeated_behavior: RepeatedFieldBehavior = RepeatedFieldBehavior.ERROR
     """The repeated field behavior. By default, is RepeatedFieldBehavior.ERROR."""
@@ -296,7 +297,7 @@ def _build(
 
 
 def object_val(
-    fields: dict[str, Union[JsonValueType, ObjectField]],
+    fields: dict[str, JsonValueType | ObjectField],
     allow_unknown_fields: bool = True,
     allow_missing: bool = True,
     allow_null: bool = True,
@@ -361,13 +362,13 @@ def object_val(
 
 def typed_object_val(
     type_field: str,
-    shared_fields: dict[str, Union[JsonValueType, ObjectField]],
+    shared_fields: dict[str, JsonValueType | ObjectField],
     objects: dict[str, JsonValueType],
     allow_unknown_types: bool = True,
     allow_missing: bool = True,
     allow_null: bool = True,
-    on_missing: Optional[str] = None,
-    on_null: Optional[str] = None,
+    on_missing: str | None = None,
+    on_null: str | None = None,
 ) -> JsonValue:
     """Creates a type-discriminated object value. For example, the JSON objects
 
@@ -529,7 +530,7 @@ def object_entries_val(
 
 
 def tuple_val(
-    values: Union[tuple[JsonValueType, ...], dict[str, JsonValueType]],
+    values: tuple[JsonValueType, ...] | dict[str, JsonValueType],
     allow_missing: bool = True,
     allow_null: bool = True,
 ) -> JsonValue:
@@ -595,8 +596,8 @@ def bool_val(
     allow_string: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
-    on_missing: Optional[bool] = None,
-    on_null: Optional[bool] = None,
+    on_missing: bool | None = None,
+    on_null: bool | None = None,
 ) -> JsonValue:
     """Creates a bool value. For example, the JSON boolean
 
@@ -651,8 +652,8 @@ def bool_val(
 def char_val(
     allow_missing: bool = True,
     allow_null: bool = True,
-    on_missing: Optional[str] = None,
-    on_null: Optional[str] = None,
+    on_missing: str | None = None,
+    on_null: str | None = None,
 ) -> JsonValue:
     """Creates a char value. For example, the JSON string
 
@@ -694,8 +695,8 @@ def byte_val(
     allow_string: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
-    on_missing: Optional[int] = None,
-    on_null: Optional[int] = None,
+    on_missing: int | None = None,
+    on_null: int | None = None,
 ) -> JsonValue:
     """Creates a byte (signed 8-bit) value. For example, the JSON integer
 
@@ -741,8 +742,8 @@ def short_val(
     allow_string: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
-    on_missing: Optional[int] = None,
-    on_null: Optional[int] = None,
+    on_missing: int | None = None,
+    on_null: int | None = None,
 ) -> JsonValue:
     """Creates a short (signed 16-bit) value. For example, the JSON integer
 
@@ -788,8 +789,8 @@ def int_val(
     allow_string: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
-    on_missing: Optional[int] = None,
-    on_null: Optional[int] = None,
+    on_missing: int | None = None,
+    on_null: int | None = None,
 ) -> JsonValue:
     """Creates an int (signed 32-bit) value. For example, the JSON integer
 
@@ -835,8 +836,8 @@ def long_val(
     allow_string: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
-    on_missing: Optional[int] = None,
-    on_null: Optional[int] = None,
+    on_missing: int | None = None,
+    on_null: int | None = None,
 ) -> JsonValue:
     """Creates a long (signed 64-bit) value. For example, the JSON integer
 
@@ -894,8 +895,8 @@ def float_val(
     allow_string: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
-    on_missing: Optional[float] = None,
-    on_null: Optional[float] = None,
+    on_missing: float | None = None,
+    on_null: float | None = None,
 ) -> JsonValue:
     """Creates a float (signed 32-bit) value. For example, the JSON decimal
 
@@ -939,8 +940,8 @@ def double_val(
     allow_string: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
-    on_missing: Optional[float] = None,
-    on_null: Optional[float] = None,
+    on_missing: float | None = None,
+    on_null: float | None = None,
 ) -> JsonValue:
     """Creates a double (signed 64-bit) value. For example, the JSON decimal
 
@@ -999,8 +1000,8 @@ def string_val(
     allow_bool: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
-    on_missing: Optional[str] = None,
-    on_null: Optional[str] = None,
+    on_missing: str | None = None,
+    on_null: str | None = None,
 ) -> JsonValue:
     """Creates a String value. For example, the JSON string
 
@@ -1062,8 +1063,8 @@ def instant_val(
     number_format: Literal[None, "s", "ms", "us", "ns"] = None,
     allow_decimal: bool = False,
     allow_string: bool = False,
-    on_missing: Optional[InstantLike] = None,
-    on_null: Optional[InstantLike] = None,
+    on_missing: InstantLike | None = None,
+    on_null: InstantLike | None = None,
 ) -> JsonValue:
     """Creates an Instant value. For example, the JSON string
 
@@ -1165,8 +1166,8 @@ def big_integer_val(
     allow_decimal: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
-    on_missing: Optional[Union[int, str]] = None,
-    on_null: Optional[Union[int, str]] = None,
+    on_missing: int | str | None = None,
+    on_null: int | str | None = None,
 ) -> JsonValue:
     """Creates a BigInteger value. For example, the JSON integer
 
@@ -1211,8 +1212,8 @@ def big_decimal_val(
     allow_string: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
-    on_missing: Optional[Union[float, str]] = None,
-    on_null: Optional[Union[float, str]] = None,
+    on_missing: float | str | None = None,
+    on_null: float | str | None = None,
 ) -> JsonValue:
     """Creates a BigDecimal value. For example, the JSON decimal
 
@@ -1262,14 +1263,14 @@ def any_val() -> JsonValue:
 
 
 def skip_val(
-    allow_missing: Optional[bool] = None,
-    allow_null: Optional[bool] = None,
-    allow_int: Optional[bool] = None,
-    allow_decimal: Optional[bool] = None,
-    allow_string: Optional[bool] = None,
-    allow_bool: Optional[bool] = None,
-    allow_object: Optional[bool] = None,
-    allow_array: Optional[bool] = None,
+    allow_missing: bool | None = None,
+    allow_null: bool | None = None,
+    allow_int: bool | None = None,
+    allow_decimal: bool | None = None,
+    allow_string: bool | None = None,
+    allow_bool: bool | None = None,
+    allow_object: bool | None = None,
+    allow_array: bool | None = None,
     allow_by_default: bool = True,
 ) -> JsonValue:
     """Creates a "skip" value. No resulting type will be returned, but the JSON types will be validated as configured.
@@ -1300,7 +1301,7 @@ def skip_val(
         the "skip" value
     """
 
-    def _allow(x: Optional[bool]) -> bool:
+    def _allow(x: bool | None) -> bool:
         return x if x is not None else allow_by_default
 
     builder = _JSkipValue.builder()

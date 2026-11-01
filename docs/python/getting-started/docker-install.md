@@ -44,9 +44,9 @@ Deephaven offers the following pre-built Docker images:
 - `server`: Python
 - `server-slim`: Groovy
 - `server-nltk`: Python with [NLTK](https://www.nltk.org/)
-- `server-pytorch`: Python with [PyTorch](https://pytorch.org/)
+- `server-pytorch`: Python with [PyTorch](https://pytorch.org/) and [TensorBoard](https://www.tensorflow.org/tensorboard)
 - `server-sklearn`: Python with [scikit-learn](https://scikit-learn.org/stable/)
-- `server-tensorflow`: Python with [TensorFlow](https://www.tensorflow.org/)
+- `server-tensorflow`: Python with [TensorFlow](https://www.tensorflow.org/) and [TensorBoard](https://www.tensorflow.org/tensorboard)
 - `server-all-ai`: Python with NLTK, PyTorch, scikit-learn, and TensorFlow
 
 To run one of these images, replace `server` in the [`docker run`](https://docs.docker.com/reference/cli/docker/container/run/) command from [The simplest possible installation](#the-simplest-possible-installation) with that image's name. For example, `ghcr.io/deephaven/server-pytorch:latest` runs the `server-pytorch` image.

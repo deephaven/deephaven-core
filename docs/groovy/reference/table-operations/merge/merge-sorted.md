@@ -2,7 +2,7 @@
 title: mergeSorted
 ---
 
-`mergeSorted` combines two or more tables into one sorted, aggregate table. This essentially stacks the tables one on top of the other and sorts the result. Null tables are ignored. `mergeSorted` is more efficient than using [`merge`](./merge.md) followed by [`sort`](../sort/sort.md).
+`mergeSorted` combines two or more tables into one sorted, aggregate table. This essentially stacks the tables one on top of the other and sorts the result. `mergeSorted` is more efficient than using [`merge`](./merge.md) followed by [`sort`](../sort/sort.md).
 
 ## Syntax
 
@@ -24,7 +24,7 @@ Source tables to be merged.
 
 - The tables to be merged must include the same columns of the same type.
 - Each table must be already sorted.
-- Null inputs are skipped.
+- Every input must be a non-null table. A `null` input throws an `UnsupportedOperationException`.
 
 </Param>
 <Param name="tables" type="Collection<Table>">
@@ -33,7 +33,7 @@ Source tables to be merged.
 
 - The tables to be merged must include the same columns of the same type.
 - Each table must be already sorted.
-- Null inputs are skipped.
+- Every input must be a non-null table. A `null` input throws an `UnsupportedOperationException`.
 
 </Param>
 </ParamTable>

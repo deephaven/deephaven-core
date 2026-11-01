@@ -21,8 +21,12 @@ import io.deephaven.engine.table.impl.by.AggregationRowLookup;
 import io.deephaven.engine.table.impl.by.RollupConstants;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.ByteGenerator;
+import io.deephaven.engine.testutil.generator.DoubleGenerator;
+import io.deephaven.engine.testutil.generator.FloatGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.generator.ShortGenerator;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
@@ -287,6 +291,48 @@ public class TestRollupTable extends RefreshingTableTestCase {
                 System.out.println("Step = " + step);
             }
             simulateShiftAwareStep(ctxt + " step == " + step, size, random, testTable, columnInfo, en);
+        }
+    }
+
+    /**
+     * Like {@link #testRollupMultiKeyVsZeroKeyIncremental()}, but counting distinct byte, short, float, and double
+     * values, whose re-aggregation reads the changes to each child level's distinct-value sets.
+     */
+    @Test
+    public void testRollupCountDistinctVsZeroKeyIncremental() {
+        final Random random = new Random(0);
+
+        final ColumnInfo[] columnInfo = initColumnInfos(
+                new String[] {"Sym", "Sym2", "byteCol", "shortCol", "floatCol", "doubleCol"},
+                new SetGenerator<>("a", "b", "c", "d"),
+                new SetGenerator<>("u", "v", "w"),
+                new ByteGenerator((byte) 0, (byte) 20, 0.1),
+                new ShortGenerator((short) 0, (short) 30, 0.1),
+                new FloatGenerator(0, 4, 0.1, 0.05),
+                new DoubleGenerator(0, 4, 0.1, 0.05));
+
+        final QueryTable testTable = getTable(true, INCREMENTAL_TABLE_SIZE, random, columnInfo);
+
+        final List<Aggregation> countDistincts = List.of(
+                AggCountDistinct("cdByte=byteCol", "cdShort=shortCol", "cdFloat=floatCol", "cdDouble=doubleCol"),
+                AggCountDistinct(true, "cdnByte=byteCol", "cdnShort=shortCol", "cdnFloat=floatCol",
+                        "cdnDouble=doubleCol"));
+        final String[] countDistinctColumns = {"cdByte", "cdShort", "cdFloat", "cdDouble", "cdnByte", "cdnShort",
+                "cdnFloat", "cdnDouble"};
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                new RollupCompareNugget(
+                        testTable.rollup(countDistincts, false, "Sym", "Sym2"),
+                        testTable.aggBy(countDistincts),
+                        countDistinctColumns)
+        };
+
+        final int steps = 100;
+        for (int step = 0; step < steps; step++) {
+            if (RefreshingTableTestCase.printTableUpdates) {
+                System.out.println("Step = " + step);
+            }
+            simulateShiftAwareStep("step == " + step, 100, random, testTable, columnInfo, en);
         }
     }
 

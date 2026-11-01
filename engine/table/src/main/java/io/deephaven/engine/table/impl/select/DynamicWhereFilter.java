@@ -131,6 +131,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
             if (sourceDataIndex != null) {
                 if (sourceDataIndex.isRefreshing()) {
                     manage(sourceDataIndex);
+                    // satisfied() reads the index table, and may be called before any filter() call
+                    sourceDataIndex.table(DataIndexOptions.USING_PARTIAL_TABLE);
                 }
                 computeIndexKeyColumns();
             }

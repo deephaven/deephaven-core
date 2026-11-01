@@ -10,8 +10,8 @@ Each data type is represented by a DType class which supports creating arrays of
 from __future__ import annotations
 
 import datetime
-from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union, cast
+from collections.abc import Callable, Sequence
+from typing import Any, TypeAlias, Union, cast
 
 import jpy
 import numpy as np
@@ -29,9 +29,6 @@ from deephaven.constants import (
 
 from .dherror import DHError
 
-if TYPE_CHECKING:
-    from typing_extensions import TypeAlias  # novermin  # noqa
-
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JPrimitiveArrayConversionUtility = jpy.get_type(
@@ -41,7 +38,7 @@ _JPrimitiveArrayConversionUtility = jpy.get_type(
 _j_name_type_map: dict[str, DType] = {}
 
 
-def _qst_custom_type(cls_name: str) -> Optional[jpy.JType]:
+def _qst_custom_type(cls_name: str) -> jpy.JType | None:
     try:
         return _JQstType.find(_JTableTools.typeFromName(cls_name))
     except Exception:
@@ -54,8 +51,8 @@ class DType:
     def __init__(
         self,
         j_name: str,
-        j_type: Optional[type] = None,
-        qst_type: Optional[jpy.JType] = None,
+        j_type: type | None = None,
+        qst_type: jpy.JType | None = None,
         is_primitive: bool = False,
         np_type: Any = np.object_,
     ):
@@ -87,6 +84,14 @@ class DType:
             return self.j_type(*args, **kwargs)
         except Exception as e:
             raise DHError(e, f"failed to create an instance of {self.j_name}") from e
+
+    # A DType is an instance, not a class, so the built-in `X | Y` would raise TypeError on it. Building a
+    # typing.Union lets `Instant | None` and `str | TimeZone` work in type hints.
+    def __or__(self, other):
+        return Union[self, other]  # noqa: UP007
+
+    def __ror__(self, other):
+        return Union[other, self]  # noqa: UP007
 
 
 bool_: DType = DType(
@@ -152,25 +157,25 @@ BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
 """Deephaven StringSet type"""
-Instant = cast(
+Instant: TypeAlias = cast(
     type, DType(j_name="java.time.Instant", np_type=np.dtype("datetime64[ns]"))
-)  # type: TypeAlias
+)
 """Instant date time type"""
-LocalDate = cast(type, DType(j_name="java.time.LocalDate"))  # type: TypeAlias
+LocalDate: TypeAlias = cast(type, DType(j_name="java.time.LocalDate"))
 """Local date type"""
-LocalTime = cast(type, DType(j_name="java.time.LocalTime"))  # type: TypeAlias
+LocalTime: TypeAlias = cast(type, DType(j_name="java.time.LocalTime"))
 """Local time type"""
-ZonedDateTime = cast(type, DType(j_name="java.time.ZonedDateTime"))  # type: TypeAlias
+ZonedDateTime: TypeAlias = cast(type, DType(j_name="java.time.ZonedDateTime"))
 """Zoned date time type"""
-Duration = cast(type, DType(j_name="java.time.Duration"))  # type: TypeAlias
+Duration: TypeAlias = cast(type, DType(j_name="java.time.Duration"))
 """Time period type, which is a unit of time in terms of clock time (24-hour days, hours, minutes, seconds, and nanoseconds)."""
-Period = cast(type, DType(j_name="java.time.Period"))  # type: TypeAlias
+Period: TypeAlias = cast(type, DType(j_name="java.time.Period"))
 """Time period type, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.)."""
-TimeZone = cast(type, DType(j_name="java.time.ZoneId"))  # type: TypeAlias
+TimeZone: TypeAlias = cast(type, DType(j_name="java.time.ZoneId"))
 """Time zone type."""
-BusinessCalendar = cast(
+BusinessCalendar: TypeAlias = cast(
     type, DType(j_name="io.deephaven.time.calendar.BusinessCalendar")
-)  # type: TypeAlias
+)
 """Business calendar type"""
 PyObject = DType(j_name="org.jpy.PyObject")
 """Python object type"""
@@ -269,7 +274,7 @@ def null_remap(dtype: DType) -> Callable[[Any], Any]:
     return lambda v: null_value if v is None else v
 
 
-def _instant_array(data: Union[Sequence, np.ndarray]) -> jpy.JType:
+def _instant_array(data: Sequence | np.ndarray) -> jpy.JType:
     """Converts a sequence of either datetime64[ns], datetime.datetime, pandas.Timestamp, datetime strings,
     or integers in nanoseconds, to a Java array of Instant values."""
 
@@ -315,8 +320,10 @@ def _instant_array(data: Union[Sequence, np.ndarray]) -> jpy.JType:
 
 
 def array(
-    dtype: DType, seq: Optional[Sequence], remap: Optional[Callable[[Any], Any]] = None
-) -> Optional[jpy.JType]:
+    dtype: DType,
+    seq: Sequence | np.ndarray | None,
+    remap: Callable[[Any], Any] | None = None,
+) -> jpy.JType | None:
     """Creates a Java array of the specified data type populated with values from a sequence.
 
     Note:
@@ -371,7 +378,7 @@ def array(
         raise DHError(e, f"failed to create a Java {dtype.j_name} array.") from e
 
 
-def from_jtype(j_class: Any) -> Optional[DType]:
+def from_jtype(j_class: Any) -> DType | None:
     """looks up a DType that matches the java type, if not found, creates a DType for it.
 
     Args:
@@ -391,7 +398,7 @@ def from_jtype(j_class: Any) -> Optional[DType]:
         return dtype
 
 
-def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -> DType:
+def from_np_dtype(np_dtype: np.dtype | pd.api.extensions.ExtensionDtype) -> DType:
     """Looks up a DType that matches the provided numpy dtype or Pandas's nullable equivalent; if not found,
     returns PyObject."""
 

@@ -2,7 +2,7 @@
 title: Barrage metrics for performance monitoring
 ---
 
-Barrage is the name of Deephaven's IPC table transport. This guide explains what statistics are recorded and how to access them.
+[Barrage](../../conceptual/what-is-barrage.md) is the name of Deephaven's IPC table transport. This guide explains what statistics are recorded and how to access them. For a step-by-step account of where in the life of an update each statistic is recorded, see [Interpret Barrage metrics](../../conceptual/barrage-metrics.md).
 
 ## Access Barrage metrics tables
 
@@ -27,60 +27,68 @@ This is what the snapshots table looks like after processing a few requests:
 
 ### Barrage subscription metrics summary
 
-Subscription statistics are presented in percentiles bucketed over a time period. Here are the various metrics that are recorded by the Deephaven server:
+Subscription statistics are presented in percentiles bucketed over a time period (see `BarragePerformanceLog.cycleDurationMillis` in [Extra configuration](#extra-configuration)). Each row describes one statistic for one publisher — a table and update interval, one tree or rollup subscription, or one receiver's local copy of a table — over one period. A statistic with no samples in the period has no row. The `StatType` column names the statistic, `Count` is the number of samples in the period, and `Pct50`, `Pct75`, `Pct90`, `Pct95`, `Pct99`, and `Max` are the distribution of the sampled values. The `TableId` and `TableKey` columns identify the table (or tree or rollup subscription, or receiver's local copy), and `Time` marks the end of the period. Subscriptions to the same table with different update intervals are recorded as separate rows that share the same `TableId` and `TableKey`.
 
-| Stat Type            | Sender / Receiver | Description                                                                                                                                                        |
-| -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| EnqueueNanos         | Sender            | The time it took to record changes that occurred during a single update graph cycle                                                                                |
-| AggregateNanos       | Sender            | The time it took to aggregate pending updates into a message; recorded for every compaction and for every range a propagation packages, even a range of one update |
-| PropagateNanos       | Sender            | The elapsed time of one propagation phase: writing one message to the subscribers it goes to                                                                       |
-| SnapshotNanos        | Sender            | The time it took to snapshot data for a new or changed subscription                                                                                                |
-| UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic                                                                                         |
-| WriteNanos           | Sender            | The elapsed time of one write of the update, to one subscriber or to every subscriber that shares an update                                                        |
-| WriteBytes           | Sender            | The payload size of the update in bytes, recorded once for each subscriber                                                                                         |
-| PendingDeltaCount    | Sender            | How many pending updates the server was holding, un-propagated, at the end of an update graph cycle; a compacted update stands for every cycle it coalesced        |
-| PendingDeltaBytes    | Sender            | Approximate heap footprint, in bytes, of the chunk storage those pending updates own                                                                               |
-| DeserializationNanos | Receiver          | The time it took to read and deserialize the update from the wire                                                                                                  |
-| ProcessUpdateNanos   | Receiver          | The time it took to apply a single update during the update graph cycle                                                                                            |
-| RefreshNanos         | Receiver          | The time it took to apply all queued updates during a single update graph cycle                                                                                    |
+Sender statistics are recorded by the server that publishes the table. Receiver statistics are recorded by the process that subscribes to or snapshots the table, in its own subscription metrics table, and only when that process uses the Java Barrage client — for example, a Deephaven server that uses a [URI](../use-uris.md) or `BarrageTableResolver`, or the Java client. Clients such as `pydeephaven` and the JavaScript client record no receiver statistics.
+
+These are the values of `StatType`:
+
+| `StatType`           | Sender / Receiver | Description                                                                                                                                                                                         |
+| -------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EnqueueNanos         | Sender            | The time it took to record changes that occurred during a single update graph cycle                                                                                                                 |
+| AggregateNanos       | Sender            | The time it took to aggregate pending updates into a message; recorded for every compaction and for every range a propagation packages, even a range of one update                                  |
+| PropagateNanos       | Sender            | The elapsed time of one propagation phase: writing one message to the subscribers it goes to                                                                                                        |
+| SnapshotNanos        | Sender            | The time it took to take one snapshot step for a new or changed subscription; for tree and rollup subscriptions, every update is sent as a snapshot and records a value                             |
+| UpdateJobNanos       | Sender            | The time it took to run one full cycle of the off-thread propagation logic                                                                                                                          |
+| WriteNanos           | Sender            | The elapsed time of one write of the update, to one subscriber or to every subscriber that shares an update                                                                                         |
+| WriteBytes           | Sender            | The size in bytes of one write of the update, every message in it including dictionary batches; recorded once for each subscriber it was sent to                                                    |
+| PendingDeltaCount    | Sender            | How many pending updates the server was holding, un-propagated, after recording an update graph cycle's changes; a compacted update counts once, even though it stands for every cycle it coalesced |
+| PendingDeltaBytes    | Sender            | Approximate heap footprint, in bytes, of the chunk storage those pending updates own                                                                                                                |
+| DeserializationNanos | Receiver          | The time it took to read and deserialize one incoming gRPC message; an update split across several messages records one value per message                                                           |
+| ProcessUpdateNanos   | Receiver          | The time it took to apply a single message (update or snapshot): during an update graph cycle for a subscription, or as the message arrives for a snapshot                                          |
+| RefreshNanos         | Receiver          | The time it took to apply all queued messages during a single update graph cycle; recorded only for subscriptions, once per cycle, even when nothing is queued                                      |
 
 ### Barrage snapshot metrics summary
 
-Snapshot statistics are presented once per request.
+Snapshot statistics are recorded for snapshots requested with a Barrage snapshot request or Arrow Flight `DoGet`. Each row also includes the `TableId` and `TableKey` of the table and the `RequestTime` at which the request was received. A refreshing table produces one row per request. A static table is sent in chunks and produces one row per chunk, all with the same `RequestTime`: `SnapshotNanos` is the total so far, and `WriteNanos` and `WriteBytes` are for that chunk.
 
-| Column        | Description                                                             |
-| ------------- | ----------------------------------------------------------------------- |
-| QueueNanos    | The time it took waiting for a thread to process the request            |
-| SnapshotNanos | The time it took to construct a consistent snapshot of the source table |
-| WriteNanos    | The time it took to write the snapshot                                  |
-| WriteBytes    | The payload size of the snapshot in bytes                               |
-
-> [!NOTE]
-> `PendingDeltaCount` and `PendingDeltaBytes` are gauges rather than durations: each is sampled once per update graph cycle, so the useful value over a reporting window is the maximum rather than the average. They measure what the server is holding on behalf of subscribers it has not yet served, which rises with the number of update graph cycles that elapse per subscriber update interval. The byte figure is approximate: it counts the capacity of the chunks a pending update owns, which is what the server allocated, not the rows actually stored in them. It also counts those chunks alone. A `String` or other object column is charged eight bytes per row — the widest a reference can be, which overstates it wherever the JVM uses compressed references — and never the object that reference points at. For a subscription carrying object columns, `PendingDeltaBytes` therefore measures the chunk storage rather than the memory those rows retain, and can fall on either side of it.
+| Column        | Description                                                                                                                        |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| QueueNanos    | The time from receiving the request until work on it began, including waiting for the requested table to be ready and for a thread |
+| SnapshotNanos | The time it took to construct a consistent snapshot of the source table                                                            |
+| WriteNanos    | The time it took to write the snapshot (or chunk)                                                                                  |
+| WriteBytes    | The size in bytes of the snapshot (or chunk), every message in it including dictionary batches                                     |
 
 > [!NOTE]
-> All durations are nanoseconds and all payload sizes are bytes, stored as `long`. This matches Deephaven's other performance tables. Convert in a query when you want different units — for example `WriteMillis = WriteNanos / 1e6`, or `WriteMegabits = WriteBytes * 8 / 1e6`. `WriteBytes` is a size, not a rate. To compare against link bandwidth, take a `WriteBytes` row's `Count` multiplied by a typical size, such as its `Pct50`, as an estimate of the bytes sent during the interval, and divide by the interval's length (`BarragePerformanceLog.cycleDurationMillis`, one minute by default).
+> `PendingDeltaCount` and `PendingDeltaBytes` are gauges rather than durations: each is sampled once per update graph cycle in which the table changes while it has at least one subscriber, so the useful value over a reporting window is the maximum rather than the average. They measure what the server is holding on behalf of subscribers it has not yet served, which rises with the number of update graph cycles that elapse per update interval and with the size of each cycle's changes. The byte figure is approximate: it counts the capacity of the chunks a pending update owns, which is what the server allocated, not the rows actually stored in them. It also counts those chunks alone. A `String` or other object column is charged eight bytes per row — the widest a reference can be, which overstates it wherever the JVM uses compressed references — and never the object that reference points at. For a subscription carrying object columns, `PendingDeltaBytes` therefore measures the chunk storage rather than the memory those rows retain, and can fall on either side of it.
+
+> [!NOTE]
+> All durations are nanoseconds and all payload sizes are bytes, stored as `long`. This matches Deephaven's other performance tables. Convert in a query when you want different units — for example `WriteMillis = WriteNanos / 1e6` in the snapshot table. In the subscription table, `WriteNanos` and `WriteBytes` are `StatType` values, so filter on `StatType` and convert a percentile column, such as `MaxMegabits = Max * 8 / 1e6`. `WriteBytes` is a size, not a rate. To compare against link bandwidth, take a `WriteBytes` row's `Count` multiplied by a typical size, such as its `Pct50`, as an estimate of the bytes sent during the interval, and divide by the interval's length (`BarragePerformanceLog.cycleDurationMillis`, one minute by default).
 
 ## Identify a table
 
-Tables are identified by their `TableId` and `TableKey`. The `TableId` is determined by the source table's [`System.identityHashCode()`](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/System.html#identityHashCode(java.lang.Object)). The `TableKey` defaults to [`Table.getDescription()`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#getDescription()) but can be overridden by setting the table attribute via [`withAttributes`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/AttributeMap.html#withAttributes(java.util.Map)).
+Tables are identified by their `TableId` and `TableKey`. For sender statistics, the `TableId` is the source table's [`System.identityHashCode`](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/System.html#identityHashCode(java.lang.Object)), written in hexadecimal. For receiver statistics, it is the identity hash code of the subscriber's local copy of the table. For tree and rollup table subscriptions, it is the identity hash code of the subscription rather than of a table. The `TableKey` defaults to [`Table.getDescription`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/Table.html#getDescription()) but can be overridden by setting the `BarragePerformanceTableKey` attribute on the table you publish via [`withAttributes`](https://deephaven.io/core/javadoc/io/deephaven/engine/table/AttributeMap.html#withAttributes(java.util.Map)).
 
-```groovy order=t,:log
+```groovy order=attrTable,:log
 t = emptyTable(0)
-
-hashcode = System.identityHashCode(t)
-
-println hashcode
 
 attrs = new HashMap(1)
 
 attrs.put(Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE, 'MyTableKey')
 
+// withAttributes returns a new table; publish this one to have its metrics recorded under "MyTableKey"
 attrTable = t.withAttributes(attrs)
+
+tableId = Integer.toHexString(System.identityHashCode(attrTable))
+
+println "TableId: ${tableId}"
 ```
 
 > [!NOTE]
-> The web client applies transformations to every table to which it subscribes. If a table is also subscribed to by a non-web client, then statistics for the original table and the transformed table will both appear in the metrics table. Their `TableId` will differ. Most transformations clear the `TableKey` attribute, such as when a column is sorted or filtered, both programmatically and through the GUI.
+> For tree and rollup tables, set the attribute on the tree or rollup table itself; otherwise the key defaults to that table's description.
+
+> [!NOTE]
+> The web client often applies transformations, such as sorts, filters, and flattening, to a table before subscribing to it. If a table is also subscribed to by a non-web client, then statistics for the original table and the transformed table will both appear in the metrics table. Their `TableId` will differ. Most transformations, such as sorting or filtering, both programmatically and through the GUI, do not carry the `TableKey` attribute to the result. With `BarragePerformanceLog.enableAll` set to `true` (the default), the transformed table is still recorded, under a `TableKey` taken from its own description.
 
 ## Extra configuration
 
@@ -91,18 +99,20 @@ Here are server-side flags that change the behavior of Barrage metrics.
 
 ## Control subscription snapshot size
 
-When a client subscribes to a ticking table, the server sends an initial snapshot of the table data. For large tables, constructing this snapshot requires holding the data in memory on the server side, which can lead to out-of-memory (OOM) errors.
+When a client subscribes to a table, or changes an existing subscription (for example, by moving its viewport), the server sends a snapshot of the requested data. For large tables, constructing this snapshot requires holding the data in memory on the server side, which can lead to out-of-memory (OOM) errors.
 
-To address this, Deephaven can break the initial snapshot into smaller chunks spread across multiple update cycles. This behavior is controlled by the following properties:
+To address this, Deephaven can break a large snapshot into a series of smaller chunks. This behavior is controlled by the following properties:
 
 - `-DBarrageMessageProducer.subscriptionGrowthEnabled`: When `true` (the default), the server limits the size of each snapshot chunk. When `false`, the server sends the entire snapshot at once (unlimited size).
 
-When subscription growth is enabled, these additional properties control the chunk size:
+These properties control the chunk size for growing subscriptions (when subscription growth is enabled), and for every snapshot of a static table requested with a Barrage snapshot request or `DoGet`, which is always sent in chunks:
 
 - `-DBarrageUtil.minSnapshotCellCount`: The minimum number of cells (rows × columns) per snapshot chunk. Default: `8192`.
 - `-DBarrageUtil.maxSnapshotCellCount`: The maximum number of cells per snapshot chunk. Default: `16777216` (approximately 16 million).
 
-The server adaptively adjusts the chunk size between these bounds based on how long each snapshot takes to generate, targeting a percentage of the update graph cycle time.
+The server adaptively adjusts the chunk size between these bounds based on how long each snapshot takes to generate, targeting a percentage of the update graph cycle time:
+
+- `-DBarrageUtil.targetSnapshotPercentage`: The fraction of the update graph's target cycle duration that each snapshot chunk should take to generate. Default: `0.25`.
 
 ### Reducing publisher memory usage
 
@@ -114,29 +124,29 @@ For systems serving very large tables to many subscribers, you can reduce publis
 -DBarrageUtil.maxSnapshotCellCount=1000000
 ```
 
-This configuration limits each snapshot chunk to exactly 1 million cells — well below the 16 million default maximum. Subscribers receive the full table data incrementally over multiple update cycles rather than all at once.
+This configuration limits each snapshot chunk to at most 1 million cells — well below the 16 million default maximum. Subscribers receive the full table data as a series of snapshot chunks rather than all at once. While a subscription is still growing, the server sends the next chunk as soon as the previous one is done, without waiting for the next update interval.
 
 > [!NOTE]
-> Setting smaller snapshot sizes increases the time required for subscribers to receive the initial table state but reduces peak memory usage on the server. These settings only affect initial snapshots — incremental updates are unaffected and must still be maintained in memory.
+> Setting smaller snapshot sizes increases the time required for subscribers to receive the initial table state but reduces peak memory usage on the server. These settings affect snapshots for new or changed subscriptions, such as an initial subscription or a viewport change, and snapshot requests for static tables — incremental updates are unaffected and must still be maintained in memory.
 
 ## Compact pending deltas
 
-The server records one delta — the set of changes from a single update graph cycle — for each table and update interval that has subscribers. Subscribers that use the same update interval share those deltas, and the server sends the accumulated deltas when the [update interval](#update-interval) elapses. When the table ticks more than once per update interval, the server therefore holds every intervening cycle's data at once, even though the message each subscriber eventually receives is the size of the combined change rather than the sum of the individual ones. Memory grows with both the size of each cycle's changes and the number of cycles per update interval.
+The server records one delta — the set of changes from a single update graph cycle — for each table and [update interval](#update-interval), shared by every subscriber to that table with that interval, then sends the accumulated deltas when the interval elapses. When subscribers are served less often than the table ticks, the server therefore holds every intervening cycle's data at once, even though the message subscribers eventually receive is usually the size of the combined change rather than the sum of the individual ones. (For a blink table it is the sum, since every row must be delivered.) Pending memory grows with both the number of cycles per update interval and the size of each cycle's changes.
 
-To limit that growth, the server combines the pending deltas in the background, before the interval elapses. Compacting costs processor time and saves memory, so the server pays for it only where there is memory to reclaim. It compares the storage the pending deltas occupy against the storage they would occupy compacted, and compacts when the saving clears both of two thresholds:
+To limit that growth, the server combines the pending deltas in the background, before the interval elapses. Compacting costs processor time and saves memory, so the server pays for it only where there is memory to reclaim. The server never compacts blink tables, or a queue of fewer than two pending deltas. Otherwise, it compares the storage the pending deltas occupy against the storage they would occupy compacted, and compacts when the saving clears both of two thresholds:
 
 ```text
 held - compacted >= max(compactionFloorBytes, compactionMinFreedFraction * held)
 ```
 
-`held` is the storage the pending deltas currently occupy, which the server reports as `PendingDeltaBytes`. `compacted` is an estimate of what they would occupy after compacting. Both measure the capacity of the chunks allocated, so a queue of many small updates is scored on the memory it actually holds.
+`held` is the storage the pending deltas currently occupy, which the server reports as `PendingDeltaBytes`. `compacted` is an estimate of what they would occupy after compacting. Both measure the capacity of the chunks allocated rather than the rows stored in them, so a queue of many small updates is scored on the memory it actually holds.
 
 The two thresholds answer different questions. The fraction asks whether compacting is worthwhile at all; the floor asks whether the saving is large enough to be worth the work.
 
-- `-DBarrageMessageProducer.compactionEnabled`: When `true` (the default), the server compacts the pending deltas between update intervals. When `false`, deltas accumulate untouched until the interval elapses.
+- `-DBarrageMessageProducer.compactionEnabled`: When `true` (the default), the server compacts a table's pending deltas between update intervals. When `false`, deltas accumulate untouched until the interval elapses.
 - `-DBarrageMessageProducer.compactionMinFreedFraction`: The fraction of the pending deltas' storage that compacting must release for the server to do it. Default: `0.5`. A higher value copies less data but lets the pending deltas grow larger — at `0.9` the server copies about a ninth as much and holds about ten times the compacted footprint.
 - `-DBarrageMessageProducer.compactionFloorBytes`: The number of bytes compacting must release, whatever fraction of the total that represents. Default: `4194304` (4 MiB). This keeps a stream of very small updates from compacting on every cycle, where the work costs the same as a compaction that reclaims far more.
-- `-DBarrageMessageProducer.deltaChunkSize`: The number of rows in each chunk a delta records. Default: `65536`. A value that is not a power of two rounds up to the next one.
+- `-DBarrageMessageProducer.deltaChunkSize`: The number of rows in each chunk a delta records. Default: `65536`, the largest pooled chunk capacity (which is itself set by `-DChunkPoolConstants.largestPooledChunkLog2Capacity`, default `16`). A value that is not a power of two rounds up to the next one.
 
 > [!NOTE]
 > The `PendingDeltaCount` and `PendingDeltaBytes` metrics in the subscription table measure what the server holds for subscribers it has not yet served, so they are the place to look when tuning these properties.
@@ -178,18 +188,67 @@ When a table has dictionary-encoded columns, subscribers that share a write may 
 > [!NOTE]
 > A shared write records one `WriteNanos` sample, and one `WriteBytes` sample for each subscriber that was sent all of it. `WriteNanos` includes copying the write to every subscriber, whether or not the copies run in parallel. Each `WriteBytes` sample is the size of one copy, so `WriteBytes` reads as it would if every subscriber had a write of its own, while the `WriteNanos` count falls to the number of writes. The dictionary values sent before a shared write to subscribers that were behind are a write of their own, recorded the same way.
 
+## Compress Barrage data
+
+By default, the server sends Barrage snapshots and subscriptions uncompressed. To let it compress a table's data, pass the table to [`TransportCompressionAttribute.withCompression`](https://deephaven.io/core/javadoc/io/deephaven/extensions/barrage/TransportCompressionAttribute.html) with the names of the compression types the server may use, in order of preference, such as the built-in `"zstd"`, `"gzip"`, `"snappy"`, and `"deflate"`. A gRPC client may list the compression types it can decode in its `grpc-accept-encoding` request header. When a client fetches the table, the server uses the first type in the table's list that the client also lists, and sends uncompressed data when none match or the client lists none.
+
+```groovy order=null
+import io.deephaven.extensions.barrage.TransportCompressionAttribute
+
+t = emptyTable(1_000_000).update("X = ii", "Sym = `S` + (ii % 32)")
+tCompressed = TransportCompressionAttribute.withCompression(t, "zstd", "gzip")
+```
+
+`withCompression` stores the list in the table's `TransportCompression` attribute. Operations whose result holds only the table's values keep the attribute: filtering, sorting, reversing, flattening, dropping or renaming columns, `partitionBy` constituents, `firstBy` and `lastBy`. Operations that compute new values or bring in another table's data drop it, including `view`, `updateView`, joins, rollups and trees; so do operations such as `head`, `select` and `update`. Their results have no attribute set, so they are sent uncompressed unless the server has a server-wide list, described next. For a rollup or tree table, pass the rollup or tree table to `withCompression` rather than its source.
+
+To compress tables without changing the queries that create them, set a server-wide list of compression types, most preferred first, with the `TransportCompression.defaultTypes` property, for example `-DTransportCompression.defaultTypes=zstd,snappy`. The server uses the server-wide list for every table that has no `TransportCompression` attribute set. Without the property, only tables with their own `TransportCompression` attribute are compressed.
+
+With a server-wide list, compression is opt-out rather than opt-in. A table with its own `TransportCompression` attribute uses its own list instead of the server-wide list. To exclude a table, call `withCompression` with no compression types. This sets the attribute to an empty list, which means "never compress". To undo `withCompression` so that the server-wide list applies again, call `TransportCompressionAttribute.resetCompression(t)`, which removes the attribute. Passing `null` to `withCompression` is an error. Operations keep or drop an empty list just as they do any other list. A table made by an operation that drops the attribute, such as a join or `view`, has no attribute set, so the server-wide list applies to it, even when its source was excluded.
+
+These are the compression types each client lists by default. A client that lists none always receives uncompressed data.
+
+| Client                                     | Compression types listed                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------- |
+| Java client                                | `gzip`, `zstd`, `snappy`, `deflate`, and any added types on its classpath |
+| Python (`pydeephaven`), C++, and R clients | `gzip` and `deflate`                                                      |
+| Web UI and JavaScript API, Go client       | None, so data is always sent uncompressed                                 |
+
+Remote tables between servers are a separate case. A Deephaven server that fetches a table from another server, for example by resolving a [`dh://` URI](../use-uris.md), connects through the Java client that runs inside the server, so it lists the same compression types as the Java client.
+
+Choose the list based on what the server's CPU can afford. The following figures come from [`TransportCompressionBenchmark`](https://github.com/deephaven/deephaven-core/blob/main/extensions/barrage/benchmark/src/main/java/io/deephaven/benchmark/barrage/TransportCompressionBenchmark.java), a JMH benchmark in the Deephaven Core repository, run on a one-million-row table of mixed trade data. They were measured with JDK 21 on one thread of an Apple M1 Max and of an Intel Core i9-14900KS, and the speeds are megabytes of uncompressed data per second. Absolute speeds depend on the hardware and the data, so use them to compare the compression types rather than to predict throughput:
+
+| Compression type | Size after compression | Compression speed (M1 Max / i9-14900KS) | Decompression speed (M1 Max / i9-14900KS) |
+| ---------------- | ---------------------- | --------------------------------------- | ----------------------------------------- |
+| `zstd`           | 31% of the original    | 380 / 550 MB/s                          | 1010 / 1270 MB/s                          |
+| `gzip`           | 28% of the original    | 18 / 30 MB/s                            | 400 / 600 MB/s                            |
+| `snappy`         | 59% of the original    | 800 / 880 MB/s                          | 1460 / 1080 MB/s                          |
+| `deflate`        | 28% of the original    | 18 / 30 MB/s                            | 360 / 550 MB/s                            |
+
+`zstd` suits most tables. `gzip` compresses slightly smaller but is about 20 times slower to compress, so list it last, and only when clients that cannot decode `zstd`, such as `pydeephaven`, should also receive compressed data. `deflate` is the algorithm of `gzip` in the zlib format: it compresses to the same size at the same speed, and decompresses slightly slower. Every client that decodes `deflate` also decodes `gzip`, so there is little reason to list `deflate` ahead of `gzip`. `snappy` compresses fastest but saves the least, and it saves nothing on data that is already close to random.
+
+To narrow the compression types a client lists, use the setting for that client. An empty list asks for uncompressed data.
+
+- A Java client: `ClientConfig.builder().acceptCompression(...)`.
+- A remote table fetched by resolving a `dh://` URI: the `-DBarrageTableResolver.acceptCompression` property on the fetching server, for example `-DBarrageTableResolver.acceptCompression=zstd`.
+
+The Java client can also compress the data it uploads with `DoPut`, including the rows it adds to input tables: set `ClientConfig.builder().requestCompression(...)`, for example to `"zstd"`. Uploads are uncompressed by default. A server that cannot decode the type fails the upload, so choose `gzip`, which every Deephaven server decodes unless `gzip` is turned off as described below, when the server might not support the others.
+
+To add a compression type beyond `zstd`, `gzip`, `snappy`, and `deflate`, such as `lz4`, write a Java class that implements `io.deephaven.grpc.compression.CompressionCodecProvider` and returns an `io.grpc.Codec` for the type, named by the codec's `getMessageEncoding()`. Register the class as a Java `ServiceLoader` service, for example with `@AutoService(CompressionCodecProvider.class)`, and put its jar on the server's classpath. Tables can then list the type by its name, and the server uses it for clients that list it. A Java client lists it by default when the same jar is on its classpath; other clients list only the types in the table above. A class whose codec has the name of a built-in type, such as `zstd`, replaces the built-in codec wherever the jar is on the classpath, for example to compress at a different level.
+
+To turn off a compression type on a server, set the type's `TransportCompression.<type>.enabled` property to `false`, for example `-DTransportCompression.gzip.enabled=false`, or put the same setting in the server's configuration file. Every type is enabled unless the type's property disables it. The server never compresses data with a disabled codec and never accepts data compressed with the codec: a table that lists the type is sent with the next type on the table's list, and a client request compressed with the type fails. The property applies to added types too.
+
 ## Additional Barrage configuration
 
 The following properties control other aspects of Barrage behavior:
 
 ### Update interval
 
-- `-Dbarrage.minUpdateInterval`: The minimum interval (in milliseconds) between update batches sent to subscribers. Default: `1000` (1 second). Lower values reduce latency but increase CPU and network usage.
+- `-Dbarrage.minUpdateInterval`: The default update interval, in milliseconds, for subscriptions that do not request one. Default: `1000` (1 second). When the table ticks, the server waits at least this long after the last update it sent before sending the next; adding or changing a subscription, and each step of a growing subscription, sends immediately. Lower values reduce latency but increase CPU and network usage.
 
 ### Message batching
 
-- `-DBarrageMessageWriterImpl.batchSize`: Maximum rows per Arrow record batch, and values per dictionary batch. Default: `Integer.MAX_VALUE`. Reduce this if clients have trouble processing very large batches.
-- `-DBarrageMessageWriterImpl.initialBatchSize`: Initial batch size for the first message. Default: `4096`. A smaller initial batch ensures clients receive data quickly while the server calibrates optimal batch sizes.
+- `-DBarrageMessageWriterImpl.batchSize`: Maximum rows per Arrow record batch, and values per dictionary batch, when the client does not specify a batch size. Default: `Integer.MAX_VALUE`. Reduce this if clients have trouble processing very large batches.
+- `-DBarrageMessageWriterImpl.initialBatchSize`: The starting row count for the first record batch of each message (capped by `batchSize`, and retried smaller if the batch is too large). Default: `4096`. Later batches in the same message are sized from the observed bytes per row, with a margin, to stay under the maximum message size.
 - `-DBarrageMessageWriterImpl.maxOutboundMessageSize`: Maximum size (in bytes) for outbound messages. Default: `104857600` (100 MB). This matches the default incoming message limit for Java clients. The server splits record batches, and the dictionary batches of dictionary-encoded columns, to stay under it.
 
 ## Troubleshooting
@@ -200,21 +259,23 @@ Use the metrics tables described above to diagnose common Barrage issues.
 
 If `SnapshotNanos` is consistently high:
 
-- The source table may be very large. Consider using viewports or filtering data before subscription.
+- The source table may be very large. Consider using viewports or filtering data before subscription. For tree and rollup tables, every update is sent as a snapshot, so `SnapshotNanos` reflects ordinary update cost.
 - The update graph may be holding a lock. Check for long-running operations blocking the cycle.
-- Consider enabling subscription growth with smaller chunk sizes (see [Control subscription snapshot size](#control-subscription-snapshot-size)).
+- Make sure subscription growth has not been disabled, and consider smaller chunk sizes (see [Control subscription snapshot size](#control-subscription-snapshot-size)).
 
 ### High `WriteNanos` or `WriteBytes`
 
 If `WriteNanos` is high or `WriteBytes` is large:
 
-- Network bandwidth may be saturated. Check network utilization.
+- `WriteNanos` measures encoding each message and handing it to gRPC, not network transmission. Large messages take longer to encode.
 - Consider subscribing to fewer columns or using viewports to reduce data volume.
-- Increase `barrage.minUpdateInterval` to batch more updates together.
+- A longer update interval sends fewer, larger messages. It reduces total bytes when the same rows change repeatedly between updates, but each message, and each `WriteBytes` value, gets larger.
 
 ### High `PropagateNanos`
 
 If `PropagateNanos` is consistently high:
+
+- `PropagateNanos` includes writing each subscriber's message, so check `WriteNanos` first.
 
 - Many subscribers may be connected to the same table. Their writes overlap only as far as `BarrageMessageProducer.propagationThreads` and idle processors allow: check that the property is above `1` and not well below the number of subscribers (see [Write to subscribers in parallel](#write-to-subscribers-in-parallel)), and whether the server's processors are already busy. Consider load balancing across multiple server instances.
 - Subscribers whose options or viewports differ each need a write of their own. Full-table subscribers with matching options share one (see [Share one write among identical subscribers](#share-one-write-among-identical-subscribers)).
@@ -224,18 +285,21 @@ If `PropagateNanos` is consistently high:
 
 Common subscription issues:
 
-- **"Ticket not found"**: The table was released or the session that published it closed. Ensure the publishing session remains active.
-- **Authentication failures**: Verify that the `auth_type` and `auth_token` match the server configuration.
+- **Ticket not found** (for example, `ticket '<id>' not found` for a shared ticket): The ticket ID is wrong, or the published table was released or the session that published it closed. A recently released table may instead fail with a "dependency released" error. Keep the publishing session open, and keep the published table from being released, for as long as others need the ticket.
+- **Authentication failures**: Verify that the client's authentication settings match the server configuration. URI resolution requires anonymous authentication; see [Use URIs to share tables](../use-uris.md).
 - **Connection refused**: Ensure the server is running and the host/port are correct. Check firewall rules.
 
 ### Memory issues
 
 If the server experiences out-of-memory errors during subscriptions:
 
-- Enable subscription growth: `-DBarrageMessageProducer.subscriptionGrowthEnabled=true`
-- Lower snapshot cell counts to reduce peak memory usage.
+- Make sure subscription growth has not been disabled (`-DBarrageMessageProducer.subscriptionGrowthEnabled` defaults to `true`).
+- Lower `maxSnapshotCellCount` or `targetSnapshotPercentage` to reduce peak memory usage.
 - Monitor the metrics tables to identify which tables consume the most resources.
 
 ## Related documentation
 
 - [Interpret Barrage metrics](../../conceptual/barrage-metrics.md)
+- [What is Barrage?](../../conceptual/what-is-barrage.md)
+- [Use URIs to share tables](../use-uris.md)
+- [Periodic Update Graph configuration](../../conceptual/periodic-update-graph-configuration.md)

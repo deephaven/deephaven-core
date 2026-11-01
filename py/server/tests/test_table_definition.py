@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 #
 import unittest
-from typing import Mapping
+from collections.abc import Mapping
 
 from deephaven import DHError, dtypes, new_table
 from deephaven.column import bool_col, col_def, string_col

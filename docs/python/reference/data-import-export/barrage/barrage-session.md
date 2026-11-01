@@ -2,7 +2,7 @@
 title: barrage_session
 ---
 
-The `barrage_session` function creates a new [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession), a Deephaven gRPC session to a remote server. Each call opens a new gRPC channel.
+The `barrage_session` function creates a new Deephaven gRPC session ([`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession)) to a remote server. Each call opens its own connection. Use the session's [`subscribe`](./subscribe.md) and [`snapshot`](./snapshot-barrage.md) methods to retrieve remote tables, and [`close`](./close.md) it when you are done.
 
 <!--TODO: Add information about client mutual TLS authentication when it's added. -->
 
@@ -17,6 +17,7 @@ barrage_session(
   use_tls: bool = False,
   tls_root_certs: bytes = None,
   extra_headers: dict[str, str] = None,
+  accept_compression: Union[str, Sequence[str]] = None
 ) -> BarrageSession
 ```
 
@@ -40,7 +41,7 @@ The authentication type string. Can be `"Anonymous"`, `"Basic"`, or any custom-b
 </Param>
 <Param name="auth_token" type="str" optional>
 
-The authentication token string. When `auth_type` is `"Basic"`, it must be `"user:password"`. When `auth_type` is `"Anonymous"`, `auth_token` will be ignored. When `auth_type` is a custom-built authenticator, `auth_token` must conform to the specific requirements of the authenticator.
+The authentication token string. When `auth_type` is `Basic`, it must be the Base64 encoding of `user:password`; unlike [`pydeephaven.Session`](/core/client-api/python/code/pydeephaven.session.html#pydeephaven.session.Session), `barrage_session` sends the token as is and does not encode it for you. When `auth_type` is `Anonymous`, leave `auth_token` empty; a non-empty token is sent to the server, which rejects it. When `auth_type` is a custom-built authenticator, `auth_token` must conform to the specific requirements of the authenticator.
 
 </Param>
 <Param name="use_tls" type="bool" optional>
@@ -50,12 +51,17 @@ If `True`, the connection will be encrypted using TLS. The default is `False`.
 </Param>
 <Param name="tls_root_certs" type="bytes" optional>
 
-The PEM-encoded root certificates to use for TLS connection, or `None` to use system defaults. If you pass non-empty certificate bytes, you must also set `use_tls` to `True`; otherwise, `barrage_session` raises a `DHError`. Defaults to `None`.
+The PEM-encoded root certificates to use for TLS connection, or `None` (or an empty value) to use the local server's outbound TLS configuration (the `outbound.ssl.*` properties, or otherwise the server's own SSL configuration) together with the JDK's default trust store. `barrage_session` has no client certificate (mutual TLS) parameters; a client identity in the local server's `outbound.ssl.*` configuration is used only when `tls_root_certs` is `None` or empty, because a non-empty value replaces that configuration. A non-empty value requires a TLS connection, so `use_tls` must also be `True`; otherwise, `barrage_session` raises an error. Defaults to `None`.
 
 </Param>
 <Param name="extra_headers" type="dict[str, str]" optional>
 
 Extra headers to set when configuring the gRPC channel. Defaults to `None`.
+
+</Param>
+<Param name="accept_compression" type="Union[str, Sequence[str]]" optional>
+
+The compression type, or types, that the session accepts, such as `"gzip"`, `"zstd"`, and `"snappy"`. The remote server compresses only tables that allow one of these types; see [Compress Barrage data](../../../how-to-guides/performance/barrage-performance.md#compress-barrage-data). `None` accepts every supported type. An empty sequence accepts none, so data is always sent uncompressed. Defaults to `None`.
 
 </Param>
 </ParamTable>
@@ -66,10 +72,7 @@ A [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.B
 
 ## Examples
 
-> [!NOTE]
-> The first three examples use the default anonymous authentication, so the server must accept [anonymous authentication](../../../how-to-guides/authentication/auth-anon.md). A default Deephaven server uses [pre-shared key authentication](../../../how-to-guides/authentication/auth-psk.md) instead; for that, pass `auth_type` and `auth_token` as the last example does.
-
-The following example creates a [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) on a Deephaven server running on `localhost` at port `10000`.
+The following example creates a [`BarrageSession`](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.BarrageSession) on a Deephaven server running on `localhost` at port `10000`. Every example except the pre-shared-key one uses the default anonymous authentication, so the target server must allow [anonymous authentication](../../../how-to-guides/authentication/auth-anon.md) (`-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler`); the default server configuration uses [pre-shared key authentication](../../../how-to-guides/authentication/auth-psk.md).
 
 ```python skip-test
 from deephaven.barrage import barrage_session
@@ -106,6 +109,19 @@ barrage_sesh = barrage_session(
 )
 ```
 
+The following example creates a session that accepts only `zstd` compression from the remote server. Tables that do not allow `zstd` still arrive uncompressed.
+
+```python skip-test
+from deephaven.barrage import barrage_session
+
+barrage_sesh = barrage_session("localhost", 10000, accept_compression="zstd")
+```
+
 ## Related documentation
 
+- [What is Barrage?](../../../conceptual/what-is-barrage.md)
+- [Capture Python client tables](../../../how-to-guides/capture-tables.md)
+- [`subscribe`](./subscribe.md)
+- [`snapshot`](./snapshot-barrage.md)
+- [`close`](./close.md)
 - [Pydoc](/core/pydoc/code/deephaven.barrage.html#deephaven.barrage.barrage_session)

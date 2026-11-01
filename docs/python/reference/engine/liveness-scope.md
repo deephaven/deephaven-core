@@ -7,7 +7,8 @@ title: liveness_scope
 ## Syntax
 
 ```python syntax
-scope = liveness_scope()
+with liveness_scope() as scope:
+    ...
 ```
 
 ## Parameters
@@ -16,7 +17,7 @@ None.
 
 ## Returns
 
-A `SimpleLivenessScope`, which shares the `preserve`, `manage`, and `unmanage` interface of [`LivenessScope`](./LivenessScope.md).
+A context manager. The `with` statement binds `scope` to a `SimpleLivenessScope`, which shares the `preserve`, `manage`, and `unmanage` interface of [`LivenessScope`](./LivenessScope.md). The scope is open for the duration of the `with` block and is released when the block exits.
 
 ## Examples
 
@@ -58,7 +59,7 @@ import deephaven.numpy as dhnp
 from deephaven.liveness_scope import liveness_scope
 
 
-@liveness_scope
+@liveness_scope()
 def get_current_values(source_table):
     latest = source_table.last_by("Sym")
     return dhnp.to_numpy(latest)  # Table stops updating after return
@@ -66,6 +67,6 @@ def get_current_values(source_table):
 
 ## Related documentation
 
-- [How to use Liveness Scopes](../../conceptual/liveness-scope-concept.md)
+- [Liveness Scopes](../../conceptual/liveness-scope-concept.md)
 - [`LivenessScope`](./LivenessScope.md)
-- [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.liveness_scope)
+- [Pydoc](/core/pydoc/code/deephaven.liveness_scope.html#deephaven.liveness_scope.liveness_scope)

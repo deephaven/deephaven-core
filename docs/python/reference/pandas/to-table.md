@@ -29,7 +29,7 @@ The columns to convert. If not specified, all columns are converted.
 </Param>
 <Param name="infer_objects" type="bool" optional>
 
-Whether to infer the best possible types for columns of the generic `Object` type in the DataFrame before creating the table. When `True`, Pandas `convert_dtypes` method is called before creating the table. Any conversion will make a copy of the data. The default value is `True`.
+Whether to infer the best possible types for columns of the generic `object` dtype in the DataFrame before creating the table. When `True`, Pandas `convert_dtypes` method is called before creating the table. Any conversion will make a copy of the data. The default value is `True`.
 
 </Param>
 </ParamTable>
@@ -64,7 +64,7 @@ df = pd.DataFrame(data=d)
 result = to_table(df, ["col1"])
 ```
 
-The following example creates a DataFrame with a generic `Object` type column. It then converts it to a table twice: once with `infer_objects=True` and once with `infer_objects=False`. The metadata for each resulting table is shown to demonstrate the difference in column types.
+The following example creates a DataFrame with a generic `object` dtype column. It then converts it to a table twice: once with `infer_objects=True` and once with `infer_objects=False`. The metadata for each resulting table is shown to demonstrate the difference in column types.
 
 ```python order=infer_meta,no_infer_meta,result_infer,result_no_infer,df
 from deephaven.pandas import to_table

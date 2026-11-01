@@ -11,43 +11,52 @@
 from __future__ import annotations
 
 import numbers
+from collections.abc import Callable, Sequence
 from enum import Enum
-from typing import Any, Dict, Union, Sequence, List, Callable, _GenericAlias
+from typing import Any, get_origin
 
-import numpy
 import jpy
+import numpy
 
 from deephaven import DHError, dtypes
 from deephaven._wrapper import JObjectWrapper
-from deephaven.dtypes import Instant, PyObject, BusinessCalendar
-from deephaven.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
-    SelectableDataSet
-from deephaven.table import Table
+from deephaven.dtypes import BusinessCalendar, Instant
 from deephaven.jcompat import j_function
+from deephaven.plot import (
+    AxisFormat,
+    AxisTransform,
+    Color,
+    Font,
+    LineStyle,
+    PlotStyle,
+    SelectableDataSet,
+    Shape,
+)
+from deephaven.table import Table
 
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
 
-def _assert_type(name: str, obj: Any, types: List) -> None:
+def _assert_type(name: str, obj: Any, types: list) -> None:
     """Assert that the input object is of the proper type.
 
     Args:
         name (str): name of the variable being converted to Java
         obj (Any): object being converted to Java
-        types (List): acceptable types for the object
+        types (list): acceptable types for the object
 
     Raises:
         DHError
     """
 
-    types_no_subscript = tuple(set(t.__origin__ if isinstance(t, _GenericAlias) else t for t in types))
+    types_no_subscript = tuple(set(get_origin(t) or t for t in types))
 
     if not isinstance(obj, types_no_subscript):
-        supported = [t._name if isinstance(t, _GenericAlias) else t.__name__ for t in types_no_subscript]
+        supported = [t.__name__ for t in types_no_subscript]
         raise DHError(message=f"Improper input type: name={name} type={type(obj)} supported={supported}")
 
 
-def _no_convert_j(name: str, obj: Any, types: List) -> Any:
+def _no_convert_j(name: str, obj: Any, types: list) -> Any:
     if obj is None:
         return None
 
@@ -56,13 +65,13 @@ def _no_convert_j(name: str, obj: Any, types: List) -> Any:
     return obj
 
 
-def _convert_j(name: str, obj: Any, types: List) -> Any:
+def _convert_j(name: str, obj: Any, types: list) -> Any:
     """Convert the input object into a Java object that can be used for plotting.
 
     Args:
         name (str): name of the variable being converted to Java
         obj (Any): object being converted to Java
-        types (List): acceptable types for the object
+        types (list): acceptable types for the object
 
     Raises:
         DHError
@@ -93,7 +102,7 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
         np_array = numpy.array(obj)
         dtype = dtypes.from_np_dtype(np_array.dtype)
         return dtypes.array(dtype, np_array)
-    elif isinstance(obj, Callable):
+    elif callable(obj):
         return j_function(obj, dtypes.PyObject)
     else:
         raise DHError(message=f"Unsupported input type: name={name} type={type(obj)}")
