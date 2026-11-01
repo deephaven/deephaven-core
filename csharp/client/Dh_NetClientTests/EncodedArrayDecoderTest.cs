@@ -2,6 +2,7 @@
 // Copyright (c) 2016-2026 Deephaven Data Labs and Patent Pending
 //
 
+using System.Collections;
 using Apache.Arrow;
 using Apache.Arrow.Ipc;
 using Apache.Arrow.Types;
@@ -150,6 +151,104 @@ public class EncodedArrayDecoderTest {
     AssertTrue(ReferenceEquals(EncodedArrayDecoder.DecodeArray(arr), arr), "array passthrough");
   }
 
+  /// <summary>
+  /// The server (BarrageUtil.toReeField) builds a non-nullable REE parent and keeps the column's
+  /// nullability on the values child, so the decoded field must take its nullability from there.
+  /// </summary>
+  [Test]
+  public void RunEndEncodedFieldTakesNullabilityFromValuesChild() {
+    var runEndsField = new Field("run_ends", Int32Type.Default, false);
+    var metadata = new Dictionary<string, string> { { "deephaven:type", "java.lang.String" } };
+
+    var nullableValues = new Field("values", StringType.Default, true, metadata);
+    var reeOfNullable = new Field("Sym", new RunEndEncodedType(runEndsField, nullableValues), false, metadata);
+    AssertTrue(EncodedArrayDecoder.DecodeField(reeOfNullable).IsNullable,
+      "non-nullable REE parent with nullable values child decodes to a nullable field");
+
+    var nonNullableValues = new Field("values", StringType.Default, false, metadata);
+    var reeOfNonNullable = new Field("Sym", new RunEndEncodedType(runEndsField, nonNullableValues), true, metadata);
+    AssertTrue(!EncodedArrayDecoder.DecodeField(reeOfNonNullable).IsNullable,
+      "non-nullable values child decodes to a non-nullable field regardless of the parent");
+
+    // Doubly-encoded: the (nullable) values child is itself dictionary-encoded.
+    var dictType = new DictionaryType(Int32Type.Default, StringType.Default, false);
+    var dictValues = new Field("values", dictType, true, metadata);
+    var reeOfDict = new Field("Sym", new RunEndEncodedType(runEndsField, dictValues), false, metadata);
+    var decoded = EncodedArrayDecoder.DecodeField(reeOfDict);
+    AssertTrue(decoded.IsNullable && decoded.DataType is StringType,
+      "REE<Dictionary<utf8>> with a nullable values child decodes to a nullable utf8 field");
+  }
+
+  /// <summary>
+  /// Run-end encoding of a list-valued column (the server picks this for e.g. constant or all-null
+  /// array columns). Covers a null list, an empty list, and a null element inside a list.
+  /// </summary>
+  [Test]
+  public void RunEndEncodedListValues() {
+    var values = BuildInt32ListArray([[1, 2], null, [], [3, null]]);
+    var runEnds = new Int32Array.Builder().Append(2).Append(3).Append(5).Append(6).Build();
+    var ree = new RunEndEncodedArray(runEnds, values);
+
+    var decoded = EncodedArrayDecoder.DecodeArray(ree);
+    AssertTrue(decoded is ListArray, "decoded is ListArray");
+    AssertTrue(((ListType)decoded.Data.DataType).ValueDataType is Int32Type, "element type preserved");
+    AssertSeqEqual(decoded, [L(1, 2), L(1, 2), null, L(), L(), L(3, null)]);
+  }
+
+  [Test]
+  public void DictionaryOfListValues() {
+    var dictValues = BuildStringListArray([["p", "q"], ["r"]]);
+    var indices = new Int32Array.Builder().Append(1).AppendNull().Append(0).Append(1).Build();
+    var dictType = new DictionaryType(Int32Type.Default, dictValues.Data.DataType, false);
+    var dictArray = new DictionaryArray(dictType, indices, dictValues);
+
+    var decoded = EncodedArrayDecoder.DecodeArray(dictArray);
+    AssertTrue(decoded is ListArray, "decoded is ListArray");
+    AssertSeqEqual(decoded, [L("r"), null, L("p", "q"), L("r")]);
+  }
+
+  private static List<object?> L(params object?[] elements) => [.. elements];
+
+  private static ListArray BuildInt32ListArray(int?[]?[] lists) {
+    var builder = new ListArray.Builder(Int32Type.Default);
+    var elementBuilder = (Int32Array.Builder)builder.ValueBuilder;
+    foreach (var list in lists) {
+      if (list == null) {
+        builder.AppendNull();
+        continue;
+      }
+      builder.Append();
+      foreach (var element in list) {
+        if (element.HasValue) {
+          elementBuilder.Append(element.Value);
+        } else {
+          elementBuilder.AppendNull();
+        }
+      }
+    }
+    return builder.Build();
+  }
+
+  private static ListArray BuildStringListArray(string?[]?[] lists) {
+    var builder = new ListArray.Builder(StringType.Default);
+    var elementBuilder = (StringArray.Builder)builder.ValueBuilder;
+    foreach (var list in lists) {
+      if (list == null) {
+        builder.AppendNull();
+        continue;
+      }
+      builder.Append();
+      foreach (var element in list) {
+        if (element != null) {
+          elementBuilder.Append(element);
+        } else {
+          elementBuilder.AppendNull();
+        }
+      }
+    }
+    return builder.Build();
+  }
+
   private static void AssertTrue(bool condition, string what) {
     if (!condition) {
       throw new Exception($"Assertion failed: {what}");
@@ -162,10 +261,29 @@ public class EncodedArrayDecoderTest {
       throw new Exception($"Expected length {expected.Length}, got {actual.Count}");
     }
     for (var i = 0; i != actual.Count; ++i) {
-      if (!Equals(actual[i], expected[i])) {
+      if (!ObjectsEqual(actual[i], expected[i])) {
         throw new Exception(
           $"Values differ at row {i}: expected={ArrowUtil.RenderObject(expected[i])}, actual={ArrowUtil.RenderObject(actual[i])}");
       }
     }
+  }
+
+  /// <summary>
+  /// Structural equality that descends into lists (decoded list columns enumerate as IList), which
+  /// Equals does not.
+  /// </summary>
+  private static bool ObjectsEqual(object? lhs, object? rhs) {
+    if (lhs is not IList llist || rhs is not IList rlist) {
+      return Equals(lhs, rhs);
+    }
+    if (llist.Count != rlist.Count) {
+      return false;
+    }
+    for (var i = 0; i != llist.Count; ++i) {
+      if (!ObjectsEqual(llist[i], rlist[i])) {
+        return false;
+      }
+    }
+    return true;
   }
 }

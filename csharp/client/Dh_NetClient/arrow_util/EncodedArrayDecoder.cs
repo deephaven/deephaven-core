@@ -69,7 +69,11 @@ public static class EncodedArrayDecoder {
         // child rather than the top-level field, so prefer the top-level metadata but
         // fall back to the child's.
         var metadata = field.Metadata is { Count: > 0 } ? field.Metadata : valuesField.Metadata;
-        return new Field(field.Name, valueType, field.IsNullable, metadata);
+        // An REE array has no validity bitmap of its own; its nulls live on the values child. The
+        // server (BarrageUtil.toReeField) accordingly makes the REE parent non-nullable and keeps
+        // the column's real nullability on the values child, so that is where the decoded field's
+        // nullability comes from.
+        return new Field(field.Name, valueType, valuesField.IsNullable, metadata);
       }
 
       default:
@@ -195,6 +199,7 @@ public static class EncodedArrayDecoder {
       ArrowTypeId.Time64 => new FixedWidthTarget<Int64>(valueType),
       ArrowTypeId.Boolean => new BooleanTarget(),
       ArrowTypeId.String => new StringTarget(),
+      ArrowTypeId.List => new ListTarget((ListType)valueType),
       _ => throw new NotSupportedException(
         $"Decoding of encoded columns with value type {valueType.Name} is not supported")
     };
@@ -291,5 +296,60 @@ public static class EncodedArrayDecoder {
     }
 
     public IArrowArray Build() => _builder.Build();
+  }
+
+  /// <summary>
+  /// Builds a plain ListArray (the server sends array- and Vector-typed columns as Arrow lists)
+  /// by copying each list's elements through a child target of the element type and rebuilding
+  /// the offsets buffer as it goes. Null lists are preserved as null entries; null elements
+  /// inside a list are preserved by the child target. The element type may be anything MakeTarget
+  /// supports, including another list.
+  /// </summary>
+  private sealed class ListTarget : IDecodeTarget {
+    private readonly ListType _listType;
+    private readonly IDecodeTarget _elements;
+    private readonly ArrowBuffer.Builder<int> _offsets = new();
+    private readonly ArrowBuffer.BitmapBuilder _validity = new();
+    private int _numElements;
+
+    public ListTarget(ListType listType) {
+      _listType = listType;
+      _elements = MakeTarget(listType.ValueDataType);
+      _offsets.Append(0);
+    }
+
+    public void AppendFrom(IArrowArray values, int index) {
+      var typedValues = (ListArray)values;
+      if (typedValues.IsNull(index)) {
+        AppendNull();
+        return;
+      }
+      // ValueOffsets already accounts for any slice offset of typedValues, so these index
+      // directly into typedValues.Values.
+      var offsets = typedValues.ValueOffsets;
+      var start = offsets[index];
+      var end = offsets[index + 1];
+      for (var i = start; i != end; ++i) {
+        _elements.AppendFrom(typedValues.Values, i);
+      }
+      _numElements += end - start;
+      _offsets.Append(_numElements);
+      _validity.Append(true);
+    }
+
+    public void AppendNull() {
+      _offsets.Append(_numElements);
+      _validity.Append(false);
+    }
+
+    public IArrowArray Build() {
+      var length = _validity.Length;
+      var nullCount = _validity.UnsetBitCount;
+      var validityBuffer = nullCount > 0 ? _validity.Build() : ArrowBuffer.Empty;
+      var elements = _elements.Build();
+      var arrayData = new ArrayData(_listType, length, nullCount, 0,
+        [validityBuffer, _offsets.Build()], [elements.Data]);
+      return ArrowArrayFactory.BuildArray(arrayData);
+    }
   }
 }
