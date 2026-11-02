@@ -95,7 +95,7 @@ Import `client.p12` into your browser's certificate store before you open the te
 
 Then open `https://localhost:8443/jsapi/authentication/mtls.html` in your browser and click **Go**. If the server accepts the certificate, the page logs **Success!**.
 
-If the browser warns about the server's certificate, it may not trust the CA that signed `server.chain.crt`. You can approve the warning to continue, or import the certificate in `ca.crt` into your browser's trusted certificates.
+If the browser warns about the server's certificate, it may not trust the CA that signed `server.chain.crt`. With the development certificates, approve the warning only for `localhost`. Do not add the bundled development CA to your normal browser or OS trust store because its private key is public. For a securely managed CA, you can import its certificate into your browser's trusted certificates.
 
 If the browser reports a TLS or client certificate error, it may not have presented a certificate that `ca.crt` signed. Check that you imported the client certificate and that `ca.crt` is the CA that signed it.
 
