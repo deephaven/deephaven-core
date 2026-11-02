@@ -143,7 +143,7 @@ This startup script does the following:
 > If you choose a VM with more memory, increase the `-Xmx4g` value in the `START_OPTS` variable, leaving headroom for the operating system and non-heap memory. For example, use `-Xmx12g` on a 16 GB VM.
 
 > [!NOTE]
-> This guide does not cover persistent storage in the cloud. There are several options, including [Docker data volumes](../conceptual/docker-data-volumes.md) and [gcloud storage](https://cloud.google.com/sdk/gcloud/reference/storage), for workflows that require storage of large datasets.
+> This guide does not cover persistent storage in the cloud. There are several options, including [Docker bind mounts](../conceptual/docker-data-volumes.md) and [gcloud storage](https://cloud.google.com/sdk/gcloud/reference/storage), for workflows that require storage of large datasets.
 
 ### Remaining options
 
@@ -229,6 +229,6 @@ With the tunnel running, open `localhost:10000/ide/` in your browser and enter t
 
 ## Related documentation
 
-- [Docker data volumes](../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../conceptual/docker-data-volumes.md)
 - [Learn Deephaven](../getting-started/quickstart.md)
 - [How to use Deephaven with AWS EC2](../how-to-guides/aws-ec2.md)
