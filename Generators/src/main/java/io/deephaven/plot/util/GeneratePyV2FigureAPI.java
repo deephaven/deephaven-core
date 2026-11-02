@@ -594,7 +594,7 @@ public class GeneratePyV2FigureAPI {
                 sb.append(INDENT).append(INDENT).append(arg.name).append(": ").append(arg.typeAnnotation());
 
                 if (!isRequired(arg)) {
-                    sb.append(" = None");
+                    sb.append(" | None = None");
                 }
 
                 sb.append(",\n");
@@ -701,7 +701,7 @@ public class GeneratePyV2FigureAPI {
 
             // non-null params
 
-            sb.append(INDENT).append(INDENT).append("non_null_args = set()\n\n");
+            sb.append(INDENT).append(INDENT).append("non_null_args: set[str] = set()\n\n");
 
             for (final PyArg arg : args) {
                 sb.append(INDENT)

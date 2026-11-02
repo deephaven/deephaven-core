@@ -11,20 +11,28 @@
 from __future__ import annotations
 
 import numbers
-from enum import Enum
 from collections.abc import Callable, Sequence
+from enum import Enum
 from typing import Any, get_origin
 
-import numpy
 import jpy
+import numpy
 
 from deephaven import DHError, dtypes
 from deephaven._wrapper import JObjectWrapper
-from deephaven.dtypes import Instant, PyObject, BusinessCalendar
-from deephaven.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
-    SelectableDataSet
-from deephaven.table import Table
+from deephaven.dtypes import BusinessCalendar, Instant
 from deephaven.jcompat import j_function
+from deephaven.plot import (
+    AxisFormat,
+    AxisTransform,
+    Color,
+    Font,
+    LineStyle,
+    PlotStyle,
+    SelectableDataSet,
+    Shape,
+)
+from deephaven.table import Table
 
 _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
@@ -94,7 +102,7 @@ def _convert_j(name: str, obj: Any, types: list) -> Any:
         np_array = numpy.array(obj)
         dtype = dtypes.from_np_dtype(np_array.dtype)
         return dtypes.array(dtype, np_array)
-    elif isinstance(obj, Callable):
+    elif callable(obj):
         return j_function(obj, dtypes.PyObject)
     else:
         raise DHError(message=f"Unsupported input type: name={name} type={type(obj)}")
