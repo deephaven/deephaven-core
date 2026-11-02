@@ -371,7 +371,7 @@ Unless you [disabled authentication](#disable-authentication), the IDE asks for 
 
 The [Deephaven examples repository](https://github.com/deephaven/examples) contains datasets that help you learn Deephaven. Deephaven's documentation uses these datasets extensively, and some examples require them.
 
-If you chose a [deployment](#choose-a-deployment) with example data, the example datasets appear in a `data/examples` directory next to your `docker-compose.yml` file. Inside the container, the same files are at `/data/examples`. See [Docker data volumes](../conceptual/docker-data-volumes.md) for more information on how Docker mounts files.
+If you chose a [deployment](#choose-a-deployment) with example data, the example datasets appear in a `data/examples` directory next to your `docker-compose.yml` file. Inside the container, the same files are at `/data/examples`. See [Docker bind mounts](../conceptual/docker-data-volumes.md) for more information on how Docker mounts files.
 
 ## Next steps
 
@@ -384,5 +384,5 @@ import { TutorialCTA } from '@theme/deephaven/CTA';
 ## Related documentation
 
 - [Pre-shared key authentication](../how-to-guides/authentication/auth-psk.md)
-- [Docker data volumes](../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../conceptual/docker-data-volumes.md)
 - [Build and launch Deephaven from source code](./launch-build.md)

@@ -38,11 +38,11 @@ Deephaven chooses each column's type by scanning all of its values. If the value
 > [!NOTE]
 > Uploaded tables exist only in the server's memory, so a server restart discards them. To keep one, save it to the server's file system with [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md) or another export method. After the restart, read the file back as described in [Read CSV or other delimited files](../data-import-export/csv-import.md).
 >
-> In Docker deployments, write to `/data`. To keep the files after you remove the container, mount a directory from your computer at `/data`, for example with `-v "$(pwd)/data:/data"`. See [Docker data volumes](../../conceptual/docker-data-volumes.md).
+> In Docker deployments, write to `/data`. To keep the files after you remove the container, mount a directory from your computer at `/data`, for example with `-v "$(pwd)/data:/data"`. See [Docker bind mounts](../../conceptual/docker-data-volumes.md).
 
 ## Related documentation
 
-- [Docker data volumes](../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../conceptual/docker-data-volumes.md)
 - [Read CSV or other delimited files](../data-import-export/csv-import.md)
 - [Navigate the GUI](./navigating-the-ui.md)
 - [Export data to CSV or other delimited files](../data-import-export/csv-export.md)

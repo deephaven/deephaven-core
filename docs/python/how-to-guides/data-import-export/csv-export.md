@@ -10,7 +10,7 @@ This guide shows how to export table data from Deephaven to CSV files with [`wri
 ## `write_csv`
 
 > [!NOTE]
-> The Deephaven server resolves file paths. If you run Deephaven in Docker, the path refers to the container's file system. The default Docker Compose setup mounts the `./data` directory of your Deephaven deployment as the `/data` [Docker data volume](../../conceptual/docker-data-volumes.md#the-data-mount-point) in the container. A file written to `/data/TrigFunctions.csv` appears at `./data/TrigFunctions.csv` on your computer. If you run Deephaven without Docker, replace `/data` with a directory that exists on the server's machine.
+> The Deephaven server resolves file paths. If you run Deephaven in Docker, the path refers to the container's file system. The default Docker Compose setup mounts the `./data` directory of your Deephaven deployment as the `/data` [Docker bind mount](../../conceptual/docker-data-volumes.md#the-data-mount-point) in the container. A file written to `/data/TrigFunctions.csv` appears at `./data/TrigFunctions.csv` on your computer. If you run Deephaven without Docker, replace `/data` with a directory that exists on the server's machine.
 
 ### Write a table to a CSV file
 
@@ -146,5 +146,5 @@ to_pandas(source).to_csv("/data/TrigFunctions.tsv", sep="\t", index=False)
 - [Create an empty table with `empty_table`](../new-and-empty-table.md#empty_table)
 - [Read CSV or other delimited files](./csv-import.md)
 - [Use pandas with Deephaven](../use-pandas.md)
-- [Docker data volumes](../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../conceptual/docker-data-volumes.md)
 - [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md)

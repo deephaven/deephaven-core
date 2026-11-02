@@ -78,11 +78,11 @@ The server stores notebooks as files in the `storage/notebooks` directory under 
 To change the data directory, see [Bootstrap configuration](../configuration/configuration-properties.md#bootstrap-configuration). To move only the storage root, set the [`storage.path`](../configuration/configuration-properties.md#server-configuration) property.
 
 > [!WARNING]
-> If you run Deephaven in Docker without mounting your own volume at `/data`, the server stores notebooks in an anonymous Docker volume. A container you start later with `docker run` gets a new, empty volume and doesn't see them. Mount a persistent Docker volume or a host directory at `/data` to keep your notebooks. See [Access your file system with Docker data volumes](../../conceptual/docker-data-volumes.md) for instructions on persisting your notebooks across container restarts and removals.
+> If you run Deephaven in Docker without mounting your own volume at `/data`, the server stores notebooks in an anonymous Docker volume. A container you start later with `docker run` gets a new, empty volume and doesn't see them. Mount a persistent Docker volume or a host directory at `/data` to keep your notebooks. See [Access your file system with Docker bind mounts](../../conceptual/docker-data-volumes.md) for instructions on persisting your notebooks across container restarts and removals.
 
 ## Related documentation
 
-- [Access your file system with Docker data volumes](../../conceptual/docker-data-volumes.md)
+- [Access your file system with Docker bind mounts](../../conceptual/docker-data-volumes.md)
 - [Install and run Deephaven with Docker](../../getting-started/docker-install.md)
 - [Navigate the GUI](./navigating-the-ui.md)
 - [Configuration properties reference](../configuration/configuration-properties.md)

@@ -115,7 +115,7 @@ The [3D plots](#3d-plots) below also pass DataFrame columns to Matplotlib, but t
 
 To draw a 3D plot, create axes with `projection="3d"` and assign the figure to a variable. The plugin displays it as an image in its own panel, like any other figure. We adapted the examples below from [Five advanced plots in Python Matplotlib](https://regenerativetoday.com/five-advanced-plots-in-python-matplotlib/). They use the [auto85 dataset from Kaggle](https://www.kaggle.com/datasets/fazilbtopal/auto85).
 
-To run them, download the dataset's CSV file and save it as `auto_clean.csv` in your Deephaven data directory. For more information, see the guide on [Docker data volumes](../../conceptual/docker-data-volumes.md#the-data-mount-point). If you run Deephaven from pip, change `/data/auto_clean.csv` to the path where you saved the file.
+To run them, download the dataset's CSV file and save it as `auto_clean.csv` in your Deephaven data directory. For more information, see the guide on [Docker bind mounts](../../conceptual/docker-data-volumes.md#the-data-mount-point). If you run Deephaven from pip, change `/data/auto_clean.csv` to the path where you saved the file.
 
 The first example reads the file into a pandas DataFrame, `df`, and plots each car's length, width, and height as a 3D scatter plot. It colors each point by the car's peak RPM and sizes it by the car's price:
 
@@ -609,7 +609,7 @@ sns_multi_ani = TableAnimation(
 ## Related documentation
 
 - [Deephaven's table types](../../conceptual/table-types.md)
-- [Docker data volumes](../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../conceptual/docker-data-volumes.md)
 - [Plotting overview](./overview.md)
 - [Install and use plugins](../install-use-plugins.md)
 - [Install and use Python packages](../install-and-use-python-packages.md)
