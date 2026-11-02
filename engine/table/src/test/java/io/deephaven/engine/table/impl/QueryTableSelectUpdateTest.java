@@ -1159,7 +1159,7 @@ public class QueryTableSelectUpdateTest {
         assertTableEquals(updated, fullUpdate.where("C"));
 
         final ColumnSource<?> fcs = fullUpdate.getColumnSource("D");
-        Assert.assertTrue(fcs instanceof InMemoryColumnSource);
+        Assert.assertTrue(InMemoryColumnSource.isInMemory(fcs));
 
         final ColumnSource<?> cs = updated.getColumnSource("D");
         Assert.assertTrue(cs instanceof RedirectedColumnSource);

@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterDelegating;
 import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.engine.table.impl.sources.DelegatingColumnSource;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
@@ -45,10 +46,10 @@ import java.util.function.LongConsumer;
  *
  * <p>
  * The key source's time conversions are delegated as well, so that a key column reinterprets as the column it was
- * grouped from does.
+ * grouped from does, and the key column is in memory exactly when the key source is.
  */
 public final class AggregationKeyColumnSource<T> extends DelegatingColumnSource<T, T>
-        implements ConvertibleTimeSource {
+        implements ConvertibleTimeSource, InMemoryColumnSource {
 
     private final ColumnSource<T> keySource;
     private final OperatorAggregationStateManager stateManager;
@@ -100,6 +101,18 @@ public final class AggregationKeyColumnSource<T> extends DelegatingColumnSource<
                 ? (IncrementalOperatorAggregationStateManager) stateManager
                 : null;
         this.updateGraph = updateGraph;
+    }
+
+    /**
+     * @return the aggregation's key source, which this column reads
+     */
+    public ColumnSource<T> getKeySource() {
+        return keySource;
+    }
+
+    @Override
+    public boolean isInMemory() {
+        return InMemoryColumnSource.isInMemory(keySource);
     }
 
     @Override

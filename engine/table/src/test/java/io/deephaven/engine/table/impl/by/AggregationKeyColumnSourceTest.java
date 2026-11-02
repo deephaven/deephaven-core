@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
@@ -53,6 +54,7 @@ import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class AggregationKeyColumnSourceTest {
@@ -70,6 +72,22 @@ public class AggregationKeyColumnSourceTest {
         final Table twoKeys = source.selectDistinct("A", "B");
         assertFalse(twoKeys.getColumnSource("A") instanceof AggregationKeyColumnSource);
         assertFalse(twoKeys.getColumnSource("B") instanceof AggregationKeyColumnSource);
+    }
+
+    @Test
+    public void testInMemoryAsTheKeySourceIs() {
+        final QueryTable source = testRefreshingTable(i(2, 4).toTracking(),
+                intCol("Key", 3, 5), intCol("Value", 1, 2));
+        final Table lastBy = source.lastBy("Key");
+        final ColumnSource<?> key = lastBy.getColumnSource("Key");
+        assertTrue(InMemoryColumnSource.isInMemory(keySource(lastBy).getKeySource()));
+        assertTrue(InMemoryColumnSource.isInMemory(key));
+        // select() keeps an in-memory column, and with it the pushdown
+        assertSame(key, lastBy.select().getColumnSource("Key"));
+
+        final Table distinct = TableTools.emptyTable(100).update("Key = (int) (ii % 7)").selectDistinct("Key");
+        assertEquals(InMemoryColumnSource.isInMemory(keySource(distinct).getKeySource()),
+                InMemoryColumnSource.isInMemory(distinct.getColumnSource("Key")));
     }
 
     @Test
