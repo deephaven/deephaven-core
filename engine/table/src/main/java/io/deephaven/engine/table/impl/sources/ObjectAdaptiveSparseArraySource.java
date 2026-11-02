@@ -29,8 +29,6 @@ import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.sparse.ObjectBitmapLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.ObjectCompactLeaf;
 import io.deephaven.engine.table.impl.sources.sparse.ObjectSortedLeaf;
-import io.deephaven.engine.table.impl.sources.sparse.PageTableLevel;
-import io.deephaven.engine.table.impl.sources.sparse.PageTableRoot;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -106,16 +104,16 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
     private static final SoftRecycler<ObjectCompactLeaf[]> compactsArrayRecycler =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY2,
                     () -> new ObjectCompactLeaf[BLOCK2_SIZE], null);
-    private static final SoftRecycler<Object[]> level2ArrayRecycler =
+    private static final SoftRecycler<Level2[]> level2ArrayRecycler =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY1,
-                    () -> new Object[BLOCK1_SIZE], null);
-    private static final SoftRecycler<PageTableLevel<?>[]> level1ArrayRecycler =
+                    () -> new Level2[BLOCK1_SIZE], null);
+    private static final SoftRecycler<Level1[]> level1ArrayRecycler =
             new SoftRecycler<>(SparseArrayColumnSourceConfiguration.OBJECT_RECYCLER_CAPACITY0,
-                    () -> new PageTableLevel<?>[BLOCK0_SIZE], null);
+                    () -> new Level1[BLOCK0_SIZE], null);
 
     private final int sortedThreshold;
     private final int compactThreshold;
-    private final PageTableRoot<Level2> root = new PageTableRoot<>(BLOCK0_SIZE, null);
+    private final Level0 root = new Level0(false);
 
     /**
      * Commits the previous values at the end of each cycle in which a value changed; null when not tracking previous
@@ -125,7 +123,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
     /**
      * The previous values recorded this cycle, or null if none have been recorded.
      */
-    private transient PageTableRoot<Level2> prevRoot;
+    private transient Level0 prevRoot;
     /**
      * The leaves of {@link #prevRoot}, as row keys shifted right by {@code LOG_BLOCK_SIZE}, so that completing the
      * cycle clears their entries and returns their snapshot blocks without reading through the page table. Writers of
@@ -196,10 +194,136 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
     }
 
     // region page table
-    // The levels above the leaves are a PageTableRoot and PageTableLevels. Like them, the bottom level holds its first
-    // leaf without allocating arrays of leaves.
+    // Like the levels of ObjectSparseArraySource, each page table level holds its first child without allocating an
+    // array of children.
     private static final int NO_CHILD = -1;
     private static final int MANY_CHILDREN = -2;
+
+    /** The top page table level, holding {@link Level1} children. */
+    private static final class Level0 {
+        /** Whether the array of children is borrowed from a recycler, as for previous values. */
+        private final boolean recycled;
+        private int oneIndex = NO_CHILD;
+        private Level1 oneChild;
+        private Level1[] children;
+
+        private Level0(final boolean recycled) {
+            this.recycled = recycled;
+        }
+
+        private Level1 get(final int index) {
+            if (oneIndex == index) {
+                return oneChild;
+            }
+            return children == null ? null : children[index];
+        }
+
+        private void set(final int index, final Level1 child) {
+            if (oneIndex == index || oneIndex == NO_CHILD) {
+                oneIndex = index;
+                oneChild = child;
+                return;
+            }
+            if (children == null) {
+                if (child == null) {
+                    // a level with one child holds no other child to clear
+                    return;
+                }
+                children = recycled ? level1ArrayRecycler.borrowItem() : new Level1[BLOCK0_SIZE];
+                children[oneIndex] = oneChild;
+                oneChild = null;
+                oneIndex = MANY_CHILDREN;
+            }
+            children[index] = child;
+        }
+
+        /** Return the array of children, whose entries must all be null, to its recycler. */
+        private void recycleArray() {
+            if (children != null) {
+                level1ArrayRecycler.returnItem(children);
+                children = null;
+            }
+        }
+
+        private void clear() {
+            oneIndex = NO_CHILD;
+            oneChild = null;
+            children = null;
+        }
+
+        private long estimateSize() {
+            if (children == null) {
+                return oneChild == null ? 0 : oneChild.estimateSize();
+            }
+            long size = (long) children.length * Long.BYTES;
+            for (final Level1 child : children) {
+                if (child != null) {
+                    size += child.estimateSize();
+                }
+            }
+            return size;
+        }
+    }
+
+    /** The middle page table level, holding {@link Level2} children. */
+    private static final class Level1 {
+        /** Whether the array of children is borrowed from a recycler, as for previous values. */
+        private final boolean recycled;
+        private int oneIndex = NO_CHILD;
+        private Level2 oneChild;
+        private Level2[] children;
+
+        private Level1(final boolean recycled) {
+            this.recycled = recycled;
+        }
+
+        private Level2 get(final int index) {
+            if (oneIndex == index) {
+                return oneChild;
+            }
+            return children == null ? null : children[index];
+        }
+
+        private void set(final int index, final Level2 child) {
+            if (oneIndex == index || oneIndex == NO_CHILD) {
+                oneIndex = index;
+                oneChild = child;
+                return;
+            }
+            if (children == null) {
+                if (child == null) {
+                    // a level with one child holds no other child to clear
+                    return;
+                }
+                children = recycled ? level2ArrayRecycler.borrowItem() : new Level2[BLOCK1_SIZE];
+                children[oneIndex] = oneChild;
+                oneChild = null;
+                oneIndex = MANY_CHILDREN;
+            }
+            children[index] = child;
+        }
+
+        /** Return the array of children, whose entries must all be null, to its recycler. */
+        private void recycleArray() {
+            if (children != null) {
+                level2ArrayRecycler.returnItem(children);
+                children = null;
+            }
+        }
+
+        private long estimateSize() {
+            if (children == null) {
+                return oneChild == null ? 0 : oneChild.estimateSize();
+            }
+            long size = (long) children.length * Long.BYTES;
+            for (final Level2 child : children) {
+                if (child != null) {
+                    size += child.estimateSize();
+                }
+            }
+            return size;
+        }
+    }
 
     /**
      * The bottom page table level, holding leaves. A leaf is either a full block or a compact leaf, kept in separate
@@ -393,8 +517,8 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
     /**
      * @return the bottom page table level of {@code root} covering {@code key}, or null if none has been allocated
      */
-    private static Level2 getLevel2(final PageTableRoot<Level2> root, final long key) {
-        final PageTableLevel<Level2> level1 = root.get(block0(key));
+    private static Level2 getLevel2(final Level0 root, final long key) {
+        final Level1 level1 = root.get(block0(key));
         return level1 == null ? null : level1.get(block1(key));
     }
 
@@ -408,11 +532,11 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
     /**
      * @return the bottom page table level of {@code root} covering {@code key}, allocating the levels as needed
      */
-    private static Level2 ensureLevel2(final PageTableRoot<Level2> root, final long key) {
+    private static Level2 ensureLevel2(final Level0 root, final long key) {
         final int block0 = block0(key);
-        PageTableLevel<Level2> level1 = root.get(block0);
+        Level1 level1 = root.get(block0);
         if (level1 == null) {
-            root.set(block0, level1 = new PageTableLevel<>(BLOCK1_SIZE, null));
+            root.set(block0, level1 = new Level1(false));
         }
         final int block1 = block1(key);
         Level2 level2 = level1.get(block1);
@@ -781,13 +905,13 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
      */
     private Level2 ensurePrevLevel2(final long key) {
         if (prevRoot == null) {
-            prevRoot = new PageTableRoot<>(BLOCK0_SIZE, level1ArrayRecycler);
+            prevRoot = new Level0(true);
             prevFlusher.maybeActivate();
         }
         final int block0 = block0(key);
-        PageTableLevel<Level2> level1 = prevRoot.get(block0);
+        Level1 level1 = prevRoot.get(block0);
         if (level1 == null) {
-            prevRoot.set(block0, level1 = new PageTableLevel<>(BLOCK1_SIZE, level2ArrayRecycler));
+            prevRoot.set(block0, level1 = new Level1(true));
         }
         final int block1 = block1(key);
         Level2 level2 = level1.get(block1);
@@ -931,7 +1055,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
      * @return the value of {@code rowKey} at the start of this cycle
      */
     private Object getPrevValue(final long rowKey) {
-        final PageTableRoot<Level2> localPrevRoot = prevRoot;
+        final Level0 localPrevRoot = prevRoot;
         if (localPrevRoot != null && rowKey >= 0) {
             final Level2 prevLevel2 = getLevel2(localPrevRoot, rowKey);
             if (prevLevel2 != null) {
@@ -1003,7 +1127,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
     }
 
     private void commitUpdates() {
-        final PageTableRoot<Level2> localPrevRoot = prevRoot;
+        final Level0 localPrevRoot = prevRoot;
         prevRoot = null;
         if (localPrevRoot != null) {
             recyclePrevious(localPrevRoot);
@@ -1026,7 +1150,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
             });
             blocks2ToClear.forAllRowKeys((final long blockIndex2) -> {
                 final long key = blockIndex2 << BLOCK1_SHIFT;
-                final PageTableLevel<Level2> level1 = root.get(block0(key));
+                final Level1 level1 = root.get(block0(key));
                 if (level1 != null) {
                     level1.set(block1(key), null);
                 }
@@ -1045,7 +1169,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
      * Clear each entry this cycle set in {@code prev}, the previous value page table, returning the snapshot blocks and
      * the arrays of entries to their recyclers.
      */
-    private void recyclePrevious(final PageTableRoot<Level2> prev) {
+    private void recyclePrevious(final Level0 prev) {
         synchronized (prevLeafKeys) {
             for (int ii = 0; ii < prevLeafKeys.size(); ++ii) {
                 final long key = prevLeafKeys.getLong(ii) << LOG_BLOCK_SIZE;
@@ -1062,7 +1186,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
             // each level1 was created with a level2, so the sorted level2 keys visit every level1, one at a time
             prevLevel2Keys.sort(null);
             long lastLevel1Key = -1;
-            PageTableLevel<Level2> level1 = null;
+            Level1 level1 = null;
             for (int ii = 0; ii < prevLevel2Keys.size(); ++ii) {
                 final long level2Key = prevLevel2Keys.getLong(ii);
                 final long key = level2Key << BLOCK1_SHIFT;
@@ -1251,7 +1375,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
      * reads the leaf's previous values: a snapshot of the whole leaf, or the recorded offsets.
      */
     private static final class FillState {
-        private final PageTableRoot<Level2> prevRoot;
+        private final Level0 prevRoot;
         private long maxKeyInCurrentLeaf = -1;
         private Object[] block;
         private ObjectCompactLeaf compact;
@@ -1262,7 +1386,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
         /**
          * @param prevRoot the previous values to read, or null to read current values
          */
-        private FillState(final PageTableRoot<Level2> prevRoot) {
+        private FillState(final Level0 prevRoot) {
             this.prevRoot = prevRoot;
         }
 
@@ -1350,7 +1474,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
     private void fill(
             final WritableObjectChunk<Object, ? super Values> chunk,
             final RowSequence rowSequence,
-            final PageTableRoot<Level2> prevRoot) {
+            final Level0 prevRoot) {
         if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
             fillByKeys(chunk, rowSequence, prevRoot);
         } else {
@@ -1361,7 +1485,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
     private void fillByRanges(
             final WritableObjectChunk<Object, ? super Values> chunk,
             final RowSequence rowSequence,
-            final PageTableRoot<Level2> prevRoot) {
+            final Level0 prevRoot) {
         final FillState state = new FillState(prevRoot);
         rowSequence.forAllRowKeyRanges((final long firstKey, final long lastKey) -> {
             long key = firstKey;
@@ -1385,7 +1509,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
     private void fillByKeys(
             final WritableObjectChunk<Object, ? super Values> chunk,
             final RowSequence rowSequence,
-            final PageTableRoot<Level2> prevRoot) {
+            final Level0 prevRoot) {
         final FillState state = new FillState(prevRoot);
         if (prevRoot == null) {
             rowSequence.forAllRowKeys((final long key) -> {
@@ -1459,7 +1583,7 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
     private void fillUnordered(
             final WritableObjectChunk<Object, ? super Values> chunk,
             final LongChunk<? extends RowKeys> keys,
-            final PageTableRoot<Level2> prevRoot) {
+            final Level0 prevRoot) {
         final FillState state = new FillState(prevRoot);
         long currentLeafKey = -1;
         final int size = keys.size();
@@ -1591,6 +1715,6 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
     @TestUseOnly
     @Override
     public long estimateSize() {
-        return root.estimateSize(level1 -> level1.estimateSize(Level2::estimateSize));
+        return root.estimateSize();
     }
 }
