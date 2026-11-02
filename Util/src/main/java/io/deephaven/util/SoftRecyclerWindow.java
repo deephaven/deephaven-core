@@ -4,6 +4,8 @@
 package io.deephaven.util;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.util.datastructures.ArrayWeakReferenceManager;
+import io.deephaven.util.datastructures.WeakReferenceManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -11,8 +13,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Decides when the windows of every {@link SoftRecycler} end, from the update cycles reported to it, so that no
- * recycler reads a clock.
+ * Decides when the windows of every registered {@link SoftRecycler} end, from the update cycles reported to it, so that
+ * no recycler reads a clock.
  *
  * <p>
  * An update graph may report the start of each cycle through {@link #reportCycleStart(String, long)}; a graph that does
@@ -44,10 +46,28 @@ public final class SoftRecyclerWindow {
             NANOS_PER_MILLI * Configuration.getInstance().getLongWithDefault(MAXIMUM_WINDOW_MILLIS_PROPERTY, 60_000));
     private static final double WINDOW_MARGIN =
             Configuration.getInstance().getDoubleWithDefault(WINDOW_MARGIN_PROPERTY, 1.5);
+    /**
+     * Every registered recycler, so that {@link #endWindowForRegisteredRecyclers()} can reach them; a recycler no
+     * longer used is collected. Recyclers are few and long-lived, so copying on each add costs little, and ending the
+     * windows walks the list without a lock.
+     */
+    private static final WeakReferenceManager<SoftRecycler<?>> RECYCLERS = new ArrayWeakReferenceManager<>(true);
 
     private static final SoftRecyclerWindow INSTANCE =
             new SoftRecyclerWindow(MINIMUM_WINDOW_NANOS, MAXIMUM_WINDOW_NANOS, WINDOW_MARGIN,
-                    SoftRecycler::endWindows);
+                    SoftRecyclerWindow::endWindowForRegisteredRecyclers);
+
+    /**
+     * Register {@code recycler}, so that its window ends with every other registered recycler's, from the update
+     * graphs' cycles. A recycler that is not registered never shrinks.
+     *
+     * @param recycler The recycler to register
+     * @return {@code recycler}, for the convenience of the caller
+     */
+    public static <T> SoftRecycler<T> register(@NotNull final SoftRecycler<T> recycler) {
+        RECYCLERS.add(recycler);
+        return recycler;
+    }
 
     /** The cycles of one reporting graph, written only by that graph's update thread. */
     private static final class GraphCycles {
@@ -58,6 +78,17 @@ public final class SoftRecyclerWindow {
         private GraphCycles(final long startNanos) {
             lastStartNanos = startNanos;
         }
+    }
+
+    /**
+     * End the window of every registered recycler, shrinking each by the items its window never needed. Called at most
+     * once per window, which should span at least one whole cycle of each client of a recycler; see
+     * {@link SoftRecyclerWindow}.
+     */
+    @VisibleForTesting
+    static void endWindowForRegisteredRecyclers() {
+        // each recycler is locked on its own, so that no borrow or return waits on more than one
+        RECYCLERS.forEachValidReference(SoftRecycler::endWindow);
     }
 
     private final long minimumWindowNanos;

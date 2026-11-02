@@ -30,6 +30,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.SoftRecyclerWindow;
 import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.mutable.MutableInt;
@@ -52,8 +53,8 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 public class LongArraySource extends ArraySourceHelper<Long, long[]>
         implements MutableColumnSourceGetDefaults.ForLong , ConvertibleTimeSource {
-    private static final SoftRecycler<long[]> recycler = new SoftRecycler<>(ArrayColumnSourceConfiguration.LONG_RECYCLER_CAPACITY,
-            ArrayColumnSourceConfiguration.LONG_RECYCLER_MAXIMUM_CAPACITY, () -> new long[BLOCK_SIZE], null);
+    private static final SoftRecycler<long[]> recycler = SoftRecyclerWindow.register(new SoftRecycler<>(ArrayColumnSourceConfiguration.LONG_RECYCLER_CAPACITY,
+            ArrayColumnSourceConfiguration.LONG_RECYCLER_MAXIMUM_CAPACITY, () -> new long[BLOCK_SIZE], null));
 
     private long[][] blocks;
     private transient long[][] prevBlocks;

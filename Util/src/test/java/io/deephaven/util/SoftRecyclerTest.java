@@ -28,7 +28,7 @@ public class SoftRecyclerTest {
             recycler = new SoftRecycler<>(capacity, maximumCapacity, () -> {
                 constructed.incrementAndGet();
                 return new long[1];
-            }, null, shrinkFraction, false);
+            }, null, shrinkFraction);
         }
 
         /** Grow the capacity to {@code count}, from a bin that starts empty. */
@@ -284,10 +284,10 @@ public class SoftRecyclerTest {
     @Test
     public void testEndWindowsShrinksEveryRegisteredRecycler() {
         final AtomicInteger constructed = new AtomicInteger();
-        final SoftRecycler<long[]> recycler = new SoftRecycler<>(10, 1000, () -> {
+        final SoftRecycler<long[]> recycler = SoftRecyclerWindow.register(new SoftRecycler<>(10, 1000, () -> {
             constructed.incrementAndGet();
             return new long[1];
-        }, null);
+        }, null));
         final List<long[]> items = new ArrayList<>();
         for (int burst = 0; burst < 2; ++burst) {
             for (int ii = 0; ii < 40; ++ii) {
@@ -298,8 +298,8 @@ public class SoftRecyclerTest {
         }
         assertEquals(40, recycler.getCapacity());
         // a window in which nothing is borrowed needed none of the 40 items; the default fraction discards half
-        SoftRecycler.endWindows();
-        SoftRecycler.endWindows();
+        SoftRecyclerWindow.endWindowForRegisteredRecyclers();
+        SoftRecyclerWindow.endWindowForRegisteredRecyclers();
         assertEquals(20, recycler.getCapacity());
     }
 
@@ -308,8 +308,8 @@ public class SoftRecyclerTest {
         assertThrows(IllegalArgumentException.class, () -> new SoftRecycler<>(10, 9, () -> new long[1], null));
         assertThrows(IllegalArgumentException.class, () -> new SoftRecycler<>(-1, 9, () -> new long[1], null));
         assertThrows(IllegalArgumentException.class,
-                () -> new SoftRecycler<>(1, 1, () -> new long[1], null, 1.5, false));
+                () -> new SoftRecycler<>(1, 1, () -> new long[1], null, 1.5));
         assertThrows(IllegalArgumentException.class,
-                () -> new SoftRecycler<>(1, 1, () -> new long[1], null, Double.NaN, false));
+                () -> new SoftRecycler<>(1, 1, () -> new long[1], null, Double.NaN));
     }
 }
