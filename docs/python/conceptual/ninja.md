@@ -157,10 +157,10 @@ t3 = t.where(filters=["X > 2 && X < 6"])
 
 In this query, `t1`, `t2`, and `t3` produce the same result, but `t2` is the best way to write it:
 
-- In `t1` and `t2`, each simple comparison, such as `X > 2`, becomes a [range filter](../how-to-guides/use-filters.md#range-filters), which the engine evaluates without compiling a formula. In `t3`, the engine compiles the combined expression `X > 2 && X < 6` into a single [formula filter](../how-to-guides/filters.md#keep-match-filters-separate-from-formulas).
+- In `t1` and `t2`, each simple comparison, such as `X > 2`, becomes a [range filter](../how-to-guides/use-filters.md#range-filters), which the engine evaluates without compiling a formula. In `t3`, the engine compiles the combined expression `X > 2 && X < 6` into a single [formula filter](../how-to-guides/filters.md#keep-match-and-range-filters-in-their-own-clauses).
 - `t2` passes both filters to one [`where`](../reference/table-operations/filter/where.md), so it produces one result table, while `t1` builds an intermediate table and filters it again. On tables that support [predicate pushdown](../how-to-guides/predicate-pushdown.md), one [`where`](../reference/table-operations/filter/where.md) also lets the engine reorder the filters.
 
-You can write many filters as either a [formula filter](../how-to-guides/filters.md#keep-match-filters-separate-from-formulas) (e.g., `where("X == 1 || X == 2 || X == 3")`) or a [match filter](../how-to-guides/use-filters.md#match-filters) (e.g., `where("X in 1,2,3")`). When a filter can be expressed either way, use the [match filter](../how-to-guides/use-filters.md#match-filters). Deephaven evaluates a [match filter](../how-to-guides/use-filters.md#match-filters) by comparing values directly instead of compiling a formula, so [match filters](../how-to-guides/use-filters.md#match-filters) typically perform better.
+You can write many filters as either a [formula filter](../how-to-guides/filters.md#keep-match-and-range-filters-in-their-own-clauses) (e.g., `where("X == 1 || X == 2 || X == 3")`) or a [match filter](../how-to-guides/use-filters.md#match-filters) (e.g., `where("X in 1,2,3")`). When a filter can be expressed either way, use the [match filter](../how-to-guides/use-filters.md#match-filters). Deephaven evaluates a [match filter](../how-to-guides/use-filters.md#match-filters) by comparing values directly instead of compiling a formula, so [match filters](../how-to-guides/use-filters.md#match-filters) typically perform better.
 
 Filter performance also depends on how a table is structured. Some columns let a filter skip data without reading every row. Two common kinds are:
 
@@ -195,7 +195,7 @@ As `t2` ticks, its one row alternates between `X = 0` and `X = 1`, so `t3` switc
 >
 > 1. Filter first, so later operations compute on less data.
 > 2. Combine filters in a single [`where`](../reference/table-operations/filter/where.md) call so the engine can reorder them when [predicate pushdown](../how-to-guides/predicate-pushdown.md) applies, and put the most selective filter first for when it can't.
-> 3. Prefer simple comparisons and [match filters](../how-to-guides/use-filters.md#match-filters) to [formula filters](../how-to-guides/filters.md#keep-match-filters-separate-from-formulas).
+> 3. Prefer simple comparisons and [match filters](../how-to-guides/use-filters.md#match-filters) to [formula filters](../how-to-guides/filters.md#keep-match-and-range-filters-in-their-own-clauses).
 > 4. When the filter values come from a table that changes, use [`where_in`](../reference/table-operations/filter/where-in.md) or [`where_not_in`](../reference/table-operations/filter/where-not-in.md) instead of [`where`](../reference/table-operations/filter/where.md).
 
 ## Use the ternary operator
