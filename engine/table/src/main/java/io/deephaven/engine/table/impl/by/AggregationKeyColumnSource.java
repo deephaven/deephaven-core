@@ -42,8 +42,8 @@ import java.util.function.LongConsumer;
  * for previous values as well as current ones. A refreshing aggregation changes its hash table only in its update
  * cycle, which it {@link IncrementalOperatorAggregationStateManager#lastStateChangeStep() marks} before the first
  * change. A probe on another thread reads the clock's step first, and is abandoned, so that the filter scans the
- * column, when a cycle at that step or later began, filtering previous values, or a later cycle began, filtering
- * current ones.
+ * column, when a cycle at that step or later began changing the hash table, filtering previous values, or a later cycle
+ * did, filtering current ones.
  *
  * <p>
  * The key source's time conversions are delegated as well, so that a key column reinterprets as the column it was

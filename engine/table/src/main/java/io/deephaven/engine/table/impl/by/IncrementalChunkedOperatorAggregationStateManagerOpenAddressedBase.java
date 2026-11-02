@@ -50,7 +50,10 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     /** Should we rehash the entire table fully ({@code true}) or incrementally ({@code false})? */
     protected boolean fullRehash = true;
 
-    /** The step of the last update cycle that began; see {@link #lastStateChangeStep()}. */
+    /** The step of the update cycle that began last, written and read only by the update. */
+    private long updateCycleStep = QueryConstants.NULL_LONG;
+
+    /** The step of the last update cycle that began changing the hash table; see {@link #lastStateChangeStep()}. */
     private volatile long lastStateChangeStep = QueryConstants.NULL_LONG;
 
     /** How much of the alternate sources are necessary to rehash? */
@@ -370,6 +373,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         if (rowSequence.isEmpty()) {
             return;
         }
+        // a build may rehash, grow the table or insert states
+        beginStateChange();
         this.nextOutputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
         buildTable((BuildContext) bc, rowSequence, sources, this::build);
@@ -404,18 +409,29 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     @Override
     public void beginUpdateCycle(final long step) {
-        lastStateChangeStep = step;
-        // a volatile write does not keep the hash table writes that follow from becoming visible before it
-        VarHandle.storeStoreFence();
+        updateCycleStep = step;
         // Once we're past initial state processing, we want to rehash incrementally.
         fullRehash = false;
         // At the beginning of the update cycle, we always want to do some rehash work so that we can eventually ditch
         // the alternate table.
         if (rehashPointer > 0) {
+            beginStateChange();
             rehashInternalPartial(CHUNK_SIZE);
             if (rehashPointer == 0) {
                 clearAlternate();
             }
+        }
+    }
+
+    /**
+     * Record that this update cycle changes the hash table, before its first change. The initial build, which precedes
+     * the first update cycle, records nothing.
+     */
+    private void beginStateChange() {
+        if (lastStateChangeStep != updateCycleStep) {
+            lastStateChangeStep = updateCycleStep;
+            // a volatile write does not keep the hash table writes that follow from becoming visible before it
+            VarHandle.storeStoreFence();
         }
     }
 

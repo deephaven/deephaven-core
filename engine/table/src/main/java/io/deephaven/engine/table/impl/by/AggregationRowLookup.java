@@ -82,8 +82,8 @@ public interface AggregationRowLookup {
      * The step of the last update cycle in which the aggregation began to change the structure this lookup reads, for a
      * reader on another thread; see {@link IncrementalOperatorAggregationStateManager#lastStateChangeStep()}.
      *
-     * @return The step of the last update cycle that began, or {@link QueryConstants#NULL_LONG} if the structure never
-     *         changes
+     * @return The step of the last update cycle that began changing the structure, or {@link QueryConstants#NULL_LONG}
+     *         if none has or the structure never changes
      */
     long lastStateChangeStep();
 

@@ -25,8 +25,10 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
     void beginUpdateCycle(long step);
 
     /**
-     * The step of the last update cycle that {@link #beginUpdateCycle(long) began}, set before that cycle changes the
-     * hash table. A reader on another thread reads the clock's step before its reads, and this after them behind a
+     * The step of the last update cycle that {@link #beginUpdateCycle(long) began} changing the hash table, set before
+     * its first change. A cycle that has rehash work left, adds rows or modifies keys may change the hash table, so it
+     * records its step; a cycle that only removes rows or modifies other columns leaves the hash table unchanged, and
+     * records nothing. A reader on another thread reads the clock's step before its reads, and this after them behind a
      * {@link java.lang.invoke.VarHandle#acquireFence() fence}. Compared to the reader's step, this is:
      * <ul>
      * <li>less: no cycle at or after the reader's step changed the hash table during the reads, so they saw its state
@@ -37,7 +39,8 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
      * reader's step.</li>
      * </ul>
      *
-     * @return the step of the last update cycle that began, or {@link io.deephaven.util.QueryConstants#NULL_LONG}
+     * @return the step of the last update cycle that began changing the hash table, or
+     *         {@link io.deephaven.util.QueryConstants#NULL_LONG} if none has
      */
     long lastStateChangeStep();
 

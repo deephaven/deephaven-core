@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
@@ -14,6 +15,7 @@ import io.deephaven.engine.table.impl.NoPushdownColumnSourceWrapper;
 import io.deephaven.engine.table.impl.PushdownFilterContext;
 import io.deephaven.engine.table.impl.PushdownResult;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
@@ -264,6 +266,47 @@ public class AggregationKeyColumnSourceTest {
         final Table noKey = source.view("Value").sumBy();
         assertEquals(0, AggregationProcessor.getRowLookup(noKey).get(AggregationRowLookup.EMPTY_KEY));
         assertEquals(QueryConstants.NULL_LONG, AggregationProcessor.getRowLookup(noKey).lastStateChangeStep());
+    }
+
+    @Test
+    public void testOnlyCyclesThatMayChangeTheHashTableRecordTheirStep() {
+        final QueryTable source = testRefreshingTable(i(2, 4, 6).toTracking(),
+                intCol("Key", 3, 5, 7), intCol("Value", 1, 2, 3));
+        final AggregationRowLookup lookup = AggregationProcessor.getRowLookup(source.lastBy("Key"));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        // the initial build precedes every reader
+        assertEquals(QueryConstants.NULL_LONG, lookup.lastStateChangeStep());
+
+        // removing rows and modifying values leave the hash table unchanged
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(6));
+            source.notifyListeners(i(), i(6), i());
+        });
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(2), intCol("Key", 3), intCol("Value", 10));
+            source.notifyListeners(new TableUpdateImpl(i(), i(), i(2), RowSetShiftData.EMPTY,
+                    source.newModifiedColumnSet("Value")));
+        });
+        assertEquals(QueryConstants.NULL_LONG, lookup.lastStateChangeStep());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(8), intCol("Key", 9), intCol("Value", 4));
+            source.notifyListeners(i(8), i(), i());
+        });
+        final long addStep = updateGraph.clock().currentStep();
+        assertEquals(addStep, lookup.lastStateChangeStep());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            removeRows(source, i(8));
+            source.notifyListeners(i(), i(8), i());
+        });
+        assertEquals(addStep, lookup.lastStateChangeStep());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(source, i(4), intCol("Key", 11), intCol("Value", 2));
+            source.notifyListeners(i(), i(), i(4));
+        });
+        assertEquals(updateGraph.clock().currentStep(), lookup.lastStateChangeStep());
     }
 
     @Test
