@@ -18,19 +18,18 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 
 public class DoubleChunkedNumericalStats implements ChunkedNumericalStatsKernel {
-    private long count = 0;
-
-    private double sum = .0;
-    private double absSum = .0;
-    private double sumOfSquares = .0;
-
-    private double min = QueryConstants.NULL_DOUBLE;
-    private double max = QueryConstants.NULL_DOUBLE;
-    private double absMin = QueryConstants.NULL_DOUBLE;
-    private double absMax = QueryConstants.NULL_DOUBLE;
-
     @Override
     public Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev) {
+        long count = 0;
+
+        double sum = .0;
+        double absSum = .0;
+        double sumOfSquares = .0;
+
+        double min = QueryConstants.NULL_DOUBLE;
+        double max = QueryConstants.NULL_DOUBLE;
+        double absMin = QueryConstants.NULL_DOUBLE;
+        double absMax = QueryConstants.NULL_DOUBLE;
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(CHUNK_SIZE)) {
             final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
