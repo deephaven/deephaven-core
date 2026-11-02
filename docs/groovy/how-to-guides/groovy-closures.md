@@ -140,7 +140,7 @@ result2 = doAgg(source2)
 
 It's common in Groovy to keep custom closures in separate Groovy files, organized in package folders. To use them in Deephaven, put the top folder of that package tree on the server's classpath. You do that with the [`EXTRA_CLASSPATH`](./configuration/configure-production-application.md#environment-variables) environment variable in your [`docker-compose.yml`](../getting-started/docker-install.md) file.
 
-The classpath entry must be a path inside the container, so the compose file below mounts the host's `./data` directory at `/data`. For more about mounts, see [Docker bind mounts]((../conceptual/docker-data-volumes.md)).
+The classpath entry must be a path inside the container, so the compose file below mounts the host's `./data` directory at `/data`. For more about mounts, see [Docker bind mounts](../conceptual/docker-data-volumes.md).
 
 For example, say we want to use closures from a class in `/data/groovyscripts/com/example/MyClass.groovy`:
 
@@ -194,7 +194,7 @@ To use `MyClass` itself in a [query string](./query-string-overview.md), rather 
 
 ## Related documentation
 
-- [Docker bind mounts]((../conceptual/docker-data-volumes.md))
+- [Docker bind mounts](../conceptual/docker-data-volumes.md)
 - [Execution context](../conceptual/execution-context.md)
 - [Docker install](../getting-started/docker-install.md)
 - [Query string overview](./query-string-overview.md)
