@@ -19,7 +19,7 @@ Such a formula gains nothing from an explicit `Selectable` object.
 
 ### When you need explicit control
 
-A formula that reads or writes shared state can give wrong results when threads process rows in parallel, unless its result is the same for any row order. Such a formula needs a `Selectable` with one of these controls:
+A formula that modifies shared state can give wrong results when threads process rows in parallel, even if its result does not depend on row order, because overlapping calls can interfere with each other. A formula whose result depends on row order has the same problem. Such a formula needs a `Selectable` with one of these controls:
 
 - [`withSerial`](./ConcurrencyControl.md#withserial): the formula evaluates its rows in row set order, never in parallel. Typical cases are:
   - A counter or accumulator that increments for each row.
