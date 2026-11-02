@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
@@ -19,6 +21,8 @@ import io.deephaven.process.ProcessInfo;
 import io.deephaven.process.ProcessInfoConfig;
 import io.deephaven.stats.Driver;
 import io.deephaven.stats.StatsIntradayLogger;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,27 +65,36 @@ public class EngineMetrics {
         return local;
     }
 
+    /**
+     * Manages the blink tables for the life of the process. The constructor creates the blink tables with
+     * {@code livenessScope} on top of the {@link LivenessScopeStack}, so releasing the caller's scope does not destroy
+     * the blink tables. Only {@link #resetForUnitTests()} releases {@code livenessScope}.
+     */
+    private final LivenessScope livenessScope = new LivenessScope();
+
     private final QueryPerformanceImpl qpImpl;
     private final QueryOperationPerformanceImpl qoplImpl;
     private final ProcessInfoImpl processInfoImpl;
     private final StatsImpl statsImpl;
 
     private EngineMetrics() {
-        EngineTableLoggers.Factory tableLoggerFactory = EngineTableLoggers.get();
-        final Logger log = LoggerFactory.getLogger(EngineMetrics.class);
-        ProcessInfo pInfo = getProcessInfo();
-        processInfoImpl = new ProcessInfoImpl(pInfo.getId(), tableLoggerFactory.processInfoLogLogger());
-        try {
-            processInfoImpl.init(pInfo);
-        } catch (IOException e) {
-            log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
-        }
-        qpImpl = new QueryPerformanceImpl(tableLoggerFactory.queryPerformanceLogLogger());
-        qoplImpl = new QueryOperationPerformanceImpl(tableLoggerFactory.queryOperationPerformanceLogLogger());
-        if (STATS_LOGGING_ENABLED) {
-            statsImpl = new StatsImpl(pInfo.getId(), tableLoggerFactory.processMetricsLogLogger());
-        } else {
-            statsImpl = null;
+        try (final SafeCloseable ignored = LivenessScopeStack.open(livenessScope, false)) {
+            EngineTableLoggers.Factory tableLoggerFactory = EngineTableLoggers.get();
+            final Logger log = LoggerFactory.getLogger(EngineMetrics.class);
+            ProcessInfo pInfo = getProcessInfo();
+            processInfoImpl = new ProcessInfoImpl(pInfo.getId(), tableLoggerFactory.processInfoLogLogger());
+            try {
+                processInfoImpl.init(pInfo);
+            } catch (IOException e) {
+                log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
+            }
+            qpImpl = new QueryPerformanceImpl(tableLoggerFactory.queryPerformanceLogLogger());
+            qoplImpl = new QueryOperationPerformanceImpl(tableLoggerFactory.queryOperationPerformanceLogLogger());
+            if (STATS_LOGGING_ENABLED) {
+                statsImpl = new StatsImpl(pInfo.getId(), tableLoggerFactory.processMetricsLogLogger());
+            } else {
+                statsImpl = null;
+            }
         }
     }
 
@@ -148,5 +161,20 @@ public class EngineMetrics {
                 "fdStatsLoggingEnabled", false);
         Driver.start(Clock.system(), EngineMetrics.getInstance().getStatsLogger(), fdStatsLoggingEnabled);
         return true;
+    }
+
+    /**
+     * Discard the singleton instance and release the liveness scope that manages the instance's blink tables. The next
+     * {@link #getInstance()} creates a new instance.
+     */
+    @TestUseOnly
+    static void resetForUnitTests() {
+        synchronized (EngineMetrics.class) {
+            if (ENGINE_METRICS == null) {
+                return;
+            }
+            ENGINE_METRICS.livenessScope.release();
+            ENGINE_METRICS = null;
+        }
     }
 }

@@ -62,7 +62,8 @@ For development and testing, pass properties as JVM arguments when starting the 
 ```python skip-test
 from deephaven_server import Server
 
-s = Server(port=10000, jvm_args=["-Xmx4g", "-Dauthentication.psk=MySecretKey"]).start()
+s = Server(port=10000, jvm_args=["-Xmx4g", "-Dauthentication.psk=MySecretKey"])
+s.start()
 ```
 
 ### Command line

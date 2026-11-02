@@ -6,9 +6,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from enum import Enum
-from typing import Callable, Union
 
 import jpy
 
@@ -52,9 +51,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
     def __init__(self, j_filter):
         self.j_filter = j_filter
 
-    def with_declared_barriers(
-        self, barriers: Union[Barrier, Sequence[Barrier]]
-    ) -> Filter:
+    def with_declared_barriers(self, barriers: Barrier | Sequence[Barrier]) -> Filter:
         """Returns a new Filter with the given declared barriers.
 
         Args:
@@ -72,9 +69,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create filter with declared barriers.") from e
 
-    def with_respected_barriers(
-        self, barriers: Union[Barrier, Sequence[Barrier]]
-    ) -> Filter:
+    def with_respected_barriers(self, barriers: Barrier | Sequence[Barrier]) -> Filter:
         """Returns a new Filter with the given respected barriers.
 
         Args:
@@ -115,9 +110,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
         return Filter(j_filter=_JFilterNot.of(self.j_filter))
 
     @classmethod
-    def from_(
-        cls, conditions: Union[str, Sequence[str]]
-    ) -> Union[Filter, Sequence[Filter]]:
+    def from_(cls, conditions: str | Sequence[str]) -> Filter | Sequence[Filter]:
         """Creates filter(s) from the given condition(s).
 
         Args:
@@ -140,7 +133,7 @@ class Filter(ConcurrencyControl["Filter"], JObjectWrapper):
             raise DHError(e, "failed to create filters.") from e
 
 
-def or_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter:
+def or_(filters: str | Filter | Sequence[str] | Sequence[Filter]) -> Filter:
     """Creates a new filter that evaluates to true when any of the given filters evaluates to true.
 
     Args:
@@ -156,7 +149,7 @@ def or_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter:
     return Filter(j_filter=getattr(_JFilter, "or")(*seq))
 
 
-def and_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter:
+def and_(filters: str | Filter | Sequence[str] | Sequence[Filter]) -> Filter:
     """Creates a new filter that evaluates to true when all the given filters evaluates to true.
 
     Args:
@@ -275,7 +268,7 @@ def incremental_release(initial_rows: int, increment: int) -> Filter:
         raise DHError(e, "failed to create incremental release filter.") from e
 
 
-def in_(col: str, values: Sequence[Union[bool, int, float, str]]) -> Filter:
+def in_(col: str, values: Sequence[bool | int | float | str]) -> Filter:
     """Creates a new filter that evaluates to true when the column's value is in the given values.
 
     Args:
@@ -307,8 +300,8 @@ _FILTER_COMPARISON_MAP: dict[str, Callable] = {
 
 def _j_filter_comparison(
     op: str,
-    left: Union[bool, int, float, str, ColumnName],
-    right: Union[bool, int, float, str, ColumnName],
+    left: bool | int | float | str | ColumnName,
+    right: bool | int | float | str | ColumnName,
 ) -> jpy.JType:
     j_left = (
         _JColumnName.of(left) if isinstance(left, ColumnName) else _JLiteral.of(left)
@@ -320,8 +313,8 @@ def _j_filter_comparison(
 
 
 def eq(
-    left: Union[bool, int, float, str, ColumnName],
-    right: Union[bool, int, float, str, ColumnName],
+    left: bool | int | float | str | ColumnName,
+    right: bool | int | float | str | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is equal to the right operand.
 
@@ -336,8 +329,8 @@ def eq(
 
 
 def ne(
-    left: Union[bool, int, float, str, ColumnName],
-    right: Union[bool, int, float, str, ColumnName],
+    left: bool | int | float | str | ColumnName,
+    right: bool | int | float | str | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is not equal to the right operand.
 
@@ -352,8 +345,8 @@ def ne(
 
 
 def lt(
-    left: Union[bool, int, float, str, ColumnName],
-    right: Union[bool, int, float, str, ColumnName],
+    left: bool | int | float | str | ColumnName,
+    right: bool | int | float | str | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is less than the right operand.
 
@@ -368,8 +361,8 @@ def lt(
 
 
 def le(
-    left: Union[bool, int, float, str, ColumnName],
-    right: Union[bool, int, float, str, ColumnName],
+    left: bool | int | float | str | ColumnName,
+    right: bool | int | float | str | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is less than or equal to the right operand.
 
@@ -384,8 +377,8 @@ def le(
 
 
 def gt(
-    left: Union[bool, int, float, str, ColumnName],
-    right: Union[bool, int, float, str, ColumnName],
+    left: bool | int | float | str | ColumnName,
+    right: bool | int | float | str | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is greater than the right operand.
 
@@ -400,8 +393,8 @@ def gt(
 
 
 def ge(
-    left: Union[bool, int, float, str, ColumnName],
-    right: Union[bool, int, float, str, ColumnName],
+    left: bool | int | float | str | ColumnName,
+    right: bool | int | float | str | ColumnName,
 ) -> Filter:
     """Creates a new filter that evaluates to true when the left operand is greater than or equal to the right operand.
 

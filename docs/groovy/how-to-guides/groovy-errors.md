@@ -702,7 +702,7 @@ The examples on this page follow the same steps:
 - [Query string overview](./query-string-overview.md)
 - [Triage errors in queries](./triage-errors.md)
 - [Retrieve logs](./logs.md)
-- [Groovy closures](./groovy-closures.md)
+- [Groovy closures in queries](./groovy-closures.md)
 - [Formulas](./formulas.md)
 - [Create static tables](./new-and-empty-table.md)
 - [Create a time table](./time-table.md)

@@ -5,7 +5,7 @@ title: dh_null_to_nan
 The `dh_null_to_nan` method converts Deephaven primitive null values in the given numpy array to `numpy.nan`. No conversion is performed on non-primitive values.
 
 > [!NOTE]
-> The input numpy array is modified in place if it is a float or double type. If that is not the desired behavior, pass a copy of the new array instead. For input arrays of other types, a new array is always returned and the input numpy array is unmodified.
+> `dh_null_to_nan` never modifies the input array. For an array of a primitive type, it returns a new array.
 
 ## Syntax
 
@@ -26,7 +26,7 @@ The numpy array to convert.
 </Param>
 <Param name="type_promotion" type="bool" optional>
 
-When True, integer, boolean, or character arrays are converted to new np.float64 arrays and Deephaven null values in them are converted to `np.nan`. Numpy arrays of float or double types are not affected by this flag, and Deephaven nulls will always be converted to `np.nan` in place.
+When True, integer, boolean, or character arrays are converted to new np.float64 arrays and Deephaven null values in them are converted to `np.nan`. Numpy arrays of float or double types are not affected by this flag, and Deephaven nulls will always be converted to `np.nan`.
 
 When False, integer, boolean, or character arrays will cause an exception to be raised. Default is False.
 
@@ -53,9 +53,9 @@ source = new_table(
 from deephaven.numpy import to_numpy
 from deephaven.jcompat import dh_null_to_nan
 
-np = to_numpy(source)
+np_source = to_numpy(source)
 
-np_nan = dh_null_to_nan(np, True)
+np_nan = dh_null_to_nan(np_source, True)
 
 print(np_nan)
 ```

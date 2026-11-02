@@ -6,7 +6,7 @@
 as well as a framework for using popular machine-learning / deep-learning libraries with Deephaven tables.
 """
 
-from typing import Callable, Optional, Union
+from collections.abc import Callable
 
 import jpy
 
@@ -22,7 +22,7 @@ _JLearnScatterer = jpy.get_type("io.deephaven.integrations.learn.Scatterer")
 class Input:
     """Input specifies how to gather data from a Deephaven table into an object."""
 
-    def __init__(self, col_names: Union[str, list[str]], gather_func: Callable):
+    def __init__(self, col_names: str | list[str], gather_func: Callable):
         """Initializes an Input object with the given arguments.
 
         Args:
@@ -122,10 +122,10 @@ def _create_non_conflicting_col_name(table: Table, base_col_name: str) -> str:
 
 def learn(
     table: Table,
-    model_func: Optional[Callable] = None,
+    model_func: Callable | None = None,
     inputs: list[Input] = [],
     outputs: list[Output] = [],
-    batch_size: Optional[int] = None,
+    batch_size: int | None = None,
 ) -> Table:
     """Learn gathers data from multiple rows of the input table, performs a calculation, and scatters values from the
     calculation into an output table. This is a common computing paradigm for artificial intelligence, machine learning,
