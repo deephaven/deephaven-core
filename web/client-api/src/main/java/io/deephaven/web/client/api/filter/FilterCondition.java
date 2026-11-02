@@ -33,21 +33,21 @@ public class FilterCondition {
     private final Condition descriptor;
 
     /**
-     * a filter condition invoking a static function with the given parameters. Currently supported Deephaven static
-     * functions:
+     * a filter condition invoking a static function with the given parameters. Examples of supported Deephaven static
+     * functions include:
      * <ul>
      * <li>{@code inRange}: Given three comparable values, returns {@code true} if the first value falls between the
      * second and third values, which are the inclusive lower and upper bounds of the range. Returns {@code false} if
      * the first value is null.</li>
      * <li>{@code isInf}: Returns {@code true} if the given number is <i>infinity</i>.</li>
      * <li>{@code isNaN}: Returns {@code true} if the given number is <i>not a number</i>.</li>
-     * <li>{@code in}: Returns {@code true} if the first value is equal to any of the values that follow it. The
-     * candidate values are passed as individual arguments rather than as a single array. Typically the
-     * {@link FilterValue#in(FilterValue[])} method should be used instead.</li>
+     * <li>{@code in}: Returns {@code true} if the first primitive value is equal to any of the primitive values that
+     * follow it. For object values such as strings, use {@code inObj} instead. Typically the
+     * {@link FilterValue#in(FilterValue[])} method should be used instead of calling either directly.</li>
      * </ul>
      * <p>
      * Because no target value is supplied, only static functions can be invoked here. To invoke a method <i>on</i> a
-     * value - such as {@code startsWith} or {@code endsWith} on a string - use
+     * value — such as {@code startsWith} or {@code endsWith} on a string — use
      * {@link FilterValue#invoke(String, FilterValue...)} instead. For regular expression and substring matching, prefer
      * the dedicated {@link FilterValue#matches(FilterValue)} and {@link FilterValue#contains(FilterValue)} methods (or
      * their case-insensitive variants).
