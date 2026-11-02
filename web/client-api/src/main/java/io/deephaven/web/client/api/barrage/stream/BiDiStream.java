@@ -89,6 +89,8 @@ public abstract class BiDiStream<Req, Resp> {
                 // the websocket transport has no per-stream cancel; the half-close is what ends the stream server-side
                 observer.onCompleted();
                 wrapper.cancel();
+                // a cancel delivers no end event, so mark the stream ended here
+                ended = true;
             }
 
             @Override
