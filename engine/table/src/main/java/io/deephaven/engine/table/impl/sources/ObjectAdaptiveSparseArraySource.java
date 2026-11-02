@@ -225,6 +225,10 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
                 return;
             }
             if (children == null) {
+                if (child == null) {
+                    // a level with one child holds no other child to clear
+                    return;
+                }
                 children = recycled ? level1ArrayRecycler.borrowItem() : new Level1[BLOCK0_SIZE];
                 children[oneIndex] = oneChild;
                 oneChild = null;
@@ -287,6 +291,10 @@ public class ObjectAdaptiveSparseArraySource<T> extends AbstractColumnSource<T>
                 return;
             }
             if (children == null) {
+                if (child == null) {
+                    // a level with one child holds no other child to clear
+                    return;
+                }
                 children = recycled ? level2ArrayRecycler.borrowItem() : new Level2[BLOCK1_SIZE];
                 children[oneIndex] = oneChild;
                 oneChild = null;

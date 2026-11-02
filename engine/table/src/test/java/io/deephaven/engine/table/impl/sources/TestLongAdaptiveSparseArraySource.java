@@ -34,6 +34,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK0_SHIFT;
+import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK1_SHIFT;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.BLOCK_SIZE;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static org.junit.Assert.assertEquals;
@@ -358,6 +360,25 @@ public class TestLongAdaptiveSparseArraySource extends AbstractLongColumnSourceT
         checkValue("live", liveValue, source.getLong(2L * BLOCK_SIZE));
         checkValue("cleared", NULL_LONG, source.getLong(0));
         checkValue("cleared", NULL_LONG, source.getLong(BLOCK_SIZE));
+    }
+
+    @Test
+    public void testClearNeverWrittenStructures() {
+        final LongAdaptiveSparseArraySource source = makeTestSource();
+        final long value = randomValue(new Random(0));
+        source.set(0, value);
+        source.startTrackingPrevValues();
+        final long sizeBefore = source.estimateSize();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            // a leaf, a block2 structure and a block1 structure that were never written
+            try (final RowSet candidates = RowSetFactory.fromKeys(BLOCK_SIZE, 1L << BLOCK1_SHIFT, 1L << BLOCK0_SHIFT);
+                    final RowSet live = RowSetFactory.fromKeys(0)) {
+                SparseBlockColumnSource.clearBlocksWithoutLiveRows(candidates, live, source);
+            }
+        });
+        assertEquals(sizeBefore, source.estimateSize());
+        checkValue("live", value, source.getLong(0));
     }
 
     private static void applyRandomOperation(
