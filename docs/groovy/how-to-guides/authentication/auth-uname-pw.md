@@ -2,7 +2,7 @@
 title: Configure username/password authentication
 ---
 
-This guide will show you how to configure username/password authentication for Deephaven.
+This guide shows you how to configure username/password authentication for Deephaven.
 
 Username/password is a common authentication method in which each user of an application has their own username and a secret password. The username says who the user is, and the password proves it.
 
