@@ -38,7 +38,7 @@ The Docker logs show the following message when you enable anonymous authenticat
 
 ## pip-installed Deephaven
 
-The following Python code starts a server on localhost, port 10000 by default, with anonymous authentication enabled. The property goes in the `jvm_args` parameter.
+The following Python code starts a server on port 10000 by default, with anonymous authentication enabled. Unless you configure a host, the server listens on all network interfaces. The property goes in the `jvm_args` parameter.
 
 ```python skip-test
 from deephaven_server import Server
