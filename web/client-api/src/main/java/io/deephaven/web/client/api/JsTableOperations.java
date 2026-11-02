@@ -47,7 +47,6 @@ import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
@@ -561,19 +560,8 @@ public interface JsTableOperations extends ServerObject {
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable NaturalJoinType joinType) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
-        return call(ticket, naturalJoinOperation(ticket, rightTable, columnsToMatch, columnsToAdd, joinType));
-    }
-
-    /**
-     * Builds the request for {@link #naturalJoin}, so implementations that return a different pending type can share
-     * it.
-     */
-    private BatchTableRequest.Operation.Builder naturalJoinOperation(Ticket resultId, JsTableReference rightTable,
-            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
-            @Nullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
-            @Nullable NaturalJoinType joinType) {
         NaturalJoinTablesRequest.Builder join = NaturalJoinTablesRequest.newBuilder()
-                .setResultId(resultId)
+                .setResultId(ticket)
                 .setLeftId(TableReference.newBuilder()
                         .setTicket(typedTicket().getTicket())
                         .build())
@@ -599,7 +587,7 @@ public interface JsTableOperations extends ServerObject {
                     break;
             }
         }
-        return BatchTableRequest.Operation.newBuilder().setNaturalJoin(join);
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setNaturalJoin(join));
     }
 
     /**
@@ -616,17 +604,8 @@ public interface JsTableOperations extends ServerObject {
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
-        return call(ticket, exactJoinOperation(ticket, rightTable, columnsToMatch, columnsToAdd));
-    }
-
-    /**
-     * Builds the request for {@link #exactJoin}.
-     */
-    private BatchTableRequest.Operation.Builder exactJoinOperation(Ticket resultId, JsTableReference rightTable,
-            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
-            @Nullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd) {
         ExactJoinTablesRequest.Builder request = ExactJoinTablesRequest.newBuilder()
-                .setResultId(resultId)
+                .setResultId(ticket)
                 .setLeftId(TableReference.newBuilder()
                         .setTicket(typedTicket().getTicket())
                         .build())
@@ -636,7 +615,7 @@ public interface JsTableOperations extends ServerObject {
                 .addAllColumnsToMatch(JsTable.MatchPairUnion.toStringArray(columnsToMatch))
                 .addAllColumnsToAdd(columnsToAdd != null ? JsTable.MatchPairUnion.toStringArray(columnsToAdd)
                         : Collections.emptyList());
-        return BatchTableRequest.Operation.newBuilder().setExactJoin(request);
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setExactJoin(request));
     }
 
     /**
@@ -650,23 +629,13 @@ public interface JsTableOperations extends ServerObject {
      * @return a new table with the joined columns
      */
     @JsMethod
-    default JsPendingTable<JsResolvedTable> crossJoin(JsTableReference rightTable,
+    default JsPendingTable<JsResolvedTable> join(JsTableReference rightTable,
             ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
             @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
             @JsOptional @JsNullable Double reserveBits) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
-        return call(ticket, crossJoinOperation(ticket, rightTable, columnsToMatch, columnsToAdd, reserveBits));
-    }
-
-    /**
-     * Builds the request for {@link #crossJoin}.
-     */
-    private BatchTableRequest.Operation.Builder crossJoinOperation(Ticket resultId, JsTableReference rightTable,
-            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
-            @Nullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
-            @Nullable Double reserveBits) {
         CrossJoinTablesRequest.Builder request = CrossJoinTablesRequest.newBuilder()
-                .setResultId(resultId)
+                .setResultId(ticket)
                 .setLeftId(TableReference.newBuilder()
                         .setTicket(typedTicket().getTicket())
                         .build())
@@ -679,159 +648,19 @@ public interface JsTableOperations extends ServerObject {
         if (reserveBits != null) {
             request.setReserveBits((int) (double) reserveBits);
         }
-        return BatchTableRequest.Operation.newBuilder().setCrossJoin(request);
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setCrossJoin(request));
     }
 
     /**
-     * The match condition rule for the final match column of as-of-join.
-     * <p>
-     * TODO BEFORE MERGE: decide the naming convention. These names follow the legacy JS {@code Table.asOfJoin} and the
-     * deprecated {@code AsOfJoinTablesRequest.MatchRule}, which describe the comparison from the right table's side:
-     * {@code LESS_THAN_EQUAL} means an aj whose match column reads {@code "L >= R"}, and {@code GREATER_THAN_EQUAL}
-     * means a raj on {@code "L <= R"}. The server's {@code AsOfJoinRule} and the other clients name the operator as
-     * written, which is the opposite. Options: keep this (one JS vocabulary, surprising to Python/Java users), flip it
-     * (matches the other clients, disagrees with legacy {@code Table.asOfJoin}), or drop the parameter and require the
-     * operator in the match column. {@link #asOfJoin} and its builder encode the legacy reading today.
-     */
-    @TsUnion(anonymous = false, name = "AsOfJoinRule", namespace = "dh")
-    @JsType(namespace = JsPackage.GLOBAL, name = "?", isNative = true)
-    interface AsOfMatchRule {
-        @TsLiteral
-        @TsUnionMember
-        @JsOverlay
-        String LESS_THAN_EQUAL = "LESS_THAN_EQUAL";
-        @TsLiteral
-        @TsUnionMember
-        @JsOverlay
-        String LESS_THAN = "LESS_THAN";
-        @TsLiteral
-        @TsUnionMember
-        @JsOverlay
-        String GREATER_THAN_EQUAL = "GREATER_THAN_EQUAL";
-        @TsLiteral
-        @TsUnionMember
-        @JsOverlay
-        String GREATER_THAN = "GREATER_THAN";
-    }
-
-    /**
-     * Performs an as-of join of this table with the right table, matching the closest row in the right table based on
-     * the last match column's ordering. Useful for joining time-series data where exact matches are not required.
+     * Performs an as-of join of this table with the right table: each row takes the right table's row with the closest
+     * as-of value at or before its own.
      *
      * @param rightTable the table to join with
-     * @param columnsToMatch the columns to match on, in "LeftCol=RightCol" format; the last column determines the as-of
-     *        match direction
+     * @param columnsToMatch the columns to match on. All but the last are exact matches ({@code "LeftCol=RightCol"} or
+     *        a name in both tables). The last is the as-of match: {@code "LeftCol>=RightCol"},
+     *        {@code "LeftCol>RightCol"}, or a name in both tables, which means {@code >=}.
      * @param columnsToAdd the columns to add from the right table; if omitted, all non-match columns are added
-     * @param asOfMatchRule the match rule for the as-of column. TODO BEFORE MERGE: the rule names read from the right
-     *        table's side, see {@link AsOfMatchRule}; {@code LESS_THAN_EQUAL} is an aj on {@code "L >= R"}.
      * @return a new table with the joined columns
-     */
-    @JsMethod
-    default JsPendingTable<JsResolvedTable> asOfJoin(JsTableReference rightTable,
-            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
-            @JsOptional @JsNullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
-            @JsOptional @JsNullable AsOfMatchRule asOfMatchRule) {
-        Ticket ticket = getConnection().getTickets().newExportTicket();
-        return call(ticket, asOfJoinOperation(ticket, rightTable, columnsToMatch, columnsToAdd, asOfMatchRule));
-    }
-
-    /**
-     * Builds the request for {@link #asOfJoin}: an aj or raj depending on the match rule.
-     * <p>
-     * The rule names follow the legacy JS API (and the deprecated {@code AsOfJoinTablesRequest}), where
-     * {@code LESS_THAN_EQUAL} means an aj whose match column reads {@code "L >= R"}: the right-hand value is less than
-     * or equal to the left. So {@code LESS_THAN_EQUAL}/{@code LESS_THAN} are an aj with {@code >=}/{@code >}, and
-     * {@code GREATER_THAN_EQUAL}/{@code GREATER_THAN} are a raj with {@code <=}/{@code <}.
-     * <p>
-     * If the last match column carries an operator, the rule is read from it and must agree with any rule given. If it
-     * is a bare name or a legacy {@code "L=R"} pair, the rule given (default {@code LESS_THAN_EQUAL}) supplies the
-     * operator, so strict rules are honored either way.
-     */
-    private BatchTableRequest.Operation.Builder asOfJoinOperation(Ticket resultId, JsTableReference rightTable,
-            ReadonlyArray<JsTable.MatchPairUnion> columnsToMatch,
-            @Nullable ReadonlyArray<JsTable.MatchPairUnion> columnsToAdd,
-            @Nullable AsOfMatchRule asOfMatchRule) {
-        AjRajTablesRequest.Builder builder = makeAjReq(rightTable, columnsToMatch, columnsToAdd, resultId);
-
-        String asOfColumn = builder.getAsOfColumn();
-        String inferredMatchRule = inferMatchRule(asOfColumn);
-        String rule;
-        if (asOfMatchRule != null) {
-            rule = asOfMatchRule.toString();
-            if (inferredMatchRule != null && !rule.equals(inferredMatchRule)) {
-                throw new IllegalArgumentException("Formula " + asOfColumn + " doesn't match rule " + rule);
-            }
-        } else {
-            rule = inferredMatchRule != null ? inferredMatchRule : AsOfMatchRule.LESS_THAN_EQUAL;
-        }
-        if (inferredMatchRule == null) {
-            // No operator in the column; write the one the rule implies, splitting a legacy "L=R" pair if present
-            int eq = asOfColumn.indexOf('=');
-            String left = eq < 0 ? asOfColumn : asOfColumn.substring(0, eq);
-            String right = eq < 0 ? asOfColumn : asOfColumn.substring(eq + 1);
-            builder.setAsOfColumn(left.trim() + operatorForRule(rule) + right.trim());
-        }
-
-        BatchTableRequest.Operation.Builder batch = BatchTableRequest.Operation.newBuilder();
-        switch (rule) {
-            case AsOfMatchRule.LESS_THAN:
-            case AsOfMatchRule.LESS_THAN_EQUAL:
-                batch.setAj(builder);
-                break;
-            case AsOfMatchRule.GREATER_THAN:
-            case AsOfMatchRule.GREATER_THAN_EQUAL:
-                batch.setRaj(builder);
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown as-of match rule: " + rule);
-        }
-        return batch;
-    }
-
-    private static String operatorForRule(String rule) {
-        switch (rule) {
-            case AsOfMatchRule.LESS_THAN_EQUAL:
-                return ">=";
-            case AsOfMatchRule.LESS_THAN:
-                return ">";
-            case AsOfMatchRule.GREATER_THAN_EQUAL:
-                return "<=";
-            case AsOfMatchRule.GREATER_THAN:
-                return "<";
-            default:
-                throw new IllegalArgumentException("Unknown as-of match rule: " + rule);
-        }
-    }
-
-    /**
-     * Reads the rule implied by the operator in a match column, with the legacy naming described on
-     * {@link #asOfJoinOperation}; {@code null} if the column has no operator.
-     */
-    private static String inferMatchRule(String asOfColumn) {
-        if (asOfColumn.contains(">=")) {
-            return AsOfMatchRule.LESS_THAN_EQUAL;
-        }
-        if (asOfColumn.contains("<=")) {
-            return AsOfMatchRule.GREATER_THAN_EQUAL;
-        }
-        if (asOfColumn.contains(">")) {
-            return AsOfMatchRule.LESS_THAN;
-        }
-        if (asOfColumn.contains("<")) {
-            return AsOfMatchRule.GREATER_THAN;
-        }
-        return null;
-    }
-
-    /**
-     * Perform an as-of join with the {@code rightTable}.
-     *
-     * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn>=rightColumn"},
-     *        {@code "leftColumn>rightColumn"}, {@code "columnFoundInBoth"}).
-     * @param columnsToAdd A comma separated list with the columns from the left side that need to be added to the right
-     *        side as a result of the match.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> aj(JsTableReference rightTable,
@@ -844,14 +673,15 @@ public interface JsTableOperations extends ServerObject {
     }
 
     /**
-     * Perform a reverse-as-of join with the {@code rightTable}.
+     * Performs a reverse as-of join of this table with the right table: each row takes the right table's row with the
+     * closest as-of value at or after its own.
      *
-     * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn<=rightColumn"},
-     *        {@code "leftColumn<rightColumn"}, {@code "columnFoundInBoth"}).
-     * @param columnsToAdd A comma separated list with the columns from the left side that need to be added to the right
-     *        side as a result of the match.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
+     * @param rightTable the table to join with
+     * @param columnsToMatch the columns to match on. All but the last are exact matches ({@code "LeftCol=RightCol"} or
+     *        a name in both tables). The last is the as-of match: {@code "LeftCol<=RightCol"},
+     *        {@code "LeftCol<RightCol"}, or a name in both tables, which means {@code <=}.
+     * @param columnsToAdd the columns to add from the right table; if omitted, all non-match columns are added
+     * @return a new table with the joined columns
      */
     @JsMethod
     default JsPendingTable<JsResolvedTable> raj(JsTableReference rightTable,
@@ -876,7 +706,7 @@ public interface JsTableOperations extends ServerObject {
                         .build());
         List<String> matchStrings = JsTable.MatchPairUnion.toStringArray(matches);
         if (matchStrings.isEmpty()) {
-            throw new IllegalArgumentException("asOfJoin requires at least one match column");
+            throw new IllegalArgumentException("aj and raj require at least one match column");
         }
         builder.addAllExactMatchColumns(matchStrings.subList(0, matchStrings.size() - 1));
         builder.setAsOfColumn(matchStrings.get(matchStrings.size() - 1));
@@ -1124,20 +954,13 @@ public interface JsTableOperations extends ServerObject {
     default JsPendingTable<JsResolvedTable> selectDistinct(
             @JsNullable @JsOptional ReadonlyArray<Column.ColumnOrName> columnNames) {
         Ticket ticket = getConnection().getTickets().newExportTicket();
-        return call(ticket, selectDistinctOperation(ticket, columnNames));
-    }
-
-    /**
-     * Builds the request for {@link #selectDistinct}.
-     */
-    private BatchTableRequest.Operation.Builder selectDistinctOperation(Ticket resultId,
-            @Nullable ReadonlyArray<Column.ColumnOrName> columnNames) {
-        return BatchTableRequest.Operation.newBuilder().setSelectDistinct(SelectDistinctRequest.newBuilder()
+        return call(ticket, BatchTableRequest.Operation.newBuilder().setSelectDistinct(SelectDistinctRequest
+                .newBuilder()
                 .addAllColumnNames(columnNames == null ? Collections.emptyList() : columnsToNameList(columnNames))
                 .setSourceId(TableReference.newBuilder()
                         .setTicket(typedTicket().getTicket())
                         .build())
-                .setResultId(resultId));
+                .setResultId(ticket)));
     }
 
     /**

@@ -49,6 +49,7 @@ public class FilterValue {
 
     /**
      * Constructs a column reference for the filter API from the given parameter.
+     *
      * @param columnName the name of the column
      * @return a FilterValue representing the column reference
      */

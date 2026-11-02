@@ -102,8 +102,7 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
         cases.add(new Case("naturalJoin",
                 (s, r, g) -> s.naturalJoin(JsTableReference.of(r), arr("X"), arr("Z"), null)));
         cases.add(new Case("exactJoin", (s, r, g) -> s.exactJoin(JsTableReference.of(r), arr("X"), arr("Z"))));
-        cases.add(new Case("crossJoin", (s, r, g) -> s.crossJoin(JsTableReference.of(r), arr("X"), arr("Z"), null)));
-        cases.add(new Case("asOfJoin", (s, r, g) -> s.asOfJoin(JsTableReference.of(r), arr("X"), arr("Z"), null)));
+        cases.add(new Case("join", (s, r, g) -> s.join(JsTableReference.of(r), arr("X"), arr("Z"), null)));
         cases.add(new Case("aj", (s, r, g) -> s.aj(JsTableReference.of(r), arr("X"), arr("Z"))));
         cases.add(new Case("raj", (s, r, g) -> s.raj(JsTableReference.of(r), arr("X"), arr("Z"))));
         cases.add(new Case("rangeJoin", (s, r, g) -> s.rangeJoin(JsTableReference.of(r), arr(), range,

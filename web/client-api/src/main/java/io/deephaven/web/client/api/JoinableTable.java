@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.ReadonlyArray;
-import elemental2.promise.Promise;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
@@ -84,9 +83,7 @@ public interface JoinableTable {
      * @param columnsToMatch The columns that should match, according to the asOfMatchRole.
      * @param columnsToAdd Columns from the right table to add to the resulting table, empty/null/absent to add all
      *        columns.
-     * @param asOfMatchRule The match rule to use, see above. TODO BEFORE MERGE: these names read from the right table's
-     *        side ({@code LESS_THAN_EQUAL} is an aj on {@code "L >= R"}); the new {@link JsTableOperations#asOfJoin}
-     *        copies this convention and the choice is still open, see {@link JsTableOperations.AsOfMatchRule}.
+     * @param asOfMatchRule The match rule to use, see above.
      * @return A promise that will resolve to the joined table.
      */
     @JsMethod
