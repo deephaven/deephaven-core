@@ -2886,6 +2886,12 @@ public final class ParquetTableFilterTest {
         }
 
         @Override
+        public WhereFilter maybeUnwrapFilter() {
+            // it throws rather than accept the inner filter's rows, so a pushdown must not answer for it
+            return this;
+        }
+
+        @Override
         public WhereFilter copy() {
             return this;
         }
