@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.util;
 
+import io.deephaven.engine.testutil.testcase.FakeProcessEnvironment;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.engine.context.ExecutionContext;
@@ -268,8 +269,9 @@ public class TestExecutorJobScheduler {
     }
 
     /**
-     * A synchronous executor that runs the job, which then throws a RejectedExecutionException itself, has not refused
-     * it: the job must not run a second time on the submitting thread.
+     * A synchronous executor that runs the job, whose error handler then throws a RejectedExecutionException, has not
+     * refused it: the handler's failure is reported as fatal, and the job does not run a second time on the submitting
+     * thread.
      */
     @Test
     public void testRejectionThrownByARunJobDoesNotRunItAgain() {
@@ -283,7 +285,7 @@ public class TestExecutorJobScheduler {
             throw new IllegalStateException("job failed");
         }, null, e -> {
             throw fromTheJob;
-        })).isSameAs(fromTheJob);
+        })).isInstanceOf(FakeProcessEnvironment.FakeFatalException.class).hasCause(fromTheJob);
 
         assertThat(runs.get()).isEqualTo(1);
         // released once, by the job, and not again for the rejection

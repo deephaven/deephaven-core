@@ -143,14 +143,15 @@ public class OperationInitializerJobScheduler implements JobScheduler {
 
     /**
      * Run a job this waiting thread has claimed. It ends as it would on a pool thread: a failure reaches the job's own
-     * error handler, and an Error is also reported as fatal, so the future being waited for reports the outcome and
-     * nothing the job throws escapes the wait.
+     * error handler, and an Error, or a failure of the handler itself, is also reported as fatal, so the future being
+     * waited for reports the outcome and nothing the job throws escapes the wait.
      */
     private static void runOnWaitingThread(@NotNull final Job job) {
         try {
             job.run(false);
         } catch (Throwable t) {
-            // delivered and reported by JobScheduler.runJob, as on a pool thread
+            // JobScheduler.runJob reported this as fatal before rethrowing it: an Error from the job, or a failure of
+            // its error handler. A pool thread's future would hold it unread.
         }
     }
 

@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.util;
 
+import io.deephaven.engine.testutil.testcase.FakeProcessEnvironment;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.util.JobScheduler;
@@ -372,6 +373,25 @@ public class TestOperationInitializerJobScheduler {
         scheduler.submit(null, () -> done.complete(42), null, done::completeExceptionally);
         assertThat(done.isDone()).isTrue();
         assertThat(scheduler.awaitCompletion(done)).isEqualTo(42);
+        assertThat(scheduler.getAccumulatedPerformance()).isNotNull();
+    }
+
+    /**
+     * A job whose error handler fails has no other way to report either failure, so the handler's failure is reported
+     * as fatal, carrying the job's, and the job's count is still released.
+     */
+    @Test
+    public void testFailingErrorHandlerIsReportedAsFatal() {
+        final OperationInitializerJobScheduler scheduler =
+                new OperationInitializerJobScheduler(OperationInitializer.NON_PARALLELIZABLE);
+        final IllegalStateException jobFailure = new IllegalStateException("job failed");
+        final IllegalStateException handlerFailure = new IllegalStateException("handler failed");
+        assertThatThrownBy(() -> scheduler.submit(null, () -> {
+            throw jobFailure;
+        }, null, e -> {
+            throw handlerFailure;
+        })).isInstanceOf(FakeProcessEnvironment.FakeFatalException.class).hasCause(handlerFailure);
+        assertThat(handlerFailure.getSuppressed()).containsExactly(jobFailure);
         assertThat(scheduler.getAccumulatedPerformance()).isNotNull();
     }
 }

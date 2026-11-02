@@ -103,12 +103,14 @@ public interface JobScheduler {
 
     /**
      * Run a submitted job on whatever thread the scheduler has chosen for it: under {@code executionContext} when one
-     * is given; with an {@link Exception} it throws delivered to {@code onError}; and with anything else it throws, an
-     * {@link Error} in practice, delivered as {@link #asDeliverableException} makes it, then reported to the global
-     * fatal error reporter, then rethrown. The default reporter ends the process and does not return, so the rethrow
-     * happens only under a reporter that does. Implementations wrap this in whatever performance accounting they keep.
-     * {@link ImmediateJobScheduler}, which runs every job on the submitting thread, does not use it: an Error from one
-     * of its jobs propagates to that thread undelivered and unreported.
+     * is given; with an {@link Exception} it throws delivered to {@code onError}, and should {@code onError} itself
+     * throw, that failure, carrying the Exception as suppressed, reported to the global fatal error reporter, then
+     * rethrown; and with anything else it throws, an {@link Error} in practice, delivered as
+     * {@link #asDeliverableException} makes it, then reported to the global fatal error reporter, then rethrown. The
+     * default reporter ends the process and does not return, so the rethrow happens only under a reporter that does.
+     * Implementations wrap this in whatever performance accounting they keep. {@link ImmediateJobScheduler}, which runs
+     * every job on the submitting thread, does not use it: an Error from one of its jobs propagates to that thread
+     * undelivered and unreported.
      *
      * @param executionContext the execution context to run the job under, or null to run it under the thread's own
      * @param runnable the job
@@ -123,7 +125,19 @@ public interface JobScheduler {
         try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
             runnable.run();
         } catch (Exception e) {
-            onError.accept(e);
+            try {
+                onError.accept(e);
+            } catch (Throwable t) {
+                // The handler that was to deliver the failure failed too, so nothing waiting on this job learns of
+                // either: report them, as an Error is reported, and rethrow.
+                if (t != e) {
+                    t.addSuppressed(e);
+                }
+                final String logMessage =
+                        new LogOutputStringImpl().append(description).append(" Error handler failed").toString();
+                ProcessEnvironment.getGlobalFatalErrorReporter().report(logMessage, t);
+                throw t;
+            }
         } catch (Throwable e) {
             // Deliver the error before reporting it. Anything waiting on this job's completion has no other way to
             // learn that the job failed, and would otherwise wait forever for a completion that cannot happen.
