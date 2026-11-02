@@ -4,7 +4,7 @@
 import contextlib
 import inspect
 from collections.abc import Mapping
-from typing import Any, Union
+from typing import Any
 
 import jpy
 
@@ -18,7 +18,6 @@ _JSql = jpy.get_type("io.deephaven.engine.sql.Sql")
 @contextlib.contextmanager
 def _scope(globals: Mapping[str, Any], locals: Mapping[str, Any]):
     j_py_script_session = _j_py_script_session()
-    # Can do `globals | locals` in Python 3.9+
     j_py_script_session.pushScope({**globals, **locals})
     try:
         yield
@@ -29,7 +28,7 @@ def _scope(globals: Mapping[str, Any], locals: Mapping[str, Any]):
 def evaluate(
     sql: str,
     dry_run: bool = False,
-) -> Union[Table, jpy.JType]:
+) -> Table | jpy.JType:
     """Evaluates an SQL query and returns the result.
 
     The query scope is taken from the environment when this method is called.

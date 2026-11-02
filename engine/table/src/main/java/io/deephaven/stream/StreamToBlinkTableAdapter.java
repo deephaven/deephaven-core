@@ -343,13 +343,20 @@ public class StreamToBlinkTableAdapter
         deliverUpdate(downstream);
     }
 
-    private synchronized boolean deliverFailures() {
-        if (enqueuedFailures.isEmpty()) {
-            return false;
+    private boolean deliverFailures() {
+        final Throwable failure;
+        synchronized (this) {
+            if (enqueuedFailures.isEmpty()) {
+                return false;
+            }
+            failure = MultiException.maybeWrapInMultiException(
+                    "Multiple errors encountered while ingesting stream",
+                    enqueuedFailures);
         }
-        deliverFailure(MultiException.maybeWrapInMultiException(
-                "Multiple errors encountered while ingesting stream",
-                enqueuedFailures));
+        // Deliver outside the adapter's lock. Delivery closes the adapter, and closing shuts down the publisher. A
+        // publisher may hold the publisher's own lock while calling accept, which takes the adapter's lock, so a
+        // shutdown that takes the publisher's lock would deadlock under the adapter's lock.
+        deliverFailure(failure);
         return true;
     }
 
@@ -383,6 +390,10 @@ public class StreamToBlinkTableAdapter
 
     private TableUpdate doRefresh() {
         streamPublisher.flush();
+        // streamPublisher.flush() may have called acceptFailure
+        if (deliverFailures()) {
+            return null;
+        }
         // Switch columns, update RowSet, deliver notification
 
         final long oldSize = rowSet.size();
@@ -390,10 +401,6 @@ public class StreamToBlinkTableAdapter
 
         final ChunkColumnSource<?>[] capturedBufferSources;
         synchronized (this) {
-            // streamPublisher.flush() may have called acceptFailure
-            if (deliverFailures()) {
-                return null;
-            }
             newSize = bufferChunkSources == null ? 0 : bufferChunkSources[0].getSize();
 
             if (oldSize == 0 && newSize == 0) {
