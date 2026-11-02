@@ -193,4 +193,4 @@ The [`deephaven.pandas`](./use-pandas.md) module contains functions that convert
 - [Create a time table](./time-table.md)
 - [Use `deephaven.learn`](./use-deephaven-learn.md)
 - [Use `deephaven.numpy`](./use-numpy.md)
-- [Use `deephaven.pandas`](./use-pandas.md)
+- [Convert between Deephaven tables and pandas DataFrames](./use-pandas.md)

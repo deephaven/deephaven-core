@@ -181,8 +181,12 @@ public class ChunkedOperatorAggregationHelper {
         final ColumnSource<?>[] reinterpretedKeySources = Arrays.stream(keySources)
                 .map(ReinterpretUtils::maybeConvertToPrimitive).toArray(ColumnSource[]::new);
 
+        // Without initial keys, every state of an add-only or blink input is created by an add and is never emptied,
+        // so only other refreshing inputs need to record emptied and reincarnated states.
+        final boolean recordStateChanges = input.isRefreshing() && !preserveEmpty
+                && (initialKeys != null || !(input.isAddOnly() || input.isBlink()));
         final AggregationContext ac = aggregationContextFactory.makeAggregationContext(
-                input, input.isRefreshing() && !preserveEmpty, keyNames);
+                input, recordStateChanges, keyNames);
 
         final PermuteKernel[] permuteKernels = ac.makePermuteKernels();
 
@@ -283,7 +287,7 @@ public class ChunkedOperatorAggregationHelper {
                         ac.initializeRefreshing(result, this);
 
                 final StateChangeRecorder stateChangeRecorder =
-                        preserveEmpty ? null : ac.getStateChangeRecorder();
+                        recordStateChanges ? ac.getStateChangeRecorder() : null;
                 // reused by every update, so that its bitset is allocated once and grows with the output positions
                 final BitmapRandomBuilder modifiedStatesBuilder = new BitmapRandomBuilder(0);
 
