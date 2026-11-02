@@ -18,27 +18,26 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 
 public class IntegerChunkedNumericalStats implements ChunkedNumericalStatsKernel {
-    private long count = 0;
-
-    private long sum = 0;
-    private boolean useFloatingSum = false;
-    private double floatingSum = .0;
-
-    private long absSum = 0;
-    private boolean useFloatingAbsSum = false;
-    private double floatingAbsSum = .0;
-
-    private long sumOfSquares = 0;
-    private boolean useFloatingSumOfSquares = false;
-    private double floatingSumOfSquares = .0;
-
-    private int min = QueryConstants.NULL_INT;
-    private int max = QueryConstants.NULL_INT;
-    private int absMin = QueryConstants.NULL_INT;
-    private int absMax = QueryConstants.NULL_INT;
-
     @Override
     public Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev) {
+        long count = 0;
+
+        long sum = 0;
+        boolean useFloatingSum = false;
+        double floatingSum = .0;
+
+        long absSum = 0;
+        boolean useFloatingAbsSum = false;
+        double floatingAbsSum = .0;
+
+        long sumOfSquares = 0;
+        boolean useFloatingSumOfSquares = false;
+        double floatingSumOfSquares = .0;
+
+        int min = QueryConstants.NULL_INT;
+        int max = QueryConstants.NULL_INT;
+        int absMin = QueryConstants.NULL_INT;
+        int absMax = QueryConstants.NULL_INT;
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(CHUNK_SIZE)) {
             final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
@@ -149,7 +148,7 @@ public class IntegerChunkedNumericalStats implements ChunkedNumericalStatsKernel
                 useFloatingSum ? TableTools.doubleCol("SUM", floatingSum) : TableTools.longCol("SUM", sum),
                 useFloatingAbsSum ? TableTools.doubleCol("SUM_ABS", floatingAbsSum)
                         : TableTools.longCol("SUM_ABS", absSum),
-                useFloatingSumOfSquares ? TableTools.doubleCol("SQRD_SUM", floatingSumOfSquares)
+                useFloatingSumOfSquares ? TableTools.doubleCol("SUM_SQRD", floatingSumOfSquares)
                         : TableTools.longCol("SUM_SQRD", sumOfSquares),
                 TableTools.intCol("MIN", min),
                 TableTools.intCol("MAX", max),
