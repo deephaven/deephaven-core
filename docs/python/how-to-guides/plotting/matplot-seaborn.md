@@ -89,7 +89,7 @@ axis[1, 1].set_title("Tanh Function")
 
 #### 3D plots
 
-Here are [some 3D examples](https://regenerativetoday.com/five-advanced-plots-in-python-matplotlib/). The data, available from [Kaggle](https://www.kaggle.com/datasets/fazilbtopal/auto85), needs to be placed in the data directory. For more information see our guide on [Docker data volumes](../../conceptual/docker-data-volumes.md#the-data-mount-point).
+Here are [some 3D examples](https://regenerativetoday.com/five-advanced-plots-in-python-matplotlib/). The data, available from [Kaggle](https://www.kaggle.com/datasets/fazilbtopal/auto85), needs to be placed in the data directory. For more information see our guide on [Docker bind mounts](../../conceptual/docker-data-volumes.md#the-data-mount-point).
 
 ```python skip-test
 import pandas as pd

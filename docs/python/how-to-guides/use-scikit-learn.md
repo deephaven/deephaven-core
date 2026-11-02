@@ -27,7 +27,7 @@ Predicting a flower's species from these measurements is a classification proble
 - [Python with All AI and example data](https://raw.githubusercontent.com/deephaven/deephaven-core/main/containers/python-examples/All-AI/docker-compose.yml).
 
 > [!NOTE]
-> In this guide, we read data from [Deephaven's examples repository](https://github.com/deephaven/examples). You can also load files from the `/data` directory in the Docker container, which Deephaven's Docker Compose deployments mount from `./data` on your computer. See [Docker data volumes](../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
+> In this guide, we read data from [Deephaven's examples repository](https://github.com/deephaven/examples). You can also load files from the `/data` directory in the Docker container, which Deephaven's Docker Compose deployments mount from `./data` on your computer. See [Docker bind mounts](../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
 
 ## Classify the Iris dataset with pandas
 
@@ -311,7 +311,7 @@ As the thread writes each row to `live_iris`, `iris_classified_live` gains a mat
 
 ## Related documentation
 
-- [Docker data volumes](../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../conceptual/docker-data-volumes.md)
 - [Table types](../conceptual/table-types.md)
 - [Incremental update model](../conceptual/table-update-model.md)
 - [Install and run with Docker](../getting-started/docker-install.md)

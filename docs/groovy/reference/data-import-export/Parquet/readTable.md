@@ -46,7 +46,7 @@ A new in-memory table from a Parquet file, metadata file, or directory with a re
 ## Examples
 
 > [!NOTE]
-> All examples in this document use data mounted in `/data` in Deephaven. For more information on the relation between this location in Deephaven and on your local file system, see [Docker data volumes](../../../conceptual/docker-data-volumes.md).
+> All examples in this document use data mounted in `/data` in Deephaven. For more information on the relation between this location in Deephaven and on your local file system, see [Docker bind mounts](../../../conceptual/docker-data-volumes.md).
 
 ### Single Parquet file
 
@@ -138,5 +138,5 @@ Additionally, the `S3.maxFragmentSize` [configuration property](../../../how-to-
 - [Parquet instructions](../../../how-to-guides/data-import-export/parquet-instructions.md)
 - [Parquet formats](../../../how-to-guides/data-import-export/parquet-formats.md)
 - [Write Parquet files](./writeTable.md)
-- [Docker data volumes](../../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://docs.deephaven.io/core/javadoc/io/deephaven/parquet/table/ParquetTools.html#readTable(java.lang.String))
