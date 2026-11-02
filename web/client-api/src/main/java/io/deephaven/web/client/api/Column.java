@@ -171,8 +171,8 @@ public class Column {
 
     /**
      * If this column is part of a roll-up tree table, represents the type of the row data that can be found in this
-     * column for leaf nodes if {@link io.deephaven.web.client.api.tree.JsRollupConfig#includeConstituents RollupConfig.includeConstituents}
-     * is enabled. Otherwise, it is {@code null}.
+     * column for leaf nodes if {@link io.deephaven.web.client.api.tree.JsRollupConfig#includeConstituents
+     * RollupConfig.includeConstituents} is enabled. Otherwise, it is {@code null}.
      *
      * @return String
      */
