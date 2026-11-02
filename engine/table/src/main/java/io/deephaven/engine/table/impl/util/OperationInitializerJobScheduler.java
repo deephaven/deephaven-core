@@ -51,9 +51,8 @@ public class OperationInitializerJobScheduler implements JobScheduler {
      */
     private final Queue<Job> pendingJobs = new ConcurrentLinkedQueue<>();
     /**
-     * The jobs of this scheduler that the current thread is running. A job that waits in {@link #awaitCompletion} waits
-     * only for its future, since the jobs running on other threads may be waiting too, perhaps for it; a thread waiting
-     * outside the scheduler's jobs waits for them all.
+     * The jobs of this scheduler that the current thread is running. None of them may wait in {@link #awaitCompletion},
+     * which waits for every job, the waiting job included.
      */
     private final ThreadLocal<MutableInt> jobsRunningOnThisThread = ThreadLocal.withInitial(MutableInt::new);
 
@@ -100,8 +99,8 @@ public class OperationInitializerJobScheduler implements JobScheduler {
     @Override
     public <T> T awaitCompletion(@NotNull final CompletableFuture<T> future)
             throws InterruptedException, ExecutionException {
+        Assert.eqZero(jobsRunningOnThisThread.get().intValue(), "jobs of this scheduler running on the waiting thread");
         future.whenComplete((result, failure) -> signalWaiters());
-        final MutableInt jobsRunningHere = jobsRunningOnThisThread.get();
         boolean interrupted = false;
         while (true) {
             // always clear the interrupt, so that the wait below blocks
@@ -111,18 +110,13 @@ public class OperationInitializerJobScheduler implements JobScheduler {
                 // released
                 future.cancel(false);
             }
-            if (jobsRunningHere.intValue() > 0 && future.isDone()) {
-                // A job waiting for its own scheduler runs other jobs only while it must wait: one of them may be
-                // waiting for this job to finish.
-                break;
-            }
             final Job job = claimNextPendingJob();
             if (job != null) {
                 runOnWaitingThread(job);
                 continue;
             }
             synchronized (outstandingJobs) {
-                if (future.isDone() && (jobsRunningHere.intValue() > 0 || outstandingJobs.get() == 0)) {
+                if (future.isDone() && outstandingJobs.get() == 0) {
                     break;
                 }
                 if (pendingJobs.isEmpty()) {
