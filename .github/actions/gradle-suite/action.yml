@@ -45,9 +45,21 @@ runs:
       shell: bash
       run: ./gradlew --scan --continue ${{ inputs.gradle-task }}
 
-    - name: Run df -h after build
+    # Runs on failure too: an out-of-disk build needs this report most.
+    - name: Disk usage after build
+      if: always()
       shell: bash
-      run: df -h
+      run: |
+        df -h || true
+        echo '== docker system df =='
+        docker system df || true
+        echo '== docker images by size =='
+        docker images --format '{{.Size}}\t{{.Repository}}:{{.Tag}}' | sort -h | tail -n 40 || true
+        echo '== du =='
+        sudo du -xsh /var/lib/docker 2>/dev/null || true
+        du -xsh "${GRADLE_USER_HOME:-$HOME/.gradle}" "$GITHUB_WORKSPACE" /tmp "$RUNNER_TEMP" /opt/hostedtoolcache 2>/dev/null || true
+        echo '== largest build dirs =='
+        du -xs */build */*/build */*/*/build 2>/dev/null | sort -n | tail -n 25 || true
 
     - name: Upload Test Results
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
