@@ -58,8 +58,8 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
         return Js.uncheckedCast(literal);
     }
 
-    private static List<Case> cases(JsTable sourceTable) {
-        FilterCondition xIsOne = sourceTable.findColumn("X").filter().eq(FilterValue.ofNumber(1.0));
+    private static List<Case> cases() {
+        FilterCondition xIsOne = FilterValue.ofColumn("X").eq(FilterValue.ofNumber(1.0));
 
         // The trigger's stamp columns are added to the result, so they must not collide with the base table's
         JsTableOperations.SnapshotWhenOptions snapshotWhen = new JsTableOperations.SnapshotWhenOptions();
@@ -140,7 +140,7 @@ public class TableOperationsSmokeTestGwt extends AbstractAsyncGwtTestCase {
                                     .then(right -> session.getTable("grouped", null).resolve()
                                             .then(grouped -> {
                                                 List<String> failures = new ArrayList<>();
-                                                return runFrom(cases(source), 0, source.operations(), right,
+                                                return runFrom(cases(), 0, source.operations(), right,
                                                         grouped, failures)
                                                         .then(ignore -> {
                                                             source.close();

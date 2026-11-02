@@ -38,6 +38,7 @@ import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.web.client.api.agg.*;
 import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.client.api.updateby.*;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
@@ -300,10 +301,10 @@ public interface JsTableOperations extends ServerObject {
     /**
      * Creates a table that filters the contents of this table based on the provided conditions.
      *
-     * @param conditions the conditions to filter on
+     * @param conditions the conditions to filter on; {@link FilterValue#ofColumn} names a column without a resolved
+     *        table
      * @return a filtered table
      */
-    // TODO consider a simple struct that has the same shape, allows not accessing columns
     @JsMethod
     default JsPendingTable<JsResolvedTable> where(ReadonlyArray<FilterCondition> conditions) {
         Ticket ticket = getConnection().getTickets().newExportTicket();

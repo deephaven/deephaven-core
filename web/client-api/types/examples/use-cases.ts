@@ -22,12 +22,9 @@ async function tickingSorted() {
 // py: source = ...; source.where(["X > 2"])
 async function filterNamed() {
     const source = session.getObject({ type: "Table", name: "source" }) as dh.PendingTable<dh.Table>;
-    // There is no string form of a filter: a FilterCondition needs a Column, which needs a resolved table.
-    const resolved = await source;
-    const x = resolved.findColumn("X");
-    const filtered = await resolved.operations().where([x.filter().greaterThan(dh.FilterValue.ofNumber(2))]);
+    // Filters name their columns, so the fetch need not be awaited first
+    const filtered = await source.where([dh.FilterValue.ofColumn("X").greaterThan(dh.FilterValue.ofNumber(2))]);
     filtered.close();
-    resolved.close();
 }
 
 // py: left.natural_join(right, on=["Key"], joins=["Value"]); left.aj(right, on=["Key", "Ts"])
