@@ -5,7 +5,7 @@ WORKDIR /usr/src/app
 ARG WEB_VERSION=1.32.0
 ARG GRID_VERSION=1.1.0
 ARG CHART_VERSION=1.1.0
-ARG WIDGET_VERSION=1.32.0
+ARG WIDGET_VERSION=1.33.0
 
 # Pull in the published code-studio package from npmjs and extract is
 RUN set -eux; \
