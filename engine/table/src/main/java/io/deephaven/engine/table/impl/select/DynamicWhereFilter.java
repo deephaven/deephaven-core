@@ -340,7 +340,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
      * @return The matching index row keys, which the caller must close
      */
     @NotNull
-    private RowSet validIndexRowKeys(
+    private RowSet lookupIndexRowKeys(
             final long kernelGeneration,
             @NotNull final DataIndex.RowKeyLookup rowKeyLookup,
             final boolean usePrev,
@@ -430,7 +430,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         // snapshot attempt; that triggers the normal retry path and is not an error. The batcher owns everything it
         // has gathered until it is built, so an abandoned attempt releases it; what is built is closed here.
         WritableRowSet matching = null;
-        try (final RowSet indexRowKeys = validIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev, step)) {
+        try (final RowSet indexRowKeys = lookupIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev, step)) {
             // One row set per index row, and the lookup has already reduced the values to distinct row keys.
             try (final RowSetUnionBatcher batcher = new RowSetUnionBatcher(indexRowKeys.size())) {
                 // An index row set holds every source row for its key, so it is clipped to selection on the way in.
@@ -468,7 +468,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl
         final long kernelGeneration = sharedSet.beginRead();
 
         final WritableRowSet matching;
-        try (final RowSet indexRowKeys = validIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev, step)) {
+        try (final RowSet indexRowKeys = lookupIndexRowKeys(kernelGeneration, rowKeyLookup, usePrev, step)) {
             // Set keys project onto a subset of their columns here, so many of them can land on the same index row.
             // The lookup collects the row keys into a row set, which leaves each index row set taken once.
             final WritableRowSet possiblyMatching;
