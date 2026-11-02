@@ -4,11 +4,11 @@
 package io.deephaven.util;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.util.datastructures.ArrayWeakReferenceManager;
-import io.deephaven.util.datastructures.WeakReferenceManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -47,11 +47,11 @@ public final class SoftRecyclerWindow {
     private static final double WINDOW_MARGIN =
             Configuration.getInstance().getDoubleWithDefault(WINDOW_MARGIN_PROPERTY, 1.5);
     /**
-     * Every registered recycler, so that {@link #endWindowForRegisteredRecyclers()} can reach them; a recycler no
-     * longer used is collected. Recyclers are few and long-lived, so copying on each add costs little, and ending the
-     * windows walks the list without a lock.
+     * Every registered recycler, so that {@link #endWindowForRegisteredRecyclers()} can reach them. Held strongly and
+     * never removed, since every registered recycler lives for the life of the process. Accessed only from synchronized
+     * methods.
      */
-    private static final WeakReferenceManager<SoftRecycler<?>> RECYCLERS = new ArrayWeakReferenceManager<>(true);
+    private static final List<SoftRecycler<?>> RECYCLERS = new ArrayList<>();
 
     private static final SoftRecyclerWindow INSTANCE =
             new SoftRecyclerWindow(MINIMUM_WINDOW_NANOS, MAXIMUM_WINDOW_NANOS, WINDOW_MARGIN,
@@ -59,12 +59,14 @@ public final class SoftRecyclerWindow {
 
     /**
      * Register {@code recycler}, so that its window ends with every other registered recycler's, from the update
-     * graphs' cycles. A recycler that is not registered never shrinks.
+     * graphs' cycles. Registered recyclers are held strongly and never unregistered, so register only a recycler that
+     * lives for the life of the process, as the column sources' static ones do. A recycler that is not registered never
+     * shrinks.
      *
      * @param recycler The recycler to register
      * @return {@code recycler}, for the convenience of the caller
      */
-    public static <T> SoftRecycler<T> register(@NotNull final SoftRecycler<T> recycler) {
+    public static synchronized <T> SoftRecycler<T> register(@NotNull final SoftRecycler<T> recycler) {
         RECYCLERS.add(recycler);
         return recycler;
     }
@@ -86,9 +88,12 @@ public final class SoftRecyclerWindow {
      * {@link SoftRecyclerWindow}.
      */
     @VisibleForTesting
-    static void endWindowForRegisteredRecyclers() {
-        // each recycler is locked on its own, so that no borrow or return waits on more than one
-        RECYCLERS.forEachValidReference(SoftRecycler::endWindow);
+    static synchronized void endWindowForRegisteredRecyclers() {
+        // The class lock is held across every recycler's endWindow, which does very little; each recycler is locked on
+        // its own, so that no borrow or return waits on more than one.
+        for (final SoftRecycler<?> recycler : RECYCLERS) {
+            recycler.endWindow();
+        }
     }
 
     private final long minimumWindowNanos;
