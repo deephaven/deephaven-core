@@ -99,7 +99,7 @@ A CSV file located in the specified path.
 ## Examples
 
 > [!NOTE]
-> Deephaven writes files to locations relative to the base of its Docker container. See [Docker data volumes](../../../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
+> Deephaven writes files to locations relative to the base of its Docker container. See [Docker bind mounts](../../../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
 
 In the following example, `write_csv` writes the source table to `/data/output.csv`. All columns are included.
 
@@ -223,5 +223,5 @@ result = readCsv("/data/output.csv")
 
 - [CSV import via query](../../../how-to-guides/data-import-export/csv-import.md)
 - [CSV export via query](../../../how-to-guides/data-import-export/csv-export.md)
-- [Docker data volumes](../../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
 - [Javadoc](https://deephaven.io/core/javadoc/io/deephaven/csv/CsvTools.html#writeCsv(io.deephaven.engine.table.Table,java.lang.String,java.lang.String...))
