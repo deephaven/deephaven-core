@@ -6,7 +6,6 @@ properties as strings, integers, floats, or booleans with optional default value
 """
 
 from collections.abc import ItemsView, KeysView, ValuesView
-from typing import Optional
 
 import jpy
 
@@ -26,7 +25,7 @@ class Configuration(JObjectWrapper):
 
     j_object_type = _JConfiguration
 
-    def __init__(self, j_configuration: Optional[jpy.JType] = None):
+    def __init__(self, j_configuration: jpy.JType | None = None):
         """Initialize a Configuration wrapper.
 
         Args:
@@ -45,8 +44,8 @@ class Configuration(JObjectWrapper):
         return self._j_configuration
 
     def get_property(
-        self, property_name: str, default: Optional[str] = None
-    ) -> Optional[str]:
+        self, property_name: str, default: str | None = None
+    ) -> str | None:
         """Get a configuration property as a string.
 
         Args:
@@ -70,9 +69,7 @@ class Configuration(JObjectWrapper):
         except Exception as e:
             raise DHError(message=f"Failed to get property '{property_name}'") from e
 
-    def get_string(
-        self, property_name: str, default: Optional[str] = None
-    ) -> Optional[str]:
+    def get_string(self, property_name: str, default: str | None = None) -> str | None:
         """Get a configuration property as a string. Alias for get_property.
 
         Args:
@@ -88,9 +85,7 @@ class Configuration(JObjectWrapper):
         """
         return self.get_property(property_name, default)
 
-    def get_int(
-        self, property_name: str, default: Optional[int] = None
-    ) -> Optional[int]:
+    def get_int(self, property_name: str, default: int | None = None) -> int | None:
         """Get a configuration property as an integer.
 
         Args:
@@ -118,8 +113,8 @@ class Configuration(JObjectWrapper):
             ) from e
 
     def get_float(
-        self, property_name: str, default: Optional[float] = None
-    ) -> Optional[float]:
+        self, property_name: str, default: float | None = None
+    ) -> float | None:
         """Get a configuration property as a float (double).
 
         Args:
@@ -146,9 +141,7 @@ class Configuration(JObjectWrapper):
                 message=f"Failed to get float property '{property_name}'"
             ) from e
 
-    def get_bool(
-        self, property_name: str, default: Optional[bool] = None
-    ) -> Optional[bool]:
+    def get_bool(self, property_name: str, default: bool | None = None) -> bool | None:
         """Get a configuration property as a boolean.
 
         Args:
@@ -175,9 +168,7 @@ class Configuration(JObjectWrapper):
                 message=f"Failed to get boolean property '{property_name}'"
             ) from e
 
-    def get_long(
-        self, property_name: str, default: Optional[int] = None
-    ) -> Optional[int]:
+    def get_long(self, property_name: str, default: int | None = None) -> int | None:
         """Get a configuration property as a long integer.
 
         Args:

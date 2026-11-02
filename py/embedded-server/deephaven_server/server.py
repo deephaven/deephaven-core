@@ -5,7 +5,6 @@
 
 import atexit
 import sys
-from typing import List, Optional
 
 from .start_jvm import start_jvm
 
@@ -57,7 +56,7 @@ class AuthenticationHandler:
         """
         return self.j_authentication_handler.getAuthType()
 
-    def urls(self, target_url: str) -> List[str]:
+    def urls(self, target_url: str) -> list[str]:
         """
         Get the URLs for this authentication handler.
 
@@ -104,7 +103,7 @@ class Server:
         return ServerConfig(self.j_server.serverConfig())
 
     @property
-    def authentication_handlers(self) -> List[AuthenticationHandler]:
+    def authentication_handlers(self) -> list[AuthenticationHandler]:
         """
         Get the authentication handlers for the server.
 
@@ -118,11 +117,11 @@ class Server:
 
     def __init__(
         self,
-        host: Optional[str] = None,
-        port: Optional[int] = None,
-        jvm_args: Optional[List[str]] = None,
-        extra_classpath: Optional[List[str]] = None,
-        default_jvm_args: Optional[List[str]] = None,
+        host: str | None = None,
+        port: int | None = None,
+        jvm_args: list[str] | None = None,
+        extra_classpath: list[str] | None = None,
+        default_jvm_args: list[str] | None = None,
     ):
         """
         Creates a Deephaven embedded server. Only one instance can be created at this time.

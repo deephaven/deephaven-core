@@ -18,10 +18,17 @@ import java.util.Map;
 
 public class FreezeByCountOperator implements IterativeChunkedAggregationOperator {
     private final ByteArraySource rowCount;
+    /**
+     * Whether the operator only receives additions. A destination then receives at most one row, and any addition that
+     * reaches the freeze operators is to a destination that was empty when the cycle began, so no previous counts are
+     * kept.
+     */
+    private final boolean addOnly;
     private boolean inInitialization;
 
-    public FreezeByCountOperator() {
+    public FreezeByCountOperator(final boolean addOnly) {
         rowCount = new ByteArraySource();
+        this.addOnly = addOnly;
         inInitialization = true;
     }
 
@@ -81,7 +88,9 @@ public class FreezeByCountOperator implements IterativeChunkedAggregationOperato
 
     @Override
     public void startTrackingPrevValues() {
-        rowCount.startTrackingPrevValues();
+        if (!addOnly) {
+            rowCount.startTrackingPrevValues();
+        }
         inInitialization = false;
     }
 
@@ -93,6 +102,9 @@ public class FreezeByCountOperator implements IterativeChunkedAggregationOperato
     }
 
     private void setEmpty(long destination) {
+        if (addOnly) {
+            throw new UnsupportedOperationException("Add-only freeze operators do not support removals");
+        }
         final byte count = rowCount.getAndSetUnsafe(destination, (byte) 0);
         if (count != 1) {
             throw new IllegalStateException("FreezeBy only allows one row per state, old count: " + count);
@@ -100,7 +112,7 @@ public class FreezeByCountOperator implements IterativeChunkedAggregationOperato
     }
 
     boolean wasDestinationEmpty(long destination) {
-        if (inInitialization) {
+        if (inInitialization || addOnly) {
             return true;
         }
         final byte prevByte = rowCount.getPrevByte(destination);

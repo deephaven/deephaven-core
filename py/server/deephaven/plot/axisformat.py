@@ -4,8 +4,6 @@
 
 """This module implements the AxisFormat class that can be applied to format axis tick labels on a plot."""
 
-from typing import Optional
-
 import jpy
 
 from deephaven._wrapper import JObjectWrapper
@@ -55,7 +53,7 @@ class DecimalAxisFormat(AxisFormat):
 class NanosAxisFormat(AxisFormat):
     """A formatter for converting nanoseconds into formatted strings."""
 
-    def __init__(self, tz: Optional[TimeZone] = None):
+    def __init__(self, tz: TimeZone | None = None):
         """Creates a new NanosAxisFormat with the specified timezone.
 
         Args:

@@ -16,7 +16,7 @@ with_attributes(attrs: Dict[str, Any]) -> Table
 ## Parameters
 
 <ParamTable>
-<Param name="attrs>" type="Dict[str, Any]">
+<Param name="attrs" type="Dict[str, Any]">
 
 A `Dict` of table attribute names and their values.
 

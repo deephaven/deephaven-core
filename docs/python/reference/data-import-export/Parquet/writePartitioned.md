@@ -105,7 +105,7 @@ None. Writes partitioned Parquet files to the specified directory.
 ## Examples
 
 > [!NOTE]
-> All examples in this document write data to the `/data` directory in Deephaven. For more information on this directory and how it relates to your local file system, see [Docker data volumes](../../../conceptual/docker-data-volumes.md).
+> All examples in this document write data to the `/data` directory in Deephaven. For more information on this directory and how it relates to your local file system, see [Docker bind mounts](../../../conceptual/docker-data-volumes.md).
 
 ### Write a partitioned table
 
@@ -198,5 +198,5 @@ This creates the partitioned files plus `_metadata` and `_common_metadata` files
 - [`write`](./writeTable.md)
 - [`read_table`](./readTable.md)
 - [`partition_by`](../../table-operations/group-and-aggregate/partitionBy.md)
-- [Docker data volumes](../../../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../../../conceptual/docker-data-volumes.md)
 - [Pydoc](https://docs.deephaven.io/core/pydoc/code/deephaven.parquet.html#deephaven.parquet.write_partitioned)

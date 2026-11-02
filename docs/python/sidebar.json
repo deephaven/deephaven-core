@@ -1110,7 +1110,7 @@
             "label": "Configuration",
             "items": [
               {
-                "label": "Docker data volumes",
+                "label": "Docker bind mounts",
                 "path": "conceptual/docker-data-volumes.md"
               },
               {
@@ -1132,6 +1132,10 @@
               {
                 "label": "Python packages",
                 "path": "how-to-guides/install-and-use-python-packages.md"
+              },
+              {
+                "label": "Package a Deephaven Python project",
+                "path": "how-to-guides/sysadmin/setuptools-deployment.md"
               },
               {
                 "label": "Install and use Java packages",
