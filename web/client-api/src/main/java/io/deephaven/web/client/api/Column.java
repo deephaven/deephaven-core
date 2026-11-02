@@ -171,7 +171,7 @@ public class Column {
 
     /**
      * If this column is part of a roll-up tree table, represents the type of the row data that can be found in this
-     * column for leaf nodes if {@link io.deephaven.web.client.api.tree.JsRollupConfig RollupConfig.includeConstituents}
+     * column for leaf nodes if {@link io.deephaven.web.client.api.tree.JsRollupConfig#includeConstituents RollupConfig.includeConstituents}
      * is enabled. Otherwise, it is {@code null}.
      *
      * @return String
@@ -196,7 +196,7 @@ public class Column {
 
     /**
      * {@code true} if this column is a partition column. Partition columns are used for filtering uncoalesced tables -
-     * see {@link JsTable Table.isUncoalesced}.
+     * see {@link JsTable#isUncoalesced() Table.isUncoalesced}.
      *
      * @return {@code true} if the column is a partition column.
      */
