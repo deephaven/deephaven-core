@@ -7,7 +7,7 @@ them, the errors are deemed to be systemic and fatal.
 """
 
 import contextlib
-from typing import Iterator
+from collections.abc import Iterator
 
 import jpy
 

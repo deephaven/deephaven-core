@@ -7,7 +7,6 @@ for accessing resources on remote Deephaven servers."""
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import jpy
 
@@ -40,7 +39,7 @@ class BarrageSession:
     def __init__(
         self,
         j_barrage_session: jpy.JType,
-        j_managed_channel: Optional[jpy.JType] = None,
+        j_managed_channel: jpy.JType | None = None,
     ):
         """Initializes a Barrage session.
 
@@ -132,9 +131,9 @@ def barrage_session(
     auth_type: str = "Anonymous",
     auth_token: str = "",
     use_tls: bool = False,
-    tls_root_certs: Optional[bytes] = None,
-    extra_headers: Optional[dict[str, str]] = None,
-    accept_compression: Optional[Union[str, Sequence[str]]] = None,
+    tls_root_certs: bytes | None = None,
+    extra_headers: dict[str, str] | None = None,
+    accept_compression: str | Sequence[str] | None = None,
 ) -> BarrageSession:
     """Returns a Deephaven gRPC session to a remote server if a cached session is available; otherwise, creates a new
     session.
@@ -253,9 +252,9 @@ def _get_barrage_session_direct(client_config: jpy.JType, auth: str) -> BarrageS
 
 def _build_client_config(
     target_uri: str,
-    tls_root_certs: Optional[bytes],
-    extra_headers: Optional[dict[str, str]] = None,
-    accept_compression: Optional[Union[str, Sequence[str]]] = None,
+    tls_root_certs: bytes | None,
+    extra_headers: dict[str, str] | None = None,
+    accept_compression: str | Sequence[str] | None = None,
 ) -> jpy.JType:
     j_client_config_builder = _JClientConfig.builder()
     j_client_config_builder.target(_JDeephavenTarget.of(_JURI(target_uri)))

@@ -4,15 +4,13 @@
 
 """A JSON processor provider implementation using Jackson (https://github.com/FasterXML/jackson)."""
 
-from typing import Optional
-
 import jpy
 
 from . import JsonValueType, json_val
 
 
 def provider(
-    json_value_type: JsonValueType, factory: Optional[jpy.JType] = None
+    json_value_type: JsonValueType, factory: jpy.JType | None = None
 ) -> jpy.JType:
     """Creates a Jackson JSON named object processor provider.
 
