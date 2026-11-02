@@ -61,7 +61,7 @@ mergeSorted(String keyColumn, Collection<Table> tables)
 `keyColumn` is the name of the key column, and `tables` are the source tables.
 
 > [!NOTE]
-> Each input table must already be sorted by the key column in ascending order, or the results are undefined. `mergeSorted` does not support ticking tables. Unlike [`merge`](../reference/table-operations/merge/merge.md), `mergeSorted` does not skip `null` inputs.
+> Each input table must already be sorted by the key column in ascending order, or the results are undefined. `mergeSorted` does not support ticking tables. Unlike [`merge`](../reference/table-operations/merge/merge.md), `mergeSorted` does not skip `null` inputs. Every input table must have the same column names, in any order, and each column must have the same type in every table.
 
 When the key column contains no null values, `mergeSorted` produces the same table as `merge` followed by [`sort`](../reference/table-operations/sort/sort.md). It interleaves rows that are already in order instead of sorting the whole merged table, so it typically does less work. The following example merges all three tables by `Number` both ways:
 

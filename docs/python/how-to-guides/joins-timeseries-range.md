@@ -177,12 +177,7 @@ result = trades.raj(
 
 ## Range joins
 
-[`range_join`](../reference/table-operations/join/range-join.md) creates a new table containing _all_ of the rows and columns of the left table, plus additional columns containing aggregated data from the right table. It is a join plus an aggregation that:
-
-- Joins arrays of data from the right table onto the left table.
-- Aggregates over the joined data.
-
-Each cell in an appended column aggregates the right-table rows that fall in the range its left-table row defines. This set of rows is the row's _responsive range_.
+[`range_join`](../reference/table-operations/join/range-join.md) creates a new table containing _all_ of the rows and columns of the left table, plus additional columns containing aggregated data from the right table. Each left-table row defines a range, and the right-table rows that fall in it are the row's _responsive range_. The range join applies the requested aggregation directly to each responsive range, so each cell in an appended column holds the aggregated result for its left-table row.
 
 ### Range join syntax
 
@@ -215,7 +210,7 @@ The [match expressions](../reference/table-operations/join/range-join.md#match-e
 
 ### Range join examples
 
-The following example joins two tables with `range_join`. It uses only a range match, with no exact-match columns. The range match expression matches each left-table row to the right-table rows whose `RightValue` is greater than that row's `LeftStartValue` and less than its `LeftEndValue`. The `group` aggregation groups the right table's `Y` values for each left-table row into the `Y` column of `result`.
+The following example joins two tables with `range_join`. It uses only a range match, with no exact-match columns. The range match expression matches each left-table row to the right-table rows whose `RightValue` is greater than that row's `LeftStartValue` and less than its `LeftEndValue`. The `group` aggregation groups the right table's `Y` values for each left-table row into a [vector](../conceptual/arrays-vs-vectors.md) in the `Y` column of `result`.
 
 ```python test-set=2 order=result,left,right
 from deephaven import empty_table
