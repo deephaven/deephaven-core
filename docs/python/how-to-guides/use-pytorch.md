@@ -31,7 +31,7 @@ The Iris flower dataset is a popular dataset commonly used in introductory machi
 Predicting a flower's species from these measurements is a classification problem suitable for a supervised machine learning algorithm.
 
 > [!NOTE]
-> In this guide, we read data from [Deephaven's examples repository](https://github.com/deephaven/examples). You can also load files from the `/data` directory, which the [Deephaven Docker Compose deployments](../getting-started/docker-install.md) mount into the container from `./data` in the deployment directory. See [Docker data volumes](../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
+> In this guide, we read data from [Deephaven's examples repository](https://github.com/deephaven/examples). You can also load files from the `/data` directory, which the [Deephaven Docker Compose deployments](../getting-started/docker-install.md) mount into the container from `./data` in the deployment directory. See [Docker bind mounts](../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
 
 ## Classify the Iris dataset with pandas
 
@@ -408,7 +408,7 @@ As new measurements arrive, `iris_predicted_live` gains rows with a `PredictedCl
 
 ## Related documentation
 
-- [Docker data volumes](../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../conceptual/docker-data-volumes.md)
 - [Incremental update model](../conceptual/table-update-model.md)
 - [Table types](../conceptual/table-types.md)
 - [Install and run with Docker](../getting-started/docker-install.md)

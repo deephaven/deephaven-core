@@ -46,7 +46,7 @@ iris = readCsv("/data/examples/Iris/csv/iris.csv")
 
 #### The `/data` mount point
 
-The Compose examples in the [Docker install guide](../../getting-started/docker-install.md) mount `./data:/data` in `docker-compose.yml`. With that mount, Docker shares the `data` folder next to your `docker-compose.yml` file with the running Deephaven container at `/data`. See [Docker data volumes](../../conceptual/docker-data-volumes.md) for more about how container paths map to your computer. A file you save at `./data/abc/file.csv` on your computer is readable in Deephaven at `/data/abc/file.csv`. A container started with `docker run` and no `-v` option still has a `/data` directory, but Docker doesn't share it with your computer.
+The Compose examples in the [Docker install guide](../../getting-started/docker-install.md) mount `./data:/data` in `docker-compose.yml`. With that mount, Docker shares the `data` folder next to your `docker-compose.yml` file with the running Deephaven container at `/data`. See [Docker bind mounts](../../conceptual/docker-data-volumes.md) for more about how container paths map to your computer. A file you save at `./data/abc/file.csv` on your computer is readable in Deephaven at `/data/abc/file.csv`. A container started with `docker run` and no `-v` option still has a `/data` directory, but Docker doesn't share it with your computer.
 
 > [!NOTE]
 > With that mount, if the `./data` directory does not exist when you launch Deephaven, Docker creates it.

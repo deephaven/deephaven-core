@@ -992,7 +992,7 @@
             "label": "Configuration",
             "items": [
               {
-                "label": "Docker data volumes",
+                "label": "Docker bind mounts",
                 "path": "conceptual/docker-data-volumes.md"
               },
               {
