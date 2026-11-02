@@ -72,6 +72,7 @@ class UdfScalarArgsTest(BaseTestCase):
             ": object",
             ": Any",
             ": Optional[Any]",
+            ": object | None",
         }
         x_formula = "X = i % 10"
         for th in type_hints:
@@ -146,19 +147,20 @@ def test_udf(col: {np_type}) -> bool: # no auto DH null conversion
                             0, res.to_string(num_rows=10, cols="Z").count("true")
                         )
 
-                    func = f"""
-def test_udf(col: Optional[{np_type}]) -> bool: # Optional enables auto DH null conversion to None
+                    for nullable in (f"Optional[{np_type}]", f"{np_type} | None"):
+                        func = f"""
+def test_udf(col: {nullable}) -> bool: # Optional enables auto DH null conversion to None
     if col is None:
         return True
     return False
 """
-                    exec(func, globals())
-                    with self.subTest(data_type):
-                        tbl = empty_table(10).update([x_formula, y_formula])
-                        res = tbl.update("Z = test_udf(Y)")
-                        self.assertEqual(
-                            5, res.to_string(num_rows=10, cols="Z").count("true")
-                        )
+                        exec(func, globals())
+                        with self.subTest(f"{data_type} {nullable}"):
+                            tbl = empty_table(10).update([x_formula, y_formula])
+                            res = tbl.update("Z = test_udf(Y)")
+                            self.assertEqual(
+                                5, res.to_string(num_rows=10, cols="Z").count("true")
+                            )
 
     def test_python_typehints(self):
         x_formula = "X = i % 10"
@@ -201,19 +203,20 @@ def test_udf(col: {py_type}) -> bool: # no auto DH null conversion
                             0, res.to_string(num_rows=10, cols="Z").count("true")
                         )
 
-                    func = f"""
-def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null conversion to None
+                    for nullable in (f"Optional[{py_type}]", f"{py_type} | None"):
+                        func = f"""
+def test_udf(col: {nullable}) -> bool: # Optional enables auto DH null conversion to None
     if col is None:
         return True
     return False
                     """
-                    exec(func, globals())
-                    with self.subTest(data_type):
-                        tbl = empty_table(10).update([x_formula, y_formula])
-                        res = tbl.update("Z = test_udf(Y)")
-                        self.assertEqual(
-                            5, res.to_string(num_rows=10, cols="Z").count("true")
-                        )
+                        exec(func, globals())
+                        with self.subTest(f"{data_type} {nullable}"):
+                            tbl = empty_table(10).update([x_formula, y_formula])
+                            res = tbl.update("Z = test_udf(Y)")
+                            self.assertEqual(
+                                5, res.to_string(num_rows=10, cols="Z").count("true")
+                            )
 
     def test_str_bool_datetime(self):
         with self.subTest("str"):
@@ -294,6 +297,12 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
 
             t2 = t.update(["Z = test_udf(Y)"])
             self.assertEqual(5, t2.to_string(cols="Z").count("true"))
+
+            def test_udf(p1: np.datetime64 | None, p2=None) -> bool:
+                return p1 is None
+
+            t3 = t.update(["Z = test_udf(Y)"])
+            self.assertEqual(5, t3.to_string(cols="Z").count("true"))
 
         with self.subTest("pd.Timestamp"):
 
@@ -439,6 +448,34 @@ def test_udf(x: {np_type}) -> bool:
 
             t = empty_table(10).update("X = test_udf((float)i)")
             self.assertEqual(10, t.to_string().count("true"))
+
+        with self.subTest("X | Y unions select the same way as Union[X, Y]"):
+
+            def test_udf(x: np.int64 | float | int) -> bool:
+                return type(x) is int
+
+            t = empty_table(10).update("X = test_udf(ii)")
+            self.assertEqual(10, t.to_string().count("true"))
+
+            def test_udf(x: np.float32 | float | int) -> bool:
+                return type(x) is float
+
+            t = empty_table(10).update("X = test_udf((float)i)")
+            self.assertEqual(10, t.to_string().count("true"))
+
+    def test_future_annotations_with_quoted_hints(self):
+        # Under `from __future__ import annotations`, a hand-quoted hint is a string inside a string, so a single
+        # eval_str pass leaves it a string.
+        func_str = """
+from __future__ import annotations
+
+def test_udf(col: "np.int32 | None") -> "list[int] | None":
+    return None if col is None else [col]
+"""
+        exec(func_str, globals())
+        t = empty_table(10).update(["Y = i % 2 == 0? NULL_INT : i", "Z = test_udf(Y)"])
+        self.assertEqual(t.columns[1].data_type, dtypes.long_array)
+        self.assertEqual(5, t.to_string(cols="Z").count("null"))
 
     def test_positional_keyword_parameters(self):
         with self.subTest("positional only params"):

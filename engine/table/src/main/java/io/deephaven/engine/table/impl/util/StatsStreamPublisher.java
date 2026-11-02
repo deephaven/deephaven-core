@@ -12,6 +12,7 @@ import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -67,6 +68,10 @@ class StatsStreamPublisher implements StreamPublisher {
             long avg,
             long sum2,
             long stdev) {
+        if (chunks == null) {
+            // Shut down: the blink table is gone, so there is nothing to publish to.
+            return;
+        }
         chunks[0].<String>asWritableObjectChunk().add(id);
         chunks[1].asWritableLongChunk().add(DateTimeUtils.millisToNanos(nowMillis));
         chunks[2].<String>asWritableObjectChunk().add(name);
@@ -87,7 +92,7 @@ class StatsStreamPublisher implements StreamPublisher {
 
     @Override
     public synchronized void flush() {
-        if (chunks[0].size() == 0) {
+        if (chunks == null || chunks[0].size() == 0) {
             return;
         }
         flushInternal();
@@ -103,5 +108,12 @@ class StatsStreamPublisher implements StreamPublisher {
     }
 
     @Override
-    public void shutdown() {}
+    public synchronized void shutdown() {
+        if (chunks == null) {
+            return;
+        }
+        // The blink table is being destroyed; any pending rows will never be delivered.
+        SafeCloseableArray.close(chunks);
+        chunks = null;
+    }
 }

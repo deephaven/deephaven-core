@@ -20,7 +20,7 @@ The user-defined formula to apply to each group. This formula can contain:
 
 - Built-in functions such as `min`, `max`, etc.
 - Mathematical operations such as `*`, `+`, `/`, etc.
-- [User-defined closures](../../../how-to-guides/groovy-closures.md)
+- [Groovy closures in queries](../../../how-to-guides/groovy-closures.md)
 
 The formula is typically specified as `OutputColumn = Expression` (when `paramToken` is `null`). The formula is applied to any column or literal value present in the formula. For example, `Out = KeyColumn * max(ValueColumn)`, produces an output column with the name `Out` and uses `KeyColumn` and `ValueColumn` as inputs.
 
