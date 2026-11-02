@@ -65,7 +65,6 @@ The following example calls static methods of `Math`, creates a `UUID` with a co
 ```python order=source,source_meta
 from deephaven import empty_table
 
-# Query strings import java.util by default, so UUID needs no import
 source = empty_table(1).update(
     [
         "RandomValueStaticMethod = Math.random()",
