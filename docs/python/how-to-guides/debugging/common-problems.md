@@ -89,11 +89,11 @@ def udf(x) -> int:
 
 t = time_table("PT1s").update("X = ii")
 
-# the script ends, and the server stops, before an update calls udf
+# the script can end, and the server stop, before an update thread calls udf
 t_new = t.update("Y = udf(X)")
 ```
 
-The script ends before the UDF is ever called, and the debugger never stops at the breakpoint. To remedy this in a script that starts its own server, keep the process alive with a call to [`time.sleep`](https://docs.python.org/3/library/time.html#time.sleep) at the end of the script:
+Whether the debugger stops depends on timing. If the time table already has rows when `t_new` is created, the initial `update` calls `udf` on the main thread, and the debugger stops there once. Calls for rows added later happen on Deephaven's update threads. The script ends right after creating `t_new`, so those calls usually never run, and the debugger never stops for them. To remedy this in a script that starts its own server, keep the process alive with a call to [`time.sleep`](https://docs.python.org/3/library/time.html#time.sleep) at the end of the script:
 
 ```python skip-test
 # keep the process alive so the server keeps running and updates call udf
