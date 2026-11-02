@@ -39,7 +39,7 @@ public interface IncrementalOperatorAggregationStateManager extends OperatorAggr
      *
      * @return the step of the last update cycle that began, or {@link io.deephaven.util.QueryConstants#NULL_LONG}
      */
-    long updateCycleStep();
+    long lastStateChangeStep();
 
     void startTrackingPrevValues();
 

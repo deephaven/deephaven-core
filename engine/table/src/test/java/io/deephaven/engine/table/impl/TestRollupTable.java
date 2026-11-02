@@ -549,24 +549,24 @@ public class TestRollupTable extends RefreshingTableTestCase {
     }
 
     /**
-     * Filtering a rollup on its group-by columns filters its base level's row lookup, which has no update cycle step to
+     * Filtering a rollup on its group-by columns filters its base level's row lookup, which has no state change step to
      * report, since the filtered rows change with the filter's result rather than the aggregation's hash table.
      */
     @Test
-    public void testFilteredBaseLevelLookupHasNoUpdateCycleStep() {
+    public void testFilteredBaseLevelLookupHasNoStateChangeStep() {
         final Table source = emptyTable(12).update("Key = (int) (ii % 3)", "Value = ii");
         final RollupTableImpl rollup = (RollupTableImpl) source.rollup(List.of(AggSum("Value")), false, "Key");
         final AggregationRowLookup lookup = rollup.baseLevelRowLookup();
         assertTrue(lookup.get(2) >= 0);
         // the aggregation of a static source never changes
-        assertEquals(QueryConstants.NULL_LONG, lookup.updateCycleStep());
+        assertEquals(QueryConstants.NULL_LONG, lookup.lastStateChangeStep());
 
         final RollupTableImpl filtered =
                 (RollupTableImpl) rollup.withFilter(WhereFilterFactory.getExpression("Key = 1"));
         final AggregationRowLookup filteredLookup = filtered.baseLevelRowLookup();
         assertTrue(filteredLookup.get(1) >= 0);
         assertEquals(AggregationRowLookup.DEFAULT_UNKNOWN_ROW, filteredLookup.get(2));
-        Assert.assertThrows(UnsupportedOperationException.class, filteredLookup::updateCycleStep);
+        Assert.assertThrows(UnsupportedOperationException.class, filteredLookup::lastStateChangeStep);
     }
 
     private Table snapshotFilteredRollup(RollupTable rollup) {

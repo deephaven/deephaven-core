@@ -40,9 +40,10 @@ import java.util.function.LongConsumer;
  * <p>
  * The aggregation never moves or removes a key's state, so a key's row key is fixed once assigned, and a probe answers
  * for previous values as well as current ones. A refreshing aggregation changes its hash table only in its update
- * cycle, which it {@link IncrementalOperatorAggregationStateManager#updateCycleStep() marks} before the first change. A
- * probe on another thread reads the clock's step first, and is abandoned, so that the filter scans the column, when a
- * cycle at that step or later began, filtering previous values, or a later cycle began, filtering current ones.
+ * cycle, which it {@link IncrementalOperatorAggregationStateManager#lastStateChangeStep() marks} before the first
+ * change. A probe on another thread reads the clock's step first, and is abandoned, so that the filter scans the
+ * column, when a cycle at that step or later began, filtering previous values, or a later cycle began, filtering
+ * current ones.
  *
  * <p>
  * The key source's time conversions are delegated as well, so that a key column reinterprets as the column it was
@@ -272,8 +273,8 @@ public final class AggregationKeyColumnSource<T> extends DelegatingColumnSource<
         }
         // a volatile read does not keep the hash table reads before it from happening after it
         VarHandle.acquireFence();
-        final long updateCycleStep = incrementalStateManager.updateCycleStep();
-        return usePrev ? updateCycleStep < step : updateCycleStep <= step;
+        final long lastStateChangeStep = incrementalStateManager.lastStateChangeStep();
+        return usePrev ? lastStateChangeStep < step : lastStateChangeStep <= step;
     }
 
     /**

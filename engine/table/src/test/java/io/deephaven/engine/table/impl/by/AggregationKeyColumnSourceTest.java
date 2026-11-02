@@ -251,19 +251,19 @@ public class AggregationKeyColumnSourceTest {
 
     /**
      * The row lookups of a static aggregation built from a data index and of a no-key aggregation never change, so
-     * neither reports an update cycle step.
+     * neither reports a state change step.
      */
     @Test
-    public void testStaticIndexedAndNoKeyLookupsHaveNoUpdateCycleStep() {
+    public void testStaticIndexedAndNoKeyLookupsHaveNoStateChangeStep() {
         final Table source = TableTools.emptyTable(12).update("Key = (int) (ii % 3)", "Value = ii");
         DataIndexer.getOrCreateDataIndex(source, "Key").table();
         final Table indexed = source.lastBy("Key");
         assertTrue(AggregationProcessor.getRowLookup(indexed).get(2) >= 0);
-        assertEquals(QueryConstants.NULL_LONG, AggregationProcessor.getRowLookup(indexed).updateCycleStep());
+        assertEquals(QueryConstants.NULL_LONG, AggregationProcessor.getRowLookup(indexed).lastStateChangeStep());
 
         final Table noKey = source.view("Value").sumBy();
         assertEquals(0, AggregationProcessor.getRowLookup(noKey).get(AggregationRowLookup.EMPTY_KEY));
-        assertEquals(QueryConstants.NULL_LONG, AggregationProcessor.getRowLookup(noKey).updateCycleStep());
+        assertEquals(QueryConstants.NULL_LONG, AggregationProcessor.getRowLookup(noKey).lastStateChangeStep());
     }
 
     @Test

@@ -50,8 +50,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     /** Should we rehash the entire table fully ({@code true}) or incrementally ({@code false})? */
     protected boolean fullRehash = true;
 
-    /** The step of the last update cycle that began; see {@link #updateCycleStep()}. */
-    private volatile long updateCycleStep = QueryConstants.NULL_LONG;
+    /** The step of the last update cycle that began; see {@link #lastStateChangeStep()}. */
+    private volatile long lastStateChangeStep = QueryConstants.NULL_LONG;
 
     /** How much of the alternate sources are necessary to rehash? */
     protected int rehashPointer = 0;
@@ -404,7 +404,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     @Override
     public void beginUpdateCycle(final long step) {
-        updateCycleStep = step;
+        lastStateChangeStep = step;
         // a volatile write does not keep the hash table writes that follow from becoming visible before it
         VarHandle.storeStoreFence();
         // Once we're past initial state processing, we want to rehash incrementally.
@@ -420,8 +420,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
     }
 
     @Override
-    public long updateCycleStep() {
-        return updateCycleStep;
+    public long lastStateChangeStep() {
+        return lastStateChangeStep;
     }
 
     protected abstract void probe(RowSequence chunkOk, Chunk[] sourceKeyChunks);

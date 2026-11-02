@@ -80,12 +80,12 @@ public interface AggregationRowLookup {
 
     /**
      * The step of the last update cycle in which the aggregation began to change the structure this lookup reads, for a
-     * reader on another thread; see {@link IncrementalOperatorAggregationStateManager#updateCycleStep()}.
+     * reader on another thread; see {@link IncrementalOperatorAggregationStateManager#lastStateChangeStep()}.
      *
      * @return The step of the last update cycle that began, or {@link QueryConstants#NULL_LONG} if the structure never
      *         changes
      */
-    long updateCycleStep();
+    long lastStateChangeStep();
 
     /**
      * Implement {@link #get(Chunk[], WritableLongChunk)} by boxing each key and calling {@link #get(Object)} on

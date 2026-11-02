@@ -387,10 +387,10 @@ public class ChunkedOperatorAggregationHelper {
             }
 
             @Override
-            public long updateCycleStep() {
+            public long lastStateChangeStep() {
                 return incrementalStateManager == null
                         ? QueryConstants.NULL_LONG
-                        : incrementalStateManager.updateCycleStep();
+                        : incrementalStateManager.lastStateChangeStep();
             }
         });
         return stateManager;
@@ -1738,7 +1738,7 @@ public class ChunkedOperatorAggregationHelper {
                 }
 
                 @Override
-                public long updateCycleStep() {
+                public long lastStateChangeStep() {
                     // the aggregation of a static source never changes
                     return QueryConstants.NULL_LONG;
                 }
@@ -2313,7 +2313,7 @@ public class ChunkedOperatorAggregationHelper {
             }
 
             @Override
-            public long updateCycleStep() {
+            public long lastStateChangeStep() {
                 // the only key is always at row 0
                 return QueryConstants.NULL_LONG;
             }

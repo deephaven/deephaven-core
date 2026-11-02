@@ -223,7 +223,7 @@ public class TableBackedDataIndex extends AbstractDataIndex {
                 }
                 // a volatile read does not keep the hash table reads before it from happening after it
                 VarHandle.acquireFence();
-                return lookupFunction.updateCycleStep();
+                return lookupFunction.lastStateChangeStep();
             }
         };
     }

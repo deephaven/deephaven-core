@@ -298,7 +298,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             }
 
             @Override
-            public long updateCycleStep() {
+            public long lastStateChangeStep() {
                 // Read only under rollup snapshot control. The filtered row set changes with the filtered base level,
                 // which the base level's step does not track.
                 throw new UnsupportedOperationException(
