@@ -10,7 +10,6 @@ package io.deephaven.engine.table.impl.by.ssmcountdistinct.count;
 import io.deephaven.engine.table.impl.util.compact.EqualsConsistentObjectCompactKernel;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.compactmodifications.EqualsConsistentObjectCompactModifications;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -368,10 +367,11 @@ public class ObjectChunkedCountDistinctOperator implements IterativeChunkedAggre
 
     @Override
     public void shift(RowSetShiftData shiftData) {
-        // the states whose deltas are cleared at the end of the cycle move with the shift; only a refreshing
-        // aggregation shifts, and it tracks them from startTrackingPrevValues
-        Assert.neqNull(touchedStates, "touchedStates");
-        shiftData.apply(touchedStates);
+        // the states whose deltas are cleared at the end of the cycle move with the shift; they are tracked only when
+        // the SSMs are exposed, since nothing else reads their deltas
+        if (touchedStates != null) {
+            shiftData.apply(touchedStates);
+        }
         ssms.shift(shiftData);
         resultColumn.shift(shiftData);
     }
