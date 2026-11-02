@@ -321,7 +321,7 @@ builder.addTable(
 
 Omit the follower key columns to reuse the leader's key column names.
 
-Use at most 31 follower tables. [`build`](/core/javadoc/io/deephaven/engine/util/LeaderTableFilter.TableBuilder.html#build()) accepts 32, but the filter doesn't release leader rows correctly with 32 followers. It throws an `IllegalArgumentException` if you add more than 32.
+A leader table can have up to 32 follower tables. [`build`](/core/javadoc/io/deephaven/engine/util/LeaderTableFilter.TableBuilder.html#build()) throws an `IllegalArgumentException` if you add more.
 
 Build and retrieve the synchronized tables:
 
