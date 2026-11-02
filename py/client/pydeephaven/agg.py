@@ -5,7 +5,6 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, Union
 
 import numpy as np
 
@@ -39,7 +38,7 @@ class Aggregation(ABC):
 @dataclass
 class _AggregationColumns(Aggregation):
     agg_spec: _GrpcAggSpec
-    cols: Union[str, list[str]]
+    cols: str | list[str]
 
     def make_grpc_message(self) -> _GrpcAggregation:
         agg_columns = _GrpcAggregationColumns(
@@ -60,7 +59,7 @@ class _AggregationCount(Aggregation):
 @dataclass
 class _AggregationCountWhere(Aggregation):
     col: str
-    filters: Union[str, list[str]]
+    filters: str | list[str]
 
     def make_grpc_message(self) -> _GrpcAggregation:
         agg_count_where = _GrpcAggregationCountWhere(
@@ -90,7 +89,7 @@ class _AggregationPartition(Aggregation):
         return _GrpcAggregation(partition=agg_count)
 
 
-def sum_(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
+def sum_(cols: str | list[str] | None = None) -> Aggregation:
     """Creates a Sum aggregation.
 
     Args:
@@ -104,7 +103,7 @@ def sum_(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def abs_sum(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
+def abs_sum(cols: str | list[str] | None = None) -> Aggregation:
     """Creates an Absolute-sum aggregation.
 
     Args:
@@ -118,7 +117,7 @@ def abs_sum(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def group(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
+def group(cols: str | list[str] | None = None) -> Aggregation:
     """Creates a Group aggregation.
 
     Args:
@@ -132,7 +131,7 @@ def group(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def avg(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
+def avg(cols: str | list[str] | None = None) -> Aggregation:
     """Creates an Average aggregation.
 
     Args:
@@ -158,7 +157,7 @@ def count_(col: str) -> Aggregation:
     return _AggregationCount(col=col)
 
 
-def count_where(col: str, filters: Union[str, list[str]]) -> Aggregation:
+def count_where(col: str, filters: str | list[str]) -> Aggregation:
     """Creates a Count aggregation. This is not supported in 'Table.agg_all_by'.
 
     Args:
@@ -185,7 +184,7 @@ def partition(col: str, include_by_columns: bool = True) -> Aggregation:
 
 
 def count_distinct(
-    cols: Optional[Union[str, list[str]]] = None, count_nulls: bool = False
+    cols: str | list[str] | None = None, count_nulls: bool = False
 ) -> Aggregation:
     """Creates a Count Distinct aggregation which computes the count of distinct values within an aggregation group for
     each of the given columns.
@@ -204,7 +203,7 @@ def count_distinct(
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def first(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
+def first(cols: str | list[str] | None = None) -> Aggregation:
     """Creates a First aggregation.
 
     Args:
@@ -220,8 +219,8 @@ def first(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
 
 def formula(
     formula: str,
-    formula_param: Optional[str] = None,
-    cols: Optional[Union[str, list[str]]] = None,
+    formula_param: str | None = None,
+    cols: str | list[str] | None = None,
 ) -> Aggregation:
     """Creates a user defined formula aggregation. This formula can contain a combination of any of the following:
         |  Built-in functions such as `min`, `max`, etc.
@@ -263,7 +262,7 @@ def formula(
     return _AggregationFormula(selectable=selectable)
 
 
-def last(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
+def last(cols: str | list[str] | None = None) -> Aggregation:
     """Creates a Last aggregation.
 
     Args:
@@ -277,7 +276,7 @@ def last(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def min_(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
+def min_(cols: str | list[str] | None = None) -> Aggregation:
     """Creates a Min aggregation.
 
     Args:
@@ -291,7 +290,7 @@ def min_(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def max_(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
+def max_(cols: str | list[str] | None = None) -> Aggregation:
     """Creates a Max aggregation.
 
     Args:
@@ -306,7 +305,7 @@ def max_(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
 
 
 def median(
-    cols: Optional[Union[str, list[str]]] = None, average_evenly_divided: bool = True
+    cols: str | list[str] | None = None, average_evenly_divided: bool = True
 ) -> Aggregation:
     """Creates a Median aggregation which computes the median value within an aggregation group for each of the
     given columns.
@@ -329,7 +328,7 @@ def median(
 
 def pct(
     percentile: float,
-    cols: Optional[Union[str, list[str]]] = None,
+    cols: str | list[str] | None = None,
     average_evenly_divided: bool = False,
 ) -> Aggregation:
     """Creates a Percentile aggregation which computes the percentile value within an aggregation group for each of
@@ -354,9 +353,7 @@ def pct(
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def sorted_first(
-    order_by: str, cols: Optional[Union[str, list[str]]] = None
-) -> Aggregation:
+def sorted_first(order_by: str, cols: str | list[str] | None = None) -> Aggregation:
     """Creates a SortedFirst aggregation.
 
     Args:
@@ -374,9 +371,7 @@ def sorted_first(
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def sorted_last(
-    order_by: str, cols: Optional[Union[str, list[str]]] = None
-) -> Aggregation:
+def sorted_last(order_by: str, cols: str | list[str] | None = None) -> Aggregation:
     """Creates a SortedLast aggregation.
 
     Args:
@@ -394,7 +389,7 @@ def sorted_last(
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def std(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
+def std(cols: str | list[str] | None = None) -> Aggregation:
     """Creates a Std (sample standard deviation) aggregation.
 
     Sample standard deviation is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
@@ -412,9 +407,9 @@ def std(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
 
 
 def unique(
-    cols: Optional[Union[str, list[str]]] = None,
+    cols: str | list[str] | None = None,
     include_nulls: bool = False,
-    non_unique_sentinel: Optional[Union[np.number, str, bool]] = None,
+    non_unique_sentinel: np.number | str | bool | None = None,
 ) -> Aggregation:
     """Creates a Unique aggregation which computes the single unique value within an aggregation group for each of
     the given columns. If all values in a column are null, or if there is more than one distinct value in a column, the
@@ -491,7 +486,7 @@ def unique(
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def var(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
+def var(cols: str | list[str] | None = None) -> Aggregation:
     """Creates a sample Variance aggregation.
 
     Sample variance is computed using `Bessel's correction <https://en.wikipedia.org/wiki/Bessel%27s_correction>`_,
@@ -508,9 +503,7 @@ def var(cols: Optional[Union[str, list[str]]] = None) -> Aggregation:
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def weighted_avg(
-    wcol: str, cols: Optional[Union[str, list[str]]] = None
-) -> Aggregation:
+def weighted_avg(wcol: str, cols: str | list[str] | None = None) -> Aggregation:
     """Creates a Weighted-average aggregation.
 
     Args:
@@ -527,9 +520,7 @@ def weighted_avg(
     return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def weighted_sum(
-    wcol: str, cols: Optional[Union[str, list[str]]] = None
-) -> Aggregation:
+def weighted_sum(wcol: str, cols: str | list[str] | None = None) -> Aggregation:
     """Creates a Weighted-sum aggregation.
 
     Args:
@@ -547,7 +538,7 @@ def weighted_sum(
 
 
 def distinct(
-    cols: Optional[Union[str, list[str]]] = None, include_nulls: bool = False
+    cols: str | list[str] | None = None, include_nulls: bool = False
 ) -> Aggregation:
     """Creates a Distinct aggregation which computes the distinct values within an aggregation group for each of the
     given columns and stores them as vectors.

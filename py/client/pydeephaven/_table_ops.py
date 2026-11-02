@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
 
@@ -54,14 +54,14 @@ class TableOp(ABC):
     @abstractmethod
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any: ...
 
     @abstractmethod
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any: ...
 
@@ -73,14 +73,14 @@ class NoneOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         raise AssertionError("should never be called.")
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         raise AssertionError("should never be called.")
@@ -90,12 +90,12 @@ class NoneOp(TableOp):
 
 
 class TimeTableOp(TableOp):
-    start_time: Union[int, str]
+    start_time: int | str
 
     def __init__(
         self,
-        start_time: Optional[Union[int, str]],
-        period: Union[int, str],
+        start_time: int | str | None,
+        period: int | str,
         blink_table: bool = False,
     ):
         if start_time is None:
@@ -112,8 +112,8 @@ class TimeTableOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.TimeTableRequest(
             result_id=result_id,
@@ -130,7 +130,7 @@ class TimeTableOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -148,14 +148,14 @@ class EmptyTableOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.EmptyTableRequest(result_id=result_id, size=self.size)
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -173,8 +173,8 @@ class DropColumnsOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.DropColumnsRequest(
             result_id=result_id, source_id=source_id, column_names=self.column_names
@@ -182,7 +182,7 @@ class DropColumnsOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -197,8 +197,8 @@ class USVOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.SelectOrUpdateRequest(
             result_id=result_id, source_id=source_id, column_specs=self.column_specs
@@ -215,7 +215,7 @@ class UpdateOp(USVOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -233,7 +233,7 @@ class LazyUpdateOp(USVOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -251,7 +251,7 @@ class ViewOp(USVOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -269,7 +269,7 @@ class UpdateViewOp(USVOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -287,7 +287,7 @@ class SelectOp(USVOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -305,8 +305,8 @@ class SelectDistinctOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.SelectDistinctRequest(
             result_id=result_id, source_id=source_id, column_names=self.column_names
@@ -314,7 +314,7 @@ class SelectDistinctOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -334,8 +334,8 @@ class UnstructuredFilterOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.UnstructuredFilterTableRequest(
             result_id=result_id, source_id=source_id, filters=self.filters
@@ -343,7 +343,7 @@ class UnstructuredFilterOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -363,8 +363,8 @@ class FilterOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.FilterTableRequest(
             result_id=result_id,
@@ -374,7 +374,7 @@ class FilterOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -393,8 +393,8 @@ class SortOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         from itertools import zip_longest
 
@@ -414,7 +414,7 @@ class SortOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -427,8 +427,8 @@ class HeadOrTailOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.HeadOrTailRequest(
             result_id=result_id, source_id=source_id, num_rows=self.num_rows
@@ -445,7 +445,7 @@ class HeadOp(HeadOrTailOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -463,7 +463,7 @@ class TailOp(HeadOrTailOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -477,8 +477,8 @@ class HeadOrTailByOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.HeadOrTailByRequest(
             result_id=result_id,
@@ -499,7 +499,7 @@ class HeadByOp(HeadOrTailByOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -518,7 +518,7 @@ class TailByOp(HeadOrTailByOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -537,8 +537,8 @@ class UngroupOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.UngroupRequest(
             result_id=result_id,
@@ -549,7 +549,7 @@ class UngroupOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -568,8 +568,8 @@ class MergeTablesOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         table_references = []
         for tbl in self.tables:
@@ -581,7 +581,7 @@ class MergeTablesOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -608,8 +608,8 @@ class NaturalJoinOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         left_id = source_id
         right_id = table_pb2.TableReference(ticket=self.table.pb_ticket)
@@ -624,7 +624,7 @@ class NaturalJoinOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -646,8 +646,8 @@ class ExactJoinOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         left_id = source_id
         right_id = table_pb2.TableReference(ticket=self.table.pb_ticket)
@@ -661,7 +661,7 @@ class ExactJoinOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -688,8 +688,8 @@ class CrossJoinOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         left_id = source_id
         right_id = table_pb2.TableReference(ticket=self.table.pb_ticket)
@@ -704,7 +704,7 @@ class CrossJoinOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -726,8 +726,8 @@ class AjOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         left_id = source_id
         right_id = table_pb2.TableReference(ticket=self.table.pb_ticket)
@@ -742,7 +742,7 @@ class AjOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -764,8 +764,8 @@ class RajOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         left_id = source_id
         right_id = table_pb2.TableReference(ticket=self.table.pb_ticket)
@@ -780,7 +780,7 @@ class RajOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -795,14 +795,14 @@ class FlattenOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.FlattenRequest(result_id=result_id, source_id=source_id)
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -817,14 +817,14 @@ class FetchTableOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.FetchTableRequest(result_id=result_id, source_id=source_id)
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -834,7 +834,7 @@ class FetchTableOp(TableOp):
 
 class UpdateByOp(TableOp):
     def __init__(
-        self, operations: list[UpdateByOperation], by: Optional[list[str]] = None
+        self, operations: list[UpdateByOperation], by: list[str] | None = None
     ):
         self.operations = operations
         self.by = by
@@ -845,8 +845,8 @@ class UpdateByOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         operations = [op.make_grpc_message() for op in self.operations]
         return table_pb2.UpdateByRequest(
@@ -858,7 +858,7 @@ class UpdateByOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -873,14 +873,14 @@ class SnapshotTableOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.SnapshotTableRequest(result_id=result_id, source_id=source_id)
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -892,7 +892,7 @@ class SnapshotWhenTableOp(TableOp):
     def __init__(
         self,
         trigger_table: Table,
-        stamp_cols: Optional[list[str]] = None,
+        stamp_cols: list[str] | None = None,
         initial: bool = False,
         incremental: bool = False,
         history: bool = False,
@@ -909,8 +909,8 @@ class SnapshotWhenTableOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         base_id = source_id
         trigger_id = table_pb2.TableReference(ticket=self.trigger_table.pb_ticket)
@@ -926,7 +926,7 @@ class SnapshotWhenTableOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -947,8 +947,8 @@ class AggregateOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         aggregations = [agg.make_grpc_message() for agg in self.aggs]
         return table_pb2.AggregateRequest(
@@ -960,7 +960,7 @@ class AggregateOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -979,8 +979,8 @@ class AggregateAllOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.AggregateAllRequest(
             result_id=result_id,
@@ -991,7 +991,7 @@ class AggregateAllOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -1004,9 +1004,9 @@ class AggregateAllOp(TableOp):
 class CreateInputTableOp(TableOp):
     def __init__(
         self,
-        schema: Optional[pa.Schema] = None,
-        init_table: Optional[Table] = None,
-        key_cols: Optional[list[str]] = None,
+        schema: pa.Schema | None = None,
+        init_table: Table | None = None,
+        key_cols: list[str] | None = None,
         blink: bool = False,
     ):
         if blink and key_cols:
@@ -1023,8 +1023,8 @@ class CreateInputTableOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         if self.blink:
             blink_ = table_pb2.CreateInputTableRequest.InputTableKind.Blink()
@@ -1072,7 +1072,7 @@ class CreateInputTableOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -1094,8 +1094,8 @@ class WhereInTableOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         right_id = table_pb2.TableReference(ticket=self.filter_table.pb_ticket)
         return table_pb2.WhereInRequest(
@@ -1108,7 +1108,7 @@ class WhereInTableOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -1127,8 +1127,8 @@ class SliceOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.SliceRequest(
             result_id=result_id,
@@ -1139,7 +1139,7 @@ class SliceOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -1154,14 +1154,14 @@ class MetaTableOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         return table_pb2.MetaTableRequest(result_id=result_id, source_id=source_id)
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(
@@ -1179,8 +1179,8 @@ class MultijoinTablesOp(TableOp):
 
     def make_grpc_request(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
-        source_id: Optional[table_pb2.TableReference],
+        result_id: ticket_pb2.Ticket | None,
+        source_id: table_pb2.TableReference | None,
     ) -> Any:
         pb_inputs = []
         for mji in self.multi_join_inputs:
@@ -1200,7 +1200,7 @@ class MultijoinTablesOp(TableOp):
 
     def make_grpc_request_for_batch(
         self,
-        result_id: Optional[ticket_pb2.Ticket],
+        result_id: ticket_pb2.Ticket | None,
         source_id: table_pb2.TableReference,
     ) -> Any:
         return table_pb2.BatchTableRequest.Operation(

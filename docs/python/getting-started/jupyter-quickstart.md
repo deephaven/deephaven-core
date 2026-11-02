@@ -8,7 +8,7 @@ Deephaven Community Core and [Jupyter](https://jupyter.org) together make a powe
 > Before you start, make sure you have what pip-installed Deephaven needs:
 >
 > - Java 17 or later, with your `JAVA_HOME` environment variable pointing to your Java installation.
-> - Python 3.9 or later.
+> - Python 3.10 or later.
 > - On Windows, [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install). Do every step in this guide, including installing Jupyter, inside WSL 2.
 > - On WSL 2, one of the [WSL 2 time-sync workarounds](../reference/community-questions/wsl2-clock-drift.md), applied before you run Deephaven, so ticking (live-updating) tables don't stall.
 >

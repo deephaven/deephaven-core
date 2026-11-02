@@ -3,12 +3,13 @@
 #
 from __future__ import annotations
 
-from typing import Any, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Any
 
 import pydeephaven_ticking._core as dhc
 
 
-def _to_sequence(v: Optional[Any] = None) -> Sequence[Any]:
+def _to_sequence(v: Any | None = None) -> Sequence[Any]:
     """This  enables a function to provide parameters that can accept both singular and plural values of the same type
     for the convenience of the users, e.g. both x= "abc" and x = ["abc"] are valid arguments.
     (adapted from table_listener.py)
@@ -28,7 +29,7 @@ def _to_sequence(v: Optional[Any] = None) -> Sequence[Any]:
 
 
 def canonicalize_cols_param(
-    table: dhc.ClientTable, col_names: Optional[Union[str, Sequence[str]]] = None
+    table: dhc.ClientTable, col_names: str | Sequence[str] | None = None
 ) -> Sequence[str]:
     """Canonicalizes the col_names parameter by turning it into a sequence of strings.
     If already a list of strings, just return it.
