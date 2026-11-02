@@ -281,14 +281,13 @@ public class OperationInitializerJobScheduler implements JobScheduler {
         }
 
         @Override
-        public boolean withdraw() {
+        public void withdraw() {
             if (!tryClaim()) {
-                return false;
+                return;
             }
             release();
             pendingJobs.remove(this);
             decrementOutstandingJobs();
-            return true;
         }
 
         /** Drop the work, which this job will not run again. */

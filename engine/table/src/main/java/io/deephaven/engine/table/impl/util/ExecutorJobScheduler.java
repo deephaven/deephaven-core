@@ -180,13 +180,12 @@ public class ExecutorJobScheduler implements JobScheduler {
         }
 
         @Override
-        public boolean withdraw() {
+        public void withdraw() {
             if (!tryClaim()) {
-                return false;
+                return;
             }
             release();
             decrementOutstandingJobs();
-            return true;
         }
 
         /** Drop the work, which this job will not run again. */

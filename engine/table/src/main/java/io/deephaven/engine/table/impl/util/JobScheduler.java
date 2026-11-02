@@ -167,14 +167,14 @@ public interface JobScheduler {
         /**
          * A submission that cannot be withdrawn, because the job has already run or its scheduler does not track it.
          */
-        Submission NOT_WITHDRAWABLE = () -> false;
+        Submission NOT_WITHDRAWABLE = () -> {
+        };
 
         /**
          * Withdraw the job if no thread has started it, so that it never runs and the scheduler no longer waits for it.
-         *
-         * @return whether the job was withdrawn
+         * A job that a thread has started, or that cannot be withdrawn, runs as submitted.
          */
-        boolean withdraw();
+        void withdraw();
     }
 
     /**
