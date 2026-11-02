@@ -107,7 +107,7 @@ s = Server()
 s.start()
 ```
 
-When you start the server from Python code, the server writes the randomly generated key to the console in its startup output. To get the key in code, read the login URL from the server object. You can also start the server from a terminal with the `deephaven server` command. That command prints the login URL, which includes the key. See the [command line section of the pip install guide](../../getting-started/pip-install.md#from-the-command-line).
+When you start the server from Python code, the server doesn't print the randomly generated key to the console. To get the key in code, read the login URL from the server object. You can also start the server from a terminal with the `deephaven server` command. That command prints the login URL, which includes the key. See the [command line section of the pip install guide](../../getting-started/pip-install.md#from-the-command-line).
 
 ```python skip-test
 from deephaven_server import Server
