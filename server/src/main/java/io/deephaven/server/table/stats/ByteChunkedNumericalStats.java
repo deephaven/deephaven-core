@@ -148,7 +148,7 @@ public class ByteChunkedNumericalStats implements ChunkedNumericalStatsKernel {
                 useFloatingSum ? TableTools.doubleCol("SUM", floatingSum) : TableTools.longCol("SUM", sum),
                 useFloatingAbsSum ? TableTools.doubleCol("SUM_ABS", floatingAbsSum)
                         : TableTools.longCol("SUM_ABS", absSum),
-                useFloatingSumOfSquares ? TableTools.doubleCol("SQRD_SUM", floatingSumOfSquares)
+                useFloatingSumOfSquares ? TableTools.doubleCol("SUM_SQRD", floatingSumOfSquares)
                         : TableTools.longCol("SUM_SQRD", sumOfSquares),
                 TableTools.byteCol("MIN", min),
                 TableTools.byteCol("MAX", max),

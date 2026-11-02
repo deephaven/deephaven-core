@@ -36,7 +36,6 @@ import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -83,8 +82,8 @@ public class ColumnStatisticsGrpcImplTest {
         assertEquals(0x1p62, stats.getColumnSource("SUM").get(0));
         assertSame(double.class, stats.getColumnSource("SUM_ABS").getType());
         assertEquals(3 * 0x1p62, stats.getColumnSource("SUM_ABS").get(0));
-        assertFalse(stats.hasColumns("SUM_SQRD"));
-        assertEquals(3 * 0x1p124, stats.getColumnSource("SQRD_SUM").get(0));
+        assertSame(double.class, stats.getColumnSource("SUM_SQRD").getType());
+        assertEquals(3 * 0x1p124, stats.getColumnSource("SUM_SQRD").get(0));
         assertEquals(-big, stats.getColumnSource("MIN").get(0));
         assertEquals(big, stats.getColumnSource("MAX").get(0));
     }
@@ -101,8 +100,9 @@ public class ColumnStatisticsGrpcImplTest {
         assertEquals(3L, stats.getColumnSource("COUNT").get(0));
         assertEquals((long) big, stats.getColumnSource("SUM").get(0));
         assertEquals(3L * big, stats.getColumnSource("SUM_ABS").get(0));
-        assertFalse(stats.hasColumns("SUM_SQRD"));
-        assertEquals(3 * 0x1p32, stats.getColumnSource("SQRD_SUM").get(0));
+        assertSame(long.class, stats.getColumnSource("SUM").getType());
+        assertSame(double.class, stats.getColumnSource("SUM_SQRD").getType());
+        assertEquals(3 * 0x1p32, stats.getColumnSource("SUM_SQRD").get(0));
         assertEquals(-big, stats.getColumnSource("MIN").get(0));
         assertEquals(big, stats.getColumnSource("MAX").get(0));
     }
