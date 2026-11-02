@@ -121,7 +121,7 @@ By default, the `generatePassword` task prints a hash that starts with `$2a$10$`
 
 PostgreSQL runs `init-users.sql` only when the container starts with an empty data directory, which happens on its first start. To add users, insert new rows into the running database instead of editing the file.
 
-The Compose file above doesn't name a volume for database data. The postgres image still stores its data in an anonymous volume, which is a volume that Docker creates without a name and that Compose doesn't manage. Removing the postgres container, for example with `docker compose down`, removes the rows you add. Add them again after you recreate the container.
+The Compose file above doesn't define a named volume or bind mount for database data, so PostgreSQL stores its data in a Docker-managed anonymous volume. `docker compose down` leaves that volume and its rows on disk, but a subsequent `docker compose up` doesn't automatically reattach it. Add the additional users again in the recreated database.
 
 Open a PostgreSQL command-line shell (`psql`) with `docker compose exec postgres psql -U postgres`. Then run an `INSERT` statement with the hash that the `generatePassword` task printed and the matching `rounds` value:
 
