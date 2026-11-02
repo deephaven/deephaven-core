@@ -114,7 +114,7 @@ This step needs git and a Java Development Kit (JDK) on your machine, not only D
 To generate a hash, clone the [Deephaven source repository](https://github.com/deephaven/deephaven-core), open a shell at its root, and run the `generatePassword` Gradle task. Replace `newPasswordGoesHere` with the password you want to hash:
 
 ```bash
-./gradlew :authentication:example-providers:sql-username-password:generatePassword --args='newPasswordGoesHere'
+./gradlew :authentication:example-providers:sql-username-password:generatePassword --args='"newPasswordGoesHere"'
 ```
 
 Keep both layers of quotes. The outer single quotes stop the shell from expanding a `$` in the password. The inner double quotes keep a password that contains spaces together as one argument when Gradle parses `--args`. Without them, the hash doesn't match the password you intended.
