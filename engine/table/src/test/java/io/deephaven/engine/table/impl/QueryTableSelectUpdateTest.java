@@ -693,10 +693,7 @@ public class QueryTableSelectUpdateTest {
     public void testUpdateIncrementalRandomized() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 2, 1);
-        final boolean old = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
-        try {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
-
+        try (final SafeCloseable ignored0 = new ForcedParallelSelect()) {
             for (int seed = 0; seed < 5; ++seed) {
                 System.out.println("Seed: " + seed);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
@@ -706,8 +703,6 @@ public class QueryTableSelectUpdateTest {
                     testUpdateIncrementalRandomized(seed, true, 25);
                 }
             }
-        } finally {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = old;
         }
     }
 
@@ -716,18 +711,13 @@ public class QueryTableSelectUpdateTest {
         // this test has large enough size that we will have individual column updates spread across threads
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 2, 1);
-        final boolean old = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
-        try {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
-
+        try (final SafeCloseable ignored0 = new ForcedParallelSelect()) {
             for (int seed = 0; seed < 1; ++seed) {
                 System.out.println("Seed: " + seed);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     testUpdateIncrementalRandomized(seed, false, 4096);
                 }
             }
-        } finally {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = old;
         }
     }
 
@@ -782,20 +772,13 @@ public class QueryTableSelectUpdateTest {
     public void testAppendOnlySparseIncrementalParallel() {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 2, 1);
-        final boolean oldForceParallel = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
-        final long oldMinimumRows = QueryTable.MINIMUM_PARALLEL_SELECT_ROWS;
-        try {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
-            // spread the adds of each column across several jobs
-            QueryTable.MINIMUM_PARALLEL_SELECT_ROWS = 4;
+        // spread the adds of each column across several jobs
+        try (final SafeCloseable ignored0 = new ForcedParallelSelect(4)) {
             for (int seed = 0; seed < 3; ++seed) {
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     testAppendOnlySparseIncremental(seed);
                 }
             }
-        } finally {
-            QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = oldForceParallel;
-            QueryTable.MINIMUM_PARALLEL_SELECT_ROWS = oldMinimumRows;
         }
     }
 

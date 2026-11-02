@@ -5,7 +5,6 @@
 import datetime as dt
 import queue
 import unittest
-from typing import List
 
 import pyarrow as pa
 import pydeephaven as dh
@@ -13,7 +12,7 @@ import pydeephaven as dh
 
 class TickingAllTypesTestCase(unittest.TestCase):
     queue = queue.Queue()
-    errors: List[str] = []
+    errors: list[str] = []
 
     def test_ticking_basic_time_table(self):
         session = dh.Session()

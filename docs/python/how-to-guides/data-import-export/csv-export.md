@@ -2,25 +2,19 @@
 title: Export data to CSV or other delimited files
 ---
 
-This guide discusses how to export table data to CSV (or other delimited) files from Deephaven by using [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md).
+This guide shows how to export table data from Deephaven to CSV files with [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md), and to other delimited files with [pandas](../use-pandas.md).
 
 > [!TIP]
-> CSV files can also be exported via **Table Options > Download CSV** in the Deephaven UI.
+> You can also export a table to a CSV file from the Deephaven UI with **Table Options > Download CSV**.
 
 ## `write_csv`
 
-The basic syntax for `write_csv` is:
-
-```python syntax
-from deephaven import write_csv
-
-write_csv(table, "/data/outputFile.csv")
-```
-
 > [!NOTE]
-> Deephaven writes files to locations relative to the base of its Docker container. See [Docker data volumes](../../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
+> The Deephaven server resolves file paths. If you run Deephaven in Docker, the path refers to the container's file system. The default Docker Compose setup mounts the `./data` directory of your Deephaven deployment as the `/data` [Docker data volume](../../conceptual/docker-data-volumes.md#the-data-mount-point) in the container. A file written to `/data/TrigFunctions.csv` appears at `./data/TrigFunctions.csv` on your computer. If you run Deephaven without Docker, replace `/data` with a directory that exists on the server's machine.
 
-We'll create a table to export by using [`empty_table`](../../reference/table-operations/create/emptyTable.md) and [`update`](../../reference/table-operations/select/update.md). The table contains 100 rows of trigonometric values.
+### Write a table to a CSV file
+
+Let's create a table to export. It contains 100 rows of trigonometric values, made with [`empty_table`](../../reference/table-operations/create/emptyTable.md) and [`update`](../../reference/table-operations/select/update.md):
 
 ```python test-set=1
 from deephaven import empty_table
@@ -30,9 +24,7 @@ source = empty_table(100).update(
 )
 ```
 
-### Standard CSV files
-
-The simplest way to use [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md) is to supply two input parameters:
+The simplest way to use [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md) is to pass two arguments:
 
 - The Deephaven source table.
 - The path of the output CSV file.
@@ -43,20 +35,22 @@ from deephaven import write_csv
 write_csv(source, "/data/TrigFunctions.csv")
 ```
 
-![The newly written CSV file](../../assets/how-to/TrigFunctions_basic.png)
+The first lines of `TrigFunctions.csv` look like this:
 
-#### The `/data` mount point
-
-If you are using Docker-installed Deephaven, you can find a `/data` folder inside your Deephaven installation's main folder, on the same level as your `docker-compose.yml` file. This folder is mounted to the `/data` volume in the running Deephaven container. This means that if the Deephaven console is used to write data to `/data/abc/file.csv`, that file will be visible at `./data/abc/file.csv` on the local file system of your computer.
-
-> [!NOTE]
-> If the `./data` directory does not exist when Deephaven is launched, it will be created.
+```text
+X,SinX,CosX,TanX
+0.0,0.0,1.0,0.0
+0.1,0.09983341664682815,0.9950041652780258,0.10033467208545055
+0.2,0.19866933079506122,0.9800665778412416,0.2027100355086725
+0.30000000000000004,0.2955202066613396,0.955336489125606,0.3093362496096233
+0.4,0.3894183423086505,0.9210609940028851,0.4227932187381618
+```
 
 ### Null values
 
-Null values are common in tables. How are they handled when exporting data to a CSV? This depends on how you call [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md).
+Null values are common in tables. [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md) writes them as empty fields.
 
-First, let's create a table with null values. The example below uses the [ternary conditional operator](../ternary-if-how-to.md) to fill the `SinX` column with a large number of nulls.
+To see this, let's create a table with null values. The example below uses the [ternary conditional operator](../ternary-if-how-to.md) to fill the `SinX` column with a large number of nulls.
 
 ```python test-set=2
 from deephaven import empty_table
@@ -79,11 +73,20 @@ from deephaven import write_csv
 write_csv(source_with_nulls, "/data/TrigFunctionsWithNulls.csv")
 ```
 
-![The newly written CSV file](../../assets/how-to/TrigFunctions_basicWithNulls.png)
+The first lines of `TrigFunctionsWithNulls.csv` show the null `SinX` values as empty fields:
+
+```text
+X,SinX,CosX,TanX
+0.0,,1.0,0.0
+0.1,0.09983341664682815,0.9950041652780258,0.10033467208545055
+0.2,,0.9800665778412416,0.2027100355086725
+0.30000000000000004,0.2955202066613396,0.955336489125606,0.3093362496096233
+0.4,,0.9210609940028851,0.4227932187381618
+```
 
 ### Column selection
 
-In the event you don't want to write every column in the table to a CSV file, you can specify which columns to write. This is done by providing a list of column names, as shown below.
+To write only some columns, pass their names in the `cols` parameter of [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md). The example below writes the `X` and `CosX` columns of the `source_with_nulls` table created in [Null values](#null-values).
 
 ```python test-set=2
 from deephaven import write_csv
@@ -91,11 +94,57 @@ from deephaven import write_csv
 write_csv(source_with_nulls, "/data/Cosine.csv", cols=["X", "CosX"])
 ```
 
-![The newly written CSV file](../../assets/how-to/TrigFunctions_NullsCosineOnly.png)
+`Cosine.csv` contains only the `X` and `CosX` columns:
+
+```text
+X,CosX
+0.0,1.0
+0.1,0.9950041652780258
+0.2,0.9800665778412416
+0.30000000000000004,0.955336489125606
+0.4,0.9210609940028851
+```
+
+### Write a ticking table
+
+Deephaven tables can tick, updating in real time as new data arrives. [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md) writes the rows that a table holds when the call runs, so the file is a point-in-time copy of a live table. It reads those rows directly, without taking a snapshot, so a table that updates during the write can produce an inconsistent file. To write a consistent copy, take a [`snapshot`](../../reference/table-operations/snapshot/snapshot.md) of the table first and write the snapshot.
+
+The example below creates a ticking table with [`time_table`](../../reference/table-operations/create/timeTable.md):
+
+```python test-set=3 ticking-table order=null
+from deephaven import time_table
+
+live = time_table("PT1s").update(formulas=["X = i"])
+```
+
+A new time table has no rows until Deephaven runs its first update cycle, which happens after the command that creates the table finishes. Writing the table in that same command produces a file with only the header row. Run the write as a separate command, after the table has ticked:
+
+```python test-set=3 ticking-table order=null
+from deephaven import write_csv
+
+write_csv(live.snapshot(), "/data/LiveSnapshot.csv")
+```
+
+To keep a file up to date as a table ticks, see [How can I periodically write a ticking table to disk?](../../reference/community-questions/write-ticking-table-periodically.md).
+
+## Write other delimited files with pandas
+
+[`write_csv`](../../reference/data-import-export/CSV/writeCsv.md) always separates fields with commas. It has no parameter for a different delimiter.
+
+To write a file with a different delimiter, convert the table to a pandas DataFrame with [`to_pandas`](../../reference/pandas/to-pandas.md) and call the DataFrame's [`to_csv`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_csv.html) method with the `sep` argument. The example below writes the `source` table created in [Write a table to a CSV file](#write-a-table-to-a-csv-file) as a tab-separated file:
+
+```python test-set=1
+from deephaven.pandas import to_pandas
+
+to_pandas(source).to_csv("/data/TrigFunctions.tsv", sep="\t", index=False)
+```
+
+[`to_pandas`](../../reference/pandas/to-pandas.md) copies the whole table into memory, so for a large table, select only the rows and columns you need first.
 
 ## Related documentation
 
-- [Create an empty table](../new-and-empty-table.md#empty_table)
-- [How to import CSV files](./csv-import.md)
+- [Create an empty table with `empty_table`](../new-and-empty-table.md#empty_table)
+- [Read CSV or other delimited files](./csv-import.md)
+- [Use pandas with Deephaven](../use-pandas.md)
 - [Docker data volumes](../../conceptual/docker-data-volumes.md)
 - [`write_csv`](../../reference/data-import-export/CSV/writeCsv.md)

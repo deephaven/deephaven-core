@@ -2,31 +2,41 @@
 title: Read CSV or other delimited files
 ---
 
-This guide will show you how to read data from CSV (and other delimited) files into in-memory Deephaven tables by using the [`readCsv`](../../reference/data-import-export/CSV/readCsv.md) method.
+This guide shows you how to read data from CSV (and other delimited) files into in-memory Deephaven tables by using the [`readCsv`](../../reference/data-import-export/CSV/readCsv.md) method. The result is a static table that holds the file's contents when you read it. To work with data that keeps arriving, see [Kafka](./kafka-stream.md).
 
 > [!TIP]
-> To upload a CSV without writing code, see [Upload a table from a file](../../how-to-guides/user-interface/upload-table-from-file.md).
+> To upload a CSV without writing code, see [Upload a table from a file](../user-interface/upload-table-from-file.md).
 
 ## `readCsv`
 
-The two most common ways to load a CSV file are using the file path or the file URL. The header of the CSV file determines the column names.
+The two most common ways to load a CSV file are using the file path or the file URL. The header row of the CSV file supplies the column names.
 
-The basic syntax for `readCsv` follows:
+The basic syntax for [`readCsv`](../../reference/data-import-export/CSV/readCsv.md) follows:
 
-```groovy skip-test
+```groovy syntax
 import static io.deephaven.csv.CsvTools.readCsv
 
 readCsv(path)
 readCsv(url)
-readCsv(path, csvSpecs)
-readCsv(url, csvSpecs)
+readCsv(path, specs)
+readCsv(url, specs)
 ```
 
-Let's dive into some simple examples. So that we don't have to create a new CSV file from scratch, we'll use some CSV files from [Deephaven's examples repository](https://github.com/deephaven/examples). We encourage you to use your own files by replacing the file paths in our queries.
+The optional `specs` argument is a [`CsvSpecs`](https://javadoc.io/doc/io.deephaven/deephaven-csv/0.19.0/io/deephaven/csv/CsvSpecs.html) object that holds read options such as the delimiter and header handling. To create one:
+
+1. Call [`CsvTools.builder`](https://deephaven.io/core/javadoc/io/deephaven/csv/CsvTools.html#builder()).
+2. Set the options you need. The [`readCsv` reference](../../reference/data-import-export/CSV/readCsv.md#csvspecs-builder-options) lists them all.
+3. Call `build`.
+
+The builder starts from the same defaults that [`readCsv(path)`](../../reference/data-import-export/CSV/readCsv.md) uses, such as rewriting headers that aren't valid Deephaven column names into valid ones. The examples from [Headerless CSV files](#headerless-csv-files) onward each build a [`CsvSpecs`](https://javadoc.io/doc/io.deephaven/deephaven-csv/0.19.0/io/deephaven/csv/CsvSpecs.html) object.
+
+Let's dive into some simple examples. These examples use CSV files from [Deephaven's examples repository](https://github.com/deephaven/examples), so you don't have to create your own. We encourage you to use your own files by replacing the file paths in our queries.
+
+The URL examples need no setup. The examples that read from a file path expect those files under `/data/examples`. To set that up, follow the directions in the [examples repository README](https://github.com/deephaven/examples/blob/main/README.md) and see [The `/data` mount point](#the-data-mount-point).
 
 ### `readCsv` with a file path
 
-The `readCsv` method can be used to read a CSV file from a file path. In this example, we will read a CSV file containing R.A. Fisher's classic iris flower dataset commonly used in machine learning applications.
+Use [`readCsv`](../../reference/data-import-export/CSV/readCsv.md) to read a CSV file from a file path. In this example, we read a CSV file that contains R.A. Fisher's classic iris flower dataset, which is commonly used in machine learning.
 
 ```groovy order=iris
 import static io.deephaven.csv.CsvTools.readCsv
@@ -36,19 +46,14 @@ iris = readCsv("/data/examples/Iris/csv/iris.csv")
 
 #### The `/data` mount point
 
-If you are using Docker-installed Deephaven, you can find a `/data` folder inside your Deephaven installation's main folder, on the same level as your `docker-compose.yml` file. This folder is mounted to the `/data` volume in the running Deephaven container. This means that if the Deephaven console is used to write data to `/data/abc/file.csv`, that file will be visible at `./data/abc/file.csv` on the local file system of your computer.
+The Compose examples in the [Docker install guide](../../getting-started/docker-install.md) mount `./data:/data` in `docker-compose.yml`. With that mount, Docker shares the `data` folder next to your `docker-compose.yml` file with the running Deephaven container at `/data`. See [Docker data volumes](../../conceptual/docker-data-volumes.md) for more about how container paths map to your computer. A file you save at `./data/abc/file.csv` on your computer is readable in Deephaven at `/data/abc/file.csv`. A container started with `docker run` and no `-v` option still has a `/data` directory, but Docker doesn't share it with your computer.
 
 > [!NOTE]
-> If the `./data` directory does not exist when Deephaven is launched, it will be created.
-
-See [Docker data volumes](../../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
-
-> [!NOTE]
-> If you're using our files, follow the directions in the [README](https://github.com/deephaven/examples/blob/main/README.md) to mount the content from [Deephaven's examples repository](https://github.com/deephaven/examples) onto `/data` in the Deephaven Docker container.
+> With that mount, if the `./data` directory does not exist when you launch Deephaven, Docker creates it.
 
 ### `readCsv` with a URL
 
-Now, we will read the same CSV file, but this time we will use a URL instead of a file path.
+Now, let's read the same iris dataset, but this time we pass [`readCsv`](../../reference/data-import-export/CSV/readCsv.md) a URL to the file in Deephaven's examples repository on GitHub instead of a file path.
 
 ```groovy order=iris
 import static io.deephaven.csv.CsvTools.readCsv
@@ -59,130 +64,103 @@ iris = readCsv(
 ```
 
 > [!NOTE]
-> This method works with any public URL that points to a CSV file.
+> This works with a publicly accessible `http` or `https` URL that points to an uncompressed CSV file. [`readCsv`](../../reference/data-import-export/CSV/readCsv.md) decompresses a compressed file only when it reads the file from a file path or a `file:` URL.
 
 ### Headerless CSV files
 
-CSV files don't always have headers. The example below uses the headerless [DeNiro CSV](https://github.com/deephaven/examples/tree/main/DeNiro/csv/deniro_headerless.csv) and `CsvSpecs`' `hasHeaderRow` set to `false`.
+CSV files don't always have headers. To read one, pass [`readCsv`](../../reference/data-import-export/CSV/readCsv.md) a [`CsvSpecs`](https://javadoc.io/doc/io.deephaven/deephaven-csv/0.19.0/io/deephaven/csv/CsvSpecs.html) whose `hasHeaderRow` option is set to `false`. The example below reads the headerless [DeNiro CSV](https://github.com/deephaven/examples/blob/main/DeNiro/csv/deniro_headerless.csv) this way.
 
 ```groovy order=deniro
 import static io.deephaven.csv.CsvTools.readCsv
-import io.deephaven.csv.CsvSpecs
+import io.deephaven.csv.CsvTools
 
-specs = CsvSpecs.builder().hasHeaderRow(false).build()
+specs = CsvTools.builder().hasHeaderRow(false).build()
 
-deniro = readCsv(
-    "https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro_headerless.csv",
-    specs,
-)
+deniro = readCsv("https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro_headerless.csv", specs)
 ```
 
-Because no column names are provided, the table will produce default column names (`Column1`, `Column2`, etc.). You can explicitly set the column names, as shown below.
+Because no column names are provided, the table uses default column names (`Column1`, `Column2`, etc.). To name the columns, pass the builder's `headers` option a list of names. Names are applied by position, so list them in the file's column order.
 
 ```groovy order=deniroHeader
 import static io.deephaven.csv.CsvTools.readCsv
-import io.deephaven.csv.CsvSpecs
+import io.deephaven.csv.CsvTools
 
 headers = List.of("Year", "Score", "Title")
 
-specs = CsvSpecs.builder().hasHeaderRow(false).headers(headers).build()
+specs = CsvTools.builder().hasHeaderRow(false).headers(headers).build()
 deniroHeader = readCsv("https://media.githubusercontent.com/media/deephaven/examples/main/DeNiro/csv/deniro_headerless.csv", specs)
 ```
 
-### Other formats
+### Other delimiters
+
+Deephaven lets you specify other delimiters if your file is not comma-delimited. Set the `delimiter` option of [`CsvSpecs`](https://javadoc.io/doc/io.deephaven/deephaven-csv/0.19.0/io/deephaven/csv/CsvSpecs.html), which accepts any single 7-bit ASCII character.
 
 #### Tab-delimited data
 
-Deephaven allows you to specify other delimiters if your file is not comma-delimited. In the example below, we read a tab-delimited file, which requires the use of `CsvSpecs.tsv()`.
+The example below reads a tab-delimited file with `delimiter('\t' as char)`.
 
 ```groovy order=deniroTSV
 import static io.deephaven.csv.CsvTools.readCsv
-import io.deephaven.csv.CsvSpecs
+import io.deephaven.csv.CsvTools
 
-specs = CsvSpecs.tsv()
+specs = CsvTools.builder().delimiter('\t' as char).build()
 
 deniroTSV = readCsv("https://raw.githubusercontent.com/deephaven/examples/main/DeNiro/csv/deniro.tsv", specs)
 ```
 
 #### Pipe-delimited data
 
-Any character can be used as a delimiter. The pipe character (`|`) is common. In the example below, we supply a `CsvSpecs` with the delimiter set to `|`.
+The pipe character (`|`) is a common delimiter. In the example below, we supply a [`CsvSpecs`](https://javadoc.io/doc/io.deephaven/deephaven-csv/0.19.0/io/deephaven/csv/CsvSpecs.html) with the delimiter set to `|`.
 
 ```groovy order=deniroPSV
 import static io.deephaven.csv.CsvTools.readCsv
-import io.deephaven.csv.CsvSpecs
+import io.deephaven.csv.CsvTools
 
-specs = CsvSpecs.builder().delimiter('|' as char).build()
+specs = CsvTools.builder().delimiter('|' as char).build()
 
 deniroPSV = readCsv("https://raw.githubusercontent.com/deephaven/examples/main/DeNiro/csv/deniro.psv", specs)
 ```
 
-#### Trim
+### Read a poorly formatted file
 
-By default, quoted values that have leading and trailing white space include the white space when reading the CSV file. For example, if `" Taxi Driver "` is in the CSV file, it will be read as `Taxi Driver`.
+In the following example, we read the `deniro_poorly_formatted.csv` file from Deephaven's examples repository. This file has a number of issues that we need to address, but [`readCsv`](../../reference/data-import-export/CSV/readCsv.md) can handle them if we give the right [`CsvSpecs`](https://javadoc.io/doc/io.deephaven/deephaven-csv/0.19.0/io/deephaven/csv/CsvSpecs.html) options:
 
-By setting `trim` to `true` when reading the CSV file, these leading and trailing white space will be removed. So `" Taxi Driver "` will be read as `Taxi Driver`.
-
-### Using `CsvSpecs`
-
-The `CsvSpecs` class allows you to specify additional options when reading a CSV file. The `CsvSpecs`' class methods are:
-
-- `allowMissingColumns(boolean)`: Whether the library should allow missing columns in the input. If `true`, allows the CSV file to have fewer columns than specified in the header. If `false`, no missing columns will be permitted.
-- `build`: Returns the `CsvSpecs` object.
-- `concurrent(boolean)`: Whether or not to run concurrently.
-- `customDoubleParser`: The custom double parser.
-- `customTimeZoneParser`: An optional low-level "timezone parser" that understands custom time zone strings.
-- `delimiter(char)`: The field delimiter character (the character that separates one column from the next).
-- `from(CsvSpecs)`: Copy all of the parameters from supplied CsvSpecs object into `this` builder.
-- `hasHeaderRow(boolean)`: Whether the input file has a header row.
-- `headerLegalizer(Function<String[],String[]>)`: An optional legalizer for column headers.
-- `headers(Iterable<String>)`: Client-specified headers that can be used to override the existing headers in the input (if `CsvSpecs.hasHeaderRow()` is `true`), or to provide absent headers (if `CsvSpecs.hasHeaderRow()` is `false`).
-- `headerValidator(Predicate<String>)`: An optional validator for column headers.
-- `ignoreEmptyLines(boolean)`: Whether the library should skip over empty lines in the input.
-- `ignoreExcessColumns(boolean)`: Whether the library should allow excess columns in the input.
-- `ignoreSurroundingSpaces(boolean)`: Whether to trim leading and trailing blanks from non-quoted values.
-- `nullParser(Parser<?>)`: The parser to use when all values in the column are null.
-- `nullValueLiterals(Iterable<String>)`: The default collection of strings that means "null value" in the input.
-- `numRows(long)`: Max number of rows to process.
-- `parsers(Iterable<? extends Parser<?>>)`: The parsers that the user wants to participate in type inference.
-- `putHeaderForIndex(int, String)`: Override a specific column header by 0-based column index.
-- `putNullValueLiteralsForIndex(int, List<String>)`: The null value literal for specific columns, specified by 0-based column index.
-- `putNullValueLiteralsForName(String, List<String>)`: The null value literal for specific columns, specified by column name.
-- `putParserForIndex(int, Parser<?>)`: Used to force a specific parser for a specific column, specified by 0-based column index.
-- `putParserForName(String, Parser<?>)`: Used to force a specific parser for a specific column, specified by column name.
-- `quote(char)`: The quote character (used when you want field or line delimiters to be interpreted as literal text).
-- `skipHeaderRows(long)`: Number of rows to skip before reading the header row from the input.
-- `skipRows(long)`: Number of data rows to skip before processing data.
-- `trim(boolean)`: Whether to trim leading and trailing blanks from inside quoted values.
-
-In the following example, we want to read in the `deniro_poorly_formatted.csv` file from the Deephaven Examples repo. This file has a number of issues that we need to address, but `readCsv` can handle them if we give the right `CsvSpecs` parameters:
-
-```groovy order=deniroHeader
+```groovy order=deniroFormatted
 import static io.deephaven.csv.CsvTools.readCsv
-import io.deephaven.csv.CsvSpecs
+import io.deephaven.csv.CsvTools
 
-headers = List.of("Release Year", "Rating", "Movie Title")
+headers = List.of("ReleaseYear", "Rating", "MovieTitle")
 
-specs = CsvSpecs.builder().headers(headers).hasHeaderRow(true).skipRows(5).numRows(20).ignoreEmptyLines(true).allowMissingColumns(true).ignoreExcessColumns(true).trim(true).build()
+specs = CsvTools.builder()
+    .headers(headers)
+    .skipRows(5)
+    .numRows(20)
+    .ignoreEmptyLines(true)
+    .allowMissingColumns(true)
+    .ignoreExcessColumns(true)
+    .trim(true)
+    .build()
 
-deniroHeader = readCsv("/data/examples/DeNiro/csv/deniro_poorly_formatted.csv", specs)
+deniroFormatted = readCsv("/data/examples/DeNiro/csv/deniro_poorly_formatted.csv", specs)
 ```
 
 In the example above, we:
 
-- Use `headers` to override and replace the files's header row.
-- Set `hasHeaderRow` to `true` to indicate that the CSV file has a header row.
-- Use `skipRows` to omit the first 5 rows of the CSV file.
-- Set `numRows` to 20 to limit our table to 20 rows.
-- Set `ignoreEmptyLines` to `true` to avoid throwing an exception due to an empty line in the CSV file.
+- Use `headers` to replace the file's column names.
+- Use `skipRows` to skip the first 5 data rows after the header row.
+- Set `numRows` to 20 to read at most 20 lines after the skipped rows.
+- Set `ignoreEmptyLines` to `true` to skip the empty line in the CSV file. The skipped line still counts toward the `numRows` limit, so the table has 19 rows. Without `ignoreEmptyLines`, [`readCsv`](../../reference/data-import-export/CSV/readCsv.md) treats an empty line as a row with missing columns. It throws an exception, or it reads a row of `null` values when `allowMissingColumns` is `true`.
 - Set `allowMissingColumns` to `true` to avoid throwing an exception due to a missing column in the CSV file. Note that the 1983 entry in our table has `null` in the missing column.
-- Set `ignoreExcessColumns` to `true` to avoid throwing an exception due to an extra column in the CSV file - 1984's _Brazil_ entry has an extra column containing a brief review that we don't need in our table.
-- Set `trim` to `true` to remove leading and trailing white space from inside quoted strings - such as our movie titles.
+- Set `ignoreExcessColumns` to `true` to avoid throwing an exception due to an extra column in the CSV file. The entry for 1985's _Brazil_ has an extra column with a brief review that we don't need in our table.
+- Set `trim` to `true` to remove leading and trailing white space from inside quoted strings, such as some of our movie titles. By default, [`readCsv`](../../reference/data-import-export/CSV/readCsv.md) keeps this white space and reads `" The Mission   "` with its leading and trailing spaces.
 
-For a complete list of optional arguments, see the [`readCsv` reference documentation](../../reference/data-import-export/CSV/readCsv.md).
+To skip lines that come before the header row, use `skipHeaderRows` instead of `skipRows`.
+
+See the [`readCsv` reference documentation](../../reference/data-import-export/CSV/readCsv.md#csvspecs-builder-options) for every `CsvSpecs` builder option.
 
 ## Related documentation
 
-- [How to export CSV files](./csv-export.md)
+- [Export data to CSV or other delimited files](./csv-export.md)
 - [`readCsv`](../../reference/data-import-export/CSV/readCsv.md)
-- [Navigate the GUI](../../how-to-guides/user-interface/navigating-the-ui.md)
+- [Use the Deephaven CSV library](../csv-library.md)
+- [Navigate the GUI](../user-interface/navigating-the-ui.md)

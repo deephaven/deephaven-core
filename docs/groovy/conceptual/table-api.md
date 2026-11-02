@@ -170,7 +170,7 @@ For refreshing tables, this choice also affects update performance. `view` recom
 
 ## Same API, different behavior
 
-The same operations work on both static and live tables — see [Static vs. live: understanding mutability](./deephaven-mental-model.md#static-vs-live-understanding-mutability) for the underlying concept. In practice, this means:
+The same operations work on both static and live tables — see [Static vs. live tables](./deephaven-mental-model.md#static-vs-live-tables) for the underlying concept. In practice, this means:
 
 ```groovy order=null ticking-table
 // Static table

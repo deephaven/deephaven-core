@@ -26,7 +26,7 @@ The maximum time to wait, in milliseconds. The default is `None`, meaning the op
 
 ## Examples
 
-In this example, the result of `await_update` is called and printed twice. The first time, 0 milliseconds have elapsed, and the method returns `false` since the table has not been updated. `await_update` is called again immediately afterward with a wait time of 1000 milliseconds. By that time, the source table has been updated, so the method returns `true`.
+In this example, the result of `await_update` is called and printed twice. The first time, 0 milliseconds have elapsed, and the method returns `False` since the table has not been updated. `await_update` is called again immediately afterward with a wait time of 1000 milliseconds. By that time, the source table has been updated, so the method returns `True`.
 
 ```python order=source,result
 from deephaven import time_table

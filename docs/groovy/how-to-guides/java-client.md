@@ -199,6 +199,13 @@ Inside the `try` block, `latestTable` is a local copy of the server's `latest_by
 
 The steps above are adapted from the [`SubscribeTable`](https://github.com/deephaven/deephaven-core/blob/main/java-client/barrage-examples/src/main/java/io/deephaven/client/examples/SubscribeTable.java) example.
 
+A subscription can also request only part of a table, or a static copy instead of a ticking one. [`BarrageSubscription`](/core/javadoc/io/deephaven/client/impl/BarrageSubscription.html) has these methods besides `entireTable`:
+
+- `partialTable` subscribes to only some rows and columns. It takes a position-space `RowSet` viewport and a `BitSet` of columns. An overload with a `reverseViewport` argument counts the viewport positions from the end of the table instead of the start.
+- `snapshotEntireTable` and `snapshotPartialTable` fetch a static snapshot instead of a ticking table.
+
+To fetch a one-time snapshot without creating a subscription, call the `BarrageSession`'s `snapshot` method instead of `subscribe`. It returns a [`BarrageSnapshot`](/core/javadoc/io/deephaven/client/impl/BarrageSnapshot.html), which has its own `entireTable` and `partialTable` methods.
+
 ### Listen to the table
 
 Once the client has a local ticking table, such as `latestTable` from [Subscribe to the table](#subscribe-to-the-table), it can process the table's data. You can read the data from the table directly. You can also add a listener to the table so that the application responds to each update, as the [table listeners guide](./table-listeners-groovy.md) explains.

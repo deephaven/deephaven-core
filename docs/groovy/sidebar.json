@@ -259,10 +259,6 @@
                 "path": "how-to-guides/data-import-export/execute-sql-queries.md"
               },
               {
-                "label": "Table data service",
-                "path": "how-to-guides/data-import-export/table-data-service.md"
-              },
-              {
                 "label": "URI",
                 "path": "how-to-guides/use-uris.md"
               }
@@ -675,6 +671,10 @@
                   {
                     "label": "Stream data with Input Tables",
                     "path": "how-to-guides/java-client-input-tables.md"
+                  },
+                  {
+                    "label": "Capture remote tables with Barrage",
+                    "path": "how-to-guides/capture-tables.md"
                   }
                 ]
               },
@@ -736,10 +736,6 @@
                   {
                     "label": "Error handling",
                     "href": "https://deephaven.io/core/client-api/python/examples.html#error-handling"
-                  },
-                  {
-                    "label": "Capture Python client tables",
-                    "path": "how-to-guides/capture-tables.md"
                   }
                 ]
               },
@@ -1014,6 +1010,10 @@
               {
                 "label": "Install and use Java packages",
                 "path": "how-to-guides/install-and-use-java-packages.md"
+              },
+              {
+                "label": "Local development",
+                "path": "how-to-guides/local-development.md"
               },
               {
                 "label": "Configure the production application",

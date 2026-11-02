@@ -104,7 +104,7 @@ source_meta = source.meta_table
 - [Python functions in query strings](./python-functions.md)
 - [Built-in functions](./built-in-functions.md)
 - [Built-in constants](./built-in-constants.md)
-- [How to read Javadocs](./read-javadocs.md)
+- [Javadocs for Python users](./read-javadocs.md)
 - [Work with arrays](./work-with-arrays.md)
 - [Work with strings](./work-with-strings.md)
 - [`empty_table`](../reference/table-operations/create/emptyTable.md)

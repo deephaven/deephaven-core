@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
@@ -46,6 +47,27 @@ public interface WhereFilter extends Filter {
     @InternalUseOnly
     static WhereFilter[] fromInternal(Filter filter) {
         return from(FilterToListImpl.of(filter));
+    }
+
+    /**
+     * {@link #beginOperation(Table) Begin} the operation of each of {@code filters}, in order. If any filter throws,
+     * the operations already begun are closed before the exception propagates.
+     *
+     * @param sourceTable The {@link Table} that will be filtered with {@code filters}
+     * @param filters The filters whose operations to begin
+     * @return A {@link SafeCloseable} that closes every operation begun, attempting each even if an earlier one throws
+     */
+    static SafeCloseable beginOperations(@NotNull final Table sourceTable, @NotNull final WhereFilter... filters) {
+        final SafeCloseable[] operations = new SafeCloseable[filters.length];
+        try {
+            for (int fi = 0; fi < filters.length; ++fi) {
+                operations[fi] = filters[fi].beginOperation(sourceTable);
+            }
+        } catch (final RuntimeException | Error failure) {
+            SafeCloseable.closeAllDuringFailure(failure, operations);
+            throw failure;
+        }
+        return new SafeCloseableList(operations);
     }
 
     /**

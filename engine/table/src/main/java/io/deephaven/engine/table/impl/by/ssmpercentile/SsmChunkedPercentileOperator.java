@@ -64,7 +64,8 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
      */
     private final ObjectArraySource<WritableChunk<Values>> stagedAdds;
     /**
-     * The values removed from each destination since its staged values were last applied, or null if there are none.
+     * The values removed from each destination since its staged values were last applied, or null if there are none; an
+     * add-only operator, which receives no removals, keeps no such column.
      */
     private final ObjectArraySource<WritableChunk<Values>> stagedRemoves;
     /**
@@ -84,10 +85,11 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
      *        types ignore it
      * @param percentile the percentile to compute
      * @param averageEvenlyDivided see {@link io.deephaven.api.agg.spec.AggSpecPercentile#averageEvenlyDivided()}
+     * @param addOnly whether the operator only receives additions
      * @param name the name of the result column
      */
     public SsmChunkedPercentileOperator(Class<?> type, boolean equalsConsistent, double percentile,
-            boolean averageEvenlyDivided, String name) {
+            boolean averageEvenlyDivided, boolean addOnly, String name) {
         this.name = name;
         this.ssms = new ObjectArraySource<>(SegmentedSortedMultiSet.class);
         final boolean isInstant = type == Instant.class;
@@ -129,7 +131,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         // noinspection unchecked,rawtypes
         stagedAdds = new ObjectArraySource<>((Class) WritableChunk.class);
         // noinspection unchecked,rawtypes
-        stagedRemoves = new ObjectArraySource<>((Class) WritableChunk.class);
+        stagedRemoves = addOnly ? null : new ObjectArraySource<>((Class) WritableChunk.class);
         percentileTypeHelper = makeTypeHelper(chunkType, type, percentile, averageEvenlyDivided, internalResult);
     }
 
@@ -225,6 +227,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
+        requireStagedRemoves();
         stageRuns(stagedRemoves, values, destinations, startPositions, length, stateModified);
     }
 
@@ -233,6 +236,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
             Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
+        requireStagedRemoves();
         stageRuns(stagedRemoves, preValues, destinations, startPositions, length, stateModified);
         stageRuns(stagedAdds, postValues, destinations, startPositions, length, stateModified);
     }
@@ -246,15 +250,24 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+        requireStagedRemoves();
         return stage(stagedRemoves, (int) destination, values, 0, values.size());
     }
 
     @Override
     public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues,
             Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+        requireStagedRemoves();
         final boolean removed = stage(stagedRemoves, (int) destination, preValues, 0, preValues.size());
         final boolean added = stage(stagedAdds, (int) destination, postValues, 0, postValues.size());
         return removed || added;
+    }
+
+    private void requireStagedRemoves() {
+        if (stagedRemoves == null) {
+            throw new UnsupportedOperationException(
+                    "Add-only percentile operators do not support removals or modifications");
+        }
     }
 
     private void stageRuns(final ObjectArraySource<WritableChunk<Values>> staged, final Chunk<? extends Values> values,
@@ -279,7 +292,8 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         }
         WritableChunk<Values> chunk = staged.getUnsafe(destination);
         if (chunk == null) {
-            if (stagedAdds.getUnsafe(destination) == null && stagedRemoves.getUnsafe(destination) == null) {
+            if (stagedAdds.getUnsafe(destination) == null
+                    && (stagedRemoves == null || stagedRemoves.getUnsafe(destination) == null)) {
                 if (touchedCount == touchedCapacity) {
                     touchedCapacity = Math.max(1, 2 * touchedCapacity);
                     touchedDestinations.ensureCapacity(touchedCapacity);
@@ -330,7 +344,9 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         for (int ti = 0; ti < touchedCount; ++ti) {
             final int destination = touchedDestinations.getUnsafe(ti);
             closeStaged(stagedAdds, destination);
-            closeStaged(stagedRemoves, destination);
+            if (stagedRemoves != null) {
+                closeStaged(stagedRemoves, destination);
+            }
         }
         touchedCount = 0;
     }
@@ -365,7 +381,8 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
     }
 
     private void applyStaged(final ApplyContext context, final int destination) {
-        final WritableChunk<Values> removes = stagedRemoves.getAndSetUnsafe(destination, null);
+        final WritableChunk<Values> removes =
+                stagedRemoves == null ? null : stagedRemoves.getAndSetUnsafe(destination, null);
         final WritableChunk<Values> adds = stagedAdds.getAndSetUnsafe(destination, null);
         if (removes == null && adds == null) {
             return;
@@ -507,7 +524,9 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         internalResult.ensureCapacity(tableSize);
         ssms.ensureCapacity(tableSize * 2);
         stagedAdds.ensureCapacity(tableSize);
-        stagedRemoves.ensureCapacity(tableSize);
+        if (stagedRemoves != null) {
+            stagedRemoves.ensureCapacity(tableSize);
+        }
     }
 
     @Override
@@ -595,6 +614,8 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         ssms.releaseBlocks(firstOutputPosition * 2, lastOutputPosition * 2 + 1);
         internalResult.releaseBlocks(firstOutputPosition, lastOutputPosition);
         stagedAdds.releaseBlocks(firstOutputPosition, lastOutputPosition);
-        stagedRemoves.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        if (stagedRemoves != null) {
+            stagedRemoves.releaseBlocks(firstOutputPosition, lastOutputPosition);
+        }
     }
 }

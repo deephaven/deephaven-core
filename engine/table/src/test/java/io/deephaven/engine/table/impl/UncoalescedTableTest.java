@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
@@ -13,12 +14,21 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static io.deephaven.engine.testutil.TstUtils.i;
@@ -35,6 +45,8 @@ public class UncoalescedTableTest {
 
     @Rule
     public final EngineCleanup cleanup = new EngineCleanup();
+
+    private static final long TIMEOUT_SECONDS = 30;
 
     private static final TableDefinition DEFINITION = TableDefinition.of(ColumnDefinition.ofInt("X"));
 
@@ -153,6 +165,70 @@ public class UncoalescedTableTest {
             assertEquals(1, uncoalesced.coalesceCount);
         } finally {
             holder.release();
+        }
+    }
+
+    /**
+     * A thread coalesces a table, with a parallel where, while every initialization thread runs a job that waits for
+     * the same coalesce. The coalesce does not wait for work on those threads, so it completes, and then so do the
+     * jobs.
+     */
+    @Test
+    public void testCoalesceCompletesWhileInitializationThreadsWaitForIt() throws Exception {
+        final int numThreads = 2;
+        final OperationInitializationThreadPool pool =
+                new OperationInitializationThreadPool(ThreadInitializationFactory.NO_OP, numThreads);
+        final ExecutorService coalescingThread = Executors.newSingleThreadExecutor();
+        try (final SafeCloseable ignored1 = new ForcedParallelWhere(numThreads, 1);
+                final SafeCloseable ignored2 = ExecutionContext.getContext().withOperationInitializer(pool).open()) {
+            final ExecutionContext executionContext = ExecutionContext.getContext();
+            final Table source = TableTools.emptyTable(100).update("X = (int) ii");
+            final CountDownLatch coalescing = new CountDownLatch(1);
+            final CountDownLatch initializationThreadsWaiting = new CountDownLatch(1);
+            final TestUncoalescedTable uncoalesced = new TestUncoalescedTable(false, () -> {
+                coalescing.countDown();
+                try {
+                    assertTrue(initializationThreadsWaiting.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+                } catch (final InterruptedException e) {
+                    throw new IllegalStateException(e);
+                }
+                return source.where("X % 2 == 0");
+            });
+
+            final Future<Table> coalesced = coalescingThread.submit(() -> {
+                try (final SafeCloseable ignored = executionContext.open()) {
+                    return uncoalesced.coalesce();
+                }
+            });
+            assertTrue(coalescing.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
+
+            // occupy every initialization thread with a job that waits for the coalesce in progress
+            final List<Thread> initializationThreads = Collections.synchronizedList(new ArrayList<>());
+            final List<Future<?>> jobs = new ArrayList<>();
+            for (int ti = 0; ti < numThreads; ++ti) {
+                jobs.add(pool.submit(() -> {
+                    initializationThreads.add(Thread.currentThread());
+                    try (final SafeCloseable ignored = executionContext.open()) {
+                        uncoalesced.coalesce();
+                    }
+                }));
+            }
+            final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS);
+            while (initializationThreads.size() < numThreads
+                    || !initializationThreads.stream().allMatch(thread -> thread.getState() == Thread.State.BLOCKED)) {
+                assertTrue("initialization threads did not block on the coalesce", System.nanoTime() < deadline);
+                Thread.sleep(10);
+            }
+            initializationThreadsWaiting.countDown();
+
+            assertEquals(50, coalesced.get(TIMEOUT_SECONDS, TimeUnit.SECONDS).size());
+            for (final Future<?> job : jobs) {
+                job.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            }
+            assertEquals(1, uncoalesced.coalesceCount);
+        } finally {
+            coalescingThread.shutdownNow();
+            pool.shutdown();
         }
     }
 

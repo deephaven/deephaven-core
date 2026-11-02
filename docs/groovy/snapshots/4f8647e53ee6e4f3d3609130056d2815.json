@@ -1,0 +1,1 @@
+{"file":"conceptual/table-update-model.md","objects":{"myTable":{"type":"Table","data":{"columns":[{"name":"Timestamp","type":"java.time.Instant"},{"name":"Value","type":"int"}],"rows":[]}}}}

@@ -202,8 +202,12 @@ public class ChunkedOperatorAggregationHelper {
         final ColumnSource<?>[] reinterpretedKeySources = Arrays.stream(keySources)
                 .map(ReinterpretUtils::maybeConvertToPrimitive).toArray(ColumnSource[]::new);
 
+        // Without initial keys, every state of an add-only or blink input is created by an add and is never emptied,
+        // so only other refreshing inputs need to record emptied and reincarnated states.
+        final boolean recordStateChanges = input.isRefreshing() && !preserveEmpty
+                && (initialKeys != null || !(input.isAddOnly() || input.isBlink()));
         final AggregationContext ac = aggregationContextFactory.makeAggregationContext(
-                input, input.isRefreshing() && !preserveEmpty, keyNames);
+                input, recordStateChanges, keyNames);
 
         final PermuteKernel[] permuteKernels = ac.makePermuteKernels();
 
@@ -289,7 +293,11 @@ public class ChunkedOperatorAggregationHelper {
                 ? RowSetFactory.flat(outputPosition.get())
                 : initialRowsBuilder.build()).toTracking();
         if (input.isRefreshing()) {
-            copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
+            // Copy the keys of every state, including initial groups that start empty and stay out of the result row
+            // set until they are filled; later cycles copy keys only for newly created states.
+            try (final RowSet allStates = RowSetFactory.flat(outputPosition.get())) {
+                copyKeyColumns(keyColumnsRaw, keyColumnsCopied, allStates);
+            }
             if (reclaimStates && reclaimMode.movesStates()) {
                 // a moved state's key is read at its old position as a previous value
                 // noinspection DataFlowIssue
@@ -329,7 +337,7 @@ public class ChunkedOperatorAggregationHelper {
                         ac.initializeRefreshing(result, this);
 
                 final StateChangeRecorder stateChangeRecorder =
-                        preserveEmpty ? null : ac.getStateChangeRecorder();
+                        recordStateChanges ? ac.getStateChangeRecorder() : null;
                 // reused by every update, so that their bitsets are allocated once and grow with the output positions
                 final BitmapRandomBuilder modifiedStatesBuilder = new BitmapRandomBuilder(0);
                 final BitmapRandomBuilder reincarnatedStatesBuilder = new BitmapRandomBuilder(0);

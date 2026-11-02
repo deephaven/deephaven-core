@@ -2,25 +2,19 @@
 title: Export data to CSV or other delimited files
 ---
 
-This guide discusses how to export table data to CSV (or other delimited) files from Deephaven by using [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md).
+This guide shows how to export table data from Deephaven to CSV and other delimited files with [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md).
 
 > [!TIP]
-> CSV files can also be exported via **Table Options > Download CSV** in the Deephaven UI.
+> You can also export a table to a CSV file from the Deephaven UI with **Table Options > Download CSV**.
 
 ## `writeCsv`
 
-The basic syntax for `writeCsv` is:
-
-```groovy skip-test
-import static io.deephaven.csv.CsvTools.writeCsv
-
-writeCsv(table, "/data/outputFile.csv")
-```
-
 > [!NOTE]
-> Deephaven writes files to locations relative to the base of its Docker container. See [Docker data volumes](../../conceptual/docker-data-volumes.md) to learn more about the relation between locations in the container and the local file system.
+> The Deephaven server resolves file paths. If you run Deephaven in Docker, the path refers to the container's file system. The default Docker Compose setup mounts the `./data` directory of your Deephaven deployment as the `/data` [Docker data volume](../../conceptual/docker-data-volumes.md#the-data-mount-point) in the container. A file written to `/data/TrigFunctions.csv` appears at `./data/TrigFunctions.csv` on your computer. If you run Deephaven without Docker, replace `/data` with a directory that exists on the server's machine.
 
-We'll create a table to export by using [`emptyTable`](../../reference/table-operations/create/emptyTable.md) and [`update`](../../reference/table-operations/select/update.md). The table contains 100 rows of trigonometric values.
+### Write a table to a CSV file
+
+Let's create a table to export. It contains 100 rows of trigonometric values, made with [`emptyTable`](../../reference/table-operations/create/emptyTable.md) and [`update`](../../reference/table-operations/select/update.md):
 
 ```groovy test-set=1
 source = emptyTable(100).update(
@@ -31,9 +25,7 @@ source = emptyTable(100).update(
 )
 ```
 
-### Standard CSV files
-
-The simplest way to use [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md) is to supply two input parameters:
+The simplest way to use [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md) is to pass two arguments:
 
 - The Deephaven source table.
 - The path of the output CSV file.
@@ -44,20 +36,22 @@ import static io.deephaven.csv.CsvTools.writeCsv
 writeCsv(source, "/data/TrigFunctions.csv")
 ```
 
-![The newly written CSV file](../../assets/how-to/TrigFunctions_basic.png)
+The first lines of `TrigFunctions.csv` look like this:
 
-#### The `/data` mount point
-
-If you are using Docker-installed Deephaven, you can find a `/data` folder inside your Deephaven installation's main folder, on the same level as your `docker-compose.yml` file. This folder is mounted to the `/data` volume in the running Deephaven container. This means that if the Deephaven console is used to write data to `/data/abc/file.csv`, that file will be visible at `./data/abc/file.csv` on the local file system of your computer.
-
-> [!NOTE]
-> If the `./data` directory does not exist when Deephaven is launched, it will be created.
+```text
+X,SinX,CosX,TanX
+0.0,0.0,1.0,0.0
+0.1,0.09983341664682815,0.9950041652780258,0.10033467208545055
+0.2,0.19866933079506122,0.9800665778412416,0.2027100355086725
+0.30000000000000004,0.2955202066613396,0.955336489125606,0.3093362496096233
+0.4,0.3894183423086505,0.9210609940028851,0.4227932187381618
+```
 
 ### Null values
 
-Null values are common in tables. How are they handled when exporting data to a CSV? This depends on how you call [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md).
+Null values are common in tables. By default, [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md) writes them as empty fields.
 
-First, let's create a table with null values. The example below uses the [ternary conditional operator](../ternary-if-how-to.md) to fill the `SinX` column with a large number of nulls.
+To see this, let's create a table with null values. The example below uses the [ternary conditional operator](../ternary-if-how-to.md) to fill the `SinX` column with a large number of nulls.
 
 ```groovy test-set=2
 sourceWithNulls = emptyTable(100).update(
@@ -76,11 +70,37 @@ import static io.deephaven.csv.CsvTools.writeCsv
 writeCsv(sourceWithNulls, "/data/TrigFunctionsWithNulls.csv")
 ```
 
-![The newly written CSV file](../../assets/how-to/TrigFunctions_basicWithNulls.png)
+The first lines of `TrigFunctionsWithNulls.csv` show the null `SinX` values as empty fields:
+
+```text
+X,SinX,CosX,TanX
+0.0,,1.0,0.0
+0.1,0.09983341664682815,0.9950041652780258,0.10033467208545055
+0.2,,0.9800665778412416,0.2027100355086725
+0.30000000000000004,0.2955202066613396,0.955336489125606,0.3093362496096233
+0.4,,0.9210609940028851,0.4227932187381618
+```
+
+To write nulls as `(null)` instead, use the overload that takes a boolean `nullsAsEmpty` argument right after the file path, and pass `false`:
+
+```groovy test-set=2
+import static io.deephaven.csv.CsvTools.writeCsv
+
+writeCsv(sourceWithNulls, "/data/TrigFunctionsWithNullStrings.csv", false)
+```
+
+The first lines of `TrigFunctionsWithNullStrings.csv` show `(null)` in place of each null `SinX` value:
+
+```text
+X,SinX,CosX,TanX
+0.0,(null),1.0,0.0
+0.1,0.09983341664682815,0.9950041652780258,0.10033467208545055
+0.2,(null),0.9800665778412416,0.2027100355086725
+```
 
 ### Column selection
 
-In the event you don't want to write every column in the table to a CSV file, you can specify which columns to write. This is done by providing a list of column names, as shown below.
+To write only some columns, pass their names as extra arguments after the file path. The example below writes the `X` and `CosX` columns of the `sourceWithNulls` table created in [Null values](#null-values).
 
 ```groovy test-set=2
 import static io.deephaven.csv.CsvTools.writeCsv
@@ -88,11 +108,64 @@ import static io.deephaven.csv.CsvTools.writeCsv
 writeCsv(sourceWithNulls, "/data/Cosine.csv", "X", "CosX")
 ```
 
-![The newly written CSV file](../../assets/how-to/TrigFunctions_NullsCosineOnly.png)
+`Cosine.csv` contains only the `X` and `CosX` columns:
+
+```text
+X,CosX
+0.0,1.0
+0.1,0.9950041652780258
+0.2,0.9800665778412416
+0.30000000000000004,0.955336489125606
+0.4,0.9210609940028851
+```
+
+### Other delimiters, compression, and time zone
+
+By default, [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md) separates fields with commas. To use a different delimiter, call the overload that takes a `separator` argument. The same overload also writes bz2-compressed files and writes `Instant` values in a time zone other than the system default. That overload has this signature:
+
+```groovy syntax
+writeCsv(source, destPath, compressed, timeZone, nullsAsEmpty, separator, columns...)
+```
+
+Between the file path and the separator, it takes these arguments, in order:
+
+- `compressed`: whether to compress the file with bz2. When `true`, [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md) appends `.bz2` to the file path.
+- `timeZone`: the time zone in which to write `Instant` values.
+- `nullsAsEmpty`: whether to write nulls as empty fields.
+
+In this overload, the boolean right after the path is `compressed`, not `nullsAsEmpty` as in [Null values](#null-values).
+
+The example below writes the `sourceWithNulls` table created in [Null values](#null-values) as a tab-separated file, with the same defaults that the two-argument call uses: no compression, the system default time zone, and nulls as empty fields.
+
+```groovy test-set=2
+import static io.deephaven.csv.CsvTools.writeCsv
+
+writeCsv(sourceWithNulls, "/data/TrigFunctionsWithNulls.tsv", false, timeZone(), true, '\t' as char)
+```
+
+### Write a ticking table
+
+Deephaven tables can tick, updating in real time as new data arrives. [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md) writes the rows that a table holds when the call runs, so the file is a point-in-time copy of a live table. It reads those rows directly, without taking a snapshot, so a table that updates during the write can produce an inconsistent file. To write a consistent copy, take a [`snapshot`](../../reference/table-operations/snapshot/snapshot.md) of the table first and write the snapshot.
+
+The example below creates a ticking table with [`timeTable`](../../reference/table-operations/create/timeTable.md):
+
+```groovy test-set=3 ticking-table order=null
+live = timeTable("PT1s").update("X = i")
+```
+
+A new time table has no rows until Deephaven runs its first update cycle, which happens after the command that creates the table finishes. Writing the table in that same command produces a file with only the header row. Run the write as a separate command, after the table has ticked:
+
+```groovy test-set=3 ticking-table order=null
+import static io.deephaven.csv.CsvTools.writeCsv
+
+writeCsv(live.snapshot(), "/data/LiveSnapshot.csv")
+```
+
+To keep a file up to date as a table ticks, see [How can I periodically write a ticking table to disk?](../../reference/community-questions/write-ticking-table-periodically.md).
 
 ## Related documentation
 
-- [Create an empty table](../new-and-empty-table.md#emptytable)
-- [How to import CSV files](./csv-import.md)
+- [Create an empty table with `emptyTable`](../new-and-empty-table.md#emptytable)
+- [Read CSV or other delimited files](./csv-import.md)
 - [Docker data volumes](../../conceptual/docker-data-volumes.md)
 - [`writeCsv`](../../reference/data-import-export/CSV/writeCsv.md)

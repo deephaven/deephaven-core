@@ -11,6 +11,9 @@ import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.PoisonedUpdateGraph;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.StandaloneLivenessManager;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
@@ -27,28 +30,53 @@ import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilterDelegatingBase;
+import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.MatchOptions;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import org.apache.commons.lang3.mutable.MutableObject;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.testutil.StepClock;
 import io.deephaven.engine.testutil.filters.ReindexingRowSetCapturingFilter;
+import io.deephaven.engine.testutil.filters.PreviousRejectingFilter;
 import io.deephaven.engine.testutil.filters.RowSetCapturingFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TestClock;
 import io.deephaven.qst.type.Type;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+import io.deephaven.engine.table.PartitionedTableFactory;
+import io.deephaven.engine.table.PartitionedTable;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
@@ -583,6 +611,528 @@ public class TestPartitionAwareSourceTableNoMocks {
         final Table composedCoalesced = viaComposed.coalesce();
         assertEquals(expectedSize, composedCoalesced.size());
         assertEquals(expectRefreshing, composedCoalesced.isRefreshing());
+    }
+
+    /**
+     * One thread coalesces a deferred table during an update cycle without the update graph lock. Its condition uses a
+     * query scope parameter, so it cannot filter previous values, and the deferred where's snapshot waits for the
+     * shared lock. Another thread, already waiting for the exclusive lock when that happens, holds it once the cycle
+     * completes and coalesces the same deferred table. The two coalesces' where operations never overlap, both
+     * coalesces complete with the same result, and only that result filters rows added afterwards.
+     */
+    @Test
+    public void testDeferredCoalesceWhileExclusiveLockHolderCoalesces() throws Exception {
+        checkDeferredCoalesceWhileExclusiveLockHolderCoalesces(true);
+    }
+
+    /**
+     * As {@link #testDeferredCoalesceWhileExclusiveLockHolderCoalesces()}, but the source is not coalesced first, so
+     * the lock-free thread coalesces the source within the attempt that it abandons.
+     */
+    @Test
+    public void testDeferredCoalesceOfUncoalescedSourceWhileExclusiveLockHolderCoalesces() throws Exception {
+        checkDeferredCoalesceWhileExclusiveLockHolderCoalesces(false);
+    }
+
+    private void checkDeferredCoalesceWhileExclusiveLockHolderCoalesces(final boolean coalesceSourceFirst)
+            throws Exception {
+        final long partitionSize = 128;
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                partitionedLocationProvider(partitionSize);
+        final Table source = refreshingPartitionedSource(tableLocationProvider);
+        if (coalesceSourceFirst) {
+            // the lock-free thread's attempt can then be abandoned only at the deferred where's snapshot
+            source.coalesce();
+        }
+        ExecutionContext.getContext().getQueryScope().putParam("threshold", 0L);
+        // copies of the filters, one for each coalesce, share what they capture
+        final RowSetCapturingFilter filter = new RowSetCapturingFilter(RawString.of("II + threshold >= 0"));
+        final OverlapRecordingFilter overlapRecordingFilter = new OverlapRecordingFilter(filter);
+        final Table coalesced = coalesceWhileExclusiveLockHolderCoalesces(source.where(overlapRecordingFilter));
+        assertEquals(4 * partitionSize, coalesced.size());
+        assertEquals(1, overlapRecordingFilter.maxOperationsInProgress.get());
+
+        filter.reset();
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(2 * partitionSize));
+        updateGraph.getDelegate().startCycleForUnitTests(false);
+        updateGraph.refreshSources();
+        updateGraph.markSourcesRefreshedForUnitTests();
+        updateGraph.getDelegate().completeCycleForUnitTests();
+        assertEquals(8 * partitionSize, coalesced.size());
+        assertEquals(4 * partitionSize, filter.numRowsProcessed());
+    }
+
+    /**
+     * As {@link #testDeferredCoalesceWhileExclusiveLockHolderCoalesces()}, but the deferred where is memoizable, so the
+     * exclusive lock holder's where reaches the same memoized operation that the other thread is computing.
+     */
+    @Test
+    public void testDeferredMemoizedCoalesceWhileExclusiveLockHolderCoalesces() throws Exception {
+        checkDeferredMemoizedCoalesceWhileExclusiveLockHolderCoalesces(true);
+    }
+
+    /**
+     * As {@link #testDeferredMemoizedCoalesceWhileExclusiveLockHolderCoalesces()}, but the source is not coalesced
+     * first, so the lock-free thread coalesces the source within the attempt that it abandons.
+     */
+    @Test
+    public void testDeferredMemoizedCoalesceOfUncoalescedSourceWhileExclusiveLockHolderCoalesces() throws Exception {
+        checkDeferredMemoizedCoalesceWhileExclusiveLockHolderCoalesces(false);
+    }
+
+    private void checkDeferredMemoizedCoalesceWhileExclusiveLockHolderCoalesces(final boolean coalesceSourceFirst)
+            throws Exception {
+        final long partitionSize = 128;
+        final Table source = refreshingPartitionedSource(partitionedLocationProvider(partitionSize));
+        if (coalesceSourceFirst) {
+            // the lock-free thread's attempt can then be abandoned only at the deferred where's snapshot
+            source.coalesce();
+        }
+        final WhereFilter filter = new PreviousRejectingFilter(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        try {
+            final Table coalesced = coalesceWhileExclusiveLockHolderCoalesces(source.where(filter));
+            assertEquals(4 * partitionSize, coalesced.size());
+        } finally {
+            QueryTable.setMemoizeResults(oldMemoize);
+        }
+    }
+
+    /**
+     * As {@link #testDeferredCoalesceWhileExclusiveLockHolderCoalesces()}, but the deferred where's filter performs a
+     * nested snapshot that needs the update graph lock during an update cycle.
+     */
+    @Test
+    public void testDeferredNestedSnapshotCoalesceWhileExclusiveLockHolderCoalesces() throws Exception {
+        checkDeferredNestedSnapshotCoalesceWhileExclusiveLockHolderCoalesces(true);
+    }
+
+    /**
+     * As {@link #testDeferredNestedSnapshotCoalesceWhileExclusiveLockHolderCoalesces()}, but the source is not
+     * coalesced first, so the lock-free thread coalesces the source within the attempt that it abandons.
+     */
+    @Test
+    public void testDeferredNestedSnapshotCoalesceOfUncoalescedSourceWhileExclusiveLockHolderCoalesces()
+            throws Exception {
+        checkDeferredNestedSnapshotCoalesceWhileExclusiveLockHolderCoalesces(false);
+    }
+
+    private void checkDeferredNestedSnapshotCoalesceWhileExclusiveLockHolderCoalesces(
+            final boolean coalesceSourceFirst) throws Exception {
+        final long partitionSize = 128;
+        final Table source = refreshingPartitionedSource(partitionedLocationProvider(partitionSize));
+        if (coalesceSourceFirst) {
+            // the lock-free thread's attempt can then be abandoned only at the filter's nested snapshot
+            source.coalesce();
+        }
+        final NestedSnapshotFilter filter =
+                new NestedSnapshotFilter(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
+        final Table coalesced = coalesceWhileExclusiveLockHolderCoalesces(source.where(filter));
+        assertEquals(4 * partitionSize, coalesced.size());
+    }
+
+    /**
+     * Before filtering, performs a nested snapshot that cannot run concurrently with an update cycle, so that it needs
+     * the update graph lock while one is updating.
+     */
+    private static class NestedSnapshotFilter extends WhereFilterDelegatingBase {
+
+        private NestedSnapshotFilter(final WhereFilter filter) {
+            super(filter);
+        }
+
+        @NotNull
+        @Override
+        public WritableRowSet filter(
+                @NotNull final RowSet selection,
+                @NotNull final RowSet fullSet,
+                @NotNull final Table table,
+                final boolean usePrev) {
+            final UpdateGraph updateGraph = table.getUpdateGraph();
+            ConstructSnapshot.callDataSnapshotFunction("NestedSnapshotFilter", new ConstructSnapshot.SnapshotControl() {
+                @Override
+                public Boolean usePreviousValues(final long beforeClockValue) {
+                    return false;
+                }
+
+                @Override
+                public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
+                    return true;
+                }
+
+                @Override
+                public UpdateGraph getUpdateGraph() {
+                    return updateGraph;
+                }
+            }, (final boolean snapshotUsePrev, final long beforeClockValue) -> {
+                if (LogicalClock.getState(beforeClockValue) == LogicalClock.State.Updating
+                        && !updateGraph.sharedLock().isHeldByCurrentThread()
+                        && !updateGraph.exclusiveLock().isHeldByCurrentThread()) {
+                    throw new ConstructSnapshot.NoSnapshotAllowedException();
+                }
+                return true;
+            });
+            return super.filter(selection, fullSet, table, usePrev);
+        }
+
+        @Override
+        public WhereFilter maybeUnwrapFilter() {
+            return this;
+        }
+
+        @Override
+        public WhereFilter copy() {
+            return new NestedSnapshotFilter(filter.copy());
+        }
+    }
+
+    /**
+     * Records the greatest number of where operations, over this filter and its copies, that are in progress at once.
+     */
+    private static class OverlapRecordingFilter extends WhereFilterDelegatingBase {
+        private final AtomicInteger operationsInProgress;
+        private final AtomicInteger maxOperationsInProgress;
+
+        private OverlapRecordingFilter(final WhereFilter filter) {
+            this(filter, new AtomicInteger(), new AtomicInteger());
+        }
+
+        private OverlapRecordingFilter(
+                final WhereFilter filter,
+                final AtomicInteger operationsInProgress,
+                final AtomicInteger maxOperationsInProgress) {
+            super(filter);
+            this.operationsInProgress = operationsInProgress;
+            this.maxOperationsInProgress = maxOperationsInProgress;
+        }
+
+        @Override
+        public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+            maxOperationsInProgress.accumulateAndGet(operationsInProgress.incrementAndGet(), Math::max);
+            final SafeCloseable delegateOperation;
+            try {
+                delegateOperation = super.beginOperation(sourceTable);
+            } catch (final RuntimeException | Error failure) {
+                operationsInProgress.decrementAndGet();
+                throw failure;
+            }
+            return () -> {
+                try (final SafeCloseable ignored = delegateOperation) {
+                    operationsInProgress.decrementAndGet();
+                }
+            };
+        }
+
+        @Override
+        public WhereFilter maybeUnwrapFilter() {
+            return this;
+        }
+
+        @Override
+        public WhereFilter copy() {
+            return new OverlapRecordingFilter(filter.copy(), operationsInProgress, maxOperationsInProgress);
+        }
+    }
+
+    /**
+     * One thread coalesces {@code deferred} during an update cycle without the update graph lock, and its deferred
+     * where's snapshot waits for the shared lock. Another thread, already waiting for the exclusive lock when that
+     * happens, holds it once the cycle completes and coalesces {@code deferred} too. Both coalesces must complete with
+     * the same result.
+     *
+     * @return The coalesced result
+     */
+    private Table coalesceWhileExclusiveLockHolderCoalesces(final Table deferred) throws Exception {
+        assertTrue(deferred instanceof DeferredViewTable);
+        final Table[] results = runWhileExclusiveLockHolderRuns(deferred::coalesce, deferred::coalesce);
+        assertSame(results[0], results[1]);
+        return results[1];
+    }
+
+    /**
+     * During an update cycle, one thread starts waiting for the exclusive lock, and then another thread without the
+     * update graph lock runs {@code lockFreeOperation} until it waits for the update graph lock. Once the cycle
+     * completes, the first thread runs {@code exclusiveOperation} while holding the exclusive lock. Both operations
+     * must complete.
+     *
+     * @return The results of {@code exclusiveOperation} and {@code lockFreeOperation}, in that order
+     */
+    private Table[] runWhileExclusiveLockHolderRuns(
+            final Supplier<Table> exclusiveOperation,
+            final Supplier<Table> lockFreeOperation) throws Exception {
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final UpdateGraph contextUpdateGraph = executionContext.getUpdateGraph();
+        final CompletableFuture<Table> exclusiveResult = new CompletableFuture<>();
+        final Thread exclusiveThread = new Thread(() -> {
+            try (final SafeCloseable ignored = executionContext.open()) {
+                exclusiveResult.complete(contextUpdateGraph.exclusiveLock().computeLocked(exclusiveOperation::get));
+            } catch (final Throwable failure) {
+                exclusiveResult.completeExceptionally(failure);
+            }
+        }, "exclusive-operation");
+        final CompletableFuture<Table> lockFreeResult = new CompletableFuture<>();
+        final Thread lockFreeThread = new Thread(() -> {
+            try (final SafeCloseable ignored = executionContext.open()) {
+                lockFreeResult.complete(lockFreeOperation.get());
+            } catch (final Throwable failure) {
+                lockFreeResult.completeExceptionally(failure);
+            }
+        }, "lock-free-operation");
+        exclusiveThread.setDaemon(true);
+        lockFreeThread.setDaemon(true);
+
+        updateGraph.getDelegate().startCycleForUnitTests(false);
+        try {
+            exclusiveThread.start();
+            awaitWaitingForUpdateGraphLock(exclusiveThread, exclusiveResult);
+            lockFreeThread.start();
+            awaitWaitingForUpdateGraphLock(lockFreeThread, lockFreeResult);
+        } finally {
+            updateGraph.refreshSources();
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.getDelegate().completeCycleForUnitTests();
+        }
+
+        try {
+            return new Table[] {
+                    exclusiveResult.get(30, TimeUnit.SECONDS),
+                    lockFreeResult.get(30, TimeUnit.SECONDS)};
+        } catch (final TimeoutException timeout) {
+            final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+            final long[] deadlockedIds = threadMXBean.findDeadlockedThreads();
+            final StringBuilder deadlocked = new StringBuilder();
+            if (deadlockedIds != null) {
+                for (final ThreadInfo threadInfo : threadMXBean.getThreadInfo(deadlockedIds, true, true)) {
+                    deadlocked.append('\n').append(threadInfo.getThreadName()).append(" waiting on ")
+                            .append(threadInfo.getLockName()).append(" owned by ")
+                            .append(threadInfo.getLockOwnerName());
+                    for (final StackTraceElement frame : threadInfo.getStackTrace()) {
+                        deadlocked.append("\n\tat ").append(frame);
+                    }
+                }
+            }
+            throw new AssertionError("Operations did not complete; deadlocked threads:" + deadlocked, timeout);
+        }
+    }
+
+    /**
+     * One thread computes a memoized where during an update cycle without the update graph lock; the where cannot
+     * filter previous values, so it waits for the shared lock while computing. Another thread, already waiting for the
+     * exclusive lock when that happens, holds it once the cycle completes and transforms a partitioned table, whose
+     * transformation runs the same where on an initialization worker. Since the transforming thread holds the lock and
+     * waits for the worker, the worker must not wait for the other thread's memoized computation.
+     */
+    @Test
+    public void testTransformWorkerDoesNotWaitForMemoizedOperationWhileExclusiveLockHolderTransforms()
+            throws Exception {
+        final long partitionSize = 128;
+        final Table source = refreshingPartitionedSource(partitionedLocationProvider(partitionSize)).coalesce();
+        final WhereFilter filter = new PreviousRejectingFilter(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
+        final PartitionedTable partitioned = PartitionedTableFactory.ofTables(source);
+        final AtomicReference<Thread> exclusiveThread = new AtomicReference<>();
+        final AtomicBoolean transformedOnWorker = new AtomicBoolean();
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        try (final SafeCloseable ignored = new ForcedParallelSelect()) {
+            final Table[] results = runWhileExclusiveLockHolderRuns(() -> {
+                exclusiveThread.set(Thread.currentThread());
+                return partitioned.transform(constituent -> {
+                    if (Thread.currentThread() != exclusiveThread.get()) {
+                        transformedOnWorker.set(true);
+                    }
+                    return constituent.where(filter);
+                }).merge();
+            }, () -> source.where(filter));
+            assertTrue("the transformation must run on an initialization worker", transformedOnWorker.get());
+            assertEquals(4 * partitionSize, results[0].size());
+            assertEquals(4 * partitionSize, results[1].size());
+        } finally {
+            QueryTable.setMemoizeResults(oldMemoize);
+        }
+    }
+
+    /**
+     * A refreshing deferred table coalesces on a thread that may wait for the update graph, so its coalesce runs in a
+     * liveness scope of its own. Once garbage is collected and the liveness referents it made unreachable are cleaned
+     * up, the coalesced result is still live and still updates, because the caller's liveness scope retains it.
+     */
+    @Test
+    public void testCoalescedResultSurvivesGarbageCollection() throws InterruptedException {
+        final long partitionSize = 128;
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                partitionedLocationProvider(partitionSize);
+        final Table deferred = refreshingPartitionedSource(tableLocationProvider)
+                .where(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
+        assertTrue(deferred instanceof DeferredViewTable);
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final Table coalesced = deferred.coalesce();
+            assertEquals(4 * partitionSize, coalesced.size());
+            for (int round = 0; round < 3; ++round) {
+                awaitLivenessCleanup();
+            }
+            assertTrue(coalesced.tryRetainReference());
+            coalesced.dropReference();
+
+            tableLocationProvider.locations.values().forEach(location -> location.setSize(2 * partitionSize));
+            updateGraph.getDelegate().startCycleForUnitTests(false);
+            updateGraph.refreshSources();
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.getDelegate().completeCycleForUnitTests();
+            assertEquals(8 * partitionSize, coalesced.size());
+        }
+    }
+
+    /**
+     * Collect garbage until the liveness cleanup processor has cleaned up a referent that became unreachable after this
+     * method was invoked.
+     */
+    private static void awaitLivenessCleanup() throws InterruptedException {
+        final CountDownLatch cleaned = new CountDownLatch(1);
+        CleanupReferenceProcessorInstance.LIVENESS.registerPhantom(new Object(), cleaned::countDown);
+        final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        while (!cleaned.await(10, TimeUnit.MILLISECONDS)) {
+            assertTrue("liveness cleanup did not run", System.nanoTime() < deadlineNanos);
+            System.gc();
+        }
+    }
+
+    /**
+     * A static source table coalesces while a {@link StandaloneLivenessManager} is the current liveness manager.
+     */
+    @Test
+    public void testStaticCoalesceWithStandaloneLivenessManager() {
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                partitionedLocationProvider(128);
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II"),
+                        ColumnDefinition.of("Timestamp", Type.find(Instant.class))),
+                tableLocationProvider.getKey().toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                null);
+        assertFalse(source.isRefreshing());
+        final StandaloneLivenessManager livenessManager = new StandaloneLivenessManager(false);
+        LivenessScopeStack.push(livenessManager);
+        try {
+            final Table coalesced = source.coalesce();
+            assertEquals(4 * 128, coalesced.size());
+            assertSame(coalesced, source.coalesce());
+        } finally {
+            LivenessScopeStack.pop(livenessManager);
+        }
+    }
+
+    /**
+     * A refreshing deferred table coalesces while a {@link StandaloneLivenessManager} is the current liveness manager.
+     * Its source is already coalesced and its where is memoized, so the coalesce reuses live cached results.
+     */
+    @Test
+    public void testRefreshingCachedCoalesceWithStandaloneLivenessManager() {
+        final Table source = refreshingPartitionedSource(partitionedLocationProvider(128));
+        final boolean oldMemoize = QueryTable.setMemoizeResults(true);
+        try {
+            final Table filtered = source.coalesce().where(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
+            final Table deferred = source.where(new MatchFilter(MatchOptions.INVERTED, "II", -1L));
+            assertTrue(deferred instanceof DeferredViewTable);
+            assertTrue(deferred.isRefreshing());
+            final StandaloneLivenessManager livenessManager = new StandaloneLivenessManager(false);
+            LivenessScopeStack.push(livenessManager);
+            try {
+                assertSame(filtered, deferred.coalesce());
+            } finally {
+                LivenessScopeStack.pop(livenessManager);
+            }
+        } finally {
+            QueryTable.setMemoizeResults(oldMemoize);
+        }
+    }
+
+    /**
+     * A static source table built without a registered update graph coalesces.
+     */
+    @Test
+    public void testStaticCoalesceWithoutUpdateGraph() {
+        try (final SafeCloseable ignored =
+                ExecutionContext.getContext().withUpdateGraph(PoisonedUpdateGraph.INSTANCE).open()) {
+            final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                    partitionedLocationProvider(128);
+            final Table source = new PartitionAwareSourceTable(
+                    TableDefinition.of(
+                            ColumnDefinition.ofString("partition").withPartitioning(),
+                            ColumnDefinition.ofLong("II"),
+                            ColumnDefinition.of("Timestamp", Type.find(Instant.class))),
+                    tableLocationProvider.getKey().toString(),
+                    RegionedTableComponentFactoryImpl.INSTANCE,
+                    tableLocationProvider,
+                    null);
+            assertFalse(source.isRefreshing());
+            assertSame(PoisonedUpdateGraph.INSTANCE, source.getUpdateGraph());
+            final Table coalesced = source.coalesce();
+            assertEquals(4 * 128, coalesced.size());
+            assertSame(coalesced, source.coalesce());
+        }
+    }
+
+    /**
+     * Wait until {@code thread} is parked waiting for the update graph lock. If {@code thread} completes first, its
+     * result or failure is reported instead.
+     */
+    private static void awaitWaitingForUpdateGraphLock(
+            final Thread thread,
+            final CompletableFuture<Table> result) throws Exception {
+        final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        final long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        while (true) {
+            if (result.isDone()) {
+                throw new AssertionError(thread.getName() + " completed without waiting for the update graph lock: "
+                        + result.get());
+            }
+            final ThreadInfo threadInfo = threadMXBean.getThreadInfo(thread.getId());
+            if (threadInfo != null && threadInfo.getLockInfo() != null
+                    && threadInfo.getLockInfo().getClassName().startsWith(ReentrantReadWriteLock.class.getName())) {
+                return;
+            }
+            if (System.nanoTime() > deadlineNanos) {
+                throw new AssertionError(thread.getName() + " is not waiting for the update graph lock: " + threadInfo);
+            }
+            Thread.sleep(10);
+        }
+    }
+
+    /**
+     * A table location provider with four partitions of {@code partitionSize} rows.
+     */
+    private static PartitionAwareSourceTableTestUtils.TableLocationProviderImpl partitionedLocationProvider(
+            final long partitionSize) {
+        final PartitionAwareSourceTableTestUtils.TestTDS tds = new PartitionAwareSourceTableTestUtils.TestTDS();
+        final TableKey tableKey = new PartitionAwareSourceTableTestUtils.TableKeyImpl();
+        final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider =
+                (PartitionAwareSourceTableTestUtils.TableLocationProviderImpl) tds.getTableLocationProvider(tableKey);
+        for (char partition = 'A'; partition <= 'D'; partition++) {
+            tableLocationProvider.appendLocation(
+                    new PartitionAwareSourceTableTestUtils.TableLocationKeyImpl(String.valueOf(partition)));
+        }
+        tableLocationProvider.locations.values().forEach(location -> location.setSize(partitionSize));
+        return tableLocationProvider;
+    }
+
+    /**
+     * A refreshing partitioned source table over {@code tableLocationProvider}.
+     */
+    private static Table refreshingPartitionedSource(
+            final PartitionAwareSourceTableTestUtils.TableLocationProviderImpl tableLocationProvider) {
+        final Table source = new PartitionAwareSourceTable(
+                TableDefinition.of(
+                        ColumnDefinition.ofString("partition").withPartitioning(),
+                        ColumnDefinition.ofLong("II"),
+                        ColumnDefinition.of("Timestamp", Type.find(Instant.class))),
+                tableLocationProvider.getKey().toString(),
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                tableLocationProvider,
+                ExecutionContext.getContext().getUpdateGraph());
+        assertTrue(source.isRefreshing());
+        return source;
     }
 
     @Test
