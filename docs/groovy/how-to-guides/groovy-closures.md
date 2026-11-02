@@ -138,13 +138,13 @@ import com.example.MyClass
 ```
 
 > [!NOTE]
-> When running [Deephaven from Docker](../getting-started/docker-install.md), the path must be visible inside the Docker container. For more information, see [Docker volumes](../conceptual/docker-data-volumes.md).
+> When running [Deephaven from Docker](../getting-started/docker-install.md), the path must be visible inside the Docker container. For more information, see [Docker bind mounts](../conceptual/docker-data-volumes.md).
 
 ## Related documentation
 
 - [Auto-imported functions](../reference/query-language/query-library/auto-imported/index.md)
 - [Create a new table](../how-to-guides/new-and-empty-table.md#newtable)
-- [Docker volumes](../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../conceptual/docker-data-volumes.md)
 - [How to use variables and functions in query strings](../how-to-guides/query-scope.md)
 - [How to install Java packages](../how-to-guides/install-and-use-java-packages.md)
 - [How to use Deephaven's built-in query language functions](../how-to-guides/built-in-functions.md)

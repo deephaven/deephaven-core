@@ -2,9 +2,9 @@
 title: Configure username/password authentication
 ---
 
-This guide shows how to configure username/password authentication for Deephaven.
+This guide will show you how to configure username/password authentication for Deephaven.
 
-With username/password authentication, each user has their own username and a secret password that proves their identity.
+Username/password is a common authentication method in which each user of an application has their own username and a secret password. The username says who the user is, and the password proves it.
 
 > [!WARNING]
 > The [example configuration](#set-up-usernamepassword-authentication) given in this guide is _not_ recommended for use in a production environment. It is only meant to show a basic implementation that can be used as a template. Every user who logs in gets the same SuperUser context. A SuperUser context allows everything the Deephaven APIs allow, so the example handler doesn't limit what any user can do.
@@ -117,7 +117,7 @@ To generate a hash, clone the [Deephaven source repository](https://github.com/d
 ./gradlew :authentication:example-providers:sql-username-password:generatePassword --args='newPasswordGoesHere'
 ```
 
-Keep the single quotes. Without them, the shell expands a `$` in the password and splits the password at spaces, so the hash doesn't match the password you intended.
+Keep both layers of quotes. The outer single quotes stop the shell from expanding a `$` in the password. The inner double quotes keep a password that contains spaces together as one argument when Gradle parses `--args`. Without them, the hash doesn't match the password you intended.
 
 By default, the `generatePassword` task prints a hash that starts with `$2a$10$`.
 

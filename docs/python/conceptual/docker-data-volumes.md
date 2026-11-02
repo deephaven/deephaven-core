@@ -6,7 +6,7 @@ Deephaven reads and writes files on your computer through [Docker bind mounts](h
 
 This guide covers only bind mounts. The [Docker Compose](https://docs.docker.com/compose/) files that Deephaven publishes use `volumes` entries that map local directories, which are bind mounts.
 
-Docker also has a separate volume type, which Docker manages. This guide does not cover it.
+Docker also has a separate volume type, which Docker manages. This guide does not cover it. See [Docker volumes](https://docs.docker.com/engine/storage/volumes/) if you want one, for example a named volume for data that doesn't need to appear on your computer.
 
 ## Why mounts are needed
 
@@ -51,7 +51,7 @@ If a local directory in the `volumes` list doesn't exist when Deephaven starts, 
 
 ## Using `docker create`
 
-If you start Deephaven without [Docker Compose](https://docs.docker.com/compose/), add a `-v` flag to `docker create` for each mount point, then start the container with `docker start`. To map `/data` to your local `./data` directory, add `-v "$(pwd)/data:/data"`. Without that flag, the image's `/data` directory is a Docker-managed anonymous volume, and files written there don't appear in your local `./data` directory. Docker-managed volumes are outside this guide.
+If you start Deephaven without [Docker Compose](https://docs.docker.com/compose/), add a `-v` flag to `docker create` for each mount point, then start the container with `docker start`. To map `/data` to your local `./data` directory, add `-v "$(pwd)/data:/data"`. Without that flag, the image's `/data` directory is a Docker-managed anonymous volume, and files written there don't appear in your local `./data` directory. The image's `/cache` directory is also an anonymous volume unless you map it. Docker-managed volumes are outside this guide.
 
 For an example of `docker create` with an extra mount point, see [Add a second volume](../getting-started/docker-install.md#add-a-second-volume). That example omits the `/data` flag, so add `-v "$(pwd)/data:/data"` to it as well to keep the `/data` mapping.
 

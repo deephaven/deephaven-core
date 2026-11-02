@@ -189,7 +189,7 @@ The [`deephaven.pandas`](./use-pandas.md) module contains functions that convert
 - [Choose Python packages to install](../reference/cheat-sheets/choose-python-packages.md)
 - [Launch Deephaven from pre-built images](../getting-started/docker-install.md)
 - [Build and launch Deephaven from source code](../getting-started/launch-build.md)
-- [Access your file system with Docker data volumes](../conceptual/docker-data-volumes.md)
+- [Access your file system with Docker bind mounts](../conceptual/docker-data-volumes.md)
 - [Create a time table](./time-table.md)
 - [Use `deephaven.learn`](./use-deephaven-learn.md)
 - [Use `deephaven.numpy`](./use-numpy.md)
