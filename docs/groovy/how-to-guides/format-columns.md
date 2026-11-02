@@ -304,7 +304,7 @@ You can also create foreground heat maps with [`heatmapFg` or `heatmapForeground
 - [Ternary-if expressions](./ternary-if-how-to.md)
 - [Auto-imported color functions](../reference/query-language/query-library/auto-imported/gui.md)
 - [Groovy variables in query strings](./groovy-variables.md)
-- [Groovy closures in query strings](./groovy-closures.md)
+- [Groovy closures in queries](./groovy-closures.md)
 - [`formatColumns`](../reference/table-operations/format/format-columns.md)
 - [`formatColumnWhere`](../reference/table-operations/format/format-column-where.md)
 - [`formatRowWhere`](../reference/table-operations/format/format-row-where.md)
