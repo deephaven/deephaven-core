@@ -13,7 +13,7 @@ The File Explorer stores these notebooks, with options to create new notebooks o
 Notebooks are stored within your Deephaven Docker container, in `/data/storage/notebooks`.
 
 > [!WARNING]
-> Notebooks stored inside the container are lost when the container is removed, unless you mount a persistent Docker volume at `/data`. See [Access your file system with Docker data volumes](../../conceptual/docker-data-volumes.md) for instructions on persisting your notebooks across container restarts and removals.
+> Notebooks stored inside the container are lost when the container is removed, unless you mount persistent storage at `/data`, such as a Docker bind mount or a Docker named volume. See [Access your file system with Docker bind mounts](../../conceptual/docker-data-volumes.md) for how to persist your notebooks with a bind mount.
 
 ## Create and organize notebooks
 

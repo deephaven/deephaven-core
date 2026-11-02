@@ -65,7 +65,7 @@ file_0=helloWorld.groovy
 In this example, we seed the files needed to use Application Mode, start the Deephaven server, and then see the results in the console.
 
 > [!NOTE]
-> By default, all Deephaven deployments mount `./data` in the local deployment directory to `/data` in the running Deephaven containers. See our guide on [Docker data volumes](../conceptual/docker-data-volumes.md) for more information.
+> By default, all Deephaven deployments mount `./data` in the local deployment directory to `/data` in the running Deephaven containers. See our guide on [Docker bind mounts](../conceptual/docker-data-volumes.md) for more information.
 
 Create an `app.d` folder inside your `./data` directory:
 
@@ -211,7 +211,7 @@ enabled=true
 ## Related documentation
 
 - [Core API design](../conceptual/deephaven-core-api.md)
-- [Docker data volumes](../conceptual/docker-data-volumes.md)
+- [Docker bind mounts](../conceptual/docker-data-volumes.md)
 - [How to install and use Java packages](./install-and-use-java-packages.md)
 - [How to use Application Mode libraries](./application-mode-libraries.md)
 - [How to use Application Mode scripts](./application-mode-script.md)
