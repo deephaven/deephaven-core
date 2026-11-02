@@ -405,6 +405,34 @@ public class TestExecutorJobScheduler {
         assertThat(scheduler.getAccumulatedPerformance().getUsageNanos()).isZero();
     }
 
+    /**
+     * A job queued by the executor and run later on the thread that submitted it, as a pool thread may run the job it
+     * submitted, is not that thread's own work, and the scheduler accounts it.
+     */
+    @Test
+    public void testQueuedJobRunLaterOnTheSubmittingThreadIsAccounted() {
+        final List<Runnable> queued = new ArrayList<>();
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(queued::add, 2);
+        final AtomicReference<Thread> runningThread = new AtomicReference<>();
+
+        scheduler.submit(null, () -> {
+            runningThread.set(Thread.currentThread());
+            try {
+                Thread.sleep(20);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, null, e -> {
+        });
+        assertThat(queued).hasSize(1);
+        queued.forEach(Runnable::run);
+
+        assertThat(runningThread.get()).isSameAs(Thread.currentThread());
+        assertThat(outstandingJobs(scheduler)).isZero();
+        assertThat(scheduler.getAccumulatedPerformance().getUsageNanos())
+                .isGreaterThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(20));
+    }
+
     @Test
     public void testExceptionIsDeliveredToOnError() throws InterruptedException {
         final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(newPool(1), 2);

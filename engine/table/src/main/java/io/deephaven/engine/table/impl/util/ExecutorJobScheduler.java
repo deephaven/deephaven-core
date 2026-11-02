@@ -92,14 +92,20 @@ public class ExecutorJobScheduler implements JobScheduler {
         outstandingJobs.incrementAndGet();
         final Job job = new Job(executionContext, runnable, description, onError);
         try {
-            executor.execute(job);
+            job.inExecute = true;
+            try {
+                executor.execute(job);
+            } finally {
+                job.inExecute = false;
+            }
         } catch (final RejectedExecutionException e) {
             if (!job.tryClaim()) {
                 // A synchronous executor ran the job, which then threw this itself: the job has run, and released its
                 // count, and must not run again.
                 throw e;
             }
-            // Every thread is busy: the job is the submitting thread's own work, and is accounted as such
+            // The executor refused the job (a pool made by newHelperPool does so only once shut down): the job is the
+            // submitting thread's own work, and is accounted as such
             decrementOutstandingJobs();
             job.runOnSubmittingThread();
             return Submission.NOT_WITHDRAWABLE;
@@ -155,6 +161,10 @@ public class ExecutorJobScheduler implements JobScheduler {
     private final class Job implements Runnable, Submission {
 
         private final Thread submitter = Thread.currentThread();
+        // Written and read only by the submitting thread: whether it is inside the executor's execute for this job, so
+        // that a run there is a synchronous executor running the job inline, and not the submitting thread taking the
+        // queued job later, as a pool thread that submitted it may.
+        private boolean inExecute;
         private final AtomicBoolean claimed = new AtomicBoolean();
         // Read only by the thread that claims this job, and cleared once it has run or been withdrawn, so that an
         // entry the executor still queues for it retains none of the work.
@@ -212,7 +222,7 @@ public class ExecutorJobScheduler implements JobScheduler {
                 return;
             }
             try {
-                if (Thread.currentThread() == submitter) {
+                if (Thread.currentThread() == submitter && inExecute) {
                     // A synchronous executor ran it here: the submitting thread's own work, as a refused job is
                     JobScheduler.runJob(executionContext, runnable, description, onError);
                     return;
