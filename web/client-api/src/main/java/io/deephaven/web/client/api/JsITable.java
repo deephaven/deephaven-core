@@ -68,8 +68,8 @@ public interface JsITable {
     ReadonlyArray<String> getAttributes();
 
     /**
-     * {@code null} if no property exists, a string if it is an easily serializable property, or a promise of a table
-     * that will either resolve with a table or error out if the object can't be passed to JS.
+     * Reads an attribute's value as a string. Only primitive and string values are sent to the client; an attribute
+     * listed by {@link #getAttributes()} with any other value cannot be read here.
      *
      * @param attributeName the name of the attribute to read
      * @return the value of the attribute or null if none with that name exists

@@ -472,11 +472,11 @@ public class JsTable extends HasLifecycle
     }
 
     /**
-     * {@code null} if no attribute exists, a string if it is an easily serializable attribute value, or a
-     * {@link Promise} that resolves to a {@link JsTable} if the attribute value is a table.
-     * 
-     * @param attributeName
-     * @return Object
+     * Reads an attribute's value as a string. Only primitive and string values are sent to the client; an attribute
+     * listed by {@link #getAttributes()} with any other value cannot be read here.
+     *
+     * @param attributeName the name of the attribute to read
+     * @return the value of the attribute or null if none with that name exists
      */
     @JsMethod
     @JsNullable
