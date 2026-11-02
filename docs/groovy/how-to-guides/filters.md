@@ -270,11 +270,11 @@ resultOrdered = source.where("Category == `rare`", "Value > 500")
 The engine keeps the order you give, with two exceptions:
 
 - When [predicate pushdown](./predicate-pushdown.md) can estimate a cheaper order, for example from [data indexes](./data-indexes.md), [sorted](../reference/table-operations/sort/sort.md) columns, or [Parquet row group metadata](./predicate-pushdown.md#parquet-row-group-metadata), the engine reorders stateless filters. A stateless filter doesn't depend on row order or outside mutable state.
-- On a table with partitioning columns, such as a partitioned Parquet or Iceberg table, the engine applies [filters that use only partitioning columns](../conceptual/query-engine/parallelization.md#stateful-partition-filters) before the other filters.
+- On a table with partitioning columns, such as a partitioned Parquet or Iceberg table, the engine applies [filters that use only partitioning columns](../conceptual/query-engine/parallelization.md#serial-filters) before the other filters.
 
-[Pushdown](./predicate-pushdown.md) reordering moves a stateless filter only within its run of adjacent stateless filters. A filter marked [stateful](../conceptual/query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where) ends that run. [Pushdown](./predicate-pushdown.md) never moves a stateful filter, and never moves another filter past it.
+[Pushdown](./predicate-pushdown.md) reordering moves a stateless filter only within its run of adjacent stateless filters. A filter marked [stateful](../conceptual/query-engine/parallelization.md#serial-filters) ends that run. [Pushdown](./predicate-pushdown.md) never moves a stateful filter, and never moves another filter past it.
 
-Neither kind of reordering moves a filter past a filter marked [serial](../conceptual/query-engine/parallelization.md#controlling-concurrency-for-select-update-and-where), or ahead of the filter that declares a [Barrier](../reference/query-language/types/Barrier.md) it respects.
+Neither kind of reordering moves a filter past a filter marked [serial](../conceptual/query-engine/parallelization.md#serial-filters), or ahead of the filter that declares a [Barrier](../reference/query-language/types/Barrier.md) it respects.
 
 ## Filter utilities
 
