@@ -193,7 +193,6 @@ public class RangeFilter extends WhereFilterImpl implements ExposesChunkFilter {
         return filter.hasVirtualRowVariables();
     }
 
-
     @Override
     public boolean canPushdown() {
         // The real filter is not visible to a walk of the filter tree, so answer for it here.

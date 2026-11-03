@@ -141,7 +141,6 @@ public abstract class WhereFilterDelegatingBase
         return filter.hasVirtualRowVariables();
     }
 
-
     @Override
     public boolean equals(Object o) {
         if (this == o)

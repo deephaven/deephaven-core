@@ -703,7 +703,6 @@ public final class ParquetTableFilterTest {
         }
     }
 
-
     @Test
     public void partitionedSelectDistinctWithCrossRowDependenciesTest() {
         final String destPath = Path.of(rootFile.getPath(),

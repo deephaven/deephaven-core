@@ -160,7 +160,6 @@ public class SwitchColumn implements SelectColumn {
         return getRealColumn().hasVirtualRowVariables();
     }
 
-
     @Override
     public boolean hasConstantArrayAccess() {
         return getRealColumn().hasConstantArrayAccess();

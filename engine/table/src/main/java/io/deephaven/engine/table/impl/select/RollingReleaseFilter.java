@@ -116,7 +116,6 @@ public class RollingReleaseFilter
         return true;
     }
 
-
     @Override
     public void run() {
         releaseMoreEntries = true;

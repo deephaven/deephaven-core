@@ -335,7 +335,6 @@ public abstract class BaseIncrementalReleaseFilter
         return true;
     }
 
-
     @Override
     public void run() {
         if (!started) {

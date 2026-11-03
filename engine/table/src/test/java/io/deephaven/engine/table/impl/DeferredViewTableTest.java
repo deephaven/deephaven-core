@@ -196,7 +196,6 @@ public class DeferredViewTableTest {
         Assert.eq(numRowsFiltered(serialFilter), "numRowsFiltered(serialFilter)", 25000);
     }
 
-
     @Test
     public void testBarrierWithNewlyDefinedColumn() {
         // assert that filters with barriers can jump over other filters
@@ -931,7 +930,6 @@ public class DeferredViewTableTest {
         Assertions.assertThat(downsampled.hasCrossRowDependencies()).isFalse();
         Assertions.assertThat(downsampled.isSerial()).isTrue();
     }
-
 
     @Test
     public void testReleaseFilterSeesTheRowsOfItsWhere() {
