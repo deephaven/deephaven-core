@@ -14,7 +14,7 @@ The Deephaven team has long been fascinated with two related software problems:
 
 2. How to transport real-time table-oriented data over the wire efficiently, without paying to translate it between formats. This applies between nodes of such a system and between disparate systems.
 
-The first challenge catalyzed the development of Deephaven's [incremental table update model](./table-update-model.md). Users have applied this design in a variety of contexts, from driving complex multimillion-dollar options market-making strategies to simulating the behavior of cryptographic networks. Deephaven's model, developed to address real-world use cases in production deployments, is a unique and empowering approach to building modern data-driven systems. Read [our introduction to Deephaven](./deephaven-overview.md) for a discussion of what users of Deephaven have accomplished under the incremental update model.
+The first challenge catalyzed the development of Deephaven's [incremental table update model](./table-update-model.md). Users have applied this design in a variety of contexts, from driving complex multimillion-dollar options market-making strategies to simulating the behavior of cryptographic networks. Deephaven's model, developed to address real-world use cases in production deployments, is a unique and empowering approach to building modern data-driven systems. Read the [Deephaven overview](./deephaven-overview.md#what-can-you-use-deephaven-for) for the kinds of workloads Deephaven serves.
 
 For the second, the philosophies and solutions provided by [gRPC](https://grpc.io/) and [Apache Arrow Flight](https://arrow.apache.org/docs/format/Flight.html) illuminated a compelling path forward.
 
@@ -280,7 +280,7 @@ To use websockets over HTTPS as well, set the `useWebsockets` connection option 
 
 ## Related documentation
 
-- [Deephaven Overview](./deephaven-overview.md)
+- [Deephaven overview](./deephaven-overview.md)
 - [Table update model](./table-update-model.md)
 - [What is Barrage?](./what-is-barrage.md)
 - [Servers and clients](./client-server-model.md)
