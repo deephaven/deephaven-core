@@ -89,11 +89,12 @@ Then run [`docker compose up -d`](https://docs.docker.com/reference/cli/docker/c
 
 Without Docker Compose, pass the option to [`docker create`](https://docs.docker.com/reference/cli/docker/container/create/) with `--env`:
 
-1. Remove your existing server container with [`docker rm -f <CONTAINER>`](https://docs.docker.com/reference/cli/docker/container/rm/).
-2. Create and start a new container named `deephaven` with the commands below. Add every option you used for the original container, such as `-v` volume mounts and other `START_OPTS` values like `-Dauthentication.psk`. Otherwise, the new container starts without them.
+1. Find where your existing container keeps its [`/data` directory](../conceptual/docker-data-volumes.md#the-data-mount-point), which holds your notebooks and other saved files. Run [`docker inspect --format '{{json .Mounts}}' <CONTAINER>`](https://docs.docker.com/reference/cli/docker/inspect/), and find the entry whose `Destination` is `/data`. Note its `Source` if it's a directory on your machine, or its `Name` if it's a Docker volume. The image always stores `/data` in a volume, even if you never mounted one, so a new container that doesn't mount it starts with an empty `/data` directory.
+2. Remove your existing server container with [`docker rm -f <CONTAINER>`](https://docs.docker.com/reference/cli/docker/container/rm/). This command keeps the container's volumes.
+3. Create and start a new container named `deephaven` with the commands below. Replace `<DATA>` with the `Source` or `Name` from step 1. Add every other option you used for the original container, such as other `-v` volume mounts and `START_OPTS` values like `-Dauthentication.psk`. Otherwise, the new container starts without them.
 
 ```shell
-docker create --name deephaven -p 10000:10000 --env START_OPTS="-Xmx4g -Dlogback.configurationFile=logback-debug.xml" ghcr.io/deephaven/server:latest
+docker create --name deephaven -p 10000:10000 -v <DATA>:/data --env START_OPTS="-Xmx4g -Dlogback.configurationFile=logback-debug.xml" ghcr.io/deephaven/server:latest
 docker start -a deephaven
 ```
 
