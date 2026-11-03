@@ -27,7 +27,7 @@ To learn a group of operations by task, see the how-to guides:
 - [Merge tables](../how-to-guides/merge-tables.md)
 - [Synchronize multiple tables](../how-to-guides/synchronizing-tables.md)
 
-To choose among the aggregation operations, see [Aggregations in Deephaven](./aggregations.md). To learn the concepts behind table operations, such as immutability, formula strings, and the dependency graph, see [Understanding the Table API](./table-api.md). For formulas in depth, see [Formulas](../how-to-guides/formulas.md).
+To choose from the aggregation operations, see [Aggregations in Deephaven](./aggregations.md). To learn the concepts behind table operations, such as immutability, formula strings, and the dependency graph, see [Understanding the Table API](./table-api.md). For formulas in depth, see [Formulas](../how-to-guides/formulas.md).
 
 ## Quick reference
 
@@ -57,7 +57,7 @@ To choose among the aggregation operations, see [Aggregations in Deephaven](./ag
 | Compute cumulative or rolling values                                                   | [`updateBy([CumSum(...)], "Key")`](../reference/table-operations/update-by-operations/updateBy.md)                                                                                                                                                                                                                                                                                        |
 | Stack tables on top of each other                                                      | [`merge(table1, table2)`](../reference/table-operations/merge/merge.md)                                                                                                                                                                                                                                                                                                                   |
 
-Most entries are methods on a table. [`merge`](../reference/table-operations/merge/merge.md) is a static method. [`AggSum`](../reference/table-operations/group-and-aggregate/AggSum.md) and [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md), which create [aggregations](./aggregations.md), are static methods too. [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md), which creates an [update-by operation](../reference/table-operations/update-by-operations/updateBy.md), is a static method too. Deephaven's Groovy sessions import these static methods by default, so your code needs no import statement.
+Most entries are methods on a table. [`merge`](../reference/table-operations/merge/merge.md) is a static method. [`AggSum`](../reference/table-operations/group-and-aggregate/AggSum.md) and [`AggGroup`](../reference/table-operations/group-and-aggregate/AggGroup.md), which create [aggregations](./aggregations.md), are static methods too. [`CumSum`](../reference/table-operations/update-by-operations/cum-sum.md), which creates an [update-by operation](../reference/table-operations/update-by-operations/updateBy.md), is also a static method. Deephaven's Groovy sessions import these static methods by default, so your code needs no import statement.
 
 ## Diving deeper: API references
 

@@ -39,7 +39,7 @@ result = AddOnlyToBlinkTableAdapter.toBlink(source)
 counts = result.countBy("Count")
 ```
 
-`source` keeps every row the [time table](../how-to-guides/time-table.md) has added, while `result` contains only the rows added during the most recent [update cycle](../conceptual/table-update-model.md). When you first create `result`, it holds all the rows `source` already has, and it drops them on the next [update cycle](../conceptual/table-update-model.md).
+`source` keeps every row the [time table](../how-to-guides/time-table.md) has added, while `result` contains only the rows added during the most recent [update cycle](../conceptual/table-update-model.md). When you first create `result`, it holds all the rows `source` already has. On the next [update cycle](../conceptual/table-update-model.md), `result` removes them in the same update that adds the rows `source` added during that cycle.
 
 ![Three tables tick side by side. `source` grows by one row each second. `result` holds only the newest `source` row, and `Count` in `counts` keeps growing](../assets/how-to/add-only-to-blink.gif)
 
