@@ -59,7 +59,7 @@ merge_sorted(tables: Sequence[Table], order_by: str) -> Table
 `tables` is a list (or other sequence) of the source tables, and `order_by` is the name of the key column.
 
 > [!NOTE]
-> Each input table must already be sorted by the key column in ascending order, or the results are undefined. `merge_sorted` does not support ticking tables. As with [`merge`](../reference/table-operations/merge/merge.md), all elements of `tables` must be tables.
+> Each input table must already be sorted by the key column in ascending order, or the results are undefined. `merge_sorted` does not support ticking tables. As with [`merge`](../reference/table-operations/merge/merge.md), all elements of `tables` must be tables. Every input table must have the same column names, in any order, and each column must have the same type in every table.
 
 When the key column contains no null values, `merge_sorted` produces the same table as `merge` followed by [`sort`](../reference/table-operations/sort/sort.md). It interleaves rows that are already in order instead of sorting the whole merged table, so it typically does less work. The following example merges all three tables by `Number` both ways:
 

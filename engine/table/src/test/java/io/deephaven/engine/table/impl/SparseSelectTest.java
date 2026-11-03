@@ -30,6 +30,7 @@ import static io.deephaven.engine.testutil.TstUtils.i;
 import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
+@SuppressWarnings("removal")
 public class SparseSelectTest {
     @Rule
     public final EngineCleanup base = new EngineCleanup();

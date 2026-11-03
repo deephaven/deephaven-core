@@ -5,12 +5,14 @@ package io.deephaven.engine.util;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.PoisonedUpdateGraph;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchOptions;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
@@ -25,6 +27,7 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -240,7 +243,88 @@ public class TestWindowCheck {
         Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
         Assert.assertNull(resultSource.getPrev(3));
 
+        // matching previous values uses the previous time, as getPrev does
+        try (final WritableRowSet prevInWindow =
+                resultSource.match(true, MatchOptions.REGULAR, i(0, 1, 2, 3), Boolean.TRUE);
+                final WritableRowSet inWindow =
+                        resultSource.match(false, MatchOptions.REGULAR, i(0, 1, 2, 3), Boolean.TRUE)) {
+            Assert.assertEquals(i(1, 2), prevInWindow);
+            Assert.assertEquals(i(2), inWindow);
+        }
+
         updateGraph.completeCycleForUnitTests();
+    }
+
+    /**
+     * A window created during an update cycle, before its source is notified, and refreshed later in that cycle reads
+     * the previous values of that cycle against the time it was created at. A row whose timestamp was in the window
+     * then, and whose modified timestamp is in the window now, replaces its queue entry rather than adding a second
+     * one.
+     */
+    @Test
+    public void testWindowCheckCreatedAndRefreshedOnSameCycle() {
+        final TestClock timeProvider = new TestClock();
+        timeProvider.now = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2022-07-14T09:30:00 NY"));
+        final QueryTable tableToCheck = testRefreshingTable(i(0, 1).toTracking(),
+                col("Timestamp", DateTimeUtils.parseInstant("2022-07-14T09:29:30 NY"),
+                        DateTimeUtils.parseInstant("2022-07-14T09:20:00 NY")),
+                intCol("Sentinel", 1, 2));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final Pair<Table, WindowCheck.TimeWindowListener> windowed;
+        updateGraph.startCycleForUnitTests(false);
+        try {
+            // the source has not been notified, so the window reads its previous values
+            windowed = WindowCheck.addTimeWindowInternal(
+                    timeProvider, tableToCheck, "Timestamp", DateTimeUtils.SECOND * 60, "InWindow", false);
+
+            // at 09:30:45, the first row's original timestamp has left the window, and its new one is in it
+            timeProvider.now = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2022-07-14T09:30:45 NY"));
+            windowed.second.run();
+            addToTable(tableToCheck, i(0),
+                    col("Timestamp", DateTimeUtils.parseInstant("2022-07-14T09:30:40 NY")), intCol("Sentinel", 1));
+            tableToCheck.notifyListeners(i(), i(), i(0));
+        } finally {
+            updateGraph.markSourcesRefreshedForUnitTests();
+            updateGraph.completeCycleForUnitTests();
+        }
+
+        windowed.second.validateQueue();
+        final ColumnSource<Boolean> resultSource = windowed.first.getColumnSource("InWindow", Boolean.class);
+        Assert.assertEquals(Boolean.TRUE, resultSource.get(0));
+        Assert.assertEquals(Boolean.FALSE, resultSource.get(1));
+
+        // when the new timestamp leaves the window, the row leaves the queue
+        updateGraph.runWithinUnitTestCycle(() -> {
+            timeProvider.now = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2022-07-14T09:31:45 NY"));
+            windowed.second.run();
+        });
+        windowed.second.validateQueue();
+        Assert.assertEquals(Boolean.FALSE, resultSource.get(0));
+    }
+
+    /**
+     * A window over a static table whose rows are all outside the window can never change, so it needs no update graph
+     * that refreshes.
+     */
+    @Test
+    public void testWindowCheckStaticExpiredWithoutRefreshingUpdateGraph() {
+        final TestClock timeProvider = new TestClock();
+        timeProvider.now = DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2022-07-14T09:30:00 NY"));
+        final QueryTable tableToCheck = testTable(i(0, 1).toTracking(),
+                col("Timestamp", DateTimeUtils.parseInstant("2022-07-14T09:20:00 NY"), null),
+                intCol("Sentinel", 1, 2));
+
+        final Pair<Table, WindowCheck.TimeWindowListener> windowed;
+        try (final SafeCloseable ignored =
+                ExecutionContext.getContext().withUpdateGraph(PoisonedUpdateGraph.INSTANCE).open()) {
+            windowed = WindowCheck.addTimeWindowInternal(
+                    timeProvider, tableToCheck, "Timestamp", DateTimeUtils.SECOND * 60, "InWindow", true);
+        }
+        Assert.assertFalse(windowed.first.isRefreshing());
+        final ColumnSource<Boolean> resultSource = windowed.first.getColumnSource("InWindow", Boolean.class);
+        Assert.assertEquals(Boolean.FALSE, resultSource.get(0));
+        Assert.assertNull(resultSource.get(1));
     }
 
     @Test

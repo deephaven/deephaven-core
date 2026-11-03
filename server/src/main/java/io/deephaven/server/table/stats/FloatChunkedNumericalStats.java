@@ -14,19 +14,18 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 
 public class FloatChunkedNumericalStats implements ChunkedNumericalStatsKernel {
-    private long count = 0;
-
-    private double sum = .0;
-    private double absSum = .0;
-    private double sumOfSquares = .0;
-
-    private float min = QueryConstants.NULL_FLOAT;
-    private float max = QueryConstants.NULL_FLOAT;
-    private float absMin = QueryConstants.NULL_FLOAT;
-    private float absMax = QueryConstants.NULL_FLOAT;
-
     @Override
     public Table processChunks(final RowSet rowSet, final ColumnSource<?> columnSource, boolean usePrev) {
+        long count = 0;
+
+        double sum = .0;
+        double absSum = .0;
+        double sumOfSquares = .0;
+
+        float min = QueryConstants.NULL_FLOAT;
+        float max = QueryConstants.NULL_FLOAT;
+        float absMin = QueryConstants.NULL_FLOAT;
+        float absMax = QueryConstants.NULL_FLOAT;
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(CHUNK_SIZE)) {
             final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();

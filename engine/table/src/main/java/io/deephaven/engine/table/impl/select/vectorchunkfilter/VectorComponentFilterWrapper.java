@@ -106,12 +106,10 @@ public class VectorComponentFilterWrapper extends WhereFilterImpl {
         if (componentFilter.isRefreshing()) {
             throw new UnsupportedOperationException("Vector component filter not supported for refreshing filters!");
         }
-        if (componentFilter.hasVirtualRowVariables()) {
-            throw new UnsupportedOperationException(
-                    "Vector component filter not supported with virtual row variables!");
-        }
-        if (!componentFilter.getColumnArrays().isEmpty()) {
-            throw new UnsupportedOperationException("Vector component filter not supported with column arrays!");
+        if (componentFilter.hasCrossRowDependencies()) {
+            // the component filter decides each element of a vector alone
+            throw new UnsupportedOperationException("Vector component filters cannot use cross-row dependencies "
+                    + "(virtual row variables or column arrays): " + componentFilter);
         }
     }
 
