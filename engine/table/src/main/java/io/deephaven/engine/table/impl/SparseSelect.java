@@ -40,10 +40,12 @@ import java.util.concurrent.Future;
  * @deprecated {@link Table#select} and {@link Table#update} cover the same uses, and take part in the engine's row and
  *             column parallelism. Use {@code table.select()} in place of {@link #sparseSelect(Table)},
  *             {@code table.select(columns)} in place of {@link #sparseSelect(Table, String...)}, and
- *             {@code table.update(columns)} in place of {@link #partialSparseSelect(Table, String...)}. A static table
- *             whose RowSet is sparse is flattened by {@code select}; use {@code update} with every column name to
- *             materialize such a table without changing its row keys. This class and its {@code SparseSelect.threads}
- *             and {@code SparseSelect.chunkSize} configuration properties will be removed in a future release.
+ *             {@code table.update(columns)} in place of {@link #partialSparseSelect(Table, String...)}. Unlike
+ *             {@code sparseSelect}, {@code select} may give its result new, flat row keys when the source is static or
+ *             append-only and not flat; {@code update} always keeps the source's row keys, so call {@code update} with
+ *             every column name to materialize every column without changing row keys. This class and its
+ *             {@code SparseSelect.threads} and {@code SparseSelect.chunkSize} configuration properties will be removed
+ *             in a future release.
  */
 @Deprecated(forRemoval = true)
 public class SparseSelect {
