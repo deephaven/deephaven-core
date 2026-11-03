@@ -251,6 +251,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      * @param updateIntervalMs
      * @deprecated use {@link #update(Object)} instead
      */
+    @Deprecated
     @JsMethod
     public void setViewport(double firstRow, double lastRow, @JsOptional @JsNullable Column[] columns,
             @JsOptional @JsNullable Double updateIntervalMs,
