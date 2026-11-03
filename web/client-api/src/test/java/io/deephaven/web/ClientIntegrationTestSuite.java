@@ -44,6 +44,7 @@ public class ClientIntegrationTestSuite extends GWTTestSuite {
         suite.addTestSuite(DoPutTestGwt.class);
         suite.addTestSuite(TotalsTableTestGwt.class);
         suite.addTestSuite(ImmutableTableTestGwt.class);
+        suite.addTestSuite(PendingTableMisuseTestGwt.class);
         suite.addTestSuite(TableOperationsSmokeTestGwt.class);
 
         // This should be a unit test, but it requires a browser environment to run on GWT 2.9

@@ -264,12 +264,6 @@ public class ImmutableTableTestGwt extends AbstractAsyncGwtTestCase {
                     WorkerConnection connection = table.getConnection();
                     JsPendingTable<JsResolvedTable> pending = table.operations().update(cols("Z = X + Y"));
                     pending.cancel();
-                    try {
-                        pending.sort(sorts("Z"));
-                        fail("Expected chaining on a canceled operation to throw");
-                    } catch (IllegalStateException expected) {
-                        // nothing was sent for the canceled operation, so nothing may reference its ticket
-                    }
                     return expectCanceled(pending.resolve())
                             .then(ignore -> delay(200))
                             .then(ignore -> {
