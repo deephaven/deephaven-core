@@ -207,9 +207,9 @@ Delivery SubscribeUntil(const std::string &script, const std::string &table_name
   auto cookie = table.Subscribe(observer);
   const auto timeout = std::chrono::seconds(120);
   observer->WaitForFirstUpdate(timeout);
-  // Marked before the script runs, so that no update the delta produces can land ahead of the mark.
-  observer->MarkDelta();
   if (delta.has_value()) {
+    // Mark before the script runs so that none of its updates precedes the mark.
+    observer->MarkDelta();
     thm.RunScript(*delta);
   }
   auto result = observer->WaitForCompletion(timeout);
