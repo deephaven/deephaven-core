@@ -292,6 +292,33 @@ public class TestOperationInitializerJobScheduler {
         }
     }
 
+    /**
+     * An inline initializer runs each job inside submit, as the submitting thread's own work, which that thread's own
+     * performance already measures; a job submitted from inside one runs inline too. Neither is accumulated.
+     */
+    @Test
+    public void testInlineInitializerJobsAreNotAccounted() {
+        final OperationInitializerJobScheduler scheduler =
+                new OperationInitializerJobScheduler(OperationInitializer.NON_PARALLELIZABLE);
+        final AtomicInteger runs = new AtomicInteger();
+        final Runnable sleep = () -> {
+            runs.incrementAndGet();
+            try {
+                Thread.sleep(20);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        };
+        scheduler.submit(null, () -> {
+            sleep.run();
+            scheduler.submit(null, sleep, null, e -> {
+            });
+        }, null, e -> {
+        });
+        assertThat(runs.get()).isEqualTo(2);
+        assertThat(scheduler.getAccumulatedPerformance().getUsageNanos()).isZero();
+    }
+
     /** An inline initializer runs each job inside submit, so there is nothing left for the waiting thread to run. */
     @Test
     public void testInlineInitializerLeavesNothingToRun() throws InterruptedException, ExecutionException {

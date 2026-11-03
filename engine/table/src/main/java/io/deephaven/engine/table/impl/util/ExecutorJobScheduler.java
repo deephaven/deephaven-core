@@ -8,6 +8,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.engine.updategraph.UpdateGraphWaitGuard;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,10 +27,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.IntSupplier;
 
 /**
- * A {@link JobScheduler} over a plain {@link Executor}. A job the executor refuses with a
- * {@link RejectedExecutionException} runs on the submitting thread instead, so no job is ever dropped.
+ * A {@link JobScheduler} over a plain {@link Executor}. A job the executor refuses, with a
+ * {@link RejectedExecutionException} or anything else it throws, is withdrawn, and {@link #submit} rethrows the
+ * refusal.
  *
  * <p>
  * It is meant for a pool shaped like {@link #newHelperPool}, which may be small and shared by many callers, and on
@@ -55,8 +59,16 @@ import java.util.function.Consumer;
  * </p>
  *
  * <p>
- * Like the other schedulers, an instance accumulates the performance of the jobs that ran off the submitting thread, so
- * make one per operation, over an executor that outlives it.
+ * A job may not wait for other threads when the thread that submitted it may not: one that holds an update graph's lock
+ * or processes its updates, or that {@link UpdateGraphWaitGuard#forbidWaits() forbids waits}. The thread may be waiting
+ * for the job, and a job that waited in turn for the update graph could deadlock with it.
+ * </p>
+ *
+ * <p>
+ * An instance accumulates the performance of the jobs whose time no waiting thread already measures as its own, so make
+ * one per operation, over an executor that outlives it. It leaves out a job the executor runs inside {@link #submit},
+ * one a thread waiting in {@link #awaitCompletion} runs, and one that runs nested inside another of its jobs on the
+ * same thread, as a fork/join pool's thread does when it helps the pool quiesce.
  * </p>
  */
 public class ExecutorJobScheduler implements JobScheduler {
@@ -83,17 +95,31 @@ public class ExecutorJobScheduler implements JobScheduler {
      */
     private final ThreadLocal<MutableInt> jobsRunningOnThisThread = new ThreadLocal<>();
     private final Executor executor;
-    private final int threadCount;
+    private final IntSupplier threadCount;
 
     /**
-     * @param executor runs the jobs; it may refuse one with a {@link RejectedExecutionException}, which then runs on
-     *        the submitting thread
+     * @param executor runs the jobs; it may refuse one with a {@link RejectedExecutionException}, which {@link #submit}
+     *        then rethrows
      * @param threadCount the most threads, the submitting thread included, that one iteration on this scheduler should
      *        use; an iteration asks the executor for one fewer than this when the caller takes part
      */
     public ExecutorJobScheduler(@NotNull final Executor executor, final int threadCount) {
+        this(executor, constant(Require.geq(threadCount, "threadCount", 1)));
+    }
+
+    /**
+     * @param executor runs the jobs; it may refuse one with a {@link RejectedExecutionException}, which {@link #submit}
+     *        then rethrows
+     * @param threadCount supplies {@link #threadCount()} each time it is called, so that a scheduler over an executor
+     *        whose parallelism cannot be read, as a poisoned operation initializer's cannot, fails only once used
+     */
+    protected ExecutorJobScheduler(@NotNull final Executor executor, @NotNull final IntSupplier threadCount) {
         this.executor = Require.neqNull(executor, "executor");
-        this.threadCount = Require.geq(threadCount, "threadCount", 1);
+        this.threadCount = Require.neqNull(threadCount, "threadCount");
+    }
+
+    private static IntSupplier constant(final int value) {
+        return () -> value;
     }
 
     /**
@@ -119,8 +145,14 @@ public class ExecutorJobScheduler implements JobScheduler {
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
+        // The submitting thread waits for its jobs. When it must not wait for other threads, a job that waited for an
+        // update graph, or for another thread that may itself be waiting for one, could deadlock with it.
+        final boolean waitsForbidden = UpdateGraphWaitGuard.currentThreadMustNotWaitForOtherThreads(
+                ExecutionContext.getContext().getUpdateGraph())
+                || (executionContext != null && UpdateGraphWaitGuard.currentThreadMustNotWaitForOtherThreads(
+                        executionContext.getUpdateGraph()));
         outstandingJobs.incrementAndGet();
-        final Job job = new Job(executionContext, runnable, description, onError);
+        final Job job = new Job(executionContext, runnable, description, onError, waitsForbidden);
         try {
             job.inExecute = true;
             try {
@@ -128,20 +160,10 @@ public class ExecutorJobScheduler implements JobScheduler {
             } finally {
                 job.inExecute = false;
             }
-        } catch (final RejectedExecutionException e) {
-            if (!job.tryClaim()) {
-                // A synchronous executor ran the job, which then threw this itself: the job has run, and released its
-                // count, and must not run again.
-                throw e;
-            }
-            // The executor refused the job (a pool made by newHelperPool does so only once shut down): the job is the
-            // submitting thread's own work, and is accounted as such
-            decrementOutstandingJobs();
-            job.runOnSubmittingThread();
-            return Submission.NOT_WITHDRAWABLE;
         } catch (final Throwable t) {
-            // A job that never started must release its count here, or getAccumulatedPerformance would wait forever
-            // for it, as in OperationInitializerJobScheduler.
+            // A job that never started is withdrawn here, releasing its count, or getAccumulatedPerformance would wait
+            // forever for it; an Error counts too, OutOfMemoryError when the pool cannot make a thread in practice. A
+            // job that a synchronous executor ran before throwing has released its count itself, and is not withdrawn.
             job.withdraw();
             throw t;
         }
@@ -259,13 +281,13 @@ public class ExecutorJobScheduler implements JobScheduler {
 
     @Override
     public int threadCount() {
-        return threadCount;
+        return threadCount.getAsInt();
     }
 
     /**
-     * A submitted job, which runs once: on the executor's thread that first starts it, on a thread waiting in
-     * {@link #awaitCompletion} that claims it first, or on the submitting thread if the executor refuses it. A job the
-     * submitter withdraws first does nothing when the executor starts it.
+     * A submitted job, which runs once: on the executor's thread that first starts it, or on a thread waiting in
+     * {@link #awaitCompletion} that claims it first. A job the submitter withdraws first does nothing when the executor
+     * starts it.
      */
     private final class Job implements Runnable, Submission {
 
@@ -281,16 +303,19 @@ public class ExecutorJobScheduler implements JobScheduler {
         private Runnable runnable;
         private LogOutputAppendable description;
         private Consumer<Exception> onError;
+        private final boolean waitsForbidden;
 
         private Job(
                 final ExecutionContext executionContext,
                 final Runnable runnable,
                 final LogOutputAppendable description,
-                final Consumer<Exception> onError) {
+                final Consumer<Exception> onError,
+                final boolean waitsForbidden) {
             this.executionContext = executionContext;
             this.runnable = runnable;
             this.description = description;
             this.onError = onError;
+            this.waitsForbidden = waitsForbidden;
         }
 
         /** @return whether this thread is the one to run this job */
@@ -321,15 +346,6 @@ public class ExecutorJobScheduler implements JobScheduler {
             onError = null;
         }
 
-        /** Run this job, which the submitting thread has claimed after the executor refused it. */
-        private void runOnSubmittingThread() {
-            try {
-                JobScheduler.runJob(executionContext, runnable, description, onError);
-            } finally {
-                release();
-            }
-        }
-
         @Override
         public void run() {
             if (!tryClaim()) {
@@ -337,15 +353,16 @@ public class ExecutorJobScheduler implements JobScheduler {
                 return;
             }
             pendingJobs.remove(this);
-            // A synchronous executor that runs it here makes it the submitting thread's own work, as a refused job is
+            // a synchronous executor that runs it here makes it the submitting thread's own work
             runClaimed(Thread.currentThread() != submitter || !inExecute);
         }
 
         /**
          * Run this job, which this thread has claimed, and release its count.
          *
-         * @param accumulatePerformance whether to accumulate the job's performance, as for a job that does not run as
-         *        part of the work of the submitting thread or of a thread waiting for this scheduler's jobs
+         * @param accumulatePerformance whether to accumulate the job's performance, as for a job that runs neither
+         *        inside the executor's execute on the submitting thread nor on a thread waiting for this scheduler's
+         *        jobs; a job nested inside another of this scheduler's jobs on this thread is not accumulated either
          */
         private void runClaimed(final boolean accumulatePerformance) {
             MutableInt jobsRunningHere = jobsRunningOnThisThread.get();
@@ -353,9 +370,11 @@ public class ExecutorJobScheduler implements JobScheduler {
                 jobsRunningHere = new MutableInt();
                 jobsRunningOnThisThread.set(jobsRunningHere);
             }
+            // the enclosing job's performance already holds the time of one nested in it
+            final boolean accumulate = accumulatePerformance && jobsRunningHere.intValue() == 0;
             jobsRunningHere.increment();
-            try {
-                if (!accumulatePerformance) {
+            try (final SafeCloseable ignored = waitsForbidden ? UpdateGraphWaitGuard.forbidWaits() : null) {
+                if (!accumulate) {
                     JobScheduler.runJob(executionContext, runnable, description, onError);
                     return;
                 }

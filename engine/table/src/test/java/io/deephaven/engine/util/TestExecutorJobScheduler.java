@@ -13,6 +13,8 @@ import io.deephaven.engine.table.impl.util.ExecutorJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.UpdateGraphWaitGuard;
+import io.deephaven.util.SafeCloseable;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -123,22 +125,21 @@ public class TestExecutorJobScheduler {
         assertThat(scheduler.getAccumulatedPerformance()).isNotNull();
     }
 
+    /** A job the executor refuses is withdrawn, never runs, and the refusal reaches the submitter. */
     @Test
-    public void testRefusedJobRunsOnTheSubmittingThread() {
-        final Executor refusing = command -> {
-            throw new RejectedExecutionException("no threads to spare");
-        };
-        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(refusing, 4);
-        final AtomicReference<Thread> runningThread = new AtomicReference<>();
+    public void testRefusedJobIsWithdrawnAndTheRefusalRethrown() {
+        final RejectedExecutionException refusal = new RejectedExecutionException("shut down");
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(command -> {
+            throw refusal;
+        }, 4);
+        final AtomicInteger runs = new AtomicInteger();
 
-        scheduler.submit(null, () -> runningThread.set(Thread.currentThread()), null, e -> {
+        assertThatThrownBy(() -> scheduler.submit(null, runs::incrementAndGet, null, e -> {
             throw new AssertionError("unexpected failure", e);
-        });
+        })).isSameAs(refusal);
 
-        assertThat(runningThread.get()).isSameAs(Thread.currentThread());
-        // the refused job released its count, and its run here is this thread's own work
+        assertThat(runs.get()).isZero();
         assertThat(outstandingJobs(scheduler)).isZero();
-        assertThat(scheduler.getAccumulatedPerformance().getUsageNanos()).isZero();
     }
 
     /** A submission the executor fails outright releases its count, so that reading the performance does not hang. */
@@ -275,8 +276,8 @@ public class TestExecutorJobScheduler {
 
     /**
      * A synchronous executor that runs the job, whose error handler then throws a RejectedExecutionException, has not
-     * refused it: the handler's failure is reported as fatal, and the job does not run a second time on the submitting
-     * thread.
+     * refused it: the handler's failure is reported as fatal, and the job, which has run and released its count, is not
+     * withdrawn as well.
      */
     @Test
     public void testRejectionThrownByARunJobDoesNotRunItAgain() {
@@ -389,8 +390,8 @@ public class TestExecutorJobScheduler {
     }
 
     /**
-     * A job a synchronous executor runs on the submitting thread is that thread's own work, as a refused job is, and is
-     * not accounted again by the scheduler.
+     * A job a synchronous executor runs on the submitting thread is that thread's own work, and is not accounted again
+     * by the scheduler.
      */
     @Test
     public void testJobRunOnTheSubmittingThreadIsNotAccounted() {
@@ -608,6 +609,56 @@ public class TestExecutorJobScheduler {
                     .isInstanceOf(ExecutionException.class)
                     .hasCauseInstanceOf(AssertionFailure.class);
             assertThat(outstandingJobs(scheduler)).isZero();
+        }
+    }
+
+    /**
+     * A job nested inside another of the scheduler's jobs on the same thread, as a fork/join pool's thread runs one
+     * when it helps the pool quiesce, is part of the enclosing job, whose performance already holds its time.
+     */
+    @Test
+    public void testJobNestedInAnotherOnTheSameThreadIsNotAccountedAgain() {
+        final List<Runnable> queued = new ArrayList<>();
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(queued::add, 2);
+        final long nestedSleepMillis = 200;
+        final AtomicInteger nestedRuns = new AtomicInteger();
+
+        scheduler.submit(null, () -> {
+            scheduler.submit(null, () -> {
+                nestedRuns.incrementAndGet();
+                try {
+                    Thread.sleep(nestedSleepMillis);
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }, null, e -> {
+            });
+            // run the nested job's queued entry here, inside the enclosing job
+            queued.remove(queued.size() - 1).run();
+        }, null, e -> {
+        });
+        assertThat(queued).hasSize(1);
+        queued.remove(0).run();
+
+        assertThat(nestedRuns.get()).isEqualTo(1);
+        assertThat(outstandingJobs(scheduler)).isZero();
+        // counted once, by the enclosing job, and not twice
+        assertThat(scheduler.getAccumulatedPerformance().getUsageNanos())
+                .isGreaterThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(nestedSleepMillis))
+                .isLessThan(TimeUnit.MILLISECONDS.toNanos(nestedSleepMillis * 2));
+    }
+
+    /** A job may not wait for other threads when the thread that submitted it may not. */
+    @Test
+    public void testJobInheritsTheSubmittersWaitGuard() throws InterruptedException, ExecutionException {
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(newPool(1), 2);
+        for (final boolean forbidden : new boolean[] {false, true}) {
+            final CompletableFuture<Boolean> sawForbidden = new CompletableFuture<>();
+            try (final SafeCloseable ignored = forbidden ? UpdateGraphWaitGuard.forbidWaits() : null) {
+                scheduler.submit(null, () -> sawForbidden.complete(UpdateGraphWaitGuard.waitsForbidden()), null,
+                        sawForbidden::completeExceptionally);
+            }
+            assertThat(scheduler.awaitCompletion(sawForbidden)).isEqualTo(forbidden);
         }
     }
 }
