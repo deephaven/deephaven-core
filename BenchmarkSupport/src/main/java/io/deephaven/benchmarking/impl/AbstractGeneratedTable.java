@@ -7,7 +7,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.impl.SparseSelect;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import org.jetbrains.annotations.NotNull;
 
@@ -32,9 +31,10 @@ public abstract class AbstractGeneratedTable extends AbstractBenchmarkTable {
     }
 
     protected Table generateTable() {
-        return SparseSelect.sparseSelect(TableTools.emptyTable(nRows).updateView(
+        return TableTools.emptyTable(nRows).updateView(
                 getGeneratorMap().entrySet().stream().map(ent -> ent.getValue().getUpdateString(ent.getKey()))
-                        .toArray(String[]::new)));
+                        .toArray(String[]::new))
+                .select();
     }
 
     @Override
