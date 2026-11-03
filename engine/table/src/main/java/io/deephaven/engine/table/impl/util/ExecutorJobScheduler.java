@@ -296,9 +296,8 @@ public class ExecutorJobScheduler implements JobScheduler {
     private final class Job implements Runnable, Submission {
 
         private final Thread submitter = Thread.currentThread();
-        // Written and read only by the submitting thread: whether it is inside the executor's execute for this job, so
-        // that a run there is a synchronous executor running the job inline, and not the submitting thread taking the
-        // queued job later, as a pool thread that submitted it may.
+        // Whether the submitting thread is inside the executor's execute for this job, where a run is a synchronous
+        // executor running the job inline; written and read only by the submitting thread.
         private boolean inExecute;
         private final AtomicBoolean claimed = new AtomicBoolean();
         // Read only by the thread that claims this job, and cleared once it has run or been withdrawn, so that an
