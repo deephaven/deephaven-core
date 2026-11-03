@@ -41,9 +41,6 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfo;
-import io.github.classgraph.ScanResult;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.Phases;
@@ -554,7 +551,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private Optional<GroovyImport> createClassImport(boolean isWildcard, String body, @Nullable String alias) {
         if (isWildcard) {
             if (classExists(body) || (groovyShell.getClassLoader().getDefinedPackage(body) != null)
-                    || packageIsVisibleToClassGraph(body)) {
+                    || packageExists(body)) {
                 return Optional.of(imports -> imports.addStarImports(body));
             }
             if (ALLOW_UNKNOWN_GROOVY_PACKAGE_IMPORTS) {
@@ -588,13 +585,28 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
-    private static boolean packageIsVisibleToClassGraph(String packageImport) {
-        try (ScanResult scanResult =
-                new ClassGraph().enableClassInfo().enableSystemJarsAndModules().acceptPackages(packageImport).scan()) {
-            final Optional<ClassInfo> firstClassFound = scanResult.getAllClasses().stream().findFirst();
-            // force load the class so that the jvm is aware of the package
-            firstClassFound.ifPresent(ClassInfo::loadClass);
-            return firstClassFound.isPresent();
+    /**
+     * Determine whether a package exists, even if none of its classes have been loaded yet.
+     *
+     * <p>
+     * Packages in named modules (including the JDK) are found by their exact name. Packages on the classpath are found
+     * by their directory resource, which also matches a package that has only subpackages; a package in a jar without
+     * directory entries is not found.
+     *
+     * @param packageName the package name
+     * @return true if the package exists
+     */
+    private boolean packageExists(final String packageName) {
+        for (final Module module : ModuleLayer.boot().modules()) {
+            if (module.getPackages().contains(packageName)) {
+                return true;
+            }
+        }
+        try {
+            return groovyShell.getClassLoader().getResources(packageName.replace('.', '/') + "/").hasMoreElements();
+        } catch (IOException e) {
+            log.warn().append("Could not look up package \"").append(packageName).append("\": ").append(e).endl();
+            return false;
         }
     }
 
