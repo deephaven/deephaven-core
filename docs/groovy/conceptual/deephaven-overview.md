@@ -38,7 +38,7 @@ Deephaven bridges real-time and batch data, letting you apply the same operation
   - Browser-based grid and plotting components that let you scroll through and manipulate tables with billions of records.
   - [Deephaven Express](/core/plotly/docs/), for real-time plotting in Python sessions.
   - [deephaven.ui](/core/ui/docs/), a Python library for building real-time dashboards in Python sessions.
-- [Excel](https://github.com/deephaven/deephaven-excel-addin) and [Jupyter](/core/docs/how-to-guides/jupyter/) integrations that bring Deephaven's server-side capabilities and live updates to these tools.
+- Excel and [Jupyter](/core/docs/how-to-guides/jupyter/) integrations that bring Deephaven's server-side capabilities and live updates to these tools.
 
 Because the stack covers ingestion from many [data sources](#what-are-the-data-sources), computation, and display, it empowers teams to focus on business problems instead of getting bogged down in utility engineering.
 
