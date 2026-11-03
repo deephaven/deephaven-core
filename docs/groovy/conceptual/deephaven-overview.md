@@ -114,7 +114,7 @@ Deephaven has delivered software components that are both unique and necessary f
 - A high-performance Java engine bound tightly with native CPython and [NumPy](/core/docs/how-to-guides/use-numpy/) through [jpy](https://github.com/jpy-consortium/jpy), a Python-Java bridge that Deephaven helps maintain.
 - An array-oriented architecture that allows for vectorized operations, amortized costs, and columnar data transfer.
 - An architecture that runs user code in-process as part of engine evaluation, rather than shipping data to the client.
-- Ticking-table subscriptions. A ticking table (a live dataframe) is one whose rows change as new data arrives. A subscription carries each update cycle's changes from the server's [DAG](./dag.md) to clients, dataframe-based tools, and other engine processes over [Barrage](./what-is-barrage.md), an [Arrow Flight](../how-to-guides/data-import-export/arrow-flight.md) extension.
+- Ticking-table subscriptions. A ticking table (a live dataframe) is one whose rows change as new data arrives. A subscription streams the table's changes, batched at a configurable [update interval](./what-is-barrage.md#update-intervals-and-batching), from the server's [DAG](./dag.md) to clients, dataframe-based tools, and other engine processes over [Barrage](./what-is-barrage.md), an [Arrow Flight](../how-to-guides/data-import-export/arrow-flight.md) extension.
 - Subscription support in the [Java](../how-to-guides/java-client.md), [C++](/core/client-api/cpp/), C#, and [JavaScript](/core/client-api/javascript/modules/dh.html) clients, and in the [Python client](/core/client-api/python/) with the `pydeephaven-ticking` package.
 
 <div className="text--danger padding-top--xl">
