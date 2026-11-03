@@ -180,6 +180,8 @@ public class ExecutorJobScheduler implements JobScheduler {
     public <T> T awaitCompletion(@NotNull final CompletableFuture<T> future)
             throws InterruptedException, ExecutionException {
         Assert.eqNull(jobsRunningOnThisThread.get(), "jobs of this scheduler running on the waiting thread");
+        // reading a thread local with no value installs its null initial value, which the waiting thread does not keep
+        jobsRunningOnThisThread.remove();
         future.whenComplete((result, failure) -> signalWaiters());
         boolean interrupted = false;
         while (true) {
@@ -192,7 +194,7 @@ public class ExecutorJobScheduler implements JobScheduler {
             }
             final Job job = claimNextPendingJob();
             if (job != null) {
-                runOnWaitingThread(job);
+                runOnWaitingThread(job, future);
                 continue;
             }
             synchronized (outstandingJobs) {
@@ -217,15 +219,17 @@ public class ExecutorJobScheduler implements JobScheduler {
 
     /**
      * Run a job this waiting thread has claimed. It ends as it would on an executor thread: a failure reaches the job's
-     * own error handler, and an Error, or a failure of the handler itself, is also reported as fatal, so the future
-     * being waited for reports the outcome and nothing the job throws escapes the wait.
+     * own error handler, and an Error, or a failure of the handler itself, is also reported as fatal. Nothing the job
+     * throws escapes the wait; it fails {@code future} instead, unless the job's handler has already completed it, so
+     * that a handler that failed before completing it does not leave the wait with nothing to wait for.
      */
-    private static void runOnWaitingThread(@NotNull final Job job) {
+    private static void runOnWaitingThread(@NotNull final Job job, @NotNull final CompletableFuture<?> future) {
         try {
             job.runClaimed(false);
         } catch (Throwable t) {
             // JobScheduler.runJob reported this as fatal before rethrowing it: an Error from the job, or a failure of
             // its error handler.
+            future.completeExceptionally(t);
         }
     }
 
@@ -365,29 +369,37 @@ public class ExecutorJobScheduler implements JobScheduler {
          *        jobs; a job nested inside another of this scheduler's jobs on this thread is not accumulated either
          */
         private void runClaimed(final boolean accumulatePerformance) {
-            MutableInt jobsRunningHere = jobsRunningOnThisThread.get();
-            if (jobsRunningHere == null) {
-                jobsRunningHere = new MutableInt();
-                jobsRunningOnThisThread.set(jobsRunningHere);
-            }
-            // the enclosing job's performance already holds the time of one nested in it
-            final boolean accumulate = accumulatePerformance && jobsRunningHere.intValue() == 0;
-            jobsRunningHere.increment();
-            try (final SafeCloseable ignored = waitsForbidden ? UpdateGraphWaitGuard.forbidWaits() : null) {
-                if (!accumulate) {
-                    JobScheduler.runJob(executionContext, runnable, description, onError);
-                    return;
+            // this thread's count once it includes this job; null until then
+            MutableInt jobsRunningHere = null;
+            try {
+                final MutableInt enclosingJobs = jobsRunningOnThisThread.get();
+                if (enclosingJobs == null) {
+                    final MutableInt onlyThisJob = new MutableInt(1);
+                    jobsRunningOnThisThread.set(onlyThisJob);
+                    jobsRunningHere = onlyThisJob;
+                } else {
+                    enclosingJobs.increment();
+                    jobsRunningHere = enclosingJobs;
                 }
-                final BasePerformanceEntry baseEntry = new BasePerformanceEntry();
-                baseEntry.onBaseEntryStart();
-                try {
-                    JobScheduler.runJob(executionContext, runnable, description, onError);
-                } finally {
-                    baseEntry.onBaseEntryEnd();
-                    accumulatedBaseEntry.accumulate(baseEntry);
+                // the enclosing job's performance already holds the time of one nested in it
+                final boolean accumulate = accumulatePerformance && enclosingJobs == null;
+                try (final SafeCloseable ignored = waitsForbidden ? UpdateGraphWaitGuard.forbidWaits() : null) {
+                    if (!accumulate) {
+                        JobScheduler.runJob(executionContext, runnable, description, onError);
+                        return;
+                    }
+                    final BasePerformanceEntry baseEntry = new BasePerformanceEntry();
+                    baseEntry.onBaseEntryStart();
+                    try {
+                        JobScheduler.runJob(executionContext, runnable, description, onError);
+                    } finally {
+                        baseEntry.onBaseEntryEnd();
+                        accumulatedBaseEntry.accumulate(baseEntry);
+                    }
                 }
             } finally {
-                if (jobsRunningHere.decrementAndGet() == 0) {
+                // null when installing this thread's count failed, an allocation in practice, perhaps part way
+                if (jobsRunningHere == null || jobsRunningHere.decrementAndGet() == 0) {
                     jobsRunningOnThisThread.remove();
                 }
                 release();

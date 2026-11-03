@@ -654,14 +654,16 @@ public class TestExecutorJobScheduler {
         }, null, e -> {
         });
         assertThat(queued).hasSize(1);
+        final long startNanos = System.nanoTime();
         queued.remove(0).run();
+        final long elapsedNanos = System.nanoTime() - startNanos;
 
         assertThat(nestedRuns.get()).isEqualTo(1);
         assertThat(outstandingJobs(scheduler)).isZero();
-        // counted once, by the enclosing job, and not twice
+        // counted once, by the enclosing job, and not twice: no more than the time the enclosing job took
         assertThat(scheduler.getAccumulatedPerformance().getUsageNanos())
                 .isGreaterThanOrEqualTo(TimeUnit.MILLISECONDS.toNanos(nestedSleepMillis))
-                .isLessThan(TimeUnit.MILLISECONDS.toNanos(nestedSleepMillis * 2));
+                .isLessThanOrEqualTo(elapsedNanos);
     }
 
     /** A job may not wait for other threads when the thread that submitted it may not. */
@@ -804,38 +806,26 @@ public class TestExecutorJobScheduler {
             }
             await(blocked);
 
-            // on a thread of its own, so that a wait that never finishes fails the test rather than hanging it
-            final ExecutionContext executionContext = ExecutionContext.getContext();
             final OperationInitializerJobScheduler scheduler = new OperationInitializerJobScheduler(pool);
             final Set<Thread> taskThreads = ConcurrentHashMap.newKeySet();
             final AtomicInteger followUps = new AtomicInteger();
             final AtomicReference<Thread> waitingThread = new AtomicReference<>();
-            final AtomicReference<Throwable> thrown = new AtomicReference<>();
-            final Thread waiter = new Thread(() -> {
+            withTimeout(() -> {
                 waitingThread.set(Thread.currentThread());
-                try (final SafeCloseable ignored = executionContext.open()) {
-                    final CompletableFuture<Void> done = new CompletableFuture<>();
-                    scheduler.iterateParallel(ExecutionContext.getContext(), null,
-                            JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 8,
-                            (context, idx, nec) -> taskThreads.add(Thread.currentThread()),
-                            () -> scheduler.submit(ExecutionContext.getContext(), () -> {
-                                followUps.incrementAndGet();
-                                done.complete(null);
-                            }, null, done::completeExceptionally),
-                            () -> {
-                            },
-                            done::completeExceptionally);
-                    scheduler.awaitCompletion(done);
-                } catch (final Throwable t) {
-                    thrown.set(t);
-                }
-            }, "operation-initializer-waiter");
-            waiter.setDaemon(true);
-            waiter.start();
-            waiter.join(TimeUnit.SECONDS.toMillis(30));
+                final CompletableFuture<Void> done = new CompletableFuture<>();
+                scheduler.iterateParallel(ExecutionContext.getContext(), null,
+                        JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, 8,
+                        (context, idx, nec) -> taskThreads.add(Thread.currentThread()),
+                        () -> scheduler.submit(ExecutionContext.getContext(), () -> {
+                            followUps.incrementAndGet();
+                            done.complete(null);
+                        }, null, done::completeExceptionally),
+                        () -> {
+                        },
+                        done::completeExceptionally);
+                scheduler.awaitCompletion(done);
+            });
 
-            assertThat(waiter.isAlive()).as("the waiting thread finished").isFalse();
-            assertThat(thrown.get()).isNull();
             assertThat(taskThreads).containsExactly(waitingThread.get());
             assertThat(followUps.get()).isEqualTo(1);
             assertThat(outstandingJobs(scheduler)).isZero();
@@ -843,5 +833,58 @@ public class TestExecutorJobScheduler {
             releasePool.countDown();
             pool.shutdown();
         }
+    }
+
+    /**
+     * A job the waiting thread runs whose error handler fails cannot complete the future, so the wait fails it with
+     * that failure rather than waiting for a completion that nothing will make.
+     */
+    @Test
+    public void testFailingErrorHandlerOfAJobTheWaitRunsFailsTheWait() throws InterruptedException {
+        final List<Runnable> queued = new ArrayList<>();
+        final ExecutorJobScheduler scheduler = new ExecutorJobScheduler(queued::add, 2);
+        final IllegalStateException handlerFailure = new IllegalStateException("handler failed");
+        final CompletableFuture<Void> done = new CompletableFuture<>();
+        scheduler.submit(null, () -> {
+            throw new IllegalStateException("job failed");
+        }, null, e -> {
+            throw handlerFailure;
+        });
+        assertThat(queued).hasSize(1);
+
+        withTimeout(() -> assertThatThrownBy(() -> scheduler.awaitCompletion(done))
+                .isInstanceOf(ExecutionException.class)
+                // the unit test fatal error reporter throws in place of the handler's failure, carrying it
+                .hasCauseInstanceOf(FakeProcessEnvironment.FakeFatalException.class)
+                .hasRootCause(handlerFailure));
+        assertThat(outstandingJobs(scheduler)).isZero();
+    }
+
+    /**
+     * Run {@code test} on a thread of its own, under this thread's execution context, so that a wait that never
+     * finishes fails the test rather than hanging it.
+     */
+    private static void withTimeout(final ThrowingRunnable test) throws InterruptedException {
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final AtomicReference<Throwable> thrown = new AtomicReference<>();
+        final Thread thread = new Thread(() -> {
+            try (final SafeCloseable ignored = executionContext.open()) {
+                test.run();
+            } catch (final Throwable t) {
+                thrown.set(t);
+            }
+        }, "executor-job-scheduler-waiter");
+        thread.setDaemon(true);
+        thread.start();
+        thread.join(TimeUnit.SECONDS.toMillis(30));
+        assertThat(thread.isAlive()).as("the waiting thread finished").isFalse();
+        if (thrown.get() != null) {
+            throw new AssertionError(thrown.get());
+        }
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws Exception;
     }
 }
