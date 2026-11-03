@@ -99,7 +99,7 @@ What sets Deephaven apart is its live dataframes. Together with the [composabili
 
 - _Ease of use_: Deephaven simplifies complex workflows for developers and data scientists.
 - _Real-time Python integrations_: Python libraries for analytics and data science run directly on real-time data in Python sessions.
-- _Rich joins_: [Relational](../how-to-guides/joins-exact-relational.md) and [time-series joins](../how-to-guides/joins-timeseries-range.md), such as [as-of joins](../reference/table-operations/join/aj.md), update incrementally on live data.
+- _Rich joins_: [Relational](../how-to-guides/joins-exact-relational.md) and [time-series joins](../how-to-guides/joins-timeseries-range.md), such as [as-of joins](../reference/table-operations/join/aj.md), update incrementally on live data. [Range joins](../reference/table-operations/join/range-join.md) are the exception: they currently require static tables.
 - _Dynamic UI/UX_: User interfaces and dashboards respond and update as the data changes.
 
 <div className="text--warning padding-top--xl">
