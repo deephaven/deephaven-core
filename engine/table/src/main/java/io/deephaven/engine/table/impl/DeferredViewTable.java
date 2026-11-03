@@ -205,20 +205,14 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             return coalesce();
         }
 
+        // only the pre-view filters are passed down to the coalesce check and enable automatic coalescing
+        final WhereFilter[] filterCopies = WhereFilter.copyFrom(innerFilters);
+        final PreAndPostFilters preAndPostFilters = applyFilterRenamings(filterCopies);
         // In order to match the equivalent memory table, run the full where on the coalesced table when any filter
-        // has cross-row dependencies (see WhereFilter#hasCrossRowDependencies). Ask before copying the filters: a
-        // filter with cross-row dependencies, such as a release filter, may not support copy().
-        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
-        for (final WhereFilter whereFilter : innerFilters) {
-            whereFilter.init(definition, compilationProcessor);
-        }
-        compilationProcessor.compile();
-        if (Arrays.stream(innerFilters).anyMatch(WhereFilter::hasCrossRowDependencies)) {
+        // has cross-row dependencies (see WhereFilter#hasCrossRowDependencies).
+        if (Arrays.stream(filterCopies).anyMatch(WhereFilter::hasCrossRowDependencies)) {
             return coalesce().where(filter);
         }
-
-        // only the pre-view filters are passed down to the coalesce check and enable automatic coalescing
-        final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(innerFilters));
         if (tableReference.shouldCoalesce(preAndPostFilters.preViewFilters)) {
             final WhereFilter[] allFilters = concat(deferredFilters, innerFilters);
             SplitAndApply splitAndApply = splitAndApplyFilters(allFilters, tableReference);

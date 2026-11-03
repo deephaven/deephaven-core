@@ -23,6 +23,7 @@ import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DownsampledWhereFilter;
+import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.LongRangeFilter;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.RangeFilter;
@@ -107,9 +108,11 @@ public class DeferredViewTableTest {
                 ColumnDefinition.ofTime("Timestamp"));
         final Table sourceTable = TableTools.emptyTable(10).update("Timestamp = DateTimeUtils.now()");
 
-        // We'll use a incremental release filter for convenience but any refreshing filter will do.
+        // Any refreshing filter will do, provided the filter has no cross-row dependencies, which withFilters rejects;
+        // a dynamic where filter over a refreshing set table qualifies.
+        final Table setTable = TstUtils.testRefreshingTable(TableTools.instantCol("Timestamp"));
         final WhereFilter[] whereFilters = new WhereFilter[] {
-                new IncrementalReleaseFilter(1, 1)
+                new DynamicWhereFilter(setTable, true, new MatchPair("Timestamp", "Timestamp"))
         };
         Assert.eqTrue(whereFilters[0].isRefreshing(), "whereFilters[0].isRefreshing()");
 
@@ -934,13 +937,18 @@ public class DeferredViewTableTest {
     @Test
     public void testReleaseFilterSeesTheRowsOfItsWhere() {
         // a release filter keeps rows by position among the rows that the filter's where receives, as a filter on ii
-        // would, so the where runs on the coalesced table rather than merging with the filters of an earlier where, and
-        // the filter is never copied, which an IncrementalReleaseFilter does not support
+        // would, so the where runs on the coalesced table rather than merging with the filters of an earlier where
         final Table source = TableTools.newTable(TableTools.intCol("A", 1, 6, 7, 8));
-        assertDeferredMatchesInMemory(source, t -> t.where("A > 5").where(new IncrementalReleaseFilter(2, 1)));
         assertDeferredMatchesInMemory(source, t -> t.where("A > 5").where(new RollingReleaseFilter(2, 1)));
         assertDeferredMatchesInMemory(source,
                 t -> t.renameColumns("B = A").where("B > 5").where(new RollingReleaseFilter(2, 1)));
+        // a deferred table copies the filters of a where, and an IncrementalReleaseFilter does not support copy(), so
+        // the caller coalesces the deferred table before applying the filter
+        final Table filtered = deferred(source).where("A > 5");
+        Assertions.assertThatThrownBy(() -> filtered.where(new IncrementalReleaseFilter(2, 1)))
+                .isInstanceOf(UnsupportedOperationException.class);
+        TstUtils.assertTableEquals(source.where("A > 5").where(new IncrementalReleaseFilter(2, 1)),
+                filtered.coalesce().where(new IncrementalReleaseFilter(2, 1)));
     }
 
     @Test
